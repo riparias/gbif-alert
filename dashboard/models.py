@@ -22,7 +22,7 @@ class Species(models.Model):
     ]
 
     name = models.CharField(max_length=100)
-    gbif_taxon_key = models.IntegerField()
+    gbif_taxon_key = models.IntegerField(unique=True)
     group = models.CharField(max_length=3, choices=GROUP_CHOICES)
     category = models.CharField(max_length=3, choices=CAT_CHOICES)
 
@@ -33,3 +33,4 @@ class Species(models.Model):
 class Occurrence(models.Model):
     species = models.ForeignKey(Species, on_delete=models.PROTECT)
     location = models.PointField(blank=True, null=True, srid=3857)
+    date = models.DateField()
