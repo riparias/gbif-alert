@@ -8,6 +8,11 @@ authors = ["Nicolas Noé <nicolas.noe@inbo.be>"]
 python = "^3.8"
 Django = "^3.2"
 psycopg2-binary = "^2.9.1"
+requests = "^2.26.0"
+gbif-blocking-occurrence-download = "^0.1.0"
+mypy = "^0.910"
+django-stubs = "^1.8.0"
+python-dwca-reader = "^0.15.0"
 
 [tool.poetry.dev-dependencies]
 

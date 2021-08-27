@@ -31,6 +31,7 @@ class Species(models.Model):
 
 
 class Occurrence(models.Model):
+    gbif_id = models.CharField(max_length=100, unique=True)
     species = models.ForeignKey(Species, on_delete=models.PROTECT)
     location = models.PointField(blank=True, null=True, srid=3857)
     date = models.DateField()

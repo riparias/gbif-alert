@@ -15,3 +15,7 @@ DATABASES = {
         'NAME': 'riparias-early-warning-webapp',
     }
 }
+
+# A Gbif.org is necessary to automatically download occurrences via the `import_occurrences` command
+RIPARIAS_GBIF_USERNAME = 'xxx'
+RIPARIAS_GBIF_PASSWORD = 'yyy'
