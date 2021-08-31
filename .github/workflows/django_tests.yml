@@ -46,8 +46,6 @@ jobs:
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install --no-interaction --no-root
-    - name: Install Django project
-      run: poetry install --no-interaction
     - name: Install Django settings
       run: cp djangoproject/local_settings_ci.py djangoproject/local_settings.py
     - name: Run Django tests
@@ -57,4 +55,4 @@ jobs:
         source .venv/bin/activate
         python manage.py test
     - name: Run mypy
-      run: mypy .
+      run: poetry run mypy .
