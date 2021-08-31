@@ -29,23 +29,16 @@ jobs:
       with:
         path: .venv
         key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-    #----------------------------------------------
-    # install dependencies if cache does not exist
-    #----------------------------------------------
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install --no-interaction --no-root
-    #----------------------------------------------
-    # install your root project, if required
-    #----------------------------------------------
     - name: Install Django project
       run: poetry install --no-interaction
-    #----------------------------------------------
-    #              run test suite
-    #----------------------------------------------
+    - name: Install Django settings
+      run: cp djangoproject/local_settings_ci.py djangoproject/local_settings.py
     - name: Run Mypy and Django tests
       env:
-        DJANGO_SETTINGS_MODULE: djangoproject.local_settings_ci
+        DJANGO_SETTINGS_MODULE: djangoproject.local_settings
       run: |
         source .venv/bin/activate
         mypy .
