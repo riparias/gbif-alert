@@ -38,12 +38,14 @@ jobs:
     #----------------------------------------------
     # install your root project, if required
     #----------------------------------------------
-    - name: Install library
+    - name: Install Django project
       run: poetry install --no-interaction
     #----------------------------------------------
     #              run test suite
     #----------------------------------------------
     - name: Run Mypy and Django tests
+      env:
+        DJANGO_SETTINGS_MODULE: djangoproject.local_settings_ci
       run: |
         source .venv/bin/activate
         mypy .
