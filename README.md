@@ -9,4 +9,4 @@ Source code of the early warning web application for Riparias
 
 # TODO
 
-- GitHub actions that run Django tests + mypy
+- Next step: GitHub actions that run Django tests + mypy

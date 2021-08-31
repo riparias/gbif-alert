@@ -1,7 +1,7 @@
 import tempfile
 import datetime
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
@@ -75,9 +75,9 @@ class Command(BaseCommand):
                     year_str = row.data[qn('year')]
                     if year_str != '':  # Skip records that don't even have a decent year
                         try:
-                            point = Point(float(row.data[qn('decimalLongitude')]),
-                                          float(row.data[qn('decimalLatitude')]),
-                                          srid=4326)
+                            point: Optional[Point] = Point(float(row.data[qn('decimalLongitude')]),
+                                                           float(row.data[qn('decimalLatitude')]),
+                                                           srid=4326)
                         except ValueError:
                             point = None
 
