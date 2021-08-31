@@ -2,6 +2,15 @@ from django.test import TestCase
 from django.urls import reverse
 
 
+class WebPagesTests(TestCase):
+    def test_homepage(self):
+        """There's a Bootstrap-powered page at / """
+        response = self.client.get('/')
+        self.assertContains(response, 'bootstrap.min.css', status_code=200)
+        self.assertContains(response, 'container')
+        self.assertTemplateUsed(response, 'dashboard/index.html')
+
+
 class ApiTests(TestCase):
     def test_species_list_json(self):
         response = self.client.get(reverse('api-species-list-json'))
