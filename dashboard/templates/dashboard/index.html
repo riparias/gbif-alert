@@ -3,16 +3,16 @@
 {% load static %}
 
 {% block after_navbar %}
-
-    <div class="container">
-        <div class="row">
-            <div class="col"><h1>Welcome!</h1></div>
+<div class="container">
+    <div class="row">
+        <div class="col"><h1>Welcome!</h1></div>
+        <div class="col-6">
             <div id="app">
-                [[ message ]]
-                <Hello></Hello>
+                <Occurrences-Map></Occurrences-Map>
             </div>
         </div>
     </div>
+</div>
 
-    <script src="{% static 'index-bundle.js' %}"></script>
+<script src="{% static 'index-bundle.js' %}"></script>
 {% endblock %}

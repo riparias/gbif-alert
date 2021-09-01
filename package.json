@@ -28,6 +28,7 @@
     "webpack-cli": "^4.8.0"
   },
   "dependencies": {
+    "ol": "^6.6.1",
     "vue": "^2.6.14",
     "vue-template-compiler": "^2.6.14"
   }

@@ -1,13 +1,12 @@
 import Vue from 'vue'
-import Hello from './Hello.vue';
+import OccurrencesMap from "./OccurrencesMap.vue";
 
 new Vue({
   el: '#app',
   components: {
-    Hello
+    OccurrencesMap
   },
   delimiters: ['[[', ']]'],
   data: {
-    message: 'Hello Vue!'
   }
 })
