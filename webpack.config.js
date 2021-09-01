@@ -19,6 +19,18 @@ module.exports = {
                     'vue-style-loader',
                     'css-loader',
                 ]
+            },
+            {
+                test: /\.tsx?$/,
+                loader: 'ts-loader',
+                exclude: /node_modules/,
+                options: {
+                    //Then there are settings for a ts-loader, which helps load the TypeScript with Vue.
+                    //We also specified the appendTsSuffixTo: [/\.vue$/], option to ts-loader in our webpack.config.js file,
+                    //which allows TypeScript to process the code extracted from a single file component.
+                    //https://github.com/TypeStrong/ts-loader#appendtssuffixto
+                    appendTsSuffixTo: [/\.vue$/],
+                }
             }
         ]
     },

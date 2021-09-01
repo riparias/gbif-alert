@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import Hello from './Hello.vue';
 
-var app = new Vue({
+new Vue({
   el: '#app',
   components: {
     Hello
