@@ -1,6 +1,6 @@
 <template>
   <div ref="map-root"
-       style="width: 600px; height: 500px; position:absolute;">
+       :style="{width: '100%', height: height + 'px'}">
   </div>
 </template>
 
@@ -17,19 +17,23 @@
   export default Vue.extend( {
     name: 'MapContainer',
     components: {},
-    props: {},
+    props: {
+      height: Number, // Map height, in pixels
+      initialZoom: Number,
+      initialLat: Number,
+      initialLon: Number
+    },
     mounted() {
       new Map({
         target: this.$refs['map-root'] as HTMLInputElement,
         layers: [
-
           new TileLayer({
-            source: new OSM()
+            source: new OSM({url: "http://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"})
           }),
         ],
         view: new View({
-          zoom: 7,
-          center: fromLonLat([4.47, 50.50]),
+          zoom: this.initialZoom,
+          center: fromLonLat([this.initialLon, this.initialLat]),
         }),
       })
     },

@@ -6,10 +6,8 @@
 <div class="container">
     <div class="row">
         <div class="col"><h1>Welcome!</h1></div>
-        <div class="col-6">
-            <div id="app">
-                <Occurrences-Map></Occurrences-Map>
-            </div>
+        <div class="col-9 overflow-auto" id="app">
+            <Occurrences-Map :height="800" :initial-zoom="8" :initial-lat="50.5010" :initial-lon="4.4764"></Occurrences-Map>
         </div>
     </div>
 </div>
