@@ -1,12 +1,15 @@
-import Vue from 'vue'
+import Vue from "vue";
 import OccurrencesMap from "./OccurrencesMap.vue";
 
+declare const ripariasConfig: Object;
+
 new Vue({
-  el: '#app',
+  el: "#app",
   components: {
-    OccurrencesMap
+    OccurrencesMap,
   },
-  delimiters: ['[[', ']]'],
+  delimiters: ["[[", "]]"],
   data: {
-  }
-})
+    frontendConfig: ripariasConfig,
+  },
+});

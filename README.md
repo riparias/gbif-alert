@@ -19,3 +19,8 @@ In short
 
 - We use npm to manage JS dependencies
 - Run `npm run dev` so Webpack watches our source frontend (in `./assets`) and create bundles (in `./static`)
+
+### Code formatting
+
+- Use `black` for Python code
+- Use `prettier` to reformat JS/TS/Vue code (see [PyCharm configuration instructions](https://www.jetbrains.com/help/pycharm/prettier.html)) 

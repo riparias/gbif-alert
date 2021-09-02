@@ -2,8 +2,14 @@ from django.urls import path
 
 from . import views
 
-urlpatterns = [
-    path('', views.index, name='index'),
+app_name = "dashboard"
 
-    path('api/species', views.species_list_json, name='api-species-list-json')
+urlpatterns = [
+    path("", views.index, name="index"),
+    path("api/species", views.species_list_json, name="api-species-list-json"),
+    path(
+        "api/tiles/<int:zoom>/<int:x>/<int:y>.mvt",
+        views.mvt_tiles,
+        name="api-mvt-tiles",
+    ),
 ]

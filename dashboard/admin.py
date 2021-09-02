@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from .models import Species, Occurrence
 
-admin.site.site_header = 'Riparias early warning administration'
+admin.site.site_header = "Riparias early warning administration"
 
 
 @admin.register(Occurrence)

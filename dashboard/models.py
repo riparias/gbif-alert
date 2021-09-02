@@ -3,22 +3,27 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class Species(models.Model):
-    GROUP_PLANT = 'PL'
-    GROUP_CRAYFISH = 'CR'
+    GROUP_PLANT = "PL"
+    GROUP_CRAYFISH = "CR"
 
-    GROUP_CHOICES = [
-        (GROUP_PLANT, _('Plants')),
-        (GROUP_CRAYFISH, _('Crayfishes'))
-    ]
+    GROUP_CHOICES = [(GROUP_PLANT, _("Plants")), (GROUP_CRAYFISH, _("Crayfishes"))]
 
-    CAT_WIDESPREAD = 'W'
-    CAT_EMERGING = 'E'
-    CAT_STILL_ABSENT = 'SA'
+    CAT_WIDESPREAD = "W"
+    CAT_EMERGING = "E"
+    CAT_STILL_ABSENT = "SA"
 
     CAT_CHOICES = [
-        (CAT_WIDESPREAD, _('Widespread and abundant species in the pilot river basins')),
-        (CAT_EMERGING, _('Emerging species with a very restricted range in the pilot river basins')),
-        (CAT_STILL_ABSENT, _('Species still absent from the pilot river basins')),
+        (
+            CAT_WIDESPREAD,
+            _("Widespread and abundant species in the pilot river basins"),
+        ),
+        (
+            CAT_EMERGING,
+            _(
+                "Emerging species with a very restricted range in the pilot river basins"
+            ),
+        ),
+        (CAT_STILL_ABSENT, _("Species still absent from the pilot river basins")),
     ]
 
     name = models.CharField(max_length=100)
