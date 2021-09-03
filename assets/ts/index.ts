@@ -1,5 +1,5 @@
 import Vue from "vue";
-import OccurrencesMap from "./OccurrencesMap.vue";
+import OccurrencesMap from "./components/OccurrencesMap.vue";
 
 declare const ripariasConfig: Object;
 
