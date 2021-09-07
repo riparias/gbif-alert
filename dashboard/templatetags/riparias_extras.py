@@ -17,11 +17,12 @@ def js_config_object(context):
         ],  # for the example (not used yet, delete later?)
         "apiEndpoints": {
             "tileServerUrlTemplate": reverse(
-                "dashboard:api-mvt-tiles", kwargs={"zoom": 1, "x": 2, "y": 3}
+                "dashboard:api-mvt-tiles-hexagon-grid-aggregated", kwargs={"zoom": 1, "x": 2, "y": 3}
             )
             .replace("1", "{z}")
             .replace("2", "{x}")
-            .replace("3", "{y}")
+            .replace("3", "{y}"),
+            "minMaxOccPerHexagonUrl": reverse("dashboard:api-mvt-min-max-per-hexagon")
         },
     }
     return mark_safe(json.dumps(conf))

@@ -11,7 +11,11 @@
                              :initial-zoom="8"
                              :initial-lat="50.5010"
                              :initial-lon="4.4764"
-                             :tile-server-url-template="frontendConfig.apiEndpoints.tileServerUrlTemplate"></Occurrences-Map>
+                             :tile-server-url-template="frontendConfig.apiEndpoints.tileServerUrlTemplate"
+                             :min-max-url="frontendConfig.apiEndpoints.minMaxOccPerHexagonUrl"
+                             :filters="filters"
+                             :show-counters="true"
+            ></Occurrences-Map>
         </div>
     </div>
 </div>

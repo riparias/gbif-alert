@@ -1,5 +1,6 @@
 import Vue from "vue";
 import OccurrencesMap from "./components/OccurrencesMap.vue";
+import {DashboardFilters} from "./interfaces";
 
 declare const ripariasConfig: Object;
 
@@ -11,5 +12,6 @@ new Vue({
   delimiters: ["[[", "]]"],
   data: {
     frontendConfig: ripariasConfig,
+    filters: {} as DashboardFilters
   },
 });

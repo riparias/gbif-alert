@@ -20,6 +20,7 @@
   "homepage": "https://github.com/riparias/early-warning-webapp#readme",
   "devDependencies": {
     "@babel/core": "^7.15.0",
+    "@types/d3": "^7.0.0",
     "babel-loader": "^8.2.2",
     "prettier": "2.3.2",
     "ts-loader": "^9.2.5",
@@ -29,6 +30,8 @@
     "webpack-cli": "^4.8.0"
   },
   "dependencies": {
+    "axios": "^0.21.1",
+    "d3": "^7.0.1",
     "ol": "^6.6.1",
     "vue": "^2.6.14",
     "vue-template-compiler": "^2.6.14"

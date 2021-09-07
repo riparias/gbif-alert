@@ -33,3 +33,15 @@ class ApiTests(TestCase):
                 break
 
         self.assertTrue(found)
+
+
+class VectorTilesServerTests(TestCase):
+    def test_base_mvt_server(self):
+        """There's a tile server returning the appropriate MIME type"""
+        response = self.client.get(
+            reverse("dashboard:api-mvt-tiles-hexagon-grid-aggregated", kwargs={"zoom": 1, "x": 1, "y": 1})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers["Content-Type"], "application/vnd.mapbox-vector-tile"
+        )

@@ -13,6 +13,7 @@ gbif-blocking-occurrence-download = "^0.1.0"
 mypy = "^0.910"
 django-stubs = "^1.8.0"
 python-dwca-reader = "^0.15.0"
+jinjasql = "^0.1.8"
 
 [tool.poetry.dev-dependencies]
 black = "^21.8b0"
