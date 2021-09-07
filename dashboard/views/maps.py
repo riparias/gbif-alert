@@ -19,7 +19,6 @@ DB_DATE_EXCHANGE_FORMAT_POSTGRES = 'YYYY-MM-DD'  # To be used in SQL queries
 # all zoom levels
 ZOOM_TO_HEX_SIZE_MULTIPLIER = 2
 ZOOM_TO_HEX_SIZE_BASELINE = {
-    0: 640000,
     1: 320000,
     2: 160000,
     3: 80000,
@@ -35,8 +34,11 @@ ZOOM_TO_HEX_SIZE_BASELINE = {
     13: 80,
     14: 40,
     15: 20,
-    16: 10
-    # TODO: show individual occurrences for levels > 13?
+    16: 10,
+    17: 5,
+    18: 5,
+    19: 5,
+    20: 5
 }
 ZOOM_TO_HEX_SIZE = {key: value * ZOOM_TO_HEX_SIZE_MULTIPLIER for key, value in ZOOM_TO_HEX_SIZE_BASELINE.items()}
 
