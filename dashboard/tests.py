@@ -146,3 +146,35 @@ class VectorTilesServerTests(TestCase):
             self.assertEqual(response.status_code, 200)
             mapbox_vector_tile.decode(response.content)
 
+    def test_min_max_per_hexagon(self):
+        # At zoom level 8, with the initial data: we should have two polygons, both at 1. So min=1 and max=1
+        response = self.client.get(reverse('dashboard:api-mvt-min-max-per-hexagon'), data={'zoom': 8})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Content-Type"], "application/json")
+        self.assertEqual(response.json()['min'], 1)
+        self.assertEqual(response.json()['max'], 1)
+
+        # Add a second one in Lillois, but not next to the other one
+        Occurrence.objects.create(gbif_id=3,
+                                  species=Species.objects.all()[0],
+                                  date=datetime.date.today(),
+                                  location=Point(4.36229, 50.64628, srid=4326)  # Lillois, bakkerij
+                                  )
+
+        # Now, at zoom level 8 we should have an hexagon with count=1 and another one with count=2
+        response = self.client.get(reverse('dashboard:api-mvt-min-max-per-hexagon'), data={'zoom': 8})
+        self.assertEqual(response.json()['min'], 1)
+        self.assertEqual(response.json()['max'], 2)
+
+        # But at a very large scale, one single hexagon with count=3
+        response = self.client.get(reverse('dashboard:api-mvt-min-max-per-hexagon'), data={'zoom': 1})
+        self.assertEqual(response.json()['min'], 3)
+        self.assertEqual(response.json()['max'], 3)
+
+        # At zoom level 17, there's no hexagons that cover more than 1 occurrence
+        response = self.client.get(reverse('dashboard:api-mvt-min-max-per-hexagon'), data={'zoom': 17})
+        self.assertEqual(response.json()['min'], 1)
+        self.assertEqual(response.json()['max'], 1)
+
+
+
