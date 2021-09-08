@@ -9,7 +9,9 @@ import {fromLonLat} from "ol/proj";
 import TileLayer from "ol/layer/Tile";
 import {VectorTile as VectorTileLayer} from "ol/layer";
 import {Stamen, VectorTile as VectorTileSource} from "ol/source";
-import * as d3 from "d3";
+import {scaleSequentialLog, ScaleSequential} from 'd3-scale'
+import {interpolateReds} from 'd3-scale-chromatic'
+import {hsl} from 'd3-color'
 import {DashboardFilters} from "../interfaces";
 import "ol/ol.css";
 import {MVT} from "ol/format";
@@ -67,8 +69,8 @@ export default Vue.extend({
     },
   },
   computed: {
-    colorScale: function (): d3.ScaleSequential<string> {
-      return d3.scaleSequentialLog(d3.interpolateReds)
+    colorScale: function (): ScaleSequential<string> {
+      return scaleSequentialLog(interpolateReds)
           .domain([this.HexMinOccCount, this.HexMaxOccCount])
     },
     dataLayerStyleFunction: function (): OlStyleFunction {
@@ -131,7 +133,7 @@ export default Vue.extend({
       }
     },
     legibleColor: function (color: string): string {
-      return d3.hsl(color).l > 0.5 ? "#000" : "#fff"
+      return hsl(color).l > 0.5 ? "#000" : "#fff"
     },
     createDataLayer: function (): VectorTileLayer {
       return new VectorTileLayer({
