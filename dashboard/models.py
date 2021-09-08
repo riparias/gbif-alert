@@ -34,6 +34,16 @@ class Species(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def as_dict(self):
+        return {  # To be consumed on the frontend: we use JS naming conventions
+            'id': self.pk,
+            'scientificName': self.name,
+            'gbifTaxonKey': self.gbif_taxon_key,
+            'groupCode': self.group,
+            'categoryCode': self.category
+        }
+
 
 class Occurrence(models.Model):
     gbif_id = models.CharField(max_length=100, unique=True)

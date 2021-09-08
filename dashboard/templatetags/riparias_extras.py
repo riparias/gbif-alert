@@ -10,12 +10,14 @@ register = template.Library()
 
 @register.simple_tag(takes_context=True)
 def js_config_object(context):
+    # When adding stuff here, don't forget to update the corresponding TypeScript interface in assets/ts/interfaces.ts
     conf = {
         "currentLanguageCode": context.request.LANGUAGE_CODE,  # for the example (not used yet, delete later?)
         "targetCountryCode": settings.RIPARIAS[
             "TARGET_COUNTRY_CODE"
         ],  # for the example (not used yet, delete later?)
         "apiEndpoints": {
+            "speciesListUrl": reverse("dashboard:api-species-list-json"),
             "tileServerUrlTemplate": reverse(
                 "dashboard:api-mvt-tiles-hexagon-grid-aggregated", kwargs={"zoom": 1, "x": 2, "y": 3}
             )

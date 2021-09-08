@@ -20,7 +20,7 @@ def extract_date_request(request, param_name, date_format="%Y-%m-%d"):
     """
     val = request.GET.get(param_name, None)
 
-    if val is not None and val != '':
+    if val is not None and val != '' and val != 'null':
         return datetime.datetime.strptime(val, date_format).date()
 
     return None

@@ -4,7 +4,6 @@
 
 <script lang="ts">
 import {Feature, Map, View} from "ol";
-import OSM from "ol/source/OSM";
 import Vue from "vue";
 import {fromLonLat} from "ol/proj";
 import TileLayer from "ol/layer/Tile";
@@ -50,6 +49,12 @@ export default Vue.extend({
     };
   },
   watch: {
+    filters: {
+      handler: function () {
+        this.replaceDataLayer();
+      },
+      deep: true
+    },
     HexMinOccCount: {
       handler: function () {
         this.replaceDataLayer(); // TODO: restyle without full replace?
@@ -101,6 +106,10 @@ export default Vue.extend({
         center: fromLonLat([this.initialLon, this.initialLat]),
       });
     },
+    filtersAsQueryString: function (): string {
+      const filtersStringinfied = Object.fromEntries(Object.entries(this.filters).map(([k, v]) => [k, String(v)]));
+      return new URLSearchParams(filtersStringinfied).toString()
+    }
   },
   methods: {
     loadOccMinMax: function (zoomLevel: number, filters: DashboardFilters) {
@@ -128,7 +137,7 @@ export default Vue.extend({
       return new VectorTileLayer({
         source: new VectorTileSource({
           format: new MVT(),
-          url: this.tileServerUrlTemplate,
+          url: this.tileServerUrlTemplate + '?' + this.filtersAsQueryString,
         }),
         style: this.dataLayerStyleFunction,
         opacity: 0.8

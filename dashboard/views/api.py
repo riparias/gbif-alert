@@ -4,5 +4,4 @@ from dashboard.models import Species
 
 
 def species_list_json(request):
-    data = list(Species.objects.all().values())
-    return JsonResponse(data, safe=False)
+    return JsonResponse([species.as_dict for species in Species.objects.all()], safe=False)
