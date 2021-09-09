@@ -1,3 +1,8 @@
+export interface OptionForSelect {
+  value: string
+  label: string
+}
+
 export interface DashboardFilters {
   speciesId: Number | null
   startDate: string | null

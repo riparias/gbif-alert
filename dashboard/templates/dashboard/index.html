@@ -9,7 +9,14 @@
     </div>
     <div class="row" id="app">
         <div class="col-3">
+            <h4>Data filtering</h4>
             <Species-Selector :species="availableSpecies" @species-changed="changeSelectedSpecies"></Species-Selector>
+
+            <h4>Map style</h4>
+            <label for="mapBaseSelector" class="form-label">Base layer</label>
+            <select id="mapBaseSelector" v-model="mapBaseLayer" class="form-select form-select-sm">
+                <option v-for="l in availableMapBaseLayers" :value="l.value">[[ l.label ]]</option>
+            </select>
         </div>
 
         <div class="col-9 overflow-auto">
@@ -21,6 +28,7 @@
                              :min-max-url="frontendConfig.apiEndpoints.minMaxOccPerHexagonUrl"
                              :filters="filters"
                              :show-counters="true"
+                             :base-layer-name="mapBaseLayer"
             ></Occurrences-Map>
         </div>
     </div>

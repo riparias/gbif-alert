@@ -1,8 +1,11 @@
 <template>
-  <select v-model="selectedSpecies" class="form-select" aria-label="Default select example">
-    <option :value="null">--- all ---</option>
-    <option v-for="s in species" :value="s.id">{{ s.scientificName }}</option>
-  </select>
+  <div>
+    <label for="speciesSelector" class="form-label">Species</label>
+    <select id="speciesSelector" v-model="selectedSpecies" class="form-select form-select-sm" aria-label="Default select example">
+      <option :value="null">--- all ---</option>
+      <option v-for="s in species" :value="s.id">{{ s.scientificName }}</option>
+    </select>
+  </div>
 </template>
 
 <script lang="ts">

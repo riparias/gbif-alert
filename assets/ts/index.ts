@@ -1,6 +1,6 @@
 import Vue from "vue";
 import OccurrencesMap from "./components/OccurrencesMap.vue";
-import {DashboardFilters, SpeciesInformation, FrontEndConfig} from "./interfaces";
+import {DashboardFilters, SpeciesInformation, FrontEndConfig, OptionForSelect} from "./interfaces";
 import SpeciesSelector from "./components/SpeciesSelector.vue";
 import axios from "axios";
 
@@ -9,7 +9,9 @@ declare const ripariasConfig: FrontEndConfig;
 interface RootAppData {
     frontendConfig: FrontEndConfig
     availableSpecies: SpeciesInformation[]
-    filters: DashboardFilters
+    filters: DashboardFilters,
+    mapBaseLayer: string
+    availableMapBaseLayers: OptionForSelect[]
 }
 
 new Vue({
@@ -21,7 +23,13 @@ new Vue({
     data: function (): RootAppData {
         return {
             frontendConfig: ripariasConfig,
+
             availableSpecies: [],
+            availableMapBaseLayers: [
+                { value: 'toner', label: 'Stamen Toner' },
+                { value: 'osmHot', label: 'OSM HOT' },
+            ],
+            mapBaseLayer: 'toner',
             filters: {
                 speciesId: null,
                 startDate: null,

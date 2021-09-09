@@ -8,7 +8,7 @@ import Vue from "vue";
 import {fromLonLat} from "ol/proj";
 import TileLayer from "ol/layer/Tile";
 import {VectorTile as VectorTileLayer} from "ol/layer";
-import {Stamen, VectorTile as VectorTileSource} from "ol/source";
+import {OSM, Stamen, VectorTile as VectorTileSource} from "ol/source";
 import {scaleSequentialLog, ScaleSequential} from 'd3-scale'
 import {interpolateReds} from 'd3-scale-chromatic'
 import {hsl} from 'd3-color'
@@ -19,11 +19,17 @@ import {Fill, Stroke, Style, Text} from "ol/style";
 import axios from "axios";
 import RenderFeature from "ol/render/Feature";
 
+interface BaseLayerEntry {
+  name: string,
+  layer: TileLayer<any>
+}
+
 declare interface MapContainerData {
   map: Map | null;
   dataLayer: VectorTileLayer | null;
   HexMinOccCount: Number,
   HexMaxOccCount: Number
+  availableBaseLayers: BaseLayerEntry[]
 }
 
 interface OlStyleFunction {
@@ -40,123 +46,163 @@ export default Vue.extend({
     tileServerUrlTemplate: String,
     filters: Object as () => DashboardFilters,
     minMaxUrl: String,
-    showCounters: Boolean
+    showCounters: Boolean,
+    baseLayerName: String
   },
   data: function (): MapContainerData {
     return {
       map: null,
       dataLayer: null,
       HexMinOccCount: 1,
-      HexMaxOccCount: 1
+      HexMaxOccCount: 1,
+      availableBaseLayers: [
+        {name: "toner", layer: new TileLayer({ source: new Stamen({ layer: "toner", })})},
+        {name: "osmHot", layer: new TileLayer({ source: new OSM({url: "http://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"})})},
+      ]
     };
   },
-  watch: {
-    filters: {
-      handler: function () {
-        this.replaceDataLayer();
+    watch: {
+      baseLayerName: {
+        handler: function (newVal: string) {
+          if (this.map) {
+            let layers = this.map.getLayers()
+            layers.removeAt(0);
+            layers.insertAt(0, this.selectedBaseLayer);
+          }
+        }
+      }
+    ,
+      filters: {
+        handler: function () {
+          this.replaceDataLayer();
+        }
+      ,
+        deep: true
+      }
+    ,
+      HexMinOccCount: {
+        handler: function () {
+          this.replaceDataLayer(); // TODO: restyle without full replace?
+        }
+      ,
+      }
+    ,
+      HexMaxOccCount: {
+        handler: function () {
+          this.replaceDataLayer(); // TODO: restyle without full replace?
+        }
+      ,
+      }
+    ,
+    }
+  ,
+    computed: {
+      selectedBaseLayer: function (): TileLayer<any> {
+          return this.selectedBaseLayerEntry.layer
       },
-      deep: true
-    },
-    HexMinOccCount: {
-      handler: function () {
-        this.replaceDataLayer(); // TODO: restyle without full replace?
+      selectedBaseLayerEntry: function (): BaseLayerEntry {
+        const found = this.availableBaseLayers.find(l => this.baseLayerName === l.name)
+        if (found) {
+          return found
+        } else {
+          return this.availableBaseLayers[0]; // First one as default
+        }
       },
-    },
-    HexMaxOccCount: {
-      handler: function () {
-        this.replaceDataLayer(); // TODO: restyle without full replace?
-      },
-    },
-  },
-  computed: {
-    colorScale: function (): ScaleSequential<string> {
-      return scaleSequentialLog(interpolateReds)
-          .domain([this.HexMinOccCount, this.HexMaxOccCount])
-    },
-    dataLayerStyleFunction: function (): OlStyleFunction {
-      let vm = this;
-      return function (feature: Feature<any> | RenderFeature): Style {
-        const featuresCount = feature.getProperties()['count']
-        const fillColor = vm.colorScale(featuresCount);
-        const textValue = vm.showCounters ? '' + featuresCount : ''
+      colorScale: function (): ScaleSequential<string> {
+        return scaleSequentialLog(interpolateReds)
+            .domain([this.HexMinOccCount, this.HexMaxOccCount])
+      }
+    ,
+      dataLayerStyleFunction: function (): OlStyleFunction {
+        let vm = this;
+        return function (feature: Feature<any> | RenderFeature): Style {
+          const featuresCount = feature.getProperties()['count']
+          const fillColor = vm.colorScale(featuresCount);
+          const textValue = vm.showCounters ? '' + featuresCount : ''
 
-        return new Style({
-          stroke: new Stroke({
-            color: 'grey',
-            width: 1,
-          }),
-          fill: new Fill({
-            color: fillColor
-          }),
-          text: new Text({
-            text: textValue,
-            fill: new Fill({color: vm.legibleColor(fillColor)})
+          return new Style({
+            stroke: new Stroke({
+              color: 'grey',
+              width: 1,
+            }),
+            fill: new Fill({
+              color: fillColor
+            }),
+            text: new Text({
+              text: textValue,
+              fill: new Fill({color: vm.legibleColor(fillColor)})
+            })
           })
+        }
+      }
+    ,
+      mapView: function (): View {
+        return new View({
+          zoom: this.initialZoom,
+          center: fromLonLat([this.initialLon, this.initialLat]),
+        });
+      }
+    ,
+      filtersAsQueryString: function (): string {
+        const filtersStringinfied = Object.fromEntries(Object.entries(this.filters).map(([k, v]) => [k, String(v)]));
+        return new URLSearchParams(filtersStringinfied).toString()
+      }
+    }
+  ,
+    methods: {
+      loadOccMinMax: function (zoomLevel: number, filters: DashboardFilters) {
+        let params = {...filters} as any;
+        params.zoom = zoomLevel;
+
+        axios.get(this.minMaxUrl, {params: params}).then(response => {
+          this.HexMinOccCount = response.data.min;
+          this.HexMaxOccCount = response.data.max;
         })
       }
-    },
-    basemapLayer: function (): TileLayer<any> {
-      return new TileLayer({
-        source: new Stamen({
-          layer: "toner",
-        }),
-      });
-    },
-    mapView: function (): View {
-      return new View({
-        zoom: this.initialZoom,
-        center: fromLonLat([this.initialLon, this.initialLat]),
-      });
-    },
-    filtersAsQueryString: function (): string {
-      const filtersStringinfied = Object.fromEntries(Object.entries(this.filters).map(([k, v]) => [k, String(v)]));
-      return new URLSearchParams(filtersStringinfied).toString()
-    }
-  },
-  methods: {
-    loadOccMinMax: function (zoomLevel: number, filters: DashboardFilters) {
-      let params = {...filters} as any;
-      params.zoom = zoomLevel;
-
-      axios.get(this.minMaxUrl, {params: params}).then(response => {
-        this.HexMinOccCount = response.data.min;
-        this.HexMaxOccCount = response.data.max;
-      })
-    },
-    replaceDataLayer: function (): void {
-      if (this.map) {
-        if (this.dataLayer) {
-          this.map.removeLayer(this.dataLayer)
+    ,
+      replaceDataLayer: function (): void {
+        if (this.map) {
+          if (this.dataLayer) {
+            this.map.removeLayer(this.dataLayer)
+          }
+          this.dataLayer = this.createDataLayer();
+          this.map.addLayer(this.dataLayer);
         }
-        this.dataLayer = this.createDataLayer();
-        this.map.addLayer(this.dataLayer);
       }
-    },
-    legibleColor: function (color: string): string {
-      return hsl(color).l > 0.5 ? "#000" : "#fff"
-    },
-    createDataLayer: function (): VectorTileLayer {
-      return new VectorTileLayer({
-        source: new VectorTileSource({
-          format: new MVT(),
-          url: this.tileServerUrlTemplate + '?' + this.filtersAsQueryString,
-        }),
-        style: this.dataLayerStyleFunction,
-        opacity: 0.8
-      });
-    },
-    createBasicMap: function (): Map {
-      return new Map({
-        target: this.$refs["map-root"] as HTMLInputElement,
-        layers: [this.basemapLayer],
-        view: this.mapView,
-      });
-    },
-  },
-  mounted() {
-    this.loadOccMinMax(this.initialZoom, this.filters);
-    this.map = this.createBasicMap();
-    this.replaceDataLayer();
-  },
-});
+    ,
+      legibleColor: function (color: string): string {
+        return hsl(color).l > 0.5 ? "#000" : "#fff"
+      }
+    ,
+      createDataLayer: function (): VectorTileLayer {
+        return new VectorTileLayer({
+          source: new VectorTileSource({
+            format: new MVT(),
+            url: this.tileServerUrlTemplate + '?' + this.filtersAsQueryString,
+          }),
+          style: this.dataLayerStyleFunction,
+          opacity: 0.8
+        });
+      }
+    ,
+      createBasicMap: function (): Map {
+        const map = new Map({
+          target: this.$refs["map-root"] as HTMLInputElement,
+          layers: [this.selectedBaseLayer],
+          view: this.mapView,
+        });
+
+        return map;
+      }
+    ,
+    }
+  ,
+    mounted()
+    {
+      this.loadOccMinMax(this.initialZoom, this.filters);
+      this.map = this.createBasicMap();
+      this.replaceDataLayer();
+    }
+  ,
+  });
 </script>
