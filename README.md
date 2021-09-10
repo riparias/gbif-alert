@@ -2,7 +2,9 @@
 
 [![Django CI](https://github.com/riparias/early-warning-webapp/actions/workflows/django_tests.yml/badge.svg)](https://github.com/riparias/early-warning-webapp/actions/workflows/django_tests.yml)
 
-Source code of the early warning web application for Riparias
+Source code of the early warning web application for Riparias.
+
+Early prototype visible at http://54.75.164.69/
 
 ## Development setup and notes
 
