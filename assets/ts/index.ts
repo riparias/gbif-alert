@@ -45,7 +45,7 @@ new Vue({
                 startDate: null,
                 endDate: null
             },
-            dataLayerOpacity: 0.5
+            dataLayerOpacity: 0.8
         }
     },
 
