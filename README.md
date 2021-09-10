@@ -15,12 +15,13 @@ Source code of the early warning web application for Riparias
 
 We use a hybrid approach such as described in https://www.saaspegasus.com/guides/modern-javascript-for-django-developers/integrating-javascript-pipeline/.
 
-In short
+In short:
 
 - We use npm to manage JS dependencies
-- Run `npm run dev` so Webpack watches our source frontend (in `./assets`) and create bundles (in `./static`)
+- Run `npm run webpack-dev` so Webpack constantly watches our source frontend (in `./assets`) and create bundles (in `./static`)
+- When deploying, use `npm run webpack prod` instead (smaller bundle size + one single copy - rather than watching files)
 
 ### Code formatting
 
 - Use `black` for Python code
-- Use `prettier` to reformat JS/TS/Vue code (see [PyCharm configuration instructions](https://www.jetbrains.com/help/pycharm/prettier.html)) 
+- Use `prettier` to reformat JS/TS/Vue code (see [PyCharm configuration instructions](https://www.jetbrains.com/help/pycharm/prettier.html))
