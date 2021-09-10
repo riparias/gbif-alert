@@ -4,6 +4,8 @@ import {DashboardFilters, SpeciesInformation, FrontEndConfig, OptionForSelect} f
 import SpeciesSelector from "./components/SpeciesSelector.vue";
 import axios from "axios";
 import OccurrencesCounter from "./components/OccurrencesCounter.vue";
+import TabSwitcher from "./components/TabSwitcher.vue";
+import OccurrencesTable from "./components/OccurrencesTable.vue";
 
 declare const ripariasConfig: FrontEndConfig;
 
@@ -13,12 +15,14 @@ interface RootAppData {
     filters: DashboardFilters,
     mapBaseLayer: string
     availableMapBaseLayers: OptionForSelect[]
+    selectedTab: string
+    availableTabs: string[]
 }
 
 new Vue({
     el: "#app",
     components: {
-        OccurrencesMap, SpeciesSelector, OccurrencesCounter
+        OccurrencesMap, SpeciesSelector, OccurrencesCounter, TabSwitcher, OccurrencesTable
     },
     delimiters: ["[[", "]]"],
     data: function (): RootAppData {
@@ -31,6 +35,8 @@ new Vue({
                 { value: 'osmHot', label: 'OSM HOT' },
             ],
             mapBaseLayer: 'toner',
+            selectedTab: 'Map view',
+            availableTabs: ['Map view', 'Table view'],
             filters: {
                 speciesId: null,
                 startDate: null,

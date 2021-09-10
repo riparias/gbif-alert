@@ -5,7 +5,7 @@ module.exports = {
     entry: './assets/ts/index.ts',  // path to our input file
     output: {
         filename: 'index-bundle.js',  // output bundle file name
-        path: path.resolve(__dirname, './static'),  // path to our Django static directory
+        path: path.resolve(__dirname, './static_global/js'),  // path to our Django static directory
     },
     module: {
         rules: [

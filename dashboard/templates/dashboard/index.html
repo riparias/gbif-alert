@@ -20,8 +20,13 @@
         </div>
 
         <div class="col-9 overflow-auto">
-            <Occurrences-counter :counter-url="frontendConfig.apiEndpoints.occurrencesCounterUrl" :filters="filters"></Occurrences-counter>
-            <Occurrences-Map :height="800"
+            <Occurrences-counter :counter-url="frontendConfig.apiEndpoints.occurrencesCounterUrl"
+                                 :filters="filters"></Occurrences-counter>
+
+            <Tab-switcher v-model="selectedTab" :tab-names="availableTabs"></Tab-switcher>
+
+            <Occurrences-Map v-show="selectedTab === 'Map view'"
+                             :height="800"
                              :initial-zoom="8"
                              :initial-lat="50.5010"
                              :initial-lon="4.4764"
@@ -31,9 +36,13 @@
                              :show-counters="true"
                              :base-layer-name="mapBaseLayer"
             ></Occurrences-Map>
+
+            <Occurrences-Table v-show="selectedTab === 'Table view'">
+
+            </Occurrences-Table>
         </div>
     </div>
 </div>
 
-<script src="{% static 'index-bundle.js' %}"></script>
+<script src="{% static 'js/index-bundle.js' %}"></script>
 {% endblock %}
