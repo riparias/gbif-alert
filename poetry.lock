@@ -159,6 +159,20 @@ pytest = ">=6.2.4,<7.0.0"
 requests = ">=2.26.0,<3.0.0"
 
 [[package]]
+name = "gunicorn"
+version = "20.1.0"
+description = "WSGI HTTP Server for UNIX"
+category = "dev"
+optional = false
+python-versions = ">=3.5"
+
+[package.extras]
+eventlet = ["eventlet (>=0.24.1)"]
+gevent = ["gevent (>=1.4.0)"]
+setproctitle = ["setproctitle"]
+tornado = ["tornado (>=0.2)"]
+
+[[package]]
 name = "idna"
 version = "3.2"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -463,7 +477,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "fc84dc3785341c321451315ac91a937ff2db89baa86058e7760540d72b87754b"
+content-hash = "ff8c1b9f80ad236d2907e12abfa3f062bb20b4589d4a283c2e2542367d92d39a"
 
 [metadata.files]
 asgiref = [
@@ -516,6 +530,10 @@ future = [
 gbif-blocking-occurrence-download = [
     {file = "gbif-blocking-occurrence-download-0.1.1.tar.gz", hash = "sha256:5d14b3656409b266cfe20bc29d508a54a5139d8b7b669ad619ffcc42ab22523f"},
     {file = "gbif_blocking_occurrence_download-0.1.1-py3-none-any.whl", hash = "sha256:6023bdfd9f1c080ce4d2e260c788e0893f8a908d58f88b54603247ebea6dc945"},
+]
+gunicorn = [
+    {file = "gunicorn-20.1.0-py3-none-any.whl", hash = "sha256:9dcc4547dbb1cb284accfb15ab5667a0e5d1881cc443e0677b4882a4067a807e"},
+    {file = "gunicorn-20.1.0.tar.gz", hash = "sha256:e0a968b5ba15f8a328fdfd7ab1fcb5af4470c28aaf7e55df02a99bc13138e6e8"},
 ]
 idna = [
     {file = "idna-3.2-py3-none-any.whl", hash = "sha256:14475042e284991034cb48e06f6851428fb14c4dc953acd9be9a5e95c7b6dd7a"},
