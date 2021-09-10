@@ -3,6 +3,7 @@ import OccurrencesMap from "./components/OccurrencesMap.vue";
 import {DashboardFilters, SpeciesInformation, FrontEndConfig, OptionForSelect} from "./interfaces";
 import SpeciesSelector from "./components/SpeciesSelector.vue";
 import axios from "axios";
+import OccurrencesCounter from "./components/OccurrencesCounter.vue";
 
 declare const ripariasConfig: FrontEndConfig;
 
@@ -17,7 +18,7 @@ interface RootAppData {
 new Vue({
     el: "#app",
     components: {
-        OccurrencesMap, SpeciesSelector
+        OccurrencesMap, SpeciesSelector, OccurrencesCounter
     },
     delimiters: ["[[", "]]"],
     data: function (): RootAppData {

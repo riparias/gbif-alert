@@ -7,6 +7,8 @@ app_name = "dashboard"
 urlpatterns = [
     path("", views.index, name="index"),
     path("api/species", views.species_list_json, name="api-species-list-json"),
+    path("api/occurrences_count", views.occurrences_counter, name="api-occurrences-counter"),
+
     path(
         "api/tiles/hexagon-grid-aggregated/<int:zoom>/<int:x>/<int:y>.mvt",
         views.mvt_tiles_hexagon_grid_aggregated,

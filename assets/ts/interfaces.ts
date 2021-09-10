@@ -20,6 +20,7 @@ export interface SpeciesInformation {
 interface EndpointsUrls {
   speciesListUrl: string
   tileServerUrlTemplate: string
+  occurrencesCounterUrl: string
 }
 
 // Keep this interface in sync with templatetags.riparias_extras.js_config_object

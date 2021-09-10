@@ -20,6 +20,7 @@
         </div>
 
         <div class="col-9 overflow-auto">
+            <Occurrences-counter :counter-url="frontendConfig.apiEndpoints.occurrencesCounterUrl" :filters="filters"></Occurrences-counter>
             <Occurrences-Map :height="800"
                              :initial-zoom="8"
                              :initial-lat="50.5010"

@@ -19,6 +19,80 @@ class WebPagesTests(TestCase):
 
 
 class ApiTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.first_species = Species.objects.all()[0]
+        cls.second_species = Species.objects.all()[1]
+
+        Occurrence.objects.create(
+            gbif_id=1,
+            species=cls.first_species,
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            location=Point(5.09513, 50.48941, srid=4326),  # Andenne
+        )
+        Occurrence.objects.create(
+            gbif_id=2,
+            species=cls.second_species,
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            location=Point(4.35978, 50.64728, srid=4326), # Lillois
+        )
+
+        Occurrence.objects.create(
+            gbif_id=3,
+            species=cls.second_species,
+            date=datetime.date.today(),
+            location=Point(4.35978, 50.64728, srid=4326),  # Lillois
+        )
+
+    def test_occurrences_counter_no_filters(self):
+        response = self.client.get(reverse("dashboard:api-occurrences-counter"))
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data['count'], 3)
+
+    def test_occurrences_counter_species_filters(self):
+        base_url = reverse("dashboard:api-occurrences-counter")
+        url_with_params = (
+            f"{base_url}?speciesId={ApiTests.second_species.pk}"
+        )
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data['count'], 2)
+
+    def test_occurrences_counter_min_date_filter(self):
+        base_url = reverse("dashboard:api-occurrences-counter")
+        url_with_params = (
+            f"{base_url}?startDate={datetime.date.today().strftime('%Y-%m-%d')}"
+        )
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data['count'], 1)
+
+    def test_occurrences_counter_max_date_filter(self):
+        base_url = reverse("dashboard:api-occurrences-counter")
+        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+        url_with_params = (
+            f"{base_url}?endDate={yesterday.strftime('%Y-%m-%d')}"
+        )
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data['count'], 2)
+
+    def test_occurences_counter_combined_filters(self):
+        """Counter is correct when filtering by species and end date"""
+        base_url = reverse("dashboard:api-occurrences-counter")
+        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+        url_with_params = (
+            f"{base_url}?endDate={yesterday.strftime('%Y-%m-%d')}&speciesId={ApiTests.second_species.pk}"
+        )
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data['count'], 1)
+
     def test_species_list_json(self):
         response = self.client.get(reverse("dashboard:api-species-list-json"))
         self.assertEqual(response.status_code, 200)

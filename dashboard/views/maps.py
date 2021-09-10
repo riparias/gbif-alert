@@ -43,8 +43,8 @@ ZOOM_TO_HEX_SIZE_BASELINE = {
 ZOOM_TO_HEX_SIZE = {key: value * ZOOM_TO_HEX_SIZE_MULTIPLIER for key, value in ZOOM_TO_HEX_SIZE_BASELINE.items()}
 
 # !! IMPORTANT !! Make sure the occurrence filtering here is equivalent to what's done in
-# other places. Otherwise, occurrences returned on the map and on other
-# components (table, ...) will be inconsistent.
+# other places (views.helpers.filtered_occurrences_from_request). Otherwise, occurrences returned on the map and on
+# other components (table, ...) will be inconsistent.
 JINJASQL_FRAGMENT_FILTER_OCCURRENCES = Template("""
     SELECT * FROM $occurrences_table_name as occ
     WHERE (
