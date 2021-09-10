@@ -1,5 +1,5 @@
 <template>
-  <h3>{{ formattedCount }} {{ occurrenceStrPluralized }} matching selection</h3>
+  <p>{{ formattedCount }} {{ occurrenceStrPluralized }} matching selection.</p>
 </template>
 
 <script lang="ts">

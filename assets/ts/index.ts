@@ -34,7 +34,7 @@ new Vue({
                 { value: 'toner', label: 'Stamen Toner' },
                 { value: 'osmHot', label: 'OSM HOT' },
             ],
-            mapBaseLayer: 'toner',
+            mapBaseLayer: 'osmHot',
             selectedTab: 'Map view',
             availableTabs: ['Map view', 'Table view'],
             filters: {
