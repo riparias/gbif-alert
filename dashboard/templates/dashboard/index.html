@@ -37,7 +37,9 @@
                              :base-layer-name="mapBaseLayer"
             ></Occurrences-Map>
 
-            <Occurrences-Table v-show="selectedTab === 'Table view'">
+            <Occurrences-Table v-show="selectedTab === 'Table view'"
+                               :filters="filters"
+                               :occurrences-json-url="frontendConfig.apiEndpoints.occurrencesJsonUrl">
 
             </Occurrences-Table>
         </div>

@@ -19,6 +19,7 @@ def js_config_object(context):
         "apiEndpoints": {
             "speciesListUrl": reverse("dashboard:api-species-list-json"),
             "occurrencesCounterUrl": reverse("dashboard:api-occurrences-counter"),
+            "occurrencesJsonUrl": reverse("dashboard:api-occurrences-json"),
             "tileServerUrlTemplate": reverse(
                 "dashboard:api-mvt-tiles-hexagon-grid-aggregated", kwargs={"zoom": 1, "x": 2, "y": 3}
             )

@@ -8,6 +8,7 @@ urlpatterns = [
     path("", views.index, name="index"),
     path("api/species", views.species_list_json, name="api-species-list-json"),
     path("api/occurrences_count", views.occurrences_counter, name="api-occurrences-counter"),
+    path("api/occurrences_json", views.occurrences_json, name="api-occurrences-json"),
 
     path(
         "api/tiles/hexagon-grid-aggregated/<int:zoom>/<int:x>/<int:y>.mvt",

@@ -50,3 +50,15 @@ class Occurrence(models.Model):
     species = models.ForeignKey(Species, on_delete=models.PROTECT)
     location = models.PointField(blank=True, null=True, srid=3857)
     date = models.DateField()
+
+    @property
+    def as_dict(self):
+        lon, lat = self.location.transform(4326, clone=True).coords
+
+        return {
+            'id': self.pk,
+            'lat': str(lat)[:6],
+            'lon': str(lon)[:6],
+            'speciesName': self.species.name,
+            'date': str(self.date)
+        }
