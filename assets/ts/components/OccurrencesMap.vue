@@ -115,14 +115,18 @@ export default Vue.extend({
     ,
     HexMinOccCount: {
       handler: function () {
-        this.replaceDataLayer(); // TODO: restyle without full replace?
+        if (this.dataLayer) {
+          this.dataLayer.setStyle(this.dataLayerStyleFunction)
+        }
       }
       ,
     }
     ,
     HexMaxOccCount: {
       handler: function () {
-        this.replaceDataLayer(); // TODO: restyle without full replace?
+        if (this.dataLayer) {
+          this.dataLayer.setStyle(this.dataLayerStyleFunction)
+        }
       }
       ,
     }
