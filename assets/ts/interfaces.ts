@@ -26,7 +26,8 @@ interface EndpointsUrls {
 
 // Keep this interface in sync with templatetags.riparias_extras.js_config_object
 export interface FrontEndConfig {
-  currentLanguageCode: String
-  targetCountryCode: String
+  currentLanguageCode: string
+  targetCountryCode: string
+  ripariasAreaGeojsonUrl: string
   apiEndpoints: EndpointsUrls
 }

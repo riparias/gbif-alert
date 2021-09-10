@@ -4,6 +4,7 @@ from django import template
 from django.conf import settings
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.templatetags.static import static
 
 register = template.Library()
 
@@ -16,6 +17,7 @@ def js_config_object(context):
         "targetCountryCode": settings.RIPARIAS[
             "TARGET_COUNTRY_CODE"
         ],  # for the example (not used yet, delete later?)
+        "ripariasAreaGeojsonUrl": static('geojson/Riparias_Official_StudyArea.geojson'),
         "apiEndpoints": {
             "speciesListUrl": reverse("dashboard:api-species-list-json"),
             "occurrencesCounterUrl": reverse("dashboard:api-occurrences-counter"),

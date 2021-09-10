@@ -10,10 +10,16 @@
             <Species-Selector :species="availableSpecies" @species-changed="changeSelectedSpecies"></Species-Selector>
 
             <h4 class="my-3">Map style</h4>
+
             <label for="mapBaseSelector" class="form-label">Base layer</label>
             <select id="mapBaseSelector" v-model="mapBaseLayer" class="form-select form-select-sm">
                 <option v-for="l in availableMapBaseLayers" :value="l.value">[[ l.label ]]</option>
             </select>
+
+            <div class="form-check form-switch">
+                <input v-model="showRipariasArea" class="form-check-input" type="checkbox" id="ripariasAreaCheckbox">
+                <label class="form-check-label" for="ripariasAreaCheckbox">Show Riparias study area</label>
+            </div>
         </div>
 
         <div class="col-9 overflow-auto">
@@ -33,6 +39,8 @@
                              :filters="filters"
                              :show-counters="true"
                              :base-layer-name="mapBaseLayer"
+                             :riparias-geojson-url="frontendConfig.ripariasAreaGeojsonUrl"
+                             :show-riparias-area="showRipariasArea"
             ></Occurrences-Map>
 
             <Occurrences-Table v-show="selectedTab === 'Table view'"

@@ -17,6 +17,7 @@ interface RootAppData {
     availableMapBaseLayers: OptionForSelect[]
     selectedTab: string
     availableTabs: string[]
+    showRipariasArea: boolean
 }
 
 new Vue({
@@ -35,6 +36,7 @@ new Vue({
                 { value: 'osmHot', label: 'OSM HOT' },
             ],
             mapBaseLayer: 'osmHot',
+            showRipariasArea: true,
             selectedTab: 'Map view',
             availableTabs: ['Map view', 'Table view'],
             filters: {
