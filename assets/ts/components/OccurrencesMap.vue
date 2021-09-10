@@ -52,7 +52,9 @@ export default Vue.extend({
     baseLayerName: String,
 
     ripariasGeojsonUrl: String,
-    showRipariasArea: Boolean
+    showRipariasArea: Boolean,
+
+    dataLayerOpacity: Number,
   },
   data: function (): MapContainerData {
     return {
@@ -83,7 +85,14 @@ export default Vue.extend({
     };
   },
   watch: {
-    showRipariasArea: function() {
+    dataLayerOpacity: {
+      handler: function (val) {
+        if (this.dataLayer) {
+          this.dataLayer.setOpacity(val);
+        }
+      }
+    },
+    showRipariasArea: function () {
       this.updateRipariasArea();
     },
     baseLayerName: {
@@ -174,7 +183,7 @@ export default Vue.extend({
   }
   ,
   methods: {
-    updateRipariasArea: function() {
+    updateRipariasArea: function () {
       if (this.map) {
         if (this.showRipariasArea) {
           this.map.addLayer(this.ripariasAreaLayer)
@@ -214,7 +223,7 @@ export default Vue.extend({
           url: this.tileServerUrlTemplate + '?' + this.filtersAsQueryString,
         }),
         style: this.dataLayerStyleFunction,
-        opacity: 0.6
+        opacity: this.dataLayerOpacity
       });
     }
     ,

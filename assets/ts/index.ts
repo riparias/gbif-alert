@@ -17,7 +17,8 @@ interface RootAppData {
     availableMapBaseLayers: OptionForSelect[]
     selectedTab: string
     availableTabs: string[]
-    showRipariasArea: boolean
+    showRipariasArea: boolean,
+    dataLayerOpacity: number
 }
 
 new Vue({
@@ -43,7 +44,8 @@ new Vue({
                 speciesId: null,
                 startDate: null,
                 endDate: null
-            }
+            },
+            dataLayerOpacity: 0.5
         }
     },
 

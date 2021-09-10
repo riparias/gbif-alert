@@ -16,6 +16,12 @@
                 <option v-for="l in availableMapBaseLayers" :value="l.value">[[ l.label ]]</option>
             </select>
 
+            <div class="form-group row">
+                <label class="col-sm-6 col-form-label col-form-label-sm" for="opacity">Data layer opacity</label>
+                <input type="range" class="col-sm-5 custom-range" id="opacity" min="0" max="1" step="0.1"
+                       v-model.number="dataLayerOpacity">
+            </div>
+
             <div class="form-check form-switch">
                 <input v-model="showRipariasArea" class="form-check-input" type="checkbox" id="ripariasAreaCheckbox">
                 <label class="form-check-label" for="ripariasAreaCheckbox">Show Riparias study area</label>
@@ -41,6 +47,7 @@
                              :base-layer-name="mapBaseLayer"
                              :riparias-geojson-url="frontendConfig.ripariasAreaGeojsonUrl"
                              :show-riparias-area="showRipariasArea"
+                             :data-layer-opacity="dataLayerOpacity"
             ></Occurrences-Map>
 
             <Occurrences-Table v-show="selectedTab === 'Table view'"
