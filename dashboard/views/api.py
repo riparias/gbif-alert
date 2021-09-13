@@ -84,7 +84,7 @@ def occurrences_json(request):
     return JsonResponse(
         {
             "results": occurrences_dicts,
-            "pageNumber": page.number, # Number of the current page
+            "pageNumber": page.number,  # Number of the current page
             "firstPage": page.paginator.page_range.start,
             # page_range is a python range, (last element not included!)
             "lastPage": page.paginator.page_range.stop - 1,

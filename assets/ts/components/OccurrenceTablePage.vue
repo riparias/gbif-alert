@@ -7,9 +7,8 @@
       <td>{{ occ.date }}</td>
       <td>{{ occ.speciesName }}</td>
     </tr>
-    </tbody>
+  </tbody>
 </template>
-
 
 <script lang="ts">
 import Vue from "vue";
@@ -17,12 +16,13 @@ import Vue from "vue";
 export default Vue.extend({
   name: "OccurrenceTablePage",
   props: {
-    'occurrences': { // Only the subset for the page
+    occurrences: {
+      // Only the subset for the page
       type: Array,
       default: function () {
-        return []
-      }
-    }
+        return [];
+      },
+    },
   },
 });
 </script>

@@ -1,33 +1,33 @@
 export interface OptionForSelect {
-  value: string
-  label: string
+  value: string;
+  label: string;
 }
 
 export interface DashboardFilters {
-  speciesId: Number | null
-  startDate: string | null
-  endDate: string | null
+  speciesId: Number | null;
+  startDate: string | null;
+  endDate: string | null;
 }
 
 export interface SpeciesInformation {
-  id: Number
-  scientificName: String
-  gbifTaxonKey: Number
-  groupCode: String
-  categoryCode: String
+  id: Number;
+  scientificName: String;
+  gbifTaxonKey: Number;
+  groupCode: String;
+  categoryCode: String;
 }
 
 interface EndpointsUrls {
-  speciesListUrl: string
-  tileServerUrlTemplate: string
-  occurrencesCounterUrl: string
-  occurrencesJsonUrl: string
+  speciesListUrl: string;
+  tileServerUrlTemplate: string;
+  occurrencesCounterUrl: string;
+  occurrencesJsonUrl: string;
 }
 
 // Keep this interface in sync with templatetags.riparias_extras.js_config_object
 export interface FrontEndConfig {
-  currentLanguageCode: string
-  targetCountryCode: string
-  ripariasAreaGeojsonUrl: string
-  apiEndpoints: EndpointsUrls
+  currentLanguageCode: string;
+  targetCountryCode: string;
+  ripariasAreaGeojsonUrl: string;
+  apiEndpoints: EndpointsUrls;
 }

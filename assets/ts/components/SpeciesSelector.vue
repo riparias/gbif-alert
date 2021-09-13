@@ -1,7 +1,12 @@
 <template>
   <div>
     <label for="speciesSelector" class="form-label">Species</label>
-    <select id="speciesSelector" v-model="selectedSpecies" class="form-select form-select-sm" aria-label="Default select example">
+    <select
+      id="speciesSelector"
+      v-model="selectedSpecies"
+      class="form-select form-select-sm"
+      aria-label="Default select example"
+    >
       <option :value="null">--- all ---</option>
       <option v-for="s in species" :value="s.id">{{ s.scientificName }}</option>
     </select>
@@ -10,10 +15,10 @@
 
 <script lang="ts">
 import Vue from "vue";
-import {SpeciesInformation} from "../interfaces";
+import { SpeciesInformation } from "../interfaces";
 
 declare interface SpeciesSelectorData {
-  selectedSpecies: Number | null
+  selectedSpecies: Number | null;
 }
 
 export default Vue.extend({
@@ -21,19 +26,18 @@ export default Vue.extend({
   props: {
     species: {
       type: Array as () => SpeciesInformation[],
-      default: []
-    }
+      default: [],
+    },
   },
   data: function (): SpeciesSelectorData {
     return {
-      selectedSpecies: null
+      selectedSpecies: null,
     };
   },
   watch: {
     selectedSpecies(newVal, oldVal) {
-      this.$emit('species-changed', this.selectedSpecies)
-    }
-  }
-})
+      this.$emit("species-changed", this.selectedSpecies);
+    },
+  },
+});
 </script>
-

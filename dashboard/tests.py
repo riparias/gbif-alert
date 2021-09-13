@@ -51,14 +51,14 @@ class ApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         # All 3 occurrences should be on this first page, in undefined order
-        self.assertEqual(json_data['totalResultsCount'], 3)
-        self.assertEqual(json_data['totalResultsCount'], len(json_data['results']))
-        self.assertEqual(json_data['pageNumber'], 1)
-        self.assertEqual(json_data['firstPage'], 1)
-        self.assertEqual(json_data['lastPage'], 1)
+        self.assertEqual(json_data["totalResultsCount"], 3)
+        self.assertEqual(json_data["totalResultsCount"], len(json_data["results"]))
+        self.assertEqual(json_data["pageNumber"], 1)
+        self.assertEqual(json_data["firstPage"], 1)
+        self.assertEqual(json_data["lastPage"], 1)
         found = False
-        for r in json_data['results']:
-            if r['speciesName'] == 'Elodea nuttallii':
+        for r in json_data["results"]:
+            if r["speciesName"] == "Elodea nuttallii":
                 found = True
         self.assertTrue(found)
 
@@ -68,9 +68,9 @@ class ApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         # Check that it's sorted by reverse primary key
-        self.assertEqual(json_data['results'][0]['id'], 3)
-        self.assertEqual(json_data['results'][1]['id'], 2)
-        self.assertEqual(json_data['results'][2]['id'], 1)
+        self.assertEqual(json_data["results"][0]["id"], 3)
+        self.assertEqual(json_data["results"][1]["id"], 2)
+        self.assertEqual(json_data["results"][2]["id"], 1)
 
     def test_occurrences_json_pagination_base(self):
         base_url = reverse("dashboard:api-occurrences-json")
@@ -78,20 +78,20 @@ class ApiTests(TestCase):
         response = self.client.get(f"{base_url}?limit=2&page_number=1")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
-        self.assertEqual(json_data['totalResultsCount'], 3)
-        self.assertEqual(len(json_data['results']), 2)
-        self.assertEqual(json_data['firstPage'], 1)
-        self.assertEqual(json_data['lastPage'], 2)
-        self.assertEqual(json_data['pageNumber'], 1)
+        self.assertEqual(json_data["totalResultsCount"], 3)
+        self.assertEqual(len(json_data["results"]), 2)
+        self.assertEqual(json_data["firstPage"], 1)
+        self.assertEqual(json_data["lastPage"], 2)
+        self.assertEqual(json_data["pageNumber"], 1)
 
         response = self.client.get(f"{base_url}?limit=2&page_number=2")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
-        self.assertEqual(json_data['totalResultsCount'], 3)
-        self.assertEqual(len(json_data['results']), 1)
-        self.assertEqual(json_data['firstPage'], 1)
-        self.assertEqual(json_data['lastPage'], 2)
-        self.assertEqual(json_data['pageNumber'], 2)
+        self.assertEqual(json_data["totalResultsCount"], 3)
+        self.assertEqual(len(json_data["results"]), 1)
+        self.assertEqual(json_data["firstPage"], 1)
+        self.assertEqual(json_data["lastPage"], 2)
+        self.assertEqual(json_data["pageNumber"], 2)
 
     def test_occurrences_json_pagination_greater_than_max(self):
         """If the requested page number is greater than the number of pages, it returns the last page"""
@@ -99,11 +99,11 @@ class ApiTests(TestCase):
         response = self.client.get(f"{base_url}?limit=2&page_number=3")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
-        self.assertEqual(json_data['totalResultsCount'], 3)
-        self.assertEqual(len(json_data['results']), 1)
-        self.assertEqual(json_data['firstPage'], 1)
-        self.assertEqual(json_data['lastPage'], 2)
-        self.assertEqual(json_data['pageNumber'], 2)
+        self.assertEqual(json_data["totalResultsCount"], 3)
+        self.assertEqual(len(json_data["results"]), 1)
+        self.assertEqual(json_data["firstPage"], 1)
+        self.assertEqual(json_data["lastPage"], 2)
+        self.assertEqual(json_data["pageNumber"], 2)
 
     def test_occurrences_json_pagination_negative(self):
         """If the requested page number is negative, it returns the last page"""
@@ -111,38 +111,44 @@ class ApiTests(TestCase):
         response = self.client.get(f"{base_url}?limit=2&page_number=-5")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
-        self.assertEqual(json_data['totalResultsCount'], 3)
-        self.assertEqual(len(json_data['results']), 1)
-        self.assertEqual(json_data['firstPage'], 1)
-        self.assertEqual(json_data['lastPage'], 2)
-        self.assertEqual(json_data['pageNumber'], 2)
+        self.assertEqual(json_data["totalResultsCount"], 3)
+        self.assertEqual(len(json_data["results"]), 1)
+        self.assertEqual(json_data["firstPage"], 1)
+        self.assertEqual(json_data["lastPage"], 2)
+        self.assertEqual(json_data["pageNumber"], 2)
 
     def test_occurrences_json_min_date_filter(self):
         base_url = reverse("dashboard:api-occurrences-json")
-        response = self.client.get(f"{base_url}?limit=10&page_number=1&startDate={datetime.date.today().strftime('%Y-%m-%d')}")
+        response = self.client.get(
+            f"{base_url}?limit=10&page_number=1&startDate={datetime.date.today().strftime('%Y-%m-%d')}"
+        )
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
-        self.assertEqual(json_data['totalResultsCount'], 1)
-        self.assertEqual(json_data['results'][0]['gbifId'], '3')
+        self.assertEqual(json_data["totalResultsCount"], 1)
+        self.assertEqual(json_data["results"][0]["gbifId"], "3")
 
     def test_occurrences_json_max_date_filter(self):
         base_url = reverse("dashboard:api-occurrences-json")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        response = self.client.get(f"{base_url}?limit=10&page_number=1&endDate={yesterday.strftime('%Y-%m-%d')}")
+        response = self.client.get(
+            f"{base_url}?limit=10&page_number=1&endDate={yesterday.strftime('%Y-%m-%d')}"
+        )
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
-        self.assertEqual(json_data['totalResultsCount'], 2)
-        self.assertIn(json_data['results'][0]['gbifId'], ['1', '2'])
-        self.assertIn(json_data['results'][1]['gbifId'], ['1', '2'])
+        self.assertEqual(json_data["totalResultsCount"], 2)
+        self.assertIn(json_data["results"][0]["gbifId"], ["1", "2"])
+        self.assertIn(json_data["results"][1]["gbifId"], ["1", "2"])
 
     def test_occurrences_json_species_filter(self):
         base_url = reverse("dashboard:api-occurrences-json")
-        url_with_params = f"{base_url}?limit=10&page_number=1&speciesId={ApiTests.second_species.pk}"
+        url_with_params = (
+            f"{base_url}?limit=10&page_number=1&speciesId={ApiTests.second_species.pk}"
+        )
         response = self.client.get(url_with_params)
         json_data = response.json()
-        self.assertEqual(json_data['totalResultsCount'], 2)
-        self.assertIn(json_data['results'][0]['gbifId'], ['2', '3'])
-        self.assertIn(json_data['results'][1]['gbifId'], ['2', '3'])
+        self.assertEqual(json_data["totalResultsCount"], 2)
+        self.assertIn(json_data["results"][0]["gbifId"], ["2", "3"])
+        self.assertIn(json_data["results"][1]["gbifId"], ["2", "3"])
 
     def test_occurrences_json_combined_filters(self):
         base_url = reverse("dashboard:api-occurrences-json")
@@ -150,16 +156,16 @@ class ApiTests(TestCase):
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesId={ApiTests.second_species.pk}&endDate={yesterday.strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
         json_data = response.json()
-        self.assertEqual(json_data['totalResultsCount'], 1)
-        self.assertEqual(json_data['results'][0]['gbifId'], '2')
+        self.assertEqual(json_data["totalResultsCount"], 1)
+        self.assertEqual(json_data["results"][0]["gbifId"], "2")
 
     def test_occurrences_json_no_results(self):
         base_url = reverse("dashboard:api-occurrences-json")
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesId={ApiTests.first_species.pk}&startDate={datetime.date.today().strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
         json_data = response.json()
-        self.assertEqual(json_data['totalResultsCount'], 0)
-        self.assertEqual(json_data['results'], [])
+        self.assertEqual(json_data["totalResultsCount"], 0)
+        self.assertEqual(json_data["results"], [])
 
     def test_occurrences_counter_no_filters(self):
         response = self.client.get(reverse("dashboard:api-occurrences-counter"))

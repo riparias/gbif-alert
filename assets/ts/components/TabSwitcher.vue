@@ -1,11 +1,12 @@
 <template>
   <ul class="nav nav-pills">
     <li v-for="tabName in tabNames" class="nav-item">
-      <a class="nav-link"
-         :class="{active: tabName == value}"
-         href="#"
-         @click="$emit('input', tabName)"
-      >{{ tabName }}
+      <a
+        class="nav-link"
+        :class="{ active: tabName == value }"
+        href="#"
+        @click="$emit('input', tabName)"
+        >{{ tabName }}
       </a>
     </li>
   </ul>
@@ -20,5 +21,5 @@ export default Vue.extend({
     value: String,
     tabNames: Array,
   },
-})
+});
 </script>
