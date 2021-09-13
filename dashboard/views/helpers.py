@@ -8,9 +8,9 @@ from dashboard.models import Occurrence
 
 
 def extract_int_request(request, param_name):
-    """Returns an integer, or None if the parameter doesn't exist or is 'null' """
+    """Returns an integer, or None if the parameter doesn't exist or is 'null'"""
     val = request.GET.get(param_name, None)
-    if val == '' or val == 'null' or val is None:
+    if val == "" or val == "null" or val is None:
         return None
     else:
         return int(val)
@@ -23,13 +23,13 @@ def extract_date_request(request, param_name, date_format="%Y-%m-%d"):
     """
     val = request.GET.get(param_name, None)
 
-    if val is not None and val != '' and val != 'null':
+    if val is not None and val != "" and val != "null":
         return datetime.datetime.strptime(val, date_format).date()
 
     return None
 
 
-def filtered_occurrences_from_request(request: WSGIRequest) -> QuerySet[Occurrence] :
+def filtered_occurrences_from_request(request: WSGIRequest) -> QuerySet[Occurrence]:
     """Takes a request, extract common parameters used to filter occurrences and return a corresponding QuerySet"""
     qs = Occurrence.objects.all()
 
@@ -49,9 +49,11 @@ def filtered_occurrences_from_request(request: WSGIRequest) -> QuerySet[Occurren
     return qs
 
 
-def filters_from_request(request: WSGIRequest) -> Tuple[int, datetime.date, datetime.date]:
-    species_id = extract_int_request(request, 'speciesId')
-    start_date = extract_date_request(request, 'startDate')
-    end_date = extract_date_request(request, 'endDate')
+def filters_from_request(
+    request: WSGIRequest,
+) -> Tuple[int, datetime.date, datetime.date]:
+    species_id = extract_int_request(request, "speciesId")
+    start_date = extract_date_request(request, "startDate")
+    end_date = extract_date_request(request, "endDate")
 
     return species_id, start_date, end_date

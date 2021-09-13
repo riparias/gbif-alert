@@ -2,11 +2,16 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 
 from dashboard.models import Species
-from dashboard.views.helpers import filtered_occurrences_from_request, extract_int_request
+from dashboard.views.helpers import (
+    filtered_occurrences_from_request,
+    extract_int_request,
+)
 
 
 def species_list_json(request):
-    return JsonResponse([species.as_dict for species in Species.objects.all()], safe=False)
+    return JsonResponse(
+        [species.as_dict for species in Species.objects.all()], safe=False
+    )
 
 
 def occurrences_counter(request):
@@ -15,22 +20,74 @@ def occurrences_counter(request):
     filters: same format than other endpoints: getting occurrences, map tiles, ...
     """
     qs = filtered_occurrences_from_request(request)
-    return JsonResponse({'count': qs.count()})
+    return JsonResponse({"count": qs.count()})
 
 
 def occurrences_json(request):
-    order = request.GET.get('order')
-    limit = extract_int_request(request, 'limit')
-    page_number = extract_int_request(request, 'page_number')
+    """Main endpoint to get paginated occurrences (data tables, ...)
 
-    occurrences = filtered_occurrences_from_request(request).order_by(order)
+    parameters:
+    - filters: same format than other endpoints: getting occurrences, map tiles, ...
+    - order: optional, occurrences order (passed to QuerySet.order_by)
+    - limit: number of occurrences per page
+    - page_number: requested page number
+
+    response example:
+
+    {
+        "results": [
+            {
+                "id": 1,
+                "lat": "50.489",
+                "lon": "5.0951",
+                "speciesName": "Elodea nuttallii",
+                "date": "2021-09-12",
+            },
+            {
+                "id": 2,
+                "lat": "50.647",
+                "lon": "4.3597",
+                "speciesName": "Heracleum mantegazzianum",
+                "date": "2021-09-12",
+            },
+            {
+                "id": 3,
+                "lat": "50.647",
+                "lon": "4.3597",
+                "speciesName": "Heracleum mantegazzianum",
+                "date": "2021-09-13",
+            },
+        ],
+        "firstPage": 1,
+        "lastPage": 1,
+        "totalResultsCount": 3,
+    }
+
+    Notes:
+        - If the page number is negative or greater than the number of pages, it returns the last page.
+        - If no results are returned because of the filtering: totalResultsCount == 0 and results == []
+    """
+
+    order = request.GET.get("order")
+    limit = extract_int_request(request, "limit")
+    page_number = extract_int_request(request, "page_number")
+
+    occurrences = filtered_occurrences_from_request(request)
+    if order is not None:
+        occurrences = occurrences.order_by(order)
 
     paginator = Paginator(occurrences, limit)
 
     page = paginator.get_page(page_number)
     occurrences_dicts = [occ.as_dict for occ in page.object_list]
 
-    return JsonResponse({'results': occurrences_dicts,
-                         'firstPage': page.paginator.page_range.start,
-                         'lastPage': page.paginator.page_range.stop,
-                         'totalResultsCount': page.paginator.count})
+    return JsonResponse(
+        {
+            "results": occurrences_dicts,
+            "pageNumber": page.number, # Number of the current page
+            "firstPage": page.paginator.page_range.start,
+            # page_range is a python range, (last element not included!)
+            "lastPage": page.paginator.page_range.stop - 1,
+            "totalResultsCount": page.paginator.count,
+        }
+    )

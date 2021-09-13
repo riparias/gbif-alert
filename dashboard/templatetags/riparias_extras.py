@@ -17,18 +17,19 @@ def js_config_object(context):
         "targetCountryCode": settings.RIPARIAS[
             "TARGET_COUNTRY_CODE"
         ],  # for the example (not used yet, delete later?)
-        "ripariasAreaGeojsonUrl": static('geojson/Riparias_Official_StudyArea.geojson'),
+        "ripariasAreaGeojsonUrl": static("geojson/Riparias_Official_StudyArea.geojson"),
         "apiEndpoints": {
             "speciesListUrl": reverse("dashboard:api-species-list-json"),
             "occurrencesCounterUrl": reverse("dashboard:api-occurrences-counter"),
             "occurrencesJsonUrl": reverse("dashboard:api-occurrences-json"),
             "tileServerUrlTemplate": reverse(
-                "dashboard:api-mvt-tiles-hexagon-grid-aggregated", kwargs={"zoom": 1, "x": 2, "y": 3}
+                "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+                kwargs={"zoom": 1, "x": 2, "y": 3},
             )
             .replace("1", "{z}")
             .replace("2", "{x}")
             .replace("3", "{y}"),
-            "minMaxOccPerHexagonUrl": reverse("dashboard:api-mvt-min-max-per-hexagon")
+            "minMaxOccPerHexagonUrl": reverse("dashboard:api-mvt-min-max-per-hexagon"),
         },
     }
     return mark_safe(json.dumps(conf))

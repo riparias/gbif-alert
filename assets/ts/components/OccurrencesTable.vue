@@ -86,7 +86,7 @@ export default Vue.extend({
       axios.get(this.occurrencesJsonUrl, {params: params}).then(response => {
         this.occurrences = response.data.results;
         this.firstPage = response.data.firstPage;
-        this.lastPage = response.data.lastPage - 1;
+        this.lastPage = response.data.lastPage;
         this.totalOccurrencesCount = response.data.totalResultsCount
       })
 

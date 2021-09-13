@@ -37,11 +37,11 @@ class Species(models.Model):
     @property
     def as_dict(self):
         return {  # To be consumed on the frontend: we use JS naming conventions
-            'id': self.pk,
-            'scientificName': self.name,
-            'gbifTaxonKey': self.gbif_taxon_key,
-            'groupCode': self.group,
-            'categoryCode': self.category
+            "id": self.pk,
+            "scientificName": self.name,
+            "gbifTaxonKey": self.gbif_taxon_key,
+            "groupCode": self.group,
+            "categoryCode": self.category,
         }
 
 
@@ -56,9 +56,10 @@ class Occurrence(models.Model):
         lon, lat = self.location.transform(4326, clone=True).coords
 
         return {
-            'id': self.pk,
-            'lat': str(lat)[:6],
-            'lon': str(lon)[:6],
-            'speciesName': self.species.name,
-            'date': str(self.date)
+            "id": self.pk,
+            "gbifId": self.gbif_id,
+            "lat": str(lat)[:6],
+            "lon": str(lon)[:6],
+            "speciesName": self.species.name,
+            "date": str(self.date),
         }
