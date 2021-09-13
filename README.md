@@ -30,3 +30,13 @@ In short:
 
 - Use `black` for Python code
 - Use `prettier` to reformat JS/TS/Vue code (see [PyCharm configuration instructions](https://www.jetbrains.com/help/pycharm/prettier.html))
+
+### Data import mechanism
+
+The data can be automatically updated by running the `import_occurrences` management command. This one will trigger a 
+GBIF Download for our search of interest (target country + species in the database) and load the corresponding 
+occurrences into the database. At the end of the process, occurrences linked to previous data imports are deleted.
+
+The data import history is recorded with the DataImport model, and shown to the user on the "about" page.
+
+=> For a given occurrence, Django-managed IDs are therefore not stable, but the gbif_id fortunately is.

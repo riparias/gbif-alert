@@ -1,0 +1,26 @@
+{% extends 'dashboard/base.html' %}
+
+{% load static %}
+
+{% block after_navbar %}
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <h1>About the data</h1>
+            <h2>Data imports</h2>
+            <p>The data shown in this application is frequently and automatically refreshed from <a href="https://www.gbif.org">GBIF</a>.</p>
+            {% for data_import in data_imports %}
+                {% if forloop.first %}
+                    <p>The following data import was performed to populate the data currently visible in the application:</p>
+                    {% include 'dashboard/_data_import.html' with data_import=data_import only %}
+                    {% if not forloop.last %}
+                        <p>Previous data imports (data no longer visible):</p>
+                    {% endif %}
+                {% else %}
+                    {% include 'dashboard/_data_import.html' with data_import=data_import collapsed=True only %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock after_navbar %}

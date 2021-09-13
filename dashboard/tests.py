@@ -5,8 +5,9 @@ from django.test import TestCase
 from django.urls import reverse
 
 import mapbox_vector_tile
+from django.utils import timezone
 
-from dashboard.models import Occurrence, Species
+from dashboard.models import Occurrence, Species, DataImport
 
 
 class WebPagesTests(TestCase):
@@ -24,16 +25,20 @@ class ApiTests(TestCase):
         cls.first_species = Species.objects.all()[0]
         cls.second_species = Species.objects.all()[1]
 
+        di = DataImport.objects.create(start=timezone.now())
+
         Occurrence.objects.create(
             gbif_id=1,
             species=cls.first_species,
             date=datetime.date.today() - datetime.timedelta(days=1),
+            data_import=di,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
         Occurrence.objects.create(
             gbif_id=2,
             species=cls.second_species,
             date=datetime.date.today() - datetime.timedelta(days=1),
+            data_import=di,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
@@ -41,6 +46,7 @@ class ApiTests(TestCase):
             gbif_id=3,
             species=cls.second_species,
             date=datetime.date.today(),
+            data_import=di,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
@@ -239,16 +245,20 @@ class VectorTilesServerTests(TestCase):
         cls.first_species = Species.objects.all()[0]
         cls.second_species = Species.objects.all()[1]
 
+        cls.di = DataImport.objects.create(start=timezone.now())
+
         Occurrence.objects.create(
             gbif_id=1,
             species=cls.first_species,
             date=datetime.date.today(),
+            data_import=cls.di,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
         Occurrence.objects.create(
             gbif_id=2,
             species=cls.second_species,
             date=datetime.date.today(),
+            data_import=cls.di,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
@@ -497,6 +507,7 @@ class VectorTilesServerTests(TestCase):
             gbif_id=3,
             species=Species.objects.all()[0],
             date=datetime.date.today(),
+            data_import=VectorTilesServerTests.di,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
@@ -527,6 +538,7 @@ class VectorTilesServerTests(TestCase):
             gbif_id=3,
             species=VectorTilesServerTests.second_species,
             date=datetime.date.today(),
+            data_import=VectorTilesServerTests.di,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
@@ -551,6 +563,7 @@ class VectorTilesServerTests(TestCase):
             gbif_id=4,
             species=VectorTilesServerTests.second_species,
             date=datetime.date.today(),
+            data_import=VectorTilesServerTests.di,
             location=Point(5.095610, 50.48800, srid=4326),
         )
 

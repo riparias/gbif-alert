@@ -31,6 +31,9 @@ class Species(models.Model):
     group = models.CharField(max_length=3, choices=GROUP_CHOICES)
     category = models.CharField(max_length=3, choices=CAT_CHOICES)
 
+    class Meta:
+        verbose_name_plural = "species"
+
     def __str__(self):
         return self.name
 
@@ -45,11 +48,27 @@ class Species(models.Model):
         }
 
 
+class DataImport(models.Model):
+    start = models.DateTimeField()
+    end = models.DateTimeField(blank=True, null=True)
+    completed = models.BooleanField(default=False)
+    gbif_download_id = models.CharField(max_length=255, blank=True)
+    imported_occurrences_counter = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"Data import #{self.pk}"
+
+
 class Occurrence(models.Model):
-    gbif_id = models.CharField(max_length=100, unique=True)
+    gbif_id = models.CharField(max_length=100)
     species = models.ForeignKey(Species, on_delete=models.PROTECT)
     location = models.PointField(blank=True, null=True, srid=3857)
     date = models.DateField()
+
+    data_import = models.ForeignKey(DataImport, on_delete=models.PROTECT)
+
+    class Meta:
+        unique_together = ["gbif_id", "data_import"]
 
     @property
     def as_dict(self):

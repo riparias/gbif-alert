@@ -7,11 +7,12 @@ from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import QuerySet
+from django.utils import timezone
 from dwca.read import DwCAReader  # type: ignore
 from dwca.darwincore.utils import qualname as qn  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences  # type: ignore
 
-from dashboard.models import Species, Occurrence
+from dashboard.models import Species, Occurrence, DataImport
 
 
 def build_gbif_predicate(country_code: str, species_list: QuerySet[Species]) -> Dict:
@@ -43,6 +44,10 @@ def species_for_row(row):
         return Species.objects.get(gbif_taxon_key=accepted_taxon_key)
 
 
+def extract_gbif_download_id_from_dwca(dwca: DwCAReader) -> str:
+    return dwca.metadata.find("dataset").find("alternateIdentifier").text
+
+
 class Command(BaseCommand):
     help = "Download and refresh all occurrence data from GBIF"
 
@@ -59,6 +64,10 @@ class Command(BaseCommand):
             self.stdout.write(
                 "Triggering a GBIF download and waiting for it - this can be long..."
             )
+
+            current_data_import = DataImport.objects.create(start=timezone.now())
+            self.stdout.write(f"Current data import: #{current_data_import.pk}")
+
             download_occurrences(
                 predicate,
                 username=settings.RIPARIAS["GBIF_USERNAME"],
@@ -68,11 +77,13 @@ class Command(BaseCommand):
 
             self.stdout.write("Occurrences downloaded")
 
-            self.stdout.write("Deleting all existing occurrences")
-            Occurrence.objects.all().delete()
-
-            self.stdout.write("Importing freshbly downloaded occurrences")
+            self.stdout.write("Importing freshly downloaded occurrences")
             with DwCAReader(download_dest) as dwca:
+                current_data_import.gbif_download_id = (
+                    extract_gbif_download_id_from_dwca(dwca)
+                )
+                current_data_import.save()
+
                 for row in dwca:
                     year_str = row.data[qn("year")]
                     if (
@@ -104,8 +115,22 @@ class Command(BaseCommand):
                             species=species_for_row(row),
                             location=point,
                             date=date,
+                            data_import=current_data_import,
                         )
 
                         self.stdout.write(".", ending="")
+
+                self.stdout.write(
+                    "All occurrences imported, now deleting occurrences linked to previous data imports..."
+                )
+                Occurrence.objects.exclude(data_import=current_data_import).delete()
+
+                self.stdout.write("Updating the DataImport object")
+                current_data_import.end = timezone.now()
+                current_data_import.completed = True
+                current_data_import.imported_occurrences_counter = (
+                    Occurrence.objects.filter(data_import=current_data_import).count()
+                )
+                current_data_import.save()
 
         self.stdout.write("Done.")

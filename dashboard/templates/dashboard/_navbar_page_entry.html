@@ -1,0 +1,7 @@
+{% url url_pattern as the_url %}
+
+
+<li class="nav-item">
+    <a class="nav-link {% if request.get_full_path == the_url %}active{% endif %}"
+       aria-current="page" href="{{ the_url }}">{{ label }}</a>
+</li>

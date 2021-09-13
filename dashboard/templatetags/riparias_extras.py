@@ -33,3 +33,8 @@ def js_config_object(context):
         },
     }
     return mark_safe(json.dumps(conf))
+
+
+@register.filter
+def gbif_download_url(value):
+    return f"https://www.gbif.org/occurrence/download/{value}"

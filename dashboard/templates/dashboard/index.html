@@ -36,7 +36,7 @@
             <Tab-switcher class="my-3" v-model="selectedTab" :tab-names="availableTabs"></Tab-switcher>
 
             <Occurrences-Map v-show="selectedTab === 'Map view'"
-                             :height="800"
+                             :height="600"
                              :initial-zoom="8"
                              :initial-lat="50.5010"
                              :initial-lon="4.4764"
