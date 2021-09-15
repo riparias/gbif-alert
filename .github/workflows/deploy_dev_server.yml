@@ -14,5 +14,4 @@ jobs:
           key: ${{ secrets.DEV_SERVER_KEY }}
           script: |
             cd early-warning-webapp
-            poetry shell
             deploy_main.sh
