@@ -14,4 +14,4 @@ jobs:
           key: ${{ secrets.DEV_SERVER_KEY }}
           script: |
             cd early-warning-webapp
-            deploy_main.sh
+            ./deploy_main.sh
