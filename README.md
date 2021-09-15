@@ -26,7 +26,7 @@ Early prototype visible at http://54.75.164.69/
 
 We make use of GitHub Actions when possible.
 
-They're currently used to run Django tests and mypy`
+They're currently used to run Django tests and `mypy`
 
 ### Frontend-backend integration
 
