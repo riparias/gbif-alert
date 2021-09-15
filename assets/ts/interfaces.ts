@@ -24,10 +24,19 @@ interface EndpointsUrls {
   occurrencesJsonUrl: string;
 }
 
-// Keep this interface in sync with templatetags.riparias_extras.js_config_object
+// Keep in sync with templatetags.riparias_extras.js_config_object
 export interface FrontEndConfig {
   currentLanguageCode: string;
   targetCountryCode: string;
   ripariasAreaGeojsonUrl: string;
   apiEndpoints: EndpointsUrls;
+}
+
+// Keep in sync with Models.Occurrence.as_dict()
+export interface JsonOccurrence {
+  id: string;
+  lat: number;
+  lon: number;
+  date: string;
+  speciesName: string;
 }
