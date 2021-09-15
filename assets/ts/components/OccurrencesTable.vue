@@ -148,8 +148,10 @@ export default Vue.extend({
       occurrences: [],
 
       cols: [
-        // sortId: must match django QS filter (null = non-sortable), label: displayed in header
-        { sortId: "id", label: "#" },
+        // sortId: must match django QS filter (null = non-sortable), label: what's displayed in header
+        // Beware: the actual data display occurs in OccurrenceTablePage component, make sure the header and data shown
+        // stay synchronised
+        { sortId: "gbif_id", label: "GBIF Id" },
         { sortId: null, label: "Lat" },
         { sortId: null, label: "Lon" },
         { sortId: null, label: "Date" },

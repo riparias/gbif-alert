@@ -1,7 +1,7 @@
 <template>
   <tbody>
     <tr v-for="occ in preparedOccurrences">
-      <th scope="row">{{ occ.id }}</th>
+      <th scope="row">{{ occ.gbifId }}</th>
       <td>{{ occ.lat }}</td>
       <td>{{ occ.lon }}</td>
       <td>{{ occ.date }}</td>
@@ -16,7 +16,7 @@ import { JsonOccurrence } from "../interfaces";
 
 interface OccurrencesForDisplay {
   // Similar to JsonOccurrence, but ready to display
-  id: string;
+  gbifId: number;
   lat: string;
   lon: string;
   date: string;
@@ -29,7 +29,7 @@ export default Vue.extend({
     preparedOccurrences: function (): OccurrencesForDisplay[] {
       return this.occurrences.map((occ) => {
         return {
-          id: occ.id,
+          gbifId: occ.gbifId,
           lat: occ.lat.toFixed(4),
           lon: occ.lon.toFixed(4),
           date: occ.date,
