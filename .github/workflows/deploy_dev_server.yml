@@ -1,0 +1,10 @@
+- name: Deploy main branch to dev server
+  uses: appleboy/ssh-action@master
+  with:
+    host: ${{ secrets.DEV_SERVER_HOST }}
+    username: ${{ secrets.DEV_SERVER_USERNAME }}
+    key: ${{ secrets.DEV_SERVER_KEY }}
+    script: |
+      cd early-warning-webapp
+      poetry shell
+      deploy_main.sh
