@@ -71,14 +71,25 @@ class Occurrence(models.Model):
         unique_together = ["gbif_id", "data_import"]
 
     @property
+    def lonlat_formatted(self):
+        """Coordinates as a (lon, lat) tuple, in EPSG:4326
+
+        (None, None) in case the occurrence has no location
+        """
+        if self.location:
+            coords = self.location.transform(4326, clone=True).coords
+            return str(coords[0])[:6], str(coords[1])[:6]
+        return None, None
+
+    @property
     def as_dict(self):
-        lon, lat = self.location.transform(4326, clone=True).coords
+        lon, lat = self.lonlat_formatted
 
         return {
             "id": self.pk,
             "gbifId": self.gbif_id,
-            "lat": str(lat)[:6],
-            "lon": str(lon)[:6],
+            "lat": lat,
+            "lon": lon,
             "speciesName": self.species.name,
             "date": str(self.date),
         }

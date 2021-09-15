@@ -25,20 +25,20 @@ class ApiTests(TestCase):
         cls.first_species = Species.objects.all()[0]
         cls.second_species = Species.objects.all()[1]
 
-        di = DataImport.objects.create(start=timezone.now())
+        cls.di = DataImport.objects.create(start=timezone.now())
 
         Occurrence.objects.create(
             gbif_id=1,
             species=cls.first_species,
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=di,
+            data_import=cls.di,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
         Occurrence.objects.create(
             gbif_id=2,
             species=cls.second_species,
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=di,
+            data_import=cls.di,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
@@ -46,9 +46,24 @@ class ApiTests(TestCase):
             gbif_id=3,
             species=cls.second_species,
             date=datetime.date.today(),
-            data_import=di,
+            data_import=cls.di,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
+
+    def test_occurrences_json_no_location(self):
+        """Regression test: no error 500 in occurrences_json if we have locations without a location"""
+        Occurrence.objects.create(
+            gbif_id=4,
+            species=ApiTests.second_species,
+            date=datetime.date.today(),
+            data_import=ApiTests.di,
+            location=None,
+        )
+        base_url = reverse("dashboard:api-occurrences-json")
+        response = self.client.get(f"{base_url}?limit=10&page_number=1")
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data["totalResultsCount"], 4)
 
     def test_occurrences_json_basic_no_filters(self):
         """Basic tests for the endpoint, no filters used"""
