@@ -30,8 +30,8 @@ export default Vue.extend({
       return this.occurrences.map((occ) => {
         return {
           gbifId: occ.gbifId,
-          lat: occ.lat.toFixed(4),
-          lon: occ.lon.toFixed(4),
+          lat: occ.lat ? occ.lat.toFixed(4) : "",
+          lon: occ.lon ? occ.lon.toFixed(4) : "",
           date: occ.date,
           speciesName: occ.speciesName,
         };
