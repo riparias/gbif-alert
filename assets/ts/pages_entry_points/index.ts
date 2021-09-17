@@ -1,16 +1,16 @@
 import Vue from "vue";
-import OccurrencesMap from "./components/OccurrencesMap.vue";
+import OccurrencesMap from "../components/OccurrencesMap.vue";
 import {
   DashboardFilters,
   SpeciesInformation,
   FrontEndConfig,
   OptionForSelect,
-} from "./interfaces";
-import SpeciesSelector from "./components/SpeciesSelector.vue";
+} from "../interfaces";
+import SpeciesSelector from "../components/SpeciesSelector.vue";
 import axios from "axios";
-import OccurrencesCounter from "./components/OccurrencesCounter.vue";
-import TabSwitcher from "./components/TabSwitcher.vue";
-import OccurrencesTable from "./components/OccurrencesTable.vue";
+import OccurrencesCounter from "../components/OccurrencesCounter.vue";
+import TabSwitcher from "../components/TabSwitcher.vue";
+import OccurrencesTable from "../components/OccurrencesTable.vue";
 
 declare const ripariasConfig: FrontEndConfig;
 
