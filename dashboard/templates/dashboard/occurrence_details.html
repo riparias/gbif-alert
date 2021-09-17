@@ -3,10 +3,17 @@
 {% load riparias_extras %}
 
 {% block after_navbar %}
-    <div class="container">
+    <div class="container my-3">
         <div class="row">
             <div class="col">
                 <h2>Occurrence details</h2>
+            </div>
+            <div class="col">
+                <button type="button" class="btn btn-warning">Mark as unread</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
                 <ul>
                     <li><b>GBIF Id: </b><a href="{{ occurrence.gbif_id|gbif_occurrence_url }}">{{ occurrence.gbif_id }}</a></li>
                     <li><b>Species: </b>{{ occurrence.species.name }}</li>
