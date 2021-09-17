@@ -16,6 +16,10 @@ import { Point } from "ol/geom";
 import { Fill, Stroke, Style } from "ol/style";
 import CircleStyle from "ol/style/Circle";
 
+declare interface SingleOccurrenceMapData {
+  map: Map | null;
+}
+
 export default Vue.extend({
   name: "SingleOccurrenceMap",
   props: {
@@ -23,7 +27,7 @@ export default Vue.extend({
     lon: Number,
     lat: Number,
   },
-  data: function () {
+  data: function (): SingleOccurrenceMapData {
     return {
       map: null,
     };
