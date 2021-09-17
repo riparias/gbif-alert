@@ -71,6 +71,14 @@ class Occurrence(models.Model):
         unique_together = ["gbif_id", "data_import"]
 
     @property
+    def lat(self):
+        return self.lonlat_4326_tuple[1]
+
+    @property
+    def lon(self):
+        return self.lonlat_4326_tuple[0]
+
+    @property
     def lonlat_4326_tuple(self):
         """Coordinates as a (lon, lat) tuple, in EPSG:4326
 
