@@ -29,6 +29,9 @@ def js_config_object(context):
             .replace("1", "{z}")
             .replace("2", "{x}")
             .replace("3", "{y}"),
+            "occurrenceDetailsUrlTemplate": reverse(
+                "dashboard:occurrence-details", kwargs={"pk": 1}
+            ).replace("1", "{pk}"),
             "minMaxOccPerHexagonUrl": reverse("dashboard:api-mvt-min-max-per-hexagon"),
         },
     }
@@ -38,3 +41,8 @@ def js_config_object(context):
 @register.filter
 def gbif_download_url(value):
     return f"https://www.gbif.org/occurrence/download/{value}"
+
+
+@register.filter
+def gbif_occurrence_url(value):
+    return f"https://www.gbif.org/occurrence/{value}"

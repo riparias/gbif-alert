@@ -5,8 +5,11 @@ from . import views
 app_name = "dashboard"
 
 urlpatterns = [
+    # Standard pages
     path("", views.index, name="index"),
     path("about", views.about, name="about"),
+    path("occurrence/<int:pk>", views.occurrence_details, name="occurrence-details"),
+    # Apis
     path("api/species", views.species_list_json, name="api-species-list-json"),
     path(
         "api/occurrences_count",

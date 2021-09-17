@@ -12,7 +12,10 @@
           </th>
         </tr>
       </thead>
-      <Occurrence-table-page :occurrences="occurrences"></Occurrence-table-page>
+      <Occurrence-table-page
+        :occurrences="occurrences"
+        :occurrence-page-url-template="occurrencePageUrlTemplate"
+      ></Occurrence-table-page>
     </table>
     <p class="text-center">
       <button
@@ -63,6 +66,7 @@ export default Vue.extend({
   props: {
     filters: Object as () => DashboardFilters,
     occurrencesJsonUrl: String,
+    occurrencePageUrlTemplate: String,
     pageSize: {
       type: Number,
       default: 20,

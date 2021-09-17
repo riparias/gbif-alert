@@ -18,6 +18,29 @@ class WebPagesTests(TestCase):
         self.assertContains(response, "container")
         self.assertTemplateUsed(response, "dashboard/index.html")
 
+    def test_occurrence_details_not_found(self):
+        response = self.client.get(
+            reverse("dashboard:occurrence-details", kwargs={"pk": 1000})
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_occurrence_details(self):
+        occ = Occurrence.objects.create(
+            gbif_id=1,
+            species=Species.objects.all()[0],
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            data_import=DataImport.objects.create(start=timezone.now()),
+            location=Point(5.09513, 50.48941, srid=4326),  # Andenne
+        )
+
+        response = self.client.get(
+            reverse("dashboard:occurrence-details", kwargs={"pk": occ.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # A few checks on the basic content
+        self.assertContains(response, '<a href="https://www.gbif.org/occurrence/1">')
+
 
 class ApiTests(TestCase):
     @classmethod

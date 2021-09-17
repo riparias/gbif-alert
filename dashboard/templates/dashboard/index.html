@@ -52,7 +52,8 @@
 
             <Occurrences-Table v-show="selectedTab === 'Table view'"
                                :filters="filters"
-                               :occurrences-json-url="frontendConfig.apiEndpoints.occurrencesJsonUrl">
+                               :occurrences-json-url="frontendConfig.apiEndpoints.occurrencesJsonUrl"
+                               :occurrence-page-url-template="frontendConfig.apiEndpoints.occurrenceDetailsUrlTemplate">
 
             </Occurrences-Table>
         </div>

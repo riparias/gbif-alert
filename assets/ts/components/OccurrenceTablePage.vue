@@ -1,7 +1,9 @@
 <template>
   <tbody>
     <tr v-for="occ in preparedOccurrences">
-      <th scope="row">{{ occ.gbifId }}</th>
+      <th scope="row">
+        <a :href="occ.url">{{ occ.gbifId }}</a>
+      </th>
       <td>{{ occ.lat }}</td>
       <td>{{ occ.lon }}</td>
       <td>{{ occ.date }}</td>
@@ -21,6 +23,7 @@ interface OccurrencesForDisplay {
   lon: string;
   date: string;
   speciesName: string;
+  url: string;
 }
 
 export default Vue.extend({
@@ -34,6 +37,10 @@ export default Vue.extend({
           lon: occ.lon ? occ.lon.toFixed(4) : "",
           date: occ.date,
           speciesName: occ.speciesName,
+          url: this.occurrencePageUrlTemplate.replace(
+            "{pk}",
+            occ.id.toString()
+          ),
         };
       });
     },
@@ -46,6 +53,7 @@ export default Vue.extend({
         return [];
       },
     },
+    occurrencePageUrlTemplate: String,
   },
 });
 </script>
