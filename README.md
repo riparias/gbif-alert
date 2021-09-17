@@ -9,7 +9,7 @@
 
 This repository contains the source code of the early warning web application for [LIFE RIPARIAS](https://www.riparias.be/) (Action A.1.2).
 
-Early prototype visible on the development server http://dev-alert.riparias.be/
+Development version visible on [dev-alert.riparias.be](http://dev-alert.riparias.be/) (development server: http://54.75.164.69/).
 
 ## Development setup and notes
 
