@@ -1,16 +1,16 @@
-import Vue from "vue";
-import OccurrencesMap from "../components/OccurrencesMap.vue";
+import { createApp } from "vue";
 import {
   DashboardFilters,
   SpeciesInformation,
   FrontEndConfig,
   OptionForSelect,
 } from "../interfaces";
-import SpeciesSelector from "../components/SpeciesSelector.vue";
 import axios from "axios";
 import OccurrencesCounter from "../components/OccurrencesCounter.vue";
 import TabSwitcher from "../components/TabSwitcher.vue";
 import OccurrencesTable from "../components/OccurrencesTable.vue";
+import OccurrencesMap from "../components/OccurrencesMap.vue";
+import SpeciesSelector from "../components/SpeciesSelector.vue";
 
 declare const ripariasConfig: FrontEndConfig;
 
@@ -26,8 +26,7 @@ interface RootAppData {
   dataLayerOpacity: number;
 }
 
-new Vue({
-  el: "#app",
+const app = createApp({
   components: {
     OccurrencesMap,
     SpeciesSelector,
@@ -76,3 +75,5 @@ new Vue({
     this.populateAvailableSpecies();
   },
 });
+
+app.mount("#app");

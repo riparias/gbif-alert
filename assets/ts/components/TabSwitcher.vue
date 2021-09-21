@@ -3,9 +3,9 @@
     <li v-for="tabName in tabNames" class="nav-item">
       <a
         class="nav-link"
-        :class="{ active: tabName == value }"
+        :class="{ active: tabName == modelValue }"
         href="#"
-        @click="$emit('input', tabName)"
+        @click="$emit('update:modelValue', tabName)"
         >{{ tabName }}
       </a>
     </li>
@@ -13,12 +13,12 @@
 </template>
 
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 
-export default Vue.extend({
+export default defineComponent({
   name: "TabSwitcher",
   props: {
-    value: String,
+    modelValue: String,
     tabNames: Array,
   },
 });

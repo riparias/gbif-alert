@@ -14,14 +14,14 @@
 </template>
 
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { SpeciesInformation } from "../interfaces";
 
 declare interface SpeciesSelectorData {
   selectedSpecies: Number | null;
 }
 
-export default Vue.extend({
+export default defineComponent({
   name: "SpeciesSelector",
   props: {
     species: {

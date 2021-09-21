@@ -14,12 +14,12 @@ module.exports = {
         rules: [
             {
                 test: /\.vue$/,
-                loader: 'vue-loader'
+                loader: 'vue-loader',
             },
             {
                 test: /.css$/,
                 use: [
-                    'vue-style-loader',
+                    'style-loader',
                     'css-loader',
                 ]
             },
@@ -42,7 +42,7 @@ module.exports = {
     ],
     resolve: {
         alias: {
-            vue: 'vue/dist/vue.js'
+            vue: "vue/dist/vue.esm-bundler.js"
         }
     }
 };

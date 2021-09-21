@@ -3,7 +3,7 @@
 </template>
 
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { Feature, Map, View } from "ol";
 import { fromLonLat } from "ol/proj";
 import TileLayer from "ol/layer/Tile";
@@ -20,7 +20,7 @@ declare interface SingleOccurrenceMapData {
   map: Map | null;
 }
 
-export default Vue.extend({
+export default defineComponent({
   name: "SingleOccurrenceMap",
   props: {
     height: Number, // Map height, in pixels

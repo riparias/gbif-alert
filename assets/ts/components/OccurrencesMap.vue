@@ -4,7 +4,7 @@
 
 <script lang="ts">
 import { Feature, Map, View } from "ol";
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { fromLonLat } from "ol/proj";
 import TileLayer from "ol/layer/Tile";
 import { Vector, VectorTile as VectorTileLayer } from "ol/layer";
@@ -38,7 +38,7 @@ interface OlStyleFunction {
   (feature: Feature<any> | RenderFeature): Style;
 }
 
-export default Vue.extend({
+export default defineComponent({
   name: "MapContainer",
   props: {
     height: Number, // Map height, in pixels

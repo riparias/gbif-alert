@@ -4,7 +4,7 @@
       <thead class="thead-dark">
         <tr>
           <th
-            :class="{ 'text-primary': sortBy == col.sortId }"
+            :class="{ 'text-primary': sortBy === col.sortId }"
             v-for="col in cols"
             scope="col"
           >
@@ -40,7 +40,7 @@
 </template>
 
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { DashboardFilters } from "../interfaces";
 import axios from "axios";
 import OccurrenceTablePage from "./OccurrenceTablePage.vue";
@@ -60,7 +60,7 @@ declare interface OccurrencesTableData {
   cols: ColDefinition[];
 }
 
-export default Vue.extend({
+export default defineComponent({
   name: "OccurrencesTable",
   components: { OccurrenceTablePage },
   props: {

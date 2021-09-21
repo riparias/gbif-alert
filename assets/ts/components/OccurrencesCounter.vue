@@ -3,11 +3,11 @@
 </template>
 
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { DashboardFilters } from "../interfaces";
 import axios from "axios";
 
-export default Vue.extend({
+export default defineComponent({
   name: "OccurrencesCounter",
   props: {
     filters: Object as () => DashboardFilters,

@@ -1,10 +1,11 @@
-import Vue from "vue";
+import { createApp } from "vue";
 import SingleOccurrenceMap from "../components/SingleOccurrenceMap.vue";
 
-new Vue({
-  el: "#app",
+const app = createApp({
   components: {
     SingleOccurrenceMap,
   },
   delimiters: ["[[", "]]"],
 });
+
+app.mount("#app");
