@@ -14,7 +14,7 @@ Development version visible on [dev-alert.riparias.be](http://dev-alert.riparias
 ## Development setup and notes
 
 ### Backbone
-- [Python](https://www.python.org/) 3.8, [(Geo)Django](https://www.djangoproject.com/) 3.2 LTS, [PostgreSQL](https://www.postgresql.org/), [PostGIS](https://postgis.net/) 3.1+, [TypeScript](https://www.typescriptlang.org/) and [Vue.js](https://vuejs.org/)
+- [Python](https://www.python.org/) 3.8, [(Geo)Django](https://www.djangoproject.com/) 3.2 LTS, [PostgreSQL](https://www.postgresql.org/), [PostGIS](https://postgis.net/) 3.1+, [TypeScript](https://www.typescriptlang.org/) and [Vue.js v3](https://vuejs.org/)
 - CSS: [Bootstrap](https://getbootstrap.com/) 5.1  
 - [Poetry](https://python-poetry.org/) to manage dependencies (use `poetry add`, `poetry install`, ... instead of pip). PyCharm also has a Poetry plugin available.
 
@@ -36,6 +36,7 @@ They're currently used to:
 We use a hybrid approach such as described in https://www.saaspegasus.com/guides/modern-javascript-for-django-developers/integrating-javascript-pipeline/:
 
 - npm is used to manage JS dependencies (**npm install** should be run)
+- Run `npm-check -u` frequently to update frontend dependencies  
 - **During development**, run `npm run webpack-dev` so Webpack constantly watches our source frontend (in `./assets`) and create bundles (in `./static`)
 - **When deploying**, use `npm run webpack prod` instead (smaller bundle size + one single copy - rather than watching files)
 
