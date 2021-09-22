@@ -64,8 +64,14 @@ export default defineComponent({
   name: "OccurrencesTable",
   components: { OccurrenceTablePage },
   props: {
-    filters: Object as () => DashboardFilters,
-    occurrencesJsonUrl: String,
+    filters: {
+      type: Object as () => DashboardFilters,
+      required: true,
+    },
+    occurrencesJsonUrl: {
+      type: String,
+      required: true,
+    },
     occurrencePageUrlTemplate: String,
     pageSize: {
       type: Number,

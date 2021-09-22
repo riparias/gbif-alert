@@ -7,11 +7,11 @@ import { defineComponent } from "vue";
 import { Feature, Map, View } from "ol";
 import { fromLonLat } from "ol/proj";
 import TileLayer from "ol/layer/Tile";
-import { OSM } from "ol/source";
+import OSM from "ol/source/OSM";
 
 import "ol/ol.css";
 import { Vector } from "ol/layer";
-import { Vector as VectorSource } from "ol/source";
+import VectorSource from "ol/source/Vector";
 import { Point } from "ol/geom";
 import { Fill, Stroke, Style } from "ol/style";
 import CircleStyle from "ol/style/Circle";
@@ -24,8 +24,14 @@ export default defineComponent({
   name: "SingleOccurrenceMap",
   props: {
     height: Number, // Map height, in pixels
-    lon: Number,
-    lat: Number,
+    lon: {
+      type: Number,
+      required: true,
+    },
+    lat: {
+      type: Number,
+      required: true,
+    },
   },
   data: function (): SingleOccurrenceMapData {
     return {

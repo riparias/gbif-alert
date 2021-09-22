@@ -8,7 +8,9 @@ import { defineComponent } from "vue";
 import { fromLonLat } from "ol/proj";
 import TileLayer from "ol/layer/Tile";
 import { Vector, VectorTile as VectorTileLayer } from "ol/layer";
-import { OSM, Stamen, VectorTile as VectorTileSource } from "ol/source";
+import OSM from "ol/source/OSM";
+import Stamen from "ol/source/Stamen";
+import VectorTileSource from "ol/source/VectorTile";
 import { scaleSequentialLog, ScaleSequential } from "d3-scale";
 import { interpolateReds } from "d3-scale-chromatic";
 import { hsl } from "d3-color";
@@ -19,19 +21,20 @@ import { Fill, Stroke, Style, Text } from "ol/style";
 import axios from "axios";
 import RenderFeature from "ol/render/Feature";
 import VectorSource from "ol/source/Vector";
+import { Polygon } from "ol/geom";
 
 interface BaseLayerEntry {
   name: string;
-  layer: TileLayer<any>;
+  layer: TileLayer<Stamen> | TileLayer<OSM>;
 }
 
-declare interface MapContainerData {
+interface MapContainerData {
   map: Map | null;
   dataLayer: VectorTileLayer | null;
   HexMinOccCount: Number;
   HexMaxOccCount: Number;
   availableBaseLayers: BaseLayerEntry[];
-  ripariasAreaLayer: Vector<any>;
+  ripariasAreaLayer: Vector<VectorSource<Polygon>>;
 }
 
 interface OlStyleFunction {
@@ -41,13 +44,31 @@ interface OlStyleFunction {
 export default defineComponent({
   name: "MapContainer",
   props: {
-    height: Number, // Map height, in pixels
-    initialZoom: Number,
-    initialLat: Number,
-    initialLon: Number,
+    height: {
+      type: Number, // Map height, in pixels
+      required: true,
+    },
+    initialZoom: {
+      type: Number,
+      required: true,
+    },
+    initialLat: {
+      type: Number,
+      required: true,
+    },
+    initialLon: {
+      type: Number,
+      required: true,
+    },
     tileServerUrlTemplate: String,
-    filters: Object as () => DashboardFilters,
-    minMaxUrl: String,
+    filters: {
+      type: Object as () => DashboardFilters,
+      required: true,
+    },
+    minMaxUrl: {
+      type: String,
+      required: true,
+    },
     showCounters: Boolean,
     baseLayerName: String,
 
@@ -56,7 +77,7 @@ export default defineComponent({
 
     dataLayerOpacity: Number,
   },
-  data: function (): MapContainerData {
+  data: function () {
     return {
       map: null,
       dataLayer: null,
@@ -88,8 +109,8 @@ export default defineComponent({
           }),
         }),
         zIndex: 1000,
-      }),
-    };
+      }) as Vector<VectorSource<Polygon>>,
+    } as MapContainerData;
   },
   watch: {
     dataLayerOpacity: {
@@ -133,17 +154,19 @@ export default defineComponent({
     },
   },
   computed: {
-    selectedBaseLayer: function (): TileLayer<any> {
+    selectedBaseLayer: function (): TileLayer<Stamen> | TileLayer<OSM> {
       return this.selectedBaseLayerEntry.layer;
     },
     selectedBaseLayerEntry: function (): BaseLayerEntry {
-      const found = this.availableBaseLayers.find(
+      const availableBaseLayers = this.availableBaseLayers as BaseLayerEntry[]; // Don't understand why the type is not inferred automatically
+
+      const found = availableBaseLayers.find(
         (l) => this.baseLayerName === l.name
       );
       if (found) {
         return found;
       } else {
-        return this.availableBaseLayers[0]; // First one as default
+        return availableBaseLayers[0]; // First one as default
       }
     },
     colorScale: function (): ScaleSequential<string> {
@@ -188,12 +211,17 @@ export default defineComponent({
     },
   },
   methods: {
-    updateRipariasArea: function () {
+    updateRipariasArea: function (): void {
       if (this.map) {
         if (this.showRipariasArea) {
-          this.map.addLayer(this.ripariasAreaLayer);
+          this.ripariasAreaLayer;
+          this.map.addLayer(
+            this.ripariasAreaLayer as Vector<VectorSource<Polygon>> // Not sure why the type of ripariasAreaLayer is not properly inferred
+          );
         } else {
-          this.map.removeLayer(this.ripariasAreaLayer);
+          this.map.removeLayer(
+            this.ripariasAreaLayer as Vector<VectorSource<Polygon>> // Not sure why the type of ripariasAreaLayer is not properly inferred
+          );
         }
       }
     },
@@ -209,10 +237,10 @@ export default defineComponent({
     replaceDataLayer: function (): void {
       if (this.map) {
         if (this.dataLayer) {
-          this.map.removeLayer(this.dataLayer);
+          this.map.removeLayer(this.dataLayer as VectorTileLayer);
         }
         this.dataLayer = this.createDataLayer();
-        this.map.addLayer(this.dataLayer);
+        this.map.addLayer(this.dataLayer as VectorTileLayer);
       }
     },
     legibleColor: function (color: string): string {
@@ -229,13 +257,11 @@ export default defineComponent({
       });
     },
     createBasicMap: function (): Map {
-      const map = new Map({
+      return new Map({
         target: this.$refs["map-root"] as HTMLInputElement,
         layers: [this.selectedBaseLayer],
         view: this.mapView,
       });
-
-      return map;
     },
   },
   mounted() {

@@ -11,7 +11,10 @@ export default defineComponent({
   name: "OccurrencesCounter",
   props: {
     filters: Object as () => DashboardFilters,
-    counterUrl: String,
+    counterUrl: {
+      type: String,
+      required: true,
+    },
   },
   data: function () {
     return {
