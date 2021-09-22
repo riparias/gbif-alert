@@ -4,16 +4,20 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { Feature, Map, View } from "ol";
+import Feature from "ol/Feature";
+import Map from "ol/Map";
+import View from "ol/View";
 import { fromLonLat } from "ol/proj";
 import TileLayer from "ol/layer/Tile";
 import OSM from "ol/source/OSM";
 
 import "ol/ol.css";
-import { Vector } from "ol/layer";
+import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { Point } from "ol/geom";
-import { Fill, Stroke, Style } from "ol/style";
+import Point from "ol/geom/Point";
+import Fill from "ol/style/Fill";
+import Stroke from "ol/style/Stroke";
+import Style from "ol/style/Style";
 import CircleStyle from "ol/style/Circle";
 
 declare interface SingleOccurrenceMapData {
@@ -55,7 +59,7 @@ export default defineComponent({
         }),
       });
 
-      let pointLayer = new Vector({
+      let pointLayer = new VectorLayer({
         source: new VectorSource({
           features: [
             new Feature({
