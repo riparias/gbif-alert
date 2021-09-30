@@ -110,5 +110,6 @@ export default defineComponent({
       this.$emit("entries-changed", newVal);
     },
   },
+  emits: ["entries-changed"],
 });
 </script>
