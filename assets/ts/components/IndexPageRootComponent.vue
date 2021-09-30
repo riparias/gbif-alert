@@ -37,7 +37,8 @@
         min="0"
         max="1"
         step="0.1"
-        v-model.number="dataLayerOpacity"
+        :value="dataLayerOpacity"
+        @input="dataLayerOpacity = $event.target.valueAsNumber"
       />
     </div>
 
