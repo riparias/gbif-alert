@@ -3,7 +3,10 @@
     <li v-for="tabName in tabNames" class="nav-item">
       <a
         class="nav-link"
-        :class="{ active: tabName == modelValue }"
+        :class="{
+          active: tabName == modelValue,
+          'bg-light': tabName == modelValue,
+        }"
         href="#"
         @click="$emit('update:modelValue', tabName)"
         >{{ tabName }}

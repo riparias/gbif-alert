@@ -3,10 +3,8 @@
 {% load static %}
 
 {% block after_navbar %}
-<div class="container">
-    <div class="row" id="app">
-        <IndexPageRootComponent></IndexPageRootComponent>
-    </div>
+<div class="container" id="app">
+    <IndexPageRootComponent></IndexPageRootComponent>
 </div>
 
 <script src="{% static 'js/index-bundle.js' %}"></script>

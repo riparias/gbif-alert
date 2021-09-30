@@ -82,10 +82,16 @@ export default defineComponent({
       } else {
         // 1 single selection: show the value
         if (this.selectedEntriesIds.length === 1) {
-          return this.getEntryPerId(this.selectedEntriesIds[0])!.label;
+          return (
+            this.buttonLabel +
+            ": " +
+            this.getEntryPerId(this.selectedEntriesIds[0])!.label
+          );
         } else {
           // Multiple selection, return a counter
-          return this.selectedEntriesIds.length + " selected species";
+          return (
+            this.selectedEntriesIds.length + " selected " + this.buttonLabel
+          );
         }
       }
     },

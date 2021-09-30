@@ -1,5 +1,8 @@
 <template>
-  <p>{{ formattedCount }} {{ occurrenceStrPluralized }} matching selection.</p>
+  <button type="button" class="btn btn-sm btn-dark">
+    Matching occurrences
+    <span class="badge badge-light">{{ formattedCount }}</span>
+  </button>
 </template>
 
 <script lang="ts">
