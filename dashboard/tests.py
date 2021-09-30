@@ -185,9 +185,7 @@ class ApiTests(TestCase):
 
     def test_occurrences_json_species_filter(self):
         base_url = reverse("dashboard:api-occurrences-json")
-        url_with_params = (
-            f"{base_url}?limit=10&page_number=1&speciesId={ApiTests.second_species.pk}"
-        )
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 2)
@@ -197,7 +195,7 @@ class ApiTests(TestCase):
     def test_occurrences_json_combined_filters(self):
         base_url = reverse("dashboard:api-occurrences-json")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        url_with_params = f"{base_url}?limit=10&page_number=1&speciesId={ApiTests.second_species.pk}&endDate={yesterday.strftime('%Y-%m-%d')}"
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={yesterday.strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 1)
@@ -205,7 +203,7 @@ class ApiTests(TestCase):
 
     def test_occurrences_json_no_results(self):
         base_url = reverse("dashboard:api-occurrences-json")
-        url_with_params = f"{base_url}?limit=10&page_number=1&speciesId={ApiTests.first_species.pk}&startDate={datetime.date.today().strftime('%Y-%m-%d')}"
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.first_species.pk}&startDate={datetime.date.today().strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 0)
@@ -219,7 +217,7 @@ class ApiTests(TestCase):
 
     def test_occurrences_counter_species_filters(self):
         base_url = reverse("dashboard:api-occurrences-counter")
-        url_with_params = f"{base_url}?speciesId={ApiTests.second_species.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={ApiTests.second_species.pk}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -248,7 +246,7 @@ class ApiTests(TestCase):
         """Counter is correct when filtering by species and end date"""
         base_url = reverse("dashboard:api-occurrences-counter")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        url_with_params = f"{base_url}?endDate={yesterday.strftime('%Y-%m-%d')}&speciesId={ApiTests.second_species.pk}"
+        url_with_params = f"{base_url}?endDate={yesterday.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -343,7 +341,7 @@ class VectorTilesServerTests(TestCase):
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = (
-            f"{base_url}?speciesId={VectorTilesServerTests.first_species.pk}"
+            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -362,7 +360,7 @@ class VectorTilesServerTests(TestCase):
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
         url_with_params = (
-            f"{base_url}?speciesId={VectorTilesServerTests.first_species.pk}"
+            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -379,7 +377,7 @@ class VectorTilesServerTests(TestCase):
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = (
-            f"{base_url}?speciesId={VectorTilesServerTests.first_species.pk}"
+            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -396,7 +394,7 @@ class VectorTilesServerTests(TestCase):
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = (
-            f"{base_url}?speciesId={VectorTilesServerTests.first_species.pk}"
+            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -582,7 +580,7 @@ class VectorTilesServerTests(TestCase):
 
         response = self.client.get(
             reverse("dashboard:api-mvt-min-max-per-hexagon"),
-            data={"zoom": 8, "speciesId": VectorTilesServerTests.first_species.pk},
+            data={"zoom": 8, "speciesIds[]": VectorTilesServerTests.first_species.pk},
         )
         self.assertEqual(response.json()["min"], 1)
         self.assertEqual(response.json()["max"], 1)
@@ -590,7 +588,10 @@ class VectorTilesServerTests(TestCase):
         # Now we're looking for the second species. (We have 2 in Lillois and none in Andenne)
         response = self.client.get(
             reverse("dashboard:api-mvt-min-max-per-hexagon"),
-            data={"zoom": 8, "speciesId": VectorTilesServerTests.second_species.pk},
+            data={
+                "zoom": 8,
+                "speciesIds[]": [VectorTilesServerTests.second_species.pk],
+            },
         )
 
         self.assertEqual(response.json()["min"], 2)
@@ -607,7 +608,7 @@ class VectorTilesServerTests(TestCase):
 
         response = self.client.get(
             reverse("dashboard:api-mvt-min-max-per-hexagon"),
-            data={"zoom": 8, "speciesId": VectorTilesServerTests.second_species.pk},
+            data={"zoom": 8, "speciesIds[]": VectorTilesServerTests.second_species.pk},
         )
 
         self.assertEqual(response.json()["min"], 1)

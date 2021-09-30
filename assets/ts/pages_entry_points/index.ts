@@ -4,13 +4,14 @@ import {
   SpeciesInformation,
   FrontEndConfig,
   OptionForSelect,
+  SelectionEntry,
 } from "../interfaces";
 import axios from "axios";
 import OccurrencesCounter from "../components/OccurrencesCounter.vue";
 import TabSwitcher from "../components/TabSwitcher.vue";
 import OccurrencesTable from "../components/OccurrencesTable.vue";
 import OccurrencesMap from "../components/OccurrencesMap.vue";
-import SpeciesSelector from "../components/SpeciesSelector.vue";
+import ModalMultiSelector from "../components/ModalMultiSelector.vue";
 
 declare const ripariasConfig: FrontEndConfig;
 
@@ -29,10 +30,10 @@ interface RootAppData {
 const app = createApp({
   components: {
     OccurrencesMap,
-    SpeciesSelector,
     OccurrencesCounter,
     TabSwitcher,
     OccurrencesTable,
+    ModalMultiSelector,
   },
   delimiters: ["[[", "]]"],
   data: function (): RootAppData {
@@ -49,17 +50,23 @@ const app = createApp({
       selectedTab: "Map view",
       availableTabs: ["Map view", "Table view"],
       filters: {
-        speciesId: null,
+        speciesIds: [],
         startDate: null,
         endDate: null,
       },
       dataLayerOpacity: 0.8,
     };
   },
-
+  computed: {
+    availableSpeciesAsEntries: function (): SelectionEntry[] {
+      return this.availableSpecies.map((s: SpeciesInformation) => {
+        return { id: s.id, label: s.scientificName };
+      });
+    },
+  },
   methods: {
-    changeSelectedSpecies: function (speciesId: Number) {
-      this.filters.speciesId = speciesId;
+    changeSelectedSpecies: function (speciesIds: Number[]) {
+      this.filters.speciesIds = speciesIds;
     },
 
     populateAvailableSpecies: function () {

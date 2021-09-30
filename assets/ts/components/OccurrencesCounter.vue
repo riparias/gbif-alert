@@ -6,6 +6,7 @@
 import { defineComponent } from "vue";
 import { DashboardFilters } from "../interfaces";
 import axios from "axios";
+import { filtersToQuerystring } from "../helpers";
 
 export default defineComponent({
   name: "OccurrencesCounter",
@@ -31,9 +32,14 @@ export default defineComponent({
   },
   methods: {
     updateCount: function (filters: DashboardFilters) {
-      axios.get(this.counterUrl, { params: filters }).then((response) => {
-        this.count = response.data.count;
-      });
+      axios
+        .get(this.counterUrl, {
+          params: filters,
+          paramsSerializer: filtersToQuerystring,
+        })
+        .then((response) => {
+          this.count = response.data.count;
+        });
     },
   },
   watch: {

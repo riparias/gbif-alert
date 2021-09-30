@@ -53,8 +53,8 @@ JINJASQL_FRAGMENT_FILTER_OCCURRENCES = Template(
     SELECT * FROM $occurrences_table_name as occ
     WHERE (
         1 = 1
-        {% if species_id %}
-            AND occ.species_id = {{ species_id }}
+        {% if species_ids %}
+            AND occ.species_id IN {{ species_ids | inclause }}
         {% endif %}
         {% if start_date %}
             AND occ.date >= TO_DATE({{ start_date }}, '$date_format')
@@ -96,7 +96,7 @@ JINJASQL_FRAGMENT_AGGREGATED_GRID = Template(
 
 def mvt_tiles_hexagon_grid_aggregated(request, zoom, x, y):
     """Tile server, showing occurrences aggregated by hexagon squares. Filters are honoured."""
-    species_id, start_date, end_date = filters_from_request(request)
+    species_ids, start_date, end_date = filters_from_request(request)
 
     sql_template = readable_string(
         Template(
@@ -118,7 +118,7 @@ def mvt_tiles_hexagon_grid_aggregated(request, zoom, x, y):
         "x": x,
         "y": y,
         # Filter included occurrences
-        "species_id": species_id,
+        "species_ids": species_ids,
     }
 
     # More occurrences filtering
@@ -139,7 +139,7 @@ def occurrence_min_max_in_hex_grid(request):
     This can be useful to dynamically color the grid according to the occurrence count
     """
     zoom = extract_int_request(request, "zoom")
-    species_id, start_date, end_date = filters_from_request(request)
+    species_ids, start_date, end_date = filters_from_request(request)
 
     sql_template = readable_string(
         Template(
@@ -155,7 +155,7 @@ def occurrence_min_max_in_hex_grid(request):
     sql_params = {
         "hex_size_meters": ZOOM_TO_HEX_SIZE[zoom],
         "grid_extent_viewport": False,
-        "species_id": species_id,
+        "species_ids": species_ids,
     }
 
     if start_date:

@@ -44,6 +44,7 @@ import { defineComponent } from "vue";
 import { DashboardFilters } from "../interfaces";
 import axios from "axios";
 import OccurrenceTablePage from "./OccurrenceTablePage.vue";
+import { filtersToQuerystring } from "../helpers";
 
 interface ColDefinition {
   sortId: string | null;
@@ -127,7 +128,10 @@ export default defineComponent({
       params.page_number = pageNumber;
 
       axios
-        .get(this.occurrencesJsonUrl, { params: params })
+        .get(this.occurrencesJsonUrl, {
+          params: params,
+          paramsSerializer: filtersToQuerystring,
+        })
         .then((response) => {
           this.occurrences = response.data.results;
           this.firstPage = response.data.firstPage;

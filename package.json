@@ -22,6 +22,7 @@
   "devDependencies": {
     "@babel/core": "^7.15.5",
     "@types/d3": "^7.0.0",
+    "@types/uuid": "^8.3.1",
     "@vue/compiler-sfc": "^3.2.13",
     "babel-loader": "^8.2.2",
     "css-loader": "^6.3.0",
@@ -39,6 +40,8 @@
     "d3": "^7.0.3",
     "npm-check": "^5.9.2",
     "ol": "^6.7.0",
+    "qs": "^6.10.1",
+    "uuid": "^8.3.2",
     "vue": "^3.2.13"
   }
 }

@@ -7,7 +7,7 @@
     <div class="row" id="app">
         <div class="col-3 bg-light">
             <h4 class="my-3">Data filtering</h4>
-            <Species-Selector :species="availableSpecies" @species-changed="changeSelectedSpecies"></Species-Selector>
+            <Modal-Multi-Selector button-label="species" modal-title="Species to include" :entries="availableSpeciesAsEntries" @entries-changed="changeSelectedSpecies"></Modal-Multi-Selector>
 
             <p><label for="mapBaseSelector" class="form-label">Source dataset</label></p>
             <p><label for="mapBaseSelector" class="form-label">Date range</label></p>

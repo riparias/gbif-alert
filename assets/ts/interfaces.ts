@@ -3,8 +3,13 @@ export interface OptionForSelect {
   label: string;
 }
 
+export interface SelectionEntry {
+  id: number;
+  label: string;
+}
+
 export interface DashboardFilters {
-  speciesId: Number | null;
+  speciesIds: Number[];
   startDate: string | null;
   endDate: string | null;
 }

@@ -22,6 +22,7 @@ import axios from "axios";
 import RenderFeature from "ol/render/Feature";
 import VectorSource from "ol/source/Vector";
 import { Polygon } from "ol/geom";
+import { filtersToQuerystring } from "../helpers";
 
 interface BaseLayerEntry {
   name: string;
@@ -203,12 +204,6 @@ export default defineComponent({
         center: fromLonLat([this.initialLon, this.initialLat]),
       });
     },
-    filtersAsQueryString: function (): string {
-      const filtersStringinfied = Object.fromEntries(
-        Object.entries(this.filters).map(([k, v]) => [k, String(v)])
-      );
-      return new URLSearchParams(filtersStringinfied).toString();
-    },
   },
   methods: {
     updateRipariasArea: function (): void {
@@ -250,7 +245,10 @@ export default defineComponent({
       return new VectorTileLayer({
         source: new VectorTileSource({
           format: new MVT(),
-          url: this.tileServerUrlTemplate + "?" + this.filtersAsQueryString,
+          url:
+            this.tileServerUrlTemplate +
+            "?" +
+            filtersToQuerystring(this.filters),
         }),
         style: this.dataLayerStyleFunction,
         opacity: this.dataLayerOpacity,
