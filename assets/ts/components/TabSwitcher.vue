@@ -1,5 +1,5 @@
 <template>
-  <ul class="nav nav-pills">
+  <ul class="nav nav-tabs">
     <li v-for="tabName in tabNames" class="nav-item">
       <a
         class="nav-link"

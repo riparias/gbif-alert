@@ -1,62 +1,16 @@
 <template>
-  <div class="col-3 bg-light">
-    <h4 class="my-3">Data filtering</h4>
-    <Modal-Multi-Selector
-      button-label="species"
-      modal-title="Species to include"
-      :entries="availableSpeciesAsEntries"
-      @entries-changed="changeSelectedSpecies"
-    ></Modal-Multi-Selector>
-
-    <p>
-      <label for="mapBaseSelector" class="form-label">Source dataset</label>
-    </p>
-    <p><label for="mapBaseSelector" class="form-label">Date range</label></p>
-
-    <h4 class="my-3">Map style</h4>
-
-    <label for="mapBaseSelector" class="form-label">Base layer</label>
-    <select
-      id="mapBaseSelector"
-      v-model="mapBaseLayer"
-      class="form-select form-select-sm"
-    >
-      <option v-for="l in availableMapBaseLayers" :value="l.id">
-        {{ l.label }}
-      </option>
-    </select>
-
-    <div class="form-group row">
-      <label class="col-sm-6 col-form-label col-form-label-sm" for="opacity"
-        >Data layer opacity</label
-      >
-      <input
-        type="range"
-        class="col-sm-5 custom-range"
-        id="opacity"
-        min="0"
-        max="1"
-        step="0.1"
-        :value="dataLayerOpacity"
-        @input="dataLayerOpacity = $event.target.valueAsNumber"
-      />
+  <div class="col bg-light overflow-auto">
+    <div>
+      Filters:
+      <Modal-Multi-Selector
+        button-label="species"
+        modal-title="Species to include"
+        :entries="availableSpeciesAsEntries"
+        @entries-changed="changeSelectedSpecies"
+      ></Modal-Multi-Selector>
     </div>
 
-    <div class="form-check form-switch">
-      <input
-        v-model="showRipariasArea"
-        class="form-check-input"
-        type="checkbox"
-        id="ripariasAreaCheckbox"
-      />
-      <label class="form-check-label" for="ripariasAreaCheckbox"
-        >Show LIFE RIPARIAS study area</label
-      >
-    </div>
-  </div>
-
-  <div class="col-9 overflow-auto">
-    <h4 class="my-3">Results</h4>
+    <hr />
     <Occurrences-counter
       :counter-url="frontendConfig.apiEndpoints.occurrencesCounterUrl"
       :filters="filters"
@@ -68,33 +22,75 @@
       :tab-names="availableTabs"
     ></Tab-switcher>
 
-    <Occurrences-Map
-      v-show="selectedTab === 'Map view'"
-      :height="600"
-      :initial-zoom="8"
-      :initial-lat="50.501"
-      :initial-lon="4.4764"
-      :tile-server-url-template="
-        frontendConfig.apiEndpoints.tileServerUrlTemplate
-      "
-      :min-max-url="frontendConfig.apiEndpoints.minMaxOccPerHexagonUrl"
-      :filters="filters"
-      :show-counters="true"
-      :base-layer-name="mapBaseLayer"
-      :riparias-geojson-url="frontendConfig.ripariasAreaGeojsonUrl"
-      :show-riparias-area="showRipariasArea"
-      :data-layer-opacity="dataLayerOpacity"
-    ></Occurrences-Map>
+    <div class="px-4">
+      <div v-show="selectedTab === 'Map view'">
+        <label for="mapBaseSelector" class="form-label">Base layer</label>
+        <select
+          id="mapBaseSelector"
+          v-model="mapBaseLayer"
+          class="form-select form-select-sm"
+        >
+          <option v-for="l in availableMapBaseLayers" :value="l.id">
+            {{ l.label }}
+          </option>
+        </select>
 
-    <Occurrences-Table
-      v-show="selectedTab === 'Table view'"
-      :filters="filters"
-      :occurrences-json-url="frontendConfig.apiEndpoints.occurrencesJsonUrl"
-      :occurrence-page-url-template="
-        frontendConfig.apiEndpoints.occurrenceDetailsUrlTemplate
-      "
-    >
-    </Occurrences-Table>
+        <div class="form-group row">
+          <label class="col-sm-6 col-form-label col-form-label-sm" for="opacity"
+            >Data layer opacity</label
+          >
+          <input
+            type="range"
+            class="col-sm-5 custom-range"
+            id="opacity"
+            min="0"
+            max="1"
+            step="0.1"
+            :value="dataLayerOpacity"
+            @input="dataLayerOpacity = $event.target.valueAsNumber"
+          />
+        </div>
+
+        <div class="form-check form-switch">
+          <input
+            v-model="showRipariasArea"
+            class="form-check-input"
+            type="checkbox"
+            id="ripariasAreaCheckbox"
+          />
+          <label class="form-check-label" for="ripariasAreaCheckbox"
+            >Show LIFE RIPARIAS study area</label
+          >
+        </div>
+
+        <Occurrences-Map
+          :height="600"
+          :initial-zoom="8"
+          :initial-lat="50.501"
+          :initial-lon="4.4764"
+          :tile-server-url-template="
+            frontendConfig.apiEndpoints.tileServerUrlTemplate
+          "
+          :min-max-url="frontendConfig.apiEndpoints.minMaxOccPerHexagonUrl"
+          :filters="filters"
+          :show-counters="true"
+          :base-layer-name="mapBaseLayer"
+          :riparias-geojson-url="frontendConfig.ripariasAreaGeojsonUrl"
+          :show-riparias-area="showRipariasArea"
+          :data-layer-opacity="dataLayerOpacity"
+        ></Occurrences-Map>
+      </div>
+
+      <Occurrences-Table
+        v-show="selectedTab === 'Table view'"
+        :filters="filters"
+        :occurrences-json-url="frontendConfig.apiEndpoints.occurrencesJsonUrl"
+        :occurrence-page-url-template="
+          frontendConfig.apiEndpoints.occurrenceDetailsUrlTemplate
+        "
+      >
+      </Occurrences-Table>
+    </div>
   </div>
 </template>
 
