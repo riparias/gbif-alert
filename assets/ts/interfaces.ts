@@ -11,11 +11,11 @@ export interface DashboardFilters {
 }
 
 export interface SpeciesInformation {
-  id: Number;
-  scientificName: String;
-  gbifTaxonKey: Number;
-  groupCode: String;
-  categoryCode: String;
+  id: number;
+  scientificName: string;
+  gbifTaxonKey: number;
+  groupCode: string;
+  categoryCode: string;
 }
 
 interface EndpointsUrls {
