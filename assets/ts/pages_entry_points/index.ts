@@ -3,7 +3,6 @@ import {
   DashboardFilters,
   SpeciesInformation,
   FrontEndConfig,
-  OptionForSelect,
   SelectionEntry,
 } from "../interfaces";
 import axios from "axios";
@@ -20,7 +19,7 @@ interface RootAppData {
   availableSpecies: SpeciesInformation[];
   filters: DashboardFilters;
   mapBaseLayer: string;
-  availableMapBaseLayers: OptionForSelect[];
+  availableMapBaseLayers: SelectionEntry[];
   selectedTab: string;
   availableTabs: string[];
   showRipariasArea: boolean;
@@ -42,8 +41,8 @@ const app = createApp({
 
       availableSpecies: [],
       availableMapBaseLayers: [
-        { value: "toner", label: "Stamen Toner" },
-        { value: "osmHot", label: "OSM HOT" },
+        { id: "toner", label: "Stamen Toner" },
+        { id: "osmHot", label: "OSM HOT" },
       ],
       mapBaseLayer: "osmHot",
       showRipariasArea: true,

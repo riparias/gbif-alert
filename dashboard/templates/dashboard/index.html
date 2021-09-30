@@ -16,7 +16,7 @@
 
             <label for="mapBaseSelector" class="form-label">Base layer</label>
             <select id="mapBaseSelector" v-model="mapBaseLayer" class="form-select form-select-sm">
-                <option v-for="l in availableMapBaseLayers" :value="l.value">[[ l.label ]]</option>
+                <option v-for="l in availableMapBaseLayers" :value="l.id">[[ l.label ]]</option>
             </select>
 
             <div class="form-group row">

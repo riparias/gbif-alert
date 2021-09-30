@@ -1,10 +1,6 @@
-export interface OptionForSelect {
-  value: string;
-  label: string;
-}
-
+// To use with <select>, checkboxes, ...
 export interface SelectionEntry {
-  id: number;
+  id: string | number;
   label: string;
 }
 
