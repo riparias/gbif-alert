@@ -23,6 +23,7 @@ interface EndpointsUrls {
   tileServerUrlTemplate: string;
   occurrencesCounterUrl: string;
   occurrencesJsonUrl: string;
+  occurrencesHistogramDataUrl: string;
 }
 
 // Keep in sync with templatetags.riparias_extras.js_config_object

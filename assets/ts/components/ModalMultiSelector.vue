@@ -78,7 +78,7 @@ export default defineComponent({
     preparedButtonLabel: function (): string {
       if (!this.selectionMade) {
         // No selection: default label
-        return this.buttonLabel;
+        return "All " + this.buttonLabel;
       } else {
         // 1 single selection: show the value
         if (this.selectedEntriesIds.length === 1) {

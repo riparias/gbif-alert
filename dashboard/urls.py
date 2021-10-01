@@ -16,6 +16,11 @@ urlpatterns = [
         views.occurrences_counter,
         name="api-occurrences-counter",
     ),
+    path(
+        "api/occurrences_monthly_histogram",
+        views.occurrences_monthly_histogram_json,
+        name="api-occurrences-monthly-histogram",
+    ),
     path("api/occurrences_json", views.occurrences_json, name="api-occurrences-json"),
     path(
         "api/tiles/hexagon-grid-aggregated/<int:zoom>/<int:x>/<int:y>.mvt",

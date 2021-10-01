@@ -33,6 +33,9 @@ def js_config_object(context):
                 "dashboard:occurrence-details", kwargs={"pk": 1}
             ).replace("1", "{pk}"),
             "minMaxOccPerHexagonUrl": reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            "occurrencesHistogramDataUrl": reverse(
+                "dashboard:api-occurrences-monthly-histogram"
+            ),
         },
     }
     return mark_safe(json.dumps(conf))

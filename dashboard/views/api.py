@@ -1,4 +1,6 @@
 from django.core.paginator import Paginator
+from django.db.models import Count
+from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 
 from dashboard.models import Species
@@ -90,4 +92,24 @@ def occurrences_json(request):
             "lastPage": page.paginator.page_range.stop - 1,
             "totalResultsCount": page.paginator.count,
         }
+    )
+
+
+def occurrences_monthly_histogram_json(request):
+    """Give the (filtered) number of occurrences per month"""
+    occurrences = filtered_occurrences_from_request(request)
+
+    histogram_data = (
+        occurrences.annotate(month=TruncMonth("date"))
+        .values("month")
+        .annotate(total=Count("id"))
+        .order_by("month")
+    )
+
+    return JsonResponse(
+        [
+            {"year": e["month"].year, "month": e["month"].month, "count": e["total"]}
+            for e in histogram_data
+        ],
+        safe=False,
     )

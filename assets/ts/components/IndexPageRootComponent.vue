@@ -26,6 +26,16 @@
     </div>
   </div>
 
+  <div class="row">
+    <div class="col">
+      <Occurrences-time-line
+        :filters="filters"
+        :histogram-data-url="
+          frontendConfig.apiEndpoints.occurrencesHistogramDataUrl
+        "
+      />
+    </div>
+  </div>
   <hr />
 
   <div class="row">
@@ -135,6 +145,7 @@ import TabSwitcher from "../components/TabSwitcher.vue";
 import OccurrencesTable from "../components/OccurrencesTable.vue";
 import OccurrencesMap from "../components/OccurrencesMap.vue";
 import ModalMultiSelector from "../components/ModalMultiSelector.vue";
+import OccurrencesTimeLine from "./OccurrencesTimeLine.vue";
 
 declare const ripariasConfig: FrontEndConfig;
 
@@ -153,6 +164,7 @@ interface IndexPageRootComponentData {
 export default defineComponent({
   name: "IndexPageRootComponent",
   components: {
+    OccurrencesTimeLine,
     OccurrencesMap,
     OccurrencesCounter,
     TabSwitcher,
