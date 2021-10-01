@@ -55,7 +55,3 @@ imports are deleted.
 The data import history is recorded with the DataImport model, and shown to the user on the "about" page.
 
 => For a given occurrence, Django-managed IDs are therefore not stable, but the GBIF ids fortunately are.
-
-TODO:
-
-- test with multi species filtering

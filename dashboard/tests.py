@@ -64,7 +64,6 @@ class ApiTests(TestCase):
             data_import=cls.di,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
-
         Occurrence.objects.create(
             gbif_id=3,
             species=cls.second_species,
@@ -192,6 +191,52 @@ class ApiTests(TestCase):
         self.assertIn(json_data["results"][0]["gbifId"], ["2", "3"])
         self.assertIn(json_data["results"][1]["gbifId"], ["2", "3"])
 
+    def test_occurrences_json_multiple_species_filter_case1(self):
+        """occurrences_json accept to filter per multiple species
+
+        Case 1: Explicitly requests all species. Results should be the same than no filter"""
+        base_url = reverse("dashboard:api-occurrences-json")
+
+        json_data_all_species = self.client.get(
+            f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&speciesIds[]={ApiTests.first_species.pk}"
+        ).json()
+        json_data_no_species_filters = self.client.get(
+            f"{base_url}?limit=10&page_number=1"
+        ).json()
+        self.assertEqual(json_data_all_species, json_data_no_species_filters)
+
+    def test_occurrences_json_multiple_species_filter_case2(self):
+        """occurrences_json accept to filter per multiple species
+
+        Case 2: request occurrences for species 1 and 3
+        """
+        # We need one more species and one related occurrence to perform this test
+        species_tetraodon = Species.objects.create(
+            name="Tetraodon fluviatilis",
+            gbif_taxon_key=5213564,
+            group="PL",
+            category="E",
+        )
+        Occurrence.objects.create(
+            gbif_id=1000,
+            species=species_tetraodon,
+            date=datetime.date.today(),
+            data_import=ApiTests.di,
+        )
+
+        base_url = reverse("dashboard:api-occurrences-json")
+
+        json_data = self.client.get(
+            f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        ).json()
+
+        self.assertEqual(json_data["totalResultsCount"], 2)
+        for result in json_data["results"]:
+            self.assertIn(
+                result["speciesName"],
+                [ApiTests.first_species.name, species_tetraodon.name],
+            )
+
     def test_occurrences_json_combined_filters(self):
         base_url = reverse("dashboard:api-occurrences-json")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
@@ -222,6 +267,49 @@ class ApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         self.assertEqual(json_data["count"], 2)
+
+    def test_occurrence_counter_multiple_species_filter_case1(self):
+        """We explicitly request all species: result should be identical to no species filtering"""
+        base_url = reverse("dashboard:api-occurrences-counter")
+        json_data_explicit = self.client.get(
+            f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&speciesIds[]={ApiTests.first_species.pk}"
+        ).json()
+        json_data_nofilters = self.client.get(f"{base_url}").json()
+        self.assertEqual(json_data_explicit, json_data_nofilters)
+
+    def test_occurrence_counter_multiple_species_filter_case2(self):
+        """We add a third species and check we can ask a count for species 2 and 3 only"""
+        # We need one more species and related occurrences to perform this test
+        species_tetraodon = Species.objects.create(
+            name="Tetraodon fluviatilis",
+            gbif_taxon_key=5213564,
+            group="PL",
+            category="E",
+        )
+        Occurrence.objects.create(
+            gbif_id=1000,
+            species=species_tetraodon,
+            date=datetime.date.today(),
+            data_import=ApiTests.di,
+        )
+        Occurrence.objects.create(
+            gbif_id=1001,
+            species=species_tetraodon,
+            date=datetime.date.today(),
+            data_import=ApiTests.di,
+        )
+        Occurrence.objects.create(
+            gbif_id=1002,
+            species=species_tetraodon,
+            date=datetime.date.today(),
+            data_import=ApiTests.di,
+        )
+
+        base_url = reverse("dashboard:api-occurrences-counter")
+        json_data = self.client.get(
+            f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        ).json()
+        self.assertEqual(json_data["count"], 5)
 
     def test_occurrences_counter_min_date_filter(self):
         base_url = reverse("dashboard:api-occurrences-counter")
@@ -320,7 +408,7 @@ class VectorTilesServerTests(TestCase):
             "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
-        url_with_params = f"{base_url}?speciesId=null&startDate=null&endDate=null"
+        url_with_params = f"{base_url}?startDate=null&endDate=null"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
 
@@ -335,7 +423,7 @@ class VectorTilesServerTests(TestCase):
     def test_tiles_species_filter(self):
         # Multiple cases where only the occurrence in Andenne is visible
 
-        # Case 1: Large-scale view: a single he over Wallonia, but count = 1
+        # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
             "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
@@ -399,6 +487,99 @@ class VectorTilesServerTests(TestCase):
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
+
+    def test_tiles_species_multiple_species_filters(self):
+        # Test based on test_tiles_species_filter(self), but with two species explicitly requested
+
+        # We need first to add a new species and related occurrences:
+        species_tetraodon = Species.objects.create(
+            name="Tetraodon fluviatilis",
+            gbif_taxon_key=5213564,
+            group="PL",
+            category="E",
+        )
+        Occurrence.objects.create(
+            gbif_id=1000,
+            species=species_tetraodon,
+            date=datetime.date.today(),
+            data_import=VectorTilesServerTests.di,
+            location=Point(4.35978, 50.64728, srid=4326),  # Lillois
+        )
+        Occurrence.objects.create(
+            gbif_id=1001,
+            species=species_tetraodon,
+            date=datetime.date.today(),
+            data_import=VectorTilesServerTests.di,
+            location=Point(4.35978, 50.64728, srid=4326),  # Lillois
+        )
+        Occurrence.objects.create(
+            gbif_id=1002,
+            species=species_tetraodon,
+            date=datetime.date.today(),
+            data_import=VectorTilesServerTests.di,
+            location=Point(4.35978, 50.64728, srid=4326),  # Lillois
+        )
+
+        # Case 1: Large-scale view: a single hex over Wallonia
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 2, "x": 2, "y": 1},
+        )
+        url_with_params = f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(
+            len(decoded_tile["default"]["features"]), 1
+        )  # it has a single feature
+        the_feature = decoded_tile["default"]["features"][0]
+        self.assertEqual(
+            the_feature["properties"]["count"], 4
+        )  # 3 in Lillois (tetraodon, 1 in Andenne)
+
+        # Case 2: A tile that covers an important part of Wallonia, including Andenne and Lillois. Should have two polygons
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 8, "x": 131, "y": 86},
+        )
+        url_with_params = f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(len(decoded_tile["default"]["features"]), 2)
+
+        # We should have one occurrence in Andenne (for first species) and 3 in Lillois (for tetraodon)
+        pass
+        for entry in decoded_tile["default"]["features"]:
+            self.assertIn(entry["properties"]["count"], [1, 3])
+
+        # Case 3: A zoomed tile with just Andenne and the close neighborhood, the hex should still be there
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 10, "x": 526, "y": 345},
+        )
+        url_with_params = f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(
+            len(decoded_tile["default"]["features"]), 1
+        )  # it has a single feature
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["count"], 1
+        )
+
+        # Case 4: A zoomed time on Lillois, we expect the three tetraodon occurrences
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 17, "x": 67123, "y": 44083},
+        )
+        url_with_params = f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(
+            len(decoded_tile["default"]["features"]), 1
+        )  # it has a single feature
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["count"], 3
+        )
 
     def test_tiles_basic_data_in_hexagons(self):
         # Very large view (big part of Europe, Africa and Russia: e expect a single hexagon over Belgium
