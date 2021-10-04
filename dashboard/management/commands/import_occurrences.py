@@ -12,7 +12,7 @@ from dwca.read import DwCAReader  # type: ignore
 from dwca.darwincore.utils import qualname as qn  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences  # type: ignore
 
-from dashboard.models import Species, Occurrence, DataImport
+from dashboard.models import Species, Occurrence, DataImport, Dataset
 
 
 def build_gbif_predicate(country_code: str, species_list: QuerySet[Species]) -> Dict:
@@ -68,6 +68,7 @@ class Command(BaseCommand):
             current_data_import = DataImport.objects.create(start=timezone.now())
             self.stdout.write(f"Current data import: #{current_data_import.pk}")
 
+            # This might takes several minutes...
             download_occurrences(
                 predicate,
                 username=settings.RIPARIAS["GBIF_USERNAME"],
@@ -86,6 +87,7 @@ class Command(BaseCommand):
 
                 for row in dwca:
                     year_str = row.data[qn("year")]
+
                     if (
                         year_str != ""
                     ):  # Skip records that don't even have a decent year
@@ -108,6 +110,14 @@ class Command(BaseCommand):
                             day = 1
                         date = datetime.date(year, month, day)
 
+                        gbif_dataset_key = row.data[
+                            "http://rs.gbif.org/terms/1.0/datasetKey"
+                        ]
+                        dataset_name = row.data[qn("datasetName")]
+                        dataset, _ = Dataset.objects.get_or_create(
+                            gbif_id=gbif_dataset_key, defaults={"name": dataset_name}
+                        )
+
                         Occurrence.objects.create(
                             gbif_id=int(
                                 row.data["http://rs.gbif.org/terms/1.0/gbifID"]
@@ -116,6 +126,7 @@ class Command(BaseCommand):
                             location=point,
                             date=date,
                             data_import=current_data_import,
+                            source_dataset=dataset,
                         )
 
                         self.stdout.write(".", ending="")

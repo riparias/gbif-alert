@@ -48,6 +48,11 @@ class Species(models.Model):
         }
 
 
+class Dataset(models.Model):
+    name = models.CharField(max_length=255)
+    gbif_id = models.CharField(max_length=255, unique=True)
+
+
 class DataImport(models.Model):
     start = models.DateTimeField()
     end = models.DateTimeField(blank=True, null=True)
@@ -66,6 +71,7 @@ class Occurrence(models.Model):
     date = models.DateField()
 
     data_import = models.ForeignKey(DataImport, on_delete=models.PROTECT)
+    source_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
 
     class Meta:
         unique_together = ["gbif_id", "data_import"]
