@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.contrib.gis.geos import Point
 from django.utils import timezone
 
-from dashboard.models import Occurrence, Species, DataImport
+from dashboard.models import Occurrence, Species, DataImport, Dataset
 
 
 class ApiTests(TestCase):
@@ -15,12 +15,16 @@ class ApiTests(TestCase):
         cls.second_species = Species.objects.all()[1]
 
         cls.di = DataImport.objects.create(start=timezone.now())
+        cls.dataset = Dataset.objects.create(
+            name="Test dataset", gbif_id="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+        )
 
         Occurrence.objects.create(
             gbif_id=1,
             species=cls.first_species,
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=cls.di,
+            source_dataset=cls.dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
         Occurrence.objects.create(
@@ -28,6 +32,7 @@ class ApiTests(TestCase):
             species=cls.second_species,
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=cls.di,
+            source_dataset=cls.dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
         Occurrence.objects.create(
@@ -35,6 +40,7 @@ class ApiTests(TestCase):
             species=cls.second_species,
             date=datetime.date.today(),
             data_import=cls.di,
+            source_dataset=cls.dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
@@ -45,6 +51,7 @@ class ApiTests(TestCase):
             species=ApiTests.second_species,
             date=datetime.date.today(),
             data_import=ApiTests.di,
+            source_dataset=ApiTests.dataset,
             location=None,
         )
         base_url = reverse("dashboard:api-occurrences-json")
@@ -188,6 +195,7 @@ class ApiTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
+            source_dataset=ApiTests.dataset,
         )
 
         base_url = reverse("dashboard:api-occurrences-json")
@@ -257,18 +265,21 @@ class ApiTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
+            source_dataset=ApiTests.dataset,
         )
         Occurrence.objects.create(
             gbif_id=1001,
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
+            source_dataset=ApiTests.dataset,
         )
         Occurrence.objects.create(
             gbif_id=1002,
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
+            source_dataset=ApiTests.dataset,
         )
 
         base_url = reverse("dashboard:api-occurrences-counter")

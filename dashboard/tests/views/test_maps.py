@@ -7,7 +7,7 @@ from django.urls import reverse
 import mapbox_vector_tile
 from django.utils import timezone
 
-from dashboard.models import Occurrence, Species, DataImport
+from dashboard.models import Occurrence, Species, DataImport, Dataset
 
 
 class VectorTilesServerTests(TestCase):
@@ -17,12 +17,16 @@ class VectorTilesServerTests(TestCase):
         cls.second_species = Species.objects.all()[1]
 
         cls.di = DataImport.objects.create(start=timezone.now())
+        cls.dataset = Dataset.objects.create(
+            name="Test dataset", gbif_id="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+        )
 
         Occurrence.objects.create(
             gbif_id=1,
             species=cls.first_species,
             date=datetime.date.today(),
             data_import=cls.di,
+            source_dataset=cls.dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
         Occurrence.objects.create(
@@ -30,6 +34,7 @@ class VectorTilesServerTests(TestCase):
             species=cls.second_species,
             date=datetime.date.today(),
             data_import=cls.di,
+            source_dataset=cls.dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
@@ -150,6 +155,7 @@ class VectorTilesServerTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            source_dataset=VectorTilesServerTests.dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
         Occurrence.objects.create(
@@ -157,6 +163,7 @@ class VectorTilesServerTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            source_dataset=VectorTilesServerTests.dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
         Occurrence.objects.create(
@@ -164,6 +171,7 @@ class VectorTilesServerTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            source_dataset=VectorTilesServerTests.dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
@@ -372,6 +380,7 @@ class VectorTilesServerTests(TestCase):
             species=Species.objects.all()[0],
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            source_dataset=VectorTilesServerTests.dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
@@ -403,6 +412,7 @@ class VectorTilesServerTests(TestCase):
             species=VectorTilesServerTests.second_species,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            source_dataset=VectorTilesServerTests.dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
@@ -431,6 +441,7 @@ class VectorTilesServerTests(TestCase):
             species=VectorTilesServerTests.second_species,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            source_dataset=VectorTilesServerTests.dataset,
             location=Point(5.095610, 50.48800, srid=4326),
         )
 

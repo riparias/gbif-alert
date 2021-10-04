@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.contrib.gis.geos import Point
 from django.utils import timezone
 
-from dashboard.models import Occurrence, Species, DataImport
+from dashboard.models import Occurrence, Species, DataImport, Dataset
 
 
 class WebPagesTests(TestCase):
@@ -28,6 +28,9 @@ class WebPagesTests(TestCase):
             species=Species.objects.all()[0],
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=DataImport.objects.create(start=timezone.now()),
+            source_dataset=Dataset.objects.create(
+                name="Test dataset", gbif_id="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+            ),
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
 
