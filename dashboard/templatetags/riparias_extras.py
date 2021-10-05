@@ -20,6 +20,7 @@ def js_config_object(context):
         "ripariasAreaGeojsonUrl": static("geojson/Riparias_Official_StudyArea.geojson"),
         "apiEndpoints": {
             "speciesListUrl": reverse("dashboard:api-species-list-json"),
+            "datasetsListUrl": reverse("dashboard:api-datasets-list-json"),
             "occurrencesCounterUrl": reverse("dashboard:api-occurrences-counter"),
             "occurrencesJsonUrl": reverse("dashboard:api-occurrences-json"),
             "tileServerUrlTemplate": reverse(

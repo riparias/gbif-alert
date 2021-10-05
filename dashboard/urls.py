@@ -11,6 +11,7 @@ urlpatterns = [
     path("occurrence/<int:pk>", views.occurrence_details, name="occurrence-details"),
     # Apis
     path("api/species", views.species_list_json, name="api-species-list-json"),
+    path("api/datasets", views.datasets_list_json, name="api-datasets-list-json"),
     path(
         "api/occurrences_count",
         views.occurrences_counter,
@@ -22,6 +23,7 @@ urlpatterns = [
         name="api-occurrences-monthly-histogram",
     ),
     path("api/occurrences_json", views.occurrences_json, name="api-occurrences-json"),
+    # Maps
     path(
         "api/tiles/hexagon-grid-aggregated/<int:zoom>/<int:x>/<int:y>.mvt",
         views.mvt_tiles_hexagon_grid_aggregated,

@@ -8,10 +8,21 @@
 
         <div class="col-7">
           <Modal-Multi-Selector
-            button-label="species"
+            class="m-2"
+            button-label-singular="species"
+            button-label-plural="species"
             modal-title="Species to include"
             :entries="availableSpeciesAsEntries"
             @entries-changed="changeSelectedSpecies"
+          ></Modal-Multi-Selector>
+
+          <Modal-Multi-Selector
+            class="m-2"
+            button-label-singular="dataset"
+            button-label-plural="datasets"
+            modal-title="Datasets to include"
+            :entries="availableDatasetsAsEntries"
+            @entries-changed="changeSelectedDatasets"
           ></Modal-Multi-Selector>
         </div>
 
@@ -135,6 +146,7 @@
 import { defineComponent } from "vue";
 import {
   DashboardFilters,
+  DatasetInformation,
   SpeciesInformation,
   FrontEndConfig,
   SelectionEntry,
@@ -152,6 +164,7 @@ declare const ripariasConfig: FrontEndConfig;
 interface IndexPageRootComponentData {
   frontendConfig: FrontEndConfig;
   availableSpecies: SpeciesInformation[];
+  availableDatasets: DatasetInformation[];
   filters: DashboardFilters;
   mapBaseLayer: string;
   availableMapBaseLayers: SelectionEntry[];
@@ -176,6 +189,7 @@ export default defineComponent({
       frontendConfig: ripariasConfig,
 
       availableSpecies: [],
+      availableDatasets: [],
       availableMapBaseLayers: [
         { id: "toner", label: "Stamen Toner" },
         { id: "osmHot", label: "OSM HOT" },
@@ -186,6 +200,7 @@ export default defineComponent({
       availableTabs: ["Map view", "Table view"],
       filters: {
         speciesIds: [],
+        datasetsIds: [],
         startDate: null,
         endDate: null,
       },
@@ -198,12 +213,28 @@ export default defineComponent({
         return { id: s.id, label: s.scientificName };
       });
     },
+    availableDatasetsAsEntries: function (): SelectionEntry[] {
+      return this.availableDatasets.map((d: DatasetInformation) => {
+        return { id: d.id, label: d.name };
+      });
+    },
   },
   methods: {
     changeSelectedSpecies: function (speciesIds: Number[]) {
       this.filters.speciesIds = speciesIds;
     },
 
+    changeSelectedDatasets: function (datasetsIds: Number[]) {
+      this.filters.datasetsIds = datasetsIds;
+    },
+
+    populateAvailableDatasets: function () {
+      axios
+        .get(this.frontendConfig.apiEndpoints.datasetsListUrl)
+        .then((response) => {
+          this.availableDatasets = response.data;
+        });
+    },
     populateAvailableSpecies: function () {
       axios
         .get(this.frontendConfig.apiEndpoints.speciesListUrl)
@@ -215,6 +246,7 @@ export default defineComponent({
 
   mounted: function () {
     this.populateAvailableSpecies();
+    this.populateAvailableDatasets();
   },
 });
 </script>

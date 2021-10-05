@@ -100,36 +100,38 @@ class Command(BaseCommand):
                         except ValueError:
                             point = None
 
-                        # Some dates are incomplete(year only - skipping for now)
-                        year = int(year_str)
-                        try:
-                            month = int(row.data[qn("month")])
-                            day = int(row.data[qn("day")])
-                        except ValueError:
-                            month = 1
-                            day = 1
-                        date = datetime.date(year, month, day)
+                        if point:  # Also skip records that don't have coordinates
+                            # Some dates are incomplete(year only - skipping for now)
+                            year = int(year_str)
+                            try:
+                                month = int(row.data[qn("month")])
+                                day = int(row.data[qn("day")])
+                            except ValueError:
+                                month = 1
+                                day = 1
+                            date = datetime.date(year, month, day)
 
-                        gbif_dataset_key = row.data[
-                            "http://rs.gbif.org/terms/1.0/datasetKey"
-                        ]
-                        dataset_name = row.data[qn("datasetName")]
-                        dataset, _ = Dataset.objects.get_or_create(
-                            gbif_id=gbif_dataset_key, defaults={"name": dataset_name}
-                        )
+                            gbif_dataset_key = row.data[
+                                "http://rs.gbif.org/terms/1.0/datasetKey"
+                            ]
+                            dataset_name = row.data[qn("datasetName")]
+                            dataset, _ = Dataset.objects.get_or_create(
+                                gbif_id=gbif_dataset_key,
+                                defaults={"name": dataset_name},
+                            )
 
-                        Occurrence.objects.create(
-                            gbif_id=int(
-                                row.data["http://rs.gbif.org/terms/1.0/gbifID"]
-                            ),
-                            species=species_for_row(row),
-                            location=point,
-                            date=date,
-                            data_import=current_data_import,
-                            source_dataset=dataset,
-                        )
+                            Occurrence.objects.create(
+                                gbif_id=int(
+                                    row.data["http://rs.gbif.org/terms/1.0/gbifID"]
+                                ),
+                                species=species_for_row(row),
+                                location=point,
+                                date=date,
+                                data_import=current_data_import,
+                                source_dataset=dataset,
+                            )
 
-                        self.stdout.write(".", ending="")
+                            self.stdout.write(".", ending="")
 
                 self.stdout.write(
                     "All occurrences imported, now deleting occurrences linked to previous data imports..."

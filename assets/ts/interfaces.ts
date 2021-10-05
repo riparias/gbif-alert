@@ -6,6 +6,7 @@ export interface SelectionEntry {
 
 export interface DashboardFilters {
   speciesIds: Number[];
+  datasetsIds: Number[];
   startDate: string | null;
   endDate: string | null;
 }
@@ -18,8 +19,15 @@ export interface SpeciesInformation {
   categoryCode: string;
 }
 
+export interface DatasetInformation {
+  id: number;
+  gbifKey: number;
+  name: string;
+}
+
 interface EndpointsUrls {
   speciesListUrl: string;
+  datasetsListUrl: string;
   tileServerUrlTemplate: string;
   occurrencesCounterUrl: string;
   occurrencesJsonUrl: string;
@@ -42,4 +50,5 @@ export interface JsonOccurrence {
   lon: number;
   date: string;
   speciesName: string;
+  datasetName: string;
 }

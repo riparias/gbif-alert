@@ -1,5 +1,6 @@
 <template>
   <button
+    v-bind="$attrs"
     type="button"
     class="btn btn-sm btn-outline-success"
     :class="{
@@ -60,7 +61,8 @@ import { v4 as uuidv4 } from "uuid";
 export default defineComponent({
   name: "ModalMultiSelector",
   props: {
-    buttonLabel: { type: String, required: true },
+    buttonLabelSingular: { type: String, required: true },
+    buttonLabelPlural: { type: String, required: true },
     modalTitle: { type: String, required: true },
     entries: {
       type: Array as () => SelectionEntry[],
@@ -78,19 +80,21 @@ export default defineComponent({
     preparedButtonLabel: function (): string {
       if (!this.selectionMade) {
         // No selection: default label
-        return "All " + this.buttonLabel;
+        return "All " + this.buttonLabelPlural;
       } else {
         // 1 single selection: show the value
         if (this.selectedEntriesIds.length === 1) {
           return (
-            this.buttonLabel +
+            this.buttonLabelSingular +
             ": " +
             this.getEntryPerId(this.selectedEntriesIds[0])!.label
           );
         } else {
           // Multiple selection, return a counter
           return (
-            this.selectedEntriesIds.length + " selected " + this.buttonLabel
+            this.selectedEntriesIds.length +
+            " selected " +
+            this.buttonLabelPlural
           );
         }
       }

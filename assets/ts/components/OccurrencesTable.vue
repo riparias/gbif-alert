@@ -170,6 +170,7 @@ export default defineComponent({
         { sortId: null, label: "Lon" },
         { sortId: null, label: "Date" },
         { sortId: "species__name", label: "Species" },
+        { sortId: "source_dataset__name", label: "Dataset" },
       ],
     };
   },

@@ -8,6 +8,7 @@
       <td>{{ occ.lon }}</td>
       <td>{{ occ.date }}</td>
       <td>{{ occ.speciesName }}</td>
+      <td>{{ occ.datasetName }}</td>
     </tr>
   </tbody>
 </template>
@@ -23,6 +24,7 @@ interface OccurrencesForDisplay {
   lon: string;
   date: string;
   speciesName: string;
+  datasetName: string;
   url: string;
 }
 
@@ -37,6 +39,7 @@ export default defineComponent({
           lon: occ.lon ? occ.lon.toFixed(4) : "",
           date: occ.date,
           speciesName: occ.speciesName,
+          datasetName: occ.datasetName,
           url: this.occurrencePageUrlTemplate!.replace(
             "{pk}",
             occ.id.toString()

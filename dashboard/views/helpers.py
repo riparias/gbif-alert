@@ -47,7 +47,7 @@ def filtered_occurrences_from_request(request: WSGIRequest) -> QuerySet[Occurren
     """Takes a request, extract common parameters used to filter occurrences and return a corresponding QuerySet"""
     qs = Occurrence.objects.all()
 
-    species_ids, start_date, end_date = filters_from_request(request)
+    species_ids, datasets_ids, start_date, end_date = filters_from_request(request)
 
     # !! IMPORTANT !! Make sure the occurrence filtering here is equivalent to what's done in
     # views.maps.JINJASQL_FRAGMENT_FILTER_OCCURRENCES. Otherwise, occurrences returned on the map and on other
@@ -55,6 +55,8 @@ def filtered_occurrences_from_request(request: WSGIRequest) -> QuerySet[Occurren
 
     if species_ids:
         qs = qs.filter(species_id__in=species_ids)
+    if datasets_ids:
+        qs = qs.filter(source_dataset_id__in=datasets_ids)
     if start_date:
         qs = qs.filter(date__gte=start_date)
     if end_date:
@@ -65,9 +67,10 @@ def filtered_occurrences_from_request(request: WSGIRequest) -> QuerySet[Occurren
 
 def filters_from_request(
     request: WSGIRequest,
-) -> Tuple[List[int], datetime.date, datetime.date]:
+) -> Tuple[List[int], List[int], datetime.date, datetime.date]:
     species_ids = extract_int_array_request(request, "speciesIds[]")
+    datasets_ids = extract_int_array_request(request, "datasetsIds[]")
     start_date = extract_date_request(request, "startDate")
     end_date = extract_date_request(request, "endDate")
 
-    return species_ids, start_date, end_date
+    return species_ids, datasets_ids, start_date, end_date

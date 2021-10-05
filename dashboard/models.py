@@ -52,6 +52,14 @@ class Dataset(models.Model):
     name = models.CharField(max_length=255)
     gbif_id = models.CharField(max_length=255, unique=True)
 
+    @property
+    def as_dict(self):
+        return {  # To be consumed on the frontend: we use JS naming conventions
+            "id": self.pk,
+            "gbifKey": self.gbif_id,
+            "name": self.name,
+        }
+
 
 class DataImport(models.Model):
     start = models.DateTimeField()
@@ -105,5 +113,6 @@ class Occurrence(models.Model):
             "lat": lat,
             "lon": lon,
             "speciesName": self.species.name,
+            "datasetName": self.source_dataset.name,
             "date": str(self.date),
         }

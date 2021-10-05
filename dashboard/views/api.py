@@ -3,7 +3,7 @@ from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 
-from dashboard.models import Species
+from dashboard.models import Species, Dataset
 from dashboard.views.helpers import (
     filtered_occurrences_from_request,
     extract_int_request,
@@ -13,6 +13,12 @@ from dashboard.views.helpers import (
 def species_list_json(request):
     return JsonResponse(
         [species.as_dict for species in Species.objects.all()], safe=False
+    )
+
+
+def datasets_list_json(request):
+    return JsonResponse(
+        [dataset.as_dict for dataset in Dataset.objects.all()], safe=False
     )
 
 
