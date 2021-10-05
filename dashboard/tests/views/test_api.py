@@ -13,10 +13,12 @@ class ApiTests(TestCase):
     def setUpTestData(cls):
         cls.first_species = Species.objects.all()[0]
         cls.second_species = Species.objects.all()[1]
-
         cls.di = DataImport.objects.create(start=timezone.now())
-        cls.dataset = Dataset.objects.create(
+        cls.first_dataset = Dataset.objects.create(
             name="Test dataset", gbif_id="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+        )
+        cls.second_dataset = Dataset.objects.create(
+            name="Test dataset #2", gbif_id="aaa7b334-ce0d-4e88-aaae-2e0c138d049f"
         )
 
         Occurrence.objects.create(
@@ -24,7 +26,7 @@ class ApiTests(TestCase):
             species=cls.first_species,
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=cls.di,
-            source_dataset=cls.dataset,
+            source_dataset=cls.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
         Occurrence.objects.create(
@@ -32,7 +34,7 @@ class ApiTests(TestCase):
             species=cls.second_species,
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=cls.di,
-            source_dataset=cls.dataset,
+            source_dataset=cls.second_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
         Occurrence.objects.create(
@@ -40,7 +42,7 @@ class ApiTests(TestCase):
             species=cls.second_species,
             date=datetime.date.today(),
             data_import=cls.di,
-            source_dataset=cls.dataset,
+            source_dataset=cls.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
@@ -51,7 +53,7 @@ class ApiTests(TestCase):
             species=ApiTests.second_species,
             date=datetime.date.today(),
             data_import=ApiTests.di,
-            source_dataset=ApiTests.dataset,
+            source_dataset=ApiTests.first_dataset,
             location=None,
         )
         base_url = reverse("dashboard:api-occurrences-json")
@@ -164,6 +166,29 @@ class ApiTests(TestCase):
         self.assertIn(json_data["results"][0]["gbifId"], ["2", "3"])
         self.assertIn(json_data["results"][1]["gbifId"], ["2", "3"])
 
+    def test_occurrences_json_dataset_filter(self):
+        base_url = reverse("dashboard:api-occurrences-json")
+        url_with_params = f"{base_url}?limit=10&page_number=1&datasetsIds[]={ApiTests.first_dataset.pk}"
+        response = self.client.get(url_with_params)
+        json_data = response.json()
+        self.assertEqual(json_data["totalResultsCount"], 2)
+        self.assertIn(json_data["results"][0]["gbifId"], ["1", "3"])
+        self.assertIn(json_data["results"][1]["gbifId"], ["1", "3"])
+
+    def test_occurrences_json_multiple_datasets_filter_case1(self):
+        """occurrences_json accept to filter per multiple datasets
+
+        Case 1: Explicitly requests all datasets. Results should be the same than no filter"""
+        base_url = reverse("dashboard:api-occurrences-json")
+
+        json_data_all_species = self.client.get(
+            f"{base_url}?limit=10&page_number=1&datasetsIds[]={ApiTests.first_dataset.pk}&datasetsIds[]={ApiTests.second_dataset.pk}"
+        ).json()
+        json_data_no_species_filters = self.client.get(
+            f"{base_url}?limit=10&page_number=1"
+        ).json()
+        self.assertEqual(json_data_all_species, json_data_no_species_filters)
+
     def test_occurrences_json_multiple_species_filter_case1(self):
         """occurrences_json accept to filter per multiple species
 
@@ -195,7 +220,7 @@ class ApiTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
-            source_dataset=ApiTests.dataset,
+            source_dataset=ApiTests.first_dataset,
         )
 
         base_url = reverse("dashboard:api-occurrences-json")
@@ -211,6 +236,30 @@ class ApiTests(TestCase):
                 [ApiTests.first_species.name, species_tetraodon.name],
             )
 
+    def test_occurrences_json_multiple_dataset_filter_case2(self):
+        """occurrences_json accept to filter per multiple datasets
+        Case 2: request occurrences for datasets 1 and 3
+        """
+        # We need one more dataset and one related occurrence to perform this test
+        third_dataset = Dataset.objects.create(name="Third dataset", gbif_id="xxxx")
+        Occurrence.objects.create(
+            gbif_id=1000,
+            species=ApiTests.first_species,
+            date=datetime.date.today(),
+            data_import=ApiTests.di,
+            source_dataset=third_dataset,
+        )
+        base_url = reverse("dashboard:api-occurrences-json")
+        json_data = self.client.get(
+            f"{base_url}?limit=10&page_number=1&datasetsIds[]={ApiTests.first_dataset.pk}&datasetsIds[]={third_dataset.pk}"
+        ).json()
+        self.assertEqual(json_data["totalResultsCount"], 3)
+        for result in json_data["results"]:
+            self.assertIn(
+                result["datasetName"],
+                [ApiTests.first_dataset.name, third_dataset.name],
+            )
+
     def test_occurrences_json_combined_filters(self):
         base_url = reverse("dashboard:api-occurrences-json")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
@@ -219,6 +268,25 @@ class ApiTests(TestCase):
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 1)
         self.assertEqual(json_data["results"][0]["gbifId"], "2")
+
+    def test_occurrences_json_combined_filters_case2(self):
+        # Starting from test_occurrences_json_combined_filters, we add one dataset filter that won't change the results
+        base_url = reverse("dashboard:api-occurrences-json")
+        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={yesterday.strftime('%Y-%m-%d')}&datasetsIds[]={ApiTests.second_dataset.pk}"
+        response = self.client.get(url_with_params)
+        json_data = response.json()
+        self.assertEqual(json_data["totalResultsCount"], 1)
+        self.assertEqual(json_data["results"][0]["gbifId"], "2")
+
+    def test_occurrences_json_combined_filters_case3(self):
+        # Starting from test_occurrences_json_combined_filters, we add one dataset filter => the filter combination now returns 0 results
+        base_url = reverse("dashboard:api-occurrences-json")
+        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={yesterday.strftime('%Y-%m-%d')}&datasetsIds[]={ApiTests.first_dataset.pk}"
+        response = self.client.get(url_with_params)
+        json_data = response.json()
+        self.assertEqual(json_data["totalResultsCount"], 0)
 
     def test_occurrences_json_no_results(self):
         base_url = reverse("dashboard:api-occurrences-json")
@@ -265,21 +333,21 @@ class ApiTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
-            source_dataset=ApiTests.dataset,
+            source_dataset=ApiTests.first_dataset,
         )
         Occurrence.objects.create(
             gbif_id=1001,
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
-            source_dataset=ApiTests.dataset,
+            source_dataset=ApiTests.first_dataset,
         )
         Occurrence.objects.create(
             gbif_id=1002,
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
-            source_dataset=ApiTests.dataset,
+            source_dataset=ApiTests.first_dataset,
         )
 
         base_url = reverse("dashboard:api-occurrences-counter")
@@ -317,6 +385,20 @@ class ApiTests(TestCase):
         json_data = response.json()
         self.assertEqual(json_data["count"], 1)
 
+        # Case 2: we also add a dataset filter (which doesn't change the number of occurrences)
+        url_with_params = f"{base_url}?endDate={yesterday.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&datasetsIds[]={ApiTests.second_dataset.pk}"
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data["count"], 1)
+
+        # Case 3: we add another one, which brings the counter to zero
+        url_with_params = f"{base_url}?endDate={yesterday.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&datasetsIds[]={ApiTests.first_dataset.pk}"
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data["count"], 0)
+
     def test_species_list_json(self):
         response = self.client.get(reverse("dashboard:api-species-list-json"))
         self.assertEqual(response.status_code, 200)
@@ -338,3 +420,15 @@ class ApiTests(TestCase):
                 break
 
         self.assertTrue(found)
+
+    def test_datasets_list_json(self):
+        response = self.client.get(reverse("dashboard:api-datasets-list-json"))
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(len(json_data), 2)
+        # Check the main fields are there (no KeyError exception)
+        json_data[0]["name"]
+        json_data[0]["id"]
+        json_data[0]["gbifKey"]
+        for entry in json_data:
+            self.assertIn(entry["name"], ("Test dataset", "Test dataset #2"))
