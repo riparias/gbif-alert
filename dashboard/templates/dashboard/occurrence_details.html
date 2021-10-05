@@ -17,6 +17,7 @@
                 <ul>
                     <li><b>GBIF Id: </b><a href="{{ occurrence.gbif_id|gbif_occurrence_url }}">{{ occurrence.gbif_id }}</a></li>
                     <li><b>Species: </b>{{ occurrence.species.name }}</li>
+                    <li><b>Source dataset: </b>{{ occurrence.source_dataset.name }}</li>
                     <li><b>Date: </b>{{ occurrence.date }}</li>
                     <li><b>Coordinates: </b> {{ occurrence.lonlat_4326_tuple }}</li>
                     <li>(More fields to come!)</li>
