@@ -17,8 +17,11 @@ class VectorTilesServerTests(TestCase):
         cls.second_species = Species.objects.all()[1]
 
         cls.di = DataImport.objects.create(start=timezone.now())
-        cls.dataset = Dataset.objects.create(
+        cls.first_dataset = Dataset.objects.create(
             name="Test dataset", gbif_id="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+        )
+        cls.second_dataset = Dataset.objects.create(
+            name="Test dataset #2", gbif_id="aaa7b334-ce0d-4e88-aaae-2e0c138d049f"
         )
 
         Occurrence.objects.create(
@@ -26,7 +29,7 @@ class VectorTilesServerTests(TestCase):
             species=cls.first_species,
             date=datetime.date.today(),
             data_import=cls.di,
-            source_dataset=cls.dataset,
+            source_dataset=cls.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
         Occurrence.objects.create(
@@ -34,7 +37,7 @@ class VectorTilesServerTests(TestCase):
             species=cls.second_species,
             date=datetime.date.today(),
             data_import=cls.di,
-            source_dataset=cls.dataset,
+            source_dataset=cls.second_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
@@ -140,6 +143,92 @@ class VectorTilesServerTests(TestCase):
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
 
+    def test_tiles_multiple_dataset_filters(self):
+        """Explicitely requesting all datasets give the same results than no filtering"""
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 2, "x": 2, "y": 1},
+        )
+        url_with_params = f"{base_url}?&datasetsIds[]={VectorTilesServerTests.first_dataset.pk}&datasetsIds[]={VectorTilesServerTests.second_dataset.pk}"
+        response = self.client.get(url_with_params)
+        decoded_tile_explicit_filters = mapbox_vector_tile.decode(response.content)
+
+        response = self.client.get(base_url)
+        decoded_tile_no_filters = mapbox_vector_tile.decode(response.content)
+
+        self.assertEqual(decoded_tile_no_filters, decoded_tile_explicit_filters)
+
+    def test_tiles_dataset_filter(self):
+        # Inspired by test_tiles_species_filter
+
+        # Multiple cases where only the occurrence in Andenne is visible
+        # (because we only ask for a the first dataset)
+
+        # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 2, "x": 2, "y": 1},
+        )
+        url_with_params = (
+            f"{base_url}?&datasetsIds[]={VectorTilesServerTests.first_dataset.pk}"
+        )
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(
+            len(decoded_tile["default"]["features"]), 1
+        )  # it has a single feature
+        the_feature = decoded_tile["default"]["features"][0]
+        self.assertEqual(
+            the_feature["properties"]["count"], 1
+        )  # Only one occurrence this time, due to the filter
+
+        # Case 2: A tile that covers an important part of Wallonia, including Andenne and Braine. Should have a single
+        # polygon this time
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 8, "x": 131, "y": 86},
+        )
+        url_with_params = (
+            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
+        )
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(
+            len(decoded_tile["default"]["features"]), 1
+        )  # it has a single feature
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["count"], 1
+        )
+
+        # Case 3: A zoomed tile with just Andenne and the close neighborhood, the hex should still be there
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 10, "x": 526, "y": 345},
+        )
+        url_with_params = (
+            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
+        )
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(
+            len(decoded_tile["default"]["features"]), 1
+        )  # it has a single feature
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["count"], 1
+        )
+
+        # Case 4: A zoomed time on Lillois, should be empty because of the filtering
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 17, "x": 67123, "y": 44083},
+        )
+        url_with_params = (
+            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
+        )
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(decoded_tile, {})
+
     def test_tiles_species_multiple_species_filters(self):
         # Test based on test_tiles_species_filter(self), but with two species explicitly requested
 
@@ -155,7 +244,7 @@ class VectorTilesServerTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.dataset,
+            source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
         Occurrence.objects.create(
@@ -163,7 +252,7 @@ class VectorTilesServerTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.dataset,
+            source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
         Occurrence.objects.create(
@@ -171,7 +260,7 @@ class VectorTilesServerTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.dataset,
+            source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
@@ -380,7 +469,7 @@ class VectorTilesServerTests(TestCase):
             species=Species.objects.all()[0],
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.dataset,
+            source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
@@ -412,7 +501,7 @@ class VectorTilesServerTests(TestCase):
             species=VectorTilesServerTests.second_species,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.dataset,
+            source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
@@ -441,7 +530,55 @@ class VectorTilesServerTests(TestCase):
             species=VectorTilesServerTests.second_species,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.dataset,
+            source_dataset=VectorTilesServerTests.first_dataset,
+            location=Point(5.095610, 50.48800, srid=4326),
+        )
+
+        response = self.client.get(
+            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            data={"zoom": 8, "speciesIds[]": VectorTilesServerTests.second_species.pk},
+        )
+
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 2)
+
+    def test_min_max_per_hexagon_with_dataset_filter(self):
+        # Add a second one in Lillois, but not next to the other one and another species
+        Occurrence.objects.create(
+            gbif_id=3,
+            species=VectorTilesServerTests.second_species,
+            date=datetime.date.today(),
+            data_import=VectorTilesServerTests.di,
+            source_dataset=VectorTilesServerTests.second_dataset,
+            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
+        )
+
+        response = self.client.get(
+            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            data={"zoom": 8, "datasetsIds[]": VectorTilesServerTests.first_dataset.pk},
+        )
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 1)
+
+        # Now we're looking for the second species. (We have 2 in Lillois and none in Andenne)
+        response = self.client.get(
+            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "speciesIds[]": [VectorTilesServerTests.second_species.pk],
+            },
+        )
+
+        self.assertEqual(response.json()["min"], 2)
+        self.assertEqual(response.json()["max"], 2)
+
+        # Now let's add another one in Andenne for species 2: whe should now have 1,2
+        Occurrence.objects.create(
+            gbif_id=4,
+            species=VectorTilesServerTests.second_species,
+            date=datetime.date.today(),
+            data_import=VectorTilesServerTests.di,
+            source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(5.095610, 50.48800, srid=4326),
         )
 
