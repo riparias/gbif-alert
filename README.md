@@ -23,6 +23,12 @@ Development version visible on [dev-alert.riparias.be](http://dev-alert.riparias
 - copy `local_settings.template.py` to `local_settings.py`, adjust those settings and point Django to `local_settings.py`
 - point Django to `local_settings`
 
+### Testing / typing
+This project provides tools to ensure the application and code stays in a decent state:
+
+- Standard Django tests (can be run with `$ ./manage.py test`), including Selenium-based testing for frontend feautres and high-level tests
+- Typing: can be checked with `$ mypy .`
+
 ### CI-CD
 
 We make use of GitHub Actions when possible.
@@ -33,7 +39,7 @@ They're currently used to:
 
 ### Dependencies
 
-Let's try to frequently update dependencies. Process is:
+We try to frequently update dependencies. Process is:
 
 - Backend: `$ poetry update`
 - Frontend: `$ npm-check -u`
