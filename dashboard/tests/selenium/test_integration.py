@@ -1,6 +1,6 @@
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium import webdriver  # type: ignore
+from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
 
 
 class MySeleniumTests(StaticLiveServerTestCase):
