@@ -49,7 +49,7 @@ jobs:
     - name: Install Django settings
       run: cp djangoproject/local_settings_ci.py djangoproject/local_settings.py
     - name: show chrome version (for debug)
-      run google-chrome --version
+      run: google-chrome --version
     - name: Run Django tests
       env:
         DJANGO_SETTINGS_MODULE: djangoproject.local_settings
