@@ -7,7 +7,12 @@ class MySeleniumTests(StaticLiveServerTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.selenium = webdriver.Chrome(ChromeDriverManager().install())
+        # Selenium setup
+        options = webdriver.ChromeOptions()
+        options.add_argument("--no-sandbox")
+        cls.selenium = webdriver.Chrome(
+            ChromeDriverManager().install(), options=options
+        )
         cls.selenium.implicitly_wait(10)
 
     @classmethod
