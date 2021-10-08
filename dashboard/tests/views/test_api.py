@@ -80,7 +80,7 @@ class ApiTests(TestCase):
                 found = True
         self.assertTrue(found)
 
-    def test_occurrences_json_ordering(self):
+    def test_occurrences_json_ordering_pk(self):
         base_url = reverse("dashboard:api-occurrences-json")
         response = self.client.get(f"{base_url}?limit=10&page_number=1&order=-pk")
         self.assertEqual(response.status_code, 200)
@@ -89,6 +89,38 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["results"][0]["id"], 3)
         self.assertEqual(json_data["results"][1]["id"], 2)
         self.assertEqual(json_data["results"][2]["id"], 1)
+
+    def test_occurrences_json_ordering_gbif_id(self):
+        base_url = reverse("dashboard:api-occurrences-json")
+        response = self.client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id")
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        # Check that it's sorted by GBIF id
+        self.assertEqual(json_data["results"][0]["gbifId"], "1")
+        self.assertEqual(json_data["results"][1]["gbifId"], "2")
+        self.assertEqual(json_data["results"][2]["gbifId"], "3")
+
+    def test_occurrences_json_ordering_species_name_asc(self):
+        base_url = reverse("dashboard:api-occurrences-json")
+        response = self.client.get(
+            f"{base_url}?limit=10&page_number=1&order=species__name"
+        )
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        # Check that it's sorted by species name (alphabetical order)
+        occ_species_names = [result["speciesName"] for result in json_data["results"]]
+        self.assertEqual(occ_species_names, sorted(occ_species_names))
+
+    def test_occurrences_json_ordering_species_name_desc(self):
+        base_url = reverse("dashboard:api-occurrences-json")
+        response = self.client.get(
+            f"{base_url}?limit=10&page_number=1&order=-species__name"
+        )
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        # Check that it's sorted by species name (alphabetical order)
+        occ_species_names = [result["speciesName"] for result in json_data["results"]]
+        self.assertEqual(occ_species_names[::-1], sorted(occ_species_names))
 
     def test_occurrences_json_pagination_base(self):
         base_url = reverse("dashboard:api-occurrences-json")
