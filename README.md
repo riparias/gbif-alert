@@ -31,6 +31,15 @@ They're currently used to:
 - Run Django tests and `mypy` on push
 - Deploy to dev server on push
 
+### Dependencies
+
+Let's try to frequently update dependencies. Process is:
+
+- Backend: `$ poetry update`
+- Frontend: `$ npm-check -u`
+- Run unit tests (+ a few manual checks?)
+- Commit changes (should include `package.json`, `package-lock.json` and `poetry lock` 
+
 ### Frontend-backend integration
 
 We use a hybrid approach such as described in https://www.saaspegasus.com/guides/modern-javascript-for-django-developers/integrating-javascript-pipeline/:
