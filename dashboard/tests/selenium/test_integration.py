@@ -10,6 +10,7 @@ class MySeleniumTests(StaticLiveServerTestCase):
         # Selenium setup
         options = webdriver.ChromeOptions()
         options.add_argument("--no-sandbox")
+        options.add_argument("--headless")
         cls.selenium = webdriver.Chrome(
             ChromeDriverManager().install(), options=options
         )
