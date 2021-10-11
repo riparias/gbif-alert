@@ -1,5 +1,10 @@
+from django.contrib.auth.models import AbstractUser
 from django.contrib.gis.db import models
 from django.utils.translation import ugettext_lazy as _
+
+
+class User(AbstractUser):
+    pass
 
 
 class Species(models.Model):

@@ -119,3 +119,5 @@ STATICFILES_DIRS: List[str] = [os.path.join(BASE_DIR, "static_global")]
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 RIPARIAS = {"TARGET_COUNTRY_CODE": "BE"}
+
+AUTH_USER_MODEL = "dashboard.User"
