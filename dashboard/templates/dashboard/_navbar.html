@@ -1,14 +1,41 @@
-<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #00a58d">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="#">LIFE RIPARIAS early alert</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:index' label='Explore occurrences' %}
-          {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:about' label='About' %}
-      </ul>
+<nav id="riparias-main-navbar" class="navbar navbar-expand-lg navbar-dark" style="background-color: #00a58d">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">LIFE RIPARIAS early alert</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto">
+                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:index' label='Explore occurrences' %}
+                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:about' label='About' %}
+            </ul>
+
+            <ul class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            Logged as {{ user.username }}
+                        </a>
+
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="#">User profile</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}">Log out</a></li>
+                        </ul>
+
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">Log in</a>
+                    </li>
+                {% endif %}
+                </li>
+            </ul>
+            </ul>
+        </div>
     </div>
-  </div>
 </nav>

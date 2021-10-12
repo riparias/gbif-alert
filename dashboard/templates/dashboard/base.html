@@ -12,7 +12,9 @@
         const ripariasConfig = {% js_config_object %}
     </script>
 
-    <title>RIPARIAS early alert</title>
+    <title>
+        {% block page_title %}RIPARIAS early alert{% endblock %}
+    </title>
   </head>
   <body>
     {% include "dashboard/_navbar.html" %}

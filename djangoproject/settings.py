@@ -121,3 +121,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 RIPARIAS = {"TARGET_COUNTRY_CODE": "BE"}
 
 AUTH_USER_MODEL = "dashboard.User"
+
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
