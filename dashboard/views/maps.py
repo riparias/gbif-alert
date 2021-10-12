@@ -137,7 +137,7 @@ def mvt_tiles_hexagon_grid_aggregated(request, zoom, x, y):
     )
 
 
-def occurrence_min_max_in_hex_grid(request):
+def occurrence_min_max_in_hex_grid_json(request):
     """Return the min, max occurrences count per hexagon, according to the zoom level. JSON format.
 
     This can be useful to dynamically color the grid according to the occurrence count

@@ -10,28 +10,41 @@ from dashboard.views.helpers import (
 )
 
 
-def species_list_json(request):
-    return JsonResponse(
-        [species.as_dict for species in Species.objects.all()], safe=False
-    )
+def _model_to_json_list(Model):
+    """Return a JSON list for the specific model
+
+    Model instances should have an as_dict property
+    """
+    return JsonResponse([entry.as_dict for entry in Model.objects.all()], safe=False)
 
 
-def datasets_list_json(request):
-    return JsonResponse(
-        [dataset.as_dict for dataset in Dataset.objects.all()], safe=False
-    )
+def species_list_json(_):
+    """A list of all species known to the system, in JSON format
+
+    Order: undetermined
+    """
+    return _model_to_json_list(Species)
 
 
-def occurrences_counter(request):
+def datasets_list_json(_):
+    """A list of all datasets known to the system, in JSON format
+
+    Order: undetermined
+    """
+    return _model_to_json_list(Dataset)
+
+
+def filtered_occurrences_counter_json(request):
     """Count the occurrences according to the filters received
 
-    filters: same format than other endpoints: getting occurrences, map tiles, ...
+    parameters:
+    - filters: same format than other endpoints: getting occurrences, map tiles, ...
     """
     qs = filtered_occurrences_from_request(request)
     return JsonResponse({"count": qs.count()})
 
 
-def occurrences_json(request):
+def filtered_occurrences_data_page_json(request):
     """Main endpoint to get paginated occurrences (data tables, ...)
 
     parameters:
@@ -101,8 +114,14 @@ def occurrences_json(request):
     )
 
 
-def occurrences_monthly_histogram_json(request):
-    """Give the (filtered) number of occurrences per month"""
+def filtered_occurrences_monthly_histogram_json(request):
+    """Give the (filtered) number of occurrences per month
+
+    parameters:
+    - filters: same format than other endpoints: getting occurrences, map tiles, ...
+
+    Output is chronologically ordered
+    """
     occurrences = filtered_occurrences_from_request(request)
 
     histogram_data = (

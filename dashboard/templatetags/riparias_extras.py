@@ -31,7 +31,7 @@ def js_config_object(context):
             .replace("2", "{x}")
             .replace("3", "{y}"),
             "occurrenceDetailsUrlTemplate": reverse(
-                "dashboard:occurrence-details", kwargs={"pk": 1}
+                "dashboard:page-occurrence-details", kwargs={"pk": 1}
             ).replace("1", "{pk}"),
             "minMaxOccPerHexagonUrl": reverse("dashboard:api-mvt-min-max-per-hexagon"),
             "occurrencesHistogramDataUrl": reverse(
