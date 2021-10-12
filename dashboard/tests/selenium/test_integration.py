@@ -97,8 +97,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
             "Your username and password didn't match. Please try again.",
         )
 
-        # Trying with correct credentials, we should be redirected to home page and properly
-        # logged
+        # Trying with correct credentials, we should be redirected to home page and properly logged
         username_field = self.selenium.find_element_by_id("id_username")
         password_field = self.selenium.find_element_by_id("id_password")
         username_field.clear()
@@ -108,19 +107,24 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         login_button = self.selenium.find_element_by_id("riparias-login-button")
         login_button.click()
         wait = WebDriverWait(self.selenium, 5)
+
         # Now, we should be redirected to the home page, and see the username in the navbar
         wait.until(EC.title_contains("Home"))
         navbar = self.selenium.find_element_by_id("riparias-main-navbar")
         logged_as_testuser = navbar.find_element_by_link_text("Logged as testuser")
+
         # We can click "logged as testuser" and get a menu with an option to log out
         logged_as_testuser.click()
         logout_link = self.selenium.find_element_by_link_text("Log out")
+
         # We can click the logout link
         logout_link.click()
         wait = WebDriverWait(self.selenium, 5)
+
         # Now, we're still on the home page
         wait.until(EC.title_contains("Home"))
         navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+
         # There's no more "Logged as testuser" message
         with self.assertRaises(NoSuchElementException):
             navbar.find_element_by_link_text("Logged as testuser")

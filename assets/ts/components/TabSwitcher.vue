@@ -4,8 +4,8 @@
       <a
         class="nav-link"
         :class="{
-          active: tabName == modelValue,
-          'bg-light': tabName == modelValue,
+          active: tabName === modelValue,
+          'bg-light': tabName === modelValue,
         }"
         href="#"
         @click="$emit('update:modelValue', tabName)"
