@@ -21,8 +21,12 @@ def js_config_object(context):
         "apiEndpoints": {
             "speciesListUrl": reverse("dashboard:api-species-list-json"),
             "datasetsListUrl": reverse("dashboard:api-datasets-list-json"),
-            "occurrencesCounterUrl": reverse("dashboard:api-occurrences-counter"),
-            "occurrencesJsonUrl": reverse("dashboard:api-occurrences-json"),
+            "occurrencesCounterUrl": reverse(
+                "dashboard:api-filtered-occurrences-counter"
+            ),
+            "occurrencesJsonUrl": reverse(
+                "dashboard:api-filtered-occurrences-data-page"
+            ),
             "tileServerUrlTemplate": reverse(
                 "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
                 kwargs={"zoom": 1, "x": 2, "y": 3},
@@ -35,7 +39,7 @@ def js_config_object(context):
             ).replace("1", "{pk}"),
             "minMaxOccPerHexagonUrl": reverse("dashboard:api-mvt-min-max-per-hexagon"),
             "occurrencesHistogramDataUrl": reverse(
-                "dashboard:api-occurrences-monthly-histogram"
+                "dashboard:api-filtered-occurrences-monthly-histogram"
             ),
         },
     }

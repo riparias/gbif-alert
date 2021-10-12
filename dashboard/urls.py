@@ -19,17 +19,17 @@ urlpatterns = [
     path(
         "api/filtered_occurrences/counter",
         views.filtered_occurrences_counter_json,
-        name="api-occurrences-counter",
+        name="api-filtered-occurrences-counter",
     ),
     path(
         "api/filtered_occurrences/monthly_histogram",
         views.filtered_occurrences_monthly_histogram_json,
-        name="api-occurrences-monthly-histogram",
+        name="api-filtered-occurrences-monthly-histogram",
     ),
     path(
         "api/filtered_occurrences/data_page",
         views.filtered_occurrences_data_page_json,
-        name="api-occurrences-json",
+        name="api-filtered-occurrences-data-page",
     ),
     # Maps
     path(

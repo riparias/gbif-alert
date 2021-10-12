@@ -56,7 +56,7 @@ class ApiTests(TestCase):
             source_dataset=ApiTests.first_dataset,
             location=None,
         )
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -64,7 +64,7 @@ class ApiTests(TestCase):
 
     def test_occurrences_json_basic_no_filters(self):
         """Basic tests for the endpoint, no filters used"""
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -81,7 +81,7 @@ class ApiTests(TestCase):
         self.assertTrue(found)
 
     def test_occurrences_json_ordering_pk(self):
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1&order=-pk")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -91,7 +91,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["results"][2]["id"], 1)
 
     def test_occurrences_json_ordering_gbif_id(self):
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -101,7 +101,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["results"][2]["gbifId"], "3")
 
     def test_occurrences_json_ordering_species_name_asc(self):
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         response = self.client.get(
             f"{base_url}?limit=10&page_number=1&order=species__name"
         )
@@ -112,7 +112,7 @@ class ApiTests(TestCase):
         self.assertEqual(occ_species_names, sorted(occ_species_names))
 
     def test_occurrences_json_ordering_species_name_desc(self):
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         response = self.client.get(
             f"{base_url}?limit=10&page_number=1&order=-species__name"
         )
@@ -123,7 +123,7 @@ class ApiTests(TestCase):
         self.assertEqual(occ_species_names[::-1], sorted(occ_species_names))
 
     def test_occurrences_json_pagination_base(self):
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
 
         response = self.client.get(f"{base_url}?limit=2&page_number=1")
         self.assertEqual(response.status_code, 200)
@@ -145,7 +145,7 @@ class ApiTests(TestCase):
 
     def test_occurrences_json_pagination_greater_than_max(self):
         """If the requested page number is greater than the number of pages, it returns the last page"""
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         response = self.client.get(f"{base_url}?limit=2&page_number=3")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -157,7 +157,7 @@ class ApiTests(TestCase):
 
     def test_occurrences_json_pagination_negative(self):
         """If the requested page number is negative, it returns the last page"""
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         response = self.client.get(f"{base_url}?limit=2&page_number=-5")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -168,7 +168,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["pageNumber"], 2)
 
     def test_occurrences_json_min_date_filter(self):
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         response = self.client.get(
             f"{base_url}?limit=10&page_number=1&startDate={datetime.date.today().strftime('%Y-%m-%d')}"
         )
@@ -178,7 +178,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["results"][0]["gbifId"], "3")
 
     def test_occurrences_json_max_date_filter(self):
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
         response = self.client.get(
             f"{base_url}?limit=10&page_number=1&endDate={yesterday.strftime('%Y-%m-%d')}"
@@ -190,7 +190,7 @@ class ApiTests(TestCase):
         self.assertIn(json_data["results"][1]["gbifId"], ["1", "2"])
 
     def test_occurrences_json_species_filter(self):
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -199,7 +199,7 @@ class ApiTests(TestCase):
         self.assertIn(json_data["results"][1]["gbifId"], ["2", "3"])
 
     def test_occurrences_json_dataset_filter(self):
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&datasetsIds[]={ApiTests.first_dataset.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -211,7 +211,7 @@ class ApiTests(TestCase):
         """occurrences_json accept to filter per multiple datasets
 
         Case 1: Explicitly requests all datasets. Results should be the same than no filter"""
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
 
         json_data_all_species = self.client.get(
             f"{base_url}?limit=10&page_number=1&datasetsIds[]={ApiTests.first_dataset.pk}&datasetsIds[]={ApiTests.second_dataset.pk}"
@@ -225,7 +225,7 @@ class ApiTests(TestCase):
         """occurrences_json accept to filter per multiple species
 
         Case 1: Explicitly requests all species. Results should be the same than no filter"""
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
 
         json_data_all_species = self.client.get(
             f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&speciesIds[]={ApiTests.first_species.pk}"
@@ -255,7 +255,7 @@ class ApiTests(TestCase):
             source_dataset=ApiTests.first_dataset,
         )
 
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
 
         json_data = self.client.get(
             f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
@@ -281,7 +281,7 @@ class ApiTests(TestCase):
             data_import=ApiTests.di,
             source_dataset=third_dataset,
         )
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         json_data = self.client.get(
             f"{base_url}?limit=10&page_number=1&datasetsIds[]={ApiTests.first_dataset.pk}&datasetsIds[]={third_dataset.pk}"
         ).json()
@@ -293,7 +293,7 @@ class ApiTests(TestCase):
             )
 
     def test_occurrences_json_combined_filters(self):
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={yesterday.strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
@@ -303,7 +303,7 @@ class ApiTests(TestCase):
 
     def test_occurrences_json_combined_filters_case2(self):
         # Starting from test_occurrences_json_combined_filters, we add one dataset filter that won't change the results
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={yesterday.strftime('%Y-%m-%d')}&datasetsIds[]={ApiTests.second_dataset.pk}"
         response = self.client.get(url_with_params)
@@ -313,7 +313,7 @@ class ApiTests(TestCase):
 
     def test_occurrences_json_combined_filters_case3(self):
         # Starting from test_occurrences_json_combined_filters, we add one dataset filter => the filter combination now returns 0 results
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={yesterday.strftime('%Y-%m-%d')}&datasetsIds[]={ApiTests.first_dataset.pk}"
         response = self.client.get(url_with_params)
@@ -321,7 +321,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["totalResultsCount"], 0)
 
     def test_occurrences_json_no_results(self):
-        base_url = reverse("dashboard:api-occurrences-json")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.first_species.pk}&startDate={datetime.date.today().strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -329,13 +329,15 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["results"], [])
 
     def test_occurrences_counter_no_filters(self):
-        response = self.client.get(reverse("dashboard:api-occurrences-counter"))
+        response = self.client.get(
+            reverse("dashboard:api-filtered-occurrences-counter")
+        )
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         self.assertEqual(json_data["count"], 3)
 
     def test_occurrences_counter_species_filters(self):
-        base_url = reverse("dashboard:api-occurrences-counter")
+        base_url = reverse("dashboard:api-filtered-occurrences-counter")
         url_with_params = f"{base_url}?speciesIds[]={ApiTests.second_species.pk}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -344,7 +346,7 @@ class ApiTests(TestCase):
 
     def test_occurrence_counter_multiple_species_filter_case1(self):
         """We explicitly request all species: result should be identical to no species filtering"""
-        base_url = reverse("dashboard:api-occurrences-counter")
+        base_url = reverse("dashboard:api-filtered-occurrences-counter")
         json_data_explicit = self.client.get(
             f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&speciesIds[]={ApiTests.first_species.pk}"
         ).json()
@@ -382,14 +384,14 @@ class ApiTests(TestCase):
             source_dataset=ApiTests.first_dataset,
         )
 
-        base_url = reverse("dashboard:api-occurrences-counter")
+        base_url = reverse("dashboard:api-filtered-occurrences-counter")
         json_data = self.client.get(
             f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&speciesIds[]={species_tetraodon.pk}"
         ).json()
         self.assertEqual(json_data["count"], 5)
 
     def test_occurrences_counter_min_date_filter(self):
-        base_url = reverse("dashboard:api-occurrences-counter")
+        base_url = reverse("dashboard:api-filtered-occurrences-counter")
         url_with_params = (
             f"{base_url}?startDate={datetime.date.today().strftime('%Y-%m-%d')}"
         )
@@ -399,7 +401,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["count"], 1)
 
     def test_occurrences_counter_max_date_filter(self):
-        base_url = reverse("dashboard:api-occurrences-counter")
+        base_url = reverse("dashboard:api-filtered-occurrences-counter")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
         url_with_params = f"{base_url}?endDate={yesterday.strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
@@ -409,7 +411,7 @@ class ApiTests(TestCase):
 
     def test_occurences_counter_combined_filters(self):
         """Counter is correct when filtering by species and end date"""
-        base_url = reverse("dashboard:api-occurrences-counter")
+        base_url = reverse("dashboard:api-filtered-occurrences-counter")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
         url_with_params = f"{base_url}?endDate={yesterday.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}"
         response = self.client.get(url_with_params)

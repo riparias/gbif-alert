@@ -18,7 +18,7 @@ class WebPagesTests(TestCase):
 
     def test_occurrence_details_not_found(self):
         response = self.client.get(
-            reverse("dashboard:occurrence-details", kwargs={"pk": 1000})
+            reverse("dashboard:page-occurrence-details", kwargs={"pk": 1000})
         )
         self.assertEqual(response.status_code, 404)
 
@@ -35,7 +35,7 @@ class WebPagesTests(TestCase):
         )
 
         response = self.client.get(
-            reverse("dashboard:occurrence-details", kwargs={"pk": occ.pk})
+            reverse("dashboard:page-occurrence-details", kwargs={"pk": occ.pk})
         )
         self.assertEqual(response.status_code, 200)
 
