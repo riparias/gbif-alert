@@ -1,3 +1,11 @@
+"""API endpoints are implemented in this file, except maps-related endpoints (see maps.py)
+
+All endpoints that deal with filtered occurrences takes the following GET parameters (all optional, can be combined at will):
+    - speciesIds[]: one or several species IDs. Example query string: ?speciesIds[]=1&speciesIds[]=2
+    - datasetsIds[]: one or several dataset IDs. Example query string: ?datasetsIds[]=1&datasetsIds[]=2
+    - startDate: start date (inclusive), in '%Y-%m-%d' format. Example: 2021-07-31, 1981-08-02
+    - endDate: end date (inclusive), in '%Y-%m-%d' format. Example: 2021-07-31, 1981-08-02
+"""
 from django.core.paginator import Paginator
 from django.db.models import Count
 from django.db.models.functions import TruncMonth

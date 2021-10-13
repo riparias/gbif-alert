@@ -7,6 +7,9 @@ from django.utils import timezone
 
 from dashboard.models import Occurrence, Species, DataImport, Dataset
 
+SEPTEMBER_13_2021 = datetime.datetime.strptime("2021-09-13", "%Y-%m-%d").date()
+OCTOBER_8_2021 = datetime.datetime.strptime("2021-10-08", "%Y-%m-%d").date()
+
 
 class ApiTests(TestCase):
     @classmethod
@@ -24,7 +27,7 @@ class ApiTests(TestCase):
         Occurrence.objects.create(
             gbif_id=1,
             species=cls.first_species,
-            date=datetime.date.today() - datetime.timedelta(days=1),
+            date=SEPTEMBER_13_2021,
             data_import=cls.di,
             source_dataset=cls.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
@@ -32,7 +35,7 @@ class ApiTests(TestCase):
         Occurrence.objects.create(
             gbif_id=2,
             species=cls.second_species,
-            date=datetime.date.today() - datetime.timedelta(days=1),
+            date=SEPTEMBER_13_2021,
             data_import=cls.di,
             source_dataset=cls.second_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
@@ -40,7 +43,7 @@ class ApiTests(TestCase):
         Occurrence.objects.create(
             gbif_id=3,
             species=cls.second_species,
-            date=datetime.date.today(),
+            date=OCTOBER_8_2021,
             data_import=cls.di,
             source_dataset=cls.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
@@ -170,7 +173,7 @@ class ApiTests(TestCase):
     def test_occurrences_json_min_date_filter(self):
         base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         response = self.client.get(
-            f"{base_url}?limit=10&page_number=1&startDate={datetime.date.today().strftime('%Y-%m-%d')}"
+            f"{base_url}?limit=10&page_number=1&startDate={OCTOBER_8_2021.strftime('%Y-%m-%d')}"
         )
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -181,7 +184,7 @@ class ApiTests(TestCase):
         base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
         response = self.client.get(
-            f"{base_url}?limit=10&page_number=1&endDate={yesterday.strftime('%Y-%m-%d')}"
+            f"{base_url}?limit=10&page_number=1&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}"
         )
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -295,7 +298,7 @@ class ApiTests(TestCase):
     def test_occurrences_json_combined_filters(self):
         base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={yesterday.strftime('%Y-%m-%d')}"
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 1)
@@ -315,14 +318,14 @@ class ApiTests(TestCase):
         # Starting from test_occurrences_json_combined_filters, we add one dataset filter => the filter combination now returns 0 results
         base_url = reverse("dashboard:api-filtered-occurrences-data-page")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={yesterday.strftime('%Y-%m-%d')}&datasetsIds[]={ApiTests.first_dataset.pk}"
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&datasetsIds[]={ApiTests.first_dataset.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 0)
 
     def test_occurrences_json_no_results(self):
         base_url = reverse("dashboard:api-filtered-occurrences-data-page")
-        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.first_species.pk}&startDate={datetime.date.today().strftime('%Y-%m-%d')}"
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.first_species.pk}&startDate={OCTOBER_8_2021.strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 0)
@@ -392,9 +395,7 @@ class ApiTests(TestCase):
 
     def test_occurrences_counter_min_date_filter(self):
         base_url = reverse("dashboard:api-filtered-occurrences-counter")
-        url_with_params = (
-            f"{base_url}?startDate={datetime.date.today().strftime('%Y-%m-%d')}"
-        )
+        url_with_params = f"{base_url}?startDate={OCTOBER_8_2021.strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -402,8 +403,7 @@ class ApiTests(TestCase):
 
     def test_occurrences_counter_max_date_filter(self):
         base_url = reverse("dashboard:api-filtered-occurrences-counter")
-        yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        url_with_params = f"{base_url}?endDate={yesterday.strftime('%Y-%m-%d')}"
+        url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -412,22 +412,21 @@ class ApiTests(TestCase):
     def test_occurences_counter_combined_filters(self):
         """Counter is correct when filtering by species and end date"""
         base_url = reverse("dashboard:api-filtered-occurrences-counter")
-        yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        url_with_params = f"{base_url}?endDate={yesterday.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}"
+        url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         self.assertEqual(json_data["count"], 1)
 
         # Case 2: we also add a dataset filter (which doesn't change the number of occurrences)
-        url_with_params = f"{base_url}?endDate={yesterday.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&datasetsIds[]={ApiTests.second_dataset.pk}"
+        url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&datasetsIds[]={ApiTests.second_dataset.pk}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         self.assertEqual(json_data["count"], 1)
 
         # Case 3: we add another one, which brings the counter to zero
-        url_with_params = f"{base_url}?endDate={yesterday.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&datasetsIds[]={ApiTests.first_dataset.pk}"
+        url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&datasetsIds[]={ApiTests.first_dataset.pk}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -466,3 +465,86 @@ class ApiTests(TestCase):
         json_data[0]["gbifKey"]
         for entry in json_data:
             self.assertIn(entry["name"], ("Test dataset", "Test dataset #2"))
+
+    def test_filtered_occurrences_monthly_histogram_json_no_filters(self):
+        # case 1: no filters
+        response = self.client.get(
+            reverse("dashboard:api-filtered-occurrences-monthly-histogram")
+        )
+        self.assertEqual(response.status_code, 200)
+
+        self.assertJSONEqual(
+            response.content.decode("utf-8"),
+            [
+                {"year": 2021, "month": 9, "count": 2},
+                {"year": 2021, "month": 10, "count": 1},
+            ],
+        )
+
+    def test_filtered_occurrences_monthly_histogram_json_end_date_filter(self):
+        base_url = reverse("dashboard:api-filtered-occurrences-monthly-histogram")
+        response = self.client.get(f"{base_url}?endDate=2021-10-01")
+        self.assertEqual(response.status_code, 200)
+
+        self.assertJSONEqual(
+            response.content.decode("utf-8"),
+            [
+                {"year": 2021, "month": 9, "count": 2},
+            ],
+        )
+
+    def test_filtered_occurrences_monthly_histogram_json_start_date_filter(self):
+        base_url = reverse("dashboard:api-filtered-occurrences-monthly-histogram")
+        response = self.client.get(f"{base_url}?startDate=2021-10-01")
+        self.assertEqual(response.status_code, 200)
+
+        self.assertJSONEqual(
+            response.content.decode("utf-8"),
+            [
+                {"year": 2021, "month": 10, "count": 1},
+            ],
+        )
+
+    def test_filtered_occurrences_monthly_histogram_json_species_filter(self):
+        base_url = reverse("dashboard:api-filtered-occurrences-monthly-histogram")
+        response = self.client.get(
+            f"{base_url}?speciesIds[]={ApiTests.second_species.pk}"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        self.assertJSONEqual(
+            response.content.decode("utf-8"),
+            [
+                {"year": 2021, "month": 9, "count": 1},
+                {"year": 2021, "month": 10, "count": 1},
+            ],
+        )
+
+    def test_filtered_occurrences_monthly_histogram_json_combined_filters(self):
+        base_url = reverse("dashboard:api-filtered-occurrences-monthly-histogram")
+        response = self.client.get(
+            f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&endDate=2021-10-01"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        self.assertJSONEqual(
+            response.content.decode("utf-8"),
+            [
+                {"year": 2021, "month": 9, "count": 1},
+            ],
+        )
+
+    def test_filtered_occurrences_monthly_histogram_json_dataset_filters(self):
+        base_url = reverse("dashboard:api-filtered-occurrences-monthly-histogram")
+        response = self.client.get(
+            f"{base_url}?datasetsIds[]={ApiTests.first_dataset.pk}"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        self.assertJSONEqual(
+            response.content.decode("utf-8"),
+            [
+                {"year": 2021, "month": 9, "count": 1},
+                {"year": 2021, "month": 10, "count": 1},
+            ],
+        )
