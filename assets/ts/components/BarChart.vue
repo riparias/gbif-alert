@@ -9,7 +9,10 @@
     >
       <rect
         class="riparias-bar"
-        v-for="barDataEntry in barData"
+        v-for="(barDataEntry, index) in barData"
+        :class="{
+          selected: index >= rangeStartIndex && index <= rangeEndIndex,
+        }"
         :key="barDataEntry.yearMonth"
         :x="xScale(barDataEntry.yearMonth)"
         :y="yScale(barDataEntry.count)"
@@ -21,6 +24,10 @@
 
       <g :transform="`translate(0, ${svgInnerHeight})`">
         <g v-xaxis="{ scale: xScale, ticks: numberOfXTicks }" />
+        <range-slider
+          :startX="xScale(rangeStart)"
+          :endX="xScale(rangeEnd)"
+        ></range-slider>
       </g>
     </g>
   </svg>
@@ -32,9 +39,11 @@ import { scaleLinear, scaleBand } from "d3-scale";
 import { max } from "d3-array";
 import { PreparedHistogramDataEntry } from "../interfaces";
 import { axisBottom, axisLeft, ScaleBand, select } from "d3";
+import RangeSlider from "./RangeSlider.vue";
 
 export default defineComponent({
   name: "BarChart",
+  components: { RangeSlider },
   props: {
     barData: {
       // Data must be sorted before being passed to the chart
@@ -58,6 +67,8 @@ export default defineComponent({
         width: 1296,
         height: 220,
       },
+      rangeStart: "1981-2",
+      rangeEnd: "2013-7",
     };
   },
   directives: {
@@ -84,7 +95,18 @@ export default defineComponent({
       },
     },
   },
+
   computed: {
+    rangeStartIndex(): number {
+      return this.barData.findIndex((e) => {
+        return e.yearMonth === this.rangeStart;
+      });
+    },
+    rangeEndIndex(): number {
+      return this.barData.findIndex((e) => {
+        return e.yearMonth === this.rangeEnd;
+      });
+    },
     dataMax(): number {
       const maxVal = max(this.barData, (d: PreparedHistogramDataEntry) => {
         return d.count;
@@ -127,7 +149,11 @@ export default defineComponent({
 <style scoped>
 .riparias-bar {
   fill: #00a58d;
-  opacity: 0.6;
+  opacity: 0.3;
+}
+
+.selected {
+  fill: red !important;
 }
 
 .riparias-bar:hover {
