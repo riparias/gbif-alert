@@ -52,3 +52,9 @@ export interface JsonOccurrence {
   speciesName: string;
   datasetName: string;
 }
+
+export interface PreparedHistogramDataEntry {
+  // Derived from HistogramDataEntry, the year and month are aggregated to a string for the bar chart
+  yearMonth: string;
+  count: number;
+}

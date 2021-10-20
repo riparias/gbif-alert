@@ -9,6 +9,19 @@ from dashboard.models import Occurrence, Species, DataImport, Dataset
 
 
 class WebPagesTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.occ = Occurrence.objects.create(
+            gbif_id=1,
+            species=Species.objects.all()[0],
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            data_import=DataImport.objects.create(start=timezone.now()),
+            source_dataset=Dataset.objects.create(
+                name="Test dataset", gbif_id="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+            ),
+            location=Point(5.09513, 50.48941, srid=4326),  # Andenne
+        )
+
     def test_homepage(self):
         """There's a Bootstrap-powered page at /"""
         response = self.client.get("/")
@@ -23,19 +36,11 @@ class WebPagesTests(TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_occurrence_details(self):
-        occ = Occurrence.objects.create(
-            gbif_id=1,
-            species=Species.objects.all()[0],
-            date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=DataImport.objects.create(start=timezone.now()),
-            source_dataset=Dataset.objects.create(
-                name="Test dataset", gbif_id="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
-            ),
-            location=Point(5.09513, 50.48941, srid=4326),  # Andenne
-        )
-
         response = self.client.get(
-            reverse("dashboard:page-occurrence-details", kwargs={"pk": occ.pk})
+            reverse(
+                "dashboard:page-occurrence-details",
+                kwargs={"pk": self.__class__.occ.pk},
+            )
         )
         self.assertEqual(response.status_code, 200)
 
