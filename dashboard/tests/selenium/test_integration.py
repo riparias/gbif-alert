@@ -8,6 +8,13 @@ from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
 
 
 class RipariasSeleniumTests(StaticLiveServerTestCase):
+    def setUp(self):
+        super().setUp()
+        # Create test users
+        User = get_user_model()
+        User.objects.create_user(username="testuser", password="12345")
+        User.objects.create_superuser(username="adminuser", password="67890")
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -20,9 +27,6 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
             ChromeDriverManager().install(), options=options
         )
         cls.selenium.implicitly_wait(5)
-        # Create a test user
-        User = get_user_model()
-        User.objects.create_user(username="testuser", password="12345")
 
     @classmethod
     def tearDownClass(cls):
@@ -32,6 +36,56 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
     def test_title_in_page(self):
         self.selenium.get(self.live_server_url)
         self.assertIn("LIFE RIPARIAS early alert", self.selenium.page_source)
+
+    def test_normal_user_has_no_admin_access(self):
+        # Login as a normal user
+        self.selenium.get(self.live_server_url + "/accounts/login/")
+        username_field = self.selenium.find_element_by_id("id_username")
+        password_field = self.selenium.find_element_by_id("id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("testuser")
+        password_field.send_keys("12345")
+        login_button = self.selenium.find_element_by_id("riparias-login-button")
+        login_button.click()
+        WebDriverWait(self.selenium, 5)
+
+        # There's no "Admin panel" link
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        navbar.find_element_by_link_text("Logged as testuser").click()
+        with self.assertRaises(NoSuchElementException):
+            navbar.find_element_by_link_text("Admin panel")
+
+        # Trying to access the "/admin" directly is not possible neither
+        self.selenium.get(self.live_server_url + "/admin")
+        self.assertIn("admin/login", self.selenium.current_url)
+        msg = "You are authenticated as testuser, but are not authorized to access this page. Would you like to login to a different account?"
+        self.assertIn(msg, self.selenium.page_source)
+
+    def test_superuser_has_admin_access(self):
+        # Login as a superuser
+        self.selenium.get(self.live_server_url + "/accounts/login/")
+        username_field = self.selenium.find_element_by_id("id_username")
+        password_field = self.selenium.find_element_by_id("id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("adminuser")
+        password_field.send_keys("67890")
+        login_button = self.selenium.find_element_by_id("riparias-login-button")
+        login_button.click()
+        WebDriverWait(self.selenium, 5)
+
+        # There's an "Admin panel" link
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        navbar.find_element_by_link_text(
+            "Logged as adminuser"
+        ).click()  # We need to open the menu first
+        admin_link = navbar.find_element_by_link_text("Admin panel")
+        admin_link.click()
+        WebDriverWait(self.selenium, 5)
+
+        self.assertTrue(self.selenium.current_url.endswith("/admin/"))
+        self.assertEqual(self.selenium.title, "Site administration | Django site admin")
 
     def test_login_logout_scenario(self):
         # We are initially not logged in and can see a "log in" link
