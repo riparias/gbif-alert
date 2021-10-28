@@ -33,7 +33,10 @@
                     </li>
                 {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'login' %}">Log in</a>
+                        <a class="nav-link" href="{% url 'login' %}">Sign in</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard:page-signup' %}">Sign up</a>
                     </li>
                 {% endif %}
                 </li>
