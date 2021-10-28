@@ -52,7 +52,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
 
         # There's no "Admin panel" link
         navbar = self.selenium.find_element_by_id("riparias-main-navbar")
-        navbar.find_element_by_link_text("Logged as testuser").click()
+        navbar.find_element_by_link_text("testuser").click()
         with self.assertRaises(NoSuchElementException):
             navbar.find_element_by_link_text("Admin panel")
 
@@ -78,7 +78,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         # There's an "Admin panel" link
         navbar = self.selenium.find_element_by_id("riparias-main-navbar")
         navbar.find_element_by_link_text(
-            "Logged as adminuser"
+            "adminuser"
         ).click()  # We need to open the menu first
         admin_link = navbar.find_element_by_link_text("Admin panel")
         admin_link.click()
@@ -87,18 +87,18 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         self.assertTrue(self.selenium.current_url.endswith("/admin/"))
         self.assertEqual(self.selenium.title, "Site administration | Django site admin")
 
-    def test_login_logout_scenario(self):
+    def test_signin_signout_scenario(self):
         # We are initially not logged in and can see a "log in" link
         self.selenium.get(self.live_server_url)
         navbar = self.selenium.find_element_by_id("riparias-main-navbar")
-        login_link = navbar.find_element_by_link_text("Log in")
+        signin_link = navbar.find_element_by_link_text("Sign in")
 
         # Let's click on it
-        login_link.click()
+        signin_link.click()
 
         # We are redirected to a "Log in" page
         wait = WebDriverWait(self.selenium, 5)
-        wait.until(EC.title_contains("Log in"))
+        wait.until(EC.title_contains("Sign in"))
 
         # We've never submitted the form, so we shouldn't have any error message
         with self.assertRaises(NoSuchElementException):
@@ -123,7 +123,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
 
         # We're still on the same page, with an error message
         wait = WebDriverWait(self.selenium, 5)
-        wait.until(EC.title_contains("Log in"))
+        wait.until(EC.title_contains("Sign in"))
         error_message = self.selenium.find_element_by_id(
             "riparias-invalid-credentials-message"
         )
@@ -142,7 +142,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         login_button = self.selenium.find_element_by_id("riparias-login-button")
         login_button.click()
         wait = WebDriverWait(self.selenium, 5)
-        wait.until(EC.title_contains("Log in"))
+        wait.until(EC.title_contains("Sign in"))
         error_message = self.selenium.find_element_by_id(
             "riparias-invalid-credentials-message"
         )
@@ -165,14 +165,14 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         # Now, we should be redirected to the home page, and see the username in the navbar
         wait.until(EC.title_contains("Home"))
         navbar = self.selenium.find_element_by_id("riparias-main-navbar")
-        logged_as_testuser = navbar.find_element_by_link_text("Logged as testuser")
+        logged_as_testuser = navbar.find_element_by_link_text("testuser")
 
-        # We can click "logged as testuser" and get a menu with an option to log out
+        # We can click "logged as testuser" and get a menu with an option to sign out
         logged_as_testuser.click()
-        logout_link = self.selenium.find_element_by_link_text("Log out")
+        signout_link = self.selenium.find_element_by_link_text("Sign out")
 
         # We can click the logout link
-        logout_link.click()
+        signout_link.click()
         wait = WebDriverWait(self.selenium, 5)
 
         # Now, we're still on the home page
@@ -183,7 +183,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         with self.assertRaises(NoSuchElementException):
             navbar.find_element_by_link_text("Logged as testuser")
         # There's a log in link again
-        navbar.find_element_by_link_text("Log in")
+        navbar.find_element_by_link_text("Sign in")
 
     def test_lost_password_scenario(self):
         # In test_login_logout_scenario, we make sure there is a link on login page to get a password back

@@ -16,6 +16,8 @@ python-dwca-reader = "^0.15.0"
 jinjasql = "^0.1.8"
 selenium = "^3.141.0"
 webdriver-manager = "^3.4.2"
+django-crispy-forms = "^1.13.0"
+crispy-bootstrap5 = "^0.6"
 
 [tool.poetry.dev-dependencies]
 black = "^21.8b0"

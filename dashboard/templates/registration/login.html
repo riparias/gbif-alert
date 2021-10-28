@@ -1,12 +1,12 @@
 {% extends "dashboard/base.html" %}
 
-{% block page_title %}Log in - RIPARIAS early alert{% endblock %}
+{% block page_title %}Sign in - RIPARIAS early alert{% endblock %}
 
 {% block after_navbar %}
-    <div class="container my-3">
+    <div class="container">
         <div class="row">
             <div class="col">
-
+                <h1>Sign in</h1>
                 {% if form.errors %}
                     <div id="riparias-invalid-credentials-message" class="alert alert-danger">Your username and password didn't match. Please try again.</div>
                 {% endif %}
@@ -32,13 +32,10 @@
                             <input type="password" class="form-control" name="password" autocomplete="current-password" required id="id_password">
                         </div>
 
-
-                    <button id="riparias-login-button" type="submit" class="btn btn-primary" value="login">Log in</button>
+                    <button id="riparias-login-button" type="submit" class="btn btn-primary btn-sm" value="login">Sign in</button>
+                    - <a href="{% url 'password_reset' %}">Lost password?</a>
                     <input type="hidden" name="next" value="{{ next }}">
                 </form>
-
-                {# Assumes you setup the password_reset view in your URLconf #}
-                <p><a href="{% url 'password_reset' %}">Lost password?</a></p>
             </div>
         </div>
     </div>
