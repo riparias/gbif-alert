@@ -70,3 +70,19 @@ imports are deleted.
 The data import history is recorded with the DataImport model, and shown to the user on the "about" page.
 
 => For a given occurrence, Django-managed IDs are therefore not stable, but the GBIF ids fortunately are.
+
+### Users
+
+The web application handle three categories of users:
+
+- Anonymous users can access the website and visualize the occurrence data via the dashboard. For Django, they are 
+  unauthenticated.
+- Registered "normal" users can do all what can anonymous users can do + create and configure their alerts. Those users can 
+  sign up directly thanks to a specific form (an e-mail address is required because it is needed for e-mail 
+  notifications). For Django, they are regular users without any specific group or permission (**not** 
+  staff, **not** superuser)
+- Admins can do all that registered users can do + access the admin interface to configure the web application. For 
+  Django they have the **staff** and **superuser** flags set. Admins can be created by different means, for example 
+  being upgraded to this status by an existing Admin after registering as a normal user, or via Django's 
+  `createsuperuser` management command.
+  
