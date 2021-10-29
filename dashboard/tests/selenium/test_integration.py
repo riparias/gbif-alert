@@ -22,7 +22,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         options = webdriver.ChromeOptions()
         options.add_argument("--no-sandbox")
         options.add_argument("--headless")
-        options.add_argument("--window-size=1280,800")
+        options.add_argument("--window-size=2560,1440")
         cls.selenium = webdriver.Chrome(
             ChromeDriverManager().install(), options=options
         )
@@ -33,7 +33,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         cls.selenium.quit()
         super().tearDownClass()
 
-    def test_title_in_page(self):
+    def test_title_in_index_page(self):
         self.selenium.get(self.live_server_url)
         self.assertIn("LIFE RIPARIAS early alert", self.selenium.page_source)
 
@@ -184,6 +184,281 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
             navbar.find_element_by_link_text("Logged as testuser")
         # There's a log in link again
         navbar.find_element_by_link_text("Sign in")
+
+    def test_signup_scenario_existing_username(self):
+        User = get_user_model()
+        number_users_before = User.objects.count()
+
+        # We are initially not logged in and can see a "log in" link
+        self.selenium.get(self.live_server_url)
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        signup_link = navbar.find_element_by_link_text("Sign up")
+
+        # Let's click on it
+        signup_link.click()
+
+        # We are redirected to a "Log in" page
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Sign up"))
+
+        # Fill in the mandatory fields
+        username_field = self.selenium.find_element_by_id("id_username")
+        email_field = self.selenium.find_element_by_id("id_email")
+        password1_field = self.selenium.find_element_by_id("id_password1")
+        password2_field = self.selenium.find_element_by_id("id_password2")
+        signup_button = self.selenium.find_element_by_id("riparias-signup-button")
+
+        username_field.clear()
+        username_field.send_keys("testuser")
+
+        email_field.clear()
+        email_field.send_keys("aaaa@bbb.com")
+
+        password1_field.clear()
+        password1_field.send_keys("FSDFSD981ç!")
+
+        password2_field.clear()
+        password2_field.send_keys("FSDFSD981ç!")
+
+        signup_button.click()
+
+        # We are still on the same page
+        wait.until(EC.title_contains("Sign up"))
+        # With a proper error message
+        self.assertIn(
+            "A user with that username already exists.", self.selenium.page_source
+        )
+        # No users were created
+        self.assertEqual(number_users_before, User.objects.count())
+
+    def test_signup_html5_form_validation(self):
+        User = get_user_model()
+        number_users_before = User.objects.count()
+
+        # We are initially not logged in and can see a "log in" link
+        self.selenium.get(self.live_server_url)
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        signup_link = navbar.find_element_by_link_text("Sign up")
+
+        # Let's click on it
+        signup_link.click()
+
+        # We are redirected to a "Log in" page
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Sign up"))
+
+        # Get the elems
+        username_field = self.selenium.find_element_by_id("id_username")
+        first_name_field = self.selenium.find_element_by_id("id_first_name")
+        last_name_field = self.selenium.find_element_by_id("id_last_name")
+        email_field = self.selenium.find_element_by_id("id_email")
+        password1_field = self.selenium.find_element_by_id("id_password1")
+        password2_field = self.selenium.find_element_by_id("id_password2")
+        signup_button = self.selenium.find_element_by_id("riparias-signup-button")
+
+        # Assert the proper fields are required
+        self.assertEqual(username_field.get_attribute("required"), "true")
+        self.assertEqual(email_field.get_attribute("required"), "true")
+        self.assertEqual(password1_field.get_attribute("required"), "true")
+        self.assertEqual(password2_field.get_attribute("required"), "true")
+        self.assertIsNone(first_name_field.get_attribute("required"))
+        self.assertIsNone(last_name_field.get_attribute("required"))
+
+        # Assert the email field has the correct type (so browser will validate what it can)
+        self.assertEqual(email_field.get_attribute("type"), "email")
+
+        # If we click the button, no users are created
+        signup_button.click()
+        self.assertEqual(number_users_before, User.objects.count())
+
+    def test_signup_scenario_password_dont_match(self):
+        User = get_user_model()
+        number_users_before = User.objects.count()
+
+        # We are initially not logged in and can see a "log in" link
+        self.selenium.get(self.live_server_url)
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        signup_link = navbar.find_element_by_link_text("Sign up")
+
+        # Let's click on it
+        signup_link.click()
+
+        # We are redirected to a "Log in" page
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Sign up"))
+
+        # Fill in the mandatory fields
+        username_field = self.selenium.find_element_by_id("id_username")
+        email_field = self.selenium.find_element_by_id("id_email")
+        password1_field = self.selenium.find_element_by_id("id_password1")
+        password2_field = self.selenium.find_element_by_id("id_password2")
+        signup_button = self.selenium.find_element_by_id("riparias-signup-button")
+
+        username_field.clear()
+        username_field.send_keys("testuser2")
+
+        email_field.clear()
+        email_field.send_keys("aaaa@bbb.com")
+
+        password1_field.clear()
+        password1_field.send_keys("FSDFSD981ç!")
+
+        password2_field.clear()
+        password2_field.send_keys("FSDFSD981ç!aaa")
+
+        signup_button.click()
+
+        # We are still on the same page
+        wait.until(EC.title_contains("Sign up"))
+        # With a proper error message
+        self.assertIn(
+            "The two password fields didn’t match.", self.selenium.page_source
+        )
+        # No users were created
+        self.assertEqual(number_users_before, User.objects.count())
+
+    def test_complete_signup_scenario_successful(self):
+        User = get_user_model()
+        number_users_before = User.objects.count()
+
+        # We are initially not logged in and can see a "log in" link
+        self.selenium.get(self.live_server_url)
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        signup_link = navbar.find_element_by_link_text("Sign up")
+
+        # Let's click on it
+        signup_link.click()
+
+        # We are redirected to a "Log in" page
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Sign up"))
+
+        # Fill in the mandatory fields
+        username_field = self.selenium.find_element_by_id("id_username")
+        email_field = self.selenium.find_element_by_id("id_email")
+        password1_field = self.selenium.find_element_by_id("id_password1")
+        password2_field = self.selenium.find_element_by_id("id_password2")
+        signup_button = self.selenium.find_element_by_id("riparias-signup-button")
+        first_name_field = self.selenium.find_element_by_id("id_first_name")
+        last_name_field = self.selenium.find_element_by_id("id_last_name")
+
+        username_field.clear()
+        username_field.send_keys("peterpan")
+
+        first_name_field.clear()
+        first_name_field.send_keys("Peter")
+
+        last_name_field.clear()
+        last_name_field.send_keys("Pan")
+
+        email_field.clear()
+        email_field.send_keys("peter@pan.com")
+
+        password1_field.clear()
+        password1_field.send_keys("kjdshfjksd678@")
+
+        password2_field.clear()
+        password2_field.send_keys("kjdshfjksd678@")
+
+        signup_button.click()
+
+        # We are redirected on the same page
+        wait.until(EC.title_contains("Home"))
+
+        # We appear logged
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        logged_as_peterpan = navbar.find_element_by_link_text("peterpan")
+
+        # A new user is added to the database
+        self.assertEqual(number_users_before + 1, User.objects.count())
+
+        # With the correct fields
+        latest_created_user = User.objects.all().order_by("-id")[0]
+        self.assertEqual(latest_created_user.username, "peterpan")
+        self.assertEqual(latest_created_user.email, "peter@pan.com")
+        self.assertEqual(latest_created_user.first_name, "Peter")
+        self.assertEqual(latest_created_user.last_name, "Pan")
+        self.assertFalse(latest_created_user.is_superuser)
+        self.assertFalse(latest_created_user.is_staff)
+
+        # This user can logout and login again with the credentials (s)he has choosen
+        # We can logout and login again with the choosen credentials
+        logged_as_peterpan.click()
+        signout_link = self.selenium.find_element_by_link_text("Sign out")
+
+        # We can click the logout link
+        signout_link.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Home"))
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+
+        # There's a log in link again
+        signin_link = navbar.find_element_by_link_text("Sign in")
+
+        # We can follow it to the sign in page
+        signin_link.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Sign in"))
+
+        # And successfully login
+        username_field = self.selenium.find_element_by_id("id_username")
+        password_field = self.selenium.find_element_by_id("id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("peterpan")
+        password_field.send_keys("kjdshfjksd678@")
+        login_button = self.selenium.find_element_by_id("riparias-login-button")
+        login_button.click()
+        wait = WebDriverWait(self.selenium, 5)
+
+        # Now, we should be redirected to the home page, and see the username in the navbar
+        wait.until(EC.title_contains("Home"))
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        navbar.find_element_by_link_text("peterpan")
+
+    def test_signup_too_common_password(self):
+        User = get_user_model()
+        number_users_before = User.objects.count()
+
+        # We are initially not logged in and can see a "log in" link
+        self.selenium.get(self.live_server_url)
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        signup_link = navbar.find_element_by_link_text("Sign up")
+
+        # Let's click on it
+        signup_link.click()
+
+        # We are redirected to a "Log in" page
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Sign up"))
+
+        # Fill in the mandatory fields
+        username_field = self.selenium.find_element_by_id("id_username")
+        email_field = self.selenium.find_element_by_id("id_email")
+        password1_field = self.selenium.find_element_by_id("id_password1")
+        password2_field = self.selenium.find_element_by_id("id_password2")
+        signup_button = self.selenium.find_element_by_id("riparias-signup-button")
+
+        username_field.clear()
+        username_field.send_keys("testuser2")
+
+        email_field.clear()
+        email_field.send_keys("aaaa@bbb.com")
+
+        password1_field.clear()
+        password1_field.send_keys("aaaaaaaa")
+
+        password2_field.clear()
+        password2_field.send_keys("aaaaaaaa")
+
+        signup_button.click()
+
+        # We are still on the same page
+        wait.until(EC.title_contains("Sign up"))
+        # With a proper error message
+        self.assertIn("This password is too common.", self.selenium.page_source)
+        # No users were created
+        self.assertEqual(number_users_before, User.objects.count())
 
     def test_lost_password_scenario(self):
         # In test_login_logout_scenario, we make sure there is a link on login page to get a password back
