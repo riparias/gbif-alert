@@ -1,7 +1,8 @@
+from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.shortcuts import render, get_object_or_404, redirect
 
-from dashboard.forms import SignUpForm
+from dashboard.forms import SignUpForm, EditProfileForm
 from dashboard.models import DataImport, Occurrence
 
 
@@ -34,3 +35,15 @@ def user_signup_page(request):
     else:
         form = SignUpForm()
     return render(request, "dashboard/user_signup.html", {"form": form})
+
+
+def user_profile_page(request):
+    if request.method == "POST":
+        form = EditProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your profile was successfully updated.")
+            return redirect("dashboard:page-index")
+    else:
+        form = EditProfileForm(instance=request.user)
+    return render(request, "dashboard/user_profile.html", {"form": form})

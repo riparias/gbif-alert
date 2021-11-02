@@ -86,3 +86,20 @@ The web application handle three categories of users:
   being upgraded to this status by an existing Admin after registering as a normal user, or via Django's 
   `createsuperuser` management command.
   
+### Use of the messages framework
+
+We make use of [Django's message framework](https://docs.djangoproject.com/en/3.2/ref/contrib/messages/), and the 
+base template is configured to display a nice Bootstrap alert for the following message levels: `info`, `success`, 
+`warning` and `error`.
+
+Example use:
+```
+from django.contrib import messages
+
+def my_view(request):
+  ...
+  messages.success(request, "Your profile was successfully updated.")
+  return redirect("dashboard:page-index")
+```
+
+  

@@ -4,10 +4,10 @@
 
 {% block page_title %}Home - RIPARIAS early alert{% endblock %}
 
-{% block after_navbar %}
+{% block after_messages %}
 <div class="container" id="app">
     <IndexPageRootComponent></IndexPageRootComponent>
 </div>
 
 <script src="{% static 'js/index-bundle.js' %}"></script>
-{% endblock %}
+{% endblock after_messages %}

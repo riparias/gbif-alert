@@ -14,6 +14,7 @@ urlpatterns = [
         name="page-occurrence-details",
     ),
     path("signup", views.user_signup_page, name="page-signup"),
+    path("profile", views.user_profile_page, name="page-profile"),
     # Api
     path("api/species", views.species_list_json, name="api-species-list-json"),
     path("api/datasets", views.datasets_list_json, name="api-datasets-list-json"),

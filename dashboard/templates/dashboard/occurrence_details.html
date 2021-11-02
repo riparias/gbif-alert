@@ -2,7 +2,7 @@
 {% load static %}
 {% load riparias_extras %}
 
-{% block after_navbar %}
+{% block after_messages %}
     <div class="container my-3">
         <div class="row">
             <div class="col">
@@ -30,4 +30,4 @@
     </div>
 
     <script src="{% static 'js/occurrence_details-bundle.js' %}"></script>
-{% endblock %}
+{% endblock after_messages %}
