@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 
 from dashboard.forms import SignUpForm, EditProfileForm
@@ -37,6 +38,7 @@ def user_signup_page(request):
     return render(request, "dashboard/user_signup.html", {"form": form})
 
 
+@login_required
 def user_profile_page(request):
     if request.method == "POST":
         form = EditProfileForm(request.POST, instance=request.user)

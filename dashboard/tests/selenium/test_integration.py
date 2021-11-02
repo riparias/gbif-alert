@@ -27,7 +27,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         # Selenium setup
         options = webdriver.ChromeOptions()
         options.add_argument("--no-sandbox")
-        # options.add_argument("--headless")
+        options.add_argument("--headless")
         options.add_argument("--window-size=2560,1440")
         cls.selenium = webdriver.Chrome(
             ChromeDriverManager().install(), options=options
@@ -544,7 +544,14 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         self.assertEqual(last_name_field.get_attribute("value"), "Palmer")
         email_field = self.selenium.find_element_by_id("id_email")
         self.assertEqual(email_field.get_attribute("value"), "palmer@gmail.com")
-        pass
+
+    def test_no_profile_page_if_not_logged(self):
+        """We try to access the profile page directly from the URL, without being signed in"""
+        self.selenium.get(self.live_server_url + "/profile")
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(
+            EC.url_contains("/accounts/login/?next=/profile")
+        )  # We are redirected to the login page
 
     def test_lost_password_scenario(self):
         # In test_login_logout_scenario, we make sure there is a link on login page to get a password back
