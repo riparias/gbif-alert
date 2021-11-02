@@ -12,7 +12,13 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         super().setUp()
         # Create test users
         User = get_user_model()
-        User.objects.create_user(username="testuser", password="12345")
+        User.objects.create_user(
+            username="testuser",
+            password="12345",
+            first_name="John",
+            last_name="Frusciante",
+            email="frusciante@gmail.com",
+        )
         User.objects.create_superuser(username="adminuser", password="67890")
 
     @classmethod
@@ -21,7 +27,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         # Selenium setup
         options = webdriver.ChromeOptions()
         options.add_argument("--no-sandbox")
-        options.add_argument("--headless")
+        # options.add_argument("--headless")
         options.add_argument("--window-size=2560,1440")
         cls.selenium = webdriver.Chrome(
             ChromeDriverManager().install(), options=options
@@ -459,6 +465,86 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         self.assertIn("This password is too common.", self.selenium.page_source)
         # No users were created
         self.assertEqual(number_users_before, User.objects.count())
+
+    def test_edit_profile_scenario(self):
+        self.selenium.get(self.live_server_url)
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        signin_link = navbar.find_element_by_link_text("Sign in")
+
+        # We can follow it to the sign in page
+        signin_link.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Sign in"))
+
+        # And successfully login
+        username_field = self.selenium.find_element_by_id("id_username")
+        password_field = self.selenium.find_element_by_id("id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("testuser")
+        password_field.send_keys("12345")
+        login_button = self.selenium.find_element_by_id("riparias-login-button")
+        login_button.click()
+        wait = WebDriverWait(self.selenium, 5)
+
+        # Now, we should be redirected to the home page, and see the username in the navbar
+        wait.until(EC.title_contains("Home"))
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        menu = navbar.find_element_by_link_text("testuser")
+        menu.click()
+
+        # We can navigate to the "profile" page
+        my_profile = navbar.find_element_by_link_text("My profile")
+        my_profile.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("My profile"))
+
+        # Basic checks on the form fields
+        username_field = self.selenium.find_element_by_id("id_username")
+        self.assertEqual(username_field.get_attribute("disabled"), "true")
+        self.assertEqual(username_field.get_attribute("value"), "testuser")
+        first_name_field = self.selenium.find_element_by_id("id_first_name")
+        self.assertEqual(first_name_field.get_attribute("value"), "John")
+        last_name_field = self.selenium.find_element_by_id("id_last_name")
+        self.assertEqual(last_name_field.get_attribute("value"), "Frusciante")
+        email_field = self.selenium.find_element_by_id("id_email")
+        self.assertEqual(email_field.get_attribute("value"), "frusciante@gmail.com")
+
+        # Let's update the values
+        first_name_field.clear()
+        first_name_field.send_keys("Amanda")
+        last_name_field.clear()
+        last_name_field.send_keys("Palmer")
+        email_field.clear()
+        email_field.send_keys("palmer@gmail.com")
+        save_button = self.selenium.find_element_by_id("riparias-profile-save-button")
+        save_button.click()
+
+        # Check for the success message
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Home"))
+        self.assertIn(
+            "Your profile was successfully updated.", self.selenium.page_source
+        )
+
+        # Go to the profile again to check the values were updated
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        menu = navbar.find_element_by_link_text("testuser")
+        menu.click()
+        my_profile = navbar.find_element_by_link_text("My profile")
+        my_profile.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("My profile"))
+
+        username_field = self.selenium.find_element_by_id("id_username")
+        self.assertEqual(username_field.get_attribute("value"), "testuser")
+        first_name_field = self.selenium.find_element_by_id("id_first_name")
+        self.assertEqual(first_name_field.get_attribute("value"), "Amanda")
+        last_name_field = self.selenium.find_element_by_id("id_last_name")
+        self.assertEqual(last_name_field.get_attribute("value"), "Palmer")
+        email_field = self.selenium.find_element_by_id("id_email")
+        self.assertEqual(email_field.get_attribute("value"), "palmer@gmail.com")
+        pass
 
     def test_lost_password_scenario(self):
         # In test_login_logout_scenario, we make sure there is a link on login page to get a password back
