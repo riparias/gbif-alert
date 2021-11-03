@@ -26,7 +26,7 @@ Development version visible on [dev-alert.riparias.be](http://dev-alert.riparias
 ### Testing / typing
 This project provides tools to ensure the application and code stays in a decent state:
 
-- Standard Django tests (can be run with `$ ./manage.py test`), including Selenium-based testing for frontend feautres and high-level tests
+- Standard Django tests (can be run with `$ ./manage.py test`), including Selenium-based testing for frontend features and high-level tests
 - Typing: can be checked with `$ mypy .`
 
 ### CI-CD
