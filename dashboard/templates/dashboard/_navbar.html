@@ -27,7 +27,7 @@
                             {% if request.user.is_superuser %}
                                 <li><a class="dropdown-item" href="{% url 'admin:index' %}">Admin panel</a></li>
                             {% endif %}
-                            <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-power"></i> Sign out</a></li>
+                            <li><a class="dropdown-item" href="{% url 'signout' %}"><i class="bi bi-power"></i> Sign out</a></li>
                         </ul>
                     </li>
                 {% else %}

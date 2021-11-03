@@ -24,7 +24,7 @@ urlpatterns = [
         auth_views.LoginView.as_view(template_name="dashboard/signin.html"),
         name="signin",
     ),
-    path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("accounts/signout/", auth_views.LogoutView.as_view(), name="signout"),
     path(
         "accounts/password_reset/",
         auth_views.PasswordResetView.as_view(),

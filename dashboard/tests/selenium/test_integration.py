@@ -177,7 +177,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         logged_as_testuser.click()
         signout_link = self.selenium.find_element_by_link_text("Sign out")
 
-        # We can click the logout link
+        # We can click the signout link
         signout_link.click()
         wait = WebDriverWait(self.selenium, 5)
 
@@ -385,7 +385,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         logged_as_peterpan.click()
         signout_link = self.selenium.find_element_by_link_text("Sign out")
 
-        # We can click the logout link
+        # We can click the sign out link
         signout_link.click()
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Home"))
