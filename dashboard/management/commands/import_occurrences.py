@@ -5,11 +5,12 @@ from typing import Dict, Optional
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.db.models import QuerySet
 from django.utils import timezone
 from dwca.read import DwCAReader  # type: ignore
 from dwca.darwincore.utils import qualname as qn  # type: ignore
+from dwca.rows import CoreRow  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences  # type: ignore
 
 from dashboard.models import Species, Occurrence, DataImport, Dataset
@@ -32,7 +33,7 @@ def build_gbif_predicate(country_code: str, species_list: QuerySet[Species]) -> 
     }
 
 
-def species_for_row(row):
+def species_for_row(row: CoreRow) -> Species:
     """Based first on taxonKey, with fallback to acceptedTaxonKey"""
     taxon_key = int(row.data["http://rs.gbif.org/terms/1.0/taxonKey"])
     try:
@@ -48,19 +49,56 @@ def extract_gbif_download_id_from_dwca(dwca: DwCAReader) -> str:
     return dwca.metadata.find("dataset").find("alternateIdentifier").text
 
 
+def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
+    # For-filtering data extraction
+    year_str = row.data[qn("year")]
+
+    try:
+        point: Optional[Point] = Point(
+            float(row.data[qn("decimalLongitude")]),
+            float(row.data[qn("decimalLatitude")]),
+            srid=4326,
+        )
+    except ValueError:
+        point = None
+
+    if year_str != "" and point:  # Only process records with a year and coordinates
+        # Some dates are incomplete(year only)
+        year = int(year_str)
+        try:
+            month = int(row.data[qn("month")])
+            day = int(row.data[qn("day")])
+        except ValueError:
+            month = 1
+            day = 1
+        date = datetime.date(year, month, day)
+        gbif_dataset_key = row.data["http://rs.gbif.org/terms/1.0/datasetKey"]
+        dataset_name = row.data[qn("datasetName")]
+        dataset, _ = Dataset.objects.get_or_create(
+            gbif_id=gbif_dataset_key,
+            defaults={"name": dataset_name},
+        )
+        Occurrence.objects.create(
+            gbif_id=int(row.data["http://rs.gbif.org/terms/1.0/gbifID"]),
+            species=species_for_row(row),
+            location=point,
+            date=date,
+            data_import=current_data_import,
+            source_dataset=dataset,
+        )
+
+
 class Command(BaseCommand):
     help = "Download and refresh all occurrence data from GBIF"
 
     def handle(self, *args, **options) -> None:
-        self.stdout.write("Reimporting all occurrences from GBIF")
+        self.stdout.write("(Re)importing all occurrences from GBIF")
         predicate = build_gbif_predicate(
             country_code=settings.RIPARIAS["TARGET_COUNTRY_CODE"],
             species_list=Species.objects.all(),
         )
 
         with tempfile.TemporaryDirectory() as dirname:
-            download_dest = Path(dirname, "download.zip")
-
             self.stdout.write(
                 "Triggering a GBIF download and waiting for it - this can be long..."
             )
@@ -68,6 +106,7 @@ class Command(BaseCommand):
             current_data_import = DataImport.objects.create(start=timezone.now())
             self.stdout.write(f"Current data import: #{current_data_import.pk}")
 
+            download_dest = Path(dirname, "download.zip")
             # This might takes several minutes...
             download_occurrences(
                 predicate,
@@ -85,53 +124,9 @@ class Command(BaseCommand):
                 )
                 current_data_import.save()
 
-                for row in dwca:
-                    year_str = row.data[qn("year")]
-
-                    if (
-                        year_str != ""
-                    ):  # Skip records that don't even have a decent year
-                        try:
-                            point: Optional[Point] = Point(
-                                float(row.data[qn("decimalLongitude")]),
-                                float(row.data[qn("decimalLatitude")]),
-                                srid=4326,
-                            )
-                        except ValueError:
-                            point = None
-
-                        if point:  # Also skip records that don't have coordinates
-                            # Some dates are incomplete(year only - skipping for now)
-                            year = int(year_str)
-                            try:
-                                month = int(row.data[qn("month")])
-                                day = int(row.data[qn("day")])
-                            except ValueError:
-                                month = 1
-                                day = 1
-                            date = datetime.date(year, month, day)
-
-                            gbif_dataset_key = row.data[
-                                "http://rs.gbif.org/terms/1.0/datasetKey"
-                            ]
-                            dataset_name = row.data[qn("datasetName")]
-                            dataset, _ = Dataset.objects.get_or_create(
-                                gbif_id=gbif_dataset_key,
-                                defaults={"name": dataset_name},
-                            )
-
-                            Occurrence.objects.create(
-                                gbif_id=int(
-                                    row.data["http://rs.gbif.org/terms/1.0/gbifID"]
-                                ),
-                                species=species_for_row(row),
-                                location=point,
-                                date=date,
-                                data_import=current_data_import,
-                                source_dataset=dataset,
-                            )
-
-                            self.stdout.write(".", ending="")
+                for core_row in dwca:
+                    import_single_occurrence(core_row, current_data_import)
+                    self.stdout.write(".", ending="")
 
                 self.stdout.write(
                     "All occurrences imported, now deleting occurrences linked to previous data imports..."
