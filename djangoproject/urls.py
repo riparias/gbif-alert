@@ -19,11 +19,10 @@ from django.urls import path, include
 
 urlpatterns = [
     path("", include("dashboard.urls")),
-    # path("accounts/", include("django.contrib.auth.urls")),
     path(
-        "accounts/login/",
-        auth_views.LoginView.as_view(template_name="dashboard/login.html"),
-        name="login",
+        "accounts/signin/",
+        auth_views.LoginView.as_view(template_name="dashboard/signin.html"),
+        name="signin",
     ),
     path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
     path(

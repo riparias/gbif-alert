@@ -44,16 +44,16 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         self.assertIn("LIFE RIPARIAS early alert", self.selenium.page_source)
 
     def test_normal_user_has_no_admin_access(self):
-        # Login as a normal user
-        self.selenium.get(self.live_server_url + "/accounts/login/")
+        # Sign in as a normal user
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
         username_field = self.selenium.find_element_by_id("id_username")
         password_field = self.selenium.find_element_by_id("id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("12345")
-        login_button = self.selenium.find_element_by_id("riparias-login-button")
-        login_button.click()
+        signin_button = self.selenium.find_element_by_id("riparias-signin-button")
+        signin_button.click()
         WebDriverWait(self.selenium, 5)
 
         # There's no "Admin panel" link
@@ -69,16 +69,16 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         self.assertIn(msg, self.selenium.page_source)
 
     def test_superuser_has_admin_access(self):
-        # Login as a superuser
-        self.selenium.get(self.live_server_url + "/accounts/login/")
+        # sign in as a superuser
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
         username_field = self.selenium.find_element_by_id("id_username")
         password_field = self.selenium.find_element_by_id("id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("adminuser")
         password_field.send_keys("67890")
-        login_button = self.selenium.find_element_by_id("riparias-login-button")
-        login_button.click()
+        signin_button = self.selenium.find_element_by_id("riparias-signin-button")
+        signin_button.click()
         WebDriverWait(self.selenium, 5)
 
         # There's an "Admin panel" link
@@ -94,7 +94,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         self.assertEqual(self.selenium.title, "Site administration | Django site admin")
 
     def test_signin_signout_scenario(self):
-        # We are initially not logged in and can see a "log in" link
+        # We are initially not logged in and can see a "sign in" link
         self.selenium.get(self.live_server_url)
         navbar = self.selenium.find_element_by_id("riparias-main-navbar")
         signin_link = navbar.find_element_by_link_text("Sign in")
@@ -102,7 +102,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         # Let's click on it
         signin_link.click()
 
-        # We are redirected to a "Log in" page
+        # We are redirected to a "Sign in" page
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
 
@@ -119,13 +119,13 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         # There is also a link to find a lost password on this page
         self.selenium.find_element_by_link_text("Lost password?")
 
-        # Trying to log in with incorrect credentials
+        # Trying to sign in with incorrect credentials
         username_field.clear()
         password_field.clear()
         username_field.send_keys("aaa")
         password_field.send_keys("bbb")
-        login_button = self.selenium.find_element_by_id("riparias-login-button")
-        login_button.click()
+        signin_button = self.selenium.find_element_by_id("riparias-signin-button")
+        signin_button.click()
 
         # We're still on the same page, with an error message
         wait = WebDriverWait(self.selenium, 5)
@@ -145,8 +145,8 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("wrong_password")
-        login_button = self.selenium.find_element_by_id("riparias-login-button")
-        login_button.click()
+        signin_button = self.selenium.find_element_by_id("riparias-signin-button")
+        signin_button.click()
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
         error_message = self.selenium.find_element_by_id(
@@ -164,8 +164,8 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("12345")
-        login_button = self.selenium.find_element_by_id("riparias-login-button")
-        login_button.click()
+        signin_button = self.selenium.find_element_by_id("riparias-signin-button")
+        signin_button.click()
         wait = WebDriverWait(self.selenium, 5)
 
         # Now, we should be redirected to the home page, and see the username in the navbar
@@ -188,14 +188,14 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         # There's no more "Logged as testuser" message
         with self.assertRaises(NoSuchElementException):
             navbar.find_element_by_link_text("Logged as testuser")
-        # There's a log in link again
+        # There's a sign in in link again
         navbar.find_element_by_link_text("Sign in")
 
     def test_signup_scenario_existing_username(self):
         User = get_user_model()
         number_users_before = User.objects.count()
 
-        # We are initially not logged in and can see a "log in" link
+        # We are initially not logged in and can see a "sign in" link
         self.selenium.get(self.live_server_url)
         navbar = self.selenium.find_element_by_id("riparias-main-navbar")
         signup_link = navbar.find_element_by_link_text("Sign up")
@@ -203,7 +203,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         # Let's click on it
         signup_link.click()
 
-        # We are redirected to a "Log in" page
+        # We are redirected to a "Sign up" page
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign up"))
 
@@ -241,15 +241,13 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         User = get_user_model()
         number_users_before = User.objects.count()
 
-        # We are initially not logged in and can see a "log in" link
+        # We are initially not logged in and can see a "sign up" link
         self.selenium.get(self.live_server_url)
         navbar = self.selenium.find_element_by_id("riparias-main-navbar")
         signup_link = navbar.find_element_by_link_text("Sign up")
 
         # Let's click on it
         signup_link.click()
-
-        # We are redirected to a "Log in" page
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign up"))
 
@@ -281,15 +279,13 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         User = get_user_model()
         number_users_before = User.objects.count()
 
-        # We are initially not logged in and can see a "log in" link
+        # We are initially not logged in and can see a "sign up" link
         self.selenium.get(self.live_server_url)
         navbar = self.selenium.find_element_by_id("riparias-main-navbar")
         signup_link = navbar.find_element_by_link_text("Sign up")
 
         # Let's click on it
         signup_link.click()
-
-        # We are redirected to a "Log in" page
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign up"))
 
@@ -327,15 +323,13 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         User = get_user_model()
         number_users_before = User.objects.count()
 
-        # We are initially not logged in and can see a "log in" link
+        # We are initially not logged in and can see a "sign up" link
         self.selenium.get(self.live_server_url)
         navbar = self.selenium.find_element_by_id("riparias-main-navbar")
         signup_link = navbar.find_element_by_link_text("Sign up")
 
         # Let's click on it
         signup_link.click()
-
-        # We are redirected to a "Log in" page
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign up"))
 
@@ -387,8 +381,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         self.assertFalse(latest_created_user.is_superuser)
         self.assertFalse(latest_created_user.is_staff)
 
-        # This user can logout and login again with the credentials (s)he has choosen
-        # We can logout and login again with the choosen credentials
+        # We can sign out and sign in again with the chosen credentials
         logged_as_peterpan.click()
         signout_link = self.selenium.find_element_by_link_text("Sign out")
 
@@ -398,7 +391,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         wait.until(EC.title_contains("Home"))
         navbar = self.selenium.find_element_by_id("riparias-main-navbar")
 
-        # There's a log in link again
+        # There's a "sign in" link again
         signin_link = navbar.find_element_by_link_text("Sign in")
 
         # We can follow it to the sign in page
@@ -406,15 +399,15 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
 
-        # And successfully login
+        # And successfully sign in
         username_field = self.selenium.find_element_by_id("id_username")
         password_field = self.selenium.find_element_by_id("id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("peterpan")
         password_field.send_keys("kjdshfjksd678@")
-        login_button = self.selenium.find_element_by_id("riparias-login-button")
-        login_button.click()
+        signin_button = self.selenium.find_element_by_id("riparias-signin-button")
+        signin_button.click()
         wait = WebDriverWait(self.selenium, 5)
 
         # Now, we should be redirected to the home page, and see the username in the navbar
@@ -426,15 +419,13 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         User = get_user_model()
         number_users_before = User.objects.count()
 
-        # We are initially not logged in and can see a "log in" link
+        # We are initially not logged in and can see a "sign up" link
         self.selenium.get(self.live_server_url)
         navbar = self.selenium.find_element_by_id("riparias-main-navbar")
         signup_link = navbar.find_element_by_link_text("Sign up")
 
         # Let's click on it
         signup_link.click()
-
-        # We are redirected to a "Log in" page
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign up"))
 
@@ -476,15 +467,15 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
 
-        # And successfully login
+        # And successfully sign in
         username_field = self.selenium.find_element_by_id("id_username")
         password_field = self.selenium.find_element_by_id("id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("12345")
-        login_button = self.selenium.find_element_by_id("riparias-login-button")
-        login_button.click()
+        signin_button = self.selenium.find_element_by_id("riparias-signin-button")
+        signin_button.click()
         wait = WebDriverWait(self.selenium, 5)
 
         # Now, we should be redirected to the home page, and see the username in the navbar
@@ -550,11 +541,12 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         self.selenium.get(self.live_server_url + "/profile")
         wait = WebDriverWait(self.selenium, 5)
         wait.until(
-            EC.url_contains("/accounts/login/?next=/profile")
+            EC.url_contains("/accounts/signin/?next=/profile")
         )  # We are redirected to the login page
+        pass
 
     def test_lost_password_scenario(self):
-        # In test_login_logout_scenario, we make sure there is a link on login page to get a password back
+        # In test_signin_signout_scenario, we make sure there is a link on login page to get a password back
         # In this test we check that feature works as expected
         # TODO: implement
         pass

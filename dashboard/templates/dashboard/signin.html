@@ -14,13 +14,13 @@
                 {% if next %}
                     {% if user.is_authenticated %}
                         <p>Your account doesn't have access to this page. To proceed,
-                            please login with an account that has access.</p>
+                            please sign in with an account that has access.</p>
                     {% else %}
-                        <p>Please login to see this page.</p>
+                        <p>Please sign in to see this page.</p>
                     {% endif %}
                 {% endif %}
 
-                <form method="post" action="{% url 'login' %}">
+                <form method="post" action="{% url 'signin' %}">
                     {% csrf_token %}
                         <div class="mb-3">
                             <label class="form-label" for="id_username">Username:</label>
@@ -32,7 +32,7 @@
                             <input type="password" class="form-control" name="password" autocomplete="current-password" required id="id_password">
                         </div>
 
-                    <button id="riparias-login-button" type="submit" class="btn btn-primary btn-sm" value="login">Sign in</button>
+                    <button id="riparias-signin-button" type="submit" class="btn btn-primary btn-sm" value="signin">Sign in</button>
                     - <a href="{% url 'password_reset' %}">Lost password?</a>
                     <input type="hidden" name="next" value="{{ next }}">
                 </form>
