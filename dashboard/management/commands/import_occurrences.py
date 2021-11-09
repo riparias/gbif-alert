@@ -1,3 +1,4 @@
+import argparse
 import tempfile
 import datetime
 from pathlib import Path
@@ -5,13 +6,13 @@ from typing import Dict, Optional
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandParser
 from django.db.models import QuerySet
 from django.utils import timezone
 from dwca.read import DwCAReader  # type: ignore
 from dwca.darwincore.utils import qualname as qn  # type: ignore
 from dwca.rows import CoreRow  # type: ignore
-from gbif_blocking_occurrences_download import download_occurrences  # type: ignore
+from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
 
 from dashboard.models import Species, Occurrence, DataImport, Dataset
 
@@ -91,54 +92,70 @@ def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
 class Command(BaseCommand):
     help = "Download and refresh all occurrence data from GBIF"
 
-    def handle(self, *args, **options) -> None:
-        self.stdout.write("(Re)importing all occurrences from GBIF")
-        predicate = build_gbif_predicate(
-            country_code=settings.RIPARIAS["TARGET_COUNTRY_CODE"],
-            species_list=Species.objects.all(),
+    def _import_all_occurrences_from_dwca(
+        self, dwca: DwCAReader, data_import: DataImport
+    ):
+
+        for core_row in dwca:
+            import_single_occurrence(core_row, data_import)
+            self.stdout.write(".", ending="")
+
+    def add_arguments(self, parser: CommandParser) -> None:
+        parser.add_argument(
+            "--source-dwca",
+            type=argparse.FileType("r"),
+            help="Use an existing dwca file as source (otherwise a new GBIF download will be generated and downloaded)",
         )
 
-        with tempfile.TemporaryDirectory() as dirname:
+    def handle(self, *args, **options) -> None:
+        self.stdout.write("(Re)importing all occurrences")
+
+        # 1. Data preparation
+        if options["source_dwca"]:
+            self.stdout.write("Using a user-provided DWCA file")
+            source_data_path = options["source_dwca"].name
+        else:
+            self.stdout.write(
+                "No DWCA file provided, we'll generate and get a new GBIF download"
+            )
+
             self.stdout.write(
                 "Triggering a GBIF download and waiting for it - this can be long..."
             )
-
-            current_data_import = DataImport.objects.create(start=timezone.now())
-            self.stdout.write(f"Current data import: #{current_data_import.pk}")
-
-            download_dest = Path(dirname, "download.zip")
+            tmp_file = tempfile.NamedTemporaryFile()
+            source_data_path = tmp_file.name
             # This might takes several minutes...
-            download_occurrences(
-                predicate,
+            download_gbif_occurrences(
+                build_gbif_predicate(
+                    country_code=settings.RIPARIAS["TARGET_COUNTRY_CODE"],
+                    species_list=Species.objects.all(),
+                ),
                 username=settings.RIPARIAS["GBIF_USERNAME"],
                 password=settings.RIPARIAS["GBIF_PASSWORD"],
-                output_path=download_dest,
+                output_path=source_data_path,
             )
-
             self.stdout.write("Occurrences downloaded")
 
-            self.stdout.write("Importing freshly downloaded occurrences")
-            with DwCAReader(download_dest) as dwca:
-                current_data_import.gbif_download_id = (
-                    extract_gbif_download_id_from_dwca(dwca)
-                )
-                current_data_import.save()
+        # 2. Occurrences import
+        self.stdout.write(
+            "We now have a (locally accessible) source dwca, real import is starting..."
+        )
+        current_data_import = DataImport.objects.create(start=timezone.now())
+        self.stdout.write(f"Created a new DataImport object: #{current_data_import.pk}")
+        with DwCAReader(source_data_path) as dwca:
+            current_data_import.set_gbif_download_id(
+                extract_gbif_download_id_from_dwca(dwca)
+            )
+            self._import_all_occurrences_from_dwca(dwca, current_data_import)
 
-                for core_row in dwca:
-                    import_single_occurrence(core_row, current_data_import)
-                    self.stdout.write(".", ending="")
+        self.stdout.write(
+            "All occurrences imported, now deleting occurrences linked to previous data imports..."
+        )
 
-                self.stdout.write(
-                    "All occurrences imported, now deleting occurrences linked to previous data imports..."
-                )
-                Occurrence.objects.exclude(data_import=current_data_import).delete()
+        # 3. Remove previous occurrences
+        Occurrence.objects.exclude(data_import=current_data_import).delete()
 
-                self.stdout.write("Updating the DataImport object")
-                current_data_import.end = timezone.now()
-                current_data_import.completed = True
-                current_data_import.imported_occurrences_counter = (
-                    Occurrence.objects.filter(data_import=current_data_import).count()
-                )
-                current_data_import.save()
-
+        # 4. Final tasks
+        self.stdout.write("Updating the DataImport object")
+        current_data_import.complete()
         self.stdout.write("Done.")

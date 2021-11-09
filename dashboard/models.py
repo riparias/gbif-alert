@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.gis.db import models
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -72,6 +73,20 @@ class DataImport(models.Model):
     completed = models.BooleanField(default=False)
     gbif_download_id = models.CharField(max_length=255, blank=True)
     imported_occurrences_counter = models.IntegerField(default=0)
+
+    def set_gbif_download_id(self, download_id: str):
+        """Set the download id and immediately save the entry"""
+        self.gbif_download_id = download_id
+        self.save()
+
+    def complete(self):
+        """Method to be called at the end of the import process to finalize this entry"""
+        self.end = timezone.now()
+        self.completed = True
+        self.imported_occurrences_counter = Occurrence.objects.filter(
+            data_import=self
+        ).count()
+        self.save()
 
     def __str__(self):
         return f"Data import #{self.pk}"
