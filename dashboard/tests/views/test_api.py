@@ -89,9 +89,8 @@ class ApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         # Check that it's sorted by reverse primary key
-        self.assertEqual(json_data["results"][0]["id"], 3)
-        self.assertEqual(json_data["results"][1]["id"], 2)
-        self.assertEqual(json_data["results"][2]["id"], 1)
+        received_pks = [e["id"] for e in json_data["results"]]
+        self.assertEqual(received_pks[::-1], sorted(received_pks))
 
     def test_occurrences_json_ordering_gbif_id(self):
         base_url = reverse("dashboard:api-filtered-occurrences-data-page")

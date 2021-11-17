@@ -35,12 +35,16 @@ def build_gbif_predicate(country_code: str, species_list: QuerySet[Species]) -> 
 
 def species_for_row(row: CoreRow) -> Species:
     """Based first on taxonKey, with fallback to acceptedTaxonKey"""
-    taxon_key = int(row.data["http://rs.gbif.org/terms/1.0/taxonKey"])
+    taxon_key = int(
+        get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/taxonKey")
+    )
     try:
         return Species.objects.get(gbif_taxon_key=taxon_key)
     except Species.DoesNotExist:
         accepted_taxon_key = int(
-            row.data["http://rs.gbif.org/terms/1.0/acceptedTaxonKey"]
+            get_string_data(
+                row, field_name="http://rs.gbif.org/terms/1.0/acceptedTaxonKey"
+            )
         )
         return Species.objects.get(gbif_taxon_key=accepted_taxon_key)
 
@@ -49,37 +53,66 @@ def extract_gbif_download_id_from_dwca(dwca: DwCAReader) -> str:
     return dwca.metadata.find("dataset").find("alternateIdentifier").text
 
 
+def get_string_data(row: CoreRow, field_name: str) -> str:
+    """Extract string data from a row (with minor cleanup)"""
+    return row.data[field_name].strip()
+
+
+def get_float_data(row: CoreRow, field_name: str) -> float:
+    """Extract float data from a row
+
+    :raise ValueError if the value can't be converted
+    """
+    return float(get_string_data(row, field_name))
+
+
+def get_int_data(row: CoreRow, field_name: str) -> float:
+    """Extract int data from a row
+
+    :raise ValueError if the value can't be converted
+    """
+    return int(get_string_data(row, field_name))
+
+
 def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
     # For-filtering data extraction
-    year_str = row.data[qn("year")]
+    year_str = get_string_data(row, field_name=qn("year"))
 
     try:
         point: Optional[Point] = Point(
-            float(row.data[qn("decimalLongitude")]),
-            float(row.data[qn("decimalLatitude")]),
+            get_float_data(row, field_name=qn("decimalLongitude")),
+            get_float_data(row, field_name=qn("decimalLatitude")),
             srid=4326,
         )
     except ValueError:
         point = None
 
-    if year_str != "" and point:  # Only process records with a year and coordinates
+    occurrence_id_str = get_string_data(row, field_name=qn("occurrenceID"))
+
+    # Only import records with a year, coordinates and an occurrenceID
+    if year_str != "" and point and occurrence_id_str != "":
         # Some dates are incomplete(year only)
         year = int(year_str)
         try:
-            month = int(row.data[qn("month")])
-            day = int(row.data[qn("day")])
+            month = get_int_data(row, field_name=qn("month"))
+            day = get_int_data(row, field_name=qn("day"))
         except ValueError:
             month = 1
             day = 1
         date = datetime.date(year, month, day)
-        gbif_dataset_key = row.data["http://rs.gbif.org/terms/1.0/datasetKey"]
-        dataset_name = row.data[qn("datasetName")]
+        gbif_dataset_key = get_string_data(
+            row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
+        )
+        dataset_name = get_string_data(row, field_name=qn("datasetName"))
         dataset, _ = Dataset.objects.get_or_create(
             gbif_id=gbif_dataset_key,
             defaults={"name": dataset_name},
         )
         Occurrence.objects.create(
-            gbif_id=int(row.data["http://rs.gbif.org/terms/1.0/gbifID"]),
+            gbif_id=int(
+                get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/gbifID")
+            ),
+            occurrence_id=occurrence_id_str,
             species=species_for_row(row),
             location=point,
             date=date,

@@ -1,3 +1,5 @@
+import hashlib
+
 from django.contrib.auth.models import AbstractUser
 from django.contrib.gis.db import models
 from django.utils import timezone
@@ -58,6 +60,14 @@ class Dataset(models.Model):
     name = models.CharField(max_length=255)
     gbif_id = models.CharField(max_length=255, unique=True)
 
+    __original_gbif_id = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__original_gbif_id = (
+            self.gbif_id
+        )  # So we're able to check if it has changed in save()
+
     @property
     def as_dict(self):
         return {  # To be consumed on the frontend: we use JS naming conventions
@@ -65,6 +75,16 @@ class Dataset(models.Model):
             "gbifKey": self.gbif_id,
             "name": self.name,
         }
+
+    def save(self, force_insert=False, force_update=False, *args, **kwargs):
+        super().save(force_insert, force_update, *args, **kwargs)
+
+        if self.gbif_id != self.__original_gbif_id:
+            # We updated the gbif_id, so all related occurrences should have a new stable_id
+            for occ in self.occurrence_set.all():
+                occ.save()
+
+        self.__original_gbif_id = self.gbif_id
 
 
 class DataImport(models.Model):
@@ -93,7 +113,22 @@ class DataImport(models.Model):
 
 
 class Occurrence(models.Model):
+    # Pay attention to the fact that this model actually has 4(!) different "identifiers" which serve different
+    # purposes. gbif_id, occurrence_id and stable_id are documented below, Django also adds the usual and implicit "pk"
+    # field.
+
+    # The GBIF-assigned identifier. We show it to the user (links to GBIF.org, ...) but don't rely on it as a stable
+    # identifier anymore. See: https://github.com/riparias/early-warning-webapp/issues/35#issuecomment-944073702 and
+    # https://github.com/gbif/pipelines/issues/604,
     gbif_id = models.CharField(max_length=100)
+
+    # The raw occurrenceId GBIF field, as provided by GBIF data providers retrieved from the data download.
+    # It is an important data source, we use it to compute stable_id
+    occurrence_id = models.TextField()
+
+    # The computed stable identifier that we can use to identify the same records between data import
+    stable_id = models.CharField(max_length=40)
+
     species = models.ForeignKey(Species, on_delete=models.PROTECT)
     location = models.PointField(blank=True, null=True, srid=3857)
     date = models.DateField()
@@ -102,7 +137,22 @@ class Occurrence(models.Model):
     source_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ["gbif_id", "data_import"]
+        unique_together = [("gbif_id", "data_import")]
+
+    def save(self, *args, **kwargs):
+        self.stable_id = Occurrence.build_stable_id(
+            self.occurrence_id, self.source_dataset.gbif_id
+        )
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def build_stable_id(occurrence_id: str, dataset_key: str) -> str:
+        """Compute a unique/portable/repeatable hash depending on occurrence_id and dataset_key
+
+        Return value is a 40-char string containing only hexadecimal characters
+        """
+        s = f"occ_id: {occurrence_id} d_id: {dataset_key}"
+        return hashlib.sha1(s.encode("utf-8")).hexdigest()
 
     @property
     def lat(self):
