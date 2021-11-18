@@ -140,7 +140,7 @@ class Occurrence(models.Model):
     source_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = [("gbif_id", "data_import")]
+        unique_together = [("gbif_id", "data_import"), ("stable_id", "data_import")]
 
     def save(self, *args, **kwargs):
         self.stable_id = Occurrence.build_stable_id(
