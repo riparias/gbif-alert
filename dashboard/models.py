@@ -62,6 +62,9 @@ class Dataset(models.Model):
 
     __original_gbif_id = None
 
+    def __str__(self):
+        return self.name
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__original_gbif_id = (
