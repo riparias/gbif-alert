@@ -18,10 +18,11 @@ class ApiTests(TestCase):
         cls.second_species = Species.objects.all()[1]
         cls.di = DataImport.objects.create(start=timezone.now())
         cls.first_dataset = Dataset.objects.create(
-            name="Test dataset", gbif_id="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+            name="Test dataset", gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
         )
         cls.second_dataset = Dataset.objects.create(
-            name="Test dataset #2", gbif_id="aaa7b334-ce0d-4e88-aaae-2e0c138d049f"
+            name="Test dataset #2",
+            gbif_dataset_key="aaa7b334-ce0d-4e88-aaae-2e0c138d049f",
         )
 
         Occurrence.objects.create(
@@ -275,7 +276,9 @@ class ApiTests(TestCase):
         Case 2: request occurrences for datasets 1 and 3
         """
         # We need one more dataset and one related occurrence to perform this test
-        third_dataset = Dataset.objects.create(name="Third dataset", gbif_id="xxxx")
+        third_dataset = Dataset.objects.create(
+            name="Third dataset", gbif_dataset_key="xxxx"
+        )
         Occurrence.objects.create(
             gbif_id=1000,
             species=ApiTests.first_species,

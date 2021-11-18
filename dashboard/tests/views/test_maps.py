@@ -18,10 +18,11 @@ class VectorTilesServerTests(TestCase):
 
         cls.di = DataImport.objects.create(start=timezone.now())
         cls.first_dataset = Dataset.objects.create(
-            name="Test dataset", gbif_id="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+            name="Test dataset", gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
         )
         cls.second_dataset = Dataset.objects.create(
-            name="Test dataset #2", gbif_id="aaa7b334-ce0d-4e88-aaae-2e0c138d049f"
+            name="Test dataset #2",
+            gbif_dataset_key="aaa7b334-ce0d-4e88-aaae-2e0c138d049f",
         )
 
         Occurrence.objects.create(

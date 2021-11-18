@@ -105,7 +105,7 @@ def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
         )
         dataset_name = get_string_data(row, field_name=qn("datasetName"))
         dataset, _ = Dataset.objects.get_or_create(
-            gbif_id=gbif_dataset_key,
+            gbif_dataset_key=gbif_dataset_key,
             defaults={"name": dataset_name},
         )
         Occurrence.objects.create(

@@ -58,36 +58,36 @@ class Species(models.Model):
 
 class Dataset(models.Model):
     name = models.CharField(max_length=255)
-    gbif_id = models.CharField(max_length=255, unique=True)
+    gbif_dataset_key = models.CharField(max_length=255, unique=True)
 
-    __original_gbif_id = None
+    __original_gbif_dataset_key = None
 
     def __str__(self):
         return self.name
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__original_gbif_id = (
-            self.gbif_id
+        self.__original_gbif_dataset_key = (
+            self.gbif_dataset_key
         )  # So we're able to check if it has changed in save()
 
     @property
     def as_dict(self):
         return {  # To be consumed on the frontend: we use JS naming conventions
             "id": self.pk,
-            "gbifKey": self.gbif_id,
+            "gbifKey": self.gbif_dataset_key,
             "name": self.name,
         }
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
         super().save(force_insert, force_update, *args, **kwargs)
 
-        if self.gbif_id != self.__original_gbif_id:
-            # We updated the gbif_id, so all related occurrences should have a new stable_id
+        if self.gbif_dataset_key != self.__original_gbif_dataset_key:
+            # We updated the gbif dataset key, so all related occurrences should have a new stable_id
             for occ in self.occurrence_set.all():
                 occ.save()
 
-        self.__original_gbif_id = self.gbif_id
+        self.__original_gbif_dataset_key = self.gbif_dataset_key
 
 
 class DataImport(models.Model):
@@ -144,7 +144,7 @@ class Occurrence(models.Model):
 
     def save(self, *args, **kwargs):
         self.stable_id = Occurrence.build_stable_id(
-            self.occurrence_id, self.source_dataset.gbif_id
+            self.occurrence_id, self.source_dataset.gbif_dataset_key
         )
         super().save(*args, **kwargs)
 

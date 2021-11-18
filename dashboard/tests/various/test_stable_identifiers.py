@@ -22,7 +22,7 @@ class StableIdentifiersTests(TestCase):
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=DataImport.objects.create(start=timezone.now()),
             source_dataset=Dataset.objects.create(
-                name="Test dataset", gbif_id=SAMPLE_DATASET_KEY
+                name="Test dataset", gbif_dataset_key=SAMPLE_DATASET_KEY
             ),
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
@@ -47,7 +47,7 @@ class StableIdentifiersTests(TestCase):
         Note: this won't probably happen in real-world use, but it's a good practice and add extra safety
         """
         stable_id_before = self.occ.stable_id
-        self.occ.source_dataset.gbif_id = "something new"
+        self.occ.source_dataset.gbif_dataset_key = "something new"
         self.occ.source_dataset.save()
 
         self.occ.refresh_from_db()
@@ -61,7 +61,7 @@ class StableIdentifiersTests(TestCase):
 
         stable_id_before = self.occ.stable_id
         self.occ.source_dataset = Dataset.objects.create(
-            name="New dataset", gbif_id="newdatasetid"
+            name="New dataset", gbif_dataset_key="newdatasetid"
         )
         self.occ.save()
         self.occ.refresh_from_db()

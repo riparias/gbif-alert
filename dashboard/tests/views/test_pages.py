@@ -17,7 +17,8 @@ class WebPagesTests(TestCase):
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=DataImport.objects.create(start=timezone.now()),
             source_dataset=Dataset.objects.create(
-                name="Test dataset", gbif_id="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+                name="Test dataset",
+                gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e",
             ),
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
