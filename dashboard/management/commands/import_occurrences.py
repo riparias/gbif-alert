@@ -66,7 +66,7 @@ def get_float_data(row: CoreRow, field_name: str) -> float:
     return float(get_string_data(row, field_name))
 
 
-def get_int_data(row: CoreRow, field_name: str) -> float:
+def get_int_data(row: CoreRow, field_name: str) -> int:
     """Extract int data from a row
 
     :raise ValueError if the value can't be converted
