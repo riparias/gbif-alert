@@ -31,17 +31,20 @@ class WebPagesTests(TestCase):
 
     def test_occurrence_details_not_found(self):
         response = self.client.get(
-            reverse("dashboard:page-occurrence-details", kwargs={"pk": 1000})
+            reverse("dashboard:page-occurrence-details", kwargs={"stable_id": 1000})
         )
         self.assertEqual(response.status_code, 404)
 
     def test_occurrence_details(self):
-        response = self.client.get(
-            reverse(
-                "dashboard:page-occurrence-details",
-                kwargs={"pk": self.__class__.occ.pk},
-            )
+        occ_stable_id = self.__class__.occ.stable_id
+
+        page_url = reverse(
+            "dashboard:page-occurrence-details",
+            kwargs={"stable_id": occ_stable_id},
         )
+
+        self.assertIn(occ_stable_id, page_url)
+        response = self.client.get(page_url)
         self.assertEqual(response.status_code, 200)
 
         # A few checks on the basic content

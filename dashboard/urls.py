@@ -9,7 +9,7 @@ urlpatterns = [
     path("", views.index_page, name="page-index"),
     path("about", views.about_page, name="page-about"),
     path(
-        "occurrence/<int:pk>",
+        "occurrence/<stable_id>",
         views.occurrence_details_page,
         name="page-occurrence-details",
     ),

@@ -45,6 +45,7 @@ export interface FrontEndConfig {
 // Keep in sync with Models.Occurrence.as_dict()
 export interface JsonOccurrence {
   id: number;
+  stableId: string;
   gbifId: number;
   lat: number;
   lon: number;

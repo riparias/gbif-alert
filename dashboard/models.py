@@ -182,6 +182,7 @@ class Occurrence(models.Model):
 
         return {
             "id": self.pk,
+            "stableId": self.stable_id,
             "gbifId": self.gbif_id,
             "lat": lat,
             "lon": lon,

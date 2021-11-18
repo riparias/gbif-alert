@@ -41,8 +41,8 @@ export default defineComponent({
           speciesName: occ.speciesName,
           datasetName: occ.datasetName,
           url: this.occurrencePageUrlTemplate!.replace(
-            "{pk}",
-            occ.id.toString()
+            "{stable_id}",
+            occ.stableId
           ),
         };
       });

@@ -16,8 +16,8 @@ def about_page(request):
     return render(request, "dashboard/about.html", {"data_imports": data_imports})
 
 
-def occurrence_details_page(request, pk):
-    occurrence = get_object_or_404(Occurrence, pk=pk)
+def occurrence_details_page(request, stable_id):
+    occurrence = get_object_or_404(Occurrence, stable_id=stable_id)
     return render(
         request, "dashboard/occurrence_details.html", {"occurrence": occurrence}
     )
