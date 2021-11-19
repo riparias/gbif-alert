@@ -114,3 +114,58 @@ class WebPagesTests(TestCase):
         self.assertIn(
             "Please sign in to be able to post comments.", strip_tags(response.content)
         )
+
+    def test_occurrence_details_attempt_to_post_comment_not_logged(self):
+        """We attempt to post a comment without being authenticated, that doesn't work"""
+        occurrence = self.__class__.second_occ
+
+        number_comments_before = OccurrenceComment.objects.filter(
+            occurrence=occurrence
+        ).count()
+
+        response = self.client.post(
+            reverse(
+                "dashboard:page-occurrence-details",
+                kwargs={"stable_id": occurrence.stable_id},
+            ),
+            {"text": "This is my comment"},
+        )
+
+        number_comments_after = OccurrenceComment.objects.filter(
+            occurrence=occurrence
+        ).count()
+
+        self.assertEqual(response.status_code, 403)  # Access denied
+        self.assertEqual(number_comments_after, number_comments_before)
+
+    def test_occurrence_details_attempt_to_post_comment_logged(self):
+        """We attempt to post a comment (authenticated this time), that should work"""
+        occurrence = self.__class__.second_occ
+
+        number_comments_before = OccurrenceComment.objects.filter(
+            occurrence=occurrence
+        ).count()
+
+        self.client.login(username="frusciante", password="12345")
+        response = self.client.post(
+            reverse(
+                "dashboard:page-occurrence-details",
+                kwargs={"stable_id": occurrence.stable_id},
+            ),
+            {"text": "New comment from the test suite"},
+        )
+
+        number_comments_after = OccurrenceComment.objects.filter(
+            occurrence=occurrence
+        ).count()
+
+        self.assertEqual(response.status_code, 200)  # HTTP success
+        self.assertEqual(
+            number_comments_after, number_comments_before + 1
+        )  # One new comment for the occurrence in DB
+        self.assertTemplateUsed(
+            response, "dashboard/occurrence_details.html"
+        )  # On the occurrence details page
+        self.assertContains(
+            response, "New comment from the test suite"
+        )  # The comment appears in the page

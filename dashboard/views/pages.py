@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404, redirect
 
 from dashboard.forms import SignUpForm, EditProfileForm, NewOccurrenceCommentForm
@@ -20,6 +21,11 @@ def occurrence_details_page(request, stable_id):
     occurrence = get_object_or_404(Occurrence, stable_id=stable_id)
 
     if request.method == "POST":
+        if (
+            not request.user.is_authenticated
+        ):  # Only authenticated users can post comments
+            return HttpResponseForbidden()
+
         form = NewOccurrenceCommentForm(request.POST)
         if form.is_valid():
             comment = form.save(commit=False)
