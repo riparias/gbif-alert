@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.contrib.gis.geos import Point
 from django.utils import timezone
+from django.utils.html import strip_tags
 
 from dashboard.models import Occurrence, Species, DataImport, Dataset, OccurrenceComment
 
@@ -79,6 +80,7 @@ class WebPagesTests(TestCase):
         self.assertContains(response, '<a href="https://www.gbif.org/occurrence/1">')
 
     def test_occurrence_details_comments_empty(self):
+        """A message is shown if no comment for the occurrence"""
         response = self.client.get(
             reverse(
                 "dashboard:page-occurrence-details",
@@ -89,6 +91,7 @@ class WebPagesTests(TestCase):
         self.assertContains(response, "No comments yet for this occurrence!")
 
     def test_occurrence_details_comment(self):
+        """Occurrence comments are displayed"""
         response = self.client.get(
             reverse(
                 "dashboard:page-occurrence-details",
@@ -99,3 +102,15 @@ class WebPagesTests(TestCase):
         self.assertContains(response, "by frusciante on")
         self.assertContains(response, "This is my comment")
         # TODO: test with more details (multiple comments, ordering, ...)
+
+    def test_occurrence_details_comment_post_not_logged(self):
+        """Non-logged users are invited to sign in to post comments"""
+        response = self.client.get(
+            reverse(
+                "dashboard:page-occurrence-details",
+                kwargs={"stable_id": self.__class__.second_occ.stable_id},
+            )
+        )
+        self.assertIn(
+            "Please sign in to be able to post comments.", strip_tags(response.content)
+        )
