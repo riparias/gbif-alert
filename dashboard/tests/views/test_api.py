@@ -27,6 +27,7 @@ class ApiTests(TestCase):
 
         Occurrence.objects.create(
             gbif_id=1,
+            occurrence_id="1",
             species=cls.first_species,
             date=SEPTEMBER_13_2021,
             data_import=cls.di,
@@ -35,6 +36,7 @@ class ApiTests(TestCase):
         )
         Occurrence.objects.create(
             gbif_id=2,
+            occurrence_id="2",
             species=cls.second_species,
             date=SEPTEMBER_13_2021,
             data_import=cls.di,
@@ -43,6 +45,7 @@ class ApiTests(TestCase):
         )
         Occurrence.objects.create(
             gbif_id=3,
+            occurrence_id="3",
             species=cls.second_species,
             date=OCTOBER_8_2021,
             data_import=cls.di,
@@ -54,6 +57,7 @@ class ApiTests(TestCase):
         """Regression test: no error 500 in occurrences_json if we have locations without a location"""
         Occurrence.objects.create(
             gbif_id=4,
+            occurrence_id="4",
             species=ApiTests.second_species,
             date=datetime.date.today(),
             data_import=ApiTests.di,
@@ -369,6 +373,7 @@ class ApiTests(TestCase):
         )
         Occurrence.objects.create(
             gbif_id=1000,
+            occurrence_id="1000",
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
@@ -376,6 +381,7 @@ class ApiTests(TestCase):
         )
         Occurrence.objects.create(
             gbif_id=1001,
+            occurrence_id="1001",
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
@@ -383,6 +389,7 @@ class ApiTests(TestCase):
         )
         Occurrence.objects.create(
             gbif_id=1002,
+            occurrence_id="1002",
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
