@@ -4,6 +4,8 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 
+from dashboard.models import OccurrenceComment
+
 
 class CommonUsersFields(forms.ModelForm):
     first_name = forms.CharField(max_length=30, required=False, help_text="Optional.")
@@ -41,3 +43,9 @@ class SignUpForm(CommonUsersFields, UserCreationForm):
             "password1",
             "password2",
         )
+
+
+class NewOccurrenceCommentForm(forms.ModelForm):
+    class Meta:
+        model = OccurrenceComment
+        fields = ("text",)

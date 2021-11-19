@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 
-from dashboard.forms import SignUpForm, EditProfileForm
+from dashboard.forms import SignUpForm, EditProfileForm, NewOccurrenceCommentForm
 from dashboard.models import DataImport, Occurrence
 
 
@@ -18,8 +18,22 @@ def about_page(request):
 
 def occurrence_details_page(request, stable_id):
     occurrence = get_object_or_404(Occurrence, stable_id=stable_id)
+
+    if request.method == "POST":
+        form = NewOccurrenceCommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.author = request.user
+            comment.occurrence = occurrence
+            comment.save()
+            form = NewOccurrenceCommentForm()  # Show a new empty one to the user
+    else:
+        form = NewOccurrenceCommentForm()
+
     return render(
-        request, "dashboard/occurrence_details.html", {"occurrence": occurrence}
+        request,
+        "dashboard/occurrence_details.html",
+        {"occurrence": occurrence, "new_comment_form": form},
     )
 
 

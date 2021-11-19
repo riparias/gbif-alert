@@ -1,4 +1,5 @@
 {% extends 'dashboard/base.html' %}
+{% load crispy_forms_filters %}
 {% load static %}
 {% load riparias_extras %}
 
@@ -30,10 +31,23 @@
         <div class="row">
             <div class="col">
                 <h2>User comments</h2>
+                {% if user.is_authenticated %}
+                    <h3>New comment</h3>
+                    <form method="post">
+                    {% csrf_token %}
+                    {{ new_comment_form|crispy }}
+                    <button type="submit" class="btn btn-primary">Post</button>
+                </form>
+                {% else %}
+                    <p class="alert alert-info"><i class="bi bi-info-circle"></i> Please <a href="{% url 'signin' %}?next={{ request.path }}">sign in</a> to be able to post comments.</p>
+                {% endif %}
+
                 {% for comment in occurrence.sorted_comments_set.all %}
-                    <p class="small text-muted">by {{ comment.author.username }} on {{ comment.created_at }}</p>
-                    <p>{{ comment.text }}</p>
-                    <hr>
+                    <div class="riparias-occurrence-comment">
+                        <p class="small text-muted">by {{ comment.author.username }} on {{ comment.created_at }}</p>
+                        <p>{{ comment.text }}</p>
+                        <hr>
+                    </div>
                 {% empty %}
                     <p>No comments yet for this occurrence!</p>
                 {% endfor %}
