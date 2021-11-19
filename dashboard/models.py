@@ -1,7 +1,9 @@
 import hashlib
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.contrib.gis.db import models
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
@@ -148,6 +150,15 @@ class Occurrence(models.Model):
         )
         super().save(*args, **kwargs)
 
+    def get_absolute_url(self):
+        return reverse(
+            "dashboard:page-occurrence-details", kwargs={"stable_id": self.stable_id}
+        )
+
+    @property
+    def sorted_comments_set(self):
+        return self.occurrencecomment_set.order_by("-created_at")
+
     @staticmethod
     def build_stable_id(occurrence_id: str, dataset_key: str) -> str:
         """Compute a unique/portable/repeatable hash depending on occurrence_id and dataset_key
@@ -190,3 +201,10 @@ class Occurrence(models.Model):
             "datasetName": self.source_dataset.name,
             "date": str(self.date),
         }
+
+
+class OccurrenceComment(models.Model):
+    occurrence = models.ForeignKey(Occurrence, on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)

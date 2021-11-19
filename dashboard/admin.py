@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Species, Occurrence, DataImport, User, Dataset
+from .models import Species, Occurrence, DataImport, User, Dataset, OccurrenceComment
 
 admin.site.site_header = "LIFE RIPARIAS early warning administration"
 
@@ -11,10 +11,17 @@ class RipariasUserAdmin(UserAdmin):
     pass
 
 
+class OccurrenceCommentInline(admin.TabularInline):
+    model = OccurrenceComment
+
+
 @admin.register(Occurrence)
 class OccurrenceAdmin(admin.ModelAdmin):
     list_display = ("stable_id", "date", "species", "source_dataset")
     list_filter = ["data_import"]
+    inlines = [
+        OccurrenceCommentInline,
+    ]
 
 
 @admin.register(Species)

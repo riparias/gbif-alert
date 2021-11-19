@@ -27,6 +27,18 @@
                 <single-occurrence-map :height="400" :lat="{{ occurrence.lat }}" :lon="{{ occurrence.lon }}"></single-occurrence-map>
             </div>
         </div>
+        <div class="row">
+            <div class="col">
+                <h2>User comments</h2>
+                {% for comment in occurrence.sorted_comments_set.all %}
+                    <p class="small text-muted">by {{ comment.author.username }} on {{ comment.created_at }}</p>
+                    <p>{{ comment.text }}</p>
+                    <hr>
+                {% empty %}
+                    <p>No comments yet for this occurrence!</p>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 
     <script src="{% static 'js/occurrence_details-bundle.js' %}"></script>
