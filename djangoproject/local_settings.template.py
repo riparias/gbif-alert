@@ -16,6 +16,15 @@ DATABASES = {
     }
 }
 
-# A Gbif.org is necessary to automatically download occurrences via the `import_occurrences` command
+# Email-sending configuration
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "email-smtp.eu-west-1.amazonaws.com"
+EMAIL_HOST_USER = "yyy"
+EMAIL_HOST_PASSWORD = "xxx"
+EMAIL_SUBJECT_PREFIX = "[dev-alert.riparias.be] "
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = "info@dev-alert.riparias.be"
+
+# A Gbif.org account is necessary to automatically download occurrences via the `import_occurrences` command
 RIPARIAS["GBIF_USERNAME"] = "xxx"
 RIPARIAS["GBIF_PASSWORD"] = "yyy"
