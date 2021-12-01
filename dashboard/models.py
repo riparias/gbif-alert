@@ -255,3 +255,13 @@ class OccurrenceComment(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Area(models.Model):
+    """An area that can be shown to the user, or used to filter occurrences"""
+
+    mpoly = models.MultiPolygonField()
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, blank=True, null=True
+    )  # an area can be global or user-specific
+    name = models.CharField(max_length=255)
