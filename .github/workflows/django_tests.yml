@@ -42,13 +42,13 @@ jobs:
       uses: actions/cache@v2
       with:
         path: .venv
-        key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}-v2
+        key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}-v3
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install --no-interaction --no-root
     - name: Install Django settings
       run: cp djangoproject/local_settings_ci.py djangoproject/local_settings.py
-    - name: show chrome version (for debug)
+    - name: Show chrome version (for debugging purposes)
       run: google-chrome --version
     - name: Run Django tests
       env:
