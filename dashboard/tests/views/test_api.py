@@ -1,11 +1,12 @@
 import datetime
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import Point, MultiPolygon, Polygon
 from django.utils import timezone
 
-from dashboard.models import Occurrence, Species, DataImport, Dataset
+from dashboard.models import Occurrence, Species, DataImport, Dataset, Area
 
 SEPTEMBER_13_2021 = datetime.datetime.strptime("2021-09-13", "%Y-%m-%d").date()
 OCTOBER_8_2021 = datetime.datetime.strptime("2021-10-08", "%Y-%m-%d").date()
@@ -52,6 +53,74 @@ class ApiTests(TestCase):
             source_dataset=cls.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
+
+        cls.global_area = Area.objects.create(
+            name="Global polygon",
+            mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
+        )
+
+        User = get_user_model()
+        cls.area_owner = User.objects.create_user(
+            username="frusciante",
+            password="12345",
+            first_name="John",
+            last_name="Frusciante",
+            email="frusciante@gmail.com",
+        )
+
+        cls.another_user = User.objects.create_user(
+            username="frusciante1",
+            password="12345",
+            first_name="John",
+            last_name="Frusciante",
+            email="frusciante1@gmail.com",
+        )
+
+        cls.user_area = Area.objects.create(
+            name="User polygon",
+            owner=cls.area_owner,
+            mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
+        )
+
+    def test_areas_list_json_anonymous(self):
+        """Getting the list of areas as an anonymous user"""
+        response = self.client.get(reverse("dashboard:api-areas-list-json"))
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+
+        # Make sure we only get the global one
+        self.assertEqual(len(json_data), 1)
+        the_area = json_data[0]
+        self.assertEqual(the_area["name"], "Global polygon")
+        self.assertFalse(the_area["is_user_specific"])
+
+    def test_areas_list_json_owner(self):
+        """Getting the list of areas as an authenticated user that has a personal area"""
+        self.client.login(username="frusciante", password="12345")
+        response = self.client.get(reverse("dashboard:api-areas-list-json"))
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+
+        # Make sure we get global one, but also the user-specific one
+        self.assertEqual(len(json_data), 2)
+        for area in json_data:
+            self.assertIn(area["name"], ("Global polygon", "User polygon"))
+
+    def test_areas_list_json_otheruser(self):
+        """Getting the list of areas as an authenticated user that as NO personal area
+
+        (result should be identical to test_areas_list_json_anonymous())
+        """
+        self.client.login(username="frusciante1", password="12345")
+        response = self.client.get(reverse("dashboard:api-areas-list-json"))
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+
+        # Make sure we only get the global one
+        self.assertEqual(len(json_data), 1)
+        the_area = json_data[0]
+        self.assertEqual(the_area["name"], "Global polygon")
+        self.assertFalse(the_area["is_user_specific"])
 
     def test_occurrences_json_no_location(self):
         """Regression test: no error 500 in occurrences_json if we have locations without a location"""

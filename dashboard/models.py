@@ -266,5 +266,31 @@ class Area(models.Model):
     )  # an area can be global or user-specific
     name = models.CharField(max_length=255)
 
-    def __str__(self):
+    @property
+    def is_global(self) -> bool:
+        return self.owner is None
+
+    @property
+    def is_user_specific(self) -> bool:
+        return not self.is_global
+
+    def is_owned_by(self, user) -> bool:
+        return self.is_user_specific and self.owner == user
+
+    def is_available_to(self, user) -> bool:
+        return self.is_global or self.is_owned_by(user)
+
+    def __str__(self) -> str:
         return self.name
+
+    def to_dict(self, include_geojson: bool):
+        d = {
+            "id": self.pk,
+            "name": self.name,
+            "is_user_specific": self.is_user_specific,
+        }
+
+        if include_geojson:
+            d["geojson_str"] = self.mpoly.geojson
+
+        return d

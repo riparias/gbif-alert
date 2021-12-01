@@ -11,7 +11,7 @@ from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 
-from dashboard.models import Species, Dataset
+from dashboard.models import Species, Dataset, Area
 from dashboard.views.helpers import (
     filtered_occurrences_from_request,
     extract_int_request,
@@ -32,6 +32,24 @@ def species_list_json(_):
     Order: undetermined
     """
     return _model_to_json_list(Species)
+
+
+def areas_list_json(request):
+    """A list of all areas (multypolygons) available to the user.
+
+    Rules:
+        - anonymous user: only list global (non-user specific) areas
+        - logged-in users: see global and own areas
+    """
+    areas = Area.objects.all()
+    if request.user.is_authenticated:
+        areas = [area for area in areas if area.is_available_to(request.user)]
+    else:
+        areas = [area for area in areas if area.is_global]
+
+    return JsonResponse(
+        [area.to_dict(include_geojson=False) for area in areas], safe=False
+    )
 
 
 def datasets_list_json(_):
