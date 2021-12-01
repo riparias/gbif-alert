@@ -58,7 +58,7 @@ imports are deleted to avoid duplicates.
 The data import history is recorded with the DataImport model, and shown to the user on the "about" page.
 
 => For a given occurrence, Django-managed IDs are therefore not stable. A hashing mechanism (based on `occurrenceId` 
-and `DatasetKey`)to allow recognizing a given occurrence between import will be implemented.
+and `DatasetKey`) to allow recognizing a given occurrence is implemented (`stable_id` field on Occurrence).
 
 ## Users
 
