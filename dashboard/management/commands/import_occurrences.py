@@ -108,7 +108,7 @@ def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
             gbif_dataset_key=gbif_dataset_key,
             defaults={"name": dataset_name},
         )
-        Occurrence.objects.create(
+        new_occurrence = Occurrence.objects.create(
             gbif_id=int(
                 get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/gbifID")
             ),
@@ -119,6 +119,7 @@ def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
             data_import=current_data_import,
             source_dataset=dataset,
         )
+        new_occurrence.migrate_linked_entities()
 
 
 class Command(BaseCommand):
