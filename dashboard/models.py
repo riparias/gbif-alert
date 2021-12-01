@@ -265,3 +265,6 @@ class Area(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, blank=True, null=True
     )  # an area can be global or user-specific
     name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name

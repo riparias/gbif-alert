@@ -1,7 +1,15 @@
-from django.contrib import admin
+from django.contrib.gis import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Species, Occurrence, DataImport, User, Dataset, OccurrenceComment
+from .models import (
+    Species,
+    Occurrence,
+    DataImport,
+    User,
+    Dataset,
+    OccurrenceComment,
+    Area,
+)
 
 admin.site.site_header = "LIFE RIPARIAS early warning administration"
 
@@ -16,7 +24,7 @@ class OccurrenceCommentInline(admin.TabularInline):
 
 
 @admin.register(Occurrence)
-class OccurrenceAdmin(admin.ModelAdmin):
+class OccurrenceAdmin(admin.OSMGeoAdmin):
     list_display = ("stable_id", "date", "species", "source_dataset")
     list_filter = ["data_import"]
     inlines = [
@@ -37,3 +45,8 @@ class DataImportAdmin(admin.ModelAdmin):
 @admin.register(Dataset)
 class DatasetAdmin(admin.ModelAdmin):
     pass
+
+
+@admin.register(Area)
+class AreaAdmin(admin.OSMGeoAdmin):
+    list_display = ("name", "owner")
