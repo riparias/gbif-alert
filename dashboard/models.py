@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 import hashlib
+
+from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.contrib.gis.db import models
+from django.db.models import QuerySet
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
@@ -144,6 +149,9 @@ class Occurrence(models.Model):
     class Meta:
         unique_together = [("gbif_id", "data_import"), ("stable_id", "data_import")]
 
+    class OtherIdenticalOccurrenceIsNewer(Exception):
+        pass
+
     def save(self, *args, **kwargs):
         self.stable_id = Occurrence.build_stable_id(
             self.occurrence_id, self.source_dataset.gbif_dataset_key
@@ -154,6 +162,45 @@ class Occurrence(models.Model):
         return reverse(
             "dashboard:page-occurrence-details", kwargs={"stable_id": self.stable_id}
         )
+
+    def migrate_linked_entities(self):
+        """Migrate existing entities (comments, ...) linked to a previous occurrence that share the stable ID
+
+        Does nothing if there's no replaced occurrence
+        """
+        replaced_occurrence = self.replaced_occurrence
+        if replaced_occurrence is not None:
+            # 1. Migrating comments
+            for comment in replaced_occurrence.occurrencecomment_set.all():
+                comment.occurrence = self
+                comment.save()
+
+    @property
+    def replaced_occurrence(self) -> Optional[Occurrence]:
+        """Return the occurrence (from a previous import) that will be replaced by this one
+
+        return None if this occurrence is new to the system
+        raises:
+        - Occurrence.MultipleObjectsReturned if multiple old occurrences match
+        - Occurrence.OtherIdenticalOccurrenceIsNewer if another one has the same stable identifier, but is more recent
+        """
+
+        identical_occurrences = self.get_identical_occurrences()
+        if identical_occurrences.count() == 0:
+            return None
+        elif identical_occurrences.count() == 1:
+            the_other_one = identical_occurrences[0]
+            if the_other_one.data_import.pk < self.data_import.pk:
+                return the_other_one
+            else:
+                raise Occurrence.OtherIdenticalOccurrenceIsNewer
+
+        else:  # Multiple occurrences found, this is abnormal
+            raise Occurrence.MultipleObjectsReturned
+
+    def get_identical_occurrences(self) -> QuerySet[Occurrence]:
+        """Return 'identical' occurrences (same stable_id), excluding myself)"""
+        return Occurrence.objects.exclude(pk=self.pk).filter(stable_id=self.stable_id)
 
     @property
     def sorted_comments_set(self):
