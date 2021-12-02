@@ -7,9 +7,11 @@ All endpoints that deal with filtered occurrences takes the following GET parame
     - endDate: end date (inclusive), in '%Y-%m-%d' format. Example: 2021-07-31, 1981-08-02
 """
 from django.core.paginator import Paginator
+from django.core.serializers import serialize
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
+from django.shortcuts import get_object_or_404
 
 from dashboard.models import Species, Dataset, Area
 from dashboard.views.helpers import (
@@ -50,6 +52,17 @@ def areas_list_json(request):
     return JsonResponse(
         [area.to_dict(include_geojson=False) for area in areas], safe=False
     )
+
+
+def area_geojson(request, id: int):
+    """Return a specific area as GeoJSON"""
+    area = get_object_or_404(Area, pk=id)
+    if area.is_available_to(request.user):
+        return HttpResponse(
+            serialize("geojson", [area]), content_type="application/json"
+        )
+    else:
+        return HttpResponseForbidden()
 
 
 def datasets_list_json(_):

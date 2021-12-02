@@ -122,6 +122,80 @@ class ApiTests(TestCase):
         self.assertEqual(the_area["name"], "Global polygon")
         self.assertFalse(the_area["is_user_specific"])
 
+    def test_area_geojson_anonymous(self):
+        """Anonymous users can get the global areas, not the user-specific ones"""
+
+        # Case 1: we request the global area
+        response = self.client.get(
+            reverse(
+                "dashboard:api-area-geojson", kwargs={"id": ApiTests.global_area.pk}
+            )
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["content-type"], "application/json")
+        # Make sure it looks like GeoJSON
+        json_data = response.json()
+        self.assertEqual(json_data["type"], "FeatureCollection")
+        json_data["features"]
+
+        # Case 2: we request a user-specific one
+        response = self.client.get(
+            reverse("dashboard:api-area-geojson", kwargs={"id": ApiTests.user_area.pk})
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.content, b"")
+
+    def test_area_geojson_owner(self):
+        """The area owner can get the global areas, but also its own"""
+
+        self.client.login(username="frusciante", password="12345")
+        # Case 1: we request the global area
+        response = self.client.get(
+            reverse(
+                "dashboard:api-area-geojson", kwargs={"id": ApiTests.global_area.pk}
+            )
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["content-type"], "application/json")
+        # Make sure it looks like GeoJSON
+        json_data = response.json()
+        self.assertEqual(json_data["type"], "FeatureCollection")
+        json_data["features"]
+
+        # Case 2: we request a user-specific one
+        response = self.client.get(
+            reverse("dashboard:api-area-geojson", kwargs={"id": ApiTests.user_area.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["content-type"], "application/json")
+        # Make sure it looks like GeoJSON
+        json_data = response.json()
+        self.assertEqual(json_data["type"], "FeatureCollection")
+        json_data["features"]
+
+    def test_area_geojson_otheruser(self):
+        """A logged-in user that has no specific area: same result than anonymous"""
+        self.client.login(username="frusciante1", password="12345")
+
+        response = self.client.get(
+            reverse(
+                "dashboard:api-area-geojson", kwargs={"id": ApiTests.global_area.pk}
+            )
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["content-type"], "application/json")
+        # Make sure it looks like GeoJSON
+        json_data = response.json()
+        self.assertEqual(json_data["type"], "FeatureCollection")
+        json_data["features"]
+
+        # Case 2: we request a user-specific one
+        response = self.client.get(
+            reverse("dashboard:api-area-geojson", kwargs={"id": ApiTests.user_area.pk})
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.content, b"")
+
     def test_occurrences_json_no_location(self):
         """Regression test: no error 500 in occurrences_json if we have locations without a location"""
         Occurrence.objects.create(

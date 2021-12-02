@@ -34,6 +34,7 @@ urlpatterns = [
         name="api-filtered-occurrences-data-page",
     ),
     path("api/areas", views.areas_list_json, name="api-areas-list-json"),
+    path("api/area/<int:id>", views.area_geojson, name="api-area-geojson"),
     # Maps
     path(
         "api/maps/tiles/hexagon_grid_aggregated/<int:zoom>/<int:x>/<int:y>.mvt",
