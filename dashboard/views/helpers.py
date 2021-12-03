@@ -1,10 +1,11 @@
 import datetime
 from typing import Tuple, List
 
+from django.contrib.gis.db.models.aggregates import Union
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import QuerySet
 
-from dashboard.models import Occurrence
+from dashboard.models import Occurrence, Area
 
 
 def extract_int_array_request(request, param_name):
@@ -47,7 +48,9 @@ def filtered_occurrences_from_request(request: WSGIRequest) -> QuerySet[Occurren
     """Takes a request, extract common parameters used to filter occurrences and return a corresponding QuerySet"""
     qs = Occurrence.objects.all()
 
-    species_ids, datasets_ids, start_date, end_date = filters_from_request(request)
+    species_ids, datasets_ids, start_date, end_date, area_ids = filters_from_request(
+        request
+    )
 
     # !! IMPORTANT !! Make sure the occurrence filtering here is equivalent to what's done in
     # views.maps.JINJASQL_FRAGMENT_FILTER_OCCURRENCES. Otherwise, occurrences returned on the map and on other
@@ -62,6 +65,11 @@ def filtered_occurrences_from_request(request: WSGIRequest) -> QuerySet[Occurren
         qs = qs.filter(date__gte=start_date)
     if end_date:
         qs = qs.filter(date__lte=end_date)
+    if area_ids:
+        combined_areas = Area.objects.filter(pk__in=area_ids).aggregate(
+            area=Union("mpoly")
+        )["area"]
+        qs = qs.filter(location__within=combined_areas)
 
     return qs
 
@@ -73,5 +81,6 @@ def filters_from_request(
     datasets_ids = extract_int_array_request(request, "datasetsIds[]")
     start_date = extract_date_request(request, "startDate")
     end_date = extract_date_request(request, "endDate")
+    area_ids = extract_int_array_request(request, "areaIds[]")
 
-    return species_ids, datasets_ids, start_date, end_date
+    return species_ids, datasets_ids, start_date, end_date, area_ids

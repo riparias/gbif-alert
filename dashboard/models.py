@@ -12,6 +12,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
+DATA_SRID = 3857  # Let's keep everything in Google Mercator to avoid reprojections
+
 
 class User(AbstractUser):
     pass
@@ -140,7 +142,7 @@ class Occurrence(models.Model):
     stable_id = models.CharField(max_length=40)
 
     species = models.ForeignKey(Species, on_delete=models.PROTECT)
-    location = models.PointField(blank=True, null=True, srid=3857)
+    location = models.PointField(blank=True, null=True, srid=DATA_SRID)
     date = models.DateField()
 
     data_import = models.ForeignKey(DataImport, on_delete=models.PROTECT)
@@ -260,7 +262,7 @@ class OccurrenceComment(models.Model):
 class Area(models.Model):
     """An area that can be shown to the user, or used to filter occurrences"""
 
-    mpoly = models.MultiPolygonField()
+    mpoly = models.MultiPolygonField(srid=DATA_SRID)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, blank=True, null=True
     )  # an area can be global or user-specific

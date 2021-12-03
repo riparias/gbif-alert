@@ -203,6 +203,7 @@ export default defineComponent({
         datasetsIds: [],
         startDate: null,
         endDate: null,
+        areaIds: [5, 6],
       },
       dataLayerOpacity: 0.8,
     };

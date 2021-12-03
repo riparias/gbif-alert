@@ -9,6 +9,7 @@ export interface DashboardFilters {
   datasetsIds: Number[];
   startDate: string | null;
   endDate: string | null;
+  areaIds: Number[];
 }
 
 export interface SpeciesInformation {
