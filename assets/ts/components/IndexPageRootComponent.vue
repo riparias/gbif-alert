@@ -29,7 +29,8 @@
             class="m-2"
             button-label-singular="area"
             button-label-plural="areas"
-            modal-title="Areas to include"
+            no-selection-button-label="Everywhere"
+            modal-title="Restrict to specific areas"
             :entries="availableAreasAsEntries"
             @entries-changed="changeSelectedAreas"
           ></Modal-Multi-Selector>

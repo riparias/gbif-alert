@@ -64,6 +64,7 @@ export default defineComponent({
     buttonLabelSingular: { type: String, required: true },
     buttonLabelPlural: { type: String, required: true },
     modalTitle: { type: String, required: true },
+    noSelectionButtonLabel: { type: String, required: false },
     entries: {
       type: Array as () => SelectionEntry[],
       default: [],
@@ -80,7 +81,11 @@ export default defineComponent({
     preparedButtonLabel: function (): string {
       if (!this.selectionMade) {
         // No selection: default label
-        return "All " + this.buttonLabelPlural;
+        if (this.noSelectionButtonLabel) {
+          return this.noSelectionButtonLabel;
+        } else {
+          return "All " + this.buttonLabelPlural;
+        }
       } else {
         // 1 single selection: show the value
         if (this.selectedEntriesIds.length === 1) {
