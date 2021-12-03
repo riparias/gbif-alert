@@ -35,7 +35,6 @@ interface MapContainerData {
   HexMinOccCount: Number;
   HexMaxOccCount: Number;
   availableBaseLayers: BaseLayerEntry[];
-  ripariasAreaLayer: Vector<VectorSource<Polygon>>;
 }
 
 interface OlStyleFunction {
@@ -73,9 +72,6 @@ export default defineComponent({
     showCounters: Boolean,
     baseLayerName: String,
 
-    ripariasGeojsonUrl: String,
-    showRipariasArea: Boolean,
-
     dataLayerOpacity: Number,
   },
   data: function () {
@@ -98,19 +94,6 @@ export default defineComponent({
           }),
         },
       ],
-      ripariasAreaLayer: new Vector({
-        source: new VectorSource({
-          format: new GeoJSON(),
-          url: this.ripariasGeojsonUrl,
-        }),
-        style: new Style({
-          stroke: new Stroke({
-            color: "#0b6efd",
-            width: 3,
-          }),
-        }),
-        zIndex: 1000,
-      }) as Vector<VectorSource<Polygon>>,
     } as MapContainerData;
   },
   watch: {
@@ -120,9 +103,6 @@ export default defineComponent({
           this.dataLayer.setOpacity(val);
         }
       },
-    },
-    showRipariasArea: function () {
-      this.updateRipariasArea();
     },
     baseLayerName: {
       handler: function (newVal: string) {
@@ -206,20 +186,6 @@ export default defineComponent({
     },
   },
   methods: {
-    updateRipariasArea: function (): void {
-      if (this.map) {
-        if (this.showRipariasArea) {
-          this.ripariasAreaLayer;
-          this.map.addLayer(
-            this.ripariasAreaLayer as Vector<VectorSource<Polygon>> // Not sure why the type of ripariasAreaLayer is not properly inferred
-          );
-        } else {
-          this.map.removeLayer(
-            this.ripariasAreaLayer as Vector<VectorSource<Polygon>> // Not sure why the type of ripariasAreaLayer is not properly inferred
-          );
-        }
-      }
-    },
     loadOccMinMax: function (zoomLevel: number, filters: DashboardFilters) {
       let params = { ...filters } as any;
       params.zoom = zoomLevel;
@@ -266,7 +232,6 @@ export default defineComponent({
     this.loadOccMinMax(this.initialZoom, this.filters);
     this.map = this.createBasicMap();
     this.replaceDataLayer();
-    this.updateRipariasArea();
   },
 });
 </script>

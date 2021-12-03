@@ -103,20 +103,6 @@
                 @input="dataLayerOpacity = $event.target.valueAsNumber"
               />
             </div>
-            <div class="col form-switch">
-              <input
-                v-model="showRipariasArea"
-                class="form-check-input"
-                type="checkbox"
-                id="ripariasAreaCheckbox"
-              />
-
-              <label
-                class="col-form-label col-form-label-sm form-check-label"
-                for="ripariasAreaCheckbox"
-                >Show LIFE RIPARIAS study area</label
-              >
-            </div>
           </div>
 
           <Occurrences-Map
@@ -131,8 +117,6 @@
             :filters="filters"
             :show-counters="true"
             :base-layer-name="mapBaseLayer"
-            :riparias-geojson-url="frontendConfig.ripariasAreaGeojsonUrl"
-            :show-riparias-area="showRipariasArea"
             :data-layer-opacity="dataLayerOpacity"
           ></Occurrences-Map>
         </div>
@@ -181,7 +165,6 @@ interface IndexPageRootComponentData {
   availableMapBaseLayers: SelectionEntry[];
   selectedTab: string;
   availableTabs: string[];
-  showRipariasArea: boolean;
   dataLayerOpacity: number;
 }
 
@@ -202,12 +185,12 @@ export default defineComponent({
       availableSpecies: [],
       availableDatasets: [],
       availableAreas: [],
+
       availableMapBaseLayers: [
         { id: "toner", label: "Stamen Toner" },
         { id: "osmHot", label: "OSM HOT" },
       ],
       mapBaseLayer: "osmHot",
-      showRipariasArea: true,
       selectedTab: "Map view",
       availableTabs: ["Map view", "Table view"],
       filters: {
