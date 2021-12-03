@@ -24,6 +24,15 @@
             :entries="availableDatasetsAsEntries"
             @entries-changed="changeSelectedDatasets"
           ></Modal-Multi-Selector>
+
+          <Modal-Multi-Selector
+            class="m-2"
+            button-label-singular="area"
+            button-label-plural="areas"
+            modal-title="Areas to include"
+            :entries="availableAreasAsEntries"
+            @entries-changed="changeSelectedAreas"
+          ></Modal-Multi-Selector>
         </div>
 
         <div class="col-3">
@@ -150,6 +159,7 @@ import {
   SpeciesInformation,
   FrontEndConfig,
   SelectionEntry,
+  AreaInformation,
 } from "../interfaces";
 import axios from "axios";
 import OccurrencesCounter from "../components/OccurrencesCounter.vue";
@@ -165,6 +175,7 @@ interface IndexPageRootComponentData {
   frontendConfig: FrontEndConfig;
   availableSpecies: SpeciesInformation[];
   availableDatasets: DatasetInformation[];
+  availableAreas: AreaInformation[];
   filters: DashboardFilters;
   mapBaseLayer: string;
   availableMapBaseLayers: SelectionEntry[];
@@ -190,6 +201,7 @@ export default defineComponent({
 
       availableSpecies: [],
       availableDatasets: [],
+      availableAreas: [],
       availableMapBaseLayers: [
         { id: "toner", label: "Stamen Toner" },
         { id: "osmHot", label: "OSM HOT" },
@@ -201,9 +213,9 @@ export default defineComponent({
       filters: {
         speciesIds: [],
         datasetsIds: [],
+        areaIds: [],
         startDate: null,
         endDate: null,
-        areaIds: [5, 6],
       },
       dataLayerOpacity: 0.8,
     };
@@ -219,6 +231,11 @@ export default defineComponent({
         return { id: d.id, label: d.name };
       });
     },
+    availableAreasAsEntries: function (): SelectionEntry[] {
+      return this.availableAreas.map((a: AreaInformation) => {
+        return { id: a.id, label: a.name };
+      });
+    },
   },
   methods: {
     changeSelectedSpecies: function (speciesIds: Number[]) {
@@ -227,6 +244,10 @@ export default defineComponent({
 
     changeSelectedDatasets: function (datasetsIds: Number[]) {
       this.filters.datasetsIds = datasetsIds;
+    },
+
+    changeSelectedAreas: function (areasIds: Number[]) {
+      this.filters.areaIds = areasIds;
     },
 
     populateAvailableDatasets: function () {
@@ -243,11 +264,19 @@ export default defineComponent({
           this.availableSpecies = response.data;
         });
     },
+    populateAvailableAreas: function () {
+      axios
+        .get(this.frontendConfig.apiEndpoints.areasListUrl)
+        .then((response) => {
+          this.availableAreas = response.data;
+        });
+    },
   },
 
   mounted: function () {
     this.populateAvailableSpecies();
     this.populateAvailableDatasets();
+    this.populateAvailableAreas();
   },
 });
 </script>

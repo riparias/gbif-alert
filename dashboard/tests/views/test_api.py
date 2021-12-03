@@ -92,7 +92,7 @@ class ApiTests(TestCase):
         self.assertEqual(len(json_data), 1)
         the_area = json_data[0]
         self.assertEqual(the_area["name"], "Global polygon")
-        self.assertFalse(the_area["is_user_specific"])
+        self.assertFalse(the_area["isUserSpecific"])
 
     def test_areas_list_json_owner(self):
         """Getting the list of areas as an authenticated user that has a personal area"""
@@ -120,7 +120,7 @@ class ApiTests(TestCase):
         self.assertEqual(len(json_data), 1)
         the_area = json_data[0]
         self.assertEqual(the_area["name"], "Global polygon")
-        self.assertFalse(the_area["is_user_specific"])
+        self.assertFalse(the_area["isUserSpecific"])
 
     def test_area_geojson_anonymous(self):
         """Anonymous users can get the global areas, not the user-specific ones"""

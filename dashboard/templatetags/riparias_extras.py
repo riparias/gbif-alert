@@ -21,6 +21,7 @@ def js_config_object(context):
         "apiEndpoints": {
             "speciesListUrl": reverse("dashboard:api-species-list-json"),
             "datasetsListUrl": reverse("dashboard:api-datasets-list-json"),
+            "areasListUrl": reverse("dashboard:api-areas-list-json"),
             "occurrencesCounterUrl": reverse(
                 "dashboard:api-filtered-occurrences-counter"
             ),

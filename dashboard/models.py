@@ -289,7 +289,7 @@ class Area(models.Model):
         d = {
             "id": self.pk,
             "name": self.name,
-            "is_user_specific": self.is_user_specific,
+            "isUserSpecific": self.is_user_specific,
         }
 
         if include_geojson:

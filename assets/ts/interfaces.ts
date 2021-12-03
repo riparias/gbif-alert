@@ -26,9 +26,16 @@ export interface DatasetInformation {
   name: string;
 }
 
+export interface AreaInformation {
+  id: number;
+  name: string;
+  isUserSpecific: boolean;
+}
+
 interface EndpointsUrls {
   speciesListUrl: string;
   datasetsListUrl: string;
+  areasListUrl: string;
   tileServerUrlTemplate: string;
   occurrencesCounterUrl: string;
   occurrencesJsonUrl: string;
