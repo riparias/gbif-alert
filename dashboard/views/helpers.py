@@ -76,7 +76,7 @@ def filtered_occurrences_from_request(request: WSGIRequest) -> QuerySet[Occurren
 
 def filters_from_request(
     request: WSGIRequest,
-) -> Tuple[List[int], List[int], datetime.date, datetime.date]:
+) -> Tuple[List[int], List[int], datetime.date, datetime.date, List[int]]:
     species_ids = extract_int_array_request(request, "speciesIds[]")
     datasets_ids = extract_int_array_request(request, "datasetsIds[]")
     start_date = extract_date_request(request, "startDate")
