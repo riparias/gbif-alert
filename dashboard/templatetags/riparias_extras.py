@@ -4,7 +4,7 @@ from django import template
 from django.conf import settings
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from django.templatetags.static import static
+
 
 register = template.Library()
 
@@ -37,6 +37,9 @@ def js_config_object(context):
             "occurrenceDetailsUrlTemplate": reverse(
                 "dashboard:page-occurrence-details", kwargs={"stable_id": 1}
             ).replace("1", "{stable_id}"),
+            "areasUrlTemplate": reverse(
+                "dashboard:api-area-geojson", kwargs={"id": 1}
+            ).replace("1", "{id}"),
             "minMaxOccPerHexagonUrl": reverse("dashboard:api-mvt-min-max-per-hexagon"),
             "occurrencesHistogramDataUrl": reverse(
                 "dashboard:api-filtered-occurrences-monthly-histogram"

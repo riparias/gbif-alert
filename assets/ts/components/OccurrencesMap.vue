@@ -3,11 +3,11 @@
 </template>
 
 <script lang="ts">
-import { Feature, Map, View } from "ol";
-import { defineComponent } from "vue";
+import { Collection, Feature, Map, View } from "ol";
+import { defineComponent, PropType } from "vue";
 import { fromLonLat } from "ol/proj";
 import TileLayer from "ol/layer/Tile";
-import { Vector, VectorTile as VectorTileLayer } from "ol/layer";
+import { VectorTile as VectorTileLayer } from "ol/layer";
 import OSM from "ol/source/OSM";
 import Stamen from "ol/source/Stamen";
 import VectorTileSource from "ol/source/VectorTile";
@@ -21,8 +21,11 @@ import { Fill, Stroke, Style, Text } from "ol/style";
 import axios from "axios";
 import RenderFeature from "ol/render/Feature";
 import VectorSource from "ol/source/Vector";
-import { Polygon } from "ol/geom";
 import { filtersToQuerystring } from "../helpers";
+import LayerGroup from "ol/layer/Group";
+import VectorLayer from "ol/layer/Vector";
+import { Geometry } from "ol/geom";
+import BaseLayer from "ol/layer/Base";
 
 interface BaseLayerEntry {
   name: string;
@@ -35,6 +38,7 @@ interface MapContainerData {
   HexMinOccCount: Number;
   HexMaxOccCount: Number;
   availableBaseLayers: BaseLayerEntry[];
+  areasOverlayCollection: Collection<VectorLayer<VectorSource<Geometry>>>;
 }
 
 interface OlStyleFunction {
@@ -73,6 +77,16 @@ export default defineComponent({
     baseLayerName: String,
 
     dataLayerOpacity: Number,
+
+    areasToShow: {
+      type: Array as PropType<Array<number>>, // Array of area ids
+      default: [],
+    },
+
+    areasEndpointUrlTemplate: {
+      type: String,
+      required: true,
+    },
   },
   data: function () {
     return {
@@ -94,9 +108,15 @@ export default defineComponent({
           }),
         },
       ],
+      areasOverlayCollection: new Collection(),
     } as MapContainerData;
   },
   watch: {
+    areasToShow: {
+      handler: function (val) {
+        this.refreshAreas(val);
+      },
+    },
     dataLayerOpacity: {
       handler: function (val) {
         if (this.dataLayer) {
@@ -186,6 +206,34 @@ export default defineComponent({
     },
   },
   methods: {
+    refreshAreas: function (areaIds: number[]): void {
+      this.areasOverlayCollection.clear();
+
+      for (const areaId of areaIds) {
+        axios
+          .get(this.areasEndpointUrlTemplate.replace("{id}", areaId.toString()))
+          .then((response) => {
+            const vectorSource = new VectorSource({
+              features: new GeoJSON().readFeatures(response.data, {
+                dataProjection: "EPSG:4326",
+                featureProjection: "EPSG:3857",
+              }),
+            });
+
+            const vectorLayer = new VectorLayer({
+              source: vectorSource,
+              style: new Style({
+                stroke: new Stroke({
+                  color: "#0b6efd",
+                  width: 3,
+                }),
+              }),
+            });
+
+            this.areasOverlayCollection.push(vectorLayer);
+          });
+      }
+    },
     loadOccMinMax: function (zoomLevel: number, filters: DashboardFilters) {
       let params = { ...filters } as any;
       params.zoom = zoomLevel;
@@ -223,7 +271,14 @@ export default defineComponent({
     createBasicMap: function (): Map {
       return new Map({
         target: this.$refs["map-root"] as HTMLInputElement,
-        layers: [this.selectedBaseLayer],
+        layers: [
+          this.selectedBaseLayer,
+          new LayerGroup({
+            layers: this
+              .areasOverlayCollection as unknown as Collection<BaseLayer>,
+            zIndex: 1000,
+          }),
+        ],
         view: this.mapView,
       });
     },

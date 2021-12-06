@@ -37,6 +37,7 @@ interface EndpointsUrls {
   datasetsListUrl: string;
   areasListUrl: string;
   tileServerUrlTemplate: string;
+  areasUrlTemplate: string;
   occurrencesCounterUrl: string;
   occurrencesJsonUrl: string;
   occurrencesHistogramDataUrl: string;

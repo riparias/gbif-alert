@@ -119,6 +119,10 @@
             :show-counters="true"
             :base-layer-name="mapBaseLayer"
             :data-layer-opacity="dataLayerOpacity"
+            :areas-to-show="filters.areaIds"
+            :areas-endpoint-url-template="
+              frontendConfig.apiEndpoints.areasUrlTemplate
+            "
           ></Occurrences-Map>
         </div>
 
