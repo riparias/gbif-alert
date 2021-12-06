@@ -1,13 +1,13 @@
 import datetime
 
-from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import Point, MultiPolygon, Polygon
 from django.test import TestCase
 from django.urls import reverse
 
 import mapbox_vector_tile
 from django.utils import timezone
 
-from dashboard.models import Occurrence, Species, DataImport, Dataset
+from dashboard.models import Occurrence, Species, DataImport, Dataset, Area
 
 
 class VectorTilesServerTests(TestCase):
@@ -44,6 +44,41 @@ class VectorTilesServerTests(TestCase):
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
+        cls.global_area_andenne = Area.objects.create(
+            name="Global polygon - Andenne",
+            # Covers Namur-Liège area (includes Andenne but not Lillois)
+            mpoly=MultiPolygon(
+                Polygon(
+                    (
+                        (4.7866, 50.5200),
+                        (5.6271, 50.6839),
+                        (5.6930, 50.5724),
+                        (4.8306, 50.4116),
+                        (4.7866, 50.5200),
+                    ),
+                    srid=4326,
+                ),
+                srid=4326,
+            ),
+        )
+
+        cls.global_area_lillois = Area.objects.create(
+            name="Global polygon - Lillois",
+            mpoly=MultiPolygon(
+                Polygon(
+                    (
+                        (4.3164, 50.6658),
+                        (4.4025, 50.6658),
+                        (4.4025, 50.6164),
+                        (4.3164, 50.6164),
+                        (4.3164, 50.6658),
+                    ),
+                    srid=4326,
+                ),
+                srid=4326,
+            ),
+        )
+
     def test_base_mvt_server(self):
         """There's a tile server returning the appropriate MIME type"""
         response = self.client.get(
@@ -78,7 +113,76 @@ class VectorTilesServerTests(TestCase):
             the_feature["properties"]["count"], 2
         )  # It has a "count" property with the value 2
 
+    def test_tiles_area_filter(self):
+        # We explore tiles at different zoom levels. In all cases the observation in Lillois should be filtered out by
+        # the areaId filtering.
+
+        # Case 1: large view over Wallonia
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 2, "x": 2, "y": 1},  # Large views over Wallonia
+        )
+        url_with_params = (
+            f"{base_url}?areaIds[]={VectorTilesServerTests.global_area_andenne.pk}"
+        )
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+
+        # We have one single hexagon (because of the zoom level), its counter is 1 (because Lillois observation was filtered out)
+        self.assertEqual(len(decoded_tile["default"]["features"]), 1)
+        the_feature = decoded_tile["default"]["features"][0]
+        self.assertEqual(the_feature["properties"]["count"], 1)
+
+        # Case 2: A tile that covers an important part of Wallonia, including Andenne and Braine. Should have a single
+        # hexagon (because of the area filtering)
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 8, "x": 131, "y": 86},
+        )
+        url_with_params = (
+            f"{base_url}?areaIds[]={VectorTilesServerTests.global_area_andenne.pk}"
+        )
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(
+            len(decoded_tile["default"]["features"]), 1
+        )  # it has a single feature
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["count"], 1
+        )
+
+        # Case 3: A zoomed tile with just Andenne and the close neighborhood, the hex should still be there
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 10, "x": 526, "y": 345},
+        )
+        url_with_params = (
+            f"{base_url}?areaIds[]={VectorTilesServerTests.global_area_andenne.pk}"
+        )
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(
+            len(decoded_tile["default"]["features"]), 1
+        )  # it has a single feature
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["count"], 1
+        )
+
+        # Case 4: A zoomed time on Lillois, should be empty because of the filtering
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 17, "x": 67123, "y": 44083},
+        )
+        url_with_params = (
+            f"{base_url}?areaIds[]={VectorTilesServerTests.global_area_andenne.pk}"
+        )
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(decoded_tile, {})
+
     def test_tiles_species_filter(self):
+        # We explore tiles at different zoom levels. In all cases the observation in Lillois should be filtered out by
+        # the speciesId filtering.
         # Multiple cases where only the occurrence in Andenne is visible
 
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
@@ -598,5 +702,53 @@ class VectorTilesServerTests(TestCase):
             data={"zoom": 8, "speciesIds[]": VectorTilesServerTests.second_species.pk},
         )
 
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 2)
+
+    def test_min_max_per_hexagon_with_area_filter(self):
+        # Add a second one in Lillois, but not next to the other
+        Occurrence.objects.create(
+            gbif_id=3,
+            occurrence_id="3",
+            species=VectorTilesServerTests.second_species,
+            date=datetime.date.today(),
+            data_import=VectorTilesServerTests.di,
+            source_dataset=VectorTilesServerTests.second_dataset,
+            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
+        )
+
+        # We restrict ourselves to Andenne: only one occurrence
+        response = self.client.get(
+            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "areaIds[]": VectorTilesServerTests.global_area_andenne.pk,
+            },
+        )
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 1)
+
+        # Case 2: we limit ourselves to Lillois (one single hexagon, with count=2)
+        response = self.client.get(
+            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "areaIds[]": VectorTilesServerTests.global_area_lillois.pk,
+            },
+        )
+        self.assertEqual(response.json()["min"], 2)
+        self.assertEqual(response.json()["max"], 2)
+
+        # Case3: Test with multiple areas: we request both Andenne and Lillois: same results as no filters
+        response = self.client.get(
+            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "areaIds[]": [
+                    VectorTilesServerTests.global_area_lillois.pk,
+                    VectorTilesServerTests.global_area_andenne.pk,
+                ],
+            },
+        )
         self.assertEqual(response.json()["min"], 1)
         self.assertEqual(response.json()["max"], 2)
