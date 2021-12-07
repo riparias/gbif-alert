@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.gis",
     "django.contrib.humanize",
     # Third-party
+    "maintenance_mode",
     "crispy_forms",
     "crispy_bootstrap5",
     # Local/custom
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.locale.LocaleMiddleware",
+    "maintenance_mode.middleware.MaintenanceModeMiddleware",
 ]
 
 ROOT_URLCONF = "djangoproject.urls"

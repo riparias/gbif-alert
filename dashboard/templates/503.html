@@ -1,0 +1,18 @@
+{% extends 'dashboard/base.html' %}
+
+{% load static %}
+
+{% block page_title %}Maintenance - RIPARIAS early alert{% endblock %}
+
+{% block after_messages %}
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <h1>The website is currently down for maintenance</h1>
+            <p>We expect to be back in a couple of minutes. Thanks for your patience.</p>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/index-bundle.js' %}"></script>
+{% endblock after_messages %}

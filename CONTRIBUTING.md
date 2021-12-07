@@ -110,3 +110,12 @@ def my_view(request):
   return redirect("dashboard:page-index")
 ```
 
+## Maintenance mode
+
+We make use of [django-maintenance-mode](https://github.com/fabiocaccamo/django-maintenance-mode). 
+
+Maintenance mode will be set during each occurrence data import (data would be inconsistent at this stage, so we don't
+want to let users access the website, nor send e-mail notifications).
+
+This tool can also be used to manually activate maintenance mode during complex maintenance tasks, look at 
+[django-maintenance-mode documentation](https://github.com/fabiocaccamo/django-maintenance-mode).

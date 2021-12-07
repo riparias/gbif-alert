@@ -160,6 +160,14 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "django-maintenance-mode"
+version = "0.16.1"
+description = "django-maintenance-mode shows a 503 error page when maintenance-mode is on."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "django-stubs"
 version = "1.9.0"
 description = "Mypy stubs for Django"
@@ -560,7 +568,7 @@ requests = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "fe1434213b4cc3b5523677668213795b9624e5739567bce0eaa4bf1832783d83"
+content-hash = "c6c539bf71b5de93e4a48ebe3109226892c24b09e174aaeb4c695e6328fdbfa9"
 
 [metadata.files]
 asgiref = [
@@ -614,6 +622,10 @@ django = [
 django-crispy-forms = [
     {file = "django-crispy-forms-1.13.0.tar.gz", hash = "sha256:4dc9e5263c91c5f51766806a050ca2ec5c349d34c5cd91fcca3a1a0363b5e29e"},
     {file = "django_crispy_forms-1.13.0-py3-none-any.whl", hash = "sha256:9c49d29dd9e98dc2e6e3a8b02670d72deb6edf7bc616986ca412d72c306b36a0"},
+]
+django-maintenance-mode = [
+    {file = "django-maintenance-mode-0.16.1.tar.gz", hash = "sha256:da1f77f431ab5c55913459adb3c259e091f783ffc72de701690826aaaccce4ca"},
+    {file = "django_maintenance_mode-0.16.1-py3-none-any.whl", hash = "sha256:1bfac0b34429a9f6dbb0db169fb753f49f24ca155ae148d7526ff395303c158d"},
 ]
 django-stubs = [
     {file = "django-stubs-1.9.0.tar.gz", hash = "sha256:664843091636a917faf5256d028476559dc360fdef9050b6df87ab61b21607bf"},
