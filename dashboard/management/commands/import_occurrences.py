@@ -13,6 +13,7 @@ from dwca.read import DwCAReader  # type: ignore
 from dwca.darwincore.utils import qualname as qn  # type: ignore
 from dwca.rows import CoreRow  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
+from maintenance_mode.core import set_maintenance_mode
 
 from dashboard.models import Species, Occurrence, DataImport, Dataset
 
@@ -176,9 +177,11 @@ class Command(BaseCommand):
             self.stdout.write("Occurrences downloaded")
 
         self.stdout.write(
-            "We now have a (locally accessible) source dwca, real import is starting..."
+            "We now have a (locally accessible) source dwca, real import is starting. We'll use a transaction and put "
+            "the website in maintenance mode"
         )
 
+        set_maintenance_mode(True)
         with transaction.atomic():
             # 2. Create the DataImport object
             current_data_import = DataImport.objects.create(start=timezone.now())
@@ -204,3 +207,6 @@ class Command(BaseCommand):
             self.stdout.write("Updating the DataImport object")
             current_data_import.complete()
             self.stdout.write("Done.")
+
+        self.stdout.write("Leaving maintenance mode.")
+        set_maintenance_mode(False)
