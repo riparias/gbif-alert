@@ -6,6 +6,7 @@ from typing import Dict, Optional
 from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core.management.base import BaseCommand, CommandParser
+from django.db import transaction
 from django.db.models import QuerySet
 from django.utils import timezone
 from dwca.read import DwCAReader  # type: ignore
@@ -178,25 +179,28 @@ class Command(BaseCommand):
             "We now have a (locally accessible) source dwca, real import is starting..."
         )
 
-        # 2. Create the DataImport object
-        current_data_import = DataImport.objects.create(start=timezone.now())
-        self.stdout.write(f"Created a new DataImport object: #{current_data_import.pk}")
-
-        # 3. Import data from DwCA (occurrences + GBIF download ID)
-        with DwCAReader(source_data_path) as dwca:
-            current_data_import.set_gbif_download_id(
-                extract_gbif_download_id_from_dwca(dwca)
+        with transaction.atomic():
+            # 2. Create the DataImport object
+            current_data_import = DataImport.objects.create(start=timezone.now())
+            self.stdout.write(
+                f"Created a new DataImport object: #{current_data_import.pk}"
             )
-            self._import_all_occurrences_from_dwca(dwca, current_data_import)
 
-        self.stdout.write(
-            "All occurrences imported, now deleting occurrences linked to previous data imports..."
-        )
+            # 3. Import data from DwCA (occurrences + GBIF download ID)
+            with DwCAReader(source_data_path) as dwca:
+                current_data_import.set_gbif_download_id(
+                    extract_gbif_download_id_from_dwca(dwca)
+                )
+                self._import_all_occurrences_from_dwca(dwca, current_data_import)
 
-        # 4. Remove previous occurrences
-        Occurrence.objects.exclude(data_import=current_data_import).delete()
+            self.stdout.write(
+                "All occurrences imported, now deleting occurrences linked to previous data imports..."
+            )
 
-        # 4. Finalize the DataImport object
-        self.stdout.write("Updating the DataImport object")
-        current_data_import.complete()
-        self.stdout.write("Done.")
+            # 4. Remove previous occurrences
+            Occurrence.objects.exclude(data_import=current_data_import).delete()
+
+            # 4. Finalize the DataImport object
+            self.stdout.write("Updating the DataImport object")
+            current_data_import.complete()
+            self.stdout.write("Done.")
