@@ -1,8 +1,8 @@
 import os
 import sys
 
-from django.contrib.gis.utils import LayerMapping
-from django.core.management import BaseCommand, CommandParser
+from django.contrib.gis.utils.layermapping import LayerMapping
+from django.core.management.base import BaseCommand, CommandParser
 
 from dashboard.models import Area
 

@@ -462,7 +462,7 @@ class VectorTilesServerTests(TestCase):
             len(the_feature["geometry"]["coordinates"][0]), 7
         )  # 7 coordinates pair = 6 sides
 
-        # Another very large tile, over Groenland. Should be empty
+        # Another very large tile, over Greenland. Should be empty
         response = self.client.get(
             reverse(
                 "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
