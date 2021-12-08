@@ -25,6 +25,10 @@ EMAIL_SUBJECT_PREFIX = "[dev-alert.riparias.be] "
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = "info@dev-alert.riparias.be"
 
+ADMINS = [
+    ("Nicolas", "nicolas.noe@inbo.be"),
+]
+
 # A Gbif.org account is necessary to automatically download occurrences via the `import_occurrences` command
 RIPARIAS["GBIF_USERNAME"] = "xxx"
 RIPARIAS["GBIF_PASSWORD"] = "yyy"

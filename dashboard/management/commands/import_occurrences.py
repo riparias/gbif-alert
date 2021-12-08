@@ -5,6 +5,7 @@ from typing import Dict, Optional
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
+from django.core.mail import mail_admins
 from django.core.management.base import BaseCommand, CommandParser
 from django.db import transaction
 from django.db.models import QuerySet
@@ -124,6 +125,14 @@ def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
         new_occurrence.migrate_linked_entities()
 
 
+def send_successful_import_email():
+    mail_admins(
+        "Successful occurrence data import",
+        "The daily occurrence data import has been successfully performed",
+        fail_silently=True,
+    )
+
+
 class Command(BaseCommand):
     help = (
         "Import new occurrences and delete previous ones. "
@@ -183,6 +192,8 @@ class Command(BaseCommand):
 
         set_maintenance_mode(True)
         with transaction.atomic():
+            transaction.on_commit(send_successful_import_email)
+
             # 2. Create the DataImport object
             current_data_import = DataImport.objects.create(start=timezone.now())
             self.stdout.write(
