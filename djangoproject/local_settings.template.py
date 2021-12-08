@@ -23,7 +23,8 @@ EMAIL_HOST_USER = "yyy"
 EMAIL_HOST_PASSWORD = "xxx"
 EMAIL_SUBJECT_PREFIX = "[dev-alert.riparias.be] "
 EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = "info@dev-alert.riparias.be"
+DEFAULT_FROM_EMAIL = "info@dev-alert.riparias.be"  # Used for normal messages
+SERVER_EMAIL = "info@dev-alert.riparias.be"  # Used to contact admins for errors, ...
 
 ADMINS = [
     ("Nicolas", "nicolas.noe@inbo.be"),
