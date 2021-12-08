@@ -13,7 +13,7 @@ from dwca.read import DwCAReader  # type: ignore
 from dwca.darwincore.utils import qualname as qn  # type: ignore
 from dwca.rows import CoreRow  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
-from maintenance_mode.core import set_maintenance_mode
+from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
 from dashboard.models import Species, Occurrence, DataImport, Dataset
 
