@@ -1,0 +1,4 @@
+"OBJECTID","ID_0","ISO","NAME_0","ID_1","NAME_1","TYPE_1","ENGTYPE_1","NL_NAME_1","VARNAME_1"
+1,23,"BEL","Belgium",1,"Bruxelles","Gewest","Region",NA,"Brussel"
+2,23,"BEL","Belgium",2,"Vlaanderen","Gewest","Region",NA,"Flandres"
+3,23,"BEL","Belgium",3,"Wallonie","Région","Region",NA,NA
