@@ -150,14 +150,8 @@ class Command(BaseCommand):
         "The --source-dwca option can be used to provide an existing local file instead."
     )
 
-    def __init__(
-        self,
-        stdout: Optional[StringIO] = ...,
-        stderr: Optional[StringIO] = ...,
-        no_color: bool = ...,
-        force_color: bool = ...,
-    ):
-        super().__init__(stdout, stderr, no_color, force_color)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.transaction_was_successful = False
 
     def _import_all_occurrences_from_dwca(
