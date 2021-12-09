@@ -1,6 +1,7 @@
 import argparse
 import tempfile
 import datetime
+from io import StringIO
 from typing import Dict, Optional
 
 from django.conf import settings
@@ -133,6 +134,14 @@ def send_successful_import_email():
     )
 
 
+def send_error_import_email():
+    mail_admins(
+        "ERROR during occurrence data import",
+        "Please have a look at the application",
+        fail_silently=True,
+    )
+
+
 class Command(BaseCommand):
     help = (
         "Import new occurrences and delete previous ones. "
@@ -140,6 +149,16 @@ class Command(BaseCommand):
         "By default, a new download is generated at GBIF. "
         "The --source-dwca option can be used to provide an existing local file instead."
     )
+
+    def __init__(
+        self,
+        stdout: Optional[StringIO] = ...,
+        stderr: Optional[StringIO] = ...,
+        no_color: bool = ...,
+        force_color: bool = ...,
+    ):
+        super().__init__(stdout, stderr, no_color, force_color)
+        self.transaction_was_successful = False
 
     def _import_all_occurrences_from_dwca(
         self, dwca: DwCAReader, data_import: DataImport
@@ -155,6 +174,9 @@ class Command(BaseCommand):
             type=argparse.FileType("r"),
             help="Use an existing dwca file as source (otherwise a new GBIF download will be generated and downloaded)",
         )
+
+    def flag_transaction_as_successful(self):
+        self.transaction_was_successful = True
 
     def handle(self, *args, **options) -> None:
         self.stdout.write("(Re)importing all occurrences")
@@ -192,7 +214,7 @@ class Command(BaseCommand):
 
         set_maintenance_mode(True)
         with transaction.atomic():
-            transaction.on_commit(send_successful_import_email)
+            transaction.on_commit(self.flag_transaction_as_successful)
 
             # 2. Create the DataImport object
             current_data_import = DataImport.objects.create(start=timezone.now())
@@ -221,3 +243,9 @@ class Command(BaseCommand):
 
         self.stdout.write("Leaving maintenance mode.")
         set_maintenance_mode(False)
+
+        self.stdout.write("Sending email report")
+        if self.transaction_was_successful:
+            send_successful_import_email()
+        else:
+            send_error_import_email()
