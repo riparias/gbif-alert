@@ -46,6 +46,6 @@ class ImportOccurrencesTest(TransactionTestCase):
                 # 2. A request to download the DwCA file was subsequently emitted
                 self.assertEqual(request_history[1].method, "GET")
                 self.assertEqual(
-                    request_history[0].url,
+                    request_history[1].url,
                     "https://api.gbif.org/v1/occurrence/download/request/1000",
                 )
