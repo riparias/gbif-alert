@@ -26,6 +26,7 @@ import LayerGroup from "ol/layer/Group";
 import VectorLayer from "ol/layer/Vector";
 import { Geometry } from "ol/geom";
 import BaseLayer from "ol/layer/Base";
+import XYZ from "ol/source/XYZ";
 
 interface BaseLayerEntry {
   name: string;
@@ -104,6 +105,15 @@ export default defineComponent({
           layer: new TileLayer({
             source: new OSM({
               url: "http://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+            }),
+          }),
+        },
+        {
+          name: "esriImagery",
+          layer: new TileLayer({
+            source: new XYZ({
+              url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+              maxZoom: 19,
             }),
           }),
         },

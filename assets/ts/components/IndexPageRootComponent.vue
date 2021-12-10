@@ -194,6 +194,7 @@ export default defineComponent({
       availableMapBaseLayers: [
         { id: "toner", label: "Stamen Toner" },
         { id: "osmHot", label: "OSM HOT" },
+        { id: "esriImagery", label: "ESRI World Imagery" },
       ],
       mapBaseLayer: "osmHot",
       selectedTab: "Map view",
