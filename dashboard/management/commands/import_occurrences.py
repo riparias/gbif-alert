@@ -1,7 +1,6 @@
 import argparse
 import tempfile
 import datetime
-from io import StringIO
 from typing import Dict, Optional
 
 from django.conf import settings

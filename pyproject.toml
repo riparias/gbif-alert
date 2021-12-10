@@ -24,6 +24,7 @@ django-maintenance-mode = "^0.16.1"
 black = "^21.8b0"
 mapbox-vector-tile = "^1.2.1"
 gunicorn = "^20.1.0"
+requests-mock = "^1.9.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
