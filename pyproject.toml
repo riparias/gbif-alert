@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "riparias-early-warning-webapp"
 version = "0.1.0"
-description = ""
+description = "LIFE RIPARIAS early alert web application"
 authors = ["Nicolas Noé <nicolas.noe@inbo.be>"]
 
 [tool.poetry.dependencies]
@@ -10,12 +10,8 @@ Django = "^3.2"
 psycopg2-binary = "^2.9.1"
 requests = "^2.26.0"
 gbif-blocking-occurrence-download = "^0.1.0"
-mypy = "^0.910"
-django-stubs = "^1.8.0"
 python-dwca-reader = "^0.15.0"
 jinjasql = "^0.1.8"
-selenium = "^3.141.0"
-webdriver-manager = "^3.4.2"
 django-crispy-forms = "^1.13.0"
 crispy-bootstrap5 = "^0.6"
 django-maintenance-mode = "^0.16.1"
@@ -25,6 +21,10 @@ black = "^21.8b0"
 mapbox-vector-tile = "^1.2.1"
 gunicorn = "^20.1.0"
 requests-mock = "^1.9.3"
+mypy = "^0.910"
+django-stubs = "^1.8.0"
+selenium = "^3.141.0"
+webdriver-manager = "^3.4.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
