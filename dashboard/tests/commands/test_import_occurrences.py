@@ -1,5 +1,6 @@
 import datetime
 from pathlib import Path
+from unittest import mock
 
 import requests_mock
 from django.contrib.gis.geos import Point
@@ -70,6 +71,41 @@ class ImportOccurrencesTest(TransactionTestCase):
             occurrence=occurrence_to_be_replaced,
             text="This is a comment to migrate",
         )
+
+    def test_transaction(self) -> None:
+        """The whole process happens in a transaction: no DB changes are made if an exception occurs near the end
+        of the process"""
+
+        MODELS_TO_OBSERVE = [
+            Dataset,
+            Species,
+            OccurrenceComment,
+            DataImport,
+            Occurrence,
+        ]
+
+        models_before = {}  # key: model name. value: list representation
+
+        for Model in MODELS_TO_OBSERVE:
+            models_before[Model._meta.label] = list(Model.objects.all().order_by("pk"))
+
+        # DataImport.complete() is called at the end of the import process. We make it fail so we can check what happens
+        with mock.patch(
+            "dashboard.models.DataImport.complete", side_effect=Exception("Boom!")
+        ):
+            with open(
+                SAMPLE_DATA_PATH / "gbif_download.zip", "rb"
+            ) as gbif_download_file:
+                with self.assertRaises(Exception):
+                    call_command("import_occurrences", source_dwca=gbif_download_file)
+
+        # Note: cannot use assertQuerySetEqual because of lazy evaluation
+        # self.assertEqual(list(Occurrence.objects.all().order_by("pk")), qs_before_occ)
+        for Model in MODELS_TO_OBSERVE:
+            self.assertEqual(
+                list(Model.objects.all().order_by("pk")),
+                models_before[Model._meta.label],
+            )
 
     def test_ignore_unusable_occurrences(self) -> None:
         """The DwC-A contains 12 records, but some are not usable:
