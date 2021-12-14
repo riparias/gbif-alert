@@ -337,7 +337,7 @@ class ImportOccurrencesTest(TransactionTestCase):
                 )
                 self.assertEqual(
                     request_history[0].text,
-                    '{"predicate": {"type": "and", "predicates": [{"type": "equals", "key": "COUNTRY", "value": "BE"}, {"type": "in", "key": "TAXON_KEY", "values": ["1224034", "7972617"]}]}}',
+                    '{"predicate": {"type": "and", "predicates": [{"type": "equals", "key": "COUNTRY", "value": "BE"}, {"type": "in", "key": "TAXON_KEY", "values": ["1224034", "7972617"]}, {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"}]}}',
                 )
 
                 # 2. A request to download the DwCA file was subsequently emitted

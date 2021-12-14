@@ -31,6 +31,7 @@ def build_gbif_predicate(country_code: str, species_list: QuerySet[Species]) -> 
                     "key": "TAXON_KEY",
                     "values": [f"{s.gbif_taxon_key}" for s in species_list],
                 },
+                {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"},
             ],
         }
     }
@@ -91,9 +92,15 @@ def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
         point = None
 
     occurrence_id_str = get_string_data(row, field_name=qn("occurrenceID"))
+    occurrence_status_str = get_string_data(row, field_name=qn("occurrenceStatus"))
 
     # Only import records with a year, coordinates and an occurrenceID
-    if year_str != "" and point and occurrence_id_str != "":
+    if (
+        year_str != ""
+        and point
+        and occurrence_id_str != ""
+        and occurrence_status_str == "PRESENT"
+    ):
         # Some dates are incomplete, we're good as long as we have a year
         year = int(year_str)
         try:
