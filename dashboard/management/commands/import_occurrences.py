@@ -94,14 +94,18 @@ def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
 
     # Only import records with a year, coordinates and an occurrenceID
     if year_str != "" and point and occurrence_id_str != "":
-        # Some dates are incomplete(year only)
+        # Some dates are incomplete, we're good as long as we have a year
         year = int(year_str)
         try:
             month = get_int_data(row, field_name=qn("month"))
-            day = get_int_data(row, field_name=qn("day"))
         except ValueError:
             month = 1
+
+        try:
+            day = get_int_data(row, field_name=qn("day"))
+        except ValueError:
             day = 1
+
         date = datetime.date(year, month, day)
         gbif_dataset_key = get_string_data(
             row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
