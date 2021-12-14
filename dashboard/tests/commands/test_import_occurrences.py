@@ -7,6 +7,7 @@ from django.contrib.gis.geos import Point
 from django.core.management import call_command
 from django.test import TransactionTestCase
 from django.utils import timezone
+from maintenance_mode.core import set_maintenance_mode
 
 from dashboard.models import (
     Species,
@@ -99,8 +100,11 @@ class ImportOccurrencesTest(TransactionTestCase):
                 with self.assertRaises(Exception):
                     call_command("import_occurrences", source_dwca=gbif_download_file)
 
+        # We left the command due to an exception, so maintenance mode is still set
+        # We disable it so it doesn't break the rest of the test suite
+        set_maintenance_mode(False)
+
         # Note: cannot use assertQuerySetEqual because of lazy evaluation
-        # self.assertEqual(list(Occurrence.objects.all().order_by("pk")), qs_before_occ)
         for Model in MODELS_TO_OBSERVE:
             self.assertEqual(
                 list(Model.objects.all().order_by("pk")),
