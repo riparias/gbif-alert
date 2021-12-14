@@ -7,7 +7,7 @@ from django.contrib.gis.geos import Point
 from django.core.management import call_command
 from django.test import TransactionTestCase
 from django.utils import timezone
-from maintenance_mode.core import set_maintenance_mode
+from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
 from dashboard.models import (
     Species,
