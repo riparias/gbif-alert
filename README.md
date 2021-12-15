@@ -33,7 +33,7 @@ The development is done in the open and all progress, discussion of new features
 on the [issues page](https://github.com/riparias/early-warning-webapp/issues). The next major steps can be summarized 
 as:
 
-- complete the user interface so registered users can configure their alerts
+- complete the user interface so registered users can configure their alerts (planned end 2021-12)
 - e-mail notifications for new occurrences matching user alerts
 - polishing of the user interface
 - update species list and available areas based on the partners feedback
