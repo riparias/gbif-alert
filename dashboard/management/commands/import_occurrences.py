@@ -124,12 +124,14 @@ def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
         )
 
         try:
-            individual_count = get_int_data(row, field_name=qn("individualCount"))
+            individual_count: Optional[int] = get_int_data(
+                row, field_name=qn("individualCount")
+            )
         except ValueError:
             individual_count = None
 
         try:
-            coordinates_uncertainty = get_float_data(
+            coordinates_uncertainty: Optional[float] = get_float_data(
                 row, field_name=qn("coordinateUncertaintyInMeters")
             )
         except ValueError:
