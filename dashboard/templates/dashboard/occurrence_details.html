@@ -17,11 +17,16 @@
             <div class="col">
                 <ul>
                     <li><b>GBIF Id: </b><a href="{{ occurrence.gbif_id|gbif_occurrence_url }}">{{ occurrence.gbif_id }}</a></li>
-                    <li><b>Species: </b>{{ occurrence.species.name }}</li>
+                    <li><b>Species: </b><i>{{ occurrence.species.name }}</i></li>
+                    <li><b>Individual count: </b>{{ occurrence.individual_count }}</li>
                     <li><b>Source dataset: </b>{{ occurrence.source_dataset.name }}</li>
+                    <li><b>Basis of record: </b>{{ occurrence.basis_of_record }}</li>
                     <li><b>Date: </b>{{ occurrence.date }}</li>
                     <li><b>Coordinates: </b> {{ occurrence.lonlat_4326_tuple }}</li>
-                    <li>(More fields to come!)</li>
+                    <li><b>Coordinates uncertainty: </b> {{ occurrence.coordinate_uncertainty_in_meters }} meters</li>
+                    <li><b>Municipality: </b> {{ occurrence.municipality }}</li>
+                    <li><b>Locality: </b> {{ occurrence.locality }}</li>
+                    <li><b>Recorded by: </b> {{ occurrence.recorded_by }}</li>
                 </ul>
             </div>
             <div class="col" id="app">

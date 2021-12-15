@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.gis.geos import Point
-from django.utils import timezone
+from django.utils import timezone, formats
 from django.utils.html import strip_tags
 
 from dashboard.models import Occurrence, Species, DataImport, Dataset, OccurrenceComment
@@ -26,6 +26,12 @@ class WebPagesTests(TestCase):
             data_import=DataImport.objects.create(start=timezone.now()),
             source_dataset=dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
+            individual_count=2,
+            locality="Andenne centre",
+            municipality="Andenne",
+            recorded_by="Nicolas Noé",
+            basis_of_record="HUMAN_OBSERVATION",
+            coordinate_uncertainty_in_meters=10,
         )
 
         cls.second_occ = Occurrence.objects.create(
@@ -78,6 +84,30 @@ class WebPagesTests(TestCase):
 
         # A few checks on the basic content
         self.assertContains(response, '<a href="https://www.gbif.org/occurrence/1">')
+        self.assertContains(
+            response, "<b>Species: </b><i>Elodea nuttallii</i>", html=True
+        )
+        self.assertContains(response, "<b>Individual count: </b> 2", html=True)
+        self.assertContains(response, "<b>Source dataset: </b> Test dataset", html=True)
+        self.assertContains(
+            response, "<b>Basis of record: </b> HUMAN_OBSERVATION", html=True
+        )
+        self.assertContains(
+            response,
+            f"<b>Date: </b>{formats.date_format(WebPagesTests.first_occ.date, 'DATE_FORMAT')}",
+            html=True,
+        )
+        self.assertContains(
+            response,
+            "<b>Coordinates: </b> (5.095129999999999, 50.48940999999999)",
+            html=True,
+        )
+        self.assertContains(response, "<b>Municipality: </b> Andenne", html=True)
+        self.assertContains(response, "<b>Locality: </b> Andenne centre", html=True)
+        self.assertContains(response, "<b>Recorded by: </b> Nicolas Noé", html=True)
+        self.assertContains(
+            response, "<b>Coordinates uncertainty: </b> 10.0 meters", html=True
+        )
 
     def test_occurrence_details_comments_empty(self):
         """A message is shown if no comment for the occurrence"""

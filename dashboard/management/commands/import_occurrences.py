@@ -122,6 +122,19 @@ def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
             gbif_dataset_key=gbif_dataset_key,
             defaults={"name": dataset_name},
         )
+
+        try:
+            individual_count = get_int_data(row, field_name=qn("individualCount"))
+        except ValueError:
+            individual_count = None
+
+        try:
+            coordinates_uncertainty = get_float_data(
+                row, field_name=qn("coordinateUncertaintyInMeters")
+            )
+        except ValueError:
+            coordinates_uncertainty = None
+
         new_occurrence = Occurrence.objects.create(
             gbif_id=int(
                 get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/gbifID")
@@ -132,6 +145,12 @@ def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
             date=date,
             data_import=current_data_import,
             source_dataset=dataset,
+            individual_count=individual_count,
+            locality=get_string_data(row, field_name=qn("locality")),
+            municipality=get_string_data(row, field_name=qn("municipality")),
+            basis_of_record=get_string_data(row, field_name=qn("basisOfRecord")),
+            recorded_by=get_string_data(row, field_name=qn("recordedBy")),
+            coordinate_uncertainty_in_meters=coordinates_uncertainty,
         )
         new_occurrence.migrate_linked_entities()
 

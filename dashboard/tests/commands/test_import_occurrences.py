@@ -197,6 +197,12 @@ class ImportOccurrencesTest(TransactionTestCase):
         self.assertAlmostEqual(lat, 50.646894)
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(occ.source_dataset.name, "iNaturalist")
+        self.assertEqual(occ.recorded_by, "Nicolas Noé")
+        self.assertEqual(occ.basis_of_record, "HUMAN_OBSERVATION")
+        self.assertEqual(occ.locality, "Lillois")
+        self.assertEqual(occ.municipality, "Braine L'alleud")
+        self.assertEqual(occ.individual_count, 1)
+        self.assertEqual(occ.coordinate_uncertainty_in_meters, 23)
 
         occ = occurrences[4]
 

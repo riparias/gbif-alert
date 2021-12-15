@@ -144,6 +144,12 @@ class Occurrence(models.Model):
     species = models.ForeignKey(Species, on_delete=models.PROTECT)
     location = models.PointField(blank=True, null=True, srid=DATA_SRID)
     date = models.DateField()
+    individual_count = models.IntegerField(blank=True, null=True)
+    locality = models.TextField(blank=True)
+    municipality = models.TextField(blank=True)
+    basis_of_record = models.TextField(blank=True)
+    recorded_by = models.TextField(blank=True)
+    coordinate_uncertainty_in_meters = models.FloatField(blank=True, null=True)
 
     data_import = models.ForeignKey(DataImport, on_delete=models.PROTECT)
     source_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
