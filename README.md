@@ -25,3 +25,20 @@ Developer documentation is available in [CONTRIBUTING.md](CONTRIBUTING.md).
 ![Screenshot 2021-12-15 at 09 12 17](https://user-images.githubusercontent.com/386387/146151509-4259f981-9a7e-403f-a7b1-7fb986b794e4.png)
 ![Screenshot 2021-12-15 at 09 12 41](https://user-images.githubusercontent.com/386387/146151514-ff5d4067-68cc-480e-9ffe-165065fd2ebd.png)
 ![Screenshot 2021-12-15 at 09 13 02](https://user-images.githubusercontent.com/386387/146151541-9abb2b86-6d3b-462e-932f-40889d39567e.png)
+
+
+## Next steps
+
+The development is done in the open and all progress, discussion of new features, milestones, ... can be tracked down 
+on the [issues page](https://github.com/riparias/early-warning-webapp/issues). The next major steps can be summarized 
+as:
+
+- complete the user interface so registered users can configure their alerts
+- e-mail notifications for new occurrences matching user alerts
+- polishing of the user interface
+- update species list and available areas based on the partners feedback
+- deployment on the production server
+
+After those steps are completed (first trimester 2022), we plan to prioritize new features and improvements mainly based 
+on the users and LIFE RIPARIAS partners feedback. A specific focus will be set on the integration with other tools and
+applications developed in other LIFE RIPARIAS work packages.
