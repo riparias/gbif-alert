@@ -41,4 +41,5 @@ as:
 
 After those steps are completed (first trimester 2022), we plan to prioritize new features and improvements mainly based 
 on the users and LIFE RIPARIAS partners feedback. A specific focus will be set on the integration with other tools and
-applications developed in other LIFE RIPARIAS work packages.
+applications developed in other LIFE RIPARIAS work packages, e.g. the decision support tool (Action A4) and the report 
+system for management actions (Action A2).
