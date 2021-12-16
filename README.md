@@ -28,22 +28,6 @@ Developer documentation is available in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Next steps
 
-The development is done in the open and all progress, discussion of new features, milestones, ... can be tracked down 
-on the [issues page](https://github.com/riparias/early-warning-webapp/issues). The next major steps can be summarized 
-as:
-
-- complete the user interface so registered users can configure their alerts (planned end 2021-12)
-- e-mail notifications for new occurrences matching user alerts
-- polishing of the user interface
-- update species list and available areas based on the partners feedback
-- deployment on the production server
-
-After those steps are completed (first trimester 2022), we plan to prioritize new features and improvements mainly based 
-on the users and LIFE RIPARIAS partners feedback. A specific focus will be set on the integration with other tools and
-applications developed in other LIFE RIPARIAS work packages, e.g. the decision support tool (Action A4) and the report 
-system for management actions (Action A2).
-
-
 The development of the early detection system is done in the open. All progress, discussion of new features, milestones, ... can be tracked down on the [issues page](https://github.com/riparias/early-warning-webapp/issues). 
 The next major steps can be summarized as follows:
 -	complete the user interface so that registered users can configure their alerts (planned end December 2021)
@@ -51,6 +35,7 @@ The next major steps can be summarized as follows:
 -	polish the user interface
 -	update species list and available areas based on the feedback from partners
 -	deployment on the production server
+
 Once these steps are completed in the first trimester 2022, new features and improvements will be prioritized, mainly based on the feedback from users and LIFE RIPARIAS partners. 
 A specific focus will be placed on the integration with other tools and applications developed in other LIFE RIPARIAS work packages , e.g. the decision support tool (Action A4) and the reporting system for management actions (Action A2).
 
