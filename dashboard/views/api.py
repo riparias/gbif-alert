@@ -139,7 +139,7 @@ def filtered_occurrences_data_page_json(request):
     paginator = Paginator(occurrences, limit)
 
     page = paginator.get_page(page_number)
-    occurrences_dicts = [occ.as_dict for occ in page.object_list]
+    occurrences_dicts = [occ.as_dict(for_user=request.user) for occ in page.object_list]
 
     return JsonResponse(
         {

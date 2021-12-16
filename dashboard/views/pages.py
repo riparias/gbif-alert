@@ -19,6 +19,8 @@ def about_page(request):
 
 def occurrence_details_page(request, stable_id):
     occurrence = get_object_or_404(Occurrence, stable_id=stable_id)
+    occurrence.mark_as_viewed_by(request.user)
+    first_viewed = occurrence.first_viewed_at(request.user)
 
     if request.method == "POST":
         if (
@@ -39,7 +41,11 @@ def occurrence_details_page(request, stable_id):
     return render(
         request,
         "dashboard/occurrence_details.html",
-        {"occurrence": occurrence, "new_comment_form": form},
+        {
+            "occurrence": occurrence,
+            "new_comment_form": form,
+            "first_view_by_user_timestamp": first_viewed,
+        },
     )
 
 
@@ -69,3 +75,17 @@ def user_profile_page(request):
     else:
         form = EditProfileForm(instance=request.user)
     return render(request, "dashboard/user_profile.html", {"form": form})
+
+
+@login_required
+def mark_occurrence_as_not_viewed(request):
+    if request.method == "POST":
+        occurrence = get_object_or_404(Occurrence, id=request.POST["occurrenceId"])
+        success = occurrence.mark_as_not_viewed_by(user=request.user)
+        if success:
+            return redirect("dashboard:page-index")
+        else:
+            return redirect(
+                "dashboard:page-occurrence-details",
+                kwargs={"stable_id": occurrence.stable_id},
+            )  # Error? Stay where we came from

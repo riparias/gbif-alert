@@ -9,9 +9,16 @@
             <div class="col">
                 <h2>Occurrence details</h2>
             </div>
-            <div class="col">
-                <button type="button" class="btn btn-warning">Mark as unread</button>
-            </div>
+            {% if user.is_authenticated and first_view_by_user_timestamp %}
+                <div class="col">
+                    <small class="text-muted">You have first seen this occurrence on {{ first_view_by_user_timestamp }}</small>
+                    <form method="post" action="{% url "dashboard:page-mark-occurrence-as-not-viewed" %}">
+                        {% csrf_token %}
+                        <input type="hidden" id="occurrenceId" name="occurrenceId" value="{{ occurrence.pk }}">
+                        <button type="submit" class="btn btn-warning btn-sm">Mark as not viewed</button>
+                    </form>
+                </div>
+            {% endif %}
         </div>
         <div class="row">
             <div class="col">

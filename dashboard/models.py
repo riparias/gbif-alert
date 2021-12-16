@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import hashlib
 
 from typing import Optional
@@ -160,6 +161,40 @@ class Occurrence(models.Model):
     class OtherIdenticalOccurrenceIsNewer(Exception):
         pass
 
+    def mark_as_viewed_by(self, user) -> None:
+        """
+        Mark the occurrence as "viewed" by a given user.
+
+        Note that this is a high-level function designed to be called directly from a view (for example)
+            - Does nothing if the user is anonymous (not signed in)
+            - Does nothing if the user has already previously viewed this occurrence
+        """
+        if user.is_authenticated:
+            try:
+                self.occurrenceview_set.get(user=user)
+            except OccurrenceView.DoesNotExist:
+                OccurrenceView.objects.create(occurrence=self, user=user)
+
+    def first_viewed_at(self, user) -> Optional[datetime.datetime]:
+        """Return the time a user as first viewed this occurrence
+
+        Returns none if the user is not logged in, or if they have not viewed the occurrence yet
+        """
+        if user.is_authenticated:
+            try:
+                return self.occurrenceview_set.get(user=user).timestamp
+            except OccurrenceView.DoesNotExist:
+                return None
+        return None
+
+    def mark_as_not_viewed_by(self, user) -> bool:
+        """Returns True is successful, False otherwise (most probable cause: user has not viewed this occurrence yet)"""
+        try:
+            self.occurrenceview_set.get(user=user).delete()
+            return True
+        except OccurrenceView.DoesNotExist:
+            return False
+
     def save(self, *args, **kwargs):
         self.stable_id = Occurrence.build_stable_id(
             self.occurrence_id, self.source_dataset.gbif_dataset_key
@@ -182,6 +217,10 @@ class Occurrence(models.Model):
             for comment in replaced_occurrence.occurrencecomment_set.all():
                 comment.occurrence = self
                 comment.save()
+
+            for occurrence_view in replaced_occurrence.occurrenceview_set.all():
+                occurrence_view.occurrence = self
+                occurrence_view.save()
 
     @property
     def replaced_occurrence(self) -> Optional[Occurrence]:
@@ -242,11 +281,12 @@ class Occurrence(models.Model):
             return coords[0], coords[1]
         return None, None
 
-    @property
-    def as_dict(self):  # Keep in sync with JsonOccurrence (TypeScript interface)
+    def as_dict(
+        self, for_user
+    ):  # Keep in sync with JsonOccurrence (TypeScript interface)
         lon, lat = self.lonlat_4326_tuple
 
-        return {
+        d = {
             "id": self.pk,
             "stableId": self.stable_id,
             "gbifId": self.gbif_id,
@@ -256,6 +296,15 @@ class Occurrence(models.Model):
             "datasetName": self.source_dataset.name,
             "date": str(self.date),
         }
+
+        if for_user.is_authenticated:
+            try:
+                self.occurrenceview_set.get(user=for_user)
+                d["viewedByCurrentUser"] = True
+            except OccurrenceView.DoesNotExist:
+                d["viewedByCurrentUser"] = False
+
+        return d
 
 
 class OccurrenceComment(models.Model):
@@ -302,3 +351,21 @@ class Area(models.Model):
             d["geojson_str"] = self.mpoly.geojson
 
         return d
+
+
+class OccurrenceView(models.Model):
+    """
+    This models keeps an history of when a user has first seen details about an occurrence
+
+    - If no entry for the user/occurrence pair: the user has never seen details about this occurrence
+    - Else: the timestamp of the *first* visit is kept (no sophisticated history mechanism)
+    """
+
+    occurrence = models.ForeignKey(Occurrence, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [
+            ("occurrence", "user"),
+        ]

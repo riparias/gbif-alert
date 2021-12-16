@@ -1,6 +1,13 @@
 <template>
   <tbody>
-    <tr v-for="occ in preparedOccurrences">
+    <tr
+      v-for="occ in preparedOccurrences"
+      :class="{
+        'table-danger':
+          occ.hasOwnProperty('viewedByCurrentUser') && // Anonymous users don't have the property, so if we don't do this all would appear us unviewed
+          occ.viewedByCurrentUser === false,
+      }"
+    >
       <th scope="row">
         <a :href="occ.url">{{ occ.gbifId }}</a>
       </th>
@@ -26,6 +33,7 @@ interface OccurrencesForDisplay {
   speciesName: string;
   datasetName: string;
   url: string;
+  viewedByCurrentUser?: boolean;
 }
 
 export default defineComponent({
@@ -44,6 +52,7 @@ export default defineComponent({
             "{stable_id}",
             occ.stableId
           ),
+          viewedByCurrentUser: occ.viewedByCurrentUser,
         };
       });
     },

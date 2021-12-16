@@ -61,6 +61,7 @@ export interface JsonOccurrence {
   date: string;
   speciesName: string;
   datasetName: string;
+  viewedByCurrentUser?: boolean;
 }
 
 export interface PreparedHistogramDataEntry {
