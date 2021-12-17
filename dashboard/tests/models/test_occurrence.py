@@ -5,7 +5,14 @@ from django.contrib.gis.geos import Point
 from django.test import TestCase
 from django.utils import timezone
 
-from dashboard.models import Occurrence, Species, DataImport, Dataset, OccurrenceComment
+from dashboard.models import (
+    Occurrence,
+    Species,
+    DataImport,
+    Dataset,
+    OccurrenceComment,
+    OccurrenceView,
+)
 
 SAMPLE_DATASET_KEY = "940821c0-3269-11df-855a-b8a03c50a862"
 SAMPLE_OCCURRENCE_ID = "BR:IFBL: 00494798"
@@ -50,6 +57,10 @@ class OccurrenceTests(TestCase):
             text="This is a second comment",
         )
 
+        self.occurrence_view = OccurrenceView.objects.create(
+            occurrence=self.occ, user=self.comment_author
+        )
+
     def test_replace_occurrence(self):
         """High-level test: after creating a new occurrence with the same stable_id, make sure we can migrate the
         linked entities then and then delete the initial occurrence"""
@@ -67,14 +78,18 @@ class OccurrenceTests(TestCase):
 
         old_occurrence = self.occ
 
+        view_timestamp_before = self.occurrence_view.timestamp
+
         # Migrate entities
         new_occurrence.migrate_linked_entities()
 
         # Make sure the counts are correct
         self.assertEqual(new_occurrence.occurrencecomment_set.count(), 2)
         self.assertEqual(old_occurrence.occurrencecomment_set.count(), 0)
+        self.assertEqual(new_occurrence.occurrenceview_set.count(), 1)
+        self.assertEqual(old_occurrence.occurrenceview_set.count(), 0)
 
-        # Make also sure the comments field were not accidentally altered
+        # Make also sure the comments fields were not accidentally altered
         self.first_comment.refresh_from_db()
         self.assertEqual(self.first_comment.author, self.comment_author)
         self.assertEqual(self.first_comment.text, "This is a first comment")
@@ -84,6 +99,12 @@ class OccurrenceTests(TestCase):
         self.assertEqual(self.second_comment.author, self.comment_author)
         self.assertEqual(self.second_comment.text, "This is a second comment")
         self.assertEqual(self.second_comment.occurrence_id, new_occurrence.pk)
+
+        # Make sure the occurrenceview other fields (timestamp, user, ...) were not accidentally altered
+        self.occurrence_view.refresh_from_db()
+        self.assertEqual(self.occurrence_view.occurrence, new_occurrence)
+        self.assertEqual(self.occurrence_view.user, self.comment_author)
+        self.assertEqual(self.occurrence_view.timestamp, view_timestamp_before)
 
         # The old occurrence can be safely deleted
         old_occurrence.delete()

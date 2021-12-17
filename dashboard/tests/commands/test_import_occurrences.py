@@ -16,6 +16,7 @@ from dashboard.models import (
     Dataset,
     OccurrenceComment,
     User,
+    OccurrenceView,
 )
 
 THIS_SCRIPT_PATH = Path(__file__).parent
@@ -71,6 +72,16 @@ class ImportOccurrencesTest(TransactionTestCase):
             author=comment_author,
             occurrence=occurrence_to_be_replaced,
             text="This is a comment to migrate",
+        )
+
+        self.occurrence_view_to_migrate = OccurrenceView.objects.create(
+            user=comment_author, occurrence=occurrence_to_be_replaced
+        )
+
+        # We also create this one so we can check it gets deleted in the new import process, and that it doesn't prevent
+        # the related occurrence to be deleted
+        self.occurrence_view_to_delete = OccurrenceView.objects.create(
+            user=comment_author, occurrence=occurrence_not_replaced
         )
 
     def test_transaction(self) -> None:
@@ -267,6 +278,26 @@ class ImportOccurrencesTest(TransactionTestCase):
         comment.refresh_from_db()
         self.assertNotEqual(comment.occurrence_id, previous_occurrence_id)
         self.assertEqual(comment.occurrence.stable_id, previous_stable_id)
+
+    def test_occurrence_views_migrated(self) -> None:
+        ov = self.occurrence_view_to_migrate
+        previous_occurrence_id = ov.occurrence_id
+        previous_stable_id = ov.occurrence.stable_id
+
+        with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
+            call_command("import_occurrences", source_dwca=gbif_download_file)
+
+        ov.refresh_from_db()
+        self.assertNotEqual(ov.occurrence_id, previous_occurrence_id)
+        self.assertEqual(ov.occurrence.stable_id, previous_stable_id)
+
+    def test_unmigrated_ov_gets_deleted(self) -> None:
+        ov_id = self.occurrence_view_to_delete.id
+
+        with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
+            call_command("import_occurrences", source_dwca=gbif_download_file)
+        with self.assertRaises(OccurrenceView.DoesNotExist):
+            OccurrenceView.objects.get(id=ov_id)
 
     def test_old_occurrences_deleted(self) -> None:
         """The old occurrences (replaced and not replaced) are deleted from the database after a new import"""
