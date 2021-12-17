@@ -85,7 +85,4 @@ def mark_occurrence_as_not_viewed(request):
         if success:
             return redirect("dashboard:page-index")
         else:
-            return redirect(
-                "dashboard:page-occurrence-details",
-                kwargs={"stable_id": occurrence.stable_id},
-            )  # Error? Stay where we came from
+            return redirect(occurrence)  # Error? Stay where we came from
