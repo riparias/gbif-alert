@@ -6,7 +6,14 @@ from django.urls import reverse
 from django.contrib.gis.geos import Point, MultiPolygon, Polygon
 from django.utils import timezone
 
-from dashboard.models import Occurrence, Species, DataImport, Dataset, Area
+from dashboard.models import (
+    Occurrence,
+    Species,
+    DataImport,
+    Dataset,
+    Area,
+    OccurrenceView,
+)
 
 SEPTEMBER_13_2021 = datetime.datetime.strptime("2021-09-13", "%Y-%m-%d").date()
 OCTOBER_8_2021 = datetime.datetime.strptime("2021-10-08", "%Y-%m-%d").date()
@@ -35,7 +42,7 @@ class ApiTests(TestCase):
             source_dataset=cls.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
-        Occurrence.objects.create(
+        second_occ = Occurrence.objects.create(
             gbif_id=2,
             occurrence_id="2",
             species=cls.second_species,
@@ -111,6 +118,8 @@ class ApiTests(TestCase):
             owner=cls.area_owner,
             mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
         )
+
+        OccurrenceView.objects.create(occurrence=second_occ, user=cls.another_user)
 
     def test_areas_list_json_anonymous(self):
         """Getting the list of areas as an anonymous user"""
@@ -237,6 +246,23 @@ class ApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content, b"")
+
+    def test_occurrences_json_view_data(self):
+        """If the user is authenticated, there is data about which occurrences were already viewed by that user"""
+        self.client.login(username="frusciante1", password="12345")
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
+        response = self.client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id")
+        json_data = response.json()
+        self.assertEqual(json_data["results"][0]["viewedByCurrentUser"], False)
+        self.assertEqual(json_data["results"][1]["viewedByCurrentUser"], True)
+
+    def test_occurrences_json_no_view_for_anonymous(self):
+        """If the user is anonymous, there is NO data about which occurrences were already viewed"""
+        base_url = reverse("dashboard:api-filtered-occurrences-data-page")
+        response = self.client.get(f"{base_url}?limit=10&page_number=1")
+        json_data = response.json()
+        with self.assertRaises(KeyError):
+            json_data["results"][0]["viewedByCurrentUser"]
 
     def test_occurrences_json_no_location(self):
         """Regression test: no error 500 in occurrences_json if we have locations without a location"""
