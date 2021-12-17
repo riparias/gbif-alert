@@ -8,7 +8,11 @@
         <div class="row">
             <div class="col">
                 <h2>Occurrence details</h2>
+                {% if user.is_superuser %}
+                    <a class="btn btn-sm btn-danger" href="{{ occurrence.get_admin_url }}">See occurrence in the admin section</a>
+                {% endif %}
             </div>
+
             {% if user.is_authenticated and first_view_by_user_timestamp %}
                 <div class="col">
                     <small class="text-muted">You have first seen this occurrence on {{ first_view_by_user_timestamp }}</small>

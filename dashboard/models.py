@@ -161,6 +161,12 @@ class Occurrence(models.Model):
     class OtherIdenticalOccurrenceIsNewer(Exception):
         pass
 
+    def get_admin_url(self):
+        return reverse(
+            "admin:%s_%s_change" % (self._meta.app_label, self._meta.model_name),
+            args=(self.id,),
+        )
+
     def mark_as_viewed_by(self, user) -> None:
         """
         Mark the occurrence as "viewed" by a given user.
