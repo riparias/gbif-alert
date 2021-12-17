@@ -9,6 +9,7 @@ from .models import (
     Dataset,
     OccurrenceComment,
     Area,
+    OccurrenceView,
 )
 
 admin.site.site_header = "LIFE RIPARIAS early warning administration"
@@ -23,13 +24,26 @@ class OccurrenceCommentInline(admin.TabularInline):
     model = OccurrenceComment
 
 
+class OccurrenceViewInline(admin.TabularInline):
+    model = OccurrenceView
+    readonly_fields = ["user", "timestamp"]
+
+    # Make that inline read-only
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Occurrence)
 class OccurrenceAdmin(admin.OSMGeoAdmin):
     list_display = ("stable_id", "date", "species", "source_dataset")
     list_filter = ["data_import"]
-    inlines = [
-        OccurrenceCommentInline,
-    ]
+    inlines = [OccurrenceCommentInline, OccurrenceViewInline]
 
 
 @admin.register(Species)
