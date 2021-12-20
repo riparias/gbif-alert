@@ -16,16 +16,17 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
                            data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle"> {{ user.username }}</i>
+                            <i class="bi bi-person-circle"></i> {{ user.username }}
                         </a>
 
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{% url 'dashboard:page-profile' %}">My profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'dashboard:page-profile' %}"><i class="bi bi-person-circle"></i> My profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'dashboard:page-alerts' %}"><i class="bi bi-exclamation-square"></i> My alerts</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
                             {% if request.user.is_superuser %}
-                                <li><a class="dropdown-item" href="{% url 'admin:index' %}">Admin panel</a></li>
+                                <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-key"></i> Admin panel</a></li>
                             {% endif %}
                             <li><a class="dropdown-item" href="{% url 'signout' %}"><i class="bi bi-power"></i> Sign out</a></li>
                         </ul>

@@ -15,6 +15,7 @@ urlpatterns = [
     ),
     path("signup", views.user_signup_page, name="page-signup"),
     path("profile", views.user_profile_page, name="page-profile"),
+    path("alerts", views.user_alerts_page, name="page-alerts"),
     path(
         "mark_occurrence_as_not_viewed",
         views.mark_occurrence_as_not_viewed,

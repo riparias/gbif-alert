@@ -400,3 +400,15 @@ class Alert(models.Model):
     email_notifications_frequency = models.CharField(
         max_length=3, choices=EMAIL_NOTIFICATION_CHOICES, default=WEEKLY_EMAILS
     )
+
+    @property
+    def areas_list(self) -> str:
+        return ", ".join(self.areas.order_by("name").values_list("name", flat=True))
+
+    @property
+    def datasets_list(self) -> str:
+        return ", ".join(self.datasets.order_by("name").values_list("name", flat=True))
+
+    @property
+    def species_list(self) -> str:
+        return ", ".join(self.species.order_by("name").values_list("name", flat=True))

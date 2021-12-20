@@ -5,7 +5,7 @@ from django.http import HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404, redirect
 
 from dashboard.forms import SignUpForm, EditProfileForm, NewOccurrenceCommentForm
-from dashboard.models import DataImport, Occurrence
+from dashboard.models import DataImport, Occurrence, Alert
 
 
 def index_page(request):
@@ -75,6 +75,12 @@ def user_profile_page(request):
     else:
         form = EditProfileForm(instance=request.user)
     return render(request, "dashboard/user_profile.html", {"form": form})
+
+
+@login_required
+def user_alerts_page(request):
+    alerts = Alert.objects.filter(user=request.user).order_by("id")
+    return render(request, "dashboard/user_alerts.html", {"alerts": alerts})
 
 
 @login_required
