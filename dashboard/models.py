@@ -375,3 +375,28 @@ class OccurrenceView(models.Model):
         unique_together = [
             ("occurrence", "user"),
         ]
+
+
+class Alert(models.Model):
+    """The per-user configured alerts"""
+
+    NO_EMAILS = "N"
+    DAILY_EMAILS = "D"
+    WEEKLY_EMAILS = "W"
+    MONTHLY_EMAILS = "M"
+
+    EMAIL_NOTIFICATION_CHOICES = [
+        (NO_EMAILS, "No emails"),
+        (DAILY_EMAILS, "Daily"),
+        (WEEKLY_EMAILS, "Weekly"),
+        (MONTHLY_EMAILS, "Monthly"),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    species = models.ManyToManyField(Species)
+    datasets = models.ManyToManyField(Dataset)
+    areas = models.ManyToManyField(Area)
+
+    email_notifications_frequency = models.CharField(
+        max_length=3, choices=EMAIL_NOTIFICATION_CHOICES, default=WEEKLY_EMAILS
+    )

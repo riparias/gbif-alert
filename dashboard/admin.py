@@ -10,6 +10,7 @@ from .models import (
     OccurrenceComment,
     Area,
     OccurrenceView,
+    Alert,
 )
 
 admin.site.site_header = "LIFE RIPARIAS early warning administration"
@@ -64,3 +65,8 @@ class DatasetAdmin(admin.ModelAdmin):
 @admin.register(Area)
 class AreaAdmin(admin.OSMGeoAdmin):
     list_display = ("name", "owner")
+
+
+@admin.register(Alert)
+class AlertAdmin(admin.ModelAdmin):
+    pass
