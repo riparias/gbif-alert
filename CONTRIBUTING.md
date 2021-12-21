@@ -48,21 +48,21 @@ We use a hybrid approach such as described in https://www.saaspegasus.com/guides
 We use `black` (for Python code) and `prettier` (for JS/TS/Vue) to automatically and consistently format the source code.
 Please configure your favorite editor/IDE to format on save. 
 
-## Occurrence import mechanism
+## Observation import mechanism
 
-The occurrence data shown in the webapp can be automatically updated by running the `import_occurrences` management 
+The observation data shown in the webapp can be automatically updated by running the `import_observations` management 
 command. This one will trigger a GBIF Download for our search of interest (target country + species in the database) and 
-load the corresponding occurrences into the database. At the end of the process, occurrences from previous data 
+load the corresponding observations into the database. At the end of the process, observations from previous data 
 imports are deleted to avoid duplicates.
 
 The data import history is recorded with the DataImport model, and shown to the user on the "about" page.
 
-=> For a given occurrence, Django-managed IDs are therefore not stable. A hashing mechanism (based on `occurrenceId` 
-and `DatasetKey`) to allow recognizing a given occurrence is implemented (`stable_id` field on Occurrence).
+=> For a given observation, Django-managed IDs are therefore not stable. A hashing mechanism (based on `occurrenceId` 
+and `DatasetKey`) to allow recognizing a given observation is implemented (`stable_id` field on Observation).
 
 ## Areas import mechanism
 
-The application allows storing Areas (multipolygons) in the database for occurrence filtering and to display as map 
+The application allows storing Areas (multipolygons) in the database for observation filtering and to display as map 
 overlays. Each area can be either user-specific, either global (=available to everyone). For now, there are 
 two ways to load a new area in the system:
 
@@ -83,7 +83,7 @@ two ways to load a new area in the system:
 
 The web application handle three categories of users:
 
-- Anonymous users can access the website and visualize the occurrence data via the dashboard. For Django, they are 
+- Anonymous users can access the website and visualize the observation data via the dashboard. For Django, they are 
   unauthenticated.
 - Registered "normal" users can do all what can anonymous users can do + create and configure their alerts. Those users can 
   sign up directly thanks to a specific form (an e-mail address is required because it is needed for e-mail 
@@ -114,7 +114,7 @@ def my_view(request):
 
 We make use of [django-maintenance-mode](https://github.com/fabiocaccamo/django-maintenance-mode). 
 
-Maintenance mode will be set during each occurrence data import (data would be inconsistent at this stage, so we don't
+Maintenance mode will be set during each (observation) data import (data would be inconsistent at this stage, so we don't
 want to let users access the website, nor send e-mail notifications).
 
 This tool can also be used to manually activate maintenance mode during complex maintenance tasks, look at 

@@ -5,7 +5,7 @@ from django.contrib.gis.db.models.aggregates import Union
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import QuerySet
 
-from dashboard.models import Occurrence, Area
+from dashboard.models import Observation, Area
 
 
 def extract_int_array_request(request, param_name):
@@ -44,16 +44,16 @@ def extract_date_request(request, param_name, date_format="%Y-%m-%d"):
     return None
 
 
-def filtered_occurrences_from_request(request: WSGIRequest) -> QuerySet[Occurrence]:
-    """Takes a request, extract common parameters used to filter occurrences and return a corresponding QuerySet"""
-    qs = Occurrence.objects.all()
+def filtered_observations_from_request(request: WSGIRequest) -> QuerySet[Observation]:
+    """Takes a request, extract common parameters used to filter observations and return a corresponding QuerySet"""
+    qs = Observation.objects.all()
 
     species_ids, datasets_ids, start_date, end_date, area_ids = filters_from_request(
         request
     )
 
-    # !! IMPORTANT !! Make sure the occurrence filtering here is equivalent to what's done in
-    # views.maps.JINJASQL_FRAGMENT_FILTER_OCCURRENCES. Otherwise, occurrences returned on the map and on other
+    # !! IMPORTANT !! Make sure the observation filtering here is equivalent to what's done in
+    # views.maps.JINJASQL_FRAGMENT_FILTER_OBSERVATIONS. Otherwise, observations returned on the map and on other
     # components (table, ...) will be inconsistent.
     # !! If adding new filters, make also sure they are properly documented in the docstrings of "api.py"
 

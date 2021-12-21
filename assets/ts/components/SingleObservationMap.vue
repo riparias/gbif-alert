@@ -20,12 +20,12 @@ import Stroke from "ol/style/Stroke";
 import Style from "ol/style/Style";
 import CircleStyle from "ol/style/Circle";
 
-declare interface SingleOccurrenceMapData {
+declare interface SingleObservationMapData {
   map: Map | null;
 }
 
 export default defineComponent({
-  name: "SingleOccurrenceMap",
+  name: "SingleObservationMap",
   props: {
     height: Number, // Map height, in pixels
     lon: {
@@ -37,7 +37,7 @@ export default defineComponent({
       required: true,
     },
   },
-  data: function (): SingleOccurrenceMapData {
+  data: function (): SingleObservationMapData {
     return {
       map: null,
     };

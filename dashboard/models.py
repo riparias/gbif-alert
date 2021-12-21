@@ -93,8 +93,8 @@ class Dataset(models.Model):
         super().save(force_insert, force_update, *args, **kwargs)
 
         if self.gbif_dataset_key != self.__original_gbif_dataset_key:
-            # We updated the gbif dataset key, so all related occurrences should have a new stable_id
-            for occ in self.occurrence_set.all():
+            # We updated the gbif dataset key, so all related observations should have a new stable_id
+            for occ in self.observation_set.all():
                 occ.save()
 
         self.__original_gbif_dataset_key = self.gbif_dataset_key
@@ -105,7 +105,7 @@ class DataImport(models.Model):
     end = models.DateTimeField(blank=True, null=True)
     completed = models.BooleanField(default=False)
     gbif_download_id = models.CharField(max_length=255, blank=True)
-    imported_occurrences_counter = models.IntegerField(default=0)
+    imported_observations_counter = models.IntegerField(default=0)
 
     def set_gbif_download_id(self, download_id: str):
         """Set the download id and immediately save the entry"""
@@ -116,7 +116,7 @@ class DataImport(models.Model):
         """Method to be called at the end of the import process to finalize this entry"""
         self.end = timezone.now()
         self.completed = True
-        self.imported_occurrences_counter = Occurrence.objects.filter(
+        self.imported_observations_counter = Observation.objects.filter(
             data_import=self
         ).count()
         self.save()
@@ -125,7 +125,7 @@ class DataImport(models.Model):
         return f"Data import #{self.pk}"
 
 
-class Occurrence(models.Model):
+class Observation(models.Model):
     # Pay attention to the fact that this model actually has 4(!) different "identifiers" which serve different
     # purposes. gbif_id, occurrence_id and stable_id are documented below, Django also adds the usual and implicit "pk"
     # field.
@@ -169,7 +169,7 @@ class Occurrence(models.Model):
 
     def mark_as_viewed_by(self, user) -> None:
         """
-        Mark the occurrence as "viewed" by a given user.
+        Mark the observation as "viewed" by a given user.
 
         Note that this is a high-level function designed to be called directly from a view (for example)
             - Does nothing if the user is anonymous (not signed in)
@@ -177,9 +177,9 @@ class Occurrence(models.Model):
         """
         if user.is_authenticated:
             try:
-                self.occurrenceview_set.get(user=user)
-            except OccurrenceView.DoesNotExist:
-                OccurrenceView.objects.create(occurrence=self, user=user)
+                self.observationview_set.get(user=user)
+            except ObservationView.DoesNotExist:
+                ObservationView.objects.create(occurrence=self, user=user)
 
     def first_viewed_at(self, user) -> Optional[datetime.datetime]:
         """Return the time a user as first viewed this occurrence
@@ -188,28 +188,28 @@ class Occurrence(models.Model):
         """
         if user.is_authenticated:
             try:
-                return self.occurrenceview_set.get(user=user).timestamp
-            except OccurrenceView.DoesNotExist:
+                return self.observationview_set.get(user=user).timestamp
+            except ObservationView.DoesNotExist:
                 return None
         return None
 
     def mark_as_not_viewed_by(self, user) -> bool:
         """Returns True is successful, False otherwise (most probable cause: user has not viewed this occurrence yet)"""
         try:
-            self.occurrenceview_set.get(user=user).delete()
+            self.observationview_set.get(user=user).delete()
             return True
-        except OccurrenceView.DoesNotExist:
+        except ObservationView.DoesNotExist:
             return False
 
     def save(self, *args, **kwargs):
-        self.stable_id = Occurrence.build_stable_id(
+        self.stable_id = Observation.build_stable_id(
             self.occurrence_id, self.source_dataset.gbif_dataset_key
         )
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
         return reverse(
-            "dashboard:page-occurrence-details", kwargs={"stable_id": self.stable_id}
+            "dashboard:page-observation-details", kwargs={"stable_id": self.stable_id}
         )
 
     def migrate_linked_entities(self):
@@ -220,16 +220,16 @@ class Occurrence(models.Model):
         replaced_occurrence = self.replaced_occurrence
         if replaced_occurrence is not None:
             # 1. Migrating comments
-            for comment in replaced_occurrence.occurrencecomment_set.all():
-                comment.occurrence = self
+            for comment in replaced_occurrence.observationcomment_set.all():
+                comment.observation = self
                 comment.save()
 
-            for occurrence_view in replaced_occurrence.occurrenceview_set.all():
+            for occurrence_view in replaced_occurrence.observationview_set.all():
                 occurrence_view.occurrence = self
                 occurrence_view.save()
 
     @property
-    def replaced_occurrence(self) -> Optional[Occurrence]:
+    def replaced_occurrence(self) -> Optional[Observation]:
         """Return the occurrence (from a previous import) that will be replaced by this one
 
         return None if this occurrence is new to the system
@@ -246,18 +246,18 @@ class Occurrence(models.Model):
             if the_other_one.data_import.pk < self.data_import.pk:
                 return the_other_one
             else:
-                raise Occurrence.OtherIdenticalOccurrenceIsNewer
+                raise Observation.OtherIdenticalOccurrenceIsNewer
 
         else:  # Multiple occurrences found, this is abnormal
-            raise Occurrence.MultipleObjectsReturned
+            raise Observation.MultipleObjectsReturned
 
-    def get_identical_occurrences(self) -> QuerySet[Occurrence]:
+    def get_identical_occurrences(self) -> QuerySet[Observation]:
         """Return 'identical' occurrences (same stable_id), excluding myself)"""
-        return Occurrence.objects.exclude(pk=self.pk).filter(stable_id=self.stable_id)
+        return Observation.objects.exclude(pk=self.pk).filter(stable_id=self.stable_id)
 
     @property
     def sorted_comments_set(self):
-        return self.occurrencecomment_set.order_by("-created_at")
+        return self.observationcomment_set.order_by("-created_at")
 
     @staticmethod
     def build_stable_id(occurrence_id: str, dataset_key: str) -> str:
@@ -305,16 +305,16 @@ class Occurrence(models.Model):
 
         if for_user.is_authenticated:
             try:
-                self.occurrenceview_set.get(user=for_user)
+                self.observationview_set.get(user=for_user)
                 d["viewedByCurrentUser"] = True
-            except OccurrenceView.DoesNotExist:
+            except ObservationView.DoesNotExist:
                 d["viewedByCurrentUser"] = False
 
         return d
 
 
-class OccurrenceComment(models.Model):
-    occurrence = models.ForeignKey(Occurrence, on_delete=models.CASCADE)
+class ObservationComment(models.Model):
+    observation = models.ForeignKey(Observation, on_delete=models.CASCADE)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -359,7 +359,7 @@ class Area(models.Model):
         return d
 
 
-class OccurrenceView(models.Model):
+class ObservationView(models.Model):
     """
     This models keeps an history of when a user has first seen details about an occurrence
 
@@ -367,7 +367,7 @@ class OccurrenceView(models.Model):
     - Else: the timestamp of the *first* visit is kept (no sophisticated history mechanism)
     """
 
-    occurrence = models.ForeignKey(Occurrence, on_delete=models.CASCADE)
+    occurrence = models.ForeignKey(Observation, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
 

@@ -3,13 +3,13 @@ from django.contrib.auth.admin import UserAdmin
 
 from .models import (
     Species,
-    Occurrence,
+    Observation,
     DataImport,
     User,
     Dataset,
-    OccurrenceComment,
+    ObservationComment,
     Area,
-    OccurrenceView,
+    ObservationView,
     Alert,
 )
 
@@ -21,12 +21,12 @@ class RipariasUserAdmin(UserAdmin):
     pass
 
 
-class OccurrenceCommentInline(admin.TabularInline):
-    model = OccurrenceComment
+class ObservationCommentCommentInline(admin.TabularInline):
+    model = ObservationComment
 
 
-class OccurrenceViewInline(admin.TabularInline):
-    model = OccurrenceView
+class ObservationViewInline(admin.TabularInline):
+    model = ObservationView
     readonly_fields = ["user", "timestamp"]
 
     # Make that inline read-only
@@ -40,11 +40,11 @@ class OccurrenceViewInline(admin.TabularInline):
         return False
 
 
-@admin.register(Occurrence)
-class OccurrenceAdmin(admin.OSMGeoAdmin):
+@admin.register(Observation)
+class ObservationAdmin(admin.OSMGeoAdmin):
     list_display = ("stable_id", "date", "species", "source_dataset")
     list_filter = ["data_import"]
-    inlines = [OccurrenceCommentInline, OccurrenceViewInline]
+    inlines = [ObservationCommentCommentInline, ObservationViewInline]
 
 
 @admin.register(Species)
@@ -54,7 +54,7 @@ class SpeciesAdmin(admin.ModelAdmin):
 
 @admin.register(DataImport)
 class DataImportAdmin(admin.ModelAdmin):
-    list_display = ("pk", "start", "imported_occurrences_counter")
+    list_display = ("pk", "start", "imported_observations_counter")
 
 
 @admin.register(Dataset)

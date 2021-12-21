@@ -21,11 +21,11 @@ def js_config_object(context):
             "speciesListUrl": reverse("dashboard:api-species-list-json"),
             "datasetsListUrl": reverse("dashboard:api-datasets-list-json"),
             "areasListUrl": reverse("dashboard:api-areas-list-json"),
-            "occurrencesCounterUrl": reverse(
-                "dashboard:api-filtered-occurrences-counter"
+            "observationsCounterUrl": reverse(
+                "dashboard:api-filtered-observations-counter"
             ),
-            "occurrencesJsonUrl": reverse(
-                "dashboard:api-filtered-occurrences-data-page"
+            "observationsJsonUrl": reverse(
+                "dashboard:api-filtered-observations-data-page"
             ),
             "tileServerUrlTemplate": reverse(
                 "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
@@ -34,15 +34,15 @@ def js_config_object(context):
             .replace("1", "{z}")
             .replace("2", "{x}")
             .replace("3", "{y}"),
-            "occurrenceDetailsUrlTemplate": reverse(
-                "dashboard:page-occurrence-details", kwargs={"stable_id": 1}
+            "observationDetailsUrlTemplate": reverse(
+                "dashboard:page-observation-details", kwargs={"stable_id": 1}
             ).replace("1", "{stable_id}"),
             "areasUrlTemplate": reverse(
                 "dashboard:api-area-geojson", kwargs={"id": 1}
             ).replace("1", "{id}"),
             "minMaxOccPerHexagonUrl": reverse("dashboard:api-mvt-min-max-per-hexagon"),
-            "occurrencesHistogramDataUrl": reverse(
-                "dashboard:api-filtered-occurrences-monthly-histogram"
+            "observationsHistogramDataUrl": reverse(
+                "dashboard:api-filtered-observations-monthly-histogram"
             ),
         },
     }

@@ -4,13 +4,13 @@ from django.db import connection
 from django.http import HttpResponse, JsonResponse
 from jinjasql import JinjaSql
 
-from dashboard.models import Occurrence, Area
+from dashboard.models import Observation, Area
 from dashboard.utils import readable_string
 from dashboard.views.helpers import filters_from_request, extract_int_request
 
 AREAS_TABLE_NAME = Area.objects.model._meta.db_table
-OCCURRENCES_TABLE_NAME = Occurrence.objects.model._meta.db_table
-OCCURRENCES_FIELD_NAME_POINT = "location"
+OBSERVATIONS_TABLE_NAME = Observation.objects.model._meta.db_table
+OBSERVATIONS_FIELD_NAME_POINT = "location"
 
 # ! Make sure the following formats are in sync
 DB_DATE_EXCHANGE_FORMAT_PYTHON = "%Y-%m-%d"  # To be passed to strftime()
@@ -46,10 +46,10 @@ ZOOM_TO_HEX_SIZE = {
     for key, value in ZOOM_TO_HEX_SIZE_BASELINE.items()
 }
 
-# !! IMPORTANT !! Make sure the occurrence filtering here is equivalent to what's done in
-# other places (views.helpers.filtered_occurrences_from_request). Otherwise, occurrences returned on the map and on
+# !! IMPORTANT !! Make sure the observation filtering here is equivalent to what's done in
+# other places (views.helpers.filtered_observations_from_request). Otherwise, occurrences returned on the map and on
 # other components (table, ...) will be inconsistent.
-JINJASQL_FRAGMENT_FILTER_OCCURRENCES = Template(
+JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
     """
     SELECT 
     * FROM $occurrences_table_name as occ
@@ -77,7 +77,7 @@ JINJASQL_FRAGMENT_FILTER_OCCURRENCES = Template(
 """
 ).substitute(
     areas_table_name=AREAS_TABLE_NAME,
-    occurrences_table_name=OCCURRENCES_TABLE_NAME,
+    occurrences_table_name=OBSERVATIONS_TABLE_NAME,
     date_format=DB_DATE_EXCHANGE_FORMAT_POSTGRES,
 )
 
@@ -100,9 +100,9 @@ JINJASQL_FRAGMENT_AGGREGATED_GRID = Template(
                     GROUP BY hexes.geom
 """
 ).substitute(
-    occurrences_table_name=OCCURRENCES_TABLE_NAME,
-    occurrences_field_name_point=OCCURRENCES_FIELD_NAME_POINT,
-    jinjasql_fragment_filter_occurrences=JINJASQL_FRAGMENT_FILTER_OCCURRENCES,
+    occurrences_table_name=OBSERVATIONS_TABLE_NAME,
+    occurrences_field_name_point=OBSERVATIONS_FIELD_NAME_POINT,
+    jinjasql_fragment_filter_occurrences=JINJASQL_FRAGMENT_FILTER_OBSERVATIONS,
 )
 
 

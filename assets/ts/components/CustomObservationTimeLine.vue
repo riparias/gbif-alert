@@ -16,7 +16,7 @@ interface HistogramDataEntry {
   count: number;
 }
 
-interface CustomOccurrencesTimeLineData {
+interface CustomObservationsTimeLineData {
   histogramDataFromServer: HistogramDataEntry[];
 }
 
@@ -24,7 +24,7 @@ const range = (start: number, end: number): number[] =>
   Array.from({ length: end - start }, (v, k) => k + start);
 
 export default defineComponent({
-  name: "CustomOccurrencesTimeLine",
+  name: "CustomObservationsTimeLine",
   components: {
     BarChart,
   },
@@ -46,7 +46,7 @@ export default defineComponent({
       default: 200,
     },
   },
-  data: function (): CustomOccurrencesTimeLineData {
+  data: function (): CustomObservationsTimeLineData {
     return {
       histogramDataFromServer: [],
     };

@@ -1,9 +1,9 @@
 import { createApp } from "vue";
-import SingleOccurrenceMap from "../components/SingleOccurrenceMap.vue";
+import SingleObservationMap from "../components/SingleObservationMap.vue";
 
 const app = createApp({
   components: {
-    SingleOccurrenceMap,
+    SingleObservationMap,
   },
   delimiters: ["[[", "]]"],
 });

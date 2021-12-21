@@ -5,7 +5,7 @@ const {VueLoaderPlugin} = require('vue-loader');
 module.exports = {
     entry: {
         index: './assets/ts/pages_entry_points/index.ts',
-        occurrence_details: './assets/ts/pages_entry_points/occurrence_details.ts'
+        observation_details: './assets/ts/pages_entry_points/observation_details.ts'
     },
     output: {
         filename: '[name]-bundle.js',  // output bundle file name

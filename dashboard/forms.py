@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 
-from dashboard.models import OccurrenceComment
+from dashboard.models import ObservationComment
 
 
 class CommonUsersFields(forms.ModelForm):
@@ -45,7 +45,7 @@ class SignUpForm(CommonUsersFields, UserCreationForm):
         )
 
 
-class NewOccurrenceCommentForm(forms.ModelForm):
+class NewObservationCommentForm(forms.ModelForm):
     class Meta:
-        model = OccurrenceComment
+        model = ObservationComment
         fields = ("text",)

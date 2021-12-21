@@ -1,7 +1,7 @@
 <template>
   <tbody>
     <tr
-      v-for="occ in preparedOccurrences"
+      v-for="occ in preparedObservations"
       :class="{
         'table-danger':
           occ.hasOwnProperty('viewedByCurrentUser') && // Anonymous users don't have the property, so if we don't do this all would appear us unviewed
@@ -22,10 +22,10 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { JsonOccurrence } from "../interfaces";
+import { JsonObservation } from "../interfaces";
 
-interface OccurrencesForDisplay {
-  // Similar to JsonOccurrence, but ready to display
+interface ObservationForDisplay {
+  // Similar to JsonObservation, but ready to display
   gbifId: number;
   lat: string;
   lon: string;
@@ -37,9 +37,9 @@ interface OccurrencesForDisplay {
 }
 
 export default defineComponent({
-  name: "OccurrenceTablePage",
+  name: "ObservationTablePage",
   computed: {
-    preparedOccurrences: function (): OccurrencesForDisplay[] {
+    preparedObservations: function (): ObservationForDisplay[] {
       return this.occurrences.map((occ) => {
         return {
           gbifId: occ.gbifId,
@@ -48,7 +48,7 @@ export default defineComponent({
           date: occ.date,
           speciesName: occ.speciesName,
           datasetName: occ.datasetName,
-          url: this.occurrencePageUrlTemplate!.replace(
+          url: this.observationPageUrlTemplate!.replace(
             "{stable_id}",
             occ.stableId
           ),
@@ -60,12 +60,12 @@ export default defineComponent({
   props: {
     occurrences: {
       // Only the subset for the page
-      type: Array as () => JsonOccurrence[],
+      type: Array as () => JsonObservation[],
       default: function () {
         return [];
       },
     },
-    occurrencePageUrlTemplate: String,
+    observationPageUrlTemplate: String,
   },
 });
 </script>

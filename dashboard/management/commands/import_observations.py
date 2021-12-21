@@ -16,7 +16,7 @@ from dwca.rows import CoreRow  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
 from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
-from dashboard.models import Species, Occurrence, DataImport, Dataset
+from dashboard.models import Species, Observation, DataImport, Dataset
 
 
 def build_gbif_predicate(country_code: str, species_list: QuerySet[Species]) -> Dict:
@@ -78,7 +78,7 @@ def get_int_data(row: CoreRow, field_name: str) -> int:
     return int(get_string_data(row, field_name))
 
 
-def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
+def import_single_observation(row: CoreRow, current_data_import: DataImport):
     # For-filtering data extraction
     year_str = get_string_data(row, field_name=qn("year"))
 
@@ -137,7 +137,7 @@ def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
         except ValueError:
             coordinates_uncertainty = None
 
-        new_occurrence = Occurrence.objects.create(
+        new_observation = Observation.objects.create(
             gbif_id=int(
                 get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/gbifID")
             ),
@@ -154,7 +154,7 @@ def import_single_occurrence(row: CoreRow, current_data_import: DataImport):
             recorded_by=get_string_data(row, field_name=qn("recordedBy")),
             coordinate_uncertainty_in_meters=coordinates_uncertainty,
         )
-        new_occurrence.migrate_linked_entities()
+        new_observation.migrate_linked_entities()
 
 
 def send_successful_import_email():
@@ -175,7 +175,7 @@ def send_error_import_email():
 
 class Command(BaseCommand):
     help = (
-        "Import new occurrences and delete previous ones. "
+        "Import new observations and delete previous ones. "
         ""
         "By default, a new download is generated at GBIF. "
         "The --source-dwca option can be used to provide an existing local file instead."
@@ -185,12 +185,12 @@ class Command(BaseCommand):
         super().__init__(*args, **kwargs)
         self.transaction_was_successful = False
 
-    def _import_all_occurrences_from_dwca(
+    def _import_all_observations_from_dwca(
         self, dwca: DwCAReader, data_import: DataImport
     ):
 
         for core_row in dwca:
-            import_single_occurrence(core_row, data_import)
+            import_single_observation(core_row, data_import)
             self.stdout.write(".", ending="")
 
     def add_arguments(self, parser: CommandParser) -> None:
@@ -204,7 +204,7 @@ class Command(BaseCommand):
         self.transaction_was_successful = True
 
     def handle(self, *args, **options) -> None:
-        self.stdout.write("(Re)importing all occurrences")
+        self.stdout.write("(Re)importing all observations")
 
         # 1. Data preparation / download
         if options["source_dwca"]:
@@ -252,14 +252,14 @@ class Command(BaseCommand):
                 current_data_import.set_gbif_download_id(
                     extract_gbif_download_id_from_dwca(dwca)
                 )
-                self._import_all_occurrences_from_dwca(dwca, current_data_import)
+                self._import_all_observations_from_dwca(dwca, current_data_import)
 
             self.stdout.write(
                 "All occurrences imported, now deleting occurrences linked to previous data imports..."
             )
 
             # 4. Remove previous occurrences
-            Occurrence.objects.exclude(data_import=current_data_import).delete()
+            Observation.objects.exclude(data_import=current_data_import).delete()
 
             # 4. Finalize the DataImport object
             self.stdout.write("Updating the DataImport object")

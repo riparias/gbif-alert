@@ -4,8 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404, redirect
 
-from dashboard.forms import SignUpForm, EditProfileForm, NewOccurrenceCommentForm
-from dashboard.models import DataImport, Occurrence, Alert
+from dashboard.forms import SignUpForm, EditProfileForm, NewObservationCommentForm
+from dashboard.models import DataImport, Observation, Alert
 
 
 def index_page(request):
@@ -17,10 +17,10 @@ def about_page(request):
     return render(request, "dashboard/about.html", {"data_imports": data_imports})
 
 
-def occurrence_details_page(request, stable_id):
-    occurrence = get_object_or_404(Occurrence, stable_id=stable_id)
-    occurrence.mark_as_viewed_by(request.user)
-    first_viewed = occurrence.first_viewed_at(request.user)
+def observation_details_page(request, stable_id):
+    observation = get_object_or_404(Observation, stable_id=stable_id)
+    observation.mark_as_viewed_by(request.user)
+    first_viewed = observation.first_viewed_at(request.user)
 
     if request.method == "POST":
         if (
@@ -28,21 +28,21 @@ def occurrence_details_page(request, stable_id):
         ):  # Only authenticated users can post comments
             return HttpResponseForbidden()
 
-        form = NewOccurrenceCommentForm(request.POST)
+        form = NewObservationCommentForm(request.POST)
         if form.is_valid():
             comment = form.save(commit=False)
             comment.author = request.user
-            comment.occurrence = occurrence
+            comment.observation = observation
             comment.save()
-            form = NewOccurrenceCommentForm()  # Show a new empty one to the user
+            form = NewObservationCommentForm()  # Show a new empty one to the user
     else:
-        form = NewOccurrenceCommentForm()
+        form = NewObservationCommentForm()
 
     return render(
         request,
-        "dashboard/occurrence_details.html",
+        "dashboard/observation_details.html",
         {
-            "occurrence": occurrence,
+            "observation": observation,
             "new_comment_form": form,
             "first_view_by_user_timestamp": first_viewed,
         },
@@ -84,11 +84,11 @@ def user_alerts_page(request):
 
 
 @login_required
-def mark_occurrence_as_not_viewed(request):
+def mark_observation_as_not_viewed(request):
     if request.method == "POST":
-        occurrence = get_object_or_404(Occurrence, id=request.POST["occurrenceId"])
-        success = occurrence.mark_as_not_viewed_by(user=request.user)
+        observation = get_object_or_404(Observation, id=request.POST["observationId"])
+        success = observation.mark_as_not_viewed_by(user=request.user)
         if success:
             return redirect("dashboard:page-index")
         else:
-            return redirect(occurrence)  # Error? Stay where we came from
+            return redirect(observation)  # Error? Stay where we came from

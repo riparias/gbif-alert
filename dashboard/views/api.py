@@ -1,6 +1,7 @@
 """API endpoints are implemented in this file, except maps-related endpoints (see maps.py)
 
-All endpoints that deal with filtered occurrences takes the following GET parameters (all optional, can be combined at will):
+All endpoints that deal with filtered observations takes the following GET parameters (all optional, can be combined at
+will):
     - speciesIds[]: one or several species IDs. Example query string: ?speciesIds[]=1&speciesIds[]=2
     - datasetsIds[]: one or several dataset IDs. Example query string: ?datasetsIds[]=1&datasetsIds[]=2
     - startDate: start date (inclusive), in '%Y-%m-%d' format. Example: 2021-07-31, 1981-08-02
@@ -15,7 +16,7 @@ from django.shortcuts import get_object_or_404
 
 from dashboard.models import Species, Dataset, Area
 from dashboard.views.helpers import (
-    filtered_occurrences_from_request,
+    filtered_observations_from_request,
     extract_int_request,
 )
 
@@ -73,23 +74,23 @@ def datasets_list_json(_):
     return _model_to_json_list(Dataset)
 
 
-def filtered_occurrences_counter_json(request):
-    """Count the occurrences according to the filters received
+def filtered_observations_counter_json(request):
+    """Count the observations according to the filters received
 
     parameters:
-    - filters: same format than other endpoints: getting occurrences, map tiles, ...
+    - filters: same format than other endpoints: getting observations, map tiles, ...
     """
-    qs = filtered_occurrences_from_request(request)
+    qs = filtered_observations_from_request(request)
     return JsonResponse({"count": qs.count()})
 
 
-def filtered_occurrences_data_page_json(request):
-    """Main endpoint to get paginated occurrences (data tables, ...)
+def filtered_observations_data_page_json(request):
+    """Main endpoint to get paginated observations (data tables, ...)
 
     parameters:
-    - filters: same format than other endpoints: getting occurrences, map tiles, ...
-    - order: optional, occurrences order (passed to QuerySet.order_by)
-    - limit: number of occurrences per page
+    - filters: same format than other endpoints: getting observations, map tiles, ...
+    - order: optional, observations order (passed to QuerySet.order_by)
+    - limit: number of observations per page
     - page_number: requested page number
 
     response example:
@@ -132,18 +133,17 @@ def filtered_occurrences_data_page_json(request):
     limit = extract_int_request(request, "limit")
     page_number = extract_int_request(request, "page_number")
 
-    occurrences = filtered_occurrences_from_request(request)
+    observations = filtered_observations_from_request(request)
     if order is not None:
-        occurrences = occurrences.order_by(order)
+        observations = observations.order_by(order)
 
-    paginator = Paginator(occurrences, limit)
+    paginator = Paginator(observations, limit)
 
     page = paginator.get_page(page_number)
-    occurrences_dicts = [occ.as_dict(for_user=request.user) for occ in page.object_list]
 
     return JsonResponse(
         {
-            "results": occurrences_dicts,
+            "results": [obs.as_dict(for_user=request.user) for obs in page.object_list],
             "pageNumber": page.number,  # Number of the current page
             "firstPage": page.paginator.page_range.start,
             # page_range is a python range, (last element not included!)
@@ -153,18 +153,18 @@ def filtered_occurrences_data_page_json(request):
     )
 
 
-def filtered_occurrences_monthly_histogram_json(request):
-    """Give the (filtered) number of occurrences per month
+def filtered_observations_monthly_histogram_json(request):
+    """Give the (filtered) number of observations per month
 
     parameters:
-    - filters: same format than other endpoints: getting occurrences, map tiles, ...
+    - filters: same format than other endpoints: getting observations, map tiles, ...
 
     Output is chronologically ordered
     """
-    occurrences = filtered_occurrences_from_request(request)
+    observations = filtered_observations_from_request(request)
 
     histogram_data = (
-        occurrences.annotate(month=TruncMonth("date"))
+        observations.annotate(month=TruncMonth("date"))
         .values("month")
         .annotate(total=Count("id"))
         .order_by("month")

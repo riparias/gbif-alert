@@ -37,11 +37,11 @@
         </div>
 
         <div class="col-3">
-          <Occurrences-counter
+          <Observations-counter
             class="float-right"
-            :counter-url="frontendConfig.apiEndpoints.occurrencesCounterUrl"
+            :counter-url="frontendConfig.apiEndpoints.observationsCounterUrl"
             :filters="filters"
-          ></Occurrences-counter>
+          ></Observations-counter>
         </div>
       </div>
     </div>
@@ -49,10 +49,10 @@
 
   <div class="row">
     <div class="col">
-      <Custom-occurrences-time-line
+      <Custom-observations-time-line
         :filters="filters"
         :histogram-data-url="
-          frontendConfig.apiEndpoints.occurrencesHistogramDataUrl
+          frontendConfig.apiEndpoints.observationsHistogramDataUrl
         "
       />
     </div>
@@ -106,7 +106,7 @@
             </div>
           </div>
 
-          <Occurrences-Map
+          <Observations-Map
             :height="600"
             :initial-zoom="8"
             :initial-lat="50.501"
@@ -123,18 +123,20 @@
             :areas-endpoint-url-template="
               frontendConfig.apiEndpoints.areasUrlTemplate
             "
-          ></Occurrences-Map>
+          ></Observations-Map>
         </div>
 
-        <Occurrences-Table
+        <Observations-Table
           v-show="selectedTab === 'Table view'"
           :filters="filters"
-          :occurrences-json-url="frontendConfig.apiEndpoints.occurrencesJsonUrl"
-          :occurrence-page-url-template="
-            frontendConfig.apiEndpoints.occurrenceDetailsUrlTemplate
+          :observations-json-url="
+            frontendConfig.apiEndpoints.observationsJsonUrl
+          "
+          :observation-page-url-template="
+            frontendConfig.apiEndpoints.observationDetailsUrlTemplate
           "
         >
-        </Occurrences-Table>
+        </Observations-Table>
       </div>
     </div>
   </div>
@@ -151,12 +153,12 @@ import {
   AreaInformation,
 } from "../interfaces";
 import axios from "axios";
-import OccurrencesCounter from "../components/OccurrencesCounter.vue";
+import ObservationsCounter from "../components/ObservationsCounter.vue";
 import TabSwitcher from "../components/TabSwitcher.vue";
-import OccurrencesTable from "../components/OccurrencesTable.vue";
-import OccurrencesMap from "../components/OccurrencesMap.vue";
+import ObservationsTable from "../components/ObservationsTable.vue";
+import ObservationsMap from "../components/ObservationsMap.vue";
 import ModalMultiSelector from "../components/ModalMultiSelector.vue";
-import CustomOccurrencesTimeLine from "./CustomOccurrenceTimeLine.vue";
+import CustomObservationsTimeLine from "./CustomObservationTimeLine.vue";
 
 declare const ripariasConfig: FrontEndConfig;
 
@@ -176,11 +178,11 @@ interface IndexPageRootComponentData {
 export default defineComponent({
   name: "IndexPageRootComponent",
   components: {
-    CustomOccurrencesTimeLine,
-    OccurrencesMap,
-    OccurrencesCounter,
+    CustomObservationsTimeLine,
+    ObservationsMap,
+    ObservationsCounter,
     TabSwitcher,
-    OccurrencesTable,
+    ObservationsTable,
     ModalMultiSelector,
   },
   data: function (): IndexPageRootComponentData {

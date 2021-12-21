@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.contrib.gis.geos import Point
 from django.utils import timezone
 
-from dashboard.models import Occurrence, Species, DataImport, Dataset
+from dashboard.models import Observation, Species, DataImport, Dataset
 
 SAMPLE_DATASET_KEY = "940821c0-3269-11df-855a-b8a03c50a862"
 SAMPLE_OCCURRENCE_ID = "BR:IFBL: 00494798"
@@ -15,7 +15,7 @@ class StableIdentifiersTests(TestCase):
     def setUp(self):
         # Not possible to remplace this by setUpTestData because some methods alter the occurrence => this code should
         # therefore be run before each method.
-        self.occ = Occurrence.objects.create(
+        self.occ = Observation.objects.create(
             gbif_id=1,
             occurrence_id=SAMPLE_OCCURRENCE_ID,
             species=Species.objects.all()[0],
@@ -54,7 +54,7 @@ class StableIdentifiersTests(TestCase):
         self.assertNotEqual(stable_id_before, self.occ.stable_id)
 
     def test_follows_dataset_change(self):
-        """The stable identifier changes if the occurrence gets linked to another dataset (with a different dataset key)
+        """The stable identifier changes if the observation gets linked to another dataset (with a different dataset key)
 
         Note: this won't probably happen in real-world use, but it's a good practice and add extra safety
         """

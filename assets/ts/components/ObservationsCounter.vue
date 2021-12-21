@@ -1,7 +1,7 @@
 <template>
   <button type="button" class="btn btn-sm btn-dark">
-    Matching occurrences
-    <span class="badge badge-light">{{ formattedCount }}</span>
+    <span class="badge badge-light">{{ formattedCount }}</span> matching
+    {{ observationStrPluralized }}
   </button>
 </template>
 
@@ -12,7 +12,7 @@ import axios from "axios";
 import { filtersToQuerystring } from "../helpers";
 
 export default defineComponent({
-  name: "OccurrencesCounter",
+  name: "ObservationsCounter",
   props: {
     filters: Object as () => DashboardFilters,
     counterUrl: {
@@ -29,8 +29,8 @@ export default defineComponent({
     formattedCount: function (): string {
       return new Intl.NumberFormat().format(this.count);
     },
-    occurrenceStrPluralized: function (): string {
-      return this.count === 1 ? "occurrence" : "occurrences";
+    observationStrPluralized: function (): string {
+      return this.count === 1 ? "observation" : "observations";
     },
   },
   methods: {

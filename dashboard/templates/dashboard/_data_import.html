@@ -4,7 +4,7 @@
 <div class="alert alert-primary" role="alert">
     <h4>Data import: #{{ data_import.pk }}</h4>
     <b>Time: </b>{{ data_import.start }} - {{ data_import.end }}<br/>
-    <b>Downloaded occurrences: </b>{{ data_import.imported_occurrences_counter|intcomma }}<br/>
+    <b>Downloaded observations: </b>{{ data_import.imported_observations_counter|intcomma }}<br/>
     <b>GBIF download: </b><a href="{{ data_import.gbif_download_id|gbif_download_url }}">{{ data_import.gbif_download_id }}</a>(visit link for license, DOI and more)
 </div>
 

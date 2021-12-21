@@ -20,6 +20,6 @@ DATABASES = {
     }
 }
 
-# A Gbif.org is necessary to automatically download occurrences via the `import_occurrences` command
+# A Gbif.org is necessary to automatically download observations via the `import_observations` command
 RIPARIAS["GBIF_USERNAME"] = "xxx"
 RIPARIAS["GBIF_PASSWORD"] = "yyy"

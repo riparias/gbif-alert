@@ -38,9 +38,10 @@ interface EndpointsUrls {
   areasListUrl: string;
   tileServerUrlTemplate: string;
   areasUrlTemplate: string;
-  occurrencesCounterUrl: string;
-  occurrencesJsonUrl: string;
-  occurrencesHistogramDataUrl: string;
+  observationsCounterUrl: string;
+  observationsJsonUrl: string;
+  observationsHistogramDataUrl: string;
+  observationDetailsUrlTemplate: string;
 }
 
 // Keep in sync with templatetags.riparias_extras.js_config_object
@@ -51,8 +52,8 @@ export interface FrontEndConfig {
   apiEndpoints: EndpointsUrls;
 }
 
-// Keep in sync with Models.Occurrence.as_dict()
-export interface JsonOccurrence {
+// Keep in sync with Models.Observation.as_dict()
+export interface JsonObservation {
   id: number;
   stableId: string;
   gbifId: number;

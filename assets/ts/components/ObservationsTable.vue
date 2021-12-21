@@ -12,10 +12,10 @@
           </th>
         </tr>
       </thead>
-      <Occurrence-table-page
+      <Observation-table-page
         :occurrences="occurrences"
-        :occurrence-page-url-template="occurrencePageUrlTemplate"
-      ></Occurrence-table-page>
+        :observation-page-url-template="observationPageUrlTemplate"
+      ></Observation-table-page>
     </table>
     <p class="text-center">
       <button
@@ -43,7 +43,7 @@
 import { defineComponent } from "vue";
 import { DashboardFilters } from "../interfaces";
 import axios from "axios";
-import OccurrenceTablePage from "./OccurrenceTablePage.vue";
+import ObservationTablePage from "./ObservationTablePage.vue";
 import { filtersToQuerystring } from "../helpers";
 
 interface ColDefinition {
@@ -51,7 +51,7 @@ interface ColDefinition {
   label: string;
 }
 
-declare interface OccurrencesTableData {
+declare interface ObservationsTableData {
   currentPage: number;
   firstPage: number | null;
   lastPage: number;
@@ -62,18 +62,18 @@ declare interface OccurrencesTableData {
 }
 
 export default defineComponent({
-  name: "OccurrencesTable",
-  components: { OccurrenceTablePage },
+  name: "ObservationsTable",
+  components: { ObservationTablePage },
   props: {
     filters: {
       type: Object as () => DashboardFilters,
       required: true,
     },
-    occurrencesJsonUrl: {
+    observationsJsonUrl: {
       type: String,
       required: true,
     },
-    occurrencePageUrlTemplate: String,
+    observationPageUrlTemplate: String,
     pageSize: {
       type: Number,
       default: 20,
@@ -128,7 +128,7 @@ export default defineComponent({
       params.page_number = pageNumber;
 
       axios
-        .get(this.occurrencesJsonUrl, {
+        .get(this.observationsJsonUrl, {
           params: params,
           paramsSerializer: filtersToQuerystring,
         })
@@ -152,7 +152,7 @@ export default defineComponent({
       return this.currentPage < this.lastPage;
     },
   },
-  data: function (): OccurrencesTableData {
+  data: function (): ObservationsTableData {
     return {
       currentPage: 1,
       firstPage: 1,

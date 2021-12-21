@@ -7,7 +7,7 @@ from django.urls import reverse
 import mapbox_vector_tile
 from django.utils import timezone
 
-from dashboard.models import Occurrence, Species, DataImport, Dataset, Area
+from dashboard.models import Observation, Species, DataImport, Dataset, Area
 
 
 class VectorTilesServerTests(TestCase):
@@ -25,7 +25,7 @@ class VectorTilesServerTests(TestCase):
             gbif_dataset_key="aaa7b334-ce0d-4e88-aaae-2e0c138d049f",
         )
 
-        Occurrence.objects.create(
+        Observation.objects.create(
             gbif_id=1,
             occurrence_id="1",
             species=cls.first_species,
@@ -34,7 +34,7 @@ class VectorTilesServerTests(TestCase):
             source_dataset=cls.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
-        Occurrence.objects.create(
+        Observation.objects.create(
             gbif_id=2,
             occurrence_id="2",
             species=cls.second_species,
@@ -346,7 +346,7 @@ class VectorTilesServerTests(TestCase):
             group="PL",
             category="E",
         )
-        Occurrence.objects.create(
+        Observation.objects.create(
             gbif_id=1000,
             occurrence_id="1000",
             species=species_tetraodon,
@@ -355,7 +355,7 @@ class VectorTilesServerTests(TestCase):
             source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
-        Occurrence.objects.create(
+        Observation.objects.create(
             gbif_id=1001,
             occurrence_id="1001",
             species=species_tetraodon,
@@ -364,7 +364,7 @@ class VectorTilesServerTests(TestCase):
             source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
-        Occurrence.objects.create(
+        Observation.objects.create(
             gbif_id=1002,
             occurrence_id="1002",
             species=species_tetraodon,
@@ -574,7 +574,7 @@ class VectorTilesServerTests(TestCase):
         self.assertEqual(response.json()["max"], 1)
 
         # Add a second one in Lillois, but not next to the other one
-        Occurrence.objects.create(
+        Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
             species=Species.objects.all()[0],
@@ -607,7 +607,7 @@ class VectorTilesServerTests(TestCase):
 
     def test_min_max_per_hexagon_with_species_filter(self):
         # Add a second one in Lillois, but not next to the other one and another species
-        Occurrence.objects.create(
+        Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
             species=VectorTilesServerTests.second_species,
@@ -637,7 +637,7 @@ class VectorTilesServerTests(TestCase):
         self.assertEqual(response.json()["max"], 2)
 
         # Now let's add another one in Andenne for species 2: whe should now have 1,2
-        Occurrence.objects.create(
+        Observation.objects.create(
             gbif_id=4,
             occurrence_id="4",
             species=VectorTilesServerTests.second_species,
@@ -657,7 +657,7 @@ class VectorTilesServerTests(TestCase):
 
     def test_min_max_per_hexagon_with_dataset_filter(self):
         # Add a second one in Lillois, but not next to the other one and another species
-        Occurrence.objects.create(
+        Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
             species=VectorTilesServerTests.second_species,
@@ -687,7 +687,7 @@ class VectorTilesServerTests(TestCase):
         self.assertEqual(response.json()["max"], 2)
 
         # Now let's add another one in Andenne for species 2: whe should now have 1,2
-        Occurrence.objects.create(
+        Observation.objects.create(
             gbif_id=4,
             occurrence_id="4",
             species=VectorTilesServerTests.second_species,
@@ -707,7 +707,7 @@ class VectorTilesServerTests(TestCase):
 
     def test_min_max_per_hexagon_with_area_filter(self):
         # Add a second one in Lillois, but not next to the other
-        Occurrence.objects.create(
+        Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
             species=VectorTilesServerTests.second_species,

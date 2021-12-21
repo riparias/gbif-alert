@@ -31,7 +31,7 @@ Developer documentation is available in [CONTRIBUTING.md](CONTRIBUTING.md).
 The development of the early detection system is done in the open. All progress, discussion of new features, milestones, ... can be tracked down on the [issues page](https://github.com/riparias/early-warning-webapp/issues). 
 The next major steps can be summarized as follows:
 -	complete the user interface so that registered users can configure their alerts (planned end December 2021)
--	set up e-mail notifications for new occurrences matching user alerts
+-	set up e-mail notifications for new observations matching user alerts
 -	polish the user interface
 -	update species list and available areas based on the feedback from partners
 -	deployment on the production server
