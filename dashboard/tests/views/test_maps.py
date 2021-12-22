@@ -341,10 +341,7 @@ class VectorTilesServerTests(TestCase):
 
         # We need first to add a new species and related observations:
         species_tetraodon = Species.objects.create(
-            name="Tetraodon fluviatilis",
-            gbif_taxon_key=5213564,
-            group="PL",
-            category="E",
+            name="Tetraodon fluviatilis", gbif_taxon_key=5213564, group="PL"
         )
         Observation.objects.create(
             gbif_id=1000,

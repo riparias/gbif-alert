@@ -480,10 +480,7 @@ class ApiTests(TestCase):
         """
         # We need one more species and one related observation to perform this test
         species_tetraodon = Species.objects.create(
-            name="Tetraodon fluviatilis",
-            gbif_taxon_key=5213564,
-            group="PL",
-            category="E",
+            name="Tetraodon fluviatilis", gbif_taxon_key=5213564, group="PL"
         )
         Observation.objects.create(
             gbif_id=1000,
@@ -612,10 +609,7 @@ class ApiTests(TestCase):
         """We add a third species and check we can ask a count for species 2 and 3 only"""
         # We need one more species and related observations to perform this test
         species_tetraodon = Species.objects.create(
-            name="Tetraodon fluviatilis",
-            gbif_taxon_key=5213564,
-            group="PL",
-            category="E",
+            name="Tetraodon fluviatilis", gbif_taxon_key=5213564, group="PL"
         )
         Observation.objects.create(
             gbif_id=1000,
