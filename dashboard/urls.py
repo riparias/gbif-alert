@@ -49,7 +49,7 @@ urlpatterns = [
     ),
     path(
         "api/maps/min_max_per_hexagon",
-        views.occurrence_min_max_in_hex_grid_json,
+        views.observation_min_max_in_hex_grid_json,
         name="api-mvt-min-max-per-hexagon",
     ),
 ]

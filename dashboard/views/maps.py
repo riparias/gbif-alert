@@ -47,12 +47,12 @@ ZOOM_TO_HEX_SIZE = {
 }
 
 # !! IMPORTANT !! Make sure the observation filtering here is equivalent to what's done in
-# other places (views.helpers.filtered_observations_from_request). Otherwise, occurrences returned on the map and on
+# other places (views.helpers.filtered_observations_from_request). Otherwise, observations returned on the map and on
 # other components (table, ...) will be inconsistent.
 JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
     """
     SELECT 
-    * FROM $occurrences_table_name as occ
+    * FROM $observations_table_name as occ
     {% if area_ids %}
     , (SELECT mpoly FROM $areas_table_name WHERE $areas_table_name.id IN {{ area_ids | inclause }}) AS areas
     {% endif %}
@@ -77,7 +77,7 @@ JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
 """
 ).substitute(
     areas_table_name=AREAS_TABLE_NAME,
-    occurrences_table_name=OBSERVATIONS_TABLE_NAME,
+    observations_table_name=OBSERVATIONS_TABLE_NAME,
     date_format=DB_DATE_EXCHANGE_FORMAT_POSTGRES,
 )
 
@@ -90,24 +90,24 @@ JINJASQL_FRAGMENT_AGGREGATED_GRID = Template(
                             {% if grid_extent_viewport %}
                                 ST_TileEnvelope({{ zoom }}, {{ x }}, {{ y }})
                             {% else %}
-                                ST_SetSRID(ST_EstimatedExtent('$occurrences_table_name', '$occurrences_field_name_point'), 3857)
+                                ST_SetSRID(ST_EstimatedExtent('$observations_table_name', '$observations_field_name_point'), 3857)
                             {% endif %} 
                         ) AS hexes
-                    INNER JOIN ($jinjasql_fragment_filter_occurrences)
+                    INNER JOIN ($jinjasql_fragment_filter_observations)
                     AS dashboard_filtered_occ
 
-                    ON ST_Intersects(dashboard_filtered_occ.$occurrences_field_name_point, hexes.geom)
+                    ON ST_Intersects(dashboard_filtered_occ.$observations_field_name_point, hexes.geom)
                     GROUP BY hexes.geom
 """
 ).substitute(
-    occurrences_table_name=OBSERVATIONS_TABLE_NAME,
-    occurrences_field_name_point=OBSERVATIONS_FIELD_NAME_POINT,
-    jinjasql_fragment_filter_occurrences=JINJASQL_FRAGMENT_FILTER_OBSERVATIONS,
+    observations_table_name=OBSERVATIONS_TABLE_NAME,
+    observations_field_name_point=OBSERVATIONS_FIELD_NAME_POINT,
+    jinjasql_fragment_filter_observations=JINJASQL_FRAGMENT_FILTER_OBSERVATIONS,
 )
 
 
 def mvt_tiles_hexagon_grid_aggregated(request, zoom, x, y):
-    """Tile server, showing occurrences aggregated by hexagon squares. Filters are honoured."""
+    """Tile server, showing observations aggregated by hexagon squares. Filters are honoured."""
     species_ids, datasets_ids, start_date, end_date, area_ids = filters_from_request(
         request
     )
@@ -131,13 +131,13 @@ def mvt_tiles_hexagon_grid_aggregated(request, zoom, x, y):
         "zoom": zoom,
         "x": x,
         "y": y,
-        # Filter included occurrences
+        # Filter included observations
         "species_ids": species_ids,
         "datasets_ids": datasets_ids,
         "area_ids": area_ids,
     }
 
-    # More occurrences filtering
+    # More observations filtering
     if start_date is not None:
         sql_params["start_date"] = start_date.strftime(DB_DATE_EXCHANGE_FORMAT_PYTHON)
     if end_date is not None:
@@ -149,10 +149,10 @@ def mvt_tiles_hexagon_grid_aggregated(request, zoom, x, y):
     )
 
 
-def occurrence_min_max_in_hex_grid_json(request):
-    """Return the min, max occurrences count per hexagon, according to the zoom level. JSON format.
+def observation_min_max_in_hex_grid_json(request):
+    """Return the min, max observations count per hexagon, according to the zoom level. JSON format.
 
-    This can be useful to dynamically color the grid according to the occurrence count
+    This can be useful to dynamically color the grid according to the count
     """
     zoom = extract_int_request(request, "zoom")
     species_ids, datasets_ids, start_date, end_date, area_ids = filters_from_request(

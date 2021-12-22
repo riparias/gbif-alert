@@ -13,9 +13,9 @@ EXPECTED_STABLE_ID = "e58dabf7bcc72dc6b3e057859ed89a453eea527d"
 
 class StableIdentifiersTests(TestCase):
     def setUp(self):
-        # Not possible to remplace this by setUpTestData because some methods alter the occurrence => this code should
+        # Not possible to replace this by setUpTestData because some methods alter the observation => this code should
         # therefore be run before each method.
-        self.occ = Observation.objects.create(
+        self.obs = Observation.objects.create(
             gbif_id=1,
             occurrence_id=SAMPLE_OCCURRENCE_ID,
             species=Species.objects.all()[0],
@@ -29,29 +29,29 @@ class StableIdentifiersTests(TestCase):
 
     def test_stable_correct_value(self):
         """The stable identifier has the expected value and is therefore predictable over time"""
-        self.assertEqual(self.occ.stable_id, EXPECTED_STABLE_ID)
+        self.assertEqual(self.obs.stable_id, EXPECTED_STABLE_ID)
 
     def test_follows_occurrence_id(self):
         """The stable identifier changes if the occurrence_id is updated"""
-        stable_id_before = self.occ.stable_id
-        self.occ.occurrence_id = "something new"
-        self.occ.save()
+        stable_id_before = self.obs.stable_id
+        self.obs.occurrence_id = "something new"
+        self.obs.save()
 
-        self.occ.refresh_from_db()  # Refresh is probably not necessary here, providing it for consistency with
+        self.obs.refresh_from_db()  # Refresh is probably not necessary here, providing it for consistency with
         # test_follows_dataset_key()
-        self.assertNotEqual(stable_id_before, self.occ.stable_id)
+        self.assertNotEqual(stable_id_before, self.obs.stable_id)
 
     def test_follows_dataset_key(self):
         """The stable identifier changes if the dataset key is updated
 
         Note: this won't probably happen in real-world use, but it's a good practice and add extra safety
         """
-        stable_id_before = self.occ.stable_id
-        self.occ.source_dataset.gbif_dataset_key = "something new"
-        self.occ.source_dataset.save()
+        stable_id_before = self.obs.stable_id
+        self.obs.source_dataset.gbif_dataset_key = "something new"
+        self.obs.source_dataset.save()
 
-        self.occ.refresh_from_db()
-        self.assertNotEqual(stable_id_before, self.occ.stable_id)
+        self.obs.refresh_from_db()
+        self.assertNotEqual(stable_id_before, self.obs.stable_id)
 
     def test_follows_dataset_change(self):
         """The stable identifier changes if the observation gets linked to another dataset (with a different dataset key)
@@ -59,26 +59,26 @@ class StableIdentifiersTests(TestCase):
         Note: this won't probably happen in real-world use, but it's a good practice and add extra safety
         """
 
-        stable_id_before = self.occ.stable_id
-        self.occ.source_dataset = Dataset.objects.create(
+        stable_id_before = self.obs.stable_id
+        self.obs.source_dataset = Dataset.objects.create(
             name="New dataset", gbif_dataset_key="newdatasetid"
         )
-        self.occ.save()
-        self.occ.refresh_from_db()
-        self.assertNotEqual(stable_id_before, self.occ.stable_id)
+        self.obs.save()
+        self.obs.refresh_from_db()
+        self.assertNotEqual(stable_id_before, self.obs.stable_id)
 
     def test_dont_follow_unrelated_fields(self):
         """The stable identifier should rely only on occurrence_id and dataset_key.
 
         This test ensures updating unrelated field doesn't change it
         """
-        stable_id_before = self.occ.stable_id
+        stable_id_before = self.obs.stable_id
 
-        self.occ.species = Species.objects.all()[1]
-        self.occ.date = datetime.date.today()
-        self.occ.data_import = DataImport.objects.create(start=timezone.now())
-        self.occ.source_dataset.name = "Renamed dataset"
-        self.occ.source_dataset.save()
-        self.occ.save()
+        self.obs.species = Species.objects.all()[1]
+        self.obs.date = datetime.date.today()
+        self.obs.data_import = DataImport.objects.create(start=timezone.now())
+        self.obs.source_dataset.name = "Renamed dataset"
+        self.obs.source_dataset.save()
+        self.obs.save()
 
-        self.assertEqual(self.occ.stable_id, stable_id_before)
+        self.assertEqual(self.obs.stable_id, stable_id_before)

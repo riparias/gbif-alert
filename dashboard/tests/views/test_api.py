@@ -42,7 +42,7 @@ class ApiTests(TestCase):
             source_dataset=cls.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
-        second_occ = Observation.objects.create(
+        second_obs = Observation.objects.create(
             gbif_id=2,
             occurrence_id="2",
             species=cls.second_species,
@@ -119,7 +119,7 @@ class ApiTests(TestCase):
             mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
         )
 
-        ObservationView.objects.create(occurrence=second_occ, user=cls.another_user)
+        ObservationView.objects.create(observation=second_obs, user=cls.another_user)
 
     def test_areas_list_json_anonymous(self):
         """Getting the list of areas as an anonymous user"""
@@ -248,7 +248,7 @@ class ApiTests(TestCase):
         self.assertEqual(response.content, b"")
 
     def test_observations_json_view_data(self):
-        """If the user is authenticated, there is data about which occurrences were already viewed by that user"""
+        """If the user is authenticated, there is data about which observations were already viewed by that user"""
         self.client.login(username="frusciante1", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id")
@@ -257,7 +257,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["results"][1]["viewedByCurrentUser"], True)
 
     def test_observations_json_no_view_for_anonymous(self):
-        """If the user is anonymous, there is NO data about which occurrences were already viewed"""
+        """If the user is anonymous, there is NO data about which observations were already viewed"""
         base_url = reverse("dashboard:api-filtered-observations-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1")
         json_data = response.json()
@@ -265,7 +265,7 @@ class ApiTests(TestCase):
             json_data["results"][0]["viewedByCurrentUser"]
 
     def test_observations_json_no_location(self):
-        """Regression test: no error 500 in occurrences_json if we have locations without a location"""
+        """Regression test: no error 500 in observations_json if we have locations without a location"""
         Observation.objects.create(
             gbif_id=4,
             occurrence_id="4",
@@ -287,7 +287,7 @@ class ApiTests(TestCase):
         response = self.client.get(f"{base_url}?limit=10&page_number=1")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
-        # All 3 occurrences should be on this first page, in undefined order
+        # All 3 observations should be on this first page, in undefined order
         self.assertEqual(json_data["totalResultsCount"], 3)
         self.assertEqual(json_data["totalResultsCount"], len(json_data["results"]))
         self.assertEqual(json_data["pageNumber"], 1)
@@ -326,8 +326,8 @@ class ApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         # Check that it's sorted by species name (alphabetical order)
-        occ_species_names = [result["speciesName"] for result in json_data["results"]]
-        self.assertEqual(occ_species_names, sorted(occ_species_names))
+        obs_species_names = [result["speciesName"] for result in json_data["results"]]
+        self.assertEqual(obs_species_names, sorted(obs_species_names))
 
     def test_observations_json_ordering_species_name_desc(self):
         base_url = reverse("dashboard:api-filtered-observations-data-page")
@@ -337,8 +337,8 @@ class ApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         # Check that it's sorted by species name (alphabetical order)
-        occ_species_names = [result["speciesName"] for result in json_data["results"]]
-        self.assertEqual(occ_species_names[::-1], sorted(occ_species_names))
+        obs_species_names = [result["speciesName"] for result in json_data["results"]]
+        self.assertEqual(obs_species_names[::-1], sorted(obs_species_names))
 
     def test_observations_json_pagination_base(self):
         base_url = reverse("dashboard:api-filtered-observations-data-page")
@@ -433,7 +433,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["totalResultsCount"], 1)
         self.assertEqual(
             json_data["results"][0]["gbifId"], "1"
-        )  # Only one occurrence in Andenne because of the selected area
+        )  # Only one observation in Andenne because of the selected area
 
     def test_observations_json_multiple_areas_filter(self):
         """The areaIds parameter can take multiple values (OR)"""
@@ -443,10 +443,10 @@ class ApiTests(TestCase):
         json_data = response.json()
         self.assertEqual(
             json_data["totalResultsCount"], 3
-        )  # All 3 occurrences should be there because the two areas cover them all
+        )  # All 3 observations should be there because the two areas cover them all
 
     def test_observations_json_multiple_datasets_filter_case1(self):
-        """occurrences_json accept to filter per multiple datasets
+        """observations_json accept to filter per multiple datasets
 
         Case 1: Explicitly requests all datasets. Results should be the same than no filter"""
         base_url = reverse("dashboard:api-filtered-observations-data-page")
@@ -460,7 +460,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data_all_species, json_data_no_species_filters)
 
     def test_observations_json_multiple_species_filter_case1(self):
-        """occurrences_json accept to filter per multiple species
+        """observations_json accept to filter per multiple species
 
         Case 1: Explicitly requests all species. Results should be the same than no filter"""
         base_url = reverse("dashboard:api-filtered-observations-data-page")
@@ -474,11 +474,11 @@ class ApiTests(TestCase):
         self.assertEqual(json_data_all_species, json_data_no_species_filters)
 
     def test_observations_json_multiple_species_filter_case2(self):
-        """occurrences_json accept to filter per multiple species
+        """observations_json accept to filter per multiple species
 
-        Case 2: request occurrences for species 1 and 3
+        Case 2: request observations for species 1 and 3
         """
-        # We need one more species and one related occurrence to perform this test
+        # We need one more species and one related observation to perform this test
         species_tetraodon = Species.objects.create(
             name="Tetraodon fluviatilis",
             gbif_taxon_key=5213564,
@@ -507,10 +507,10 @@ class ApiTests(TestCase):
             )
 
     def test_observations_json_multiple_dataset_filter_case2(self):
-        """occurrences_json accept to filter per multiple datasets
-        Case 2: request occurrences for datasets 1 and 3
+        """observations_json accept to filter per multiple datasets
+        Case 2: request observations for datasets 1 and 3
         """
-        # We need one more dataset and one related occurrence to perform this test
+        # We need one more dataset and one related observation to perform this test
         third_dataset = Dataset.objects.create(
             name="Third dataset", gbif_dataset_key="xxxx"
         )
@@ -566,8 +566,9 @@ class ApiTests(TestCase):
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 1)
 
-    def test_occurrence_json_combined_filters_case5(self):
-        # Starting from test_observations_json_combined_filters, we add one area filter => the filter combination now returns 0 results
+    def test_observation_json_combined_filters_case5(self):
+        # Starting from test_observations_json_combined_filters, we add one area filter => the filter combination now
+        # returns 0 results
         base_url = reverse("dashboard:api-filtered-observations-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&areaIds[]={ApiTests.global_area_andenne.pk}"
         response = self.client.get(url_with_params)
@@ -598,7 +599,7 @@ class ApiTests(TestCase):
         json_data = response.json()
         self.assertEqual(json_data["count"], 2)
 
-    def test_occurrence_counter_multiple_species_filter_case1(self):
+    def test_observation_counter_multiple_species_filter_case1(self):
         """We explicitly request all species: result should be identical to no species filtering"""
         base_url = reverse("dashboard:api-filtered-observations-counter")
         json_data_explicit = self.client.get(
@@ -607,9 +608,9 @@ class ApiTests(TestCase):
         json_data_nofilters = self.client.get(f"{base_url}").json()
         self.assertEqual(json_data_explicit, json_data_nofilters)
 
-    def test_occurrence_counter_multiple_species_filter_case2(self):
+    def test_observation_counter_multiple_species_filter_case2(self):
         """We add a third species and check we can ask a count for species 2 and 3 only"""
-        # We need one more species and related occurrences to perform this test
+        # We need one more species and related observations to perform this test
         species_tetraodon = Species.objects.create(
             name="Tetraodon fluviatilis",
             gbif_taxon_key=5213564,
@@ -680,7 +681,7 @@ class ApiTests(TestCase):
         json_data = response.json()
         self.assertEqual(json_data["count"], 1)
 
-        # Case 2: we also add a dataset filter (which doesn't change the number of occurrences)
+        # Case 2: we also add a dataset filter (which doesn't change the number of observations)
         url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&datasetsIds[]={ApiTests.second_dataset.pk}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)

@@ -158,7 +158,7 @@ class Observation(models.Model):
     class Meta:
         unique_together = [("gbif_id", "data_import"), ("stable_id", "data_import")]
 
-    class OtherIdenticalOccurrenceIsNewer(Exception):
+    class OtherIdenticalObservationIsNewer(Exception):
         pass
 
     def get_admin_url(self):
@@ -173,18 +173,18 @@ class Observation(models.Model):
 
         Note that this is a high-level function designed to be called directly from a view (for example)
             - Does nothing if the user is anonymous (not signed in)
-            - Does nothing if the user has already previously viewed this occurrence
+            - Does nothing if the user has already previously viewed this observation
         """
         if user.is_authenticated:
             try:
                 self.observationview_set.get(user=user)
             except ObservationView.DoesNotExist:
-                ObservationView.objects.create(occurrence=self, user=user)
+                ObservationView.objects.create(observation=self, user=user)
 
     def first_viewed_at(self, user) -> Optional[datetime.datetime]:
-        """Return the time a user as first viewed this occurrence
+        """Return the time a user as first viewed this observation
 
-        Returns none if the user is not logged in, or if they have not viewed the occurrence yet
+        Returns none if the user is not logged in, or if they have not viewed the observation yet
         """
         if user.is_authenticated:
             try:
@@ -194,7 +194,7 @@ class Observation(models.Model):
         return None
 
     def mark_as_not_viewed_by(self, user) -> bool:
-        """Returns True is successful, False otherwise (most probable cause: user has not viewed this occurrence yet)"""
+        """Return True is successful, False otherwise (most probable cause: user has not viewed this observation yet)"""
         try:
             self.observationview_set.get(user=user).delete()
             return True
@@ -213,46 +213,46 @@ class Observation(models.Model):
         )
 
     def migrate_linked_entities(self):
-        """Migrate existing entities (comments, ...) linked to a previous occurrence that share the stable ID
+        """Migrate existing entities (comments, ...) linked to a previous observation that share the stable ID
 
-        Does nothing if there's no replaced occurrence
+        Does nothing if there's no replaced observation
         """
-        replaced_occurrence = self.replaced_occurrence
-        if replaced_occurrence is not None:
+        replaced_observation = self.replaced_observation
+        if replaced_observation is not None:
             # 1. Migrating comments
-            for comment in replaced_occurrence.observationcomment_set.all():
+            for comment in replaced_observation.observationcomment_set.all():
                 comment.observation = self
                 comment.save()
-
-            for occurrence_view in replaced_occurrence.observationview_set.all():
-                occurrence_view.occurrence = self
-                occurrence_view.save()
+            # 2. Migrating user views
+            for observation_view in replaced_observation.observationview_set.all():
+                observation_view.observation = self
+                observation_view.save()
 
     @property
-    def replaced_occurrence(self) -> Optional[Observation]:
-        """Return the occurrence (from a previous import) that will be replaced by this one
+    def replaced_observation(self) -> Optional[Observation]:
+        """Return the observation (from a previous import) that will be replaced by this one
 
-        return None if this occurrence is new to the system
+        return None if this observation is new to the system
         raises:
-        - Occurrence.MultipleObjectsReturned if multiple old occurrences match
-        - Occurrence.OtherIdenticalOccurrenceIsNewer if another one has the same stable identifier, but is more recent
+        - Observation.MultipleObjectsReturned if multiple old observations match
+        - Observation.OtherIdenticalObservationIsNewer if another one has the same stable identifier, but is more recent
         """
 
-        identical_occurrences = self.get_identical_occurrences()
-        if identical_occurrences.count() == 0:
+        identical_observations = self.get_identical_observations()
+        if identical_observations.count() == 0:
             return None
-        elif identical_occurrences.count() == 1:
-            the_other_one = identical_occurrences[0]
+        elif identical_observations.count() == 1:
+            the_other_one = identical_observations[0]
             if the_other_one.data_import.pk < self.data_import.pk:
                 return the_other_one
             else:
-                raise Observation.OtherIdenticalOccurrenceIsNewer
+                raise Observation.OtherIdenticalObservationIsNewer
 
-        else:  # Multiple occurrences found, this is abnormal
+        else:  # Multiple observations found, this is abnormal
             raise Observation.MultipleObjectsReturned
 
-    def get_identical_occurrences(self) -> QuerySet[Observation]:
-        """Return 'identical' occurrences (same stable_id), excluding myself)"""
+    def get_identical_observations(self) -> QuerySet[Observation]:
+        """Return 'identical' observations (same stable_id), excluding myself)"""
         return Observation.objects.exclude(pk=self.pk).filter(stable_id=self.stable_id)
 
     @property
@@ -280,7 +280,7 @@ class Observation(models.Model):
     def lonlat_4326_tuple(self):
         """Coordinates as a (lon, lat) tuple, in EPSG:4326
 
-        (None, None) in case the occurrence has no location
+        (None, None) in case the observation has no location
         """
         if self.location:
             coords = self.location.transform(4326, clone=True).coords
@@ -289,7 +289,7 @@ class Observation(models.Model):
 
     def as_dict(
         self, for_user
-    ):  # Keep in sync with JsonOccurrence (TypeScript interface)
+    ):  # Keep in sync with JsonObservation (TypeScript interface)
         lon, lat = self.lonlat_4326_tuple
 
         d = {
@@ -321,7 +321,7 @@ class ObservationComment(models.Model):
 
 
 class Area(models.Model):
-    """An area that can be shown to the user, or used to filter occurrences"""
+    """An area that can be shown to the user, or used to filter observations"""
 
     mpoly = models.MultiPolygonField(srid=DATA_SRID)
     owner = models.ForeignKey(
@@ -361,19 +361,19 @@ class Area(models.Model):
 
 class ObservationView(models.Model):
     """
-    This models keeps an history of when a user has first seen details about an occurrence
+    This models keeps an history of when a user has first seen details about an observation
 
-    - If no entry for the user/occurrence pair: the user has never seen details about this occurrence
+    - If no entry for the user/observation pair: the user has never seen details about this observation
     - Else: the timestamp of the *first* visit is kept (no sophisticated history mechanism)
     """
 
-    occurrence = models.ForeignKey(Observation, on_delete=models.CASCADE)
+    observation = models.ForeignKey(Observation, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = [
-            ("occurrence", "user"),
+            ("observation", "user"),
         ]
 
 

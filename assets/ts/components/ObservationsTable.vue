@@ -13,7 +13,7 @@
         </tr>
       </thead>
       <Observation-table-page
-        :occurrences="occurrences"
+        :observations="observations"
         :observation-page-url-template="observationPageUrlTemplate"
       ></Observation-table-page>
     </table>
@@ -55,9 +55,9 @@ declare interface ObservationsTableData {
   currentPage: number;
   firstPage: number | null;
   lastPage: number;
-  totalOccurrencesCount: number | null;
+  totalObservationsCount: number | null;
   sortBy: string;
-  occurrences: [];
+  observations: [];
   cols: ColDefinition[];
 }
 
@@ -85,7 +85,7 @@ export default defineComponent({
       immediate: true,
       handler: function () {
         this.currentPage = 1;
-        this.loadOccurrences(
+        this.loadObservations(
           this.filters,
           this.sortBy,
           this.pageSize,
@@ -94,7 +94,7 @@ export default defineComponent({
       },
     },
     currentPage: function () {
-      this.loadOccurrences(
+      this.loadObservations(
         this.filters,
         this.sortBy,
         this.pageSize,
@@ -102,7 +102,7 @@ export default defineComponent({
       );
     },
     sortBy: function () {
-      this.loadOccurrences(
+      this.loadObservations(
         this.filters,
         this.sortBy,
         this.pageSize,
@@ -116,7 +116,7 @@ export default defineComponent({
         this.sortBy = newSort;
       }
     },
-    loadOccurrences: function (
+    loadObservations: function (
       filters: DashboardFilters,
       orderBy: string,
       pageSize: number,
@@ -133,10 +133,10 @@ export default defineComponent({
           paramsSerializer: filtersToQuerystring,
         })
         .then((response) => {
-          this.occurrences = response.data.results;
+          this.observations = response.data.results;
           this.firstPage = response.data.firstPage;
           this.lastPage = response.data.lastPage;
-          this.totalOccurrencesCount = response.data.totalResultsCount;
+          this.totalObservationsCount = response.data.totalResultsCount;
         });
 
       params.order = orderBy;
@@ -157,13 +157,13 @@ export default defineComponent({
       currentPage: 1,
       firstPage: 1,
       lastPage: 1,
-      totalOccurrencesCount: null,
+      totalObservationsCount: null,
       sortBy: "id",
-      occurrences: [],
+      observations: [],
 
       cols: [
         // sortId: must match django QS filter (null = non-sortable), label: what's displayed in header
-        // Beware: the actual data display occurs in OccurrenceTablePage component, make sure the header and data shown
+        // Beware: the actual data display occurs in ObservationsTablePage component, make sure the header and data shown
         // stay synchronised
         { sortId: "gbif_id", label: "GBIF Id" },
         { sortId: null, label: "Lat" },

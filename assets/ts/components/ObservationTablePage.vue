@@ -40,7 +40,7 @@ export default defineComponent({
   name: "ObservationTablePage",
   computed: {
     preparedObservations: function (): ObservationForDisplay[] {
-      return this.occurrences.map((occ) => {
+      return this.observations.map((occ) => {
         return {
           gbifId: occ.gbifId,
           lat: occ.lat ? occ.lat.toFixed(4) : "",
@@ -58,7 +58,7 @@ export default defineComponent({
     },
   },
   props: {
-    occurrences: {
+    observations: {
       // Only the subset for the page
       type: Array as () => JsonObservation[],
       default: function () {

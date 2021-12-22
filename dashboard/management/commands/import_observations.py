@@ -159,15 +159,15 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport):
 
 def send_successful_import_email():
     mail_admins(
-        "Successful occurrence data import",
-        "The daily occurrence data import has been successfully performed",
+        "Successful observations data import",
+        "The daily observation data import has been successfully performed",
         fail_silently=True,
     )
 
 
 def send_error_import_email():
     mail_admins(
-        "ERROR during occurrence data import",
+        "ERROR during observation data import",
         "Please have a look at the application",
         fail_silently=True,
     )
@@ -230,7 +230,7 @@ class Command(BaseCommand):
                 password=settings.RIPARIAS["GBIF_PASSWORD"],
                 output_path=source_data_path,
             )
-            self.stdout.write("Occurrences downloaded")
+            self.stdout.write("Observations downloaded")
 
         self.stdout.write(
             "We now have a (locally accessible) source dwca, real import is starting. We'll use a transaction and put "
@@ -247,7 +247,7 @@ class Command(BaseCommand):
                 f"Created a new DataImport object: #{current_data_import.pk}"
             )
 
-            # 3. Import data from DwCA (occurrences + GBIF download ID)
+            # 3. Import data from DwCA (observations + GBIF download ID)
             with DwCAReader(source_data_path) as dwca:
                 current_data_import.set_gbif_download_id(
                     extract_gbif_download_id_from_dwca(dwca)
@@ -255,10 +255,10 @@ class Command(BaseCommand):
                 self._import_all_observations_from_dwca(dwca, current_data_import)
 
             self.stdout.write(
-                "All occurrences imported, now deleting occurrences linked to previous data imports..."
+                "All observations imported, now deleting observations linked to previous data imports..."
             )
 
-            # 4. Remove previous occurrences
+            # 4. Remove previous observations
             Observation.objects.exclude(data_import=current_data_import).delete()
 
             # 4. Finalize the DataImport object

@@ -183,7 +183,7 @@ class VectorTilesServerTests(TestCase):
     def test_tiles_species_filter(self):
         # We explore tiles at different zoom levels. In all cases the observation in Lillois should be filtered out by
         # the speciesId filtering.
-        # Multiple cases where only the occurrence in Andenne is visible
+        # Multiple cases where only the observation in Andenne is visible
 
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
@@ -201,7 +201,7 @@ class VectorTilesServerTests(TestCase):
         the_feature = decoded_tile["default"]["features"][0]
         self.assertEqual(
             the_feature["properties"]["count"], 1
-        )  # Only one occurrence this time, due to the filter
+        )  # Only one observation this time, due to the filter
 
         # Case 2: A tile that covers an important part of Wallonia, including Andenne and Braine. Should have a single
         # polygon this time
@@ -268,7 +268,7 @@ class VectorTilesServerTests(TestCase):
     def test_tiles_dataset_filter(self):
         # Inspired by test_tiles_species_filter
 
-        # Multiple cases where only the occurrence in Andenne is visible
+        # Multiple cases where only the observation in Andenne is visible
         # (because we only ask for a the first dataset)
 
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
@@ -287,7 +287,7 @@ class VectorTilesServerTests(TestCase):
         the_feature = decoded_tile["default"]["features"][0]
         self.assertEqual(
             the_feature["properties"]["count"], 1
-        )  # Only one occurrence this time, due to the filter
+        )  # Only one observation this time, due to the filter
 
         # Case 2: A tile that covers an important part of Wallonia, including Andenne and Braine. Should have a single
         # polygon this time
@@ -339,7 +339,7 @@ class VectorTilesServerTests(TestCase):
     def test_tiles_species_multiple_species_filters(self):
         # Test based on test_tiles_species_filter(self), but with two species explicitly requested
 
-        # We need first to add a new species and related occurrences:
+        # We need first to add a new species and related observations:
         species_tetraodon = Species.objects.create(
             name="Tetraodon fluviatilis",
             gbif_taxon_key=5213564,
@@ -400,7 +400,7 @@ class VectorTilesServerTests(TestCase):
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(len(decoded_tile["default"]["features"]), 2)
 
-        # We should have one occurrence in Andenne (for first species) and 3 in Lillois (for tetraodon)
+        # We should have one observation in Andenne (for first species) and 3 in Lillois (for tetraodon)
         pass
         for entry in decoded_tile["default"]["features"]:
             self.assertIn(entry["properties"]["count"], [1, 3])
@@ -420,7 +420,7 @@ class VectorTilesServerTests(TestCase):
             decoded_tile["default"]["features"][0]["properties"]["count"], 1
         )
 
-        # Case 4: A zoomed time on Lillois, we expect the three tetraodon occurrences
+        # Case 4: A zoomed time on Lillois, we expect the three tetraodon observations
         base_url = reverse(
             "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
@@ -526,7 +526,7 @@ class VectorTilesServerTests(TestCase):
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
 
-        # Let's get a very small tile containing the Lillois occurrence
+        # Let's get a very small tile containing the Lillois observations
         response = self.client.get(
             reverse(
                 "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
@@ -598,7 +598,7 @@ class VectorTilesServerTests(TestCase):
         self.assertEqual(response.json()["min"], 3)
         self.assertEqual(response.json()["max"], 3)
 
-        # At zoom level 17, there's no hexagons that cover more than 1 occurrence
+        # At zoom level 17, there's no hexagons that cover more than 1 observation
         response = self.client.get(
             reverse("dashboard:api-mvt-min-max-per-hexagon"), data={"zoom": 17}
         )
@@ -717,7 +717,7 @@ class VectorTilesServerTests(TestCase):
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
-        # We restrict ourselves to Andenne: only one occurrence
+        # We restrict ourselves to Andenne: only one observation
         response = self.client.get(
             reverse("dashboard:api-mvt-min-max-per-hexagon"),
             data={

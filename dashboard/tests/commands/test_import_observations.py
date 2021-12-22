@@ -37,9 +37,9 @@ class ImportObservationsTest(TransactionTestCase):
             name="iNaturalist", gbif_dataset_key="50c9509d-22c7-4a22-a47d-8c48425ef4a7"
         )
 
-        # This occurrence will be replaced during the import process
+        # This observation will be replaced during the import process
         # because there's a row with the same occurrence_id and dataset_key in the DwC-A
-        occurrence_to_be_replaced = Observation.objects.create(
+        observation_to_be_replaced = Observation.objects.create(
             gbif_id=1,
             occurrence_id="https://www.inaturalist.org/observations/33366292",
             source_dataset=inaturalist,
@@ -50,7 +50,7 @@ class ImportObservationsTest(TransactionTestCase):
         )
 
         # This one has no equivalent in the DwC-A
-        occurrence_not_replaced = Observation.objects.create(
+        observation_not_replaced = Observation.objects.create(
             gbif_id=2,
             occurrence_id="2",
             source_dataset=inaturalist,
@@ -70,18 +70,18 @@ class ImportObservationsTest(TransactionTestCase):
 
         ObservationComment.objects.create(
             author=comment_author,
-            observation=occurrence_to_be_replaced,
+            observation=observation_to_be_replaced,
             text="This is a comment to migrate",
         )
 
         self.observation_view_to_migrate = ObservationView.objects.create(
-            user=comment_author, occurrence=occurrence_to_be_replaced
+            user=comment_author, observation=observation_to_be_replaced
         )
 
         # We also create this one so we can check it gets deleted in the new import process, and that it doesn't prevent
-        # the related occurrence to be deleted
+        # the related observation to be deleted
         self.observation_view_to_delete = ObservationView.objects.create(
-            user=comment_author, occurrence=occurrence_not_replaced
+            user=comment_author, observation=observation_not_replaced
         )
 
     def test_transaction(self) -> None:
@@ -122,7 +122,7 @@ class ImportObservationsTest(TransactionTestCase):
                 models_before[Model._meta.label],
             )
 
-    def test_ignore_unusable_occurrences(self) -> None:
+    def test_ignore_unusable_observations(self) -> None:
         """The DwC-A contains 12 records, but some are not usable:
 
         - missing coordinates: 3 records
@@ -138,14 +138,14 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(Observation.objects.all().count(), 7)
         # TODO: more testing to make sure it's the usable ones that were loaded?
 
-    def test_load_occurrence_values(self) -> None:
+    def test_load_observations_values(self) -> None:
         """Imported values look correct"""
         with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
             call_command("import_observations", source_dwca=gbif_download_file)
 
-        occurrences = Observation.objects.all().order_by("id")
-        # We assume occurrences are loaded in the DwC-A rows order
-        occ = occurrences[0]  #
+        observations = Observation.objects.all().order_by("id")
+        # We assume observations are loaded in the DwC-A rows order
+        occ = observations[0]  #
         self.assertEqual(str(occ.date), "2020-04-20")
         self.assertEqual(occ.gbif_id, "3044795455")
         self.assertEqual(
@@ -160,7 +160,7 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(occ.source_dataset.name, "iNaturalist")
 
-        occ = occurrences[1]
+        occ = observations[1]
         self.assertEqual(str(occ.date), "2020-04-19")
         self.assertEqual(occ.gbif_id, "2609350465")
         self.assertEqual(
@@ -175,7 +175,7 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(occ.source_dataset.name, "iNaturalist")
 
-        occ = occurrences[
+        occ = observations[
             2
         ]  # Fourth row in CSV (third was skipped because of date issue)
 
@@ -193,7 +193,7 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(occ.source_dataset.name, "iNaturalist")
 
-        occ = occurrences[3]
+        occ = observations[3]
 
         self.assertEqual(str(occ.date), "2018-09-05")
         self.assertEqual(occ.gbif_id, "1914197587")
@@ -215,7 +215,7 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(occ.individual_count, 1)
         self.assertEqual(occ.coordinate_uncertainty_in_meters, 23)
 
-        occ = occurrences[4]
+        occ = observations[4]
 
         self.assertEqual(str(occ.date), "2018-05-11")
         self.assertEqual(occ.gbif_id, "1847507314")
@@ -231,7 +231,7 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(occ.source_dataset.name, "iNaturalist")
 
-        occ = occurrences[5]
+        occ = observations[5]
 
         self.assertEqual(str(occ.date), "2017-05-15")
         self.assertEqual(occ.gbif_id, "1802743867")
@@ -247,7 +247,7 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(occ.source_dataset.name, "iNaturalist")
 
-        occ = occurrences[6]
+        occ = observations[6]
 
         self.assertEqual(str(occ.date), "1950-06-18")
         self.assertEqual(occ.gbif_id, "1315928743")
@@ -267,7 +267,7 @@ class ImportObservationsTest(TransactionTestCase):
         )
         # We stop there, the remaining rows in DwC-A miss either the location or the occurrence id
 
-    def test_occurrence_comments_migrated(self) -> None:
+    def test_observation_comments_migrated(self) -> None:
         comment = ObservationComment.objects.all()[0]  # there's only one...
         previous_observation_id = comment.observation_id
         previous_stable_id = comment.observation.stable_id
@@ -279,17 +279,17 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertNotEqual(comment.observation_id, previous_observation_id)
         self.assertEqual(comment.observation.stable_id, previous_stable_id)
 
-    def test_occurrence_views_migrated(self) -> None:
+    def test_observation_views_migrated(self) -> None:
         ov = self.observation_view_to_migrate
-        previous_occurrence_id = ov.occurrence_id
-        previous_stable_id = ov.occurrence.stable_id
+        previous_observation_id = ov.observation_id
+        previous_stable_id = ov.observation.stable_id
 
         with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
             call_command("import_observations", source_dwca=gbif_download_file)
 
         ov.refresh_from_db()
-        self.assertNotEqual(ov.occurrence_id, previous_occurrence_id)
-        self.assertEqual(ov.occurrence.stable_id, previous_stable_id)
+        self.assertNotEqual(ov.observation_id, previous_observation_id)
+        self.assertEqual(ov.observation.stable_id, previous_stable_id)
 
     def test_unmigrated_ov_gets_deleted(self) -> None:
         ov_id = self.observation_view_to_delete.id
@@ -299,18 +299,18 @@ class ImportObservationsTest(TransactionTestCase):
         with self.assertRaises(ObservationView.DoesNotExist):
             ObservationView.objects.get(id=ov_id)
 
-    def test_old_occurrences_deleted(self) -> None:
-        """The old occurrences (replaced and not replaced) are deleted from the database after a new import"""
-        id_occurrences_before = list(
+    def test_old_observations_deleted(self) -> None:
+        """The old observations (replaced and not replaced) are deleted from the database after a new import"""
+        id_observations_before = list(
             Observation.objects.all().values_list("id", flat=True)
         )
         with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
             call_command("import_observations", source_dwca=gbif_download_file)
 
-        id_occurrences_after = list(
+        id_observations_after = list(
             Observation.objects.all().values_list("id", flat=True)
         )
-        self.assertFalse(bool(set(id_occurrences_before) & set(id_occurrences_after)))
+        self.assertFalse(bool(set(id_observations_before) & set(id_observations_after)))
 
     def test_dataimport_object_created(self) -> None:
         count_before = DataImport.objects.count()
@@ -322,8 +322,8 @@ class ImportObservationsTest(TransactionTestCase):
     def test_dataimport_object_values(self):
         """Values of the DataImport object are created
 
-        Side effect of the occurrence_counter check: we also check that newly created occurrences reference the correct
-        DataImport object
+        Side effect of the observations_counter check: we also check that newly created observations reference the
+        correct DataImport object
         """
         with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
             call_command("import_observations", source_dwca=gbif_download_file)

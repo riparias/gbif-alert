@@ -24,7 +24,7 @@ class WebPagesTests(TestCase):
             gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e",
         )
 
-        cls.first_occ = Observation.objects.create(
+        cls.first_obs = Observation.objects.create(
             gbif_id=1,
             occurrence_id="1",
             species=Species.objects.all()[0],
@@ -40,7 +40,7 @@ class WebPagesTests(TestCase):
             coordinate_uncertainty_in_meters=10,
         )
 
-        cls.second_occ = Observation.objects.create(
+        cls.second_obs = Observation.objects.create(
             gbif_id=2,
             occurrence_id="2",
             species=Species.objects.all()[1],
@@ -60,7 +60,7 @@ class WebPagesTests(TestCase):
         )
 
         ObservationComment.objects.create(
-            observation=cls.second_occ, author=comment_author, text="This is my comment"
+            observation=cls.second_obs, author=comment_author, text="This is my comment"
         )
 
     def test_homepage(self):
@@ -77,14 +77,14 @@ class WebPagesTests(TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_observation_details_base(self):
-        occ_stable_id = self.__class__.first_occ.stable_id
+        obs_stable_id = self.__class__.first_obs.stable_id
 
         page_url = reverse(
             "dashboard:page-observation-details",
-            kwargs={"stable_id": occ_stable_id},
+            kwargs={"stable_id": obs_stable_id},
         )
 
-        self.assertIn(occ_stable_id, page_url)
+        self.assertIn(obs_stable_id, page_url)
         response = self.client.get(page_url)
         self.assertEqual(response.status_code, 200)
 
@@ -100,7 +100,7 @@ class WebPagesTests(TestCase):
         )
         self.assertContains(
             response,
-            f"<b>Date: </b>{formats.date_format(WebPagesTests.first_occ.date, 'DATE_FORMAT')}",
+            f"<b>Date: </b>{formats.date_format(self.__class__.first_obs.date, 'DATE_FORMAT')}",
             html=True,
         )
         self.assertContains(
@@ -116,22 +116,22 @@ class WebPagesTests(TestCase):
         )
 
     def test_observation_details_comments_empty(self):
-        """A message is shown if no comment for the occurrence"""
+        """A message is shown if no comment for the observation"""
         response = self.client.get(
             reverse(
                 "dashboard:page-observation-details",
-                kwargs={"stable_id": self.__class__.first_occ.stable_id},
+                kwargs={"stable_id": self.__class__.first_obs.stable_id},
             )
         )
 
         self.assertContains(response, "No comments yet for this observation!")
 
     def test_observation_details_comment(self):
-        """Occurrence comments are displayed"""
+        """Observation comments are displayed"""
         response = self.client.get(
             reverse(
                 "dashboard:page-observation-details",
-                kwargs={"stable_id": self.__class__.second_occ.stable_id},
+                kwargs={"stable_id": self.__class__.second_obs.stable_id},
             )
         )
 
@@ -144,7 +144,7 @@ class WebPagesTests(TestCase):
         response = self.client.get(
             reverse(
                 "dashboard:page-observation-details",
-                kwargs={"stable_id": self.__class__.second_occ.stable_id},
+                kwargs={"stable_id": self.__class__.second_obs.stable_id},
             )
         )
         self.assertIn(
@@ -153,7 +153,7 @@ class WebPagesTests(TestCase):
 
     def test_observation_details_attempt_to_post_comment_not_logged(self):
         """We attempt to post a comment without being authenticated, that doesn't work"""
-        observation = self.__class__.second_occ
+        observation = self.__class__.second_obs
 
         number_comments_before = ObservationComment.objects.filter(
             observation=observation
@@ -176,29 +176,29 @@ class WebPagesTests(TestCase):
 
     def test_observation_details_attempt_to_post_comment_logged(self):
         """We attempt to post a comment (authenticated this time), that should work"""
-        occurrence = self.__class__.second_occ
+        observation = self.__class__.second_obs
 
         number_comments_before = ObservationComment.objects.filter(
-            observation=occurrence
+            observation=observation
         ).count()
 
         self.client.login(username="frusciante", password="12345")
         response = self.client.post(
             reverse(
                 "dashboard:page-observation-details",
-                kwargs={"stable_id": occurrence.stable_id},
+                kwargs={"stable_id": observation.stable_id},
             ),
             {"text": "New comment from the test suite"},
         )
 
         number_comments_after = ObservationComment.objects.filter(
-            observation=occurrence
+            observation=observation
         ).count()
 
         self.assertEqual(response.status_code, 200)  # HTTP success
         self.assertEqual(
             number_comments_after, number_comments_before + 1
-        )  # One new comment for the occurrence in DB
+        )  # One new comment for the observation in DB
         self.assertTemplateUsed(
             response, "dashboard/observation_details.html"
         )  # On the observation details page
