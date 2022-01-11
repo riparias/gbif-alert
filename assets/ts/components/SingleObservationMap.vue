@@ -8,8 +8,6 @@ import Feature from "ol/Feature";
 import Map from "ol/Map";
 import View from "ol/View";
 import { fromLonLat } from "ol/proj";
-import TileLayer from "ol/layer/Tile";
-import OSM from "ol/source/OSM";
 
 import "ol/ol.css";
 import VectorLayer from "ol/layer/Vector";
@@ -19,6 +17,7 @@ import Fill from "ol/style/Fill";
 import Stroke from "ol/style/Stroke";
 import Style from "ol/style/Style";
 import CircleStyle from "ol/style/Circle";
+import { baseLayers } from "../map_config";
 
 declare interface SingleObservationMapData {
   map: Map | null;
@@ -46,13 +45,7 @@ export default defineComponent({
     createBasicMap: function () {
       const map = new Map({
         target: this.$refs["map-root"] as HTMLInputElement,
-        layers: [
-          new TileLayer({
-            source: new OSM({
-              url: "http://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
-            }),
-          }),
-        ],
+        layers: [baseLayers[1].layer],
         view: new View({
           zoom: 10,
           center: fromLonLat([this.lon, this.lat]),

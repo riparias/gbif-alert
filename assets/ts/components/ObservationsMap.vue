@@ -14,7 +14,7 @@ import VectorTileSource from "ol/source/VectorTile";
 import { scaleSequentialLog, ScaleSequential } from "d3-scale";
 import { interpolateReds } from "d3-scale-chromatic";
 import { hsl } from "d3-color";
-import { DashboardFilters } from "../interfaces";
+import { BaseLayerEntry, DashboardFilters } from "../interfaces";
 import "ol/ol.css";
 import { GeoJSON, MVT } from "ol/format";
 import { Fill, Stroke, Style, Text } from "ol/style";
@@ -26,12 +26,7 @@ import LayerGroup from "ol/layer/Group";
 import VectorLayer from "ol/layer/Vector";
 import { Geometry } from "ol/geom";
 import BaseLayer from "ol/layer/Base";
-import XYZ from "ol/source/XYZ";
-
-interface BaseLayerEntry {
-  name: string;
-  layer: TileLayer<Stamen> | TileLayer<OSM>;
-}
+import { baseLayers } from "../map_config";
 
 interface MapContainerData {
   map: Map | null;
@@ -95,29 +90,7 @@ export default defineComponent({
       dataLayer: null,
       HexMinOccCount: 1,
       HexMaxOccCount: 1,
-      availableBaseLayers: [
-        {
-          name: "toner",
-          layer: new TileLayer({ source: new Stamen({ layer: "toner" }) }),
-        },
-        {
-          name: "osmHot",
-          layer: new TileLayer({
-            source: new OSM({
-              url: "http://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
-            }),
-          }),
-        },
-        {
-          name: "esriImagery",
-          layer: new TileLayer({
-            source: new XYZ({
-              url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-              maxZoom: 19,
-            }),
-          }),
-        },
-      ],
+      availableBaseLayers: baseLayers,
       areasOverlayCollection: new Collection(),
     } as MapContainerData;
   },

@@ -1,4 +1,9 @@
 // To use with <select>, checkboxes, ...
+import TileLayer from "ol/layer/Tile";
+import Stamen from "ol/source/Stamen";
+import OSM from "ol/source/OSM";
+import { XYZ } from "ol/source";
+
 export interface SelectionEntry {
   id: string | number;
   label: string;
@@ -69,4 +74,9 @@ export interface PreparedHistogramDataEntry {
   // Derived from HistogramDataEntry, the year and month are aggregated to a string for the bar chart
   yearMonth: string;
   count: number;
+}
+
+export interface BaseLayerEntry {
+  name: string;
+  layer: TileLayer<Stamen> | TileLayer<OSM> | TileLayer<XYZ>;
 }
