@@ -155,6 +155,7 @@ class Observation(models.Model):
             - Does nothing if the user is anonymous (not signed in)
             - Does nothing if the user has already previously viewed this observation
         """
+
         if user.is_authenticated:
             try:
                 self.observationview_set.get(user=user)
@@ -166,6 +167,8 @@ class Observation(models.Model):
 
         Returns none if the user is not logged in, or if they have not viewed the observation yet
         """
+
+        # We want to check if user is not anonymous, but apparently is_authenticated is the preferred method
         if user.is_authenticated:
             try:
                 return self.observationview_set.get(user=user).timestamp

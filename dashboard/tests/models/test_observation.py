@@ -1,6 +1,7 @@
 import datetime
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.gis.geos import Point
 from django.test import TestCase
 from django.utils import timezone
@@ -60,6 +61,32 @@ class ObservationTests(TestCase):
         self.observation_view = ObservationView.objects.create(
             observation=self.obs, user=self.comment_author
         )
+
+        self.second_obs = Observation.objects.create(
+            gbif_id=2,
+            occurrence_id=123456,
+            species=Species.objects.all()[0],
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            data_import=DataImport.objects.create(start=timezone.now()),
+            source_dataset=self.dataset,
+            location=Point(5.09513, 50.48941, srid=4326),  # Andenne
+        )
+
+    def test_first_viewed_at_case_1(self):
+        """Observation.first_viewed_at() works as expected when the observation has been seen"""
+        now = timezone.now()
+        timestamp = self.obs.first_viewed_at(user=self.comment_author)
+
+        self.assertLess(now - timestamp, datetime.timedelta(minutes=1))
+
+    def test_first_viewed_at_case_2(self):
+        """Observation.first_viewed_at() returns None if an observation has not been seen"""
+        self.assertIsNone(self.second_obs.first_viewed_at(user=self.comment_author))
+
+    def test_first_viewed_at_case_3(self):
+        """Observation.first_viewed_at() returns None for anonymous users"""
+        self.assertIsNone(self.obs.first_viewed_at(user=AnonymousUser()))
+        self.assertIsNone(self.second_obs.first_viewed_at(user=AnonymousUser()))
 
     def test_replace_observation(self):
         """High-level test: after creating a new observation with the same stable_id, make sure we can migrate the
