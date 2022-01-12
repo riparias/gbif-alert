@@ -1,5 +1,7 @@
 import datetime
+from unittest import mock
 
+import pytz
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -13,6 +15,7 @@ from dashboard.models import (
     DataImport,
     Dataset,
     ObservationComment,
+    ObservationView,
 )
 
 
@@ -62,6 +65,13 @@ class WebPagesTests(TestCase):
         ObservationComment.objects.create(
             observation=cls.second_obs, author=comment_author, text="This is my comment"
         )
+
+        # Let's force an earlier date for auto_add_now
+        mocked = datetime.datetime(2018, 4, 4, 0, 0, 0, tzinfo=pytz.utc)
+        with mock.patch("django.utils.timezone.now", mock.Mock(return_value=mocked)):
+            ObservationView.objects.create(
+                observation=cls.second_obs, user=comment_author
+            )
 
     def test_homepage(self):
         """There's a Bootstrap-powered page at /"""
@@ -205,3 +215,56 @@ class WebPagesTests(TestCase):
         self.assertContains(
             response, "New comment from the test suite"
         )  # The comment appears in the page
+
+    def test_observation_details_observation_view_anonymous(self):
+        """Visiting the observation details page anonymously: no 'first seen' timestamp, nor button to mark as not seen"""
+        obs_stable_id = self.__class__.first_obs.stable_id
+
+        page_url = reverse(
+            "dashboard:page-observation-details",
+            kwargs={"stable_id": obs_stable_id},
+        )
+
+        response = self.client.get(page_url)
+        self.assertNotContains(response, "You have first seen this observation on")
+        self.assertNotContains(response, "Mark as not viewed")
+
+    def test_observation_details_observation_view_authenticated_case_1(self):
+        """Visiting the observation_details page while logged in: there's a first seen timestamp, and a button to mark as unseen
+
+        In this case, this is the first time we see the observation, so the timestamp is very recent
+        """
+        self.client.login(username="frusciante", password="12345")
+        obs_stable_id = self.__class__.first_obs.stable_id
+
+        page_url = reverse(
+            "dashboard:page-observation-details",
+            kwargs={"stable_id": obs_stable_id},
+        )
+
+        response = self.client.get(page_url)
+        self.assertContains(response, "You have first seen this observation on")
+        self.assertContains(response, "Mark as not viewed")
+        timestamp = response.context["first_view_by_user_timestamp"]
+        self.assertLess(timezone.now() - timestamp, datetime.timedelta(minutes=1))
+
+    def test_observation_details_observation_view_authenticated_case_2(self):
+        """Visiting the observation_details page while logged in: there's a first seen timestamp, and a button to mark as unseen
+
+        In this case, the user show a previously seen observation: timestamp is older
+        """
+        self.client.login(username="frusciante", password="12345")
+        obs_stable_id = self.__class__.second_obs.stable_id
+
+        page_url = reverse(
+            "dashboard:page-observation-details",
+            kwargs={"stable_id": obs_stable_id},
+        )
+
+        response = self.client.get(page_url)
+        self.assertContains(response, "You have first seen this observation on")
+        self.assertContains(response, "Mark as not viewed")
+        timestamp = response.context["first_view_by_user_timestamp"]
+        self.assertEqual(timestamp.year, 2018)
+        self.assertEqual(timestamp.month, 4)
+        self.assertEqual(timestamp.day, 4)
