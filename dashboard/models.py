@@ -3,10 +3,10 @@ from __future__ import annotations
 import datetime
 import hashlib
 
-from typing import Optional
+from typing import Optional, Union
 
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, AnonymousUser
 from django.contrib.gis.db import models
 from django.db.models import QuerySet
 from django.urls import reverse
@@ -147,7 +147,7 @@ class Observation(models.Model):
             args=(self.id,),
         )
 
-    def mark_as_viewed_by(self, user) -> None:
+    def mark_as_viewed_by(self, user: Union[User, AnonymousUser]) -> None:
         """
         Mark the observation as "viewed" by a given user.
 
@@ -162,7 +162,9 @@ class Observation(models.Model):
             except ObservationView.DoesNotExist:
                 ObservationView.objects.create(observation=self, user=user)
 
-    def first_viewed_at(self, user) -> Optional[datetime.datetime]:
+    def first_viewed_at(
+        self, user: Union[User, AnonymousUser]
+    ) -> Optional[datetime.datetime]:
         """Return the time a user as first viewed this observation
 
         Returns none if the user is not logged in, or if they have not viewed the observation yet
@@ -176,13 +178,16 @@ class Observation(models.Model):
                 return None
         return None
 
-    def mark_as_not_viewed_by(self, user) -> bool:
+    def mark_as_not_viewed_by(self, user: Union[User, AnonymousUser]) -> bool:
         """Return True is successful, False otherwise (most probable cause: user has not viewed this observation yet)"""
-        try:
-            self.observationview_set.get(user=user).delete()
-            return True
-        except ObservationView.DoesNotExist:
-            return False
+        if user.is_authenticated:
+            try:
+                self.observationview_set.get(user=user).delete()
+                return True
+            except ObservationView.DoesNotExist:
+                return False
+
+        return False
 
     def save(self, *args, **kwargs):
         self.stable_id = Observation.build_stable_id(

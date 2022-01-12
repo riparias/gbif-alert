@@ -88,6 +88,43 @@ class ObservationTests(TestCase):
         self.assertIsNone(self.obs.first_viewed_at(user=AnonymousUser()))
         self.assertIsNone(self.second_obs.first_viewed_at(user=AnonymousUser()))
 
+    def test_mark_as_viewed_by_case_1(self):
+        """Standard case: a we mark a not views obs by a regular user"""
+        # Before we start, we have no entry
+        self.assertEqual(
+            ObservationView.objects.filter(observation=self.second_obs).count(), 0
+        )
+        r = self.second_obs.mark_as_viewed_by(user=self.comment_author)
+        self.assertIsNone(r)  # Method always return None
+        # After, we have one entry
+        ov = ObservationView.objects.get(observation=self.second_obs)
+
+        # Basic checks on observationView objects
+        self.assertEqual(ov.user.username, "testuser")
+        self.assertEqual(ov.observation.id, self.second_obs.id)
+        self.assertLess(timezone.now() - ov.timestamp, datetime.timedelta(minutes=1))
+
+    def test_mark_as_viewed_by_case_2(self):
+        """The user is anonymous: nothing happens"""
+        self.assertEqual(
+            ObservationView.objects.filter(observation=self.second_obs).count(), 0
+        )
+        r = self.second_obs.mark_as_viewed_by(user=AnonymousUser())
+        self.assertIsNone(r)  # Method always return None
+        # Nothing has changed:
+        self.assertEqual(
+            ObservationView.objects.filter(observation=self.second_obs).count(), 0
+        )
+
+    def test_mark_as_viewed_by_case_3(self):
+        """The user has already seen this observation: nothing happens"""
+        ovs_before = ObservationView.objects.filter(observation=self.obs).values()
+        r = self.second_obs.mark_as_viewed_by(user=self.comment_author)
+        self.assertIsNone(r)  # Method always return None
+
+        ovs_after = ObservationView.objects.filter(observation=self.obs).values()
+        self.assertQuerysetEqual(ovs_after, ovs_before)
+
     def test_replace_observation(self):
         """High-level test: after creating a new observation with the same stable_id, make sure we can migrate the
         linked entities then and then delete the initial observation"""
