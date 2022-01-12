@@ -125,6 +125,31 @@ class ObservationTests(TestCase):
         ovs_after = ObservationView.objects.filter(observation=self.obs).values()
         self.assertQuerysetEqual(ovs_after, ovs_before)
 
+    def test_mark_as_not_viewed_by_case_1(self):
+        """Normal case: the user has indeed previously seen the occurrence"""
+        # Before, we can find it
+        ObservationView.objects.get(observation=self.obs, user=self.comment_author)
+        r = self.obs.mark_as_not_viewed_by(user=self.comment_author)
+        self.assertTrue(r)
+        with self.assertRaises(ObservationView.DoesNotExist):
+            ObservationView.objects.get(observation=self.obs, user=self.comment_author)
+
+    def test_mark_as_not_viewed_by_case_2(self):
+        """Anonymous user: nothing happens and the method return False"""
+        all_ovs_before = ObservationView.objects.all().values()
+        r = self.obs.mark_as_not_viewed_by(user=AnonymousUser())
+        self.assertFalse(r)
+        all_ovs_after = ObservationView.objects.all().values()
+        self.assertQuerysetEqual(all_ovs_after, all_ovs_before)
+
+    def test_mark_as_not_viewed_by_case_3(self):
+        """User has not seen the observation before: method returns False, nothing happens to the db"""
+        all_ovs_before = ObservationView.objects.all().values()
+        r = self.second_obs.mark_as_not_viewed_by(user=self.comment_author)
+        self.assertFalse(r)
+        all_ovs_after = ObservationView.objects.all().values()
+        self.assertQuerysetEqual(all_ovs_after, all_ovs_before)
+
     def test_replace_observation(self):
         """High-level test: after creating a new observation with the same stable_id, make sure we can migrate the
         linked entities then and then delete the initial observation"""

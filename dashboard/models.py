@@ -179,7 +179,7 @@ class Observation(models.Model):
         return None
 
     def mark_as_not_viewed_by(self, user: Union[User, AnonymousUser]) -> bool:
-        """Return True is successful, False otherwise (most probable cause: user has not viewed this observation yet)"""
+        """Return True is successful, False otherwise (probable causes: user has not viewed this observation yet / user is anonymous)"""
         if user.is_authenticated:
             try:
                 self.observationview_set.get(user=user).delete()
