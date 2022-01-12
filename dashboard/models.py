@@ -275,9 +275,11 @@ class Observation(models.Model):
             return coords[0], coords[1]
         return None, None
 
-    def as_dict(
-        self, for_user
-    ):  # Keep in sync with JsonObservation (TypeScript interface)
+    # Keep in sync with JsonObservation (TypeScript interface)
+    def as_dict(self, for_user):
+        """Returns the model representation has a dict.
+
+        If the user is not anonymous, it also contains observation view data"""
         lon, lat = self.lonlat_4326_tuple
 
         d = {

@@ -543,7 +543,6 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         wait.until(
             EC.url_contains("/accounts/signin/?next=/profile")
         )  # We are redirected to the login page
-        pass
 
     def test_lost_password_scenario(self):
         # In test_signin_signout_scenario, we make sure there is a link on login page to get a password back

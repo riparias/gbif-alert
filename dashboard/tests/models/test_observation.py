@@ -72,6 +72,21 @@ class ObservationTests(TestCase):
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
 
+    def test_as_dict_observation_view_anonymous(self):
+        """The as_dict() method does not contain observation_view data for anonymous users"""
+        with self.assertRaises(KeyError):
+            self.obs.as_dict(for_user=AnonymousUser())["viewedByCurrentUser"]
+
+    def test_as_dict_observation_view_non_anonymous(self):
+        """The as_dict() method does not contain observation_view data for anonymous users"""
+
+        self.assertTrue(
+            self.obs.as_dict(for_user=self.comment_author)["viewedByCurrentUser"]
+        )
+        self.assertFalse(
+            self.second_obs.as_dict(for_user=self.comment_author)["viewedByCurrentUser"]
+        )
+
     def test_first_viewed_at_case_1(self):
         """Observation.first_viewed_at() works as expected when the observation has been seen"""
         now = timezone.now()
