@@ -155,8 +155,8 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(occ.stable_id, "4aa3b8d81c4a62c89b73a4416af7d51968c29104")
         self.assertEqual(occ.species_id, self.polydrusus.pk)
         lon, lat = occ.lonlat_4326_tuple
-        self.assertAlmostEqual(lon, 3.315567)
-        self.assertAlmostEqual(lat, 51.354473)
+        self.assertAlmostEqual(lon, 3.315567)  # type: ignore
+        self.assertAlmostEqual(lat, 51.354473)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(occ.source_dataset.name, "iNaturalist")
 
@@ -170,8 +170,8 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(occ.stable_id, "6a6fc5bd50d1ead0f33f32c843b185bbfbd7c166")
         self.assertEqual(occ.species_id, self.polydrusus.pk)
         lon, lat = occ.lonlat_4326_tuple
-        self.assertAlmostEqual(lon, 3.254023)
-        self.assertAlmostEqual(lat, 50.664364)
+        self.assertAlmostEqual(lon, 3.254023)  # type: ignore
+        self.assertAlmostEqual(lat, 50.664364)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(occ.source_dataset.name, "iNaturalist")
 
@@ -188,8 +188,8 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(occ.stable_id, "a4ec033c2da60ef1095c50f4445bf305904aa336")
         self.assertEqual(occ.species_id, self.polydrusus.pk)
         lon, lat = occ.lonlat_4326_tuple
-        self.assertAlmostEqual(lon, 3.52526)
-        self.assertAlmostEqual(lat, 51.150846)
+        self.assertAlmostEqual(lon, 3.52526)  # type: ignore
+        self.assertAlmostEqual(lat, 51.150846)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(occ.source_dataset.name, "iNaturalist")
 
@@ -204,8 +204,8 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(occ.stable_id, "48f6d956f104c4c83174e9ea7cbb0b545e995d4d")
         self.assertEqual(occ.species_id, self.lixus.pk)
         lon, lat = occ.lonlat_4326_tuple
-        self.assertAlmostEqual(lon, 4.360086)
-        self.assertAlmostEqual(lat, 50.646894)
+        self.assertAlmostEqual(lon, 4.360086)  # type: ignore
+        self.assertAlmostEqual(lat, 50.646894)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(occ.source_dataset.name, "iNaturalist")
         self.assertEqual(occ.recorded_by, "Nicolas Noé")
@@ -226,8 +226,8 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(occ.stable_id, "baddab78a96bf75f3dd98b0be69b035364f6a77e")
         self.assertEqual(occ.species_id, self.polydrusus.pk)
         lon, lat = occ.lonlat_4326_tuple
-        self.assertAlmostEqual(lon, 2.59858)
-        self.assertAlmostEqual(lat, 51.097573)
+        self.assertAlmostEqual(lon, 2.59858)  # type: ignore
+        self.assertAlmostEqual(lat, 51.097573)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(occ.source_dataset.name, "iNaturalist")
 
@@ -242,8 +242,8 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(occ.stable_id, "85b4076d572cdc8782746d3dc0252fab7e2a5cd2")
         self.assertEqual(occ.species_id, self.polydrusus.pk)
         lon, lat = occ.lonlat_4326_tuple
-        self.assertAlmostEqual(lon, 4.454613)
-        self.assertAlmostEqual(lat, 51.26503)
+        self.assertAlmostEqual(lon, 4.454613)  # type: ignore
+        self.assertAlmostEqual(lat, 51.26503)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(occ.source_dataset.name, "iNaturalist")
 
@@ -258,8 +258,8 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertEqual(occ.stable_id, "cc478993ca998a9be116bad94e6b31ddf2128f33")
         self.assertEqual(occ.species_id, self.lixus.pk)
         lon, lat = occ.lonlat_4326_tuple
-        self.assertAlmostEqual(lon, 4.418141)
-        self.assertAlmostEqual(lat, 51.27734)
+        self.assertAlmostEqual(lon, 4.418141)  # type: ignore
+        self.assertAlmostEqual(lat, 51.27734)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(
             occ.source_dataset.name,

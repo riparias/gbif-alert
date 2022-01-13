@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import hashlib
 
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, AnonymousUser
@@ -36,11 +36,11 @@ class Species(models.Model):
     class Meta:
         verbose_name_plural = "species"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
     @property
-    def as_dict(self):
+    def as_dict(self) -> dict[str, Any]:
         return {  # To be consumed on the frontend: we use JS naming conventions
             "id": self.pk,
             "scientificName": self.name,
@@ -55,24 +55,24 @@ class Dataset(models.Model):
 
     __original_gbif_dataset_key = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.__original_gbif_dataset_key = (
             self.gbif_dataset_key
         )  # So we're able to check if it has changed in save()
 
     @property
-    def as_dict(self):
+    def as_dict(self) -> dict[str, Any]:
         return {  # To be consumed on the frontend: we use JS naming conventions
             "id": self.pk,
             "gbifKey": self.gbif_dataset_key,
             "name": self.name,
         }
 
-    def save(self, force_insert=False, force_update=False, *args, **kwargs):
+    def save(self, force_insert=False, force_update=False, *args, **kwargs) -> None:
         super().save(force_insert, force_update, *args, **kwargs)
 
         if self.gbif_dataset_key != self.__original_gbif_dataset_key:
@@ -90,12 +90,12 @@ class DataImport(models.Model):
     gbif_download_id = models.CharField(max_length=255, blank=True)
     imported_observations_counter = models.IntegerField(default=0)
 
-    def set_gbif_download_id(self, download_id: str):
+    def set_gbif_download_id(self, download_id: str) -> None:
         """Set the download id and immediately save the entry"""
         self.gbif_download_id = download_id
         self.save()
 
-    def complete(self):
+    def complete(self) -> None:
         """Method to be called at the end of the import process to finalize this entry"""
         self.end = timezone.now()
         self.completed = True
@@ -104,7 +104,7 @@ class DataImport(models.Model):
         ).count()
         self.save()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Data import #{self.pk}"
 
 
@@ -144,7 +144,7 @@ class Observation(models.Model):
     class OtherIdenticalObservationIsNewer(Exception):
         pass
 
-    def get_admin_url(self):
+    def get_admin_url(self) -> str:
         return reverse(
             "admin:%s_%s_change" % (self._meta.app_label, self._meta.model_name),
             args=(self.id,),
@@ -190,18 +190,18 @@ class Observation(models.Model):
 
         return False
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         self.stable_id = Observation.build_stable_id(
             self.occurrence_id, self.source_dataset.gbif_dataset_key
         )
         super().save(*args, **kwargs)
 
-    def get_absolute_url(self):
+    def get_absolute_url(self) -> str:
         return reverse(
             "dashboard:page-observation-details", kwargs={"stable_id": self.stable_id}
         )
 
-    def migrate_linked_entities(self):
+    def migrate_linked_entities(self) -> None:
         """Migrate existing entities (comments, ...) linked to a previous observation that share the stable ID
 
         Does nothing if there's no replaced observation
@@ -245,7 +245,7 @@ class Observation(models.Model):
         return Observation.objects.exclude(pk=self.pk).filter(stable_id=self.stable_id)
 
     @property
-    def sorted_comments_set(self):
+    def sorted_comments_set(self) -> QuerySet[ObservationComment]:
         return self.observationcomment_set.order_by("-created_at")
 
     @staticmethod
@@ -258,15 +258,15 @@ class Observation(models.Model):
         return hashlib.sha1(s.encode("utf-8")).hexdigest()
 
     @property
-    def lat(self):
+    def lat(self) -> Optional[float]:
         return self.lonlat_4326_tuple[1]
 
     @property
-    def lon(self):
+    def lon(self) -> Optional[float]:
         return self.lonlat_4326_tuple[0]
 
     @property
-    def lonlat_4326_tuple(self):
+    def lonlat_4326_tuple(self) -> tuple[Optional[float], Optional[float]]:
         """Coordinates as a (lon, lat) tuple, in EPSG:4326
 
         (None, None) in case the observation has no location
@@ -277,7 +277,7 @@ class Observation(models.Model):
         return None, None
 
     # Keep in sync with JsonObservation (TypeScript interface)
-    def as_dict(self, for_user: WebsiteUser):
+    def as_dict(self, for_user: WebsiteUser) -> dict[str, Any]:
         """Returns the model representation has a dict.
 
         If the user is not anonymous, it also contains observation view data"""
@@ -312,13 +312,13 @@ class ObservationComment(models.Model):
 
 
 class MyAreaManager(models.Manager):
-    def owned_by(self, user: WebsiteUser):
+    def owned_by(self, user: WebsiteUser) -> QuerySet[Area]:
         return super(MyAreaManager, self).get_queryset().filter(owner=user)
 
-    def public(self):
+    def public(self) -> QuerySet[Area]:
         return super(MyAreaManager, self).get_queryset().filter(owner=None)
 
-    def available_to(self, user: WebsiteUser):
+    def available_to(self, user: WebsiteUser) -> QuerySet[Area]:
         if user.is_authenticated:
             return (
                 super(MyAreaManager, self)
@@ -412,7 +412,7 @@ class Alert(models.Model):
         max_length=3, choices=EMAIL_NOTIFICATION_CHOICES, default=WEEKLY_EMAILS
     )
 
-    def get_absolute_url(self):
+    def get_absolute_url(self) -> str:
         return reverse("dashboard:page-alert-details", kwargs={"alert_id": self.id})
 
     @property
