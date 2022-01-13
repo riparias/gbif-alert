@@ -4,7 +4,17 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 
-from dashboard.models import ObservationComment
+from dashboard.models import ObservationComment, Alert, Area
+
+
+class AlertForm(forms.ModelForm):
+    def __init__(self, for_user, *args, **kwargs):
+        super(AlertForm, self).__init__(*args, **kwargs)
+        self.fields["areas"].queryset = Area.objects.available_to(user=for_user)
+
+    class Meta:
+        model = Alert
+        fields: Tuple[str, ...] = ("species", "datasets", "areas")
 
 
 class CommonUsersFields(forms.ModelForm):

@@ -8,7 +8,7 @@ from typing import Optional, Union
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, AnonymousUser
 from django.contrib.gis.db import models
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Q
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
@@ -310,6 +310,24 @@ class ObservationComment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+class MyAreaManager(models.Manager):
+    def owned_by(self, user):
+        return super(MyAreaManager, self).get_queryset().filter(owner=user)
+
+    def public(self):
+        return super(MyAreaManager, self).get_queryset().filter(owner=None)
+
+    def available_to(self, user):
+        if user.is_authenticated:
+            return (
+                super(MyAreaManager, self)
+                .get_queryset()
+                .filter(Q(owner=user) | Q(owner=None))
+            )
+        else:
+            return self.public()
+
+
 class Area(models.Model):
     """An area that can be shown to the user, or used to filter observations"""
 
@@ -319,19 +337,21 @@ class Area(models.Model):
     )  # an area can be global or user-specific
     name = models.CharField(max_length=255)
 
+    objects = MyAreaManager()
+
     @property
-    def is_global(self) -> bool:
+    def is_public(self) -> bool:
         return self.owner is None
 
     @property
     def is_user_specific(self) -> bool:
-        return not self.is_global
+        return not self.is_public
 
     def is_owned_by(self, user) -> bool:
         return self.is_user_specific and self.owner == user
 
     def is_available_to(self, user) -> bool:
-        return self.is_global or self.is_owned_by(user)
+        return self.is_public or self.is_owned_by(user)
 
     def __str__(self) -> str:
         return self.name
@@ -390,6 +410,9 @@ class Alert(models.Model):
     email_notifications_frequency = models.CharField(
         max_length=3, choices=EMAIL_NOTIFICATION_CHOICES, default=WEEKLY_EMAILS
     )
+
+    def get_absolute_url(self):
+        return reverse("dashboard:page-alert-details", kwargs={"alert_id": self.id})
 
     @property
     def areas_list(self) -> str:

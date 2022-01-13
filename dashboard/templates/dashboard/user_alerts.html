@@ -5,6 +5,12 @@
 {% block after_messages %}
     <div class="container">
         <div class="row">
+            <div class="col text-end">
+                <a href="{% url 'dashboard:page-alert-create' %}" class="btn btn-success">Create a new alert</a>
+            </div>
+        </div>
+
+        <div class="row">
             <div class="col">
                 <h1>My alerts</h1>
             </div>
@@ -15,15 +21,14 @@
                {% for alert in alerts %}
                 <div class="card">
                     <div class="card-body">
-                        <p>
-                            <b>Areas:</b> {{ alert.areas_list|default:"/" }}
+                        <p class="card-text">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><b>Areas:</b> {{ alert.areas_list|default:"/" }}</li>
+                                <li class="list-group-item"><b>Species:</b> {{ alert.species_list|default:"/" }}</li>
+                                <li class="list-group-item"><b>Datasets:</b> {{ alert.datasets_list|default:"/" }}</li>
+                            </ul>
                         </p>
-                        <p>
-                            <b>Species:</b> {{ alert.species_list|default:"/" }}
-                        </p>
-                        <p>
-                            <b>Datasets:</b> {{ alert.datasets_list|default:"/" }}
-                        </p>
+                        <a href="{% url 'dashboard:page-alert-details' alert_id=alert.id%}" class="btn btn-primary">See alert details</a>
                     </div>
                 </div>
             {% empty %}

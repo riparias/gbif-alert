@@ -9,7 +9,7 @@
             <ul class="navbar-nav me-auto">
                 {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:page-index' label='Explore all observations' %}
                 {% if user.is_authenticated %}
-                    {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:page-alerts' label='My alerts' %}
+                    {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:page-my-alerts' label='My alerts' %}
                 {% endif %}
                 {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:page-about' label='About' %}
             </ul>
@@ -24,7 +24,7 @@
 
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="{% url 'dashboard:page-profile' %}"><i class="bi bi-person-circle"></i> My profile</a></li>
-                            <li><a class="dropdown-item" href="{% url 'dashboard:page-alerts' %}"><i class="bi bi-exclamation-square"></i> My alerts</a></li>
+                            <li><a class="dropdown-item" href="{% url 'dashboard:page-my-alerts' %}"><i class="bi bi-exclamation-square"></i> My alerts</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>

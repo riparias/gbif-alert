@@ -1,0 +1,20 @@
+{% extends 'dashboard/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}New alert - LIFE RIPARIAS early alert{% endblock %}
+
+{% block after_messages %}
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <h1>Create a new alert</h1>
+
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <input type="submit" value="Submit">
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

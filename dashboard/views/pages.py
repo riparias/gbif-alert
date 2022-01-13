@@ -4,7 +4,12 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404, redirect
 
-from dashboard.forms import SignUpForm, EditProfileForm, NewObservationCommentForm
+from dashboard.forms import (
+    SignUpForm,
+    EditProfileForm,
+    NewObservationCommentForm,
+    AlertForm,
+)
 from dashboard.models import DataImport, Observation, Alert
 
 
@@ -47,6 +52,32 @@ def observation_details_page(request, stable_id):
             "first_view_by_user_timestamp": first_viewed,
         },
     )
+
+
+@login_required
+def alert_details_page(request, alert_id):
+    alert = get_object_or_404(Alert, id=alert_id)
+
+    if alert.user == request.user:
+        return render(request, "dashboard/alert_details.html", {"alert": alert})
+    else:
+        return HttpResponseForbidden()
+
+
+@login_required
+def alert_create_page(request):
+    if request.method == "POST":
+        form = AlertForm(request.user, request.POST)
+        if form.is_valid():
+            alert = form.save(commit=False)
+            alert.user = request.user
+            alert.save()
+            form.save_m2m()
+            return redirect(alert)
+    else:
+        form = AlertForm(for_user=request.user)
+
+    return render(request, "dashboard/alert_create.html", {"form": form})
 
 
 def user_signup_page(request):

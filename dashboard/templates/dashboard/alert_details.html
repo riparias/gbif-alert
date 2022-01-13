@@ -1,0 +1,13 @@
+{% extends 'dashboard/base.html' %}
+
+{% block page_title %}Alert #{{ alert.pk }} details - LIFE RIPARIAS early alert{% endblock %}
+
+{% block after_messages %}
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <h1>Alerts #{{ alert.pk }}</h1>
+            </div>
+        </div>
+    </div>
+{% endblock %}
