@@ -20,6 +20,9 @@ class User(AbstractUser):
     pass
 
 
+WebsiteUser = Union[User, AnonymousUser]
+
+
 class Species(models.Model):
     GROUP_PLANT = "PL"
     GROUP_CRAYFISH = "CR"
@@ -147,7 +150,7 @@ class Observation(models.Model):
             args=(self.id,),
         )
 
-    def mark_as_viewed_by(self, user: Union[User, AnonymousUser]) -> None:
+    def mark_as_viewed_by(self, user: WebsiteUser) -> None:
         """
         Mark the observation as "viewed" by a given user.
 
@@ -162,9 +165,7 @@ class Observation(models.Model):
             except ObservationView.DoesNotExist:
                 ObservationView.objects.create(observation=self, user=user)
 
-    def first_viewed_at(
-        self, user: Union[User, AnonymousUser]
-    ) -> Optional[datetime.datetime]:
+    def first_viewed_at(self, user: WebsiteUser) -> Optional[datetime.datetime]:
         """Return the time a user as first viewed this observation
 
         Returns none if the user is not logged in, or if they have not viewed the observation yet
@@ -178,7 +179,7 @@ class Observation(models.Model):
                 return None
         return None
 
-    def mark_as_not_viewed_by(self, user: Union[User, AnonymousUser]) -> bool:
+    def mark_as_not_viewed_by(self, user: WebsiteUser) -> bool:
         """Return True is successful, False otherwise (probable causes: user has not viewed this observation yet / user is anonymous)"""
         if user.is_authenticated:
             try:
@@ -276,7 +277,7 @@ class Observation(models.Model):
         return None, None
 
     # Keep in sync with JsonObservation (TypeScript interface)
-    def as_dict(self, for_user):
+    def as_dict(self, for_user: WebsiteUser):
         """Returns the model representation has a dict.
 
         If the user is not anonymous, it also contains observation view data"""
@@ -311,13 +312,13 @@ class ObservationComment(models.Model):
 
 
 class MyAreaManager(models.Manager):
-    def owned_by(self, user):
+    def owned_by(self, user: WebsiteUser):
         return super(MyAreaManager, self).get_queryset().filter(owner=user)
 
     def public(self):
         return super(MyAreaManager, self).get_queryset().filter(owner=None)
 
-    def available_to(self, user):
+    def available_to(self, user: WebsiteUser):
         if user.is_authenticated:
             return (
                 super(MyAreaManager, self)
@@ -347,10 +348,10 @@ class Area(models.Model):
     def is_user_specific(self) -> bool:
         return not self.is_public
 
-    def is_owned_by(self, user) -> bool:
+    def is_owned_by(self, user: WebsiteUser) -> bool:
         return self.is_user_specific and self.owner == user
 
-    def is_available_to(self, user) -> bool:
+    def is_available_to(self, user: WebsiteUser) -> bool:
         return self.is_public or self.is_owned_by(user)
 
     def __str__(self) -> str:

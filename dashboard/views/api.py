@@ -11,7 +11,7 @@ from django.core.paginator import Paginator
 from django.core.serializers import serialize
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
-from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponse, HttpRequest
 from django.shortcuts import get_object_or_404
 
 from dashboard.models import Species, Dataset, Area
@@ -37,7 +37,7 @@ def species_list_json(_):
     return _model_to_json_list(Species)
 
 
-def areas_list_json(request):
+def areas_list_json(request: HttpRequest):
     """A list of all areas (multipolygons) available to the user.
 
     Rules:
@@ -51,7 +51,7 @@ def areas_list_json(request):
     )
 
 
-def area_geojson(request, id: int):
+def area_geojson(request: HttpRequest, id: int):
     """Return a specific area as GeoJSON"""
     area = get_object_or_404(Area, pk=id)
     if area.is_available_to(request.user):
@@ -70,7 +70,7 @@ def datasets_list_json(_):
     return _model_to_json_list(Dataset)
 
 
-def filtered_observations_counter_json(request):
+def filtered_observations_counter_json(request: HttpRequest):
     """Count the observations according to the filters received
 
     parameters:
@@ -80,7 +80,7 @@ def filtered_observations_counter_json(request):
     return JsonResponse({"count": qs.count()})
 
 
-def filtered_observations_data_page_json(request):
+def filtered_observations_data_page_json(request: HttpRequest):
     """Main endpoint to get paginated observations (data tables, ...)
 
     parameters:
@@ -149,7 +149,7 @@ def filtered_observations_data_page_json(request):
     )
 
 
-def filtered_observations_monthly_histogram_json(request):
+def filtered_observations_monthly_histogram_json(request: HttpRequest):
     """Give the (filtered) number of observations per month
 
     parameters:

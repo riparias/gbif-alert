@@ -1,7 +1,7 @@
 from string import Template
 
 from django.db import connection
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpRequest
 from jinjasql import JinjaSql
 
 from dashboard.models import Observation, Area
@@ -106,7 +106,7 @@ JINJASQL_FRAGMENT_AGGREGATED_GRID = Template(
 )
 
 
-def mvt_tiles_hexagon_grid_aggregated(request, zoom, x, y):
+def mvt_tiles_hexagon_grid_aggregated(request: HttpRequest, zoom: int, x: int, y: int):
     """Tile server, showing observations aggregated by hexagon squares. Filters are honoured."""
     species_ids, datasets_ids, start_date, end_date, area_ids = filters_from_request(
         request
@@ -149,7 +149,7 @@ def mvt_tiles_hexagon_grid_aggregated(request, zoom, x, y):
     )
 
 
-def observation_min_max_in_hex_grid_json(request):
+def observation_min_max_in_hex_grid_json(request: HttpRequest):
     """Return the min, max observations count per hexagon, according to the zoom level. JSON format.
 
     This can be useful to dynamically color the grid according to the count

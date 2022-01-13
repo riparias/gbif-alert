@@ -2,10 +2,16 @@ import datetime
 from typing import Tuple, List
 
 from django.contrib.gis.db.models.aggregates import Union
-from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import QuerySet
+from django.http import HttpRequest
 
-from dashboard.models import Observation, Area
+from dashboard.models import Observation, Area, User
+
+
+# This class is only defined to make Mypy happy
+# see https://github.com/typeddjango/django-stubs#how-can-i-create-a-httprequest-thats-guaranteed-to-have-an-authenticated-user
+class AuthenticatedHttpRequest(HttpRequest):
+    user: User
 
 
 def extract_int_array_request(request, param_name):
@@ -44,7 +50,7 @@ def extract_date_request(request, param_name, date_format="%Y-%m-%d"):
     return None
 
 
-def filtered_observations_from_request(request: WSGIRequest) -> QuerySet[Observation]:
+def filtered_observations_from_request(request: HttpRequest) -> QuerySet[Observation]:
     """Takes a request, extract common parameters used to filter observations and return a corresponding QuerySet"""
     qs = Observation.objects.all()
 
@@ -75,7 +81,7 @@ def filtered_observations_from_request(request: WSGIRequest) -> QuerySet[Observa
 
 
 def filters_from_request(
-    request: WSGIRequest,
+    request: HttpRequest,
 ) -> Tuple[List[int], List[int], datetime.date, datetime.date, List[int]]:
     species_ids = extract_int_array_request(request, "speciesIds[]")
     datasets_ids = extract_int_array_request(request, "datasetsIds[]")

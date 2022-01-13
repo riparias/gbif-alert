@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpRequest
 from django.shortcuts import render, get_object_or_404, redirect
 
 from dashboard.forms import (
@@ -11,18 +11,19 @@ from dashboard.forms import (
     AlertForm,
 )
 from dashboard.models import DataImport, Observation, Alert
+from dashboard.views.helpers import AuthenticatedHttpRequest
 
 
-def index_page(request):
+def index_page(request: HttpRequest):
     return render(request, "dashboard/index.html")
 
 
-def about_page(request):
+def about_page(request: HttpRequest):
     data_imports = DataImport.objects.all().order_by("-start")
     return render(request, "dashboard/about.html", {"data_imports": data_imports})
 
 
-def observation_details_page(request, stable_id):
+def observation_details_page(request: HttpRequest, stable_id: str):
     observation = get_object_or_404(Observation, stable_id=stable_id)
     observation.mark_as_viewed_by(request.user)
     first_viewed = observation.first_viewed_at(request.user)
@@ -55,7 +56,7 @@ def observation_details_page(request, stable_id):
 
 
 @login_required
-def alert_details_page(request, alert_id):
+def alert_details_page(request: AuthenticatedHttpRequest, alert_id: int):
     alert = get_object_or_404(Alert, id=alert_id)
 
     if alert.user == request.user:
@@ -65,7 +66,7 @@ def alert_details_page(request, alert_id):
 
 
 @login_required
-def alert_create_page(request):
+def alert_create_page(request: AuthenticatedHttpRequest):
     if request.method == "POST":
         form = AlertForm(request.user, request.POST)
         if form.is_valid():
@@ -80,7 +81,7 @@ def alert_create_page(request):
     return render(request, "dashboard/alert_create.html", {"form": form})
 
 
-def user_signup_page(request):
+def user_signup_page(request: HttpRequest):
     if request.method == "POST":
         form = SignUpForm(request.POST)
         if form.is_valid():
@@ -96,7 +97,7 @@ def user_signup_page(request):
 
 
 @login_required
-def user_profile_page(request):
+def user_profile_page(request: AuthenticatedHttpRequest):
     if request.method == "POST":
         form = EditProfileForm(request.POST, instance=request.user)
         if form.is_valid():
@@ -109,13 +110,13 @@ def user_profile_page(request):
 
 
 @login_required
-def user_alerts_page(request):
+def user_alerts_page(request: AuthenticatedHttpRequest):
     alerts = Alert.objects.filter(user=request.user).order_by("id")
     return render(request, "dashboard/user_alerts.html", {"alerts": alerts})
 
 
 @login_required
-def mark_observation_as_not_viewed(request):
+def mark_observation_as_not_viewed(request: AuthenticatedHttpRequest):
     if request.method == "POST":
         observation = get_object_or_404(Observation, id=request.POST["observationId"])
         success = observation.mark_as_not_viewed_by(user=request.user)
