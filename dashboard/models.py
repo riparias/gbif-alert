@@ -335,7 +335,7 @@ class Area(models.Model):
     mpoly = models.MultiPolygonField(srid=DATA_SRID)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, blank=True, null=True
-    )  # an area can be global or user-specific
+    )  # an area can be public or user-specific
     name = models.CharField(max_length=255)
 
     objects = MyAreaManager()

@@ -44,8 +44,8 @@ class VectorTilesServerTests(TestCase):
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
-        cls.global_area_andenne = Area.objects.create(
-            name="Global polygon - Andenne",
+        cls.public_area_andenne = Area.objects.create(
+            name="Public polygon - Andenne",
             # Covers Namur-Liège area (includes Andenne but not Lillois)
             mpoly=MultiPolygon(
                 Polygon(
@@ -62,8 +62,8 @@ class VectorTilesServerTests(TestCase):
             ),
         )
 
-        cls.global_area_lillois = Area.objects.create(
-            name="Global polygon - Lillois",
+        cls.public_area_lillois = Area.objects.create(
+            name="Public polygon - Lillois",
             mpoly=MultiPolygon(
                 Polygon(
                     (
@@ -123,7 +123,7 @@ class VectorTilesServerTests(TestCase):
             kwargs={"zoom": 2, "x": 2, "y": 1},  # Large views over Wallonia
         )
         url_with_params = (
-            f"{base_url}?areaIds[]={VectorTilesServerTests.global_area_andenne.pk}"
+            f"{base_url}?areaIds[]={VectorTilesServerTests.public_area_andenne.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -140,7 +140,7 @@ class VectorTilesServerTests(TestCase):
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
         url_with_params = (
-            f"{base_url}?areaIds[]={VectorTilesServerTests.global_area_andenne.pk}"
+            f"{base_url}?areaIds[]={VectorTilesServerTests.public_area_andenne.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -157,7 +157,7 @@ class VectorTilesServerTests(TestCase):
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = (
-            f"{base_url}?areaIds[]={VectorTilesServerTests.global_area_andenne.pk}"
+            f"{base_url}?areaIds[]={VectorTilesServerTests.public_area_andenne.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -174,7 +174,7 @@ class VectorTilesServerTests(TestCase):
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = (
-            f"{base_url}?areaIds[]={VectorTilesServerTests.global_area_andenne.pk}"
+            f"{base_url}?areaIds[]={VectorTilesServerTests.public_area_andenne.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -719,7 +719,7 @@ class VectorTilesServerTests(TestCase):
             reverse("dashboard:api-mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
-                "areaIds[]": VectorTilesServerTests.global_area_andenne.pk,
+                "areaIds[]": VectorTilesServerTests.public_area_andenne.pk,
             },
         )
         self.assertEqual(response.json()["min"], 1)
@@ -730,7 +730,7 @@ class VectorTilesServerTests(TestCase):
             reverse("dashboard:api-mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
-                "areaIds[]": VectorTilesServerTests.global_area_lillois.pk,
+                "areaIds[]": VectorTilesServerTests.public_area_lillois.pk,
             },
         )
         self.assertEqual(response.json()["min"], 2)
@@ -742,8 +742,8 @@ class VectorTilesServerTests(TestCase):
             data={
                 "zoom": 8,
                 "areaIds[]": [
-                    VectorTilesServerTests.global_area_lillois.pk,
-                    VectorTilesServerTests.global_area_andenne.pk,
+                    VectorTilesServerTests.public_area_lillois.pk,
+                    VectorTilesServerTests.public_area_andenne.pk,
                 ],
             },
         )

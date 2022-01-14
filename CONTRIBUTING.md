@@ -63,16 +63,16 @@ and `DatasetKey`) to allow recognizing a given observation is implemented (`stab
 ## Areas import mechanism
 
 The application allows storing Areas (multipolygons) in the database for observation filtering and to display as map 
-overlays. Each area can be either user-specific, either global (=available to everyone). For now, there are 
+overlays. Each area can be either user-specific, either public. For now, there are 
 two ways to load a new area in the system:
 
 - An administrator can use the Admin section to hand-drawn the area over an OSM background
 - The custom `load_area` management command can be used to directly import complex polygons from a file 
   source (shapefile, GeoJSON, ...)
   
-### How to use the `load_area` command to import a new global Area
+### How to use the `load_area` command to import a new public Area
 
-1) Copy the source data file to `source_data/global_areas`
+1) Copy the source data file to `source_data/public_areas`
 2) Adjust the `LAYER_MAPPING_CONFIGURATION` constant in `load_area.py` so it can deal with the specificities 
    of the new source file (other adjustments to `load_area.py` may also be necessary, see 
    [LayerMapping documentation](https://docs.djangoproject.com/en/3.2/ref/contrib/gis/layermapping/).)

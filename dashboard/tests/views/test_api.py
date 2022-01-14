@@ -79,8 +79,8 @@ class ApiTests(TestCase):
             ),
         )
 
-        cls.global_area_lillois = Area.objects.create(
-            name="Global polygon - Lillois",
+        cls.public_area_lillois = Area.objects.create(
+            name="Public polygon - Lillois",
             mpoly=MultiPolygon(
                 Polygon(
                     (
@@ -127,11 +127,11 @@ class ApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
 
-        # Make sure we only get the global ones
+        # Make sure we only get the public ones
         self.assertEqual(len(json_data), 2)
 
         for the_area in json_data:
-            self.assertTrue(the_area["name"].startswith("Global polygon"))
+            self.assertTrue(the_area["name"].startswith("Public polygon"))
             self.assertFalse(the_area["isUserSpecific"])
 
     def test_areas_list_json_owner(self):
@@ -141,14 +141,14 @@ class ApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
 
-        # Make sure we get global one, but also the user-specific one
+        # Make sure we get public ones, but also the user-specific one
         self.assertEqual(len(json_data), 3)
         for area in json_data:
             self.assertIn(
                 area["name"],
                 (
-                    "Global polygon - Andenne",
-                    "Global polygon - Lillois",
+                    "Public polygon - Andenne",
+                    "Public polygon - Lillois",
                     "User polygon",
                 ),
             )
@@ -163,21 +163,21 @@ class ApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
 
-        # Make sure we only get the global ones
+        # Make sure we only get the public ones
         self.assertEqual(len(json_data), 2)
 
         for the_area in json_data:
-            self.assertTrue(the_area["name"].startswith("Global polygon - "))
+            self.assertTrue(the_area["name"].startswith("Public polygon - "))
             self.assertFalse(the_area["isUserSpecific"])
 
     def test_area_geojson_anonymous(self):
-        """Anonymous users can get the global areas, not the user-specific ones"""
+        """Anonymous users can get the public areas, not the user-specific ones"""
 
-        # Case 1: we request a global area
+        # Case 1: we request a public area
         response = self.client.get(
             reverse(
                 "dashboard:api-area-geojson",
-                kwargs={"id": ApiTests.global_area_andenne.pk},
+                kwargs={"id": ApiTests.public_area_andenne.pk},
             )
         )
         self.assertEqual(response.status_code, 200)
@@ -195,14 +195,14 @@ class ApiTests(TestCase):
         self.assertEqual(response.content, b"")
 
     def test_area_geojson_owner(self):
-        """The area owner can get the global areas, but also its own"""
+        """The area owner can get the public areas, but also its own"""
 
         self.client.login(username="frusciante", password="12345")
-        # Case 1: we request the global area
+        # Case 1: we request the public area
         response = self.client.get(
             reverse(
                 "dashboard:api-area-geojson",
-                kwargs={"id": ApiTests.global_area_andenne.pk},
+                kwargs={"id": ApiTests.public_area_andenne.pk},
             )
         )
         self.assertEqual(response.status_code, 200)
@@ -230,7 +230,7 @@ class ApiTests(TestCase):
         response = self.client.get(
             reverse(
                 "dashboard:api-area-geojson",
-                kwargs={"id": ApiTests.global_area_andenne.pk},
+                kwargs={"id": ApiTests.public_area_andenne.pk},
             )
         )
         self.assertEqual(response.status_code, 200)
@@ -427,7 +427,7 @@ class ApiTests(TestCase):
     def test_observations_json_area_filter(self):
         """We filter by a single area"""
         base_url = reverse("dashboard:api-filtered-observations-data-page")
-        url_with_params = f"{base_url}?limit=10&page_number=1&areaIds[]={ApiTests.global_area_andenne.pk}"
+        url_with_params = f"{base_url}?limit=10&page_number=1&areaIds[]={ApiTests.public_area_andenne.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 1)
@@ -438,7 +438,7 @@ class ApiTests(TestCase):
     def test_observations_json_multiple_areas_filter(self):
         """The areaIds parameter can take multiple values (OR)"""
         base_url = reverse("dashboard:api-filtered-observations-data-page")
-        url_with_params = f"{base_url}?limit=10&page_number=1&areaIds[]={ApiTests.global_area_andenne.pk}&areaIds[]={ApiTests.global_area_lillois.pk}"
+        url_with_params = f"{base_url}?limit=10&page_number=1&areaIds[]={ApiTests.public_area_andenne.pk}&areaIds[]={ApiTests.public_area_lillois.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
         self.assertEqual(
@@ -558,7 +558,7 @@ class ApiTests(TestCase):
     def test_observations_json_combined_filters_case4(self):
         # Starting from test_observations_json_combined_filters, we add one area filter that won't change the results
         base_url = reverse("dashboard:api-filtered-observations-data-page")
-        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&areaIds[]={ApiTests.global_area_lillois.pk}"
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&areaIds[]={ApiTests.public_area_lillois.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 1)
@@ -567,7 +567,7 @@ class ApiTests(TestCase):
         # Starting from test_observations_json_combined_filters, we add one area filter => the filter combination now
         # returns 0 results
         base_url = reverse("dashboard:api-filtered-observations-data-page")
-        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&areaIds[]={ApiTests.global_area_andenne.pk}"
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&areaIds[]={ApiTests.public_area_andenne.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 0)
@@ -652,7 +652,7 @@ class ApiTests(TestCase):
 
     def test_observations_counter_area_filter(self):
         base_url = reverse("dashboard:api-filtered-observations-counter")
-        url_with_params = f"{base_url}?areaIds[]={ApiTests.global_area_andenne.pk}"
+        url_with_params = f"{base_url}?areaIds[]={ApiTests.public_area_andenne.pk}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -690,7 +690,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["count"], 0)
 
         # Case 4: start from case 1) but add an area filter that brings us to zero records
-        url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&areaIds[]={ApiTests.global_area_andenne.pk}"
+        url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&areaIds[]={ApiTests.public_area_andenne.pk}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -801,7 +801,7 @@ class ApiTests(TestCase):
     def test_filtered_observations_monthly_histogram_json_combined_filters_case2(self):
         base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
         response = self.client.get(
-            f"{base_url}?areaIds[]={ApiTests.global_area_lillois.pk}&endDate=2021-10-01"
+            f"{base_url}?areaIds[]={ApiTests.public_area_lillois.pk}&endDate=2021-10-01"
         )
         self.assertEqual(response.status_code, 200)
 
@@ -830,7 +830,7 @@ class ApiTests(TestCase):
     def test_filtered_observations_monthly_histogram_json_area_filter(self):
         base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
         response = self.client.get(
-            f"{base_url}?areaIds[]={ApiTests.global_area_andenne.pk}"
+            f"{base_url}?areaIds[]={ApiTests.public_area_andenne.pk}"
         )
         self.assertEqual(response.status_code, 200)
 

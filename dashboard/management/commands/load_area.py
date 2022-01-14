@@ -8,7 +8,7 @@ from dashboard.models import Area
 
 THIS_DIR = os.path.dirname(__file__)
 
-SOURCE_DIRECTORY = os.path.join(THIS_DIR, "../../../source_data/global_areas")
+SOURCE_DIRECTORY = os.path.join(THIS_DIR, "../../../source_data/public_areas")
 
 LAYER_MAPPING_CONFIGURATION = {  # key: filename / value: mapping
     "Riparias_Official_StudyArea.geojson": {"name": "BEKNAAM", "mpoly": "POLYGON"},
@@ -20,7 +20,7 @@ class Command(BaseCommand):
     help = (
         "Import new predefined areas in the database. "
         ""
-        "Takes a single argument: source data file name (in source_data/global_areas). "
+        "Takes a single argument: source data file name (in source_data/public_areas). "
         "This script should be adjusted (mapping, projections, ...) for each area data source"
     )
 
@@ -31,8 +31,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options) -> None:
-        self.stdout.write("Loading an area (from file in static/areas)")
-
         filename = options["area-source-filename"]
         try:
             mapping = LAYER_MAPPING_CONFIGURATION[filename]
