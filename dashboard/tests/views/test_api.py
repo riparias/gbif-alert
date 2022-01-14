@@ -61,8 +61,8 @@ class ApiTests(TestCase):
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
-        cls.global_area_andenne = Area.objects.create(
-            name="Global polygon - Andenne",
+        cls.public_area_andenne = Area.objects.create(
+            name="Public polygon - Andenne",
             # Covers Namur-Liège area (includes Andenne but not Lillois)
             mpoly=MultiPolygon(
                 Polygon(

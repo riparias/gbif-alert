@@ -5,7 +5,7 @@ import pytz
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import Point, MultiPolygon, Polygon
 from django.utils import timezone, formats
 from django.utils.html import strip_tags
 
@@ -16,10 +16,118 @@ from dashboard.models import (
     Dataset,
     ObservationComment,
     ObservationView,
+    Alert,
+    Area,
 )
 
 
+class AlertWebPagesTests(TestCase):
+    """Alerts-related web page tests"""
+
+    @classmethod
+    def setUpTestData(cls):
+        User = get_user_model()
+        the_user = User.objects.create_user(
+            username="frusciante",
+            password="12345",
+            first_name="John",
+            last_name="Frusciante",
+            email="frusciante@gmail.com",
+        )
+
+        User.objects.create_user(
+            username="other_user",
+            password="12345",
+            first_name="Aaa",
+            last_name="Bbb",
+            email="otheruser@gmail.com",
+        )
+
+        public_area_andenne = Area.objects.create(
+            name="Public polygon - Andenne",
+            # Covers Namur-Liège area (includes Andenne but not Lillois)
+            mpoly=MultiPolygon(
+                Polygon(
+                    (
+                        (4.7866, 50.5200),
+                        (5.6271, 50.6839),
+                        (5.6930, 50.5724),
+                        (4.8306, 50.4116),
+                        (4.7866, 50.5200),
+                    ),
+                    srid=4326,
+                ),
+                srid=4326,
+            ),
+        )
+
+        first_dataset = Dataset.objects.create(
+            name="Test dataset", gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+        )
+
+        cls.alert = Alert.objects.create(
+            user=the_user,
+        )
+        cls.alert.species.add(Species.objects.all()[0])
+        cls.alert.datasets.add(first_dataset)
+        cls.alert.areas.add(public_area_andenne)
+
+    my_alerts_navbar_snippet = (
+        '<a class="nav-link " aria-current="page" href="/my-alerts">My alerts</a>'
+    )
+
+    def test_navbar_my_alerts_authenticated(self):
+        """Authenticated users have a 'my alerts' link in the navbar"""
+        self.client.login(username="frusciante", password="12345")
+        response = self.client.get("/")
+        self.assertContains(
+            response,
+            self.my_alerts_navbar_snippet,
+            html=True,
+        )
+
+    def test_navbar_my_alerts_anonymous(self):
+        """Anonymous users **don't** have a 'my alerts' link in the navbar"""
+        response = self.client.get("/")
+        self.assertNotContains(
+            response,
+            self.my_alerts_navbar_snippet,
+            html=True,
+        )
+
+    def test_user_can_access_own_alert_details(self):
+        """An authenticated user has access to details of their own alerts"""
+        self.client.login(username="frusciante", password="12345")
+        page_url = reverse(
+            "dashboard:page-alert-details",
+            kwargs={"alert_id": self.__class__.alert.id},
+        )
+        response = self.client.get(page_url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_anonymous_cant_access_alert_details(self):
+        """An anonymous user is invited to log in when trying to see an alert details"""
+        page_url = reverse(
+            "dashboard:page-alert-details",
+            kwargs={"alert_id": self.__class__.alert.id},
+        )
+        response = self.client.get(page_url)
+        self.assertEqual(response.status_code, 302)  # We got redirected to sign in
+
+    def test_otheruser_cant_access_alert_details(self):
+        """An authenticated user cannot see the alert details of another user"""
+        self.client.login(username="other_user", password="12345")
+        page_url = reverse(
+            "dashboard:page-alert-details",
+            kwargs={"alert_id": self.__class__.alert.id},
+        )
+        response = self.client.get(page_url)
+        self.assertEqual(response.status_code, 403)
+
+
 class WebPagesTests(TestCase):
+    """Various web page tests  # TODO: split in multiple classes?"""
+
     @classmethod
     def setUpTestData(cls):
         dataset = Dataset.objects.create(
