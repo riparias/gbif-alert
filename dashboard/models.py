@@ -389,7 +389,11 @@ class ObservationView(models.Model):
 
 
 class Alert(models.Model):
-    """The per-user configured alerts"""
+    """The per-user configured alerts
+
+    An alert is user specific.
+    Species, datasets and areas are optional filters. If left blank, the alert targets all species/datasets/areas.
+    """
 
     NO_EMAILS = "N"
     DAILY_EMAILS = "D"
@@ -404,9 +408,21 @@ class Alert(models.Model):
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    species = models.ManyToManyField(Species)
-    datasets = models.ManyToManyField(Dataset)
-    areas = models.ManyToManyField(Area)
+    species = models.ManyToManyField(
+        Species,
+        blank=True,
+        help_text="Alert is restricted to the following species (no selection: all species)",
+    )
+    datasets = models.ManyToManyField(
+        Dataset,
+        blank=True,
+        help_text="Alert is restricted to the following datasets (no selection: all datasets)",
+    )
+    areas = models.ManyToManyField(
+        Area,
+        blank=True,
+        help_text="Alert is restricted to the following areas (no selection: all areas)",
+    )
 
     email_notifications_frequency = models.CharField(
         max_length=3, choices=EMAIL_NOTIFICATION_CHOICES, default=WEEKLY_EMAILS

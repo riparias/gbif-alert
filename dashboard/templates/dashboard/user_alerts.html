@@ -23,9 +23,10 @@
                     <div class="card-body">
                         <p class="card-text">
                             <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><b>Areas:</b> {{ alert.areas_list|default:"/" }}</li>
-                                <li class="list-group-item"><b>Species:</b> {{ alert.species_list|default:"/" }}</li>
-                                <li class="list-group-item"><b>Datasets:</b> {{ alert.datasets_list|default:"/" }}</li>
+                                <li class="list-group-item"><b>Areas:</b> {{ alert.areas_list|default:"all" }}</li>
+                                <li class="list-group-item"><b>Species:</b> {{ alert.species_list|default:"all" }}</li>
+                                <li class="list-group-item"><b>Datasets:</b> {{ alert.datasets_list|default:"all" }}</li>
+                                <li class="list-group-item"><b>Email notifications frequency:</b> {{ alert.get_email_notifications_frequency_display }}</li>
                             </ul>
                         </p>
                         <a href="{% url 'dashboard:page-alert-details' alert_id=alert.id%}" class="btn btn-primary">See alert details</a>

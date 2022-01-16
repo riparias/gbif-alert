@@ -14,7 +14,12 @@ class AlertForm(forms.ModelForm):
 
     class Meta:
         model = Alert
-        fields: Tuple[str, ...] = ("species", "datasets", "areas")
+        fields: Tuple[str, ...] = (
+            "species",
+            "datasets",
+            "areas",
+            "email_notifications_frequency",
+        )
 
 
 class CommonUsersFields(forms.ModelForm):

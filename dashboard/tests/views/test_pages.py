@@ -27,7 +27,7 @@ class AlertWebPagesTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         User = get_user_model()
-        the_user = User.objects.create_user(
+        cls.first_user = User.objects.create_user(
             username="frusciante",
             password="12345",
             first_name="John",
@@ -35,7 +35,7 @@ class AlertWebPagesTests(TestCase):
             email="frusciante@gmail.com",
         )
 
-        User.objects.create_user(
+        second_user = User.objects.create_user(
             username="other_user",
             password="12345",
             first_name="Aaa",
@@ -43,7 +43,7 @@ class AlertWebPagesTests(TestCase):
             email="otheruser@gmail.com",
         )
 
-        public_area_andenne = Area.objects.create(
+        cls.public_area_andenne = Area.objects.create(
             name="Public polygon - Andenne",
             # Covers Namur-Liège area (includes Andenne but not Lillois)
             mpoly=MultiPolygon(
@@ -61,16 +61,28 @@ class AlertWebPagesTests(TestCase):
             ),
         )
 
-        first_dataset = Dataset.objects.create(
+        cls.first_dataset = Dataset.objects.create(
             name="Test dataset", gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
         )
 
         cls.alert = Alert.objects.create(
-            user=the_user,
+            user=cls.first_user,
         )
         cls.alert.species.add(Species.objects.all()[0])
-        cls.alert.datasets.add(first_dataset)
-        cls.alert.areas.add(public_area_andenne)
+        cls.alert.datasets.add(cls.first_dataset)
+        cls.alert.areas.add(cls.public_area_andenne)
+
+        cls.first_user_area = Area.objects.create(
+            name="First user polygon",
+            owner=cls.first_user,
+            mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
+        )
+
+        cls.second_user_area = Area.objects.create(
+            name="Second user polygon",
+            owner=second_user,
+            mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
+        )
 
     my_alerts_navbar_snippet = (
         '<a class="nav-link " aria-current="page" href="/my-alerts">My alerts</a>'
@@ -123,6 +135,114 @@ class AlertWebPagesTests(TestCase):
         )
         response = self.client.get(page_url)
         self.assertEqual(response.status_code, 403)
+
+    def test_anonymous_cant_access_new_alert_page(self):
+        """Anonymous users cannot access the create alert page"""
+        # 1) GET
+        response = self.client.get(reverse("dashboard:page-alert-create"))
+        self.assertEqual(response.status_code, 302)  # We got redirected to sign in
+        self.assertEqual(response.url, "/accounts/signin/?next=/new-alert")
+
+        # 2) POST
+        response = self.client.post(reverse("dashboard:page-alert-create"))
+        self.assertEqual(response.status_code, 302)  # We got redirected to sign in
+        self.assertEqual(response.url, "/accounts/signin/?next=/new-alert")
+
+    def test_get_new_alert_page(self):
+        """An authenticated has a page allowing to create an alert"""
+        self.client.login(username="frusciante", password="12345")
+
+        response = self.client.get(reverse("dashboard:page-alert-create"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/alert_create.html")
+
+        # The template receives a form, with a species selector that shows 18 entries (all species)
+        self.assertEqual(
+            len(response.context["form"].fields["species"].choices.queryset), 18
+        )
+
+        # Same thing for datasets (only 1 in database)
+        self.assertEqual(
+            len(response.context["form"].fields["datasets"].choices.queryset), 1
+        )
+
+        # Areas: the user can select the public ones, as well as their own (but not those owned by someone else)
+        self.assertEqual(
+            len(response.context["form"].fields["areas"].choices.queryset), 2
+        )
+        available_area_names = [
+            a[1] for a in response.context["form"].fields["areas"].choices
+        ]
+        self.assertIn("Public polygon - Andenne", available_area_names)
+        self.assertIn("First user polygon", available_area_names)
+        self.assertNotIn("Second user polygon", available_area_names)
+
+        # Let's make sure we also have a submit button that targets the same view
+        self.assertIn('<form method="post">', response.content.decode())
+        self.assertContains(
+            response,
+            '<input class="btn btn-primary btn-sm" type="submit" value="Create alert">',
+            html=True,
+        )
+
+    def test_post_new_alert_page(self):
+        self.client.login(username="frusciante", password="12345")
+
+        # Attempt 1: post no data: we stay on the same page because there's one field required (email_notifications_frequency)
+        response = self.client.post(reverse("dashboard:page-alert-create"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context["form"].errors), 1)
+        self.assertIn("email_notifications_frequency", response.context["form"].errors)
+        # No new alert was created in the database
+        self.assertEqual(
+            Alert.objects.filter(user=self.__class__.first_user).count(), 1
+        )
+
+        # Attempt 2: post email_notifications_frequency: the alerts gets created and the user is redirected to the alert details page
+        response = self.client.post(
+            reverse("dashboard:page-alert-create"),
+            {"email_notifications_frequency": "D"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "/alert/2")
+        self.assertEqual(
+            Alert.objects.filter(user=self.__class__.first_user).count(), 2
+        )
+        # Values check:
+        new_alert = Alert.objects.get(pk=2)
+        self.assertEqual(new_alert.user, self.__class__.first_user)
+        self.assertEqual(new_alert.email_notifications_frequency, "D")
+        self.assertEqual(new_alert.areas.count(), 0)
+        self.assertEqual(new_alert.species.count(), 0)
+        self.assertEqual(new_alert.datasets.count(), 0)
+
+        # Attempt 3: post all fields: the alerts gets created and the user is redirected to the alert details page
+        response = self.client.post(
+            reverse("dashboard:page-alert-create"),
+            {
+                "email_notifications_frequency": "W",
+                "species": [1, 2],
+                "datasets": self.__class__.first_dataset.pk,
+                "areas": self.__class__.public_area_andenne.pk,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "/alert/3")
+        self.assertEqual(
+            Alert.objects.filter(user=self.__class__.first_user).count(), 3
+        )
+
+        new_alert = Alert.objects.get(pk=3)
+        self.assertEqual(new_alert.user, self.__class__.first_user)
+        self.assertEqual(new_alert.email_notifications_frequency, "W")
+        self.assertEqual(new_alert.areas.count(), 1)
+        self.assertEqual(new_alert.areas.first().name, "Public polygon - Andenne")
+        self.assertEqual(new_alert.species.count(), 2)
+        new_alert_species_name = [s.name for s in new_alert.species.all()]
+        self.assertIn("Elodea nuttallii", new_alert_species_name)
+        self.assertIn("Heracleum mantegazzianum", new_alert_species_name)
+        self.assertEqual(new_alert.datasets.count(), 1)
+        self.assertEqual(new_alert.datasets.first().name, "Test dataset")
 
 
 class WebPagesTests(TestCase):
