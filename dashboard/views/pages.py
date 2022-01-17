@@ -124,3 +124,15 @@ def mark_observation_as_not_viewed(request: AuthenticatedHttpRequest):
             return redirect("dashboard:page-index")
         else:
             return redirect(observation)  # Error? Stay where we came from
+
+
+@login_required
+def action_alert_delete(request: AuthenticatedHttpRequest):
+    if request.method == "POST":
+        alert = get_object_or_404(Alert, pk=request.POST.get("alert_id"))
+        if alert.user == request.user:
+            alert.delete()
+            messages.success(request, "Alert deleted.")
+            return redirect("dashboard:page-my-alerts")
+        else:
+            return HttpResponseForbidden

@@ -29,7 +29,14 @@
                                 <li class="list-group-item"><b>Email notifications frequency:</b> {{ alert.get_email_notifications_frequency_display }}</li>
                             </ul>
                         </p>
-                        <a href="{% url 'dashboard:page-alert-details' alert_id=alert.id%}" class="btn btn-primary">See alert details</a>
+                        <a href="{% url 'dashboard:page-alert-details' alert_id=alert.id%}" class="btn btn-sm btn-primary">See alert details</a>
+                        <form class="d-inline" action="{% url 'dashboard:action-alert-delete'%}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="alert_id" value="{{ alert.pk }}" />
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="bi bi-trash"></i> Delete alert
+                            </button>
+                        </form>
                     </div>
                 </div>
             {% empty %}
