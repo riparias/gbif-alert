@@ -22,8 +22,13 @@ OCTOBER_8_2021 = datetime.datetime.strptime("2021-10-08", "%Y-%m-%d").date()
 class ApiTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.first_species = Species.objects.all()[0]
-        cls.second_species = Species.objects.all()[1]
+        cls.first_species = Species.objects.create(
+            name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+        )
+        cls.second_species = Species.objects.create(
+            name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
+        )
+
         cls.di = DataImport.objects.create(start=timezone.now())
         cls.first_dataset = Dataset.objects.create(
             name="Test dataset", gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
@@ -295,7 +300,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["lastPage"], 1)
         found = False
         for r in json_data["results"]:
-            if r["speciesName"] == "Elodea nuttallii":
+            if r["speciesName"] == "Procambarus fallax":
                 found = True
         self.assertTrue(found)
 
@@ -702,7 +707,7 @@ class ApiTests(TestCase):
         # There's already 18 entries in the species table thanks to a data migration (0002_populate_initial_species.py)
 
         json_data = response.json()
-        self.assertEqual(len(json_data), 18)
+        self.assertEqual(len(json_data), 2)
 
         # Check the main fields are there (no KeyError exception)
         json_data[0]["scientificName"]
@@ -712,7 +717,7 @@ class ApiTests(TestCase):
         # Check a specific one can be found
         found = False
         for entry in json_data:
-            if entry["scientificName"] == "Elodea nuttallii":
+            if entry["scientificName"] == "Procambarus fallax":
                 found = True
                 break
 

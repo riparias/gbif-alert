@@ -13,8 +13,12 @@ from dashboard.models import Observation, Species, DataImport, Dataset, Area
 class VectorTilesServerTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.first_species = Species.objects.all()[0]
-        cls.second_species = Species.objects.all()[1]
+        cls.first_species = Species.objects.create(
+            name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+        )
+        cls.second_species = Species.objects.create(
+            name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
+        )
 
         cls.di = DataImport.objects.create(start=timezone.now())
         cls.first_dataset = Dataset.objects.create(

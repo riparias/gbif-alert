@@ -27,10 +27,14 @@ class ObservationTests(TestCase):
             name="Test dataset", gbif_dataset_key=SAMPLE_DATASET_KEY
         )
 
+        species_p_fallax = Species.objects.create(
+            name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+        )
+
         self.obs = Observation.objects.create(
             gbif_id=1,
             occurrence_id=SAMPLE_OCCURRENCE_ID,
-            species=Species.objects.all()[0],
+            species=species_p_fallax,
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=DataImport.objects.create(start=timezone.now()),
             source_dataset=self.dataset,

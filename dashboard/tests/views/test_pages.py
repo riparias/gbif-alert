@@ -27,6 +27,7 @@ class AlertWebPagesTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         User = get_user_model()
+
         cls.first_user = User.objects.create_user(
             username="frusciante",
             password="12345",
@@ -41,6 +42,13 @@ class AlertWebPagesTests(TestCase):
             first_name="Aaa",
             last_name="Bbb",
             email="otheruser@gmail.com",
+        )
+
+        cls.first_species = Species.objects.create(
+            name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+        )
+        cls.second_species = Species.objects.create(
+            name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
         )
 
         cls.public_area_andenne = Area.objects.create(
@@ -68,7 +76,7 @@ class AlertWebPagesTests(TestCase):
         cls.alert = Alert.objects.create(
             user=cls.first_user,
         )
-        cls.alert.species.add(Species.objects.all()[0])
+        cls.alert.species.add(cls.first_species)
         cls.alert.datasets.add(cls.first_dataset)
         cls.alert.areas.add(cls.public_area_andenne)
 
@@ -156,9 +164,9 @@ class AlertWebPagesTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "dashboard/alert_create.html")
 
-        # The template receives a form, with a species selector that shows 18 entries (all species)
+        # The template receives a form, with a species selector that shows 2 entries (all species)
         self.assertEqual(
-            len(response.context["form"].fields["species"].choices.queryset), 18
+            len(response.context["form"].fields["species"].choices.queryset), 2
         )
 
         # Same thing for datasets (only 1 in database)
@@ -221,7 +229,10 @@ class AlertWebPagesTests(TestCase):
             reverse("dashboard:page-alert-create"),
             {
                 "email_notifications_frequency": "W",
-                "species": [1, 2],
+                "species": [
+                    self.__class__.first_species.pk,
+                    self.__class__.second_species.pk,
+                ],
                 "datasets": self.__class__.first_dataset.pk,
                 "areas": self.__class__.public_area_andenne.pk,
             },
@@ -239,8 +250,8 @@ class AlertWebPagesTests(TestCase):
         self.assertEqual(new_alert.areas.first().name, "Public polygon - Andenne")
         self.assertEqual(new_alert.species.count(), 2)
         new_alert_species_name = [s.name for s in new_alert.species.all()]
-        self.assertIn("Elodea nuttallii", new_alert_species_name)
-        self.assertIn("Heracleum mantegazzianum", new_alert_species_name)
+        self.assertIn("Procambarus fallax", new_alert_species_name)
+        self.assertIn("Orconectes virilis", new_alert_species_name)
         self.assertEqual(new_alert.datasets.count(), 1)
         self.assertEqual(new_alert.datasets.first().name, "Test dataset")
 
@@ -258,7 +269,9 @@ class WebPagesTests(TestCase):
         cls.first_obs = Observation.objects.create(
             gbif_id=1,
             occurrence_id="1",
-            species=Species.objects.all()[0],
+            species=Species.objects.create(
+                name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+            ),
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=DataImport.objects.create(start=timezone.now()),
             source_dataset=dataset,
@@ -274,7 +287,9 @@ class WebPagesTests(TestCase):
         cls.second_obs = Observation.objects.create(
             gbif_id=2,
             occurrence_id="2",
-            species=Species.objects.all()[1],
+            species=Species.objects.create(
+                name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
+            ),
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=DataImport.objects.create(start=timezone.now()),
             source_dataset=dataset,
@@ -329,7 +344,7 @@ class WebPagesTests(TestCase):
         # A few checks on the basic content
         self.assertContains(response, '<a href="https://www.gbif.org/occurrence/1">')
         self.assertContains(
-            response, "<b>Species: </b><i>Elodea nuttallii</i>", html=True
+            response, "<b>Species: </b><i>Procambarus fallax</i>", html=True
         )
         self.assertContains(response, "<b>Individual count: </b> 2", html=True)
         self.assertContains(response, "<b>Source dataset: </b> Test dataset", html=True)

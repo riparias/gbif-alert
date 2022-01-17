@@ -15,10 +15,14 @@ class StableIdentifiersTests(TestCase):
     def setUp(self):
         # Not possible to replace this by setUpTestData because some methods alter the observation => this code should
         # therefore be run before each method.
+        self.species_p_fallax = Species.objects.create(
+            name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+        )
+
         self.obs = Observation.objects.create(
             gbif_id=1,
             occurrence_id=SAMPLE_OCCURRENCE_ID,
-            species=Species.objects.all()[0],
+            species=self.species_p_fallax,
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=DataImport.objects.create(start=timezone.now()),
             source_dataset=Dataset.objects.create(
@@ -74,7 +78,7 @@ class StableIdentifiersTests(TestCase):
         """
         stable_id_before = self.obs.stable_id
 
-        self.obs.species = Species.objects.all()[1]
+        self.obs.species = self.species_p_fallax
         self.obs.date = datetime.date.today()
         self.obs.data_import = DataImport.objects.create(start=timezone.now())
         self.obs.source_dataset.name = "Renamed dataset"
