@@ -1,5 +1,7 @@
 from django.contrib.gis import admin
 from django.contrib.auth.admin import UserAdmin
+from import_export import resources
+from import_export.admin import ImportExportModelAdmin
 
 from .models import (
     Species,
@@ -47,9 +49,14 @@ class ObservationAdmin(admin.OSMGeoAdmin):
     inlines = [ObservationCommentCommentInline, ObservationViewInline]
 
 
+class SpeciesResource(resources.ModelResource):
+    class Meta:
+        model = Species
+
+
 @admin.register(Species)
-class SpeciesAdmin(admin.ModelAdmin):
-    pass
+class SpeciesAdmin(ImportExportModelAdmin):
+    resource_class = SpeciesResource
 
 
 @admin.register(DataImport)

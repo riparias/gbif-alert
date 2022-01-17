@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "maintenance_mode",
     "crispy_forms",
     "crispy_bootstrap5",
+    "import_export",
     # Local/custom
     "dashboard",
 ]
