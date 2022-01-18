@@ -255,6 +255,73 @@ class AlertWebPagesTests(TestCase):
         self.assertEqual(new_alert.datasets.count(), 1)
         self.assertEqual(new_alert.datasets.first().name, "Test dataset")
 
+    def test_delete_alert_anonymous(self):
+        """An anonymous user cannot delete an alert"""
+        response = self.client.post(
+            reverse("dashboard:action-alert-delete"),
+            {"alert_id": self.__class__.alert.pk},
+        )
+        self.assertEqual(response.status_code, 302)  # We got redirected to sign in
+        self.assertEqual(response.url, "/accounts/signin/?next=/delete-alert")
+
+    def test_delete_alert_success(self):
+        """A user can delete its own alerts"""
+        self.client.login(username="frusciante", password="12345")
+
+        # Situation before: there's an alert for this user
+        self.assertEqual(
+            Alert.objects.filter(user=self.__class__.first_user).count(), 1
+        )
+
+        response = self.client.post(
+            reverse("dashboard:action-alert-delete"),
+            {"alert_id": self.__class__.alert.pk},
+        )
+        # No more alerts for this user
+        self.assertEqual(
+            Alert.objects.filter(user=self.__class__.first_user).count(), 0
+        )
+
+        # The user gets redirected to the "my alerts" page
+        self.assertEqual(response.status_code, 302)  # We got redirected to sign in
+        self.assertEqual(response.url, "/my-alerts")
+
+    def test_delete_non_existing_alert(self):
+        """We get an error 404 when trying to delete an alert that doesn't exist"""
+        self.client.login(username="frusciante", password="12345")
+
+        # Situation before: there's an alert for this user
+        self.assertEqual(
+            Alert.objects.filter(user=self.__class__.first_user).count(), 1
+        )
+
+        response = self.client.post(
+            reverse("dashboard:action-alert-delete"),
+            {"alert_id": 5},
+        )
+        # The user alert has been untouched
+        self.assertEqual(
+            Alert.objects.filter(user=self.__class__.first_user).count(), 1
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_other_user_alert(self):
+        """A user cannot delete an alert owned by someone else"""
+        self.client.login(username="other_user", password="12345")
+
+        # Situation before: there's an alert for this user
+        self.assertEqual(Alert.objects.all().count(), 1)
+
+        response = self.client.post(
+            reverse("dashboard:action-alert-delete"),
+            {"alert_id": self.__class__.alert.pk},
+        )
+        # Alerts are unchanged in the database
+        self.assertEqual(Alert.objects.all().count(), 1)
+
+        self.assertEqual(response.status_code, 403)
+
 
 class WebPagesTests(TestCase):
     """Various web page tests  # TODO: split in multiple classes?"""

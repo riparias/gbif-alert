@@ -135,4 +135,4 @@ def action_alert_delete(request: AuthenticatedHttpRequest):
             messages.success(request, "Alert deleted.")
             return redirect("dashboard:page-my-alerts")
         else:
-            return HttpResponseForbidden
+            return HttpResponseForbidden()
