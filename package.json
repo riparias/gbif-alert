@@ -20,28 +20,28 @@
   },
   "homepage": "https://github.com/riparias/early-warning-webapp#readme",
   "devDependencies": {
-    "@babel/core": "^7.16.0",
+    "@babel/core": "^7.16.7",
     "@types/d3": "^7.1.0",
-    "@types/uuid": "^8.3.3",
-    "@vue/compiler-sfc": "^3.2.23",
+    "@types/uuid": "^8.3.4",
+    "@vue/compiler-sfc": "^3.2.27",
     "babel-loader": "^8.2.3",
     "css-loader": "^6.5.1",
-    "prettier": "^2.5.0",
+    "prettier": "^2.5.1",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.2.6",
-    "typescript": "^4.5.2",
-    "vue-loader": "^16.8.3",
-    "webpack": "^5.64.4",
+    "typescript": "^4.5.4",
+    "vue-loader": "^17.0.0",
+    "webpack": "^5.66.0",
     "webpack-cli": "^4.9.1",
     "webpack-merge": "^5.8.0"
   },
   "dependencies": {
-    "axios": "^0.24.0",
-    "d3": "^7.1.1",
+    "axios": "^0.25.0",
+    "d3": "^7.3.0",
     "npm-check": "^5.9.2",
-    "ol": "^6.9.0",
-    "qs": "^6.10.1",
+    "ol": "^6.12.0",
+    "qs": "^6.10.3",
     "uuid": "^8.3.2",
-    "vue": "^3.2.23"
+    "vue": "^3.2.27"
   }
 }

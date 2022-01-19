@@ -1,7 +1,7 @@
 # Development setup and notes
 
 ## Technological backbone
-- [Python](https://www.python.org/) 3.8, [(Geo)Django](https://www.djangoproject.com/) 3.2 LTS, [PostgreSQL](https://www.postgresql.org/), [PostGIS](https://postgis.net/) 3.1+, [TypeScript](https://www.typescriptlang.org/) and [Vue.js v3](https://vuejs.org/)
+- [Python](https://www.python.org/) 3.8+, [(Geo)Django](https://www.djangoproject.com/) 3.2 LTS, [PostgreSQL](https://www.postgresql.org/), [PostGIS](https://postgis.net/) 3.1+, [TypeScript](https://www.typescriptlang.org/) and [Vue.js v3](https://vuejs.org/)
 - CSS: [Bootstrap](https://getbootstrap.com/) 5.1  
 - [Poetry](https://python-poetry.org/) is used to manage dependencies (use `poetry add`, `poetry install`, ... instead of pip). PyCharm also has a Poetry plugin available.
 
