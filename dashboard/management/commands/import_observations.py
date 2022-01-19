@@ -78,7 +78,11 @@ def get_int_data(row: CoreRow, field_name: str) -> int:
     return int(get_string_data(row, field_name))
 
 
-def import_single_observation(row: CoreRow, current_data_import: DataImport) -> None:
+def import_single_observation(row: CoreRow, current_data_import: DataImport) -> bool:
+    """Import a single observation into the database
+
+    :return True if successful, False if observation was skipped (=unusable OR is an absence)
+    """
     # For-filtering data extraction
     year_str = get_string_data(row, field_name=qn("year"))
 
@@ -94,7 +98,7 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
     occurrence_id_str = get_string_data(row, field_name=qn("occurrenceID"))
     occurrence_status_str = get_string_data(row, field_name=qn("occurrenceStatus"))
 
-    # Only import records with a year, coordinates and an occurrenceID
+    # Only import records with a year, coordinates, an occurrenceID which represent "presence" data
     if (
         year_str != ""
         and point
@@ -155,6 +159,9 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
             coordinate_uncertainty_in_meters=coordinates_uncertainty,
         )
         new_observation.migrate_linked_entities()
+        return True
+
+    return False  # Observation was skipped
 
 
 def send_successful_import_email():
@@ -187,11 +194,16 @@ class Command(BaseCommand):
 
     def _import_all_observations_from_dwca(
         self, dwca: DwCAReader, data_import: DataImport
-    ):
-
+    ) -> int:
+        """:return the number of skipped observations"""
+        skipped_observations_counter = 0
         for core_row in dwca:
-            import_single_observation(core_row, data_import)
+            r = import_single_observation(core_row, data_import)
+            if r is False:
+                skipped_observations_counter = skipped_observations_counter + 1
             self.stdout.write(".", ending="")
+
+        return skipped_observations_counter
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
@@ -256,7 +268,9 @@ class Command(BaseCommand):
                 current_data_import.set_gbif_download_id(
                     extract_gbif_download_id_from_dwca(dwca)
                 )
-                self._import_all_observations_from_dwca(dwca, current_data_import)
+                current_data_import.skipped_observations_counter = (
+                    self._import_all_observations_from_dwca(dwca, current_data_import)
+                )
 
             self.stdout.write(
                 "All observations imported, now deleting observations linked to previous data imports..."

@@ -123,11 +123,12 @@ class ImportObservationsTest(TransactionTestCase):
             )
 
     def test_ignore_unusable_observations(self) -> None:
-        """The DwC-A contains 12 records, but some are not usable:
+        """The DwC-A contains 13 records, but some are not usable:
 
         - missing coordinates: 3 records
         - no year: 1 record
         - no occurrence ID: 1 record
+        - absence: 1 record
 
         => so, only 7 should be loaded after the import process
         """
@@ -136,6 +137,10 @@ class ImportObservationsTest(TransactionTestCase):
             call_command("import_observations", source_dwca=gbif_download_file)
 
         self.assertEqual(Observation.objects.all().count(), 7)
+
+        self.assertEqual(
+            DataImport.objects.latest("id").skipped_observations_counter, 6
+        )
         # TODO: more testing to make sure it's the usable ones that were loaded?
 
     def test_load_observations_values(self) -> None:
