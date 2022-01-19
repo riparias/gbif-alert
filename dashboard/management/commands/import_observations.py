@@ -78,7 +78,7 @@ def get_int_data(row: CoreRow, field_name: str) -> int:
     return int(get_string_data(row, field_name))
 
 
-def import_single_observation(row: CoreRow, current_data_import: DataImport):
+def import_single_observation(row: CoreRow, current_data_import: DataImport) -> None:
     # For-filtering data extraction
     year_str = get_string_data(row, field_name=qn("year"))
 
@@ -207,6 +207,7 @@ class Command(BaseCommand):
         self.stdout.write("(Re)importing all observations")
 
         # 1. Data preparation / download
+        gbif_predicate = None
         if options["source_dwca"]:
             self.stdout.write("Using a user-provided DWCA file")
             source_data_path = options["source_dwca"].name
@@ -221,11 +222,12 @@ class Command(BaseCommand):
             tmp_file = tempfile.NamedTemporaryFile()
             source_data_path = tmp_file.name
             # This might takes several minutes...
+            gbif_predicate = build_gbif_predicate(
+                country_code=settings.RIPARIAS["TARGET_COUNTRY_CODE"],
+                species_list=Species.objects.all(),
+            )
             download_gbif_occurrences(
-                build_gbif_predicate(
-                    country_code=settings.RIPARIAS["TARGET_COUNTRY_CODE"],
-                    species_list=Species.objects.all(),
-                ),
+                gbif_predicate,
                 username=settings.RIPARIAS["GBIF_USERNAME"],
                 password=settings.RIPARIAS["GBIF_PASSWORD"],
                 output_path=source_data_path,
@@ -242,7 +244,9 @@ class Command(BaseCommand):
             transaction.on_commit(self.flag_transaction_as_successful)
 
             # 2. Create the DataImport object
-            current_data_import = DataImport.objects.create(start=timezone.now())
+            current_data_import = DataImport.objects.create(
+                start=timezone.now(), gbif_predicate=gbif_predicate
+            )
             self.stdout.write(
                 f"Created a new DataImport object: #{current_data_import.pk}"
             )

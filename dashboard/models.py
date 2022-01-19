@@ -89,6 +89,9 @@ class DataImport(models.Model):
     completed = models.BooleanField(default=False)
     gbif_download_id = models.CharField(max_length=255, blank=True)
     imported_observations_counter = models.IntegerField(default=0)
+    gbif_predicate = models.JSONField(
+        blank=True, null=True
+    )  # Null if a DwC-A file was provided - no GBIF download
 
     def set_gbif_download_id(self, download_id: str) -> None:
         """Set the download id and immediately save the entry"""

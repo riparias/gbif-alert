@@ -334,6 +334,7 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertGreater(di.end, di.start)
         self.assertTrue(di.completed)
         self.assertEqual(di.gbif_download_id, "0076720-210914110416597")
+        self.assertIsNone(di.gbif_predicate)
         self.assertEqual(
             di.imported_observations_counter,
             Observation.objects.filter(data_import=di).count(),
@@ -382,4 +383,41 @@ class ImportObservationsTest(TransactionTestCase):
                 self.assertEqual(
                     request_history[1].url,
                     "https://api.gbif.org/v1/occurrence/download/request/1000",
+                )
+
+    def test_gbif_predicate_stored(self):
+        """In case of GBIF request, the predicate is stored in the DataImport object"""
+        with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
+            with requests_mock.Mocker() as m:
+                m.post(
+                    "https://api.gbif.org/v1/occurrence/download/request", text="1000"
+                )
+                m.get(
+                    "https://api.gbif.org/v1/occurrence/download/request/1000",
+                    body=gbif_download_file,
+                )
+
+                call_command("import_observations")
+
+                di = DataImport.objects.latest("id")
+                self.assertEqual(
+                    di.gbif_predicate,
+                    {
+                        "predicate": {
+                            "type": "and",
+                            "predicates": [
+                                {"key": "COUNTRY", "type": "equals", "value": "BE"},
+                                {
+                                    "key": "TAXON_KEY",
+                                    "type": "in",
+                                    "values": ["1224034", "7972617"],
+                                },
+                                {
+                                    "key": "OCCURRENCE_STATUS",
+                                    "type": "equals",
+                                    "value": "present",
+                                },
+                            ],
+                        }
+                    },
                 )
