@@ -35,6 +35,11 @@ We try to frequently update dependencies. Process is:
 - Run unit tests (+ a few manual checks?)
 - Commit changes (should include `package.json`, `package-lock.json` and `poetry lock` 
 
+## Database diagram
+
+Only the tables from the `dashboard` app (+linked tables) are included. Last update: 20 jan 2022.
+![tables diagram](./dashboard_app_table_diagram.png)
+
 ## Frontend-backend integration
 
 We use a hybrid approach such as described in https://www.saaspegasus.com/guides/modern-javascript-for-django-developers/integrating-javascript-pipeline/:
