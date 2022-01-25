@@ -35,6 +35,7 @@ class VectorTilesServerTests(TestCase):
             species=cls.first_species,
             date=datetime.date.today(),
             data_import=cls.di,
+            initial_data_import=cls.di,
             source_dataset=cls.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
@@ -44,6 +45,7 @@ class VectorTilesServerTests(TestCase):
             species=cls.second_species,
             date=datetime.date.today(),
             data_import=cls.di,
+            initial_data_import=cls.di,
             source_dataset=cls.second_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
@@ -353,6 +355,7 @@ class VectorTilesServerTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            initial_data_import=VectorTilesServerTests.di,
             source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
@@ -362,6 +365,7 @@ class VectorTilesServerTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            initial_data_import=VectorTilesServerTests.di,
             source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
@@ -371,6 +375,7 @@ class VectorTilesServerTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            initial_data_import=VectorTilesServerTests.di,
             source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
@@ -581,6 +586,7 @@ class VectorTilesServerTests(TestCase):
             species=Species.objects.all()[0],
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            initial_data_import=VectorTilesServerTests.di,
             source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
@@ -610,10 +616,11 @@ class VectorTilesServerTests(TestCase):
         # Add a second one in Lillois, but not next to the other one and another species
         Observation.objects.create(
             gbif_id=3,
-            occurrence_id="3",
+            occurrence_id="3LKDVC",
             species=VectorTilesServerTests.second_species,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            initial_data_import=VectorTilesServerTests.di,
             source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
@@ -644,6 +651,7 @@ class VectorTilesServerTests(TestCase):
             species=VectorTilesServerTests.second_species,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            initial_data_import=VectorTilesServerTests.di,
             source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(5.095610, 50.48800, srid=4326),
         )
@@ -660,10 +668,11 @@ class VectorTilesServerTests(TestCase):
         # Add a second one in Lillois, but not next to the other one and another species
         Observation.objects.create(
             gbif_id=3,
-            occurrence_id="3",
+            occurrence_id="3DSRZER",
             species=VectorTilesServerTests.second_species,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            initial_data_import=VectorTilesServerTests.di,
             source_dataset=VectorTilesServerTests.second_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
@@ -694,6 +703,7 @@ class VectorTilesServerTests(TestCase):
             species=VectorTilesServerTests.second_species,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            initial_data_import=VectorTilesServerTests.di,
             source_dataset=VectorTilesServerTests.first_dataset,
             location=Point(5.095610, 50.48800, srid=4326),
         )
@@ -714,6 +724,7 @@ class VectorTilesServerTests(TestCase):
             species=VectorTilesServerTests.second_species,
             date=datetime.date.today(),
             data_import=VectorTilesServerTests.di,
+            initial_data_import=VectorTilesServerTests.di,
             source_dataset=VectorTilesServerTests.second_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )

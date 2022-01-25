@@ -140,6 +140,11 @@ class Observation(models.Model):
     coordinate_uncertainty_in_meters = models.FloatField(blank=True, null=True)
 
     data_import = models.ForeignKey(DataImport, on_delete=models.PROTECT)
+    initial_data_import = models.ForeignKey(
+        DataImport,
+        on_delete=models.PROTECT,
+        related_name="occurrences_initially_imported",
+    )
     source_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
 
     class Meta:
@@ -205,6 +210,16 @@ class Observation(models.Model):
             "dashboard:page-observation-details", kwargs={"stable_id": self.stable_id}
         )
 
+    def set_or_migrate_initial_data_import(
+        self, current_data_import: DataImport
+    ) -> None:
+        """If this is the first import of this observation, set initial_data_import to the current import. Otherwise migrate its value from the previous observation."""
+        replaced_observation = self.replaced_observation
+        if replaced_observation is None:
+            self.initial_data_import = current_data_import
+        else:
+            self.initial_data_import = replaced_observation.initial_data_import
+
     def migrate_linked_entities(self) -> None:
         """Migrate existing entities (comments, ...) linked to a previous observation that share the stable ID
 
@@ -246,7 +261,11 @@ class Observation(models.Model):
 
     def get_identical_observations(self) -> QuerySet[Observation]:
         """Return 'identical' observations (same stable_id), excluding myself)"""
-        return Observation.objects.exclude(pk=self.pk).filter(stable_id=self.stable_id)
+        return Observation.objects.exclude(pk=self.pk).filter(
+            stable_id=Observation.build_stable_id(
+                self.occurrence_id, self.source_dataset.gbif_dataset_key
+            )
+        )
 
     @property
     def sorted_comments_set(self) -> QuerySet[ObservationComment]:

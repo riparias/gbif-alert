@@ -141,7 +141,7 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
         except ValueError:
             coordinates_uncertainty = None
 
-        new_observation = Observation.objects.create(
+        new_observation = Observation(
             gbif_id=int(
                 get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/gbifID")
             ),
@@ -158,6 +158,10 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
             recorded_by=get_string_data(row, field_name=qn("recordedBy")),
             coordinate_uncertainty_in_meters=coordinates_uncertainty,
         )
+        new_observation.set_or_migrate_initial_data_import(
+            current_data_import=current_data_import
+        )
+        new_observation.save()
         new_observation.migrate_linked_entities()
         return True
 

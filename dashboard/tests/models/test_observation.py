@@ -31,12 +31,14 @@ class ObservationTests(TestCase):
             name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
         )
 
+        di = DataImport.objects.create(start=timezone.now())
         self.obs = Observation.objects.create(
             gbif_id=1,
             occurrence_id=SAMPLE_OCCURRENCE_ID,
             species=species_p_fallax,
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=DataImport.objects.create(start=timezone.now()),
+            data_import=di,
+            initial_data_import=di,
             source_dataset=self.dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
@@ -71,7 +73,8 @@ class ObservationTests(TestCase):
             occurrence_id=123456,
             species=Species.objects.all()[0],
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=DataImport.objects.create(start=timezone.now()),
+            data_import=di,
+            initial_data_import=di,
             source_dataset=self.dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
@@ -174,12 +177,14 @@ class ObservationTests(TestCase):
         linked entities then and then delete the initial observation"""
 
         # 2. Create a new one
+        new_di = DataImport.objects.create(start=timezone.now())
         new_observation = Observation.objects.create(
             gbif_id=1,
             occurrence_id=SAMPLE_OCCURRENCE_ID,
             species=Species.objects.all()[0],
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=DataImport.objects.create(start=timezone.now()),
+            data_import=new_di,
+            initial_data_import=new_di,
             source_dataset=self.dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
@@ -217,17 +222,38 @@ class ObservationTests(TestCase):
         # The old observation can be safely deleted
         old_observation.delete()
 
+    def test_get_identical_observations_unsaved(self):
+        """Regression test: the get_identical_observations() method also works with 'not yet saved' observations"""
+        # Case 1: there's initially no identical observations in the database
+        self.assertEqual(self.obs.get_identical_observations().count(), 0)
+
+        new_di = DataImport.objects.create(start=timezone.now())
+        new_one = Observation(
+            gbif_id=1,
+            occurrence_id=SAMPLE_OCCURRENCE_ID,
+            species=Species.objects.all()[0],
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            data_import=new_di,
+            initial_data_import=new_di,
+            source_dataset=self.dataset,
+            location=Point(5.09513, 50.48941, srid=4326),  # Andenne
+        )
+
+        self.assertEqual(new_one.get_identical_observations().count(), 1)
+
     def test_get_identical_observations(self):
         # Case 1: there's initially no identical observations in the database
         self.assertEqual(self.obs.get_identical_observations().count(), 0)
 
         # Case 2: let's create a second one, but with a different stable_id (so the result should stay the same)
+        di_2 = DataImport.objects.create(start=timezone.now())
         unrelated_one = Observation.objects.create(
             gbif_id=1,
             occurrence_id=SAMPLE_OCCURRENCE_ID[::-1],
             species=Species.objects.all()[0],
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=DataImport.objects.create(start=timezone.now()),
+            data_import=di_2,
+            initial_data_import=di_2,
             source_dataset=self.dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
@@ -236,12 +262,14 @@ class ObservationTests(TestCase):
         self.assertEqual(unrelated_one.get_identical_observations().count(), 0)
 
         # Case 3: let's create a second, identical one
+        di_3 = DataImport.objects.create(start=timezone.now())
         new_one = Observation.objects.create(
             gbif_id=1,
             occurrence_id=SAMPLE_OCCURRENCE_ID,
             species=Species.objects.all()[0],
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=DataImport.objects.create(start=timezone.now()),
+            data_import=di_3,
+            initial_data_import=di_3,
             source_dataset=self.dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
@@ -254,12 +282,14 @@ class ObservationTests(TestCase):
         self.assertEqual(new_one.get_identical_observations()[0], self.obs)
 
         # Case 4: Let's add a second identical
+        di_4 = DataImport.objects.create(start=timezone.now())
         another_new_one = Observation.objects.create(
             gbif_id=1,
             occurrence_id=SAMPLE_OCCURRENCE_ID,
             species=Species.objects.all()[0],
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=DataImport.objects.create(start=timezone.now()),
+            data_import=di_4,
+            initial_data_import=di_4,
             source_dataset=self.dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
@@ -276,12 +306,14 @@ class ObservationTests(TestCase):
         self.assertIsNone(self.obs.replaced_observation)
 
         # Case 2: we add a second one to replace it
+        di_2 = DataImport.objects.create(start=timezone.now())
         new_one = Observation.objects.create(
             gbif_id=1,
             occurrence_id=SAMPLE_OCCURRENCE_ID,
             species=Species.objects.all()[0],
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=DataImport.objects.create(start=timezone.now()),
+            data_import=di_2,
+            initial_data_import=di_2,
             source_dataset=self.dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
@@ -294,12 +326,14 @@ class ObservationTests(TestCase):
 
         # Case 3: we add a third one (that situation shouldn't happen in the real world, since each import replace
         # previous observations)
+        di_3 = DataImport.objects.create(start=timezone.now())
         another_new_one = Observation.objects.create(
             gbif_id=1,
             occurrence_id=SAMPLE_OCCURRENCE_ID,
             species=Species.objects.all()[0],
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=DataImport.objects.create(start=timezone.now()),
+            data_import=di_3,
+            initial_data_import=di_3,
             source_dataset=self.dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )

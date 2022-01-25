@@ -39,13 +39,15 @@ class ImportObservationsTest(TransactionTestCase):
 
         # This observation will be replaced during the import process
         # because there's a row with the same occurrence_id and dataset_key in the DwC-A
+        self.initial_di = DataImport.objects.create(start=timezone.now())
         observation_to_be_replaced = Observation.objects.create(
             gbif_id=1,
             occurrence_id="https://www.inaturalist.org/observations/33366292",
             source_dataset=inaturalist,
             species=self.polydrusus,
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=DataImport.objects.create(start=timezone.now()),
+            data_import=self.initial_di,
+            initial_data_import=self.initial_di,
             location=Point(5.09513, 50.48941, srid=4326),
         )
 
@@ -56,7 +58,8 @@ class ImportObservationsTest(TransactionTestCase):
             source_dataset=inaturalist,
             species=self.lixus,
             date=datetime.date.today(),
-            data_import=DataImport.objects.create(start=timezone.now()),
+            data_import=self.initial_di,
+            initial_data_import=self.initial_di,
             location=Point(5.09513, 50.48941, srid=4326),
         )
 
@@ -83,6 +86,31 @@ class ImportObservationsTest(TransactionTestCase):
         self.observation_view_to_delete = ObservationView.objects.create(
             user=comment_author, observation=observation_not_replaced
         )
+
+    def test_initial_data_import_value_replaced(self):
+        """The initial_data_import field still points to the first import after an occurrence gets replaced"""
+        with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
+            call_command("import_observations", source_dwca=gbif_download_file)
+
+        observation_new_import = Observation.objects.get(
+            occurrence_id="https://www.inaturalist.org/observations/33366292"
+        )
+
+        self.assertEqual(observation_new_import.initial_data_import, self.initial_di)
+        # Just to be sure: the data_import field points to the new/current one
+        latest_di = DataImport.objects.latest("id")
+        self.assertEqual(observation_new_import.data_import, latest_di)
+
+    def test_initial_data_import_value_new(self):
+        """Make sure the initial_data_import field points to the current data import for a completely new occurrence"""
+        with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
+            call_command("import_observations", source_dwca=gbif_download_file)
+
+        observations = Observation.objects.all().order_by("id")
+        totally_new_obs = observations[0]
+        latest_di = DataImport.objects.latest("id")
+        self.assertEqual(totally_new_obs.initial_data_import, latest_di)
+        self.assertEqual(totally_new_obs.data_import, latest_di)
 
     def test_transaction(self) -> None:
         """The whole process happens in a transaction: no DB changes are made if an exception occurs near the end

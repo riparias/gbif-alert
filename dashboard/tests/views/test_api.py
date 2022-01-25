@@ -44,6 +44,7 @@ class ApiTests(TestCase):
             species=cls.first_species,
             date=SEPTEMBER_13_2021,
             data_import=cls.di,
+            initial_data_import=cls.di,
             source_dataset=cls.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
@@ -53,6 +54,7 @@ class ApiTests(TestCase):
             species=cls.second_species,
             date=SEPTEMBER_13_2021,
             data_import=cls.di,
+            initial_data_import=cls.di,
             source_dataset=cls.second_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
@@ -62,6 +64,7 @@ class ApiTests(TestCase):
             species=cls.second_species,
             date=OCTOBER_8_2021,
             data_import=cls.di,
+            initial_data_import=cls.di,
             source_dataset=cls.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
@@ -277,6 +280,7 @@ class ApiTests(TestCase):
             species=ApiTests.second_species,
             date=datetime.date.today(),
             data_import=ApiTests.di,
+            initial_data_import=ApiTests.di,
             source_dataset=ApiTests.first_dataset,
             location=None,
         )
@@ -492,6 +496,7 @@ class ApiTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
+            initial_data_import=ApiTests.di,
             source_dataset=ApiTests.first_dataset,
         )
 
@@ -521,6 +526,7 @@ class ApiTests(TestCase):
             species=ApiTests.first_species,
             date=datetime.date.today(),
             data_import=ApiTests.di,
+            initial_data_import=ApiTests.di,
             source_dataset=third_dataset,
         )
         base_url = reverse("dashboard:api-filtered-observations-data-page")
@@ -622,6 +628,7 @@ class ApiTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
+            initial_data_import=ApiTests.di,
             source_dataset=ApiTests.first_dataset,
         )
         Observation.objects.create(
@@ -630,6 +637,7 @@ class ApiTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
+            initial_data_import=ApiTests.di,
             source_dataset=ApiTests.first_dataset,
         )
         Observation.objects.create(
@@ -638,6 +646,7 @@ class ApiTests(TestCase):
             species=species_tetraodon,
             date=datetime.date.today(),
             data_import=ApiTests.di,
+            initial_data_import=ApiTests.di,
             source_dataset=ApiTests.first_dataset,
         )
 

@@ -19,12 +19,14 @@ class StableIdentifiersTests(TestCase):
             name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
         )
 
+        di = DataImport.objects.create(start=timezone.now())
         self.obs = Observation.objects.create(
             gbif_id=1,
             occurrence_id=SAMPLE_OCCURRENCE_ID,
             species=self.species_p_fallax,
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=DataImport.objects.create(start=timezone.now()),
+            data_import=di,
+            initial_data_import=di,
             source_dataset=Dataset.objects.create(
                 name="Test dataset", gbif_dataset_key=SAMPLE_DATASET_KEY
             ),

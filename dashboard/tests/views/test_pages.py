@@ -333,6 +333,8 @@ class WebPagesTests(TestCase):
             gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e",
         )
 
+        di = DataImport.objects.create(start=timezone.now())
+
         cls.first_obs = Observation.objects.create(
             gbif_id=1,
             occurrence_id="1",
@@ -340,7 +342,8 @@ class WebPagesTests(TestCase):
                 name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
             ),
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=DataImport.objects.create(start=timezone.now()),
+            data_import=di,
+            initial_data_import=di,
             source_dataset=dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
             individual_count=2,
@@ -358,7 +361,8 @@ class WebPagesTests(TestCase):
                 name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
             ),
             date=datetime.date.today() - datetime.timedelta(days=1),
-            data_import=DataImport.objects.create(start=timezone.now()),
+            data_import=di,
+            initial_data_import=di,
             source_dataset=dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
