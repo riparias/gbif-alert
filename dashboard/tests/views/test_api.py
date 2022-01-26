@@ -444,6 +444,75 @@ class ApiTests(TestCase):
             json_data["results"][0]["gbifId"], "1"
         )  # Only one observation in Andenne because of the selected area
 
+    def test_observations_json_status_filter_anonymous(self):
+        """Filtered observations: status is ignored if the user is anonymous"""
+        base_url = reverse("dashboard:api-filtered-observations-data-page")
+
+        response = self.client.get(f"{base_url}?limit=10&page_number=1")
+        unfiltered_results = response.json()
+
+        response = self.client.get(f"{base_url}?limit=10&page_number=1&status=read")
+        filtered_read_results = response.json()
+        self.assertEqual(filtered_read_results, unfiltered_results)
+
+        response = self.client.get(f"{base_url}?limit=10&page_number=1&status=read")
+        filtered_unread_results = response.json()
+        self.assertEqual(filtered_unread_results, unfiltered_results)
+
+    def test_observations_json_status_filter_logged(self):
+        """Observations can be filtered by status for authenticated users"""
+
+        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        response = self.client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id")
+        unfiltered_results = response.json()
+        unfiltered_results_ids = [r["id"] for r in unfiltered_results["results"]]
+
+        # Case 1: this user hasn't seen any observation
+        self.client.login(username="frusciante", password="12345")
+
+        # Case 1.1: asking read observations => 0 results
+        response = self.client.get(
+            f"{base_url}?limit=10&page_number=1&order=gbif_id&status=read"
+        )
+        filtered_read_results = response.json()
+        self.assertEqual(filtered_read_results["totalResultsCount"], 0)
+
+        # case 1.2: asking unread observations => same results than no filtering
+        response = self.client.get(
+            f"{base_url}?limit=10&page_number=1&order=gbif_id&status=unread"
+        )
+        filtered_unread_results = response.json()
+        filtered_unread_results_ids = [
+            r["id"] for r in filtered_unread_results["results"]
+        ]
+
+        # We have to compare IDS rather than full record, because if the user is authenticated there's also the "viewedByCurrentUser" field
+        self.assertEqual(filtered_unread_results_ids, unfiltered_results_ids)
+
+        # Case 2: this user has one seen read observation
+        # Case 2.1: asking read
+        self.client.login(username="frusciante1", password="12345")
+        response = self.client.get(
+            f"{base_url}?limit=10&page_number=1&order=gbif_id&status=read"
+        )
+        filtered_read_results = response.json()
+        self.assertEqual(filtered_read_results["totalResultsCount"], 1)
+        self.assertEqual(
+            filtered_read_results["results"][0]["stableId"],
+            "4b8dc5900ede9a5850cba11be6aba60315b0f04e",
+        )
+
+        # Case 2.2: asking unread
+        self.client.login(username="frusciante1", password="12345")
+        response = self.client.get(
+            f"{base_url}?limit=10&page_number=1&order=gbif_id&status=unread"
+        )
+        filtered_unread_results = response.json()
+        filtered_unread_results_gbif_ids = [
+            r["gbifId"] for r in filtered_unread_results["results"]
+        ]
+        self.assertEqual(filtered_unread_results_gbif_ids, ["1", "3"])
+
     def test_observations_json_multiple_areas_filter(self):
         """The areaIds parameter can take multiple values (OR)"""
         base_url = reverse("dashboard:api-filtered-observations-data-page")
