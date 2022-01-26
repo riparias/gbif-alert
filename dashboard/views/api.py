@@ -21,7 +21,7 @@ from dashboard.views.helpers import (
 )
 
 
-def _model_to_json_list(Model):
+def _model_to_json_list(Model) -> JsonResponse:
     """Return a JSON list for the specific model
 
     Model instances should have an as_dict property
@@ -29,7 +29,7 @@ def _model_to_json_list(Model):
     return JsonResponse([entry.as_dict for entry in Model.objects.all()], safe=False)
 
 
-def species_list_json(_):
+def species_list_json(_) -> JsonResponse:
     """A list of all species known to the system, in JSON format
 
     Order: undetermined
@@ -37,7 +37,7 @@ def species_list_json(_):
     return _model_to_json_list(Species)
 
 
-def areas_list_json(request: HttpRequest):
+def areas_list_json(request: HttpRequest) -> JsonResponse:
     """A list of all areas (multipolygons) available to the user.
 
     Rules:
@@ -62,7 +62,7 @@ def area_geojson(request: HttpRequest, id: int):
         return HttpResponseForbidden()
 
 
-def datasets_list_json(_):
+def datasets_list_json(_) -> JsonResponse:
     """A list of all datasets known to the system, in JSON format
 
     Order: undetermined
@@ -70,7 +70,7 @@ def datasets_list_json(_):
     return _model_to_json_list(Dataset)
 
 
-def filtered_observations_counter_json(request: HttpRequest):
+def filtered_observations_counter_json(request: HttpRequest) -> JsonResponse:
     """Count the observations according to the filters received
 
     parameters:
@@ -80,7 +80,7 @@ def filtered_observations_counter_json(request: HttpRequest):
     return JsonResponse({"count": qs.count()})
 
 
-def filtered_observations_data_page_json(request: HttpRequest):
+def filtered_observations_data_page_json(request: HttpRequest) -> JsonResponse:
     """Main endpoint to get paginated observations (data tables, ...)
 
     parameters:
@@ -127,6 +127,8 @@ def filtered_observations_data_page_json(request: HttpRequest):
 
     order = request.GET.get("order")
     limit = extract_int_request(request, "limit")
+    if limit is None:
+        limit = 50
     page_number = extract_int_request(request, "page_number")
 
     observations = filtered_observations_from_request(request)

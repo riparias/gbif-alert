@@ -395,7 +395,7 @@ class Area(models.Model):
 
 class ObservationView(models.Model):
     """
-    This models keeps an history of when a user has first seen details about an observation
+    This models keeps a history of when a user has first seen details about an observation
 
     - If no entry for the user/observation pair: the user has never seen details about this observation
     - Else: the timestamp of the *first* visit is kept (no sophisticated history mechanism)

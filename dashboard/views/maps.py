@@ -4,12 +4,14 @@ from django.db import connection
 from django.http import HttpResponse, JsonResponse, HttpRequest
 from jinjasql import JinjaSql
 
-from dashboard.models import Observation, Area
+from dashboard.models import Observation, Area, ObservationView
 from dashboard.utils import readable_string
 from dashboard.views.helpers import filters_from_request, extract_int_request
 
 AREAS_TABLE_NAME = Area.objects.model._meta.db_table
 OBSERVATIONS_TABLE_NAME = Observation.objects.model._meta.db_table
+OBSERVATIONVIEWS_TABLE_NAME = ObservationView.objects.model._meta.db_table
+
 OBSERVATIONS_FIELD_NAME_POINT = "location"
 
 # ! Make sure the following formats are in sync
@@ -51,8 +53,12 @@ ZOOM_TO_HEX_SIZE = {
 # other components (table, ...) will be inconsistent.
 JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
     """
-    SELECT 
-    * FROM $observations_table_name as occ
+    SELECT * FROM $observations_table_name as occ
+    {% if status == 'read' %}
+        INNER JOIN "dashboard_observationview" 
+        ON (occ.id = "dashboard_observationview"."observation_id") 
+    {% endif %}
+    
     {% if area_ids %}
     , (SELECT mpoly FROM $areas_table_name WHERE $areas_table_name.id IN {{ area_ids | inclause }}) AS areas
     {% endif %}
@@ -73,11 +79,24 @@ JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
         {% if area_ids %}
             AND ST_Within(occ.location, areas.mpoly)
         {% endif %}
+        {% if status == 'unread' %}
+            AND NOT (EXISTS(
+            SELECT (1) AS "a" FROM "dashboard_observationview" V1 WHERE (
+                V1."id" IN (SELECT U0."id" FROM "dashboard_observationview" U0 WHERE U0."user_id" = {{ user_id }}) 
+                AND V1."observation_id" = occ.id
+            ) LIMIT 1))
+        {% endif %}
+        {% if status == 'read' %}
+            AND "dashboard_observationview"."id" IN (
+                SELECT U0."id" FROM "dashboard_observationview" U0 WHERE U0."user_id" = {{ user_id }}
+            )
+        {% endif %}
     )
 """
 ).substitute(
     areas_table_name=AREAS_TABLE_NAME,
     observations_table_name=OBSERVATIONS_TABLE_NAME,
+    observationview_table_name=OBSERVATIONVIEWS_TABLE_NAME,
     date_format=DB_DATE_EXCHANGE_FORMAT_POSTGRES,
 )
 
@@ -108,9 +127,14 @@ JINJASQL_FRAGMENT_AGGREGATED_GRID = Template(
 
 def mvt_tiles_hexagon_grid_aggregated(request: HttpRequest, zoom: int, x: int, y: int):
     """Tile server, showing observations aggregated by hexagon squares. Filters are honoured."""
-    species_ids, datasets_ids, start_date, end_date, area_ids = filters_from_request(
-        request
-    )
+    (
+        species_ids,
+        datasets_ids,
+        start_date,
+        end_date,
+        area_ids,
+        status_for_user,
+    ) = filters_from_request(request)
 
     sql_template = readable_string(
         Template(
@@ -137,6 +161,10 @@ def mvt_tiles_hexagon_grid_aggregated(request: HttpRequest, zoom: int, x: int, y
         "area_ids": area_ids,
     }
 
+    if status_for_user and request.user.is_authenticated:
+        sql_params["status"] = status_for_user
+        sql_params["user_id"] = request.user.pk
+
     # More observations filtering
     if start_date is not None:
         sql_params["start_date"] = start_date.strftime(DB_DATE_EXCHANGE_FORMAT_PYTHON)
@@ -155,40 +183,48 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
     This can be useful to dynamically color the grid according to the count
     """
     zoom = extract_int_request(request, "zoom")
-    species_ids, datasets_ids, start_date, end_date, area_ids = filters_from_request(
-        request
-    )
+    if zoom is not None:
+        (
+            species_ids,
+            datasets_ids,
+            start_date,
+            end_date,
+            area_ids,
+            _,
+        ) = filters_from_request(request)
 
-    sql_template = readable_string(
-        Template(
-            """
-    WITH grid AS ($jinjasql_fragment_aggregated_grid)
-    SELECT MIN(count), MAX(count) FROM grid;
-    """
-        ).substitute(
-            jinjasql_fragment_aggregated_grid=JINJASQL_FRAGMENT_AGGREGATED_GRID
+        sql_template = readable_string(
+            Template(
+                """
+        WITH grid AS ($jinjasql_fragment_aggregated_grid)
+        SELECT MIN(count), MAX(count) FROM grid;
+        """
+            ).substitute(
+                jinjasql_fragment_aggregated_grid=JINJASQL_FRAGMENT_AGGREGATED_GRID
+            )
         )
-    )
 
-    sql_params = {
-        "hex_size_meters": ZOOM_TO_HEX_SIZE[zoom],
-        "grid_extent_viewport": False,
-        "species_ids": species_ids,
-        "datasets_ids": datasets_ids,
-        "area_ids": area_ids,
-    }
+        sql_params = {
+            "hex_size_meters": ZOOM_TO_HEX_SIZE[zoom],
+            "grid_extent_viewport": False,
+            "species_ids": species_ids,
+            "datasets_ids": datasets_ids,
+            "area_ids": area_ids,
+        }
 
-    if start_date:
-        sql_params["start_date"] = start_date.strftime(DB_DATE_EXCHANGE_FORMAT_PYTHON)
-    if end_date:
-        sql_params["end_date"] = end_date.strftime(DB_DATE_EXCHANGE_FORMAT_PYTHON)
+        if start_date:
+            sql_params["start_date"] = start_date.strftime(
+                DB_DATE_EXCHANGE_FORMAT_PYTHON
+            )
+        if end_date:
+            sql_params["end_date"] = end_date.strftime(DB_DATE_EXCHANGE_FORMAT_PYTHON)
 
-    j = JinjaSql()
-    query, bind_params = j.prepare_query(sql_template, sql_params)
-    with connection.cursor() as cursor:
-        cursor.execute(query, bind_params)
-        r = cursor.fetchone()
-        return JsonResponse({"min": r[0], "max": r[1]})
+        j = JinjaSql()
+        query, bind_params = j.prepare_query(sql_template, sql_params)
+        with connection.cursor() as cursor:
+            cursor.execute(query, bind_params)
+            r = cursor.fetchone()
+            return JsonResponse({"min": r[0], "max": r[1]})
 
 
 def _mvt_query_data(sql_template, sql_params):
