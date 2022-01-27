@@ -652,6 +652,27 @@ class ApiTests(TestCase):
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 0)
 
+    def test_observation_json_combined_filters_case6(self):
+        # Starting from test_observations_json_combined_filters, we also ask only unread observations for another_user
+        # => the filter combination now returns 0 results
+        self.client.login(username="frusciante1", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&status=unread"
+        response = self.client.get(url_with_params)
+        json_data = response.json()
+        self.assertEqual(json_data["totalResultsCount"], 0)
+
+    def test_observation_json_combined_filters_case7(self):
+        # Similar to test_observation_json_combined_filters_case6(), but with "read" status. The single observation from
+        # test_observation_json_combined_filters is read, so that observation is still returned in this case
+        self.client.login(username="frusciante1", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&status=read"
+        response = self.client.get(url_with_params)
+        json_data = response.json()
+        self.assertEqual(json_data["totalResultsCount"], 1)
+        self.assertEqual(json_data["results"][0]["gbifId"], "2")
+
     def test_observations_json_no_results(self):
         base_url = reverse("dashboard:api-filtered-observations-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.first_species.pk}&startDate={OCTOBER_8_2021.strftime('%Y-%m-%d')}"
