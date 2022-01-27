@@ -444,6 +444,23 @@ class ApiTests(TestCase):
             json_data["results"][0]["gbifId"], "1"
         )  # Only one observation in Andenne because of the selected area
 
+    def test_observations_json_status_filter_invalid_value(self):
+        """Filtered observations: status is ignored not read nor unread"""
+        base_url = reverse("dashboard:api-filtered-observations-data-page")
+
+        response = self.client.get(f"{base_url}?limit=10&page_number=1")
+        unfiltered_results = response.json()
+
+        response = self.client.get(f"{base_url}?limit=10&page_number=1&status=all")
+        results = response.json()
+        self.assertEqual(results, unfiltered_results)
+
+        response = self.client.get(
+            f"{base_url}?limit=10&page_number=1&status=dfsfsdfsfsdfs"
+        )
+        results = response.json()
+        self.assertEqual(results, unfiltered_results)
+
     def test_observations_json_status_filter_anonymous(self):
         """Filtered observations: status is ignored if the user is anonymous"""
         base_url = reverse("dashboard:api-filtered-observations-data-page")
@@ -725,6 +742,25 @@ class ApiTests(TestCase):
         json_data = response.json()
         self.assertEqual(json_data["count"], 3)
 
+    def test_observations_counter_status_filter_anonymous(self):
+        """status is ignored for anonymous users"""
+        base_url = reverse("dashboard:api-filtered-observations-counter")
+        url_with_params = f"{base_url}?status=read"
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data["count"], 3)
+
+    def test_observations_counter_status_filter_invalid(self):
+        """status is ignored if not read nor unread"""
+        self.client.login(username="frusciante", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-counter")
+        url_with_params = f"{base_url}?status=kvsnfgkdng"
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data["count"], 3)
+
     def test_observations_counter_species_filters(self):
         base_url = reverse("dashboard:api-filtered-observations-counter")
         url_with_params = f"{base_url}?speciesIds[]={ApiTests.second_species.pk}"
@@ -942,6 +978,22 @@ class ApiTests(TestCase):
             ],
         )
 
+    def test_filtered_observations_monthly_histogram_json_status_filter_invalid_value(
+        self,
+    ):
+        self.client.login(username="frusciante1", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        response = self.client.get(f"{base_url}?status=klfhjklsdwfhklsfhs")
+        self.assertEqual(response.status_code, 200)
+
+        self.assertJSONEqual(
+            response.content.decode("utf-8"),
+            [
+                {"year": 2021, "month": 9, "count": 2},
+                {"year": 2021, "month": 10, "count": 1},
+            ],
+        )
+
     def test_filtered_observations_monthly_histogram_json_status_filter_case1(self):
         self.client.login(username="frusciante1", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
@@ -965,6 +1017,19 @@ class ApiTests(TestCase):
             response.content.decode("utf-8"),
             [
                 {"year": 2021, "month": 9, "count": 1},
+                {"year": 2021, "month": 10, "count": 1},
+            ],
+        )
+
+    def test_filtered_observations_monthly_histogram_json_status_filter_anonymous(self):
+        """Anonymous users: the status filter is ignored"""
+        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        response = self.client.get(f"{base_url}?status=unread")
+        self.assertEqual(response.status_code, 200)
+        self.assertJSONEqual(
+            response.content.decode("utf-8"),
+            [
+                {"year": 2021, "month": 9, "count": 2},
                 {"year": 2021, "month": 10, "count": 1},
             ],
         )

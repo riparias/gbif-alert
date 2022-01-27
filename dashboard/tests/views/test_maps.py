@@ -205,6 +205,40 @@ class VectorTilesServerTests(TestCase):
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
 
+    def test_tiles_status_filter_anonymous(self):
+        """Similar to test_tiles_status_filter_case1() but anonymous => filter is ignored"""
+        # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 2, "x": 2, "y": 1},
+        )
+        url_with_params = f"{base_url}?status=read"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(
+            len(decoded_tile["default"]["features"]), 1
+        )  # it has a single feature
+        the_feature = decoded_tile["default"]["features"][0]
+        self.assertEqual(the_feature["properties"]["count"], 2)
+
+    def test_tiles_status_filter_invalid_filter_value(self):
+        """Similar to test_tiles_status_filter_case1() but with a filter that's not read | unread => filter is ignored
+        and everything is included"""
+        # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
+        self.client.login(username="frusciante", password="12345")
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 2, "x": 2, "y": 1},
+        )
+        url_with_params = f"{base_url}?status=all"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(
+            len(decoded_tile["default"]["features"]), 1
+        )  # it has a single feature
+        the_feature = decoded_tile["default"]["features"][0]
+        self.assertEqual(the_feature["properties"]["count"], 2)
+
     def test_tiles_status_filter_case1(self):
         self.client.login(username="frusciante", password="12345")
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
@@ -797,6 +831,16 @@ class VectorTilesServerTests(TestCase):
         )
 
         self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 2)
+
+    def test_min_max_in_hexagon_with_status_filter_invalid_value(self):
+        """status is not read nor unread, therefore is ignored and everything is included"""
+        self.client.login(username="frusciante", password="12345")
+        response = self.client.get(
+            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            data={"zoom": 1, "status": "all"},
+        )
+        self.assertEqual(response.json()["min"], 2)
         self.assertEqual(response.json()["max"], 2)
 
     def test_min_max_in_hexagon_with_status_filter(self):
