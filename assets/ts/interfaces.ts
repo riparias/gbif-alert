@@ -15,6 +15,7 @@ export interface DashboardFilters {
   startDate: string | null;
   endDate: string | null;
   areaIds: Number[];
+  status: "read" | "unread" | null;
 }
 
 export interface SpeciesInformation {
@@ -55,6 +56,8 @@ export interface FrontEndConfig {
   targetCountryCode: string;
   ripariasAreaGeojsonUrl: string;
   apiEndpoints: EndpointsUrls;
+  authenticatedUser: boolean;
+  userId?: number; // Only set if authenticatedUser is true
 }
 
 // Keep in sync with Models.Observation.as_dict()

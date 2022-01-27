@@ -34,6 +34,30 @@
             :entries="availableAreasAsEntries"
             @entries-changed="changeSelectedAreas"
           ></Modal-Multi-Selector>
+
+          <div
+            class="row mb-3"
+            v-if="frontendConfig.authenticatedUser === true"
+          >
+            <label
+              for="obsStatus"
+              class="col-sm-2 col-form-label col-form-label-sm"
+              >Status</label
+            >
+            <div class="col-sm-10">
+              <select
+                type="email"
+                class="form-control form-control-sm"
+                id="obsStatus"
+                placeholder="col-form-label-sm"
+                v-model="filters.status"
+              >
+                <option :value="null">All</option>
+                <option value="read">Read</option>
+                <option value="unread">Unread</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <div class="col-3">
@@ -207,6 +231,7 @@ export default defineComponent({
         areaIds: [],
         startDate: null,
         endDate: null,
+        status: null,
       },
       dataLayerOpacity: 0.8,
     };
