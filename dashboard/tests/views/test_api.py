@@ -689,6 +689,42 @@ class ApiTests(TestCase):
         json_data = response.json()
         self.assertEqual(json_data["count"], 3)
 
+    def test_observations_counter_status_filter_case1(self):
+        self.client.login(username="frusciante1", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-counter")
+        url_with_params = f"{base_url}?status=read"
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data["count"], 1)
+
+    def test_observations_counter_status_filter_case2(self):
+        self.client.login(username="frusciante1", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-counter")
+        url_with_params = f"{base_url}?status=unread"
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data["count"], 2)
+
+    def test_observations_counter_status_filter_case3(self):
+        self.client.login(username="frusciante", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-counter")
+        url_with_params = f"{base_url}?status=read"
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data["count"], 0)
+
+    def test_observations_counter_status_filter_case4(self):
+        self.client.login(username="frusciante", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-counter")
+        url_with_params = f"{base_url}?status=unread"
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data["count"], 3)
+
     def test_observations_counter_species_filters(self):
         base_url = reverse("dashboard:api-filtered-observations-counter")
         url_with_params = f"{base_url}?speciesIds[]={ApiTests.second_species.pk}"
@@ -800,6 +836,24 @@ class ApiTests(TestCase):
         json_data = response.json()
         self.assertEqual(json_data["count"], 0)
 
+        # Case 5: start from case 1) but add a status filter that brings un to zero records
+        self.client.login(username="frusciante1", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-counter")
+        url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&status=unread"
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data["count"], 0)
+
+        # Case 6: similar to case 5), with with read status
+        self.client.login(username="frusciante1", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-counter")
+        url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&status=read"
+        response = self.client.get(url_with_params)
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(json_data["count"], 1)
+
     def test_species_list_json(self):
         response = self.client.get(reverse("dashboard:api-species-list-json"))
         self.assertEqual(response.status_code, 200)
@@ -888,6 +942,33 @@ class ApiTests(TestCase):
             ],
         )
 
+    def test_filtered_observations_monthly_histogram_json_status_filter_case1(self):
+        self.client.login(username="frusciante1", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        response = self.client.get(f"{base_url}?status=read")
+        self.assertEqual(response.status_code, 200)
+
+        self.assertJSONEqual(
+            response.content.decode("utf-8"),
+            [
+                {"year": 2021, "month": 9, "count": 1},
+            ],
+        )
+
+    def test_filtered_observations_monthly_histogram_json_status_filter_case2(self):
+        self.client.login(username="frusciante1", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        response = self.client.get(f"{base_url}?status=unread")
+        self.assertEqual(response.status_code, 200)
+
+        self.assertJSONEqual(
+            response.content.decode("utf-8"),
+            [
+                {"year": 2021, "month": 9, "count": 1},
+                {"year": 2021, "month": 10, "count": 1},
+            ],
+        )
+
     def test_filtered_observations_monthly_histogram_json_combined_filters(self):
         base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
         response = self.client.get(
@@ -915,6 +996,31 @@ class ApiTests(TestCase):
                 {"year": 2021, "month": 9, "count": 1},
             ],
         )
+
+    def test_filtered_observations_monthly_histogram_json_combined_filters_case3(self):
+        self.client.login(username="frusciante1", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        response = self.client.get(
+            f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&endDate=2021-10-01&status=read"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        self.assertJSONEqual(
+            response.content.decode("utf-8"),
+            [
+                {"year": 2021, "month": 9, "count": 1},
+            ],
+        )
+
+    def test_filtered_observations_monthly_histogram_json_combined_filters_case4(self):
+        self.client.login(username="frusciante1", password="12345")
+        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        response = self.client.get(
+            f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&endDate=2021-10-01&status=unread"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        self.assertJSONEqual(response.content.decode("utf-8"), [])
 
     def test_filtered_observations_monthly_histogram_json_dataset_filters(self):
         base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
