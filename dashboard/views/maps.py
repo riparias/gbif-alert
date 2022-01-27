@@ -190,7 +190,7 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
             start_date,
             end_date,
             area_ids,
-            _,
+            status_for_user,
         ) = filters_from_request(request)
 
         sql_template = readable_string(
@@ -211,6 +211,10 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
             "datasets_ids": datasets_ids,
             "area_ids": area_ids,
         }
+
+        if status_for_user and request.user.is_authenticated:
+            sql_params["status"] = status_for_user
+            sql_params["user_id"] = request.user.pk
 
         if start_date:
             sql_params["start_date"] = start_date.strftime(

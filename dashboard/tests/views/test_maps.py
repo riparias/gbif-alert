@@ -1,5 +1,6 @@
 import datetime
 
+from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Point, MultiPolygon, Polygon
 from django.test import TestCase
 from django.urls import reverse
@@ -7,7 +8,14 @@ from django.urls import reverse
 import mapbox_vector_tile
 from django.utils import timezone
 
-from dashboard.models import Observation, Species, DataImport, Dataset, Area
+from dashboard.models import (
+    Observation,
+    Species,
+    DataImport,
+    Dataset,
+    Area,
+    ObservationView,
+)
 
 
 class VectorTilesServerTests(TestCase):
@@ -29,7 +37,7 @@ class VectorTilesServerTests(TestCase):
             gbif_dataset_key="aaa7b334-ce0d-4e88-aaae-2e0c138d049f",
         )
 
-        Observation.objects.create(
+        first_obs = Observation.objects.create(
             gbif_id=1,
             occurrence_id="1",
             species=cls.first_species,
@@ -39,7 +47,7 @@ class VectorTilesServerTests(TestCase):
             source_dataset=cls.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
-        Observation.objects.create(
+        second_obs = Observation.objects.create(
             gbif_id=2,
             occurrence_id="2",
             species=cls.second_species,
@@ -84,6 +92,17 @@ class VectorTilesServerTests(TestCase):
                 srid=4326,
             ),
         )
+
+        User = get_user_model()
+        cls.user = User.objects.create_user(
+            username="frusciante",
+            password="12345",
+            first_name="John",
+            last_name="Frusciante",
+            email="frusciante@gmail.com",
+        )
+
+        ObservationView.objects.create(observation=second_obs, user=cls.user)
 
     def test_base_mvt_server(self):
         """There's a tile server returning the appropriate MIME type"""
@@ -182,6 +201,70 @@ class VectorTilesServerTests(TestCase):
         url_with_params = (
             f"{base_url}?areaIds[]={VectorTilesServerTests.public_area_andenne.pk}"
         )
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(decoded_tile, {})
+
+    def test_tiles_status_filter_case1(self):
+        self.client.login(username="frusciante", password="12345")
+        # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 2, "x": 2, "y": 1},
+        )
+        url_with_params = f"{base_url}?status=read"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(
+            len(decoded_tile["default"]["features"]), 1
+        )  # it has a single feature
+        the_feature = decoded_tile["default"]["features"][0]
+        self.assertEqual(
+            the_feature["properties"]["count"], 1
+        )  # Only one observation this time, due to the filter
+
+    def test_tiles_status_filter_case2(self):
+        self.client.login(username="frusciante", password="12345")
+        # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 2, "x": 2, "y": 1},
+        )
+        url_with_params = f"{base_url}?status=unread"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+
+        self.assertEqual(
+            len(decoded_tile["default"]["features"]), 1
+        )  # it has a single feature
+        the_feature = decoded_tile["default"]["features"][0]
+        self.assertEqual(
+            the_feature["properties"]["count"], 1
+        )  # Only one observation this time (the one in Andenne), due to the filter
+
+        # Case 2: zoom a bit to make sure it's the one in Andenne
+
+        # Case 2.1: it still appears when zoomed on Andenne
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 10, "x": 526, "y": 345},
+        )
+        url_with_params = f"{base_url}?status=unread"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(
+            len(decoded_tile["default"]["features"]), 1
+        )  # it has a single feature
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["count"], 1
+        )
+
+        # Case 2.2: there's nothing when zoomed on Lillois
+        base_url = reverse(
+            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            kwargs={"zoom": 17, "x": 67123, "y": 44083},
+        )
+        url_with_params = f"{base_url}?status=unread"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
@@ -713,6 +796,57 @@ class VectorTilesServerTests(TestCase):
             data={"zoom": 8, "speciesIds[]": VectorTilesServerTests.second_species.pk},
         )
 
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 2)
+
+    def test_min_max_in_hexagon_with_status_filter(self):
+        # Add a second one in Lillois, but not next to the other
+        Observation.objects.create(
+            gbif_id=3,
+            occurrence_id="3",
+            species=VectorTilesServerTests.second_species,
+            date=datetime.date.today(),
+            data_import=VectorTilesServerTests.di,
+            initial_data_import=VectorTilesServerTests.di,
+            source_dataset=VectorTilesServerTests.second_dataset,
+            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
+        )
+
+        self.client.login(username="frusciante", password="12345")
+
+        # At a zoom level that only shows Lillois or Andenne, it's 1-1
+        response = self.client.get(
+            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "status": "unread",
+            },
+        )
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 1)
+
+    def test_min_max_in_hexagon_with_status_filter_anonymous(self):
+        """Similar to test_min_max_in_hexagon_with_status_filter(), but anonymous -> filters get ignored"""
+        # Add a second one in Lillois, but not next to the other
+        Observation.objects.create(
+            gbif_id=3,
+            occurrence_id="3",
+            species=VectorTilesServerTests.second_species,
+            date=datetime.date.today(),
+            data_import=VectorTilesServerTests.di,
+            initial_data_import=VectorTilesServerTests.di,
+            source_dataset=VectorTilesServerTests.second_dataset,
+            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
+        )
+
+        # At a zoom level that only shows Lillois or Andenne, it's 1-1
+        response = self.client.get(
+            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "status": "unread",
+            },
+        )
         self.assertEqual(response.json()["min"], 1)
         self.assertEqual(response.json()["max"], 2)
 
