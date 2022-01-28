@@ -18,6 +18,9 @@
     </title>
   </head>
   <body>
+    {% if riparias_settings.SHOW_DEV_VERSION_WARNING %}
+        {% include 'dashboard/_dev_version_warning.html' %}
+    {% endif %}
     {% include "dashboard/_navbar.html" %}
     {% include "dashboard/_messages.html" %}
 
