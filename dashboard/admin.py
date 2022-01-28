@@ -45,7 +45,7 @@ class ObservationViewInline(admin.TabularInline):
 @admin.register(Observation)
 class ObservationAdmin(admin.OSMGeoAdmin):
     list_display = ("stable_id", "date", "species", "source_dataset")
-    list_filter = ["data_import"]
+    list_filter = ["data_import", "species"]
     inlines = [ObservationCommentCommentInline, ObservationViewInline]
 
 

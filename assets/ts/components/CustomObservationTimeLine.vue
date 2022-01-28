@@ -95,24 +95,28 @@ export default defineComponent({
           paramsSerializer: filtersToQuerystring,
         })
         .then((response) => {
-          // Build an empty range (padding)
-          let emptyHistogramData = this.buildEmptyHistogramArray(
-            response.data[0],
-            response.data[response.data.length - 1]
-          );
+          if (response.data.length === 0) {
+            this.histogramDataFromServer = [];
+          } else {
+            // Build an empty range (padding)
+            let emptyHistogramData = this.buildEmptyHistogramArray(
+              response.data[0],
+              response.data[response.data.length - 1]
+            );
 
-          // Populate it
-          response.data.forEach((serverEntry: HistogramDataEntry) => {
-            const index = emptyHistogramData.findIndex(function (elem) {
-              return (
-                elem.year === serverEntry.year &&
-                elem.month === serverEntry.month
-              );
+            // Populate it
+            response.data.forEach((serverEntry: HistogramDataEntry) => {
+              const index = emptyHistogramData.findIndex(function (elem) {
+                return (
+                  elem.year === serverEntry.year &&
+                  elem.month === serverEntry.month
+                );
+              });
+              emptyHistogramData[index].count = serverEntry.count;
             });
-            emptyHistogramData[index].count = serverEntry.count;
-          });
 
-          this.histogramDataFromServer = emptyHistogramData;
+            this.histogramDataFromServer = emptyHistogramData;
+          }
         });
     },
   },

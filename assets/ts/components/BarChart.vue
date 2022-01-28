@@ -9,9 +9,10 @@
     >
       <rect
         class="riparias-bar"
-        v-for="(barDataEntry, index) in barData"
+        v-for="(barDataEntry, index) in truncatedBarData"
         :class="{
-          selected: index >= rangeStartIndex && index <= rangeEndIndex,
+          selected:
+            index >= selectedRangeStartIndex && index <= selectedRangeEndIndex,
         }"
         :key="barDataEntry.yearMonth"
         :x="xScale(barDataEntry.yearMonth)"
@@ -25,8 +26,8 @@
       <g :transform="`translate(0, ${svgInnerHeight})`">
         <g v-xaxis="{ scale: xScale, ticks: numberOfXTicks }" />
         <range-slider
-          :startX="xScale(rangeStart)"
-          :endX="xScale(rangeEnd)"
+          :startX="xScale(selectedRangeStart)"
+          :endX="xScale(selectedRangeEnd)"
         ></range-slider>
       </g>
     </g>
@@ -39,7 +40,9 @@ import { scaleLinear, scaleBand } from "d3-scale";
 import { max } from "d3-array";
 import { PreparedHistogramDataEntry } from "../interfaces";
 import { axisBottom, axisLeft, ScaleBand, select } from "d3";
+import { DateTime } from "luxon";
 import RangeSlider from "./RangeSlider.vue";
+import { Interval } from "luxon";
 
 export default defineComponent({
   name: "BarChart",
@@ -67,8 +70,10 @@ export default defineComponent({
         width: 1296,
         height: 220,
       },
-      rangeStart: "1981-2",
-      rangeEnd: "2013-7",
+      selectedRangeStart: "1981-2",
+      selectedRangeEnd: "2013-7",
+
+      numberOfMonths: 60,
     };
   },
   directives: {
@@ -97,31 +102,52 @@ export default defineComponent({
   },
 
   computed: {
-    rangeStartIndex(): number {
-      return this.barData.findIndex((e) => {
-        return e.yearMonth === this.rangeStart;
+    selectedRangeStartIndex(): number {
+      return this.truncatedBarData.findIndex((e) => {
+        return e.yearMonth === this.selectedRangeStart;
       });
     },
-    rangeEndIndex(): number {
-      return this.barData.findIndex((e) => {
-        return e.yearMonth === this.rangeEnd;
+    selectedRangeEndIndex(): number {
+      return this.truncatedBarData.findIndex((e) => {
+        return e.yearMonth === this.selectedRangeEnd;
       });
     },
     dataMax(): number {
-      const maxVal = max(this.barData, (d: PreparedHistogramDataEntry) => {
-        return d.count;
-      });
+      const maxVal = max(
+        this.truncatedBarData,
+        (d: PreparedHistogramDataEntry) => {
+          return d.count;
+        }
+      );
       return maxVal ? maxVal : 0;
+    },
+    truncatedBarData(): PreparedHistogramDataEntry[] {
+      return this.barData.filter((e) =>
+        this.xScaleDomain.includes(e.yearMonth)
+      );
+    },
+    xScaleDomain(): string[] {
+      function* months(interval: Interval) {
+        let cursor = interval.start.startOf("month");
+        while (cursor < interval.end) {
+          yield cursor;
+          cursor = cursor.plus({ months: 1 });
+        }
+      }
+
+      const endDate = DateTime.now();
+      const startDate = endDate.minus({ month: this.numberOfMonths });
+      const interval = Interval.fromDateTimes(startDate, endDate);
+
+      return Array.from(months(interval)).map(
+        (m: DateTime) => m.year + "-" + m.month
+      );
     },
     xScale(): ScaleBand<string> {
       return scaleBand()
         .range([0, this.svgInnerWidth])
         .paddingInner(0.3)
-        .domain(
-          this.barData.map((d) => {
-            return d.yearMonth;
-          })
-        );
+        .domain(this.xScaleDomain);
     },
     yScale() {
       return scaleLinear()
