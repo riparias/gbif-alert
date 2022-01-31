@@ -2,12 +2,17 @@
   <bar-chart
     :bar-data="preparedHistogramData"
     :data-loaded="dataLoaded"
+    @selectedRangeUpdated="selectedRange = $event"
   ></bar-chart>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { DashboardFilters, PreparedHistogramDataEntry } from "../interfaces";
+import {
+  DashboardFilters,
+  DateRange,
+  PreparedHistogramDataEntry,
+} from "../interfaces";
 import axios from "axios";
 import { filtersToQuerystring } from "../helpers";
 import BarChart from "./BarChart.vue";
@@ -22,6 +27,7 @@ interface HistogramDataEntry {
 interface CustomObservationsTimeLineData {
   histogramDataFromServer: HistogramDataEntry[];
   dataLoaded: boolean;
+  selectedRange: DateRange;
 }
 
 const range = (start: number, end: number): number[] =>
@@ -50,20 +56,21 @@ export default defineComponent({
       default: 200,
     },
   },
+  emits: ["selectedDateRangeUpdated"],
   data: function (): CustomObservationsTimeLineData {
     return {
       histogramDataFromServer: [],
       dataLoaded: false,
+      selectedRange: { start: null, end: null },
     };
   },
   computed: {
     preparedHistogramData: function (): PreparedHistogramDataEntry[] {
       return this.histogramDataFromServer.map((e) => {
-        let newEntry = {
+        return {
           yearMonth: e.year + "-" + e.month,
           count: e.count,
         };
-        return newEntry;
       });
     },
   },
@@ -95,9 +102,13 @@ export default defineComponent({
     },
     loadHistogramData: function (filters: DashboardFilters) {
       this.dataLoaded = false;
+
+      // The histogram has to drop the date filtering parameters
+      const strippedFilters = (({ startDate, endDate, ...o }) => o)(filters);
+
       axios
         .get(this.histogramDataUrl, {
-          params: filters,
+          params: strippedFilters,
           paramsSerializer: filtersToQuerystring,
         })
         .then((response) => {
@@ -134,6 +145,9 @@ export default defineComponent({
       handler: function (val) {
         this.loadHistogramData(val);
       },
+    },
+    selectedRange: function () {
+      this.$emit("selectedDateRangeUpdated", this.selectedRange);
     },
   },
 });

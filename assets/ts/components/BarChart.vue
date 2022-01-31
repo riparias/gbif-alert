@@ -81,6 +81,7 @@ export default defineComponent({
       type: Boolean,
     },
   },
+  emits: ["selectedRangeUpdated"],
   data: function () {
     return {
       svgStyle: {
@@ -126,12 +127,39 @@ export default defineComponent({
     },
   },
   methods: {
+    emitSelectedRange() {
+      let rangeStartDate = null;
+      let rangeEndDate = null;
+      if (this.dateRangeFilteringEnabled) {
+        rangeStartDate = this.monthStrToDateTime(this.selectedRangeStart);
+        rangeEndDate = this.monthStrToDateTime(this.selectedRangeEnd);
+      }
+      this.$emit("selectedRangeUpdated", {
+        start: rangeStartDate,
+        end: rangeEndDate,
+      });
+    },
+    monthStrToDateTime(m: string): DateTime {
+      // The first day of the month is returned
+      const splitted = m.split("-");
+      return DateTime.fromObject({
+        year: parseInt(splitted[0]),
+        month: parseInt(splitted[1]),
+        day: 1,
+      });
+    },
     datetimeToMonthStr(d: DateTime): string {
       return d.year + "-" + d.month;
     },
     rangeUpdated(indexes: number[]) {
       this.selectedRangeStart = this.truncatedBarData[indexes[0]].yearMonth;
       this.selectedRangeEnd = this.truncatedBarData[indexes[1]].yearMonth;
+      this.emitSelectedRange();
+    },
+  },
+  watch: {
+    dateRangeFilteringEnabled: function () {
+      this.emitSelectedRange();
     },
   },
   computed: {

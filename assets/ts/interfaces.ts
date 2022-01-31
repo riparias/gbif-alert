@@ -3,6 +3,7 @@ import TileLayer from "ol/layer/Tile";
 import Stamen from "ol/source/Stamen";
 import OSM from "ol/source/OSM";
 import { XYZ } from "ol/source";
+import { DateTime } from "luxon";
 
 export interface SelectionEntry {
   id: string | number;
@@ -82,4 +83,9 @@ export interface PreparedHistogramDataEntry {
 export interface BaseLayerEntry {
   name: string;
   layer: TileLayer<Stamen> | TileLayer<OSM> | TileLayer<XYZ>;
+}
+
+export interface DateRange {
+  start: DateTime | null;
+  end: DateTime | null;
 }

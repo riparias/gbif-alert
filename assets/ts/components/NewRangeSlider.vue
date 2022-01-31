@@ -1,9 +1,11 @@
 <template>
   <div
     :style="{
-      'margin-left': leftMargin + 'px',
-      'margin-right': rightMargin + 'px',
+      'padding-left': leftMargin + 'px',
+      'padding-right': rightMargin + 'px',
+      width: 1116 + 'px',
     }"
+    class="mx-auto"
   >
     <div id="slider-round" ref="slider-root" class="slider-styled"></div>
   </div>

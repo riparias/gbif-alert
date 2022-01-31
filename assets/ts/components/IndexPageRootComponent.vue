@@ -77,6 +77,7 @@
         :histogram-data-url="
           frontendConfig.apiEndpoints.observationsHistogramDataUrl
         "
+        @selectedDateRangeUpdated="updateDateFilters"
       />
     </div>
   </div>
@@ -174,6 +175,7 @@ import {
   FrontEndConfig,
   SelectionEntry,
   AreaInformation,
+  DateRange,
 } from "../interfaces";
 import axios from "axios";
 import ObservationsCounter from "../components/ObservationsCounter.vue";
@@ -182,6 +184,7 @@ import ObservationsTable from "../components/ObservationsTable.vue";
 import ObservationsMap from "../components/ObservationsMap.vue";
 import ModalMultiSelector from "../components/ModalMultiSelector.vue";
 import CustomObservationsTimeLine from "./CustomObservationTimeLine.vue";
+import { DateTime } from "luxon";
 
 declare const ripariasConfig: FrontEndConfig;
 
@@ -263,6 +266,19 @@ export default defineComponent({
 
     changeSelectedAreas: function (areasIds: Number[]) {
       this.filters.areaIds = areasIds;
+    },
+
+    updateDateFilters: function (range: DateRange) {
+      this.filters.startDate = this.dateTimeToFilterParam(range.start);
+      this.filters.endDate = this.dateTimeToFilterParam(range.end);
+    },
+
+    dateTimeToFilterParam(dt: DateTime | null): string | null {
+      if (dt == null) {
+        return null;
+      } else {
+        return dt.toISODate();
+      }
     },
 
     populateAvailableDatasets: function () {
