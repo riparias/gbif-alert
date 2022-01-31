@@ -12,7 +12,9 @@
         v-for="(barDataEntry, index) in truncatedBarData"
         :class="{
           selected:
-            index >= selectedRangeStartIndex && index <= selectedRangeEndIndex,
+            dateRangeFilteringEnabled === false ||
+            (index >= selectedRangeStartIndex &&
+              index <= selectedRangeEndIndex),
         }"
         :key="barDataEntry.yearMonth"
         :x="xScale(barDataEntry.yearMonth)"
@@ -28,12 +30,25 @@
       </g>
     </g>
   </svg>
+
+  <div class="form-check">
+    <input
+      type="checkbox"
+      class="form-check-input"
+      id="checkbox"
+      v-model="dateRangeFilteringEnabled"
+    />
+    <label for="checkbox" class="form-check-label"
+      >Enable date range filtering</label
+    >
+  </div>
   <new-range-slider
     v-if="dataLoaded"
     :numberOfMonths="numberOfMonths"
     :initialValues="[selectedRangeStartIndex, selectedRangeEndIndex]"
     :leftMargin="this.svgStyle.margin.left"
     :rightMargin="this.svgStyle.margin.right"
+    :sliderDisabled="!this.dateRangeFilteringEnabled"
     @update-value="rangeUpdated"
   >
   </new-range-slider>
@@ -80,6 +95,8 @@ export default defineComponent({
       },
       selectedRangeStart: "2020-2",
       selectedRangeEnd: "2021-6",
+
+      dateRangeFilteringEnabled: false,
 
       numberOfMonths: 60,
     };

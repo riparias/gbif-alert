@@ -37,12 +37,35 @@ export default defineComponent({
       type: Number,
       default: 0,
     },
+    sliderDisabled: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ["updateValue"],
   data: function (): NewRangeSliderData {
     return {
       slider: null,
     };
+  },
+  methods: {
+    updateDisabledAttribute: function () {
+      if (this.slider !== null) {
+        if (this.sliderDisabled === true) {
+          this.slider.target.setAttribute("disabled", "true");
+        } else {
+          this.slider.target.removeAttribute("disabled");
+        }
+      }
+    },
+  },
+  watch: {
+    sliderDisabled: {
+      immediate: true,
+      handler: function () {
+        this.updateDisabledAttribute();
+      },
+    },
   },
   mounted() {
     this.slider = noUiSlider.create(this.$refs["slider-root"] as HTMLElement, {
@@ -61,6 +84,8 @@ export default defineComponent({
         values.map((v: any) => parseInt(v))
       );
     });
+
+    this.updateDisabledAttribute();
   },
 });
 </script>
@@ -73,6 +98,10 @@ export default defineComponent({
 #slider-round .noUi-connect {
   background: red;
   opacity: 0.3;
+}
+
+#slider-round[disabled] .noUi-connect {
+  background: #bababa;
 }
 
 #slider-round .noUi-handle {
