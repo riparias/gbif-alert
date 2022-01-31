@@ -77,7 +77,7 @@
         :histogram-data-url="
           frontendConfig.apiEndpoints.observationsHistogramDataUrl
         "
-        @selectedDateRangeUpdated="updateDateFilters"
+        @selectedDateRangeUpdated="debouncedUpdateDateFilters"
       />
     </div>
   </div>
@@ -185,6 +185,7 @@ import ObservationsMap from "../components/ObservationsMap.vue";
 import ModalMultiSelector from "../components/ModalMultiSelector.vue";
 import CustomObservationsTimeLine from "./CustomObservationTimeLine.vue";
 import { DateTime } from "luxon";
+import { debounce, DebouncedFunc } from "lodash";
 
 declare const ripariasConfig: FrontEndConfig;
 
@@ -199,6 +200,7 @@ interface IndexPageRootComponentData {
   selectedTab: string;
   availableTabs: string[];
   dataLayerOpacity: number;
+  debouncedUpdateDateFilters: null | DebouncedFunc<(range: DateRange) => void>;
 }
 
 export default defineComponent({
@@ -236,6 +238,7 @@ export default defineComponent({
         status: null,
       },
       dataLayerOpacity: 0.8,
+      debouncedUpdateDateFilters: null,
     };
   },
   computed: {
@@ -255,6 +258,18 @@ export default defineComponent({
       });
     },
   },
+  created() {
+    // Approach stolen  from: https://dmitripavlutin.com/vue-debounce-throttle/
+    this.debouncedUpdateDateFilters = debounce((range) => {
+      this.filters.startDate = this.dateTimeToFilterParam(range.start);
+      this.filters.endDate = this.dateTimeToFilterParam(range.end);
+    }, 300);
+  },
+  beforeUnmount() {
+    if (this.debouncedUpdateDateFilters) {
+      this.debouncedUpdateDateFilters.cancel();
+    }
+  },
   methods: {
     changeSelectedSpecies: function (speciesIds: Number[]) {
       this.filters.speciesIds = speciesIds;
@@ -266,11 +281,6 @@ export default defineComponent({
 
     changeSelectedAreas: function (areasIds: Number[]) {
       this.filters.areaIds = areasIds;
-    },
-
-    updateDateFilters: function (range: DateRange) {
-      this.filters.startDate = this.dateTimeToFilterParam(range.start);
-      this.filters.endDate = this.dateTimeToFilterParam(range.end);
     },
 
     dateTimeToFilterParam(dt: DateTime | null): string | null {

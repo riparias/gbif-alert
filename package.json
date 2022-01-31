@@ -22,6 +22,7 @@
   "devDependencies": {
     "@babel/core": "^7.16.12",
     "@types/d3": "^7.1.0",
+    "@types/lodash.debounce": "^4.0.6",
     "@types/luxon": "^2.0.9",
     "@types/uuid": "^8.3.4",
     "@vue/compiler-sfc": "^3.2.29",
@@ -39,6 +40,8 @@
   "dependencies": {
     "axios": "^0.25.0",
     "d3": "^7.3.0",
+    "lodash": "^4.17.21",
+    "lodash.debounce": "^4.0.8",
     "luxon": "^2.3.0",
     "nouislider": "^15.5.1",
     "npm-check": "^4.1.4",
