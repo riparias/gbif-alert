@@ -1,5 +1,8 @@
 <template>
-  <bar-chart :bar-data="preparedHistogramData"></bar-chart>
+  <bar-chart
+    :bar-data="preparedHistogramData"
+    :data-loaded="dataLoaded"
+  ></bar-chart>
 </template>
 
 <script lang="ts">
@@ -18,6 +21,7 @@ interface HistogramDataEntry {
 
 interface CustomObservationsTimeLineData {
   histogramDataFromServer: HistogramDataEntry[];
+  dataLoaded: boolean;
 }
 
 const range = (start: number, end: number): number[] =>
@@ -49,6 +53,7 @@ export default defineComponent({
   data: function (): CustomObservationsTimeLineData {
     return {
       histogramDataFromServer: [],
+      dataLoaded: false,
     };
   },
   computed: {
@@ -89,6 +94,7 @@ export default defineComponent({
       return data;
     },
     loadHistogramData: function (filters: DashboardFilters) {
+      this.dataLoaded = false;
       axios
         .get(this.histogramDataUrl, {
           params: filters,
@@ -116,6 +122,7 @@ export default defineComponent({
             });
 
             this.histogramDataFromServer = emptyHistogramData;
+            this.dataLoaded = true;
           }
         });
     },

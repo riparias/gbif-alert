@@ -46,7 +46,6 @@
             >
             <div class="col-sm-10">
               <select
-                type="email"
                 class="form-control form-control-sm"
                 id="obsStatus"
                 placeholder="col-form-label-sm"
