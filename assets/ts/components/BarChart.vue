@@ -94,8 +94,10 @@ export default defineComponent({
         width: 1116,
         height: 220,
       },
-      selectedRangeStart: "2020-2",
-      selectedRangeEnd: "2021-6",
+      selectedRangeStart: this.datetimeToMonthStr(
+        DateTime.now().minus({ years: 1 })
+      ),
+      selectedRangeEnd: this.datetimeToMonthStr(DateTime.now()),
 
       dateRangeFilteringEnabled: false,
 
