@@ -16,6 +16,7 @@ import {
 import axios from "axios";
 import { filtersToQuerystring } from "../helpers";
 import BarChart from "./BarChart.vue";
+import { DateTime } from "luxon";
 
 interface HistogramDataEntry {
   // As received from the server
@@ -76,15 +77,16 @@ export default defineComponent({
   },
   methods: {
     buildEmptyHistogramArray: function (
-      rangeStart: HistogramDataEntry,
-      rangeEnd: HistogramDataEntry
+      rangeStart: HistogramDataEntry
     ): HistogramDataEntry[] {
+      // first entry: first month with data from server
+      // Last entry: current month
       let data = [] as HistogramDataEntry[];
-      const yearsRange = range(rangeStart.year, rangeEnd.year + 1);
+      const yearsRange = range(rangeStart.year, DateTime.now().year + 1);
       yearsRange.forEach((currentYear, yearIndex) => {
         const startMonth = yearIndex === 0 ? rangeStart.month : 1;
         const endMonth =
-          yearIndex === yearsRange.length - 1 ? rangeEnd.month : 12;
+          yearIndex === yearsRange.length - 1 ? DateTime.now().month : 12;
 
         for (
           let currentMonth = startMonth;
@@ -117,8 +119,7 @@ export default defineComponent({
           } else {
             // Build an empty range (padding)
             let emptyHistogramData = this.buildEmptyHistogramArray(
-              response.data[0],
-              response.data[response.data.length - 1]
+              response.data[0]
             );
 
             // Populate it
