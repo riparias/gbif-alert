@@ -256,21 +256,21 @@ class ApiTests(TestCase):
         self.assertEqual(response.content, b"")
 
     def test_observations_json_view_data(self):
-        """If the user is authenticated, there is data about which observations were already viewed by that user"""
+        """If the user is authenticated, there is data about which observations were already seen by that user"""
         self.client.login(username="frusciante1", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id")
         json_data = response.json()
-        self.assertEqual(json_data["results"][0]["viewedByCurrentUser"], False)
-        self.assertEqual(json_data["results"][1]["viewedByCurrentUser"], True)
+        self.assertEqual(json_data["results"][0]["seenByCurrentUser"], False)
+        self.assertEqual(json_data["results"][1]["seenByCurrentUser"], True)
 
     def test_observations_json_no_view_for_anonymous(self):
-        """If the user is anonymous, there is NO data about which observations were already viewed"""
+        """If the user is anonymous, there is NO data about which observations were already seen"""
         base_url = reverse("dashboard:api-filtered-observations-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1")
         json_data = response.json()
         with self.assertRaises(KeyError):
-            json_data["results"][0]["viewedByCurrentUser"]
+            json_data["results"][0]["seenByCurrentUser"]
 
     def test_observations_json_no_location(self):
         """Regression test: no error 500 in observations_json if we have locations without a location"""
@@ -445,7 +445,7 @@ class ApiTests(TestCase):
         )  # Only one observation in Andenne because of the selected area
 
     def test_observations_json_status_filter_invalid_value(self):
-        """Filtered observations: status is ignored not read nor unread"""
+        """Filtered observations: status is ignored not seen nor unseen"""
         base_url = reverse("dashboard:api-filtered-observations-data-page")
 
         response = self.client.get(f"{base_url}?limit=10&page_number=1")
@@ -468,13 +468,13 @@ class ApiTests(TestCase):
         response = self.client.get(f"{base_url}?limit=10&page_number=1")
         unfiltered_results = response.json()
 
-        response = self.client.get(f"{base_url}?limit=10&page_number=1&status=read")
-        filtered_read_results = response.json()
-        self.assertEqual(filtered_read_results, unfiltered_results)
+        response = self.client.get(f"{base_url}?limit=10&page_number=1&status=seen")
+        filtered_seen_results = response.json()
+        self.assertEqual(filtered_seen_results, unfiltered_results)
 
-        response = self.client.get(f"{base_url}?limit=10&page_number=1&status=read")
-        filtered_unread_results = response.json()
-        self.assertEqual(filtered_unread_results, unfiltered_results)
+        response = self.client.get(f"{base_url}?limit=10&page_number=1&status=unseen")
+        filtered_unseen_results = response.json()
+        self.assertEqual(filtered_unseen_results, unfiltered_results)
 
     def test_observations_json_status_filter_logged(self):
         """Observations can be filtered by status for authenticated users"""
@@ -487,48 +487,48 @@ class ApiTests(TestCase):
         # Case 1: this user hasn't seen any observation
         self.client.login(username="frusciante", password="12345")
 
-        # Case 1.1: asking read observations => 0 results
+        # Case 1.1: asking seen observations => 0 results
         response = self.client.get(
-            f"{base_url}?limit=10&page_number=1&order=gbif_id&status=read"
+            f"{base_url}?limit=10&page_number=1&order=gbif_id&status=seen"
         )
-        filtered_read_results = response.json()
-        self.assertEqual(filtered_read_results["totalResultsCount"], 0)
+        filtered_seen_results = response.json()
+        self.assertEqual(filtered_seen_results["totalResultsCount"], 0)
 
-        # case 1.2: asking unread observations => same results than no filtering
+        # case 1.2: asking unseen observations => same results than no filtering
         response = self.client.get(
-            f"{base_url}?limit=10&page_number=1&order=gbif_id&status=unread"
+            f"{base_url}?limit=10&page_number=1&order=gbif_id&status=unseen"
         )
-        filtered_unread_results = response.json()
-        filtered_unread_results_ids = [
-            r["id"] for r in filtered_unread_results["results"]
+        filtered_unseen_results = response.json()
+        filtered_unseen_results_ids = [
+            r["id"] for r in filtered_unseen_results["results"]
         ]
 
-        # We have to compare IDS rather than full record, because if the user is authenticated there's also the "viewedByCurrentUser" field
-        self.assertEqual(filtered_unread_results_ids, unfiltered_results_ids)
+        # We have to compare IDs rather than full record, because if the user is authenticated there's also the "seenByCurrentUser" field
+        self.assertEqual(filtered_unseen_results_ids, unfiltered_results_ids)
 
-        # Case 2: this user has one seen read observation
-        # Case 2.1: asking read
+        # Case 2: this user has one seen observation
+        # Case 2.1: asking seen observations
         self.client.login(username="frusciante1", password="12345")
         response = self.client.get(
-            f"{base_url}?limit=10&page_number=1&order=gbif_id&status=read"
+            f"{base_url}?limit=10&page_number=1&order=gbif_id&status=seen"
         )
-        filtered_read_results = response.json()
-        self.assertEqual(filtered_read_results["totalResultsCount"], 1)
+        filtered_seen_results = response.json()
+        self.assertEqual(filtered_seen_results["totalResultsCount"], 1)
         self.assertEqual(
-            filtered_read_results["results"][0]["stableId"],
+            filtered_seen_results["results"][0]["stableId"],
             "4b8dc5900ede9a5850cba11be6aba60315b0f04e",
         )
 
-        # Case 2.2: asking unread
+        # Case 2.2: asking unseen observations
         self.client.login(username="frusciante1", password="12345")
         response = self.client.get(
-            f"{base_url}?limit=10&page_number=1&order=gbif_id&status=unread"
+            f"{base_url}?limit=10&page_number=1&order=gbif_id&status=unseen"
         )
-        filtered_unread_results = response.json()
-        filtered_unread_results_gbif_ids = [
-            r["gbifId"] for r in filtered_unread_results["results"]
+        filtered_unseen_results = response.json()
+        filtered_unseen_results_gbif_ids = [
+            r["gbifId"] for r in filtered_unseen_results["results"]
         ]
-        self.assertEqual(filtered_unread_results_gbif_ids, ["1", "3"])
+        self.assertEqual(filtered_unseen_results_gbif_ids, ["1", "3"])
 
     def test_observations_json_multiple_areas_filter(self):
         """The areaIds parameter can take multiple values (OR)"""
@@ -670,21 +670,21 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["totalResultsCount"], 0)
 
     def test_observation_json_combined_filters_case6(self):
-        # Starting from test_observations_json_combined_filters, we also ask only unread observations for another_user
+        # Starting from test_observations_json_combined_filters, we also ask only unseen observations for another_user
         # => the filter combination now returns 0 results
         self.client.login(username="frusciante1", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-data-page")
-        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&status=unread"
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&status=unseen"
         response = self.client.get(url_with_params)
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 0)
 
     def test_observation_json_combined_filters_case7(self):
-        # Similar to test_observation_json_combined_filters_case6(), but with "read" status. The single observation from
-        # test_observation_json_combined_filters is read, so that observation is still returned in this case
+        # Similar to test_observation_json_combined_filters_case6(), but with "seen" status. The single observation from
+        # test_observation_json_combined_filters is seen, so that observation is still returned in this case
         self.client.login(username="frusciante1", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-data-page")
-        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&status=read"
+        url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&status=seen"
         response = self.client.get(url_with_params)
         json_data = response.json()
         self.assertEqual(json_data["totalResultsCount"], 1)
@@ -709,7 +709,7 @@ class ApiTests(TestCase):
     def test_observations_counter_status_filter_case1(self):
         self.client.login(username="frusciante1", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-counter")
-        url_with_params = f"{base_url}?status=read"
+        url_with_params = f"{base_url}?status=seen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -718,7 +718,7 @@ class ApiTests(TestCase):
     def test_observations_counter_status_filter_case2(self):
         self.client.login(username="frusciante1", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-counter")
-        url_with_params = f"{base_url}?status=unread"
+        url_with_params = f"{base_url}?status=unseen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -727,7 +727,7 @@ class ApiTests(TestCase):
     def test_observations_counter_status_filter_case3(self):
         self.client.login(username="frusciante", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-counter")
-        url_with_params = f"{base_url}?status=read"
+        url_with_params = f"{base_url}?status=seen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -736,7 +736,7 @@ class ApiTests(TestCase):
     def test_observations_counter_status_filter_case4(self):
         self.client.login(username="frusciante", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-counter")
-        url_with_params = f"{base_url}?status=unread"
+        url_with_params = f"{base_url}?status=unseen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -745,14 +745,14 @@ class ApiTests(TestCase):
     def test_observations_counter_status_filter_anonymous(self):
         """status is ignored for anonymous users"""
         base_url = reverse("dashboard:api-filtered-observations-counter")
-        url_with_params = f"{base_url}?status=read"
+        url_with_params = f"{base_url}?status=seen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         self.assertEqual(json_data["count"], 3)
 
     def test_observations_counter_status_filter_invalid(self):
-        """status is ignored if not read nor unread"""
+        """status is ignored if not seen nor unseen"""
         self.client.login(username="frusciante", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-counter")
         url_with_params = f"{base_url}?status=kvsnfgkdng"
@@ -875,16 +875,16 @@ class ApiTests(TestCase):
         # Case 5: start from case 1) but add a status filter that brings un to zero records
         self.client.login(username="frusciante1", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-counter")
-        url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&status=unread"
+        url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&status=unseen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         self.assertEqual(json_data["count"], 0)
 
-        # Case 6: similar to case 5), with with read status
+        # Case 6: similar to case 5), with with seen status
         self.client.login(username="frusciante1", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-counter")
-        url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&status=read"
+        url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&status=seen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -997,7 +997,7 @@ class ApiTests(TestCase):
     def test_filtered_observations_monthly_histogram_json_status_filter_case1(self):
         self.client.login(username="frusciante1", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
-        response = self.client.get(f"{base_url}?status=read")
+        response = self.client.get(f"{base_url}?status=seen")
         self.assertEqual(response.status_code, 200)
 
         self.assertJSONEqual(
@@ -1010,7 +1010,7 @@ class ApiTests(TestCase):
     def test_filtered_observations_monthly_histogram_json_status_filter_case2(self):
         self.client.login(username="frusciante1", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
-        response = self.client.get(f"{base_url}?status=unread")
+        response = self.client.get(f"{base_url}?status=unseen")
         self.assertEqual(response.status_code, 200)
 
         self.assertJSONEqual(
@@ -1024,7 +1024,7 @@ class ApiTests(TestCase):
     def test_filtered_observations_monthly_histogram_json_status_filter_anonymous(self):
         """Anonymous users: the status filter is ignored"""
         base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
-        response = self.client.get(f"{base_url}?status=unread")
+        response = self.client.get(f"{base_url}?status=unseen")
         self.assertEqual(response.status_code, 200)
         self.assertJSONEqual(
             response.content.decode("utf-8"),
@@ -1066,7 +1066,7 @@ class ApiTests(TestCase):
         self.client.login(username="frusciante1", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
         response = self.client.get(
-            f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&endDate=2021-10-01&status=read"
+            f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&endDate=2021-10-01&status=seen"
         )
         self.assertEqual(response.status_code, 200)
 
@@ -1081,7 +1081,7 @@ class ApiTests(TestCase):
         self.client.login(username="frusciante1", password="12345")
         base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
         response = self.client.get(
-            f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&endDate=2021-10-01&status=unread"
+            f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&endDate=2021-10-01&status=unseen"
         )
         self.assertEqual(response.status_code, 200)
 

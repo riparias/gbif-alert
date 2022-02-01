@@ -4,8 +4,8 @@
       v-for="occ in preparedObservations"
       :class="{
         'table-danger':
-          occ.hasOwnProperty('viewedByCurrentUser') && // Anonymous users don't have the property, so if we don't do this all would appear us unviewed
-          occ.viewedByCurrentUser === false,
+          occ.hasOwnProperty('seenByCurrentUser') && // Anonymous users don't have the property, so if we don't do this all would appear us unseen
+          occ.seenByCurrentUser === false,
       }"
     >
       <th scope="row">
@@ -33,7 +33,7 @@ interface ObservationForDisplay {
   speciesName: string;
   datasetName: string;
   url: string;
-  viewedByCurrentUser?: boolean;
+  seenByCurrentUser?: boolean;
 }
 
 export default defineComponent({
@@ -52,7 +52,7 @@ export default defineComponent({
             "{stable_id}",
             occ.stableId
           ),
-          viewedByCurrentUser: occ.viewedByCurrentUser,
+          seenByCurrentUser: occ.seenByCurrentUser,
         };
       });
     },

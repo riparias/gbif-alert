@@ -88,9 +88,9 @@ def filtered_observations_from_request(request: HttpRequest) -> QuerySet[Observa
         qs = qs.filter(location__within=combined_areas)
     if status_for_user and request.user.is_authenticated:
         ov = ObservationView.objects.filter(user=request.user)
-        if status_for_user == "read":
+        if status_for_user == "seen":
             qs = qs.filter(observationview__in=ov)
-        elif status_for_user == "unread":
+        elif status_for_user == "unseen":
             qs = qs.exclude(observationview__in=ov)
 
     return qs

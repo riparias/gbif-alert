@@ -16,7 +16,7 @@ export interface DashboardFilters {
   startDate: string | null;
   endDate: string | null;
   areaIds: Number[];
-  status: "read" | "unread" | null;
+  status: "seen" | "unseen" | null;
 }
 
 export interface SpeciesInformation {
@@ -71,7 +71,7 @@ export interface JsonObservation {
   date: string;
   speciesName: string;
   datasetName: string;
-  viewedByCurrentUser?: boolean;
+  seenByCurrentUser?: boolean;
 }
 
 export interface PreparedHistogramDataEntry {

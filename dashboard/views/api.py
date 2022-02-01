@@ -7,8 +7,8 @@ will):
     - startDate: start date (inclusive), in '%Y-%m-%d' format. Example: 2021-07-31, 1981-08-02
     - endDate: end date (inclusive), in '%Y-%m-%d' format. Example: 2021-07-31, 1981-08-02
     - areaIds[]: one or several area IDs. Same format than speciesIds and datasetsIds
-    - status_for_user: read | unread. Ignored for anonymous users. If the parameter is not set or is set to any other
-      value than read or unread, filtering is not applied
+    - status_for_user: seen | unseen. Ignored for anonymous users. If the parameter is not set or is set to any other
+      value than seen or unseen, filtering is not applied
 """
 from django.core.paginator import Paginator
 from django.core.serializers import serialize

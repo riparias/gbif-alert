@@ -20,9 +20,9 @@ urlpatterns = [
     path("new-alert", views.alert_create_page, name="page-alert-create"),
     path("delete-alert", views.action_alert_delete, name="action-alert-delete"),
     path(
-        "mark_observation_as_not_viewed",
-        views.mark_observation_as_not_viewed,
-        name="page-mark-observation-as-not-viewed",
+        "mark_observation_as_unseen",
+        views.mark_observation_as_unseen,
+        name="page-mark-observation-as-unseen",
     ),
     # Api
     path("api/species", views.species_list_json, name="api-species-list-json"),

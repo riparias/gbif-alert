@@ -52,8 +52,8 @@
                 v-model="filters.status"
               >
                 <option :value="null">All</option>
-                <option value="read">Read</option>
-                <option value="unread">Unread</option>
+                <option value="seen">Seen</option>
+                <option value="unseen">Unseen</option>
               </select>
             </div>
           </div>

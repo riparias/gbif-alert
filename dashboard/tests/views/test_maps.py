@@ -212,7 +212,7 @@ class VectorTilesServerTests(TestCase):
             "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
-        url_with_params = f"{base_url}?status=read"
+        url_with_params = f"{base_url}?status=seen"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -222,7 +222,7 @@ class VectorTilesServerTests(TestCase):
         self.assertEqual(the_feature["properties"]["count"], 2)
 
     def test_tiles_status_filter_invalid_filter_value(self):
-        """Similar to test_tiles_status_filter_case1() but with a filter that's not read | unread => filter is ignored
+        """Similar to test_tiles_status_filter_case1() but with a filter that's not seen | unseen => filter is ignored
         and everything is included"""
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         self.client.login(username="frusciante", password="12345")
@@ -246,7 +246,7 @@ class VectorTilesServerTests(TestCase):
             "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
-        url_with_params = f"{base_url}?status=read"
+        url_with_params = f"{base_url}?status=seen"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -264,7 +264,7 @@ class VectorTilesServerTests(TestCase):
             "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
-        url_with_params = f"{base_url}?status=unread"
+        url_with_params = f"{base_url}?status=unseen"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
 
@@ -283,7 +283,7 @@ class VectorTilesServerTests(TestCase):
             "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
-        url_with_params = f"{base_url}?status=unread"
+        url_with_params = f"{base_url}?status=unseen"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -298,7 +298,7 @@ class VectorTilesServerTests(TestCase):
             "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
-        url_with_params = f"{base_url}?status=unread"
+        url_with_params = f"{base_url}?status=unseen"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
@@ -834,7 +834,7 @@ class VectorTilesServerTests(TestCase):
         self.assertEqual(response.json()["max"], 2)
 
     def test_min_max_in_hexagon_with_status_filter_invalid_value(self):
-        """status is not read nor unread, therefore is ignored and everything is included"""
+        """status is not seen nor unseen, therefore is ignored and everything is included"""
         self.client.login(username="frusciante", password="12345")
         response = self.client.get(
             reverse("dashboard:api-mvt-min-max-per-hexagon"),
@@ -863,7 +863,7 @@ class VectorTilesServerTests(TestCase):
             reverse("dashboard:api-mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
-                "status": "unread",
+                "status": "unseen",
             },
         )
         self.assertEqual(response.json()["min"], 1)
@@ -888,7 +888,7 @@ class VectorTilesServerTests(TestCase):
             reverse("dashboard:api-mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
-                "status": "unread",
+                "status": "unseen",
             },
         )
         self.assertEqual(response.json()["min"], 1)

@@ -54,7 +54,7 @@ ZOOM_TO_HEX_SIZE = {
 JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
     """
     SELECT * FROM $observations_table_name as occ
-    {% if status == 'read' %}
+    {% if status == 'seen' %}
         INNER JOIN "dashboard_observationview" 
         ON (occ.id = "dashboard_observationview"."observation_id") 
     {% endif %}
@@ -79,14 +79,14 @@ JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
         {% if area_ids %}
             AND ST_Within(occ.location, areas.mpoly)
         {% endif %}
-        {% if status == 'unread' %}
+        {% if status == 'unseen' %}
             AND NOT (EXISTS(
             SELECT (1) AS "a" FROM "dashboard_observationview" V1 WHERE (
                 V1."id" IN (SELECT U0."id" FROM "dashboard_observationview" U0 WHERE U0."user_id" = {{ user_id }}) 
                 AND V1."observation_id" = occ.id
             ) LIMIT 1))
         {% endif %}
-        {% if status == 'read' %}
+        {% if status == 'seen' %}
             AND "dashboard_observationview"."id" IN (
                 SELECT U0."id" FROM "dashboard_observationview" U0 WHERE U0."user_id" = {{ user_id }}
             )

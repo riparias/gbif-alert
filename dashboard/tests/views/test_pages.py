@@ -541,7 +541,7 @@ class WebPagesTests(TestCase):
 
         response = self.client.get(page_url)
         self.assertNotContains(response, "You have first seen this observation on")
-        self.assertNotContains(response, "Mark as not viewed")
+        self.assertNotContains(response, "Mark this observation as unseen")
 
     def test_observation_details_observation_view_authenticated_case_1(self):
         """Visiting the observation_details page while logged in: there's a first seen timestamp, and a button to mark as unseen
@@ -558,8 +558,8 @@ class WebPagesTests(TestCase):
 
         response = self.client.get(page_url)
         self.assertContains(response, "You have first seen this observation on")
-        self.assertContains(response, "Mark as not viewed")
-        timestamp = response.context["first_view_by_user_timestamp"]
+        self.assertContains(response, "Mark this observation as unseen")
+        timestamp = response.context["first_seen_by_user_timestamp"]
         self.assertLess(timezone.now() - timestamp, datetime.timedelta(minutes=1))
 
     def test_observation_details_observation_view_authenticated_case_2(self):
@@ -577,8 +577,8 @@ class WebPagesTests(TestCase):
 
         response = self.client.get(page_url)
         self.assertContains(response, "You have first seen this observation on")
-        self.assertContains(response, "Mark as not viewed")
-        timestamp = response.context["first_view_by_user_timestamp"]
+        self.assertContains(response, "Mark this observation as unseen")
+        timestamp = response.context["first_seen_by_user_timestamp"]
         self.assertEqual(timestamp.year, 2018)
         self.assertEqual(timestamp.month, 4)
         self.assertEqual(timestamp.day, 4)

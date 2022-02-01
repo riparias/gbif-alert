@@ -25,8 +25,8 @@ def about_page(request: HttpRequest):
 
 def observation_details_page(request: HttpRequest, stable_id: str):
     observation = get_object_or_404(Observation, stable_id=stable_id)
-    observation.mark_as_viewed_by(request.user)
-    first_viewed = observation.first_viewed_at(request.user)
+    observation.mark_as_seen_by(request.user)
+    first_seen = observation.first_seen_at(request.user)
 
     if request.method == "POST":
         if (
@@ -50,7 +50,7 @@ def observation_details_page(request: HttpRequest, stable_id: str):
         {
             "observation": observation,
             "new_comment_form": form,
-            "first_view_by_user_timestamp": first_viewed,
+            "first_seen_by_user_timestamp": first_seen,
         },
     )
 
@@ -116,10 +116,10 @@ def user_alerts_page(request: AuthenticatedHttpRequest):
 
 
 @login_required
-def mark_observation_as_not_viewed(request: AuthenticatedHttpRequest):
+def mark_observation_as_unseen(request: AuthenticatedHttpRequest):
     if request.method == "POST":
         observation = get_object_or_404(Observation, id=request.POST["observationId"])
-        success = observation.mark_as_not_viewed_by(user=request.user)
+        success = observation.mark_as_unseen_by(user=request.user)
         if success:
             return redirect("dashboard:page-index")
         else:

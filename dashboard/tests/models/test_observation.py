@@ -79,44 +79,44 @@ class ObservationTests(TestCase):
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
 
-    def test_as_dict_observation_view_anonymous(self):
-        """The as_dict() method does not contain observation_view data for anonymous users"""
+    def test_as_dict_observation_seen_anonymous(self):
+        """The as_dict() method does not contains observation_view data for anonymous users"""
         with self.assertRaises(KeyError):
-            self.obs.as_dict(for_user=AnonymousUser())["viewedByCurrentUser"]
+            self.obs.as_dict(for_user=AnonymousUser())["seenByCurrentUser"]
 
-    def test_as_dict_observation_view_non_anonymous(self):
-        """The as_dict() method does not contain observation_view data for anonymous users"""
+    def test_as_dict_observation_seen_non_anonymous(self):
+        """The as_dict() method contains observation_view data for authenticated users"""
 
         self.assertTrue(
-            self.obs.as_dict(for_user=self.comment_author)["viewedByCurrentUser"]
+            self.obs.as_dict(for_user=self.comment_author)["seenByCurrentUser"]
         )
         self.assertFalse(
-            self.second_obs.as_dict(for_user=self.comment_author)["viewedByCurrentUser"]
+            self.second_obs.as_dict(for_user=self.comment_author)["seenByCurrentUser"]
         )
 
-    def test_first_viewed_at_case_1(self):
-        """Observation.first_viewed_at() works as expected when the observation has been seen"""
+    def test_first_seen_at_case_1(self):
+        """Observation.first_seen_at() works as expected when the observation has been seen"""
         now = timezone.now()
-        timestamp = self.obs.first_viewed_at(user=self.comment_author)
+        timestamp = self.obs.first_seen_at(user=self.comment_author)
 
         self.assertLess(now - timestamp, datetime.timedelta(minutes=1))
 
-    def test_first_viewed_at_case_2(self):
-        """Observation.first_viewed_at() returns None if an observation has not been seen"""
-        self.assertIsNone(self.second_obs.first_viewed_at(user=self.comment_author))
+    def test_first_seen_at_case_2(self):
+        """Observation.first_seen_at() returns None if an observation has not been seen"""
+        self.assertIsNone(self.second_obs.first_seen_at(user=self.comment_author))
 
-    def test_first_viewed_at_case_3(self):
-        """Observation.first_viewed_at() returns None for anonymous users"""
-        self.assertIsNone(self.obs.first_viewed_at(user=AnonymousUser()))
-        self.assertIsNone(self.second_obs.first_viewed_at(user=AnonymousUser()))
+    def test_first_seen_at_case_3(self):
+        """Observation.first_seen_at() returns None for anonymous users"""
+        self.assertIsNone(self.obs.first_seen_at(user=AnonymousUser()))
+        self.assertIsNone(self.second_obs.first_seen_at(user=AnonymousUser()))
 
-    def test_mark_as_viewed_by_case_1(self):
-        """Standard case: a we mark a not views obs by a regular user"""
+    def test_mark_as_seen_by_case_1(self):
+        """Standard case: we mark an previously unseen observation by a regular user"""
         # Before we start, we have no entry
         self.assertEqual(
             ObservationView.objects.filter(observation=self.second_obs).count(), 0
         )
-        r = self.second_obs.mark_as_viewed_by(user=self.comment_author)
+        r = self.second_obs.mark_as_seen_by(user=self.comment_author)
         self.assertIsNone(r)  # Method always return None
         # After, we have one entry
         ov = ObservationView.objects.get(observation=self.second_obs)
@@ -126,48 +126,48 @@ class ObservationTests(TestCase):
         self.assertEqual(ov.observation.id, self.second_obs.id)
         self.assertLess(timezone.now() - ov.timestamp, datetime.timedelta(minutes=1))
 
-    def test_mark_as_viewed_by_case_2(self):
+    def test_mark_as_seen_by_case_2(self):
         """The user is anonymous: nothing happens"""
         self.assertEqual(
             ObservationView.objects.filter(observation=self.second_obs).count(), 0
         )
-        r = self.second_obs.mark_as_viewed_by(user=AnonymousUser())
+        r = self.second_obs.mark_as_seen_by(user=AnonymousUser())
         self.assertIsNone(r)  # Method always return None
         # Nothing has changed:
         self.assertEqual(
             ObservationView.objects.filter(observation=self.second_obs).count(), 0
         )
 
-    def test_mark_as_viewed_by_case_3(self):
+    def test_mark_as_seen_by_case_3(self):
         """The user has already seen this observation: nothing happens"""
         ovs_before = ObservationView.objects.filter(observation=self.obs).values()
-        r = self.second_obs.mark_as_viewed_by(user=self.comment_author)
+        r = self.second_obs.mark_as_seen_by(user=self.comment_author)
         self.assertIsNone(r)  # Method always return None
 
         ovs_after = ObservationView.objects.filter(observation=self.obs).values()
         self.assertQuerysetEqual(ovs_after, ovs_before)
 
-    def test_mark_as_not_viewed_by_case_1(self):
+    def test_mark_as_unseen_by_case_1(self):
         """Normal case: the user has indeed previously seen the occurrence"""
         # Before, we can find it
         ObservationView.objects.get(observation=self.obs, user=self.comment_author)
-        r = self.obs.mark_as_not_viewed_by(user=self.comment_author)
+        r = self.obs.mark_as_unseen_by(user=self.comment_author)
         self.assertTrue(r)
         with self.assertRaises(ObservationView.DoesNotExist):
             ObservationView.objects.get(observation=self.obs, user=self.comment_author)
 
-    def test_mark_as_not_viewed_by_case_2(self):
+    def test_mark_as_unseen_by_case_2(self):
         """Anonymous user: nothing happens and the method return False"""
         all_ovs_before = ObservationView.objects.all().values()
-        r = self.obs.mark_as_not_viewed_by(user=AnonymousUser())
+        r = self.obs.mark_as_unseen_by(user=AnonymousUser())
         self.assertFalse(r)
         all_ovs_after = ObservationView.objects.all().values()
         self.assertQuerysetEqual(all_ovs_after, all_ovs_before)
 
-    def test_mark_as_not_viewed_by_case_3(self):
+    def test_mark_as_unseen_by_case_3(self):
         """User has not seen the observation before: method returns False, nothing happens to the db"""
         all_ovs_before = ObservationView.objects.all().values()
-        r = self.second_obs.mark_as_not_viewed_by(user=self.comment_author)
+        r = self.second_obs.mark_as_unseen_by(user=self.comment_author)
         self.assertFalse(r)
         all_ovs_after = ObservationView.objects.all().values()
         self.assertQuerysetEqual(all_ovs_after, all_ovs_before)

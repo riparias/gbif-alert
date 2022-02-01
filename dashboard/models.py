@@ -159,13 +159,13 @@ class Observation(models.Model):
             args=(self.id,),
         )
 
-    def mark_as_viewed_by(self, user: WebsiteUser) -> None:
+    def mark_as_seen_by(self, user: WebsiteUser) -> None:
         """
-        Mark the observation as "viewed" by a given user.
+        Mark the observation as "seen" by a given user.
 
         Note that this is a high-level function designed to be called directly from a view (for example)
             - Does nothing if the user is anonymous (not signed in)
-            - Does nothing if the user has already previously viewed this observation
+            - Does nothing if the user has already previously seen this observation
         """
 
         if user.is_authenticated:
@@ -174,10 +174,10 @@ class Observation(models.Model):
             except ObservationView.DoesNotExist:
                 ObservationView.objects.create(observation=self, user=user)
 
-    def first_viewed_at(self, user: WebsiteUser) -> Optional[datetime.datetime]:
-        """Return the time a user as first viewed this observation
+    def first_seen_at(self, user: WebsiteUser) -> Optional[datetime.datetime]:
+        """Return the time a user as first seen this observation
 
-        Returns none if the user is not logged in, or if they have not viewed the observation yet
+        Returns none if the user is not logged in, or if they have not seen the observation yet
         """
 
         # We want to check if user is not anonymous, but apparently is_authenticated is the preferred method
@@ -188,8 +188,8 @@ class Observation(models.Model):
                 return None
         return None
 
-    def mark_as_not_viewed_by(self, user: WebsiteUser) -> bool:
-        """Return True is successful, False otherwise (probable causes: user has not viewed this observation yet / user is anonymous)"""
+    def mark_as_unseen_by(self, user: WebsiteUser) -> bool:
+        """Return True is successful, False otherwise (probable causes: user has not seen this observation yet / user is anonymous)"""
         if user.is_authenticated:
             try:
                 self.observationview_set.get(user=user).delete()
@@ -303,7 +303,7 @@ class Observation(models.Model):
     def as_dict(self, for_user: WebsiteUser) -> dict[str, Any]:
         """Returns the model representation has a dict.
 
-        If the user is not anonymous, it also contains observation view data"""
+        If the user is not anonymous, it also contains status data (seen / unseen)"""
         lon, lat = self.lonlat_4326_tuple
 
         d = {
@@ -320,9 +320,9 @@ class Observation(models.Model):
         if for_user.is_authenticated:
             try:
                 self.observationview_set.get(user=for_user)
-                d["viewedByCurrentUser"] = True
+                d["seenByCurrentUser"] = True
             except ObservationView.DoesNotExist:
-                d["viewedByCurrentUser"] = False
+                d["seenByCurrentUser"] = False
 
         return d
 
