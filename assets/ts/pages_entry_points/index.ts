@@ -1,5 +1,4 @@
-import IndexPageRootComponent from "../components/IndexPageRootComponent.vue";
+import IndexPageRootComponent from "../components/pages_root_components/IndexPageRootComponent.vue";
 import { createApp } from "vue";
 
-const app = createApp(IndexPageRootComponent);
-app.mount("#app");
+createApp(IndexPageRootComponent).mount("#app");

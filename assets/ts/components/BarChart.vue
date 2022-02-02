@@ -31,19 +31,19 @@
     </g>
   </svg>
 
-  <div class="form-check">
+  <div class="form-check ms-5">
     <input
       type="checkbox"
       class="form-check-input"
       id="checkbox"
       v-model="dateRangeFilteringEnabled"
     />
-    <label for="checkbox" class="form-check-label"
+    <label for="checkbox" class="form-check-label small"
       >Enable date range filtering</label
     >
   </div>
   <new-range-slider
-    v-if="dataLoaded"
+    v-if="dataLoaded && dateRangeFilteringEnabled"
     :numberOfMonths="numberOfMonths"
     :initialValues="[selectedRangeStartIndex, selectedRangeEndIndex]"
     :leftMargin="this.svgStyle.margin.left"

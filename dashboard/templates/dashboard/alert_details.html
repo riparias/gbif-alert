@@ -1,5 +1,7 @@
 {% extends 'dashboard/base.html' %}
 
+{% load static %}
+
 {% block page_title %}Alert #{{ alert.pk }} details - LIFE RIPARIAS early alert{% endblock %}
 
 {% block after_messages %}
@@ -7,6 +9,22 @@
         <div class="row">
             <div class="col">
                 <h1>Alerts #{{ alert.pk }}</h1>
+                <ul class="list-group">
+                    <li class="list-group-item"><b>Areas:</b> {{ alert.areas_list|default:"all" }}</li>
+                    <li class="list-group-item"><b>Species:</b> {{ alert.species_list|default:"all" }}</li>
+                    <li class="list-group-item"><b>Datasets:</b> {{ alert.datasets_list|default:"all" }}</li>
+                    <li class="list-group-item"><b>Email notifications frequency:</b> {{ alert.get_email_notifications_frequency_display }}</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <div id="app">
+                    <AlertDetailsPageRootComponent></AlertDetailsPageRootComponent>
+                </div>
+
+                <script src="{% static 'js/alert_details-bundle.js' %}"></script>
             </div>
         </div>
     </div>

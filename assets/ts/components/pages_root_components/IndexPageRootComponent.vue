@@ -35,132 +35,118 @@
             @entries-changed="changeSelectedAreas"
           ></Modal-Multi-Selector>
 
-          <div
-            class="row mb-3"
-            v-if="frontendConfig.authenticatedUser === true"
-          >
-            <label
-              for="obsStatus"
-              class="col-sm-2 col-form-label col-form-label-sm"
-              >Status</label
-            >
-            <div class="col-sm-10">
-              <select
-                class="form-control form-control-sm"
-                id="obsStatus"
-                placeholder="col-form-label-sm"
-                v-model="filters.status"
-              >
-                <option :value="null">All</option>
-                <option value="seen">Seen</option>
-                <option value="unseen">Unseen</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-3">
-          <Observations-counter
-            class="float-right"
-            :counter-url="frontendConfig.apiEndpoints.observationsCounterUrl"
-            :filters="filters"
-          ></Observations-counter>
+          <ObservationStatusSelector
+            v-if="frontendConfig.authenticatedUser"
+            v-model="filters.status"
+          ></ObservationStatusSelector>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="row">
-    <div class="col">
-      <Custom-observations-time-line
-        :filters="filters"
-        :histogram-data-url="
-          frontendConfig.apiEndpoints.observationsHistogramDataUrl
-        "
-        @selectedDateRangeUpdated="debouncedUpdateDateFilters"
-      />
+  <div class="results">
+    <div class="row">
+      <div class="col">
+        <Custom-observations-time-line
+          :filters="filters"
+          :histogram-data-url="
+            frontendConfig.apiEndpoints.observationsHistogramDataUrl
+          "
+          @selectedDateRangeUpdated="debouncedUpdateDateFilters"
+        />
+      </div>
     </div>
-  </div>
-  <hr />
 
-  <div class="row">
-    <div class="col">
-      <Tab-switcher
-        v-model="selectedTab"
-        :tab-names="availableTabs"
-      ></Tab-switcher>
+    <div class="row mt-3">
+      <div class="col">
+        <Tab-switcher
+          v-model="selectedTab"
+          :tab-names="availableTabs"
+        ></Tab-switcher>
+      </div>
+      <div class="col align-self-center">
+        <Observations-counter
+          class="float-end"
+          :counter-url="frontendConfig.apiEndpoints.observationsCounterUrl"
+          :filters="filters"
+        ></Observations-counter>
+      </div>
+    </div>
 
-      <div class="px-4 bg-light border-start border-end">
-        <div v-show="selectedTab === 'Map view'">
-          <div class="row pt-2">
-            <div class="col">
-              <label
-                for="mapBaseSelector"
-                class="col-form-label col-form-label-sm"
-                >Base layer</label
-              >
+    <div class="row">
+      <div class="col">
+        <div class="px-4 bg-light border-start border-end">
+          <div v-show="selectedTab === 'Map view'">
+            <div class="row pt-2">
+              <div class="col">
+                <label
+                  for="mapBaseSelector"
+                  class="col-form-label col-form-label-sm"
+                  >Base layer</label
+                >
+              </div>
+              <div class="col">
+                <select
+                  id="mapBaseSelector"
+                  v-model="mapBaseLayer"
+                  class="form-select form-select-sm"
+                >
+                  <option v-for="l in availableMapBaseLayers" :value="l.id">
+                    {{ l.label }}
+                  </option>
+                </select>
+              </div>
+              <div class="col">
+                <label for="opacity" class="col-form-label col-form-label-sm"
+                  >Data layer opacity</label
+                >
+              </div>
+              <div class="col">
+                <input
+                  type="range"
+                  class="custom-range"
+                  id="opacity"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  :value="dataLayerOpacity"
+                  @input="dataLayerOpacity = $event.target.valueAsNumber"
+                />
+              </div>
             </div>
-            <div class="col">
-              <select
-                id="mapBaseSelector"
-                v-model="mapBaseLayer"
-                class="form-select form-select-sm"
-              >
-                <option v-for="l in availableMapBaseLayers" :value="l.id">
-                  {{ l.label }}
-                </option>
-              </select>
-            </div>
-            <div class="col">
-              <label for="opacity" class="col-form-label col-form-label-sm"
-                >Data layer opacity</label
-              >
-            </div>
-            <div class="col">
-              <input
-                type="range"
-                class="custom-range"
-                id="opacity"
-                min="0"
-                max="1"
-                step="0.1"
-                :value="dataLayerOpacity"
-                @input="dataLayerOpacity = $event.target.valueAsNumber"
-              />
-            </div>
+
+            <Observations-Map
+              :height="600"
+              :initial-zoom="8"
+              :initial-lat="50.501"
+              :initial-lon="4.4764"
+              :tile-server-url-template="
+                frontendConfig.apiEndpoints.tileServerUrlTemplate
+              "
+              :min-max-url="frontendConfig.apiEndpoints.minMaxOccPerHexagonUrl"
+              :filters="filters"
+              :show-counters="true"
+              :base-layer-name="mapBaseLayer"
+              :data-layer-opacity="dataLayerOpacity"
+              :areas-to-show="filters.areaIds"
+              :areas-endpoint-url-template="
+                frontendConfig.apiEndpoints.areasUrlTemplate
+              "
+            ></Observations-Map>
           </div>
 
-          <Observations-Map
-            :height="600"
-            :initial-zoom="8"
-            :initial-lat="50.501"
-            :initial-lon="4.4764"
-            :tile-server-url-template="
-              frontendConfig.apiEndpoints.tileServerUrlTemplate
-            "
-            :min-max-url="frontendConfig.apiEndpoints.minMaxOccPerHexagonUrl"
+          <Observations-Table
+            v-show="selectedTab === 'Table view'"
             :filters="filters"
-            :show-counters="true"
-            :base-layer-name="mapBaseLayer"
-            :data-layer-opacity="dataLayerOpacity"
-            :areas-to-show="filters.areaIds"
-            :areas-endpoint-url-template="
-              frontendConfig.apiEndpoints.areasUrlTemplate
+            :observations-json-url="
+              frontendConfig.apiEndpoints.observationsJsonUrl
             "
-          ></Observations-Map>
+            :observation-page-url-template="
+              frontendConfig.apiEndpoints.observationDetailsUrlTemplate
+            "
+          >
+          </Observations-Table>
         </div>
-
-        <Observations-Table
-          v-show="selectedTab === 'Table view'"
-          :filters="filters"
-          :observations-json-url="
-            frontendConfig.apiEndpoints.observationsJsonUrl
-          "
-          :observation-page-url-template="
-            frontendConfig.apiEndpoints.observationDetailsUrlTemplate
-          "
-        >
-        </Observations-Table>
       </div>
     </div>
   </div>
@@ -176,14 +162,15 @@ import {
   SelectionEntry,
   AreaInformation,
   DateRange,
-} from "../interfaces";
+} from "../../interfaces";
 import axios from "axios";
-import ObservationsCounter from "../components/ObservationsCounter.vue";
-import TabSwitcher from "../components/TabSwitcher.vue";
-import ObservationsTable from "../components/ObservationsTable.vue";
-import ObservationsMap from "../components/ObservationsMap.vue";
-import ModalMultiSelector from "../components/ModalMultiSelector.vue";
-import CustomObservationsTimeLine from "./CustomObservationTimeLine.vue";
+import ObservationsCounter from "../ObservationsCounter.vue";
+import TabSwitcher from "../TabSwitcher.vue";
+import ObservationsTable from "../ObservationsTable.vue";
+import ObservationsMap from "../ObservationsMap.vue";
+import ModalMultiSelector from "../ModalMultiSelector.vue";
+import CustomObservationsTimeLine from "../CustomObservationTimeLine.vue";
+import ObservationStatusSelector from "../ObservationStatusSelector.vue";
 import { DateTime } from "luxon";
 import { debounce, DebouncedFunc } from "lodash";
 
@@ -207,6 +194,7 @@ export default defineComponent({
   name: "IndexPageRootComponent",
   components: {
     CustomObservationsTimeLine,
+    ObservationStatusSelector,
     ObservationsMap,
     ObservationsCounter,
     TabSwitcher,
