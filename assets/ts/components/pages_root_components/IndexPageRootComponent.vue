@@ -43,113 +43,11 @@
       </div>
     </div>
   </div>
-
-  <div class="results">
-    <div class="row">
-      <div class="col">
-        <Custom-observations-time-line
-          :filters="filters"
-          :histogram-data-url="
-            frontendConfig.apiEndpoints.observationsHistogramDataUrl
-          "
-          @selectedDateRangeUpdated="debouncedUpdateDateFilters"
-        />
-      </div>
-    </div>
-
-    <div class="row mt-3">
-      <div class="col">
-        <Tab-switcher
-          v-model="selectedTab"
-          :tab-names="availableTabs"
-        ></Tab-switcher>
-      </div>
-      <div class="col align-self-center">
-        <Observations-counter
-          class="float-end"
-          :counter-url="frontendConfig.apiEndpoints.observationsCounterUrl"
-          :filters="filters"
-        ></Observations-counter>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col">
-        <div class="px-4 bg-light border-start border-end">
-          <div v-show="selectedTab === 'Map view'">
-            <div class="row pt-2">
-              <div class="col">
-                <label
-                  for="mapBaseSelector"
-                  class="col-form-label col-form-label-sm"
-                  >Base layer</label
-                >
-              </div>
-              <div class="col">
-                <select
-                  id="mapBaseSelector"
-                  v-model="mapBaseLayer"
-                  class="form-select form-select-sm"
-                >
-                  <option v-for="l in availableMapBaseLayers" :value="l.id">
-                    {{ l.label }}
-                  </option>
-                </select>
-              </div>
-              <div class="col">
-                <label for="opacity" class="col-form-label col-form-label-sm"
-                  >Data layer opacity</label
-                >
-              </div>
-              <div class="col">
-                <input
-                  type="range"
-                  class="custom-range"
-                  id="opacity"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  :value="dataLayerOpacity"
-                  @input="dataLayerOpacity = $event.target.valueAsNumber"
-                />
-              </div>
-            </div>
-
-            <Observations-Map
-              :height="600"
-              :initial-zoom="8"
-              :initial-lat="50.501"
-              :initial-lon="4.4764"
-              :tile-server-url-template="
-                frontendConfig.apiEndpoints.tileServerUrlTemplate
-              "
-              :min-max-url="frontendConfig.apiEndpoints.minMaxOccPerHexagonUrl"
-              :filters="filters"
-              :show-counters="true"
-              :base-layer-name="mapBaseLayer"
-              :data-layer-opacity="dataLayerOpacity"
-              :areas-to-show="filters.areaIds"
-              :areas-endpoint-url-template="
-                frontendConfig.apiEndpoints.areasUrlTemplate
-              "
-            ></Observations-Map>
-          </div>
-
-          <Observations-Table
-            v-show="selectedTab === 'Table view'"
-            :filters="filters"
-            :observations-json-url="
-              frontendConfig.apiEndpoints.observationsJsonUrl
-            "
-            :observation-page-url-template="
-              frontendConfig.apiEndpoints.observationDetailsUrlTemplate
-            "
-          >
-          </Observations-Table>
-        </div>
-      </div>
-    </div>
-  </div>
+  <Observations
+    :frontend-config="frontendConfig"
+    :filters="filters"
+    @selectedDateRangeUpdated="debouncedUpdateDateFilters"
+  ></Observations>
 </template>
 
 <script lang="ts">
@@ -164,13 +62,11 @@ import {
   DateRange,
 } from "../../interfaces";
 import axios from "axios";
-import ObservationsCounter from "../ObservationsCounter.vue";
-import TabSwitcher from "../TabSwitcher.vue";
-import ObservationsTable from "../ObservationsTable.vue";
-import ObservationsMap from "../ObservationsMap.vue";
+
 import ModalMultiSelector from "../ModalMultiSelector.vue";
-import CustomObservationsTimeLine from "../CustomObservationTimeLine.vue";
+
 import ObservationStatusSelector from "../ObservationStatusSelector.vue";
+import Observations from "../Observations.vue";
 import { DateTime } from "luxon";
 import { debounce, DebouncedFunc } from "lodash";
 
@@ -182,23 +78,14 @@ interface IndexPageRootComponentData {
   availableDatasets: DatasetInformation[];
   availableAreas: AreaInformation[];
   filters: DashboardFilters;
-  mapBaseLayer: string;
-  availableMapBaseLayers: SelectionEntry[];
-  selectedTab: string;
-  availableTabs: string[];
-  dataLayerOpacity: number;
   debouncedUpdateDateFilters: null | DebouncedFunc<(range: DateRange) => void>;
 }
 
 export default defineComponent({
   name: "IndexPageRootComponent",
   components: {
-    CustomObservationsTimeLine,
+    Observations,
     ObservationStatusSelector,
-    ObservationsMap,
-    ObservationsCounter,
-    TabSwitcher,
-    ObservationsTable,
     ModalMultiSelector,
   },
   data: function (): IndexPageRootComponentData {
@@ -209,14 +96,6 @@ export default defineComponent({
       availableDatasets: [],
       availableAreas: [],
 
-      availableMapBaseLayers: [
-        { id: "toner", label: "Stamen Toner" },
-        { id: "osmHot", label: "OSM HOT" },
-        { id: "esriImagery", label: "ESRI World Imagery" },
-      ],
-      mapBaseLayer: "osmHot",
-      selectedTab: "Map view",
-      availableTabs: ["Map view", "Table view"],
       filters: {
         speciesIds: [],
         datasetsIds: [],
@@ -225,7 +104,7 @@ export default defineComponent({
         endDate: null,
         status: null,
       },
-      dataLayerOpacity: 0.8,
+
       debouncedUpdateDateFilters: null,
     };
   },
@@ -278,7 +157,6 @@ export default defineComponent({
         return dt.toISODate();
       }
     },
-
     populateAvailableDatasets: function () {
       axios
         .get(this.frontendConfig.apiEndpoints.datasetsListUrl)

@@ -49,6 +49,7 @@ interface EndpointsUrls {
   observationsJsonUrl: string;
   observationsHistogramDataUrl: string;
   observationDetailsUrlTemplate: string;
+  minMaxOccPerHexagonUrl: string;
 }
 
 // Keep in sync with templatetags.riparias_extras.js_config_object
