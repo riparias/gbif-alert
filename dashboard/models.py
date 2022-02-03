@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import hashlib
 
-from typing import Optional, Union, Any
+from typing import Optional, Union, Any, Dict
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, AnonymousUser
@@ -189,7 +189,10 @@ class Observation(models.Model):
         return None
 
     def mark_as_unseen_by(self, user: WebsiteUser) -> bool:
-        """Return True is successful, False otherwise (probable causes: user has not seen this observation yet / user is anonymous)"""
+        """Mark the observation as "unseen" for a given user.
+
+        :return: True is successful (most probable causes of failure: user has not seen this observation yet / user is
+        anonymous)"""
         if user.is_authenticated:
             try:
                 self.observationview_set.get(user=user).delete()
@@ -260,7 +263,7 @@ class Observation(models.Model):
             raise Observation.MultipleObjectsReturned
 
     def get_identical_observations(self) -> QuerySet[Observation]:
-        """Return 'identical' observations (same stable_id), excluding myself)"""
+        """Return 'identical' observations (same stable_id), excluding myself"""
         return Observation.objects.exclude(pk=self.pk).filter(
             stable_id=Observation.build_stable_id(
                 self.occurrence_id, self.source_dataset.gbif_dataset_key
@@ -465,3 +468,19 @@ class Alert(models.Model):
     @property
     def species_list(self) -> str:
         return ", ".join(self.species.order_by("name").values_list("name", flat=True))
+
+    @property
+    def as_dashboard_filters(self) -> Dict[str, Any]:
+        """The alert represented as a dict
+
+        Once converted to JSON, this dict is suitable for Observation filtering in the frontend
+        (see DashboardFilters TypeScript interface).
+        """
+        return {
+            "speciesIds": [s.pk for s in self.species.all()],
+            "datasetsIds": [d.pk for d in self.datasets.all()],
+            "areaIds": [a.pk for a in self.areas.all()],
+            "startDate": None,
+            "endDate": None,
+            "status": None,
+        }

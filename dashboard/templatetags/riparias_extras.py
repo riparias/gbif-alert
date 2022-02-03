@@ -45,6 +45,7 @@ def js_config_object(context):
             "observationsHistogramDataUrl": reverse(
                 "dashboard:api-filtered-observations-monthly-histogram"
             ),
+            "alertAsFiltersUrl": reverse("dashboard:api-alert-as-filters-json"),
         },
     }
     if context.request.user.is_authenticated:

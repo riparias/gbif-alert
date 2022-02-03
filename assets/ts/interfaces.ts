@@ -50,6 +50,7 @@ interface EndpointsUrls {
   observationsHistogramDataUrl: string;
   observationDetailsUrlTemplate: string;
   minMaxOccPerHexagonUrl: string;
+  alertAsFiltersUrl: string;
 }
 
 // Keep in sync with templatetags.riparias_extras.js_config_object

@@ -25,6 +25,11 @@ urlpatterns = [
         name="page-mark-observation-as-unseen",
     ),
     # Api
+    path(
+        "api/alert/as_filters",
+        views.alert_as_filters,
+        name="api-alert-as-filters-json",
+    ),
     path("api/species", views.species_list_json, name="api-species-list-json"),
     path("api/datasets", views.datasets_list_json, name="api-datasets-list-json"),
     path(

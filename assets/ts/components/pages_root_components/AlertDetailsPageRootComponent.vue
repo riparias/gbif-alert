@@ -1,11 +1,69 @@
 <template>
-  <h1>Toto</h1>
+  <Observations
+    :frontend-config="frontendConfig"
+    :filters="filters"
+    @selectedDateRangeUpdated="debouncedUpdateDateFilters"
+  ></Observations>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
+import Observations from "../Observations.vue";
+import { DashboardFilters, DateRange, FrontEndConfig } from "../../interfaces";
+import axios from "axios";
+import { debounce, DebouncedFunc } from "lodash";
+import { dateTimeToFilterParam } from "../../helpers";
+
+declare const ripariasConfig: FrontEndConfig;
+declare const alertId: number;
+
+interface AlertDetailsPageRootComponentData {
+  alertId: number;
+  frontendConfig: FrontEndConfig;
+  filters: DashboardFilters;
+  debouncedUpdateDateFilters: null | DebouncedFunc<(range: DateRange) => void>;
+}
 
 export default defineComponent({
   name: "AlertDetailsPageRootComponent",
+  components: {
+    Observations,
+  },
+  data: function (): AlertDetailsPageRootComponentData {
+    return {
+      frontendConfig: ripariasConfig,
+      alertId: alertId,
+      filters: {
+        speciesIds: [],
+        datasetsIds: [],
+        areaIds: [],
+        startDate: null,
+        endDate: null,
+        status: null,
+      },
+      debouncedUpdateDateFilters: null,
+    };
+  },
+  mounted: function () {
+    axios
+      .get(this.frontendConfig.apiEndpoints.alertAsFiltersUrl, {
+        params: { alert_id: this.alertId },
+      })
+      .then((response) => {
+        this.filters = response.data;
+      });
+  },
+  created() {
+    // Approach stolen  from: https://dmitripavlutin.com/vue-debounce-throttle/
+    this.debouncedUpdateDateFilters = debounce((range) => {
+      this.filters.startDate = dateTimeToFilterParam(range.start);
+      this.filters.endDate = dateTimeToFilterParam(range.end);
+    }, 300);
+  },
+  beforeUnmount() {
+    if (this.debouncedUpdateDateFilters) {
+      this.debouncedUpdateDateFilters.cancel();
+    }
+  },
 });
 </script>

@@ -10,6 +10,9 @@ will):
     - status_for_user: seen | unseen. Ignored for anonymous users. If the parameter is not set or is set to any other
       value than seen or unseen, filtering is not applied
 """
+from __future__ import annotations
+
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.core.serializers import serialize
 from django.db.models import Count
@@ -17,10 +20,11 @@ from django.db.models.functions import TruncMonth
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse, HttpRequest
 from django.shortcuts import get_object_or_404
 
-from dashboard.models import Species, Dataset, Area
+from dashboard.models import Species, Dataset, Area, Alert
 from dashboard.views.helpers import (
     filtered_observations_from_request,
     extract_int_request,
+    AuthenticatedHttpRequest,
 )
 
 
@@ -178,3 +182,16 @@ def filtered_observations_monthly_histogram_json(request: HttpRequest):
         ],
         safe=False,
     )
+
+
+@login_required
+def alert_as_filters(
+    request: AuthenticatedHttpRequest,
+) -> JsonResponse | HttpResponseForbidden:
+    alert_id = extract_int_request(request, "alert_id")
+    alert = get_object_or_404(Alert, id=alert_id)
+
+    if alert.user == request.user:
+        return JsonResponse(alert.as_dashboard_filters)
+    else:
+        return HttpResponseForbidden()

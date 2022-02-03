@@ -69,6 +69,7 @@ import ObservationStatusSelector from "../ObservationStatusSelector.vue";
 import Observations from "../Observations.vue";
 import { DateTime } from "luxon";
 import { debounce, DebouncedFunc } from "lodash";
+import { dateTimeToFilterParam } from "../../helpers";
 
 declare const ripariasConfig: FrontEndConfig;
 
@@ -128,8 +129,8 @@ export default defineComponent({
   created() {
     // Approach stolen  from: https://dmitripavlutin.com/vue-debounce-throttle/
     this.debouncedUpdateDateFilters = debounce((range) => {
-      this.filters.startDate = this.dateTimeToFilterParam(range.start);
-      this.filters.endDate = this.dateTimeToFilterParam(range.end);
+      this.filters.startDate = dateTimeToFilterParam(range.start);
+      this.filters.endDate = dateTimeToFilterParam(range.end);
     }, 300);
   },
   beforeUnmount() {
@@ -148,14 +149,6 @@ export default defineComponent({
 
     changeSelectedAreas: function (areasIds: Number[]) {
       this.filters.areaIds = areasIds;
-    },
-
-    dateTimeToFilterParam(dt: DateTime | null): string | null {
-      if (dt == null) {
-        return null;
-      } else {
-        return dt.toISODate();
-      }
     },
     populateAvailableDatasets: function () {
       axios
