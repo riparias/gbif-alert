@@ -34,7 +34,6 @@ export default defineComponent({
   emits: ["update:modelValue"],
   methods: {
     myEmit: function (v: string | null) {
-      console.log("Passe myEmit, value", v);
       this.$emit("update:modelValue", v);
     },
   },

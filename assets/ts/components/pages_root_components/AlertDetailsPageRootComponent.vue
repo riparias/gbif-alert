@@ -1,4 +1,8 @@
 <template>
+  <ObservationStatusSelector
+    v-model="filters.status"
+  ></ObservationStatusSelector>
+
   <Observations
     :frontend-config="frontendConfig"
     :filters="filters"
@@ -13,6 +17,7 @@ import { DashboardFilters, DateRange, FrontEndConfig } from "../../interfaces";
 import axios from "axios";
 import { debounce, DebouncedFunc } from "lodash";
 import { dateTimeToFilterParam } from "../../helpers";
+import ObservationStatusSelector from "../ObservationStatusSelector.vue";
 
 declare const ripariasConfig: FrontEndConfig;
 declare const alertId: number;
@@ -28,6 +33,7 @@ export default defineComponent({
   name: "AlertDetailsPageRootComponent",
   components: {
     Observations,
+    ObservationStatusSelector,
   },
   data: function (): AlertDetailsPageRootComponentData {
     return {
