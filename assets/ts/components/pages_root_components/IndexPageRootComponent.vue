@@ -67,7 +67,6 @@ import ModalMultiSelector from "../ModalMultiSelector.vue";
 
 import ObservationStatusSelector from "../ObservationStatusSelector.vue";
 import Observations from "../Observations.vue";
-import { DateTime } from "luxon";
 import { debounce, DebouncedFunc } from "lodash";
 import { dateTimeToFilterParam } from "../../helpers";
 

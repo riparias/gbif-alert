@@ -12,6 +12,7 @@ import axios from "axios";
 import { filtersToQuerystring } from "../helpers";
 
 export default defineComponent({
+  // This component only shows a total counter, according to the passed filters (see also ObservationsCounterPerStatus)
   name: "ObservationsCounter",
   props: {
     filters: Object as () => DashboardFilters,
