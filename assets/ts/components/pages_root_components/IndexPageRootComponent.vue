@@ -38,6 +38,8 @@
           <ObservationStatusSelector
             v-if="frontendConfig.authenticatedUser"
             v-model="filters.status"
+            :counter-url="frontendConfig.apiEndpoints.observationsCounterUrl"
+            :filters="filters"
           ></ObservationStatusSelector>
         </div>
       </div>

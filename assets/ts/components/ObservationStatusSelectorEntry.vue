@@ -8,13 +8,15 @@
     :checked="checked"
     @click="$emit('entrySelected')"
   />
-  <label class="btn btn-outline-primary" :for="elementId">{{
-    entryLabel
-  }}</label>
+  <label class="btn btn-outline-success" :for="elementId"
+    >{{ entryLabel }}
+    <span v-if="count" class="badge bg-dark">{{ formattedCount }}</span>
+  </label>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
+import { formatCount } from "../helpers";
 
 export default defineComponent({
   name: "ObservationStatusSelectorEntry",
@@ -27,8 +29,17 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    count: {
+      type: Number,
+      required: false,
+    },
   },
   computed: {
+    formattedCount: function (): string | undefined {
+      if (this.count) {
+        return formatCount(this.count);
+      }
+    },
     elementId: function (): string {
       return "btnRadio" + this.entryLabel;
     },

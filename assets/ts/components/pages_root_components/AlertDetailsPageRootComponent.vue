@@ -1,12 +1,9 @@
 <template>
   <ObservationStatusSelector
     v-model="filters.status"
-  ></ObservationStatusSelector>
-
-  <ObservationsCounterPerStatus
     :counter-url="frontendConfig.apiEndpoints.observationsCounterUrl"
     :filters="filters"
-  ></ObservationsCounterPerStatus>
+  ></ObservationStatusSelector>
 
   <Observations
     :frontend-config="frontendConfig"
@@ -23,7 +20,6 @@ import axios from "axios";
 import { debounce, DebouncedFunc } from "lodash";
 import { dateTimeToFilterParam } from "../../helpers";
 import ObservationStatusSelector from "../ObservationStatusSelector.vue";
-import ObservationsCounterPerStatus from "../ObservationsCounterPerStatus.vue";
 
 declare const ripariasConfig: FrontEndConfig;
 declare const alertId: number;
@@ -40,7 +36,6 @@ export default defineComponent({
   components: {
     Observations,
     ObservationStatusSelector,
-    ObservationsCounterPerStatus,
   },
   data: function (): AlertDetailsPageRootComponentData {
     return {

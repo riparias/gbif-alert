@@ -13,3 +13,7 @@ export function dateTimeToFilterParam(dt: DateTime | null): string | null {
     return dt.toISODate();
   }
 }
+
+export function formatCount(val: number): string {
+  return new Intl.NumberFormat().format(val);
+}
