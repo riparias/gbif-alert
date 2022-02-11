@@ -231,6 +231,7 @@ export default defineComponent({
         if (this.dataLayer) {
           this.map.removeLayer(this.dataLayer as VectorTileLayer);
         }
+        this.loadOccMinMax(this.initialZoom, this.filters);
         this.dataLayer = this.createDataLayer();
         this.map.addLayer(this.dataLayer as VectorTileLayer);
       }
@@ -267,7 +268,6 @@ export default defineComponent({
     },
   },
   mounted() {
-    this.loadOccMinMax(this.initialZoom, this.filters);
     this.map = this.createBasicMap();
     this.replaceDataLayer();
   },
