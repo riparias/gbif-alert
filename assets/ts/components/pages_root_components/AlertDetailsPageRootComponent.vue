@@ -45,6 +45,7 @@ export default defineComponent({
         speciesIds: [],
         datasetsIds: [],
         areaIds: [],
+        initialDataImportIds: [],
         startDate: null,
         endDate: null,
         status: null,

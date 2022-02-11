@@ -6,13 +6,14 @@
           <b>Data filtering:</b>
         </div>
 
-        <div class="col-7">
+        <div class="col">
           <Modal-Multi-Selector
             class="m-2"
             button-label-singular="species"
             button-label-plural="species"
             modal-title="Species to include"
             :entries="availableSpeciesAsEntries"
+            :initially-selected-entries-ids="filters.speciesIds"
             @entries-changed="changeSelectedSpecies"
           ></Modal-Multi-Selector>
 
@@ -22,6 +23,7 @@
             button-label-plural="datasets"
             modal-title="Datasets to include"
             :entries="availableDatasetsAsEntries"
+            :initially-selected-entries-ids="filters.datasetsIds"
             @entries-changed="changeSelectedDatasets"
           ></Modal-Multi-Selector>
 
@@ -32,7 +34,19 @@
             no-selection-button-label="Everywhere"
             modal-title="Restrict to specific areas"
             :entries="availableAreasAsEntries"
+            :initially-selected-entries-ids="filters.areaIds"
             @entries-changed="changeSelectedAreas"
+          ></Modal-Multi-Selector>
+
+          <Modal-Multi-Selector
+            class="m-2"
+            button-label-singular="initial data import"
+            button-label-plural="initial data imports"
+            no-selection-button-label="Imported at all time"
+            modal-title="First imported during data imports"
+            :entries="availableDataimportsAsEntries"
+            :initially-selected-entries-ids="filters.initialDataImportIds"
+            @entries-changed="changeSelectedInitialDataImport"
           ></Modal-Multi-Selector>
 
           <ObservationStatusSelector
@@ -62,6 +76,7 @@ import {
   SelectionEntry,
   AreaInformation,
   DateRange,
+  DataImportInformation,
 } from "../../interfaces";
 import axios from "axios";
 
@@ -73,12 +88,14 @@ import { debounce, DebouncedFunc } from "lodash";
 import { dateTimeToFilterParam } from "../../helpers";
 
 declare const ripariasConfig: FrontEndConfig;
+declare const initialFilters: DashboardFilters;
 
 interface IndexPageRootComponentData {
   frontendConfig: FrontEndConfig;
   availableSpecies: SpeciesInformation[];
   availableDatasets: DatasetInformation[];
   availableAreas: AreaInformation[];
+  availableDataImports: DataImportInformation[];
   filters: DashboardFilters;
   debouncedUpdateDateFilters: null | DebouncedFunc<(range: DateRange) => void>;
 }
@@ -97,34 +114,41 @@ export default defineComponent({
       availableSpecies: [],
       availableDatasets: [],
       availableAreas: [],
+      availableDataImports: [],
 
-      filters: {
-        speciesIds: [],
-        datasetsIds: [],
-        areaIds: [],
-        startDate: null,
-        endDate: null,
-        status: null,
-      },
+      filters: initialFilters,
 
       debouncedUpdateDateFilters: null,
     };
   },
   computed: {
     availableSpeciesAsEntries: function (): SelectionEntry[] {
-      return this.availableSpecies.map((s: SpeciesInformation) => {
-        return { id: s.id, label: s.scientificName };
-      });
+      return this.availableSpecies
+        .sort((a, b) => (a.scientificName > b.scientificName ? 1 : -1))
+        .map((s) => {
+          return { id: s.id, label: s.scientificName };
+        });
     },
     availableDatasetsAsEntries: function (): SelectionEntry[] {
-      return this.availableDatasets.map((d: DatasetInformation) => {
-        return { id: d.id, label: d.name };
-      });
+      return this.availableDatasets
+        .sort((a, b) => (a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1))
+        .map((d) => {
+          return { id: d.id, label: d.name };
+        });
     },
     availableAreasAsEntries: function (): SelectionEntry[] {
-      return this.availableAreas.map((a: AreaInformation) => {
-        return { id: a.id, label: a.name };
-      });
+      return this.availableAreas
+        .sort((a, b) => (a.name > b.name ? 1 : -1))
+        .map((a: AreaInformation) => {
+          return { id: a.id, label: a.name };
+        });
+    },
+    availableDataimportsAsEntries: function (): SelectionEntry[] {
+      return this.availableDataImports
+        .sort((a, b) => (a.str > b.str ? 1 : -1))
+        .map((d) => {
+          return { id: d.id, label: d.str };
+        });
     },
   },
   created() {
@@ -151,6 +175,9 @@ export default defineComponent({
     changeSelectedAreas: function (areasIds: Number[]) {
       this.filters.areaIds = areasIds;
     },
+    changeSelectedInitialDataImport: function (dataImportsIds: Number[]) {
+      this.filters.initialDataImportIds = dataImportsIds;
+    },
     populateAvailableDatasets: function () {
       axios
         .get(this.frontendConfig.apiEndpoints.datasetsListUrl)
@@ -172,12 +199,20 @@ export default defineComponent({
           this.availableAreas = response.data;
         });
     },
+    populateAvailableDataImports: function () {
+      axios
+        .get(this.frontendConfig.apiEndpoints.dataImportsListUrl)
+        .then((response) => {
+          this.availableDataImports = response.data;
+        });
+    },
   },
 
   mounted: function () {
     this.populateAvailableSpecies();
     this.populateAvailableDatasets();
     this.populateAvailableAreas();
+    this.populateAvailableDataImports();
   },
 });
 </script>

@@ -54,9 +54,15 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, PropType } from "vue";
 import { SelectionEntry } from "../interfaces";
 import { v4 as uuidv4 } from "uuid";
+
+interface ModalMultiSelectorData {
+  modalActive: boolean;
+  selectedEntriesIds: number[];
+  uuid: string;
+}
 
 export default defineComponent({
   name: "ModalMultiSelector",
@@ -69,11 +75,15 @@ export default defineComponent({
       type: Array as () => SelectionEntry[],
       default: [],
     },
+    initiallySelectedEntriesIds: {
+      type: Array as PropType<Array<number>>,
+      default: [],
+    },
   },
-  data() {
+  data(): ModalMultiSelectorData {
     return {
       modalActive: false,
-      selectedEntriesIds: [],
+      selectedEntriesIds: this.initiallySelectedEntriesIds,
       uuid: uuidv4(),
     };
   },
@@ -88,7 +98,7 @@ export default defineComponent({
         }
       } else {
         // 1 single selection: show the value
-        if (this.selectedEntriesIds.length === 1) {
+        if (this.selectedEntriesIds.length === 1 && this.entries.length > 0) {
           return (
             this.buttonLabelSingular +
             ": " +

@@ -79,6 +79,9 @@ JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
         {% if area_ids %}
             AND ST_Within(occ.location, areas.mpoly)
         {% endif %}
+        {% if initial_data_import_ids %}
+            AND occ.initial_data_import_id IN {{ initial_data_import_ids | inclause }}
+        {% endif %}
         {% if status == 'unseen' %}
             AND NOT (EXISTS(
             SELECT (1) AS "a" FROM "dashboard_observationview" V1 WHERE (
@@ -134,6 +137,7 @@ def mvt_tiles_hexagon_grid_aggregated(request: HttpRequest, zoom: int, x: int, y
         end_date,
         area_ids,
         status_for_user,
+        initial_data_import_ids,
     ) = filters_from_request(request)
 
     sql_template = readable_string(
@@ -159,6 +163,7 @@ def mvt_tiles_hexagon_grid_aggregated(request: HttpRequest, zoom: int, x: int, y
         "species_ids": species_ids,
         "datasets_ids": datasets_ids,
         "area_ids": area_ids,
+        "initial_data_import_ids": initial_data_import_ids,
     }
 
     if status_for_user and request.user.is_authenticated:
@@ -191,6 +196,7 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
             end_date,
             area_ids,
             status_for_user,
+            initial_data_import_ids,
         ) = filters_from_request(request)
 
         sql_template = readable_string(
@@ -210,6 +216,7 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
             "species_ids": species_ids,
             "datasets_ids": datasets_ids,
             "area_ids": area_ids,
+            "initial_data_import_ids": initial_data_import_ids,
         }
 
         if status_for_user and request.user.is_authenticated:

@@ -5,6 +5,10 @@
 {% block page_title %}Home - RIPARIAS early alert{% endblock %}
 
 {% block after_messages %}
+<script type="text/javascript">
+    const initialFilters = {{ initialFilters|safe }};
+</script>
+
 <div class="container" id="app">
     <IndexPageRootComponent></IndexPageRootComponent>
 </div>

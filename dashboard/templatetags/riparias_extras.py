@@ -1,12 +1,43 @@
 import json
+from typing import Any
+from urllib.parse import urlencode
 
 from django import template
 from django.conf import settings
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
+from dashboard.models import DataImport
 
 register = template.Library()
+
+
+def _my_reverse(view_name, kwargs=None, query_kwargs=None):
+    """
+    Custom reverse to add a query string after the url
+    Example usage:
+    url = my_reverse('my_test_url', kwargs={'pk': object.id}, query_kwargs={'next': reverse('home')})
+    """
+    url = reverse(view_name, kwargs=kwargs)
+
+    if query_kwargs:
+        return f"{url}?{urlencode(query_kwargs)}"
+
+    return url
+
+
+def _build_dashboard_url_with_filter(k: str, v: Any) -> str:
+    return _my_reverse(
+        "dashboard:page-index",
+        query_kwargs={"filters": {k: v}},
+    )
+
+
+@register.simple_tag
+def dashboard_url_filtered_by_data_import(data_import: DataImport) -> str:
+    return _build_dashboard_url_with_filter(
+        k="initialDataImportIds", v=[data_import.pk]
+    )
 
 
 @register.simple_tag(takes_context=True)
@@ -22,6 +53,7 @@ def js_config_object(context):
             "speciesListUrl": reverse("dashboard:api-species-list-json"),
             "datasetsListUrl": reverse("dashboard:api-datasets-list-json"),
             "areasListUrl": reverse("dashboard:api-areas-list-json"),
+            "dataImportsListUrl": reverse("dashboard:api-dataimports-list-json"),
             "observationsCounterUrl": reverse(
                 "dashboard:api-filtered-observations-counter"
             ),

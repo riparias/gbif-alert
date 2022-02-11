@@ -32,6 +32,10 @@ urlpatterns = [
     ),
     path("api/species", views.species_list_json, name="api-species-list-json"),
     path("api/datasets", views.datasets_list_json, name="api-datasets-list-json"),
+    path("api/areas", views.areas_list_json, name="api-areas-list-json"),
+    path(
+        "api/dataimports", views.dataimports_list_json, name="api-dataimports-list-json"
+    ),
     path(
         "api/filtered_observations/counter",
         views.filtered_observations_counter_json,
@@ -47,7 +51,6 @@ urlpatterns = [
         views.filtered_observations_data_page_json,
         name="api-filtered-observations-data-page",
     ),
-    path("api/areas", views.areas_list_json, name="api-areas-list-json"),
     path("api/area/<int:id>", views.area_geojson, name="api-area-geojson"),
     # Maps
     path(

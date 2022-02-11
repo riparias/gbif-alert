@@ -1,5 +1,7 @@
+import ast
 import datetime
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Dict
+from urllib.parse import unquote
 
 from django.contrib.gis.db.models.aggregates import Union
 from django.db.models import QuerySet
@@ -56,6 +58,23 @@ def extract_date_request(
     return None
 
 
+def extract_dict_request(request: HttpRequest, param_name: str) -> Optional[Dict]:
+    """Returns a dict. The parameter is expected to be URL encoded via  urlencode() or similar
+
+    Edge cases:
+    If parameter not set: None
+    If not a dict but something else that can be interpreted by literal_eval (see Python doc): None
+    May raise ValueError, TypeError, SyntaxError, MemoryError and RecursionError depending on the malformed input.
+    """
+    val = extract_str_request(request, param_name)
+    if val is not None:
+        evaluated = ast.literal_eval(unquote(val))
+        if isinstance(evaluated, Dict):
+            return evaluated
+
+    return None
+
+
 def filtered_observations_from_request(request: HttpRequest) -> QuerySet[Observation]:
     """Takes a request, extract common parameters used to filter observations and return a corresponding QuerySet"""
     (
@@ -65,6 +84,7 @@ def filtered_observations_from_request(request: HttpRequest) -> QuerySet[Observa
         end_date,
         area_ids,
         status_for_user,
+        initial_data_import_ids,
     ) = filters_from_request(request)
 
     # !! IMPORTANT !! Make sure the observation filtering here is equivalent to what's done in
@@ -86,6 +106,8 @@ def filtered_observations_from_request(request: HttpRequest) -> QuerySet[Observa
             area=Union("mpoly")
         )["area"]
         qs = qs.filter(location__within=combined_areas)
+    if initial_data_import_ids:
+        qs = qs.filter(initial_data_import_id__in=initial_data_import_ids)
     if status_for_user and request.user.is_authenticated:
         ov = ObservationView.objects.filter(user=request.user)
         if status_for_user == "seen":
@@ -105,6 +127,7 @@ def filters_from_request(
     Optional[datetime.date],
     List[int],
     Optional[str],
+    List[int],
 ]:
     species_ids = extract_int_array_request(request, "speciesIds[]")
     datasets_ids = extract_int_array_request(request, "datasetsIds[]")
@@ -112,5 +135,16 @@ def filters_from_request(
     end_date = extract_date_request(request, "endDate")
     area_ids = extract_int_array_request(request, "areaIds[]")
     status_for_user = extract_str_request(request, "status")
+    initial_data_import_ids = extract_int_array_request(
+        request, "initialDataImportIds[]"
+    )
 
-    return species_ids, datasets_ids, start_date, end_date, area_ids, status_for_user
+    return (
+        species_ids,
+        datasets_ids,
+        start_date,
+        end_date,
+        area_ids,
+        status_for_user,
+        initial_data_import_ids,
+    )

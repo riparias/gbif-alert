@@ -5,7 +5,7 @@
     <h4>Data import: #{{ data_import.pk }}</h4>
     <b>Time: </b>{{ data_import.start }} - {{ data_import.end }}<br/>
     <b>Imported observations: </b>{{ data_import.imported_observations_counter|intcomma }}<br/>
-     <b>New observations in this import: </b>{{ data_import.occurrences_initially_imported.count|intcomma }}<br/>
+    <b>New observations in this import: </b><a href="{% dashboard_url_filtered_by_data_import data_import %}">{{ data_import.occurrences_initially_imported.count|intcomma }}</a><br/>
     <b>Skipped observations in download: </b>{{ data_import.skipped_observations_counter|intcomma }}<br/>
     <b>GBIF predicate: </b>{{ data_import.gbif_predicate }}<br/>
     <b>GBIF download: </b><a href="{{ data_import.gbif_download_id|gbif_download_url }}">{{ data_import.gbif_download_id }}</a>(visit link for license, DOI and more)

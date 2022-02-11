@@ -7,6 +7,7 @@ will):
     - startDate: start date (inclusive), in '%Y-%m-%d' format. Example: 2021-07-31, 1981-08-02
     - endDate: end date (inclusive), in '%Y-%m-%d' format. Example: 2021-07-31, 1981-08-02
     - areaIds[]: one or several area IDs. Same format than speciesIds and datasetsIds
+    - initialDataImportIds[]: one or several data import. Same format than speciesIds, datasetsIds and areaIds
     - status_for_user: seen | unseen. Ignored for anonymous users. If the parameter is not set or is set to any other
       value than seen or unseen, filtering is not applied
 """
@@ -20,7 +21,7 @@ from django.db.models.functions import TruncMonth
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse, HttpRequest
 from django.shortcuts import get_object_or_404
 
-from dashboard.models import Species, Dataset, Area, Alert
+from dashboard.models import Species, Dataset, Area, Alert, DataImport
 from dashboard.views.helpers import (
     filtered_observations_from_request,
     extract_int_request,
@@ -34,6 +35,14 @@ def _model_to_json_list(Model) -> JsonResponse:
     Model instances should have an as_dict property
     """
     return JsonResponse([entry.as_dict for entry in Model.objects.all()], safe=False)
+
+
+def dataimports_list_json(_) -> JsonResponse:
+    """A list of all data imports known to the system, in JSON format
+
+    Order: undetermined
+    """
+    return _model_to_json_list(DataImport)
 
 
 def species_list_json(_) -> JsonResponse:

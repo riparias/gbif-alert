@@ -17,6 +17,7 @@ export interface DashboardFilters {
   endDate: string | null;
   areaIds: Number[];
   status: "seen" | "unseen" | null;
+  initialDataImportIds: Number[];
 }
 
 export interface SpeciesInformation {
@@ -39,10 +40,17 @@ export interface AreaInformation {
   isUserSpecific: boolean;
 }
 
+export interface DataImportInformation {
+  id: number;
+  str: string;
+  startTimestamp: string; // Format: "2022-01-21T11:31:35.490Z"
+}
+
 interface EndpointsUrls {
   speciesListUrl: string;
   datasetsListUrl: string;
   areasListUrl: string;
+  dataImportsListUrl: string;
   tileServerUrlTemplate: string;
   areasUrlTemplate: string;
   observationsCounterUrl: string;

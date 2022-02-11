@@ -11,6 +11,8 @@ from django.contrib.gis.db import models
 from django.db.models import QuerySet, Q
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import localize
+from django.utils.timezone import localtime
 from django.utils.translation import ugettext_lazy as _
 
 DATA_SRID = 3857  # Let's keep everything in Google Mercator to avoid reprojections
@@ -109,7 +111,17 @@ class DataImport(models.Model):
         self.save()
 
     def __str__(self) -> str:
-        return f"Data import #{self.pk}"
+        return (
+            f"Data import #{self.pk} ({localize(localtime(self.start), use_l10n=True)})"
+        )
+
+    @property
+    def as_dict(self) -> dict[str, Any]:
+        return {  # To be consumed on the frontend: we use JS naming conventions
+            "id": self.pk,
+            "str": self.__str__(),
+            "startTimestamp": self.start,
+        }
 
 
 class Observation(models.Model):

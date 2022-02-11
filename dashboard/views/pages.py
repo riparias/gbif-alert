@@ -11,11 +11,19 @@ from dashboard.forms import (
     AlertForm,
 )
 from dashboard.models import DataImport, Observation, Alert
-from dashboard.views.helpers import AuthenticatedHttpRequest
+from dashboard.views.helpers import AuthenticatedHttpRequest, extract_dict_request
 
 
 def index_page(request: HttpRequest):
-    return render(request, "dashboard/index.html")
+    filters_from_url = extract_dict_request(request, "filters")
+
+    if filters_from_url is not None:
+        filters_for_template = filters_from_url
+    else:
+        filters_for_template = {}
+    return render(
+        request, "dashboard/index.html", {"initialFilters": filters_for_template}
+    )
 
 
 def about_page(request: HttpRequest):
