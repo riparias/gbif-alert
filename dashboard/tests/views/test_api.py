@@ -1,5 +1,7 @@
 import datetime
+from unittest import mock
 
+import pytz
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -29,7 +31,10 @@ class ApiTests(TestCase):
             name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
         )
 
-        cls.di = DataImport.objects.create(start=timezone.now())
+        mocked = datetime.datetime(2022, 2, 11, 15, 10, 0, tzinfo=pytz.utc)
+        with mock.patch("django.utils.timezone.now", mock.Mock(return_value=mocked)):
+            cls.di = DataImport.objects.create(start=timezone.now())
+
         cls.first_dataset = Dataset.objects.create(
             name="Test dataset", gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
         )
@@ -128,6 +133,22 @@ class ApiTests(TestCase):
         )
 
         ObservationView.objects.create(observation=second_obs, user=cls.another_user)
+
+    def test_dataimports_list_json(self):
+        """Simple tests for the API that serves the list of dataimport objects"""
+        response = self.client.get(reverse("dashboard:api-dataimports-list-json"))
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        self.assertEqual(
+            json_data,
+            [
+                {
+                    "id": 1,
+                    "str": "Data import #1 (Feb. 11, 2022, 4:10 p.m.)",
+                    "startTimestamp": "2022-02-11T15:10:00Z",
+                }
+            ],
+        )
 
     def test_areas_list_json_anonymous(self):
         """Getting the list of areas as an anonymous user"""
