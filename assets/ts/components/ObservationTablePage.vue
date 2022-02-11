@@ -1,20 +1,23 @@
 <template>
   <tbody>
-    <tr
-      v-for="occ in preparedObservations"
-      :class="{
-        'table-danger':
-          occ.hasOwnProperty('seenByCurrentUser') && // Anonymous users don't have the property, so if we don't do this all would appear us unseen
-          occ.seenByCurrentUser === false,
-      }"
-    >
-      <th scope="row">
+    <tr v-for="occ in preparedObservations">
+      <td>
+        <span
+          v-if="
+            occ.hasOwnProperty('seenByCurrentUser') && // Anonymous users don't have the property, so if we don't do this all would appear us unseen
+            occ.seenByCurrentUser === false
+          "
+          class="badge rounded-pill bg-danger"
+          >Unseen</span
+        >
+      </td>
+      <td>
         <a :href="occ.url">{{ occ.gbifId }}</a>
-      </th>
+      </td>
       <td>{{ occ.lat }}</td>
       <td>{{ occ.lon }}</td>
       <td>{{ occ.date }}</td>
-      <td>{{ occ.speciesName }}</td>
+      <td class="fst-italic">{{ occ.speciesName }}</td>
       <td>{{ occ.datasetName }}</td>
     </tr>
   </tbody>
@@ -47,7 +50,7 @@ export default defineComponent({
           lon: occ.lon ? occ.lon.toFixed(4) : "",
           date: occ.date,
           speciesName: occ.speciesName,
-          datasetName: occ.datasetName,
+          datasetName: this.truncateString(occ.datasetName, 30),
           url: this.observationPageUrlTemplate!.replace(
             "{stable_id}",
             occ.stableId
@@ -66,6 +69,15 @@ export default defineComponent({
       },
     },
     observationPageUrlTemplate: String,
+  },
+  methods: {
+    truncateString: function (str: string, num: number): string {
+      if (str.length > num) {
+        return str.slice(0, num) + "...";
+      } else {
+        return str;
+      }
+    },
   },
 });
 </script>

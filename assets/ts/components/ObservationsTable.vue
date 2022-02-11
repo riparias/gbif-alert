@@ -1,6 +1,6 @@
 <template>
   <div id="table-outer">
-    <table class="table table-striped table-sm">
+    <table class="table table-striped table-sm table-hover small">
       <thead class="thead-dark">
         <tr>
           <th
@@ -165,6 +165,7 @@ export default defineComponent({
         // sortId: must match django QS filter (null = non-sortable), label: what's displayed in header
         // Beware: the actual data display occurs in ObservationsTablePage component, make sure the header and data shown
         // stay synchronised
+        { sortId: null, label: "" },
         { sortId: "gbif_id", label: "GBIF Id" },
         { sortId: null, label: "Lat" },
         { sortId: null, label: "Lon" },
