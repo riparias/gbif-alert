@@ -30,7 +30,10 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         options.add_argument("--headless")
         options.add_argument("--window-size=2560,1440")
         cls.selenium = webdriver.Chrome(
-            ChromeDriverManager().install(), options=options
+            # Temporarily downgrade Chrome Driver because of the following bug:
+            # https://github.com/SeleniumHQ/selenium/issues/10318
+            ChromeDriverManager(version="97.0.4692.71").install(),
+            options=options,
         )
         cls.selenium.implicitly_wait(5)
 
