@@ -76,4 +76,11 @@ class AreaAdmin(admin.OSMGeoAdmin):
 
 @admin.register(Alert)
 class AlertAdmin(admin.ModelAdmin):
-    pass
+    list_display = (
+        "user",
+        "species_list",
+        "datasets_list",
+        "areas_list",
+        "email_notifications_frequency",
+    )
+    list_filter = ["user", "email_notifications_frequency"]
