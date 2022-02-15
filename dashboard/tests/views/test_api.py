@@ -139,12 +139,14 @@ class ApiTests(TestCase):
         response = self.client.get(reverse("dashboard:api-dataimports-list-json"))
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
+
+        di_id = self.__class__.di.pk
         self.assertEqual(
             json_data,
             [
                 {
-                    "id": 1,
-                    "str": "Data import #1 (Feb. 11, 2022, 4:10 p.m.)",
+                    "id": di_id,
+                    "str": f"Data import #{di_id} (Feb. 11, 2022, 4:10 p.m.)",
                     "startTimestamp": "2022-02-11T15:10:00Z",
                 }
             ],
