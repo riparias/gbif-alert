@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core.mail import mail_admins
-from django.core.management.base import BaseCommand, CommandParser
+from django.core.management.base import BaseCommand, CommandParser, CommandError
 from django.db import transaction
 from django.db.models import QuerySet
 from django.utils import timezone
@@ -38,19 +38,29 @@ def build_gbif_predicate(country_code: str, species_list: QuerySet[Species]) -> 
 
 
 def species_for_row(row: CoreRow) -> Species:
-    """Based first on taxonKey, with fallback to acceptedTaxonKey"""
+    """Based first on taxonKey, with fallback to acceptedTaxonKey then speciesKey
+
+    Raise Species.DoesNotExist if the corresponding species cannot be found
+    """
     taxon_key = int(
         get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/taxonKey")
     )
+
+    accepted_taxon_key = int(
+        get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/acceptedTaxonKey")
+    )
+
+    species_key = int(
+        get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/speciesKey")
+    )
+
     try:
         return Species.objects.get(gbif_taxon_key=taxon_key)
     except Species.DoesNotExist:
-        accepted_taxon_key = int(
-            get_string_data(
-                row, field_name="http://rs.gbif.org/terms/1.0/acceptedTaxonKey"
-            )
-        )
-        return Species.objects.get(gbif_taxon_key=accepted_taxon_key)
+        try:
+            return Species.objects.get(gbif_taxon_key=accepted_taxon_key)
+        except Species.DoesNotExist:
+            return Species.objects.get(gbif_taxon_key=species_key)
 
 
 def extract_gbif_download_id_from_dwca(dwca: DwCAReader) -> str:
@@ -80,6 +90,8 @@ def get_int_data(row: CoreRow, field_name: str) -> int:
 
 def import_single_observation(row: CoreRow, current_data_import: DataImport) -> bool:
     """Import a single observation into the database
+
+    :raise: Species.DoesNotExist if the species referenced in the row cannot be found in the database
 
     :return True if successful, False if observation was skipped (=unusable OR is an absence)
     """
@@ -202,10 +214,14 @@ class Command(BaseCommand):
         """:return the number of skipped observations"""
         skipped_observations_counter = 0
         for core_row in dwca:
-            r = import_single_observation(core_row, data_import)
-            if r is False:
-                skipped_observations_counter = skipped_observations_counter + 1
-            self.stdout.write(".", ending="")
+            try:
+                r = import_single_observation(core_row, data_import)
+
+                if r is False:
+                    skipped_observations_counter = skipped_observations_counter + 1
+                self.stdout.write(".", ending="")
+            except Species.DoesNotExist:
+                raise CommandError(f"species not found in db for row: {core_row}")
 
         return skipped_observations_counter
 
