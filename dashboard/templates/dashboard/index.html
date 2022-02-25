@@ -13,5 +13,10 @@
     <IndexPageRootComponent></IndexPageRootComponent>
 </div>
 
-<script src="{% static 'js/index-bundle.js' %}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function (event) {
+        initIndexPage();
+    });
+</script>
+
 {% endblock after_messages %}

@@ -72,5 +72,9 @@
         </div>
     </div>
 
-    <script src="{% static 'js/observation_details-bundle.js' %}"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function (event) {
+            initObservationDetailsPage();
+        });
+    </script>
 {% endblock after_messages %}

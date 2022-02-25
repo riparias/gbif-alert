@@ -28,7 +28,7 @@ import VectorLayer from "ol/layer/Vector";
 import { Geometry } from "ol/geom";
 import BaseLayer from "ol/layer/Base";
 import { baseLayers } from "../map_config";
-import { Popover } from "bootstrap"; // Beware: Bootstrap is also included in web pages via a CDN. Make sure the versions stays in sync.
+import { Popover } from "bootstrap";
 
 interface MapContainerData {
   map: Map | null;

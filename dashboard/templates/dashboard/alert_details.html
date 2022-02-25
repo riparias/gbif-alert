@@ -26,9 +26,13 @@
                     </script>
                     <AlertDetailsPageRootComponent></AlertDetailsPageRootComponent>
                 </div>
-
-                <script src="{% static 'js/alert_details-bundle.js' %}"></script>
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function (event) {
+            initAlertDetailsPage();
+        });
+    </script>
 {% endblock %}
