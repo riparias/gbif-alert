@@ -390,7 +390,7 @@ class WebPagesTests(TestCase):
     def test_homepage(self):
         """There's a Bootstrap-powered page at /"""
         response = self.client.get("/")
-        self.assertContains(response, "bootstrap.min.css", status_code=200)
+        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "container")
         self.assertTemplateUsed(response, "dashboard/index.html")
 
