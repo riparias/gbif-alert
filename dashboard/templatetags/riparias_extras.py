@@ -3,7 +3,6 @@ from typing import Any
 from urllib.parse import urlencode
 
 from django import template
-from django.conf import settings
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
@@ -33,6 +32,15 @@ def _build_dashboard_url_with_filter(k: str, v: Any) -> str:
     )
 
 
+def _build_mvt_url_template(url_pattern: str) -> str:
+    return (
+        reverse(url_pattern, kwargs={"zoom": 1, "x": 2, "y": 3})
+        .replace("1", "{z}")
+        .replace("2", "{x}")
+        .replace("3", "{y}")
+    )
+
+
 @register.simple_tag
 def dashboard_url_filtered_by_data_import(data_import: DataImport) -> str:
     return _build_dashboard_url_with_filter(
@@ -44,10 +52,6 @@ def dashboard_url_filtered_by_data_import(data_import: DataImport) -> str:
 def js_config_object(context):
     # When adding stuff here, don't forget to update the corresponding TypeScript interface in assets/ts/interfaces.ts
     conf = {
-        "currentLanguageCode": context.request.LANGUAGE_CODE,  # for the example (not used yet, delete later?)
-        "targetCountryCode": settings.RIPARIAS[
-            "TARGET_COUNTRY_CODE"
-        ],  # for the example (not used yet, delete later?)
         "authenticatedUser": context.request.user.is_authenticated,
         "apiEndpoints": {
             "speciesListUrl": reverse("dashboard:api-species-list-json"),
@@ -60,13 +64,10 @@ def js_config_object(context):
             "observationsJsonUrl": reverse(
                 "dashboard:api-filtered-observations-data-page"
             ),
-            "tileServerUrlTemplate": reverse(
-                "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
-                kwargs={"zoom": 1, "x": 2, "y": 3},
-            )
-            .replace("1", "{z}")
-            .replace("2", "{x}")
-            .replace("3", "{y}"),
+            "tileServerAggregatedUrlTemplate": _build_mvt_url_template(
+                "dashboard:api-mvt-tiles-hexagon-grid-aggregated"
+            ),
+            "tileServerUrlTemplate": _build_mvt_url_template("dashboard:api-mvt-tiles"),
             "observationDetailsUrlTemplate": reverse(
                 "dashboard:page-observation-details", kwargs={"stable_id": 1}
             ).replace("1", "{stable_id}"),

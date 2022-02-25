@@ -128,8 +128,24 @@ JINJASQL_FRAGMENT_AGGREGATED_GRID = Template(
 )
 
 
-def mvt_tiles_hexagon_grid_aggregated(request: HttpRequest, zoom: int, x: int, y: int):
-    """Tile server, showing observations aggregated by hexagon squares. Filters are honoured."""
+def mvt_tiles_observations(
+    request: HttpRequest, zoom: int, x: int, y: int
+) -> HttpResponse:
+    """Tile server, showing non-aggregated observations. Filters are honoured."""
+    sql_template = readable_string(
+        Template(
+            """
+            WITH mvtgeom AS (
+                SELECT ST_AsMVTGeom(observations.location, ST_TileEnvelope({{ zoom }}, {{ x }}, {{ y }})), observations.gbif_id, observations.stable_id
+                FROM ($jinjasql_filtered_observations) AS observations
+            )
+            SELECT st_asmvt(mvtgeom.*) FROM mvtgeom;
+    """
+        ).substitute(
+            jinjasql_filtered_observations=JINJASQL_FRAGMENT_FILTER_OBSERVATIONS
+        )
+    )
+
     (
         species_ids,
         datasets_ids,
@@ -140,6 +156,38 @@ def mvt_tiles_hexagon_grid_aggregated(request: HttpRequest, zoom: int, x: int, y
         initial_data_import_ids,
     ) = filters_from_request(request)
 
+    sql_params = {
+        # Map technicalities
+        "zoom": zoom,
+        "x": x,
+        "y": y,
+        # Filter included observations
+        "species_ids": species_ids,
+        "datasets_ids": datasets_ids,
+        "area_ids": area_ids,
+        "initial_data_import_ids": initial_data_import_ids,
+    }
+
+    if status_for_user and request.user.is_authenticated:
+        sql_params["status"] = status_for_user
+        sql_params["user_id"] = request.user.pk
+
+    # More observations filtering
+    if start_date is not None:
+        sql_params["start_date"] = start_date.strftime(DB_DATE_EXCHANGE_FORMAT_PYTHON)
+    if end_date is not None:
+        sql_params["end_date"] = end_date.strftime(DB_DATE_EXCHANGE_FORMAT_PYTHON)
+
+    return HttpResponse(
+        _mvt_query_data(sql_template, sql_params),
+        content_type="application/vnd.mapbox-vector-tile",
+    )
+
+
+def mvt_tiles_observations_hexagon_grid_aggregated(
+    request: HttpRequest, zoom: int, x: int, y: int
+) -> HttpResponse:
+    """Tile server, showing observations aggregated by hexagon squares. Filters are honoured."""
     sql_template = readable_string(
         Template(
             """
@@ -151,6 +199,16 @@ def mvt_tiles_hexagon_grid_aggregated(request: HttpRequest, zoom: int, x: int, y
             jinjasql_fragment_aggregated_grid=JINJASQL_FRAGMENT_AGGREGATED_GRID
         )
     )
+
+    (
+        species_ids,
+        datasets_ids,
+        start_date,
+        end_date,
+        area_ids,
+        status_for_user,
+        initial_data_import_ids,
+    ) = filters_from_request(request)
 
     sql_params = {
         # Map technicalities

@@ -54,8 +54,13 @@ urlpatterns = [
     path("api/area/<int:id>", views.area_geojson, name="api-area-geojson"),
     # Maps
     path(
-        "api/maps/tiles/hexagon_grid_aggregated/<int:zoom>/<int:x>/<int:y>.mvt",
-        views.mvt_tiles_hexagon_grid_aggregated,
+        "api/maps/tiles/observations/<int:zoom>/<int:x>/<int:y>.mvt",
+        views.mvt_tiles_observations,
+        name="api-mvt-tiles",
+    ),
+    path(
+        "api/maps/tiles/observations/hexagon_grid_aggregated/<int:zoom>/<int:x>/<int:y>.mvt",
+        views.mvt_tiles_observations_hexagon_grid_aggregated,
         name="api-mvt-tiles-hexagon-grid-aggregated",
     ),
     path(

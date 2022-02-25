@@ -68,7 +68,10 @@ export default defineComponent({
         return [];
       },
     },
-    observationPageUrlTemplate: String,
+    observationPageUrlTemplate: {
+      type: String,
+      required: true,
+    },
   },
   methods: {
     truncateString: function (str: string, num: number): string {

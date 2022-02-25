@@ -51,7 +51,8 @@ interface EndpointsUrls {
   datasetsListUrl: string;
   areasListUrl: string;
   dataImportsListUrl: string;
-  tileServerUrlTemplate: string;
+  tileServerAggregatedUrlTemplate: string; // On this URL, observations are aggregated per hexagon
+  tileServerUrlTemplate: string; // On this URL, observations are *not* aggregated
   areasUrlTemplate: string;
   observationsCounterUrl: string;
   observationsJsonUrl: string;
@@ -63,8 +64,6 @@ interface EndpointsUrls {
 
 // Keep in sync with templatetags.riparias_extras.js_config_object
 export interface FrontEndConfig {
-  currentLanguageCode: string;
-  targetCountryCode: string;
   ripariasAreaGeojsonUrl: string;
   apiEndpoints: EndpointsUrls;
   authenticatedUser: boolean;

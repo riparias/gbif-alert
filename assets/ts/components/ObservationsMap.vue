@@ -1,9 +1,10 @@
 <template>
   <div ref="map-root" :style="{ width: '100%', height: height + 'px' }"></div>
+  <div ref="popup-root" title="Observations at this location"></div>
 </template>
 
 <script lang="ts">
-import { Collection, Feature, Map, View } from "ol";
+import { Collection, Feature, Map, Overlay, View } from "ol";
 import { defineComponent, PropType } from "vue";
 import { fromLonLat } from "ol/proj";
 import TileLayer from "ol/layer/Tile";
@@ -17,7 +18,7 @@ import { hsl } from "d3-color";
 import { BaseLayerEntry, DashboardFilters } from "../interfaces";
 import "ol/ol.css";
 import { GeoJSON, MVT } from "ol/format";
-import { Fill, Stroke, Style, Text } from "ol/style";
+import { Fill, Stroke, Style, Text, Circle } from "ol/style";
 import axios from "axios";
 import RenderFeature from "ol/render/Feature";
 import VectorSource from "ol/source/Vector";
@@ -27,14 +28,18 @@ import VectorLayer from "ol/layer/Vector";
 import { Geometry } from "ol/geom";
 import BaseLayer from "ol/layer/Base";
 import { baseLayers } from "../map_config";
+import { Popover } from "bootstrap"; // Beware: Bootstrap is also included in web pages via a CDN. Make sure the versions stays in sync.
 
 interface MapContainerData {
   map: Map | null;
-  dataLayer: VectorTileLayer | null;
+  aggregatedDataLayer: VectorTileLayer | null;
+  simpleDataLayer: VectorTileLayer | null;
+  popup: Overlay;
   HexMinOccCount: Number;
   HexMaxOccCount: Number;
   availableBaseLayers: BaseLayerEntry[];
   areasOverlayCollection: Collection<VectorLayer<VectorSource<Geometry>>>;
+  popover: Popover | null;
 }
 
 interface OlStyleFunction {
@@ -61,6 +66,7 @@ export default defineComponent({
       required: true,
     },
     tileServerUrlTemplate: String,
+    tileServerAggregatedUrlTemplate: String,
     filters: {
       type: Object as () => DashboardFilters,
       required: true,
@@ -71,15 +77,21 @@ export default defineComponent({
     },
     showCounters: Boolean,
     baseLayerName: String,
-
     dataLayerOpacity: Number,
-
     areasToShow: {
       type: Array as PropType<Array<number>>, // Array of area ids
       default: [],
     },
-
     areasEndpointUrlTemplate: {
+      type: String,
+      required: true,
+    },
+    layerSwitchZoomLevel: {
+      // At which zoom level do we switch to the "individual observation" layer
+      type: Number,
+      default: 13,
+    },
+    observationPageUrlTemplate: {
       type: String,
       required: true,
     },
@@ -87,11 +99,14 @@ export default defineComponent({
   data: function () {
     return {
       map: null,
-      dataLayer: null,
+      aggregatedDataLayer: null,
+      simpleDataLayer: null,
+      popup: new Overlay({}),
       HexMinOccCount: 1,
       HexMaxOccCount: 1,
       availableBaseLayers: baseLayers,
       areasOverlayCollection: new Collection(),
+      popover: null,
     } as MapContainerData;
   },
   watch: {
@@ -102,13 +117,16 @@ export default defineComponent({
     },
     dataLayerOpacity: {
       handler: function (val) {
-        if (this.dataLayer) {
-          this.dataLayer.setOpacity(val);
+        if (this.aggregatedDataLayer) {
+          this.aggregatedDataLayer.setOpacity(val);
+        }
+        if (this.simpleDataLayer) {
+          this.simpleDataLayer.setOpacity(val);
         }
       },
     },
     baseLayerName: {
-      handler: function (newVal: string) {
+      handler: function () {
         if (this.map) {
           let layers = this.map.getLayers();
           layers.removeAt(0);
@@ -118,21 +136,25 @@ export default defineComponent({
     },
     filters: {
       handler: function () {
-        this.replaceDataLayer();
+        this.replaceDataLayers();
       },
       deep: true,
     },
     HexMinOccCount: {
       handler: function () {
-        if (this.dataLayer) {
-          this.dataLayer.setStyle(this.dataLayerStyleFunction);
+        if (this.aggregatedDataLayer) {
+          this.aggregatedDataLayer.setStyle(
+            this.aggregatedDataLayerStyleFunction
+          );
         }
       },
     },
     HexMaxOccCount: {
       handler: function () {
-        if (this.dataLayer) {
-          this.dataLayer.setStyle(this.dataLayerStyleFunction);
+        if (this.aggregatedDataLayer) {
+          this.aggregatedDataLayer.setStyle(
+            this.aggregatedDataLayerStyleFunction
+          );
         }
       },
     },
@@ -159,7 +181,7 @@ export default defineComponent({
         this.HexMaxOccCount,
       ]);
     },
-    dataLayerStyleFunction: function (): OlStyleFunction {
+    aggregatedDataLayerStyleFunction: function (): OlStyleFunction {
       let vm = this;
       return function (feature: Feature<any> | RenderFeature): Style {
         const featuresCount = feature.getProperties()["count"];
@@ -226,20 +248,33 @@ export default defineComponent({
         this.HexMaxOccCount = response.data.max;
       });
     },
-    replaceDataLayer: function (): void {
+    replaceDataLayers: function (): void {
+      this.replaceAggregatedDataLayer();
+      this.replaceSimpleDataLayer();
+    },
+    replaceSimpleDataLayer: function (): void {
       if (this.map) {
-        if (this.dataLayer) {
-          this.map.removeLayer(this.dataLayer as VectorTileLayer);
+        if (this.simpleDataLayer) {
+          this.map.removeLayer(this.simpleDataLayer as VectorTileLayer);
+        }
+        this.simpleDataLayer = this.createSimpleDataLayer();
+        this.map.addLayer(this.simpleDataLayer as VectorTileLayer);
+      }
+    },
+    replaceAggregatedDataLayer: function (): void {
+      if (this.map) {
+        if (this.aggregatedDataLayer) {
+          this.map.removeLayer(this.aggregatedDataLayer as VectorTileLayer);
         }
         this.loadOccMinMax(this.initialZoom, this.filters);
-        this.dataLayer = this.createDataLayer();
-        this.map.addLayer(this.dataLayer as VectorTileLayer);
+        this.aggregatedDataLayer = this.createAggregatedDataLayer();
+        this.map.addLayer(this.aggregatedDataLayer as VectorTileLayer);
       }
     },
     legibleColor: function (color: string): string {
       return hsl(color).l > 0.5 ? "#000" : "#fff";
     },
-    createDataLayer: function (): VectorTileLayer {
+    createSimpleDataLayer: function (): VectorTileLayer {
       return new VectorTileLayer({
         source: new VectorTileSource({
           format: new MVT(),
@@ -248,8 +283,28 @@ export default defineComponent({
             "?" +
             filtersToQuerystring(this.filters),
         }),
-        style: this.dataLayerStyleFunction,
+        style: new Style({
+          image: new Circle({
+            radius: 7,
+            fill: new Fill({ color: "red" }),
+          }),
+        }),
         opacity: this.dataLayerOpacity,
+        minZoom: this.layerSwitchZoomLevel,
+      });
+    },
+    createAggregatedDataLayer: function (): VectorTileLayer {
+      return new VectorTileLayer({
+        source: new VectorTileSource({
+          format: new MVT(),
+          url:
+            this.tileServerAggregatedUrlTemplate +
+            "?" +
+            filtersToQuerystring(this.filters),
+        }),
+        style: this.aggregatedDataLayerStyleFunction,
+        opacity: this.dataLayerOpacity,
+        maxZoom: this.layerSwitchZoomLevel,
       });
     },
     createBasicMap: function (): Map {
@@ -269,7 +324,50 @@ export default defineComponent({
   },
   mounted() {
     this.map = this.createBasicMap();
-    this.replaceDataLayer();
+
+    // Prepare popup
+    this.popup.setElement(this.$refs["popup-root"] as HTMLElement);
+    this.map.addOverlay(this.popup as Overlay);
+
+    this.replaceDataLayers();
+
+    this.map.on("click", (evt) => {
+      if (
+        this.map &&
+        this.map.getView().getZoom()! >= this.layerSwitchZoomLevel
+      ) {
+        const features = this.map.getFeaturesAtPixel(evt.pixel);
+
+        const clickedFeaturesData = features.map((f) => {
+          const properties = f.getProperties();
+          return {
+            gbifId: properties["gbif_id"],
+            url: this.observationPageUrlTemplate!.replace(
+              "{stable_id}",
+              properties["stable_id"]
+            ),
+          };
+        });
+
+        const clickedFeaturesHtmlList = clickedFeaturesData.map((f) => {
+          return `<li><a href="${f.url}" target="_blank">${f.gbifId}</a></li>`;
+        });
+
+        // Hide previously opened
+        if (this.popover !== null) {
+          this.popover.hide();
+        }
+
+        if (clickedFeaturesData.length > 0) {
+          this.popup.setPosition(evt.coordinate);
+          this.popover = new Popover(this.popup.getElement() as HTMLElement, {
+            html: true,
+            content: "<ul>" + clickedFeaturesHtmlList.join("") + "</ul>",
+          });
+          this.popover.show();
+        }
+      }
+    });
   },
 });
 </script>
