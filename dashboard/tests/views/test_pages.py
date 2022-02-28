@@ -436,7 +436,94 @@ class WebPagesTests(TestCase):
         self.assertContains(response, "<b>Locality: </b> Andenne centre", html=True)
         self.assertContains(response, "<b>Recorded by: </b> Nicolas Noé", html=True)
         self.assertContains(
-            response, "<b>Coordinates uncertainty: </b> 10.0 meters", html=True
+            response, "<b>Coordinates uncertainty: </b> 10 meters", html=True
+        )
+
+    def test_observation_details_coordinates_uncertainty_format(self):
+        """Check we have a nice display in various cases"""
+        di = DataImport.objects.create(start=timezone.now())
+        new_obs = Observation.objects.create(
+            gbif_id=3,
+            occurrence_id="3",
+            species=Species.objects.create(
+                name="AAA BBB", gbif_taxon_key=22, group="CR"
+            ),
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            data_import=di,
+            initial_data_import=di,
+            source_dataset=Dataset.objects.create(
+                name="Test dataset",
+                gbif_dataset_key="azerty",
+            ),
+            location=Point(5.09513, 50.48941, srid=4326),
+        )
+
+        # case 1: coordinates uncertainty unknown
+        response = self.client.get(
+            reverse(
+                "dashboard:page-observation-details",
+                kwargs={"stable_id": new_obs.stable_id},
+            )
+        )
+
+        self.assertContains(
+            response, "<b>Coordinates uncertainty: </b> unknown", html=True
+        )
+
+        # case 2: 1 meter => singular value
+        new_obs.coordinate_uncertainty_in_meters = 1
+        new_obs.save()
+        response = self.client.get(
+            reverse(
+                "dashboard:page-observation-details",
+                kwargs={"stable_id": new_obs.stable_id},
+            )
+        )
+
+        self.assertContains(
+            response, "<b>Coordinates uncertainty: </b> 1 meter", html=True
+        )
+
+        # case 2: 3 meters => plural value
+        new_obs.coordinate_uncertainty_in_meters = 3
+        new_obs.save()
+        response = self.client.get(
+            reverse(
+                "dashboard:page-observation-details",
+                kwargs={"stable_id": new_obs.stable_id},
+            )
+        )
+
+        self.assertContains(
+            response, "<b>Coordinates uncertainty: </b> 3 meters", html=True
+        )
+
+        # case 3: 5 meters => do not display ".0" when not necessary
+        new_obs.coordinate_uncertainty_in_meters = 5.0
+        new_obs.save()
+        response = self.client.get(
+            reverse(
+                "dashboard:page-observation-details",
+                kwargs={"stable_id": new_obs.stable_id},
+            )
+        )
+
+        self.assertContains(
+            response, "<b>Coordinates uncertainty: </b> 5 meters", html=True
+        )
+
+        # case 4: display 1 decimal place when necessary:
+        new_obs.coordinate_uncertainty_in_meters = 3.141592
+        new_obs.save()
+        response = self.client.get(
+            reverse(
+                "dashboard:page-observation-details",
+                kwargs={"stable_id": new_obs.stable_id},
+            )
+        )
+
+        self.assertContains(
+            response, "<b>Coordinates uncertainty: </b> 3.1 meters", html=True
         )
 
     def test_observation_details_comments_empty(self):
