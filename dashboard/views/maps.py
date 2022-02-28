@@ -53,10 +53,10 @@ ZOOM_TO_HEX_SIZE = {
 # other components (table, ...) will be inconsistent.
 JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
     """
-    SELECT * FROM $observations_table_name as occ
+    SELECT * FROM $observations_table_name as obs
     {% if status == 'seen' %}
-        INNER JOIN "dashboard_observationview" 
-        ON (occ.id = "dashboard_observationview"."observation_id") 
+        INNER JOIN $observationview_table_name
+        ON obs.id = $observationview_table_name.observation_id
     {% endif %}
     
     {% if area_ids %}
@@ -65,33 +65,33 @@ JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
     WHERE (
         1 = 1
         {% if species_ids %}
-            AND occ.species_id IN {{ species_ids | inclause }}
+            AND obs.species_id IN {{ species_ids | inclause }}
         {% endif %}
         {% if datasets_ids %}
-            AND occ.source_dataset_id IN {{ datasets_ids | inclause }}
+            AND obs.source_dataset_id IN {{ datasets_ids | inclause }}
         {% endif %}
         {% if start_date %}
-            AND occ.date >= TO_DATE({{ start_date }}, '$date_format')
+            AND obs.date >= TO_DATE({{ start_date }}, '$date_format')
         {% endif %}
         {% if end_date %}
-            AND occ.date <= TO_DATE({{ end_date }}, '$date_format')
+            AND obs.date <= TO_DATE({{ end_date }}, '$date_format')
         {% endif %}
         {% if area_ids %}
-            AND ST_Within(occ.location, areas.mpoly)
+            AND ST_Within(obs.location, areas.mpoly)
         {% endif %}
         {% if initial_data_import_ids %}
-            AND occ.initial_data_import_id IN {{ initial_data_import_ids | inclause }}
+            AND obs.initial_data_import_id IN {{ initial_data_import_ids | inclause }}
         {% endif %}
         {% if status == 'unseen' %}
             AND NOT (EXISTS(
-            SELECT (1) AS "a" FROM "dashboard_observationview" V1 WHERE (
-                V1."id" IN (SELECT U0."id" FROM "dashboard_observationview" U0 WHERE U0."user_id" = {{ user_id }}) 
-                AND V1."observation_id" = occ.id
+            SELECT (1) FROM $observationview_table_name ov WHERE (
+                ov.id IN (SELECT ov1.id FROM $observationview_table_name ov1 WHERE ov1.user_id = {{ user_id }}) 
+                AND ov.observation_id = obs.id
             ) LIMIT 1))
         {% endif %}
         {% if status == 'seen' %}
-            AND "dashboard_observationview"."id" IN (
-                SELECT U0."id" FROM "dashboard_observationview" U0 WHERE U0."user_id" = {{ user_id }}
+            AND $observationview_table_name.id IN (
+                SELECT ov1.id FROM $observationview_table_name ov1 WHERE ov1.user_id = {{ user_id }}
             )
         {% endif %}
     )
