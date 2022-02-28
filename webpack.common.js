@@ -34,6 +34,11 @@ module.exports = {
                     //https://github.com/TypeStrong/ts-loader#appendtssuffixto
                     appendTsSuffixTo: [/\.vue$/],
                 }
+            },
+            {
+                test: /\.woff(2)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
+                type: 'asset/resource',
+                dependency: { not: ['url'] },
             }
         ]
     },

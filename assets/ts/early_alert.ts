@@ -1,5 +1,6 @@
 import * as bootstrap from "bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
+require("bootstrap-icons/font/bootstrap-icons.css");
 
 import IndexPageRootComponent from "./components/pages_root_components/IndexPageRootComponent.vue";
 import AlertDetailsPageRootComponent from "./components/pages_root_components/AlertDetailsPageRootComponent.vue";
