@@ -14,7 +14,7 @@
                     <p>The following data import was performed to populate the data currently visible in the application:</p>
                     {% include 'dashboard/_data_import.html' with data_import=data_import only %}
                     {% if not forloop.last %}
-                        <p>Previous data imports (data no longer visible):</p>
+                        <p class="mt-3">Previous data imports (data no longer visible):</p>
                     {% endif %}
                 {% else %}
                     {% include 'dashboard/_data_import.html' with data_import=data_import collapsed=True only %}
