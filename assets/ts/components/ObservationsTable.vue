@@ -1,6 +1,9 @@
 <template>
   <div id="table-outer">
-    <table class="table table-striped table-sm table-hover small">
+    <table
+      class="table table-striped table-sm table-hover small"
+      id="riparias-observations-table"
+    >
       <thead class="thead-dark">
         <tr>
           <th

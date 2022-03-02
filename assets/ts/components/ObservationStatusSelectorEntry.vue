@@ -8,8 +8,12 @@
     :checked="checked"
     @click="$emit('entrySelected')"
   />
-  <label class="btn btn-outline-success" :for="elementId"
-    >{{ entryLabel }}
+  <label
+    class="btn btn-outline-success"
+    :for="elementId"
+    :id="`label-${elementId}`"
+  >
+    {{ entryLabel }}
     <span v-if="count" class="badge bg-dark">{{ formattedCount }}</span>
   </label>
 </template>

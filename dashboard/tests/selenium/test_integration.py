@@ -1,10 +1,17 @@
+import datetime
+import time
+
 from django.contrib.auth import get_user_model
+from django.contrib.gis.geos import Point
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.utils import timezone
 from selenium import webdriver  # type: ignore
 from selenium.common.exceptions import NoSuchElementException  # type: ignore
 from selenium.webdriver.support.wait import WebDriverWait  # type: ignore
 from selenium.webdriver.support import expected_conditions as EC  # type: ignore
 from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
+
+from dashboard.models import Species, DataImport, Dataset, Observation, ObservationView
 
 
 class RipariasSeleniumTests(StaticLiveServerTestCase):
@@ -12,7 +19,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         super().setUp()
         # Create test users
         User = get_user_model()
-        User.objects.create_user(
+        normal_user = User.objects.create_user(
             username="testuser",
             password="12345",
             first_name="John",
@@ -20,6 +27,56 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
             email="frusciante@gmail.com",
         )
         User.objects.create_superuser(username="adminuser", password="67890")
+
+        first_species = Species.objects.create(
+            name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+        )
+        second_species = Species.objects.create(
+            name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
+        )
+
+        di = DataImport.objects.create(start=timezone.now())
+        first_dataset = Dataset.objects.create(
+            name="Test dataset", gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+        )
+        second_dataset = Dataset.objects.create(
+            name="Test dataset #2",
+            gbif_dataset_key="aaa7b334-ce0d-4e88-aaae-2e0c138d049f",
+        )
+
+        obs_1 = Observation.objects.create(
+            gbif_id=1,
+            occurrence_id="1",
+            species=first_species,
+            date=datetime.date.today(),
+            data_import=di,
+            initial_data_import=di,
+            source_dataset=first_dataset,
+            location=Point(5.09513, 50.48941, srid=4326),
+        )
+        Observation.objects.create(
+            gbif_id=2,
+            occurrence_id="2",
+            species=second_species,
+            date=datetime.date.today(),
+            data_import=di,
+            initial_data_import=di,
+            source_dataset=second_dataset,
+            location=Point(4.35978, 50.64728, srid=4326),
+        )
+        Observation.objects.create(
+            gbif_id=3,
+            occurrence_id="3",
+            species=second_species,
+            date=datetime.date.today(),
+            data_import=di,
+            initial_data_import=di,
+            source_dataset=second_dataset,
+            location=Point(5.09513, 50.48941, srid=4326),
+        )
+
+        # Obs 1 (and only obs_1) has been seen by the user
+        ObservationView.objects.create(observation=obs_1, user=normal_user)
 
     @classmethod
     def setUpClass(cls):
@@ -41,6 +98,82 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
     def tearDownClass(cls):
         cls.selenium.quit()
         super().tearDownClass()
+
+    def test_seen_unseen_observations_table(self):
+        """Dashboard page with a few seen and unseen observations: play with the status selector and check effect on the results table"""
+
+        # Action 1: login
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
+        username_field = self.selenium.find_element_by_id("id_username")
+        password_field = self.selenium.find_element_by_id("id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("testuser")
+        password_field.send_keys("12345")
+        signin_button = self.selenium.find_element_by_id("riparias-signin-button")
+        signin_button.click()
+        WebDriverWait(self.selenium, 5)
+
+        # Action 2: select table view
+        table_tab = self.selenium.find_element_by_id("tab-table-view")
+        table_tab.click()
+
+        # Check 1: have a look at the all/seen/unseen button/counters
+        observation_status_selector = self.selenium.find_element_by_id(
+            "riparias-obs-status-selector"
+        )
+        seen_button = observation_status_selector.find_element_by_id(
+            "label-btnRadioSeen"
+        )
+        seen_tab_counter_badge = seen_button.find_element_by_tag_name("span")
+        self.assertEqual(seen_tab_counter_badge.text, "1")
+
+        unseen_button = observation_status_selector.find_element_by_id(
+            "label-btnRadioUnseen"
+        )
+        unseen_tab_counter_badge = unseen_button.find_element_by_tag_name("span")
+        self.assertEqual(unseen_tab_counter_badge.text, "2")
+
+        # Action 3: make sure "all" is selected
+        observation_status_selector.find_element_by_id("label-btnRadioAll").click()
+
+        # Check 2: make sure there are 3 rows in the table, but only 2 "unseen" badges
+        obs_table = self.selenium.find_element_by_id("riparias-observations-table")
+        obs_table_body = obs_table.find_element_by_tag_name("tbody")
+        result_rows = obs_table_body.find_elements_by_tag_name("tr")
+        self.assertEqual(len(result_rows), 3)  # 3 result rows
+        unseen_badges = obs_table_body.find_elements_by_class_name(
+            "riparias-unseen-badge"
+        )
+        self.assertEqual(len(unseen_badges), 2)
+
+        # Action 4: select "seen"
+        observation_status_selector.find_element_by_id("label-btnRadioSeen").click()
+        time.sleep(1)
+
+        # Check 3: only 1 result row, no "unseen" badge
+        obs_table = self.selenium.find_element_by_id("riparias-observations-table")
+        obs_table_body = obs_table.find_element_by_tag_name("tbody")
+        result_rows = obs_table_body.find_elements_by_tag_name("tr")
+        self.assertEqual(len(result_rows), 1)
+        unseen_badges = obs_table_body.find_elements_by_class_name(
+            "riparias-unseen-badge"
+        )
+        self.assertEqual(len(unseen_badges), 0)
+
+        # Action 5: select "unseen"
+        observation_status_selector.find_element_by_id("label-btnRadioUnseen").click()
+        time.sleep(1)
+
+        # Check 4: 2 results row, both with "unseen" badge
+        obs_table = self.selenium.find_element_by_id("riparias-observations-table")
+        obs_table_body = obs_table.find_element_by_tag_name("tbody")
+        result_rows = obs_table_body.find_elements_by_tag_name("tr")
+        self.assertEqual(len(result_rows), 2)
+        unseen_badges = obs_table_body.find_elements_by_class_name(
+            "riparias-unseen-badge"
+        )
+        self.assertEqual(len(unseen_badges), 2)
 
     def test_title_in_index_page(self):
         self.selenium.get(self.live_server_url)

@@ -3,7 +3,7 @@
   <div
     class="btn-group btn-group-sm"
     role="group"
-    aria-label="Basic radio toggle button group"
+    id="riparias-obs-status-selector"
   >
     <ObservationStatusSelectorEntry
       entry-label="All"

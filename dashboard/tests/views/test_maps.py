@@ -37,7 +37,7 @@ class VectorTilesServerTests(TestCase):
             gbif_dataset_key="aaa7b334-ce0d-4e88-aaae-2e0c138d049f",
         )
 
-        first_obs = Observation.objects.create(
+        Observation.objects.create(
             gbif_id=1,
             occurrence_id="1",
             species=cls.first_species,
