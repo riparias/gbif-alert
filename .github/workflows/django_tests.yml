@@ -50,6 +50,10 @@ jobs:
       run: cp djangoproject/local_settings_ci.py djangoproject/local_settings.py
     - name: Show chrome version (for debugging purposes)
       run: google-chrome --version
+    - name: Install frontend dependencies
+      run: npm install
+    - name: Run webpack
+      run: npm run webpack-prod
     - name: Run Django tests
       env:
         DJANGO_SETTINGS_MODULE: djangoproject.local_settings
