@@ -7,6 +7,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    {# Body will be shown later to avoid flashing unstyled content, see https://stackoverflow.com/a/43823506 #}
+    <style>
+      html {
+        display: none;
+      }
+    </style>
+
     {# A global configuration object is passed from Python via a custom template tag. This hack allows easy configuration of the frontend from Django #}
     <script type="text/javascript">
         const ripariasConfig = {% js_config_object %}
@@ -27,5 +34,6 @@
 
     {% include "dashboard/_footer.html" %}
     <script src="{% static 'js/early_alert-bundle.js' %}"></script>
+    <link rel="stylesheet" href="{% static "css/show_body.css" %}">
   </body>
 </html>
