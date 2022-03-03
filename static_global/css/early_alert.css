@@ -1,0 +1,10 @@
+footer {
+    background-color: #3c3c3c;
+    border-top: 5px solid #bcbcbc;
+    color: #bcbcbc;
+    font-size: .9rem;
+}
+
+footer a {
+    color: white;
+}
