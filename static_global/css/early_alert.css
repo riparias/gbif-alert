@@ -1,3 +1,7 @@
+#riparias-main-navbar {
+    background-color: #00a58d;
+}
+
 footer {
     background-color: #3c3c3c;
     border-top: 5px solid #bcbcbc;
@@ -6,5 +10,9 @@ footer {
 }
 
 footer a {
+    color: white;
+}
+
+footer a:hover {
     color: white;
 }
