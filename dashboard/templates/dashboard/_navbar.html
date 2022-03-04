@@ -1,17 +1,17 @@
 <nav id="riparias-main-navbar" class="navbar navbar-expand-lg navbar-dark mb-3">
     <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'dashboard:page-index' %}">LIFE RIPARIAS early alert</a>
+        <a class="navbar-brand" href="{% url 'dashboard:pages:index' %}">LIFE RIPARIAS early alert</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
                 aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto">
-                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:page-index' label='Explore all observations' %}
+                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:index' label='Explore all observations' %}
                 {% if user.is_authenticated %}
-                    {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:page-my-alerts' label='My alerts' %}
+                    {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:my-alerts' label='My alerts' %}
                 {% endif %}
-                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:page-about' label='About' %}
+                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:about' label='About' %}
             </ul>
 
             <ul class="navbar-nav ms-auto">
@@ -23,8 +23,8 @@
                         </a>
 
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{% url 'dashboard:page-profile' %}"><i class="bi bi-person-circle"></i> My profile</a></li>
-                            <li><a class="dropdown-item" href="{% url 'dashboard:page-my-alerts' %}"><i class="bi bi-exclamation-square"></i> My alerts</a></li>
+                            <li><a class="dropdown-item" href="{% url 'dashboard:pages:profile' %}"><i class="bi bi-person-circle"></i> My profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'dashboard:pages:my-alerts' %}"><i class="bi bi-exclamation-square"></i> My alerts</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
@@ -36,7 +36,7 @@
                     </li>
                 {% else %}
                     <a class="btn btn-dark btn-sm mx-1" href="{% url 'signin' %}"><i class="bi bi-lock-fill"></i> Sign in</a>
-                    <a class="btn btn-dark btn-sm mx-1" href="{% url 'dashboard:page-signup' %}"><i class="bi bi-person-plus-fill"></i> Sign up</a>
+                    <a class="btn btn-dark btn-sm mx-1" href="{% url 'dashboard:pages:signup' %}"><i class="bi bi-person-plus-fill"></i> Sign up</a>
                 {% endif %}
             </ul>
         </div>

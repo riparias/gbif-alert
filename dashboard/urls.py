@@ -1,71 +1,102 @@
-from django.urls import path
+from django.urls import path, include
 
 from . import views
 
 app_name = "dashboard"
 
-urlpatterns = [
-    # Web pages
-    path("", views.index_page, name="page-index"),
-    path("about", views.about_page, name="page-about"),
+pages_urls = [
+    path("", views.index_page, name="index"),
+    path("about", views.about_page, name="about"),
+    path("alert/<int:alert_id>", views.alert_details_page, name="alert-details"),
+    path("my_alerts", views.user_alerts_page, name="my-alerts"),
+    path("new_alert", views.alert_create_page, name="alert-create"),
     path(
         "observation/<stable_id>",
         views.observation_details_page,
-        name="page-observation-details",
+        name="observation-details",
     ),
-    path("signup", views.user_signup_page, name="page-signup"),
-    path("profile", views.user_profile_page, name="page-profile"),
-    path("my-alerts", views.user_alerts_page, name="page-my-alerts"),
-    path("alert/<int:alert_id>", views.alert_details_page, name="page-alert-details"),
-    path("new-alert", views.alert_create_page, name="page-alert-create"),
-    path("delete-alert", views.action_alert_delete, name="action-alert-delete"),
+    path("profile", views.user_profile_page, name="profile"),
+    path("signup", views.user_signup_page, name="signup"),
+]
+
+maps_api_urls = [
+    path(
+        "min_max_per_hexagon",
+        views.observation_min_max_in_hex_grid_json,
+        name="mvt-min-max-per-hexagon",
+    ),
+    path(
+        "tiles/observations/<int:zoom>/<int:x>/<int:y>.mvt",
+        views.mvt_tiles_observations,
+        name="mvt-tiles",
+    ),
+    path(
+        "tiles/observations/hexagon_grid_aggregated/<int:zoom>/<int:x>/<int:y>.mvt",
+        views.mvt_tiles_observations_hexagon_grid_aggregated,
+        name="mvt-tiles-hexagon-grid-aggregated",
+    ),
+]
+
+api_urls = [
+    path("areas", views.areas_list_json, name="areas-list-json"),
+    path(
+        "alert/as_filters",
+        views.alert_as_filters,
+        name="alert-as-filters-json",
+    ),
+    path("dataimports", views.dataimports_list_json, name="dataimports-list-json"),
+    path("datasets", views.datasets_list_json, name="datasets-list-json"),
+    path(
+        "filtered_observations/counter",
+        views.filtered_observations_counter_json,
+        name="filtered-observations-counter",
+    ),
+    path(
+        "filtered_observations/data_page",
+        views.filtered_observations_data_page_json,
+        name="filtered-observations-data-page",
+    ),
+    path(
+        "filtered_observations/monthly_histogram",
+        views.filtered_observations_monthly_histogram_json,
+        name="filtered-observations-monthly-histogram",
+    ),
+    path(
+        "maps",
+        include(
+            (maps_api_urls, "maps"),
+        ),
+    ),
+    path("species", views.species_list_json, name="species-list-json"),
+    path("area/<int:id>", views.area_geojson, name="area-geojson"),
+]
+
+actions_urls = [
+    path("delete_alert", views.delete_alert, name="delete-alert"),
     path(
         "mark_observation_as_unseen",
         views.mark_observation_as_unseen,
-        name="page-mark-observation-as-unseen",
+        name="mark-observation-as-unseen",
     ),
-    # Api
+]
+
+urlpatterns = [
     path(
-        "api/alert/as_filters",
-        views.alert_as_filters,
-        name="api-alert-as-filters-json",
-    ),
-    path("api/species", views.species_list_json, name="api-species-list-json"),
-    path("api/datasets", views.datasets_list_json, name="api-datasets-list-json"),
-    path("api/areas", views.areas_list_json, name="api-areas-list-json"),
-    path(
-        "api/dataimports", views.dataimports_list_json, name="api-dataimports-list-json"
+        "",
+        include(
+            (pages_urls, "pages"),
+        ),
     ),
     path(
-        "api/filtered_observations/counter",
-        views.filtered_observations_counter_json,
-        name="api-filtered-observations-counter",
+        "api/",
+        include(
+            (api_urls, "api"),
+        ),
     ),
     path(
-        "api/filtered_observations/monthly_histogram",
-        views.filtered_observations_monthly_histogram_json,
-        name="api-filtered-observations-monthly-histogram",
-    ),
-    path(
-        "api/filtered_observations/data_page",
-        views.filtered_observations_data_page_json,
-        name="api-filtered-observations-data-page",
-    ),
-    path("api/area/<int:id>", views.area_geojson, name="api-area-geojson"),
-    # Maps
-    path(
-        "api/maps/tiles/observations/<int:zoom>/<int:x>/<int:y>.mvt",
-        views.mvt_tiles_observations,
-        name="api-mvt-tiles",
-    ),
-    path(
-        "api/maps/tiles/observations/hexagon_grid_aggregated/<int:zoom>/<int:x>/<int:y>.mvt",
-        views.mvt_tiles_observations_hexagon_grid_aggregated,
-        name="api-mvt-tiles-hexagon-grid-aggregated",
-    ),
-    path(
-        "api/maps/min_max_per_hexagon",
-        views.observation_min_max_in_hex_grid_json,
-        name="api-mvt-min-max-per-hexagon",
+        "actions/",
+        include(
+            (actions_urls, "actions"),
+        ),
     ),
 ]

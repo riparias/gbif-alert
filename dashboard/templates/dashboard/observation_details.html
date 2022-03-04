@@ -16,7 +16,7 @@
             {% if user.is_authenticated and first_seen_by_user_timestamp %}
                 <div class="col">
                     <small class="text-muted">You have first seen this observation on <span id="observation-view-timestamp">{{ first_seen_by_user_timestamp }}</span></small>
-                    <form method="post" action="{% url "dashboard:page-mark-observation-as-unseen" %}">
+                    <form method="post" action="{% url "dashboard:actions:mark-observation-as-unseen" %}">
                         {% csrf_token %}
                         <input type="hidden" id="observationId" name="observationId" value="{{ observation.pk }}">
                         <button type="submit" class="btn btn-warning btn-sm">Mark this observation as unseen</button>

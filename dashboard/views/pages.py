@@ -98,7 +98,7 @@ def user_signup_page(request: HttpRequest):
             raw_password = form.cleaned_data.get("password1")
             user = authenticate(username=username, password=raw_password)
             login(request, user)
-            return redirect("dashboard:page-index")
+            return redirect("dashboard:pages:index")
     else:
         form = SignUpForm()
     return render(request, "dashboard/user_signup.html", {"form": form})
@@ -111,7 +111,7 @@ def user_profile_page(request: AuthenticatedHttpRequest):
         if form.is_valid():
             form.save()
             messages.success(request, "Your profile was successfully updated.")
-            return redirect("dashboard:page-index")
+            return redirect("dashboard:pages:index")
     else:
         form = EditProfileForm(instance=request.user)
     return render(request, "dashboard/user_profile.html", {"form": form})
@@ -121,26 +121,3 @@ def user_profile_page(request: AuthenticatedHttpRequest):
 def user_alerts_page(request: AuthenticatedHttpRequest):
     alerts = Alert.objects.filter(user=request.user).order_by("id")
     return render(request, "dashboard/user_alerts.html", {"alerts": alerts})
-
-
-@login_required
-def mark_observation_as_unseen(request: AuthenticatedHttpRequest):
-    if request.method == "POST":
-        observation = get_object_or_404(Observation, id=request.POST["observationId"])
-        success = observation.mark_as_unseen_by(user=request.user)
-        if success:
-            return redirect("dashboard:page-index")
-        else:
-            return redirect(observation)  # Error? Stay where we came from
-
-
-@login_required
-def action_alert_delete(request: AuthenticatedHttpRequest):
-    if request.method == "POST":
-        alert = get_object_or_404(Alert, pk=request.POST.get("alert_id"))
-        if alert.user == request.user:
-            alert.delete()
-            messages.success(request, "Alert deleted.")
-            return redirect("dashboard:page-my-alerts")
-        else:
-            return HttpResponseForbidden()

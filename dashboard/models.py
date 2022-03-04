@@ -222,7 +222,7 @@ class Observation(models.Model):
 
     def get_absolute_url(self) -> str:
         return reverse(
-            "dashboard:page-observation-details", kwargs={"stable_id": self.stable_id}
+            "dashboard:pages:observation-details", kwargs={"stable_id": self.stable_id}
         )
 
     def set_or_migrate_initial_data_import(
@@ -467,7 +467,7 @@ class Alert(models.Model):
     )
 
     def get_absolute_url(self) -> str:
-        return reverse("dashboard:page-alert-details", kwargs={"alert_id": self.id})
+        return reverse("dashboard:pages:alert-details", kwargs={"alert_id": self.id})
 
     @property
     def areas_list(self) -> str:

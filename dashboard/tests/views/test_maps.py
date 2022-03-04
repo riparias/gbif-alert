@@ -108,7 +108,7 @@ class VectorTilesServerTests(TestCase):
         """There's a tile server returning the appropriate MIME type"""
         response = self.client.get(
             reverse(
-                "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+                "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
                 kwargs={"zoom": 1, "x": 1, "y": 1},
             )
         )
@@ -123,7 +123,7 @@ class VectorTilesServerTests(TestCase):
         Derived from test_basic_data_in_hexagons()
         """
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?startDate=null&endDate=null"
@@ -144,7 +144,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 1: large view over Wallonia
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},  # Large views over Wallonia
         )
         url_with_params = (
@@ -161,7 +161,7 @@ class VectorTilesServerTests(TestCase):
         # Case 2: A tile that covers an important part of Wallonia, including Andenne and Braine. Should have a single
         # hexagon (because of the area filtering)
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
         url_with_params = (
@@ -178,7 +178,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 3: A zoomed tile with just Andenne and the close neighborhood, the hex should still be there
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = (
@@ -195,7 +195,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 4: A zoomed time on Lillois, should be empty because of the filtering
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = (
@@ -209,7 +209,7 @@ class VectorTilesServerTests(TestCase):
         """Similar to test_tiles_status_filter_case1() but anonymous => filter is ignored"""
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?status=seen"
@@ -227,7 +227,7 @@ class VectorTilesServerTests(TestCase):
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         self.client.login(username="frusciante", password="12345")
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?status=all"
@@ -243,7 +243,7 @@ class VectorTilesServerTests(TestCase):
         self.client.login(username="frusciante", password="12345")
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?status=seen"
@@ -261,7 +261,7 @@ class VectorTilesServerTests(TestCase):
         self.client.login(username="frusciante", password="12345")
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?status=unseen"
@@ -280,7 +280,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 2.1: it still appears when zoomed on Andenne
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = f"{base_url}?status=unseen"
@@ -295,7 +295,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 2.2: there's nothing when zoomed on Lillois
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = f"{base_url}?status=unseen"
@@ -310,7 +310,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = (
@@ -329,7 +329,7 @@ class VectorTilesServerTests(TestCase):
         # Case 2: A tile that covers an important part of Wallonia, including Andenne and Braine. Should have a single
         # polygon this time
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
         url_with_params = (
@@ -346,7 +346,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 3: A zoomed tile with just Andenne and the close neighborhood, the hex should still be there
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = (
@@ -363,7 +363,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 4: A zoomed time on Lillois, should be empty because of the filtering
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = (
@@ -376,7 +376,7 @@ class VectorTilesServerTests(TestCase):
     def test_tiles_multiple_dataset_filters(self):
         """Explicitely requesting all datasets give the same results than no filtering"""
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?&datasetsIds[]={VectorTilesServerTests.first_dataset.pk}&datasetsIds[]={VectorTilesServerTests.second_dataset.pk}"
@@ -396,7 +396,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = (
@@ -415,7 +415,7 @@ class VectorTilesServerTests(TestCase):
         # Case 2: A tile that covers an important part of Wallonia, including Andenne and Braine. Should have a single
         # polygon this time
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
         url_with_params = (
@@ -432,7 +432,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 3: A zoomed tile with just Andenne and the close neighborhood, the hex should still be there
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = (
@@ -449,7 +449,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 4: A zoomed time on Lillois, should be empty because of the filtering
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = (
@@ -499,7 +499,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 1: Large-scale view: a single hex over Wallonia
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
@@ -515,7 +515,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 2: A tile that covers an important part of Wallonia, including Andenne and Lillois. Should have two polygons
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
         url_with_params = f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
@@ -530,7 +530,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 3: A zoomed tile with just Andenne and the close neighborhood, the hex should still be there
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
@@ -545,7 +545,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 4: A zoomed time on Lillois, we expect the three tetraodon observations
         base_url = reverse(
-            "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+            "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
@@ -565,7 +565,7 @@ class VectorTilesServerTests(TestCase):
         # https://openlayers.org/en/latest/examples/canvas-tiles.html
         response = self.client.get(
             reverse(
-                "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+                "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
                 kwargs={"zoom": 2, "x": 2, "y": 1},
             )
         )
@@ -588,7 +588,7 @@ class VectorTilesServerTests(TestCase):
         # Another very large tile, over Greenland. Should be empty
         response = self.client.get(
             reverse(
-                "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+                "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
                 kwargs={"zoom": 2, "x": 1, "y": 0},
             )
         )
@@ -598,7 +598,7 @@ class VectorTilesServerTests(TestCase):
         # A tile that covers an important part of Wallonia, including Andenne and Braine. Should have two polygons
         response = self.client.get(
             reverse(
-                "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+                "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
                 kwargs={"zoom": 8, "x": 131, "y": 86},
             )
         )
@@ -617,7 +617,7 @@ class VectorTilesServerTests(TestCase):
         # The tile east of it should be empty
         response = self.client.get(
             reverse(
-                "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+                "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
                 kwargs={"zoom": 8, "x": 132, "y": 86},
             )
         )
@@ -627,7 +627,7 @@ class VectorTilesServerTests(TestCase):
         # A tile with just Andenne and the close neighborhood
         response = self.client.get(
             reverse(
-                "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+                "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
                 kwargs={"zoom": 10, "x": 526, "y": 345},
             )
         )
@@ -642,7 +642,7 @@ class VectorTilesServerTests(TestCase):
         # The one on the west is empty
         response = self.client.get(
             reverse(
-                "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+                "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
                 kwargs={"zoom": 10, "x": 525, "y": 345},
             )
         )
@@ -652,7 +652,7 @@ class VectorTilesServerTests(TestCase):
         # Let's get a very small tile containing the Lillois observations
         response = self.client.get(
             reverse(
-                "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+                "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
                 kwargs={"zoom": 17, "x": 67123, "y": 44083},
             )
         )
@@ -667,7 +667,7 @@ class VectorTilesServerTests(TestCase):
         # The next one is empty
         response = self.client.get(
             reverse(
-                "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+                "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
                 kwargs={"zoom": 17, "x": 67124, "y": 44083},
             )
         )
@@ -679,7 +679,7 @@ class VectorTilesServerTests(TestCase):
         for zoom_level in range(1, 21):
             response = self.client.get(
                 reverse(
-                    "dashboard:api-mvt-tiles-hexagon-grid-aggregated",
+                    "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated",
                     kwargs={"zoom": zoom_level, "x": 1, "y": 1},
                 )
             )
@@ -689,7 +689,7 @@ class VectorTilesServerTests(TestCase):
     def test_min_max_per_hexagon(self):
         # At zoom level 8, with the initial data: we should have two polygons, both at 1. So min=1 and max=1
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"), data={"zoom": 8}
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"), data={"zoom": 8}
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers["Content-Type"], "application/json")
@@ -710,21 +710,21 @@ class VectorTilesServerTests(TestCase):
 
         # Now, at zoom level 8 we should have an hexagon with count=1 and another one with count=2
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"), data={"zoom": 8}
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"), data={"zoom": 8}
         )
         self.assertEqual(response.json()["min"], 1)
         self.assertEqual(response.json()["max"], 2)
 
         # But at a very large scale, one single hexagon with count=3
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"), data={"zoom": 1}
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"), data={"zoom": 1}
         )
         self.assertEqual(response.json()["min"], 3)
         self.assertEqual(response.json()["max"], 3)
 
         # At zoom level 17, there's no hexagons that cover more than 1 observation
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"), data={"zoom": 17}
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"), data={"zoom": 17}
         )
         self.assertEqual(response.json()["min"], 1)
         self.assertEqual(response.json()["max"], 1)
@@ -743,7 +743,7 @@ class VectorTilesServerTests(TestCase):
         )
 
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"),
             data={"zoom": 8, "speciesIds[]": VectorTilesServerTests.first_species.pk},
         )
         self.assertEqual(response.json()["min"], 1)
@@ -751,7 +751,7 @@ class VectorTilesServerTests(TestCase):
 
         # Now we're looking for the second species. (We have 2 in Lillois and none in Andenne)
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
                 "speciesIds[]": [VectorTilesServerTests.second_species.pk],
@@ -774,7 +774,7 @@ class VectorTilesServerTests(TestCase):
         )
 
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"),
             data={"zoom": 8, "speciesIds[]": VectorTilesServerTests.second_species.pk},
         )
 
@@ -795,7 +795,7 @@ class VectorTilesServerTests(TestCase):
         )
 
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"),
             data={"zoom": 8, "datasetsIds[]": VectorTilesServerTests.first_dataset.pk},
         )
         self.assertEqual(response.json()["min"], 1)
@@ -803,7 +803,7 @@ class VectorTilesServerTests(TestCase):
 
         # Now we're looking for the second species. (We have 2 in Lillois and none in Andenne)
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
                 "speciesIds[]": [VectorTilesServerTests.second_species.pk],
@@ -826,7 +826,7 @@ class VectorTilesServerTests(TestCase):
         )
 
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"),
             data={"zoom": 8, "speciesIds[]": VectorTilesServerTests.second_species.pk},
         )
 
@@ -837,7 +837,7 @@ class VectorTilesServerTests(TestCase):
         """status is not seen nor unseen, therefore is ignored and everything is included"""
         self.client.login(username="frusciante", password="12345")
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"),
             data={"zoom": 1, "status": "all"},
         )
         self.assertEqual(response.json()["min"], 2)
@@ -860,7 +860,7 @@ class VectorTilesServerTests(TestCase):
 
         # At a zoom level that only shows Lillois or Andenne, it's 1-1
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
                 "status": "unseen",
@@ -885,7 +885,7 @@ class VectorTilesServerTests(TestCase):
 
         # At a zoom level that only shows Lillois or Andenne, it's 1-1
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
                 "status": "unseen",
@@ -909,7 +909,7 @@ class VectorTilesServerTests(TestCase):
 
         # We restrict ourselves to Andenne: only one observation
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
                 "areaIds[]": VectorTilesServerTests.public_area_andenne.pk,
@@ -920,7 +920,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case 2: we limit ourselves to Lillois (one single hexagon, with count=2)
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
                 "areaIds[]": VectorTilesServerTests.public_area_lillois.pk,
@@ -931,7 +931,7 @@ class VectorTilesServerTests(TestCase):
 
         # Case3: Test with multiple areas: we request both Andenne and Lillois: same results as no filters
         response = self.client.get(
-            reverse("dashboard:api-mvt-min-max-per-hexagon"),
+            reverse("dashboard:api:maps:mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
                 "areaIds[]": [

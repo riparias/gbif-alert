@@ -136,7 +136,7 @@ class ApiTests(TestCase):
 
     def test_dataimports_list_json(self):
         """Simple tests for the API that serves the list of dataimport objects"""
-        response = self.client.get(reverse("dashboard:api-dataimports-list-json"))
+        response = self.client.get(reverse("dashboard:api:dataimports-list-json"))
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
 
@@ -154,7 +154,7 @@ class ApiTests(TestCase):
 
     def test_areas_list_json_anonymous(self):
         """Getting the list of areas as an anonymous user"""
-        response = self.client.get(reverse("dashboard:api-areas-list-json"))
+        response = self.client.get(reverse("dashboard:api:areas-list-json"))
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
 
@@ -168,7 +168,7 @@ class ApiTests(TestCase):
     def test_areas_list_json_owner(self):
         """Getting the list of areas as an authenticated user that has a personal area"""
         self.client.login(username="frusciante", password="12345")
-        response = self.client.get(reverse("dashboard:api-areas-list-json"))
+        response = self.client.get(reverse("dashboard:api:areas-list-json"))
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
 
@@ -190,7 +190,7 @@ class ApiTests(TestCase):
         (result should be identical to test_areas_list_json_anonymous())
         """
         self.client.login(username="frusciante1", password="12345")
-        response = self.client.get(reverse("dashboard:api-areas-list-json"))
+        response = self.client.get(reverse("dashboard:api:areas-list-json"))
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
 
@@ -207,7 +207,7 @@ class ApiTests(TestCase):
         # Case 1: we request a public area
         response = self.client.get(
             reverse(
-                "dashboard:api-area-geojson",
+                "dashboard:api:area-geojson",
                 kwargs={"id": ApiTests.public_area_andenne.pk},
             )
         )
@@ -220,7 +220,7 @@ class ApiTests(TestCase):
 
         # Case 2: we request a user-specific one
         response = self.client.get(
-            reverse("dashboard:api-area-geojson", kwargs={"id": ApiTests.user_area.pk})
+            reverse("dashboard:api:area-geojson", kwargs={"id": ApiTests.user_area.pk})
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content, b"")
@@ -232,7 +232,7 @@ class ApiTests(TestCase):
         # Case 1: we request the public area
         response = self.client.get(
             reverse(
-                "dashboard:api-area-geojson",
+                "dashboard:api:area-geojson",
                 kwargs={"id": ApiTests.public_area_andenne.pk},
             )
         )
@@ -245,7 +245,7 @@ class ApiTests(TestCase):
 
         # Case 2: we request a user-specific one
         response = self.client.get(
-            reverse("dashboard:api-area-geojson", kwargs={"id": ApiTests.user_area.pk})
+            reverse("dashboard:api:area-geojson", kwargs={"id": ApiTests.user_area.pk})
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["content-type"], "application/json")
@@ -260,7 +260,7 @@ class ApiTests(TestCase):
 
         response = self.client.get(
             reverse(
-                "dashboard:api-area-geojson",
+                "dashboard:api:area-geojson",
                 kwargs={"id": ApiTests.public_area_andenne.pk},
             )
         )
@@ -273,7 +273,7 @@ class ApiTests(TestCase):
 
         # Case 2: we request a user-specific one
         response = self.client.get(
-            reverse("dashboard:api-area-geojson", kwargs={"id": ApiTests.user_area.pk})
+            reverse("dashboard:api:area-geojson", kwargs={"id": ApiTests.user_area.pk})
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content, b"")
@@ -281,7 +281,7 @@ class ApiTests(TestCase):
     def test_observations_json_view_data(self):
         """If the user is authenticated, there is data about which observations were already seen by that user"""
         self.client.login(username="frusciante1", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id")
         json_data = response.json()
         self.assertEqual(json_data["results"][0]["seenByCurrentUser"], False)
@@ -289,7 +289,7 @@ class ApiTests(TestCase):
 
     def test_observations_json_no_view_for_anonymous(self):
         """If the user is anonymous, there is NO data about which observations were already seen"""
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1")
         json_data = response.json()
         with self.assertRaises(KeyError):
@@ -307,7 +307,7 @@ class ApiTests(TestCase):
             source_dataset=ApiTests.first_dataset,
             location=None,
         )
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -315,7 +315,7 @@ class ApiTests(TestCase):
 
     def test_observations_json_basic_no_filters(self):
         """Basic tests for the endpoint, no filters used"""
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -332,7 +332,7 @@ class ApiTests(TestCase):
         self.assertTrue(found)
 
     def test_observations_json_ordering_pk(self):
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1&order=-pk")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -341,7 +341,7 @@ class ApiTests(TestCase):
         self.assertEqual(received_pks[::-1], sorted(received_pks))
 
     def test_observations_json_ordering_gbif_id(self):
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -351,7 +351,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["results"][2]["gbifId"], "3")
 
     def test_observations_json_ordering_species_name_asc(self):
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         response = self.client.get(
             f"{base_url}?limit=10&page_number=1&order=species__name"
         )
@@ -362,7 +362,7 @@ class ApiTests(TestCase):
         self.assertEqual(obs_species_names, sorted(obs_species_names))
 
     def test_observations_json_ordering_species_name_desc(self):
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         response = self.client.get(
             f"{base_url}?limit=10&page_number=1&order=-species__name"
         )
@@ -373,7 +373,7 @@ class ApiTests(TestCase):
         self.assertEqual(obs_species_names[::-1], sorted(obs_species_names))
 
     def test_observations_json_pagination_base(self):
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
 
         response = self.client.get(f"{base_url}?limit=2&page_number=1")
         self.assertEqual(response.status_code, 200)
@@ -395,7 +395,7 @@ class ApiTests(TestCase):
 
     def test_observations_json_pagination_greater_than_max(self):
         """If the requested page number is greater than the number of pages, it returns the last page"""
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         response = self.client.get(f"{base_url}?limit=2&page_number=3")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -407,7 +407,7 @@ class ApiTests(TestCase):
 
     def test_observations_json_pagination_negative(self):
         """If the requested page number is negative, it returns the last page"""
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         response = self.client.get(f"{base_url}?limit=2&page_number=-5")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -418,7 +418,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["pageNumber"], 2)
 
     def test_observations_json_min_date_filter(self):
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         response = self.client.get(
             f"{base_url}?limit=10&page_number=1&startDate={OCTOBER_8_2021.strftime('%Y-%m-%d')}"
         )
@@ -428,7 +428,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["results"][0]["gbifId"], "3")
 
     def test_observations_json_max_date_filter(self):
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         response = self.client.get(
             f"{base_url}?limit=10&page_number=1&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}"
         )
@@ -439,7 +439,7 @@ class ApiTests(TestCase):
         self.assertIn(json_data["results"][1]["gbifId"], ["1", "2"])
 
     def test_observations_json_species_filter(self):
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -448,7 +448,7 @@ class ApiTests(TestCase):
         self.assertIn(json_data["results"][1]["gbifId"], ["2", "3"])
 
     def test_observations_json_dataset_filter(self):
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&datasetsIds[]={ApiTests.first_dataset.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -458,7 +458,7 @@ class ApiTests(TestCase):
 
     def test_observations_json_area_filter(self):
         """We filter by a single area"""
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&areaIds[]={ApiTests.public_area_andenne.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -469,7 +469,7 @@ class ApiTests(TestCase):
 
     def test_observations_json_status_filter_invalid_value(self):
         """Filtered observations: status is ignored not seen nor unseen"""
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
 
         response = self.client.get(f"{base_url}?limit=10&page_number=1")
         unfiltered_results = response.json()
@@ -486,7 +486,7 @@ class ApiTests(TestCase):
 
     def test_observations_json_status_filter_anonymous(self):
         """Filtered observations: status is ignored if the user is anonymous"""
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
 
         response = self.client.get(f"{base_url}?limit=10&page_number=1")
         unfiltered_results = response.json()
@@ -502,7 +502,7 @@ class ApiTests(TestCase):
     def test_observations_json_status_filter_logged(self):
         """Observations can be filtered by status for authenticated users"""
 
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         response = self.client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id")
         unfiltered_results = response.json()
         unfiltered_results_ids = [r["id"] for r in unfiltered_results["results"]]
@@ -555,7 +555,7 @@ class ApiTests(TestCase):
 
     def test_observations_json_multiple_areas_filter(self):
         """The areaIds parameter can take multiple values (OR)"""
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&areaIds[]={ApiTests.public_area_andenne.pk}&areaIds[]={ApiTests.public_area_lillois.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -567,7 +567,7 @@ class ApiTests(TestCase):
         """observations_json accept to filter per multiple datasets
 
         Case 1: Explicitly requests all datasets. Results should be the same than no filter"""
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
 
         json_data_all_species = self.client.get(
             f"{base_url}?limit=10&page_number=1&datasetsIds[]={ApiTests.first_dataset.pk}&datasetsIds[]={ApiTests.second_dataset.pk}"
@@ -581,7 +581,7 @@ class ApiTests(TestCase):
         """observations_json accept to filter per multiple species
 
         Case 1: Explicitly requests all species. Results should be the same than no filter"""
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
 
         json_data_all_species = self.client.get(
             f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&speciesIds[]={ApiTests.first_species.pk}"
@@ -609,7 +609,7 @@ class ApiTests(TestCase):
             source_dataset=ApiTests.first_dataset,
         )
 
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
 
         json_data = self.client.get(
             f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
@@ -638,7 +638,7 @@ class ApiTests(TestCase):
             initial_data_import=ApiTests.di,
             source_dataset=third_dataset,
         )
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         json_data = self.client.get(
             f"{base_url}?limit=10&page_number=1&datasetsIds[]={ApiTests.first_dataset.pk}&datasetsIds[]={third_dataset.pk}"
         ).json()
@@ -650,7 +650,7 @@ class ApiTests(TestCase):
             )
 
     def test_observations_json_combined_filters(self):
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -659,7 +659,7 @@ class ApiTests(TestCase):
 
     def test_observations_json_combined_filters_case2(self):
         # Starting from test_observations_json_combined_filters, we add one dataset filter that won't change the results
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={yesterday.strftime('%Y-%m-%d')}&datasetsIds[]={ApiTests.second_dataset.pk}"
         response = self.client.get(url_with_params)
@@ -669,7 +669,7 @@ class ApiTests(TestCase):
 
     def test_observations_json_combined_filters_case3(self):
         # Starting from test_observations_json_combined_filters, we add one dataset filter => the filter combination now returns 0 results
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&datasetsIds[]={ApiTests.first_dataset.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -677,7 +677,7 @@ class ApiTests(TestCase):
 
     def test_observations_json_combined_filters_case4(self):
         # Starting from test_observations_json_combined_filters, we add one area filter that won't change the results
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&areaIds[]={ApiTests.public_area_lillois.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -686,7 +686,7 @@ class ApiTests(TestCase):
     def test_observation_json_combined_filters_case5(self):
         # Starting from test_observations_json_combined_filters, we add one area filter => the filter combination now
         # returns 0 results
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&areaIds[]={ApiTests.public_area_andenne.pk}"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -696,7 +696,7 @@ class ApiTests(TestCase):
         # Starting from test_observations_json_combined_filters, we also ask only unseen observations for another_user
         # => the filter combination now returns 0 results
         self.client.login(username="frusciante1", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&status=unseen"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -706,7 +706,7 @@ class ApiTests(TestCase):
         # Similar to test_observation_json_combined_filters_case6(), but with "seen" status. The single observation from
         # test_observation_json_combined_filters is seen, so that observation is still returned in this case
         self.client.login(username="frusciante1", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.second_species.pk}&endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&status=seen"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -714,7 +714,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["results"][0]["gbifId"], "2")
 
     def test_observations_json_no_results(self):
-        base_url = reverse("dashboard:api-filtered-observations-data-page")
+        base_url = reverse("dashboard:api:filtered-observations-data-page")
         url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={ApiTests.first_species.pk}&startDate={OCTOBER_8_2021.strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
         json_data = response.json()
@@ -723,7 +723,7 @@ class ApiTests(TestCase):
 
     def test_observations_counter_no_filters(self):
         response = self.client.get(
-            reverse("dashboard:api-filtered-observations-counter")
+            reverse("dashboard:api:filtered-observations-counter")
         )
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
@@ -731,7 +731,7 @@ class ApiTests(TestCase):
 
     def test_observations_counter_status_filter_case1(self):
         self.client.login(username="frusciante1", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         url_with_params = f"{base_url}?status=seen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -740,7 +740,7 @@ class ApiTests(TestCase):
 
     def test_observations_counter_status_filter_case2(self):
         self.client.login(username="frusciante1", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         url_with_params = f"{base_url}?status=unseen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -749,7 +749,7 @@ class ApiTests(TestCase):
 
     def test_observations_counter_status_filter_case3(self):
         self.client.login(username="frusciante", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         url_with_params = f"{base_url}?status=seen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -758,7 +758,7 @@ class ApiTests(TestCase):
 
     def test_observations_counter_status_filter_case4(self):
         self.client.login(username="frusciante", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         url_with_params = f"{base_url}?status=unseen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -767,7 +767,7 @@ class ApiTests(TestCase):
 
     def test_observations_counter_status_filter_anonymous(self):
         """status is ignored for anonymous users"""
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         url_with_params = f"{base_url}?status=seen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -777,7 +777,7 @@ class ApiTests(TestCase):
     def test_observations_counter_status_filter_invalid(self):
         """status is ignored if not seen nor unseen"""
         self.client.login(username="frusciante", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         url_with_params = f"{base_url}?status=kvsnfgkdng"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -785,7 +785,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["count"], 3)
 
     def test_observations_counter_species_filters(self):
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         url_with_params = f"{base_url}?speciesIds[]={ApiTests.second_species.pk}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -794,7 +794,7 @@ class ApiTests(TestCase):
 
     def test_observation_counter_multiple_species_filter_case1(self):
         """We explicitly request all species: result should be identical to no species filtering"""
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         json_data_explicit = self.client.get(
             f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&speciesIds[]={ApiTests.first_species.pk}"
         ).json()
@@ -835,14 +835,14 @@ class ApiTests(TestCase):
             source_dataset=ApiTests.first_dataset,
         )
 
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         json_data = self.client.get(
             f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&speciesIds[]={species_tetraodon.pk}"
         ).json()
         self.assertEqual(json_data["count"], 5)
 
     def test_observations_counter_min_date_filter(self):
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         url_with_params = f"{base_url}?startDate={OCTOBER_8_2021.strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -850,7 +850,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["count"], 1)
 
     def test_observations_counter_area_filter(self):
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         url_with_params = f"{base_url}?areaIds[]={ApiTests.public_area_andenne.pk}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -858,7 +858,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["count"], 1)
 
     def test_observations_counter_max_date_filter(self):
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -867,7 +867,7 @@ class ApiTests(TestCase):
 
     def test_observations_counter_combined_filters(self):
         """Counter is correct when filtering by species and end date"""
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -897,7 +897,7 @@ class ApiTests(TestCase):
 
         # Case 5: start from case 1) but add a status filter that brings un to zero records
         self.client.login(username="frusciante1", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&status=unseen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -906,7 +906,7 @@ class ApiTests(TestCase):
 
         # Case 6: similar to case 5), with with seen status
         self.client.login(username="frusciante1", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-counter")
+        base_url = reverse("dashboard:api:filtered-observations-counter")
         url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={ApiTests.second_species.pk}&status=seen"
         response = self.client.get(url_with_params)
         self.assertEqual(response.status_code, 200)
@@ -914,7 +914,7 @@ class ApiTests(TestCase):
         self.assertEqual(json_data["count"], 1)
 
     def test_species_list_json(self):
-        response = self.client.get(reverse("dashboard:api-species-list-json"))
+        response = self.client.get(reverse("dashboard:api:species-list-json"))
         self.assertEqual(response.status_code, 200)
         # There's already 18 entries in the species table thanks to a data migration (0002_populate_initial_species.py)
 
@@ -945,12 +945,12 @@ class ApiTests(TestCase):
             "HTTP_ORIGIN": "http://somethingelse.com",
         }
         response = self.client.get(
-            reverse("dashboard:api-species-list-json"), {}, **request_headers
+            reverse("dashboard:api:species-list-json"), {}, **request_headers
         )
         self.assertEqual(response.headers["Access-Control-Allow-Origin"], "*")
 
     def test_datasets_list_json(self):
-        response = self.client.get(reverse("dashboard:api-datasets-list-json"))
+        response = self.client.get(reverse("dashboard:api:datasets-list-json"))
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         self.assertEqual(len(json_data), 2)
@@ -964,7 +964,7 @@ class ApiTests(TestCase):
     def test_filtered_observations_monthly_histogram_json_no_filters(self):
         # case 1: no filters
         response = self.client.get(
-            reverse("dashboard:api-filtered-observations-monthly-histogram")
+            reverse("dashboard:api:filtered-observations-monthly-histogram")
         )
         self.assertEqual(response.status_code, 200)
 
@@ -977,7 +977,7 @@ class ApiTests(TestCase):
         )
 
     def test_filtered_observations_monthly_histogram_json_end_date_filter(self):
-        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        base_url = reverse("dashboard:api:filtered-observations-monthly-histogram")
         response = self.client.get(f"{base_url}?endDate=2021-10-01")
         self.assertEqual(response.status_code, 200)
 
@@ -989,7 +989,7 @@ class ApiTests(TestCase):
         )
 
     def test_filtered_observations_monthly_histogram_json_start_date_filter(self):
-        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        base_url = reverse("dashboard:api:filtered-observations-monthly-histogram")
         response = self.client.get(f"{base_url}?startDate=2021-10-01")
         self.assertEqual(response.status_code, 200)
 
@@ -1001,7 +1001,7 @@ class ApiTests(TestCase):
         )
 
     def test_filtered_observations_monthly_histogram_json_species_filter(self):
-        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        base_url = reverse("dashboard:api:filtered-observations-monthly-histogram")
         response = self.client.get(
             f"{base_url}?speciesIds[]={ApiTests.second_species.pk}"
         )
@@ -1019,7 +1019,7 @@ class ApiTests(TestCase):
         self,
     ):
         self.client.login(username="frusciante1", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        base_url = reverse("dashboard:api:filtered-observations-monthly-histogram")
         response = self.client.get(f"{base_url}?status=klfhjklsdwfhklsfhs")
         self.assertEqual(response.status_code, 200)
 
@@ -1033,7 +1033,7 @@ class ApiTests(TestCase):
 
     def test_filtered_observations_monthly_histogram_json_status_filter_case1(self):
         self.client.login(username="frusciante1", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        base_url = reverse("dashboard:api:filtered-observations-monthly-histogram")
         response = self.client.get(f"{base_url}?status=seen")
         self.assertEqual(response.status_code, 200)
 
@@ -1046,7 +1046,7 @@ class ApiTests(TestCase):
 
     def test_filtered_observations_monthly_histogram_json_status_filter_case2(self):
         self.client.login(username="frusciante1", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        base_url = reverse("dashboard:api:filtered-observations-monthly-histogram")
         response = self.client.get(f"{base_url}?status=unseen")
         self.assertEqual(response.status_code, 200)
 
@@ -1060,7 +1060,7 @@ class ApiTests(TestCase):
 
     def test_filtered_observations_monthly_histogram_json_status_filter_anonymous(self):
         """Anonymous users: the status filter is ignored"""
-        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        base_url = reverse("dashboard:api:filtered-observations-monthly-histogram")
         response = self.client.get(f"{base_url}?status=unseen")
         self.assertEqual(response.status_code, 200)
         self.assertJSONEqual(
@@ -1072,7 +1072,7 @@ class ApiTests(TestCase):
         )
 
     def test_filtered_observations_monthly_histogram_json_combined_filters(self):
-        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        base_url = reverse("dashboard:api:filtered-observations-monthly-histogram")
         response = self.client.get(
             f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&endDate=2021-10-01"
         )
@@ -1086,7 +1086,7 @@ class ApiTests(TestCase):
         )
 
     def test_filtered_observations_monthly_histogram_json_combined_filters_case2(self):
-        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        base_url = reverse("dashboard:api:filtered-observations-monthly-histogram")
         response = self.client.get(
             f"{base_url}?areaIds[]={ApiTests.public_area_lillois.pk}&endDate=2021-10-01"
         )
@@ -1101,7 +1101,7 @@ class ApiTests(TestCase):
 
     def test_filtered_observations_monthly_histogram_json_combined_filters_case3(self):
         self.client.login(username="frusciante1", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        base_url = reverse("dashboard:api:filtered-observations-monthly-histogram")
         response = self.client.get(
             f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&endDate=2021-10-01&status=seen"
         )
@@ -1116,7 +1116,7 @@ class ApiTests(TestCase):
 
     def test_filtered_observations_monthly_histogram_json_combined_filters_case4(self):
         self.client.login(username="frusciante1", password="12345")
-        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        base_url = reverse("dashboard:api:filtered-observations-monthly-histogram")
         response = self.client.get(
             f"{base_url}?speciesIds[]={ApiTests.second_species.pk}&endDate=2021-10-01&status=unseen"
         )
@@ -1125,7 +1125,7 @@ class ApiTests(TestCase):
         self.assertJSONEqual(response.content.decode("utf-8"), [])
 
     def test_filtered_observations_monthly_histogram_json_dataset_filters(self):
-        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        base_url = reverse("dashboard:api:filtered-observations-monthly-histogram")
         response = self.client.get(
             f"{base_url}?datasetsIds[]={ApiTests.first_dataset.pk}"
         )
@@ -1140,7 +1140,7 @@ class ApiTests(TestCase):
         )
 
     def test_filtered_observations_monthly_histogram_json_area_filter(self):
-        base_url = reverse("dashboard:api-filtered-observations-monthly-histogram")
+        base_url = reverse("dashboard:api:filtered-observations-monthly-histogram")
         response = self.client.get(
             f"{base_url}?areaIds[]={ApiTests.public_area_andenne.pk}"
         )

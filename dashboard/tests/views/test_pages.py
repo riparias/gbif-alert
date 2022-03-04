@@ -93,7 +93,7 @@ class AlertWebPagesTests(TestCase):
         )
 
     my_alerts_navbar_snippet = (
-        '<a class="nav-link " aria-current="page" href="/my-alerts">My alerts</a>'
+        '<a class="nav-link " aria-current="page" href="/my_alerts">My alerts</a>'
     )
 
     def test_navbar_my_alerts_authenticated(self):
@@ -119,7 +119,7 @@ class AlertWebPagesTests(TestCase):
         """An authenticated user has access to details of their own alerts"""
         self.client.login(username="frusciante", password="12345")
         page_url = reverse(
-            "dashboard:page-alert-details",
+            "dashboard:pages:alert-details",
             kwargs={"alert_id": self.__class__.alert.id},
         )
         response = self.client.get(page_url)
@@ -128,7 +128,7 @@ class AlertWebPagesTests(TestCase):
     def test_anonymous_cant_access_alert_details(self):
         """An anonymous user is invited to log in when trying to see an alert details"""
         page_url = reverse(
-            "dashboard:page-alert-details",
+            "dashboard:pages:alert-details",
             kwargs={"alert_id": self.__class__.alert.id},
         )
         response = self.client.get(page_url)
@@ -138,7 +138,7 @@ class AlertWebPagesTests(TestCase):
         """An authenticated user cannot see the alert details of another user"""
         self.client.login(username="other_user", password="12345")
         page_url = reverse(
-            "dashboard:page-alert-details",
+            "dashboard:pages:alert-details",
             kwargs={"alert_id": self.__class__.alert.id},
         )
         response = self.client.get(page_url)
@@ -147,20 +147,20 @@ class AlertWebPagesTests(TestCase):
     def test_anonymous_cant_access_new_alert_page(self):
         """Anonymous users cannot access the create alert page"""
         # 1) GET
-        response = self.client.get(reverse("dashboard:page-alert-create"))
+        response = self.client.get(reverse("dashboard:pages:alert-create"))
         self.assertEqual(response.status_code, 302)  # We got redirected to sign in
-        self.assertEqual(response.url, "/accounts/signin/?next=/new-alert")
+        self.assertEqual(response.url, "/accounts/signin/?next=/new_alert")
 
         # 2) POST
-        response = self.client.post(reverse("dashboard:page-alert-create"))
+        response = self.client.post(reverse("dashboard:pages:alert-create"))
         self.assertEqual(response.status_code, 302)  # We got redirected to sign in
-        self.assertEqual(response.url, "/accounts/signin/?next=/new-alert")
+        self.assertEqual(response.url, "/accounts/signin/?next=/new_alert")
 
     def test_get_new_alert_page(self):
         """An authenticated has a page allowing to create an alert"""
         self.client.login(username="frusciante", password="12345")
 
-        response = self.client.get(reverse("dashboard:page-alert-create"))
+        response = self.client.get(reverse("dashboard:pages:alert-create"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "dashboard/alert_create.html")
 
@@ -197,7 +197,7 @@ class AlertWebPagesTests(TestCase):
         self.client.login(username="frusciante", password="12345")
 
         # Attempt 1: post no data: we stay on the same page because there's one field required (email_notifications_frequency)
-        response = self.client.post(reverse("dashboard:page-alert-create"))
+        response = self.client.post(reverse("dashboard:pages:alert-create"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context["form"].errors), 1)
         self.assertIn("email_notifications_frequency", response.context["form"].errors)
@@ -208,7 +208,7 @@ class AlertWebPagesTests(TestCase):
 
         # Attempt 2: post email_notifications_frequency: the alerts gets created and the user is redirected to the alert details page
         response = self.client.post(
-            reverse("dashboard:page-alert-create"),
+            reverse("dashboard:pages:alert-create"),
             {"email_notifications_frequency": "D"},
         )
         self.assertEqual(response.status_code, 302)
@@ -226,7 +226,7 @@ class AlertWebPagesTests(TestCase):
 
         # Attempt 3: post all fields: the alerts gets created and the user is redirected to the alert details page
         response = self.client.post(
-            reverse("dashboard:page-alert-create"),
+            reverse("dashboard:pages:alert-create"),
             {
                 "email_notifications_frequency": "W",
                 "species": [
@@ -258,11 +258,11 @@ class AlertWebPagesTests(TestCase):
     def test_delete_alert_anonymous(self):
         """An anonymous user cannot delete an alert"""
         response = self.client.post(
-            reverse("dashboard:action-alert-delete"),
+            reverse("dashboard:actions:delete-alert"),
             {"alert_id": self.__class__.alert.pk},
         )
         self.assertEqual(response.status_code, 302)  # We got redirected to sign in
-        self.assertEqual(response.url, "/accounts/signin/?next=/delete-alert")
+        self.assertEqual(response.url, "/accounts/signin/?next=/actions/delete_alert")
 
     def test_delete_alert_success(self):
         """A user can delete its own alerts"""
@@ -274,7 +274,7 @@ class AlertWebPagesTests(TestCase):
         )
 
         response = self.client.post(
-            reverse("dashboard:action-alert-delete"),
+            reverse("dashboard:actions:delete-alert"),
             {"alert_id": self.__class__.alert.pk},
         )
         # No more alerts for this user
@@ -284,7 +284,7 @@ class AlertWebPagesTests(TestCase):
 
         # The user gets redirected to the "my alerts" page
         self.assertEqual(response.status_code, 302)  # We got redirected to sign in
-        self.assertEqual(response.url, "/my-alerts")
+        self.assertEqual(response.url, "/my_alerts")
 
     def test_delete_non_existing_alert(self):
         """We get an error 404 when trying to delete an alert that doesn't exist"""
@@ -296,7 +296,7 @@ class AlertWebPagesTests(TestCase):
         )
 
         response = self.client.post(
-            reverse("dashboard:action-alert-delete"),
+            reverse("dashboard:actions:delete-alert"),
             {"alert_id": 5},
         )
         # The user alert has been untouched
@@ -314,7 +314,7 @@ class AlertWebPagesTests(TestCase):
         self.assertEqual(Alert.objects.all().count(), 1)
 
         response = self.client.post(
-            reverse("dashboard:action-alert-delete"),
+            reverse("dashboard:actions:delete-alert"),
             {"alert_id": self.__class__.alert.pk},
         )
         # Alerts are unchanged in the database
@@ -396,7 +396,7 @@ class WebPagesTests(TestCase):
 
     def test_observation_details_not_found(self):
         response = self.client.get(
-            reverse("dashboard:page-observation-details", kwargs={"stable_id": 1000})
+            reverse("dashboard:pages:observation-details", kwargs={"stable_id": 1000})
         )
         self.assertEqual(response.status_code, 404)
 
@@ -404,7 +404,7 @@ class WebPagesTests(TestCase):
         obs_stable_id = self.__class__.first_obs.stable_id
 
         page_url = reverse(
-            "dashboard:page-observation-details",
+            "dashboard:pages:observation-details",
             kwargs={"stable_id": obs_stable_id},
         )
 
@@ -461,7 +461,7 @@ class WebPagesTests(TestCase):
         # case 1: coordinates uncertainty unknown
         response = self.client.get(
             reverse(
-                "dashboard:page-observation-details",
+                "dashboard:pages:observation-details",
                 kwargs={"stable_id": new_obs.stable_id},
             )
         )
@@ -475,7 +475,7 @@ class WebPagesTests(TestCase):
         new_obs.save()
         response = self.client.get(
             reverse(
-                "dashboard:page-observation-details",
+                "dashboard:pages:observation-details",
                 kwargs={"stable_id": new_obs.stable_id},
             )
         )
@@ -489,7 +489,7 @@ class WebPagesTests(TestCase):
         new_obs.save()
         response = self.client.get(
             reverse(
-                "dashboard:page-observation-details",
+                "dashboard:pages:observation-details",
                 kwargs={"stable_id": new_obs.stable_id},
             )
         )
@@ -503,7 +503,7 @@ class WebPagesTests(TestCase):
         new_obs.save()
         response = self.client.get(
             reverse(
-                "dashboard:page-observation-details",
+                "dashboard:pages:observation-details",
                 kwargs={"stable_id": new_obs.stable_id},
             )
         )
@@ -517,7 +517,7 @@ class WebPagesTests(TestCase):
         new_obs.save()
         response = self.client.get(
             reverse(
-                "dashboard:page-observation-details",
+                "dashboard:pages:observation-details",
                 kwargs={"stable_id": new_obs.stable_id},
             )
         )
@@ -530,7 +530,7 @@ class WebPagesTests(TestCase):
         """A message is shown if no comment for the observation"""
         response = self.client.get(
             reverse(
-                "dashboard:page-observation-details",
+                "dashboard:pages:observation-details",
                 kwargs={"stable_id": self.__class__.first_obs.stable_id},
             )
         )
@@ -541,7 +541,7 @@ class WebPagesTests(TestCase):
         """Observation comments are displayed"""
         response = self.client.get(
             reverse(
-                "dashboard:page-observation-details",
+                "dashboard:pages:observation-details",
                 kwargs={"stable_id": self.__class__.second_obs.stable_id},
             )
         )
@@ -554,7 +554,7 @@ class WebPagesTests(TestCase):
         """Non-logged users are invited to sign in to post comments"""
         response = self.client.get(
             reverse(
-                "dashboard:page-observation-details",
+                "dashboard:pages:observation-details",
                 kwargs={"stable_id": self.__class__.second_obs.stable_id},
             )
         )
@@ -572,7 +572,7 @@ class WebPagesTests(TestCase):
 
         response = self.client.post(
             reverse(
-                "dashboard:page-observation-details",
+                "dashboard:pages:observation-details",
                 kwargs={"stable_id": observation.stable_id},
             ),
             {"text": "This is my comment"},
@@ -596,7 +596,7 @@ class WebPagesTests(TestCase):
         self.client.login(username="frusciante", password="12345")
         response = self.client.post(
             reverse(
-                "dashboard:page-observation-details",
+                "dashboard:pages:observation-details",
                 kwargs={"stable_id": observation.stable_id},
             ),
             {"text": "New comment from the test suite"},
@@ -622,7 +622,7 @@ class WebPagesTests(TestCase):
         obs_stable_id = self.__class__.first_obs.stable_id
 
         page_url = reverse(
-            "dashboard:page-observation-details",
+            "dashboard:pages:observation-details",
             kwargs={"stable_id": obs_stable_id},
         )
 
@@ -639,7 +639,7 @@ class WebPagesTests(TestCase):
         obs_stable_id = self.__class__.first_obs.stable_id
 
         page_url = reverse(
-            "dashboard:page-observation-details",
+            "dashboard:pages:observation-details",
             kwargs={"stable_id": obs_stable_id},
         )
 
@@ -658,7 +658,7 @@ class WebPagesTests(TestCase):
         obs_stable_id = self.__class__.second_obs.stable_id
 
         page_url = reverse(
-            "dashboard:page-observation-details",
+            "dashboard:pages:observation-details",
             kwargs={"stable_id": obs_stable_id},
         )
 

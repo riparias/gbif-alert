@@ -112,7 +112,7 @@ from django.contrib import messages
 def my_view(request):
   ...
   messages.success(request, "Your profile was successfully updated.")
-  return redirect("dashboard:page-index")
+  return redirect("dashboard:pages:index")
 ```
 
 ## Maintenance mode
