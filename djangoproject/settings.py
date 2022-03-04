@@ -147,3 +147,6 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 RIPARIAS = {"TARGET_COUNTRY_CODE": "BE"}
 
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_METHODS = [
+    "GET"
+]  # Probably needed, but just to be on the safe side. See https://github.com/riparias/early-warning-webapp/issues/100
