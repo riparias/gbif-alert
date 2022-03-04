@@ -141,7 +141,7 @@ class Observation(models.Model):
     # The computed stable identifier that we can use to identify the same records between data import
     stable_id = models.CharField(max_length=40)
 
-    species = models.ForeignKey(Species, on_delete=models.PROTECT)
+    species = models.ForeignKey(Species, on_delete=models.CASCADE)
     location = models.PointField(blank=True, null=True, srid=DATA_SRID)
     date = models.DateField()
     individual_count = models.IntegerField(blank=True, null=True)
