@@ -935,6 +935,20 @@ class ApiTests(TestCase):
 
         self.assertTrue(found)
 
+    def test_species_list_cors_enabled(self):
+        """Make sure CORS is enabled for the (semi public) species_list JSON API
+
+        # Technique inspired from https://stackoverflow.com/a/47609921
+        """
+        request_headers = {
+            "HTTP_ACCESS_CONTROL_REQUEST_METHOD": "GET",
+            "HTTP_ORIGIN": "http://somethingelse.com",
+        }
+        response = self.client.get(
+            reverse("dashboard:api-species-list-json"), {}, **request_headers
+        )
+        self.assertEqual(response.headers["Access-Control-Allow-Origin"], "*")
+
     def test_datasets_list_json(self):
         response = self.client.get(reverse("dashboard:api-datasets-list-json"))
         self.assertEqual(response.status_code, 200)
