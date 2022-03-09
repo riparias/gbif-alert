@@ -89,7 +89,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         cls.selenium = webdriver.Chrome(
             # Temporarily downgrade Chrome Driver because of the following bug:
             # https://github.com/SeleniumHQ/selenium/issues/10318
-            ChromeDriverManager(version="97.0.4692.71").install(),
+            ChromeDriverManager().install(),
             options=options,
         )
         cls.selenium.implicitly_wait(5)

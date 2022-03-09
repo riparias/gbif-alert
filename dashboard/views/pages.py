@@ -1,3 +1,5 @@
+"""Views that return HTML pages"""
+
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required

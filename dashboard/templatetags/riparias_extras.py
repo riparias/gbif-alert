@@ -54,35 +54,39 @@ def js_config_object(context):
     conf = {
         "authenticatedUser": context.request.user.is_authenticated,
         "apiEndpoints": {
-            "speciesListUrl": reverse("dashboard:api:species-list-json"),
-            "datasetsListUrl": reverse("dashboard:api:datasets-list-json"),
-            "areasListUrl": reverse("dashboard:api:areas-list-json"),
-            "dataImportsListUrl": reverse("dashboard:api:dataimports-list-json"),
+            "speciesListUrl": reverse("dashboard:public-api:species-list-json"),
+            "datasetsListUrl": reverse("dashboard:internal-api:datasets-list-json"),
+            "areasListUrl": reverse("dashboard:internal-api:areas-list-json"),
+            "dataImportsListUrl": reverse(
+                "dashboard:internal-api:dataimports-list-json"
+            ),
             "observationsCounterUrl": reverse(
-                "dashboard:api:filtered-observations-counter"
+                "dashboard:internal-api:filtered-observations-counter"
             ),
             "observationsJsonUrl": reverse(
-                "dashboard:api:filtered-observations-data-page"
+                "dashboard:internal-api:filtered-observations-data-page"
             ),
             "tileServerAggregatedUrlTemplate": _build_mvt_url_template(
-                "dashboard:api:maps:mvt-tiles-hexagon-grid-aggregated"
+                "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated"
             ),
             "tileServerUrlTemplate": _build_mvt_url_template(
-                "dashboard:api:maps:mvt-tiles"
+                "dashboard:internal-api:maps:mvt-tiles"
             ),
             "observationDetailsUrlTemplate": reverse(
                 "dashboard:pages:observation-details", kwargs={"stable_id": 1}
             ).replace("1", "{stable_id}"),
             "areasUrlTemplate": reverse(
-                "dashboard:api:area-geojson", kwargs={"id": 1}
+                "dashboard:internal-api:area-geojson", kwargs={"id": 1}
             ).replace("1", "{id}"),
             "minMaxOccPerHexagonUrl": reverse(
-                "dashboard:api:maps:mvt-min-max-per-hexagon"
+                "dashboard:internal-api:maps:mvt-min-max-per-hexagon"
             ),
             "observationsHistogramDataUrl": reverse(
-                "dashboard:api:filtered-observations-monthly-histogram"
+                "dashboard:internal-api:filtered-observations-monthly-histogram"
             ),
-            "alertAsFiltersUrl": reverse("dashboard:api:alert-as-filters-json"),
+            "alertAsFiltersUrl": reverse(
+                "dashboard:internal-api:alert-as-filters-json"
+            ),
         },
     }
     if context.request.user.is_authenticated:

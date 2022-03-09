@@ -1,3 +1,5 @@
+"""Observations tile server + related endpoints"""
+
 from string import Template
 
 from django.db import connection

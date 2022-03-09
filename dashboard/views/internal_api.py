@@ -1,4 +1,4 @@
-"""API endpoints are implemented in this file, except maps-related endpoints (see maps.py)
+"""Internal API endpoints are implemented in this file, except maps-related endpoints (see maps.py)
 
 All endpoints that deal with filtered observations takes the following GET parameters (all optional, can be combined at
 will):
@@ -26,15 +26,8 @@ from dashboard.views.helpers import (
     filtered_observations_from_request,
     extract_int_request,
     AuthenticatedHttpRequest,
+    model_to_json_list,
 )
-
-
-def _model_to_json_list(Model) -> JsonResponse:
-    """Return a JSON list for the specific model
-
-    Model instances should have an as_dict property
-    """
-    return JsonResponse([entry.as_dict for entry in Model.objects.all()], safe=False)
 
 
 def dataimports_list_json(_) -> JsonResponse:
@@ -42,15 +35,7 @@ def dataimports_list_json(_) -> JsonResponse:
 
     Order: undetermined
     """
-    return _model_to_json_list(DataImport)
-
-
-def species_list_json(_) -> JsonResponse:
-    """A list of all species known to the system, in JSON format
-
-    Order: undetermined
-    """
-    return _model_to_json_list(Species)
+    return model_to_json_list(DataImport)
 
 
 def areas_list_json(request: HttpRequest) -> JsonResponse:
@@ -83,7 +68,7 @@ def datasets_list_json(_) -> JsonResponse:
 
     Order: undetermined
     """
-    return _model_to_json_list(Dataset)
+    return model_to_json_list(Dataset)
 
 
 def filtered_observations_counter_json(request: HttpRequest) -> JsonResponse:

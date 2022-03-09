@@ -37,13 +37,18 @@ maps_api_urls = [
     ),
 ]
 
-api_urls = [
-    path("areas", views.areas_list_json, name="areas-list-json"),
+public_api_urls = [
+    path("species", views.species_list_json, name="species-list-json"),
+]
+
+internal_api_urls = [
     path(
         "alert/as_filters",
         views.alert_as_filters,
         name="alert-as-filters-json",
     ),
+    path("area/<int:id>", views.area_geojson, name="area-geojson"),
+    path("areas", views.areas_list_json, name="areas-list-json"),
     path("dataimports", views.dataimports_list_json, name="dataimports-list-json"),
     path("datasets", views.datasets_list_json, name="datasets-list-json"),
     path(
@@ -67,8 +72,6 @@ api_urls = [
             (maps_api_urls, "maps"),
         ),
     ),
-    path("species", views.species_list_json, name="species-list-json"),
-    path("area/<int:id>", views.area_geojson, name="area-geojson"),
 ]
 
 actions_urls = [
@@ -88,9 +91,15 @@ urlpatterns = [
         ),
     ),
     path(
-        "api/",
+        "api",
         include(
-            (api_urls, "api"),
+            (public_api_urls, "public-api"),
+        ),
+    ),
+    path(
+        "internal-api/",
+        include(
+            (internal_api_urls, "internal-api"),
         ),
     ),
     path(

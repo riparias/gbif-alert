@@ -1,3 +1,5 @@
+"""Helpers functions used by views"""
+
 import ast
 import datetime
 from typing import Tuple, List, Optional, Dict
@@ -5,7 +7,7 @@ from urllib.parse import unquote
 
 from django.contrib.gis.db.models.aggregates import Union
 from django.db.models import QuerySet
-from django.http import HttpRequest
+from django.http import HttpRequest, JsonResponse
 
 from dashboard.models import Observation, Area, User, ObservationView
 
@@ -148,3 +150,11 @@ def filters_from_request(
         status_for_user,
         initial_data_import_ids,
     )
+
+
+def model_to_json_list(Model) -> JsonResponse:
+    """Return a JSON list for the specific model
+
+    Model instances should have an as_dict property
+    """
+    return JsonResponse([entry.as_dict for entry in Model.objects.all()], safe=False)
