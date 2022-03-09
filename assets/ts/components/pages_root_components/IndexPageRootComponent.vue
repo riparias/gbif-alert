@@ -102,6 +102,7 @@ interface IndexPageRootComponentData {
 
 export default defineComponent({
   name: "IndexPageRootComponent",
+
   components: {
     Observations,
     ObservationStatusSelector,

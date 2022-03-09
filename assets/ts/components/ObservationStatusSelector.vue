@@ -7,7 +7,7 @@
   >
     <ObservationStatusSelectorEntry
       entry-label="All"
-      :checked="modelValue === null"
+      :checked="modelValue === null || modelValue === undefined"
       @entry-selected="myEmit(null)"
     ></ObservationStatusSelectorEntry>
     <ObservationStatusSelectorEntry
