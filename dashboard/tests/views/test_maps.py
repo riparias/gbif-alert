@@ -18,7 +18,9 @@ from dashboard.models import (
 )
 
 
-class VectorTilesServerTests(TestCase):
+class MapsTestDataMixin(object):
+    """Multiple test cases share the test data via this mixin"""
+
     @classmethod
     def setUpTestData(cls):
         cls.first_species = Species.objects.create(
@@ -104,6 +106,275 @@ class VectorTilesServerTests(TestCase):
 
         ObservationView.objects.create(observation=second_obs, user=cls.user)
 
+
+class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
+    """Tests covering the min_max_in_hexagon endpoint"""
+
+    def test_min_max_per_hexagon(self):
+        # At zoom level 8, with the initial data: we should have two polygons, both at 1. So min=1 and max=1
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={"zoom": 8},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Content-Type"], "application/json")
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 1)
+
+        # Add a second one in Lillois, but not next to the other one
+        Observation.objects.create(
+            gbif_id=3,
+            occurrence_id="3",
+            species=Species.objects.all()[0],
+            date=datetime.date.today(),
+            data_import=self.__class__.di,
+            initial_data_import=self.__class__.di,
+            source_dataset=self.__class__.first_dataset,
+            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
+        )
+
+        # Now, at zoom level 8 we should have an hexagon with count=1 and another one with count=2
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={"zoom": 8},
+        )
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 2)
+
+        # But at a very large scale, one single hexagon with count=3
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={"zoom": 1},
+        )
+        self.assertEqual(response.json()["min"], 3)
+        self.assertEqual(response.json()["max"], 3)
+
+        # At zoom level 17, there's no hexagons that cover more than 1 observation
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={"zoom": 17},
+        )
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 1)
+
+    def test_min_max_per_hexagon_with_species_filter(self):
+        # Add a second one in Lillois, but not next to the other one and another species
+        Observation.objects.create(
+            gbif_id=3,
+            occurrence_id="3LKDVC",
+            species=self.__class__.second_species,
+            date=datetime.date.today(),
+            data_import=self.__class__.di,
+            initial_data_import=self.__class__.di,
+            source_dataset=self.__class__.first_dataset,
+            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
+        )
+
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={"zoom": 8, "speciesIds[]": self.__class__.first_species.pk},
+        )
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 1)
+
+        # Now we're looking for the second species. (We have 2 in Lillois and none in Andenne)
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "speciesIds[]": [self.__class__.second_species.pk],
+            },
+        )
+
+        self.assertEqual(response.json()["min"], 2)
+        self.assertEqual(response.json()["max"], 2)
+
+        # Now let's add another one in Andenne for species 2: whe should now have 1,2
+        Observation.objects.create(
+            gbif_id=4,
+            occurrence_id="4",
+            species=self.__class__.second_species,
+            date=datetime.date.today(),
+            data_import=self.__class__.di,
+            initial_data_import=self.__class__.di,
+            source_dataset=self.__class__.first_dataset,
+            location=Point(5.095610, 50.48800, srid=4326),
+        )
+
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={"zoom": 8, "speciesIds[]": self.__class__.second_species.pk},
+        )
+
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 2)
+
+    def test_min_max_per_hexagon_with_dataset_filter(self):
+        # Add a second one in Lillois, but not next to the other one and another species
+        Observation.objects.create(
+            gbif_id=3,
+            occurrence_id="3DSRZER",
+            species=self.__class__.second_species,
+            date=datetime.date.today(),
+            data_import=self.__class__.di,
+            initial_data_import=self.__class__.di,
+            source_dataset=self.__class__.second_dataset,
+            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
+        )
+
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={"zoom": 8, "datasetsIds[]": self.__class__.first_dataset.pk},
+        )
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 1)
+
+        # Now we're looking for the second species. (We have 2 in Lillois and none in Andenne)
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "speciesIds[]": [self.__class__.second_species.pk],
+            },
+        )
+
+        self.assertEqual(response.json()["min"], 2)
+        self.assertEqual(response.json()["max"], 2)
+
+        # Now let's add another one in Andenne for species 2: whe should now have 1,2
+        Observation.objects.create(
+            gbif_id=4,
+            occurrence_id="4",
+            species=self.__class__.second_species,
+            date=datetime.date.today(),
+            data_import=self.__class__.di,
+            initial_data_import=self.__class__.di,
+            source_dataset=self.__class__.first_dataset,
+            location=Point(5.095610, 50.48800, srid=4326),
+        )
+
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={"zoom": 8, "speciesIds[]": self.__class__.second_species.pk},
+        )
+
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 2)
+
+    def test_min_max_in_hexagon_with_status_filter_invalid_value(self):
+        """status is not seen nor unseen, therefore is ignored and everything is included"""
+        self.client.login(username="frusciante", password="12345")
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={"zoom": 1, "status": "all"},
+        )
+        self.assertEqual(response.json()["min"], 2)
+        self.assertEqual(response.json()["max"], 2)
+
+    def test_min_max_in_hexagon_with_status_filter(self):
+        # Add a second one in Lillois, but not next to the other
+        Observation.objects.create(
+            gbif_id=3,
+            occurrence_id="3",
+            species=self.__class__.second_species,
+            date=datetime.date.today(),
+            data_import=self.__class__.di,
+            initial_data_import=self.__class__.di,
+            source_dataset=self.__class__.second_dataset,
+            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
+        )
+
+        self.client.login(username="frusciante", password="12345")
+
+        # At a zoom level that only shows Lillois or Andenne, it's 1-1
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "status": "unseen",
+            },
+        )
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 1)
+
+    def test_min_max_in_hexagon_with_status_filter_anonymous(self):
+        """Similar to test_min_max_in_hexagon_with_status_filter(), but anonymous -> filters get ignored"""
+        # Add a second one in Lillois, but not next to the other
+        Observation.objects.create(
+            gbif_id=3,
+            occurrence_id="3",
+            species=self.__class__.second_species,
+            date=datetime.date.today(),
+            data_import=self.__class__.di,
+            initial_data_import=self.__class__.di,
+            source_dataset=self.__class__.second_dataset,
+            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
+        )
+
+        # At a zoom level that only shows Lillois or Andenne, it's 1-1
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "status": "unseen",
+            },
+        )
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 2)
+
+    def test_min_max_per_hexagon_with_area_filter(self):
+        # Add a second one in Lillois, but not next to the other
+        Observation.objects.create(
+            gbif_id=3,
+            occurrence_id="3",
+            species=self.__class__.second_species,
+            date=datetime.date.today(),
+            data_import=self.__class__.di,
+            initial_data_import=self.__class__.di,
+            source_dataset=self.__class__.second_dataset,
+            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
+        )
+
+        # We restrict ourselves to Andenne: only one observation
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "areaIds[]": self.__class__.public_area_andenne.pk,
+            },
+        )
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 1)
+
+        # Case 2: we limit ourselves to Lillois (one single hexagon, with count=2)
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "areaIds[]": self.__class__.public_area_lillois.pk,
+            },
+        )
+        self.assertEqual(response.json()["min"], 2)
+        self.assertEqual(response.json()["max"], 2)
+
+        # Case3: Test with multiple areas: we request both Andenne and Lillois: same results as no filters
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "areaIds[]": [
+                    self.__class__.public_area_lillois.pk,
+                    self.__class__.public_area_andenne.pk,
+                ],
+            },
+        )
+        self.assertEqual(response.json()["min"], 1)
+        self.assertEqual(response.json()["max"], 2)
+
+
+class VectorTilesServerTests(MapsTestDataMixin, TestCase):
+    """Tests covering the MVT server (tiles generation)"""
+
     def test_base_mvt_server(self):
         """There's a tile server returning the appropriate MIME type"""
         response = self.client.get(
@@ -117,7 +388,7 @@ class VectorTilesServerTests(TestCase):
             response.headers["Content-Type"], "application/vnd.mapbox-vector-tile"
         )
 
-    def test_tiles_null_filters_ignored(self):
+    def test_aggregated_tiles_null_filters_ignored(self):
         """Regression test: filters at null in the URL don't create problems, the filter is just ignored.
 
         Derived from test_basic_data_in_hexagons()
@@ -138,7 +409,7 @@ class VectorTilesServerTests(TestCase):
             the_feature["properties"]["count"], 2
         )  # It has a "count" property with the value 2
 
-    def test_tiles_area_filter(self):
+    def test_aggregated_tiles_area_filter(self):
         # We explore tiles at different zoom levels. In all cases the observation in Lillois should be filtered out by
         # the areaId filtering.
 
@@ -205,7 +476,7 @@ class VectorTilesServerTests(TestCase):
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
 
-    def test_tiles_status_filter_anonymous(self):
+    def test_aggregated_tiles_status_filter_anonymous(self):
         """Similar to test_tiles_status_filter_case1() but anonymous => filter is ignored"""
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
@@ -221,7 +492,7 @@ class VectorTilesServerTests(TestCase):
         the_feature = decoded_tile["default"]["features"][0]
         self.assertEqual(the_feature["properties"]["count"], 2)
 
-    def test_tiles_status_filter_invalid_filter_value(self):
+    def test_aggregated_tiles_status_filter_invalid_filter_value(self):
         """Similar to test_tiles_status_filter_case1() but with a filter that's not seen | unseen => filter is ignored
         and everything is included"""
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
@@ -239,7 +510,7 @@ class VectorTilesServerTests(TestCase):
         the_feature = decoded_tile["default"]["features"][0]
         self.assertEqual(the_feature["properties"]["count"], 2)
 
-    def test_tiles_status_filter_case1(self):
+    def test_aggregated_tiles_status_filter_case1(self):
         self.client.login(username="frusciante", password="12345")
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
@@ -257,7 +528,7 @@ class VectorTilesServerTests(TestCase):
             the_feature["properties"]["count"], 1
         )  # Only one observation this time, due to the filter
 
-    def test_tiles_status_filter_case2(self):
+    def test_aggregated_tiles_status_filter_case2(self):
         self.client.login(username="frusciante", password="12345")
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
@@ -303,7 +574,7 @@ class VectorTilesServerTests(TestCase):
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
 
-    def test_tiles_species_filter(self):
+    def test_aggregated_tiles_species_filter(self):
         # We explore tiles at different zoom levels. In all cases the observation in Lillois should be filtered out by
         # the speciesId filtering.
         # Multiple cases where only the observation in Andenne is visible
@@ -373,7 +644,7 @@ class VectorTilesServerTests(TestCase):
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
 
-    def test_tiles_multiple_dataset_filters(self):
+    def test_aggregated_tiles_multiple_dataset_filters(self):
         """Explicitely requesting all datasets give the same results than no filtering"""
         base_url = reverse(
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
@@ -388,7 +659,7 @@ class VectorTilesServerTests(TestCase):
 
         self.assertEqual(decoded_tile_no_filters, decoded_tile_explicit_filters)
 
-    def test_tiles_dataset_filter(self):
+    def test_aggregated_tiles_dataset_filter(self):
         # Inspired by test_tiles_species_filter
 
         # Multiple cases where only the observation in Andenne is visible
@@ -459,7 +730,7 @@ class VectorTilesServerTests(TestCase):
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
 
-    def test_tiles_species_multiple_species_filters(self):
+    def test_aggregated_tiles_species_multiple_species_filters(self):
         # Test based on test_tiles_species_filter(self), but with two species explicitly requested
 
         # We need first to add a new species and related observations:
@@ -558,7 +829,7 @@ class VectorTilesServerTests(TestCase):
             decoded_tile["default"]["features"][0]["properties"]["count"], 3
         )
 
-    def test_tiles_basic_data_in_hexagons(self):
+    def test_aggregated_tiles_basic_data_in_hexagons(self):
         # Very large view (big part of Europe, Africa and Russia: e expect a single hexagon over Belgium
         #
         # Those tests can be more easily debugged with a "TileDebug" layer in OpenLayers:
@@ -685,264 +956,3 @@ class VectorTilesServerTests(TestCase):
             )
             self.assertEqual(response.status_code, 200)
             mapbox_vector_tile.decode(response.content)
-
-    def test_min_max_per_hexagon(self):
-        # At zoom level 8, with the initial data: we should have two polygons, both at 1. So min=1 and max=1
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 8},
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers["Content-Type"], "application/json")
-        self.assertEqual(response.json()["min"], 1)
-        self.assertEqual(response.json()["max"], 1)
-
-        # Add a second one in Lillois, but not next to the other one
-        Observation.objects.create(
-            gbif_id=3,
-            occurrence_id="3",
-            species=Species.objects.all()[0],
-            date=datetime.date.today(),
-            data_import=VectorTilesServerTests.di,
-            initial_data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.first_dataset,
-            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
-        )
-
-        # Now, at zoom level 8 we should have an hexagon with count=1 and another one with count=2
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 8},
-        )
-        self.assertEqual(response.json()["min"], 1)
-        self.assertEqual(response.json()["max"], 2)
-
-        # But at a very large scale, one single hexagon with count=3
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 1},
-        )
-        self.assertEqual(response.json()["min"], 3)
-        self.assertEqual(response.json()["max"], 3)
-
-        # At zoom level 17, there's no hexagons that cover more than 1 observation
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 17},
-        )
-        self.assertEqual(response.json()["min"], 1)
-        self.assertEqual(response.json()["max"], 1)
-
-    def test_min_max_per_hexagon_with_species_filter(self):
-        # Add a second one in Lillois, but not next to the other one and another species
-        Observation.objects.create(
-            gbif_id=3,
-            occurrence_id="3LKDVC",
-            species=VectorTilesServerTests.second_species,
-            date=datetime.date.today(),
-            data_import=VectorTilesServerTests.di,
-            initial_data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.first_dataset,
-            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
-        )
-
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 8, "speciesIds[]": VectorTilesServerTests.first_species.pk},
-        )
-        self.assertEqual(response.json()["min"], 1)
-        self.assertEqual(response.json()["max"], 1)
-
-        # Now we're looking for the second species. (We have 2 in Lillois and none in Andenne)
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={
-                "zoom": 8,
-                "speciesIds[]": [VectorTilesServerTests.second_species.pk],
-            },
-        )
-
-        self.assertEqual(response.json()["min"], 2)
-        self.assertEqual(response.json()["max"], 2)
-
-        # Now let's add another one in Andenne for species 2: whe should now have 1,2
-        Observation.objects.create(
-            gbif_id=4,
-            occurrence_id="4",
-            species=VectorTilesServerTests.second_species,
-            date=datetime.date.today(),
-            data_import=VectorTilesServerTests.di,
-            initial_data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.first_dataset,
-            location=Point(5.095610, 50.48800, srid=4326),
-        )
-
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 8, "speciesIds[]": VectorTilesServerTests.second_species.pk},
-        )
-
-        self.assertEqual(response.json()["min"], 1)
-        self.assertEqual(response.json()["max"], 2)
-
-    def test_min_max_per_hexagon_with_dataset_filter(self):
-        # Add a second one in Lillois, but not next to the other one and another species
-        Observation.objects.create(
-            gbif_id=3,
-            occurrence_id="3DSRZER",
-            species=VectorTilesServerTests.second_species,
-            date=datetime.date.today(),
-            data_import=VectorTilesServerTests.di,
-            initial_data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.second_dataset,
-            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
-        )
-
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 8, "datasetsIds[]": VectorTilesServerTests.first_dataset.pk},
-        )
-        self.assertEqual(response.json()["min"], 1)
-        self.assertEqual(response.json()["max"], 1)
-
-        # Now we're looking for the second species. (We have 2 in Lillois and none in Andenne)
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={
-                "zoom": 8,
-                "speciesIds[]": [VectorTilesServerTests.second_species.pk],
-            },
-        )
-
-        self.assertEqual(response.json()["min"], 2)
-        self.assertEqual(response.json()["max"], 2)
-
-        # Now let's add another one in Andenne for species 2: whe should now have 1,2
-        Observation.objects.create(
-            gbif_id=4,
-            occurrence_id="4",
-            species=VectorTilesServerTests.second_species,
-            date=datetime.date.today(),
-            data_import=VectorTilesServerTests.di,
-            initial_data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.first_dataset,
-            location=Point(5.095610, 50.48800, srid=4326),
-        )
-
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 8, "speciesIds[]": VectorTilesServerTests.second_species.pk},
-        )
-
-        self.assertEqual(response.json()["min"], 1)
-        self.assertEqual(response.json()["max"], 2)
-
-    def test_min_max_in_hexagon_with_status_filter_invalid_value(self):
-        """status is not seen nor unseen, therefore is ignored and everything is included"""
-        self.client.login(username="frusciante", password="12345")
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 1, "status": "all"},
-        )
-        self.assertEqual(response.json()["min"], 2)
-        self.assertEqual(response.json()["max"], 2)
-
-    def test_min_max_in_hexagon_with_status_filter(self):
-        # Add a second one in Lillois, but not next to the other
-        Observation.objects.create(
-            gbif_id=3,
-            occurrence_id="3",
-            species=VectorTilesServerTests.second_species,
-            date=datetime.date.today(),
-            data_import=VectorTilesServerTests.di,
-            initial_data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.second_dataset,
-            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
-        )
-
-        self.client.login(username="frusciante", password="12345")
-
-        # At a zoom level that only shows Lillois or Andenne, it's 1-1
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={
-                "zoom": 8,
-                "status": "unseen",
-            },
-        )
-        self.assertEqual(response.json()["min"], 1)
-        self.assertEqual(response.json()["max"], 1)
-
-    def test_min_max_in_hexagon_with_status_filter_anonymous(self):
-        """Similar to test_min_max_in_hexagon_with_status_filter(), but anonymous -> filters get ignored"""
-        # Add a second one in Lillois, but not next to the other
-        Observation.objects.create(
-            gbif_id=3,
-            occurrence_id="3",
-            species=VectorTilesServerTests.second_species,
-            date=datetime.date.today(),
-            data_import=VectorTilesServerTests.di,
-            initial_data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.second_dataset,
-            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
-        )
-
-        # At a zoom level that only shows Lillois or Andenne, it's 1-1
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={
-                "zoom": 8,
-                "status": "unseen",
-            },
-        )
-        self.assertEqual(response.json()["min"], 1)
-        self.assertEqual(response.json()["max"], 2)
-
-    def test_min_max_per_hexagon_with_area_filter(self):
-        # Add a second one in Lillois, but not next to the other
-        Observation.objects.create(
-            gbif_id=3,
-            occurrence_id="3",
-            species=VectorTilesServerTests.second_species,
-            date=datetime.date.today(),
-            data_import=VectorTilesServerTests.di,
-            initial_data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.second_dataset,
-            location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
-        )
-
-        # We restrict ourselves to Andenne: only one observation
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={
-                "zoom": 8,
-                "areaIds[]": VectorTilesServerTests.public_area_andenne.pk,
-            },
-        )
-        self.assertEqual(response.json()["min"], 1)
-        self.assertEqual(response.json()["max"], 1)
-
-        # Case 2: we limit ourselves to Lillois (one single hexagon, with count=2)
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={
-                "zoom": 8,
-                "areaIds[]": VectorTilesServerTests.public_area_lillois.pk,
-            },
-        )
-        self.assertEqual(response.json()["min"], 2)
-        self.assertEqual(response.json()["max"], 2)
-
-        # Case3: Test with multiple areas: we request both Andenne and Lillois: same results as no filters
-        response = self.client.get(
-            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={
-                "zoom": 8,
-                "areaIds[]": [
-                    VectorTilesServerTests.public_area_lillois.pk,
-                    VectorTilesServerTests.public_area_andenne.pk,
-                ],
-            },
-        )
-        self.assertEqual(response.json()["min"], 1)
-        self.assertEqual(response.json()["max"], 2)
