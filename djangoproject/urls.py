@@ -31,4 +31,5 @@ urlpatterns = [
         name="password_reset",
     ),
     path("admin/", admin.site.urls),
+    path("markdownx/", include("markdownx.urls")),
 ]

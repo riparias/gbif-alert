@@ -44,8 +44,10 @@ INSTALLED_APPS = [
     "crispy_bootstrap5",
     "import_export",
     "corsheaders",
+    "markdownx",
     # Local/custom
     "dashboard",
+    "page_fragments",
 ]
 
 MIDDLEWARE = [
@@ -150,3 +152,5 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_METHODS = [
     "GET"
 ]  # Probably needed, but just to be on the safe side. See https://github.com/riparias/early-warning-webapp/issues/100
+
+PAGE_FRAGMENTS_FALLBACK_LANGUAGE = "en"
