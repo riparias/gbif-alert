@@ -1,6 +1,6 @@
 """Long-running tasks to be used with Django-rq"""
 from django.db.models import QuerySet
-from django_rq import job
+from django_rq import job  # type: ignore
 
 from dashboard.models import Observation, User
 
