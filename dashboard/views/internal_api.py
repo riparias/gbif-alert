@@ -179,6 +179,21 @@ def filtered_observations_monthly_histogram_json(request: HttpRequest):
 
 
 @login_required
+def filtered_observations_mark_as_seen(
+    request: AuthenticatedHttpRequest,
+) -> JsonResponse | HttpResponseForbidden:
+    """Mark multiple observations as seen by the current user. Take the same filters as the other observations API"""
+    if request.method == "POST":
+        observations = filtered_observations_from_request(request)
+        for observation in observations:
+            observation.mark_as_seen_by(request.user)
+
+        return JsonResponse({"success": True})
+
+    return HttpResponseForbidden()
+
+
+@login_required
 def alert_as_filters(
     request: AuthenticatedHttpRequest,
 ) -> JsonResponse | HttpResponseForbidden:

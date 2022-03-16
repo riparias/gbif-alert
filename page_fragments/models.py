@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from markdownx.models import MarkdownxField
+from markdownx.models import MarkdownxField  # type: ignore
 
 
 class PageFragment(models.Model):

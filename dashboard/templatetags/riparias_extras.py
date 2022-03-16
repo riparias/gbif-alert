@@ -66,6 +66,9 @@ def js_config_object(context):
             "observationsJsonUrl": reverse(
                 "dashboard:internal-api:filtered-observations-data-page"
             ),
+            "markObservationsAsSeenUrl": reverse(
+                "dashboard:internal-api:filtered-observations-mark-as-seen"
+            ),
             "tileServerAggregatedUrlTemplate": _build_mvt_url_template(
                 "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated"
             ),

@@ -62,6 +62,11 @@ internal_api_urls = [
         name="filtered-observations-data-page",
     ),
     path(
+        "filtered_observations/mark_as_seen",
+        views.filtered_observations_mark_as_seen,
+        name="filtered-observations-mark-as-seen",
+    ),
+    path(
         "filtered_observations/monthly_histogram",
         views.filtered_observations_monthly_histogram_json,
         name="filtered-observations-monthly-histogram",

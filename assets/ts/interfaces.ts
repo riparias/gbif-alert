@@ -58,6 +58,7 @@ interface EndpointsUrls {
   observationsJsonUrl: string;
   observationsHistogramDataUrl: string;
   observationDetailsUrlTemplate: string;
+  markObservationsAsSeenUrl: string;
   minMaxOccPerHexagonUrl: string;
   alertAsFiltersUrl: string;
 }

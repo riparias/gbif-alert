@@ -5,6 +5,12 @@
     :filters="filters"
   ></ObservationStatusSelector>
 
+  <p>
+    <a @click="markAllObservationsAsSeen()" href="#"
+      >Mark all observations as seen</a
+    >
+  </p>
+
   <Observations
     :frontend-config="frontendConfig"
     :filters="filters"
@@ -18,7 +24,7 @@ import Observations from "../Observations.vue";
 import { DashboardFilters, DateRange, FrontEndConfig } from "../../interfaces";
 import axios from "axios";
 import { debounce, DebouncedFunc } from "lodash";
-import { dateTimeToFilterParam } from "../../helpers";
+import { dateTimeToFilterParam, filtersToQuerystring } from "../../helpers";
 import ObservationStatusSelector from "../ObservationStatusSelector.vue";
 
 declare const ripariasConfig: FrontEndConfig;
@@ -52,6 +58,19 @@ export default defineComponent({
       },
       debouncedUpdateDateFilters: null,
     };
+  },
+  methods: {
+    markAllObservationsAsSeen: function () {
+      axios
+        .post(
+          this.frontendConfig.apiEndpoints.markObservationsAsSeenUrl,
+          filtersToQuerystring(this.filters),
+          { headers: { "X-CSRFToken": (window as any).CSRF_TOKEN } }
+        )
+        .then((response) => {
+          console.log("response");
+        });
+    },
   },
   mounted: function () {
     axios

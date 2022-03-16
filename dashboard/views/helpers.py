@@ -7,7 +7,7 @@ from urllib.parse import unquote
 
 from django.contrib.gis.db.models.aggregates import Union
 from django.db.models import QuerySet
-from django.http import HttpRequest, JsonResponse
+from django.http import HttpRequest, JsonResponse, QueryDict
 
 from dashboard.models import Observation, Area, User, ObservationView
 
@@ -18,8 +18,19 @@ class AuthenticatedHttpRequest(HttpRequest):
     user: User
 
 
+def _get_querydict_from_request(request: HttpRequest) -> QueryDict:
+    """Allows to transparently get parameters from GET and POST requests
+
+    For POST requests, the body contains a string formatted exactly like the querystring would be in a GET request
+    """
+    if request.method == "GET":
+        return request.GET
+    else:
+        return QueryDict(query_string=request.body)
+
+
 def extract_str_request(request: HttpRequest, param_name: str) -> Optional[str]:
-    return request.GET.get(param_name, None)
+    return _get_querydict_from_request(request).get(param_name, None)
 
 
 def extract_int_array_request(request: HttpRequest, param_name: str) -> List[int]:
@@ -33,12 +44,12 @@ def extract_array_request(request: HttpRequest, param_name: str) -> List[str]:
     #   in: ?speciesIds[]=10&speciesIds[]=12 (params in URL string)
     #   out: ['10', '12']
     # empty params: output is []
-    return request.GET.getlist(param_name)
+    return _get_querydict_from_request(request).getlist(param_name)
 
 
 def extract_int_request(request: HttpRequest, param_name: str) -> Optional[int]:
     """Returns an integer, or None if the parameter doesn't exist or is 'null'"""
-    val = request.GET.get(param_name, None)
+    val = _get_querydict_from_request(request).get(param_name, None)
     if val == "" or val == "null" or val is None:
         return None
     else:
@@ -52,7 +63,7 @@ def extract_date_request(
 
     format: see https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
     """
-    val = request.GET.get(param_name, None)
+    val = _get_querydict_from_request(request).get(param_name, None)
 
     if val is not None and val != "" and val != "null":
         return datetime.datetime.strptime(val, date_format).date()

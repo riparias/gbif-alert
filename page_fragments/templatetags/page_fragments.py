@@ -1,6 +1,6 @@
 from django import template
 from django.utils.safestring import mark_safe
-from markdownx.utils import markdownify
+from markdownx.utils import markdownify  # type: ignore
 
 from page_fragments.models import PageFragment
 
