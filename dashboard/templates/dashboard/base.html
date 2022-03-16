@@ -3,15 +3,15 @@
 
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     {# Body will be shown later to avoid flashing unstyled content, see https://stackoverflow.com/a/43823506 #}
     <style>
-      html {
-        display: none;
-      }
+        html {
+            display: none;
+        }
     </style>
 
     <link rel="stylesheet" href="{% static "css/early_alert.css" %}">
@@ -24,8 +24,9 @@
     <title>
         {% block page_title %}RIPARIAS early alert{% endblock %}
     </title>
-  </head>
-  <body>
+</head>
+<body>
+<div style="margin-bottom: 100px;">
     {% if riparias_settings.SHOW_DEV_VERSION_WARNING %}
         {% include 'dashboard/_dev_version_warning.html' %}
     {% endif %}
@@ -33,9 +34,10 @@
     {% include "dashboard/_messages.html" %}
 
     {% block after_messages %}{% endblock %}
+</div>
 
-    {% include "dashboard/_footer.html" %}
-    <script src="{% static 'js/early_alert-bundle.js' %}"></script>
-    <link rel="stylesheet" href="{% static "css/show_body.css" %}">
-  </body>
+{% include "dashboard/_footer.html" %}
+<script src="{% static 'js/early_alert-bundle.js' %}"></script>
+<link rel="stylesheet" href="{% static "css/show_body.css" %}">
+</body>
 </html>
