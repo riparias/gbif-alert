@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "import_export",
     "corsheaders",
     "markdownx",
+    "django_rq",
     # Local/custom
     "dashboard",
     "page_fragments",
@@ -154,3 +155,5 @@ CORS_ALLOW_METHODS = [
 ]  # Probably needed, but just to be on the safe side. See https://github.com/riparias/early-warning-webapp/issues/100
 
 PAGE_FRAGMENTS_FALLBACK_LANGUAGE = "en"
+
+RQ_SHOW_ADMIN_LINK = True

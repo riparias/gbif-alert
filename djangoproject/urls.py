@@ -32,4 +32,5 @@ urlpatterns = [
     ),
     path("admin/", admin.site.urls),
     path("markdownx/", include("markdownx.urls")),
+    path("django-rq/", include("django_rq.urls")),
 ]

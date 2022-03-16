@@ -20,6 +20,13 @@ DATABASES = {
     }
 }
 
+RQ_QUEUES = {
+    "default": {
+        "HOST": "127.0.0.1",
+        "PORT": 6379,
+    },
+}
+
 # A Gbif.org is necessary to automatically download observations via the `import_observations` command
 RIPARIAS["GBIF_USERNAME"] = "xxx"
 RIPARIAS["GBIF_PASSWORD"] = "yyy"

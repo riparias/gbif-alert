@@ -16,6 +16,17 @@ DATABASES = {
     }
 }
 
+# Redis configuration for django-rq
+RQ_QUEUES = {
+    "default": {
+        "HOST": "localhost",
+        "PORT": 6379,
+        "DB": 0,
+        "PASSWORD": "some-password",
+        "DEFAULT_TIMEOUT": 360,
+    },
+}
+
 # Email-sending configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "email-smtp.eu-west-1.amazonaws.com"

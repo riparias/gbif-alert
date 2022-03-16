@@ -1,12 +1,12 @@
 # Development setup and notes
 
 ## Technological backbone
-- [Python](https://www.python.org/) 3.8+, [(Geo)Django](https://www.djangoproject.com/) 3.2 LTS, [PostgreSQL](https://www.postgresql.org/), [PostGIS](https://postgis.net/) 3.1+, [TypeScript](https://www.typescriptlang.org/) and [Vue.js v3](https://vuejs.org/)
+- [Python](https://www.python.org/) 3.8+, [(Geo)Django](https://www.djangoproject.com/) 3.2 LTS, [PostgreSQL](https://www.postgresql.org/), [PostGIS](https://postgis.net/) 3.1+, [Redis](https://redis.io/),  [TypeScript](https://www.typescriptlang.org/) and [Vue.js v3](https://vuejs.org/)
 - CSS: [Bootstrap](https://getbootstrap.com/) 5.1  
 - [Poetry](https://python-poetry.org/) is used to manage dependencies (use `poetry add`, `poetry install`, ... instead of pip). PyCharm also has a Poetry plugin available.
 
 ## Dev environment configuration
-- Python>=3.8, PostGIS>=3.1 and `npm` are required
+- Python>=3.8, PostGIS>=3.1, Redis and `npm` are required
 - Use [Poetry](https://python-poetry.org/) to create an isolated virtualenv and install dependencies (`poetry install`) 
 - Copy `local_settings.template.py` to `local_settings.py`, adjust those settings and point Django to `local_settings.py`
 - [Point Django to local_settings](https://docs.djangoproject.com/en/3.2/topics/settings/#designating-the-settings)
@@ -114,6 +114,14 @@ def my_view(request):
   messages.success(request, "Your profile was successfully updated.")
   return redirect("dashboard:pages:index")
 ```
+
+## Use of Redis
+
+Redis is currently used with [django-rq](https://github.com/rq/django-rq) to manage queues for long-running tasks 
+(as of 2022-03: mark all observations as seen).
+
+In addition to install a Redis instance on your development machine, you'll need to configure Django-rq to find it
+(see local_settings.template.py) and run a worker for the default queue with ``$ python manage.py rqworker default``
 
 ## Maintenance mode
 

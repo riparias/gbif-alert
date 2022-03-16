@@ -21,13 +21,19 @@ from django.db.models.functions import TruncMonth
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse, HttpRequest
 from django.shortcuts import get_object_or_404
 
-from dashboard.models import Species, Dataset, Area, Alert, DataImport
+from dashboard.models import (
+    Dataset,
+    Area,
+    Alert,
+    DataImport,
+)
 from dashboard.views.helpers import (
     filtered_observations_from_request,
     extract_int_request,
     AuthenticatedHttpRequest,
     model_to_json_list,
 )
+from dashboard.views.jobs import mark_many_observations_as_seen
 
 
 def dataimports_list_json(_) -> JsonResponse:
@@ -185,10 +191,8 @@ def filtered_observations_mark_as_seen(
     """Mark multiple observations as seen by the current user. Take the same filters as the other observations API"""
     if request.method == "POST":
         observations = filtered_observations_from_request(request)
-        for observation in observations:
-            observation.mark_as_seen_by(request.user)
-
-        return JsonResponse({"success": True})
+        mark_many_observations_as_seen.delay(observations, request.user)
+        return JsonResponse({"queued": True})
 
     return HttpResponseForbidden()
 
