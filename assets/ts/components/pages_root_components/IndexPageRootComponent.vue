@@ -1,12 +1,24 @@
 <template>
   <div class="row">
     <div class="col-sm my-2">
+      <bootstrap-alert
+        v-if="showInProgressMessage"
+        @clickClose="showInProgressMessage = false"
+        alert-type="success"
+        class="my-2"
+      >
+        <i class="bi bi-info-circle"></i>
+        The observations are marked as seen in the background. This might takes
+        a couple of minutes if there are a lot of observations. Don't hesitate
+        to refresh the page.
+      </bootstrap-alert>
+
       <div class="row">
-        <div class="col-2">
+        <div class="col-2 d-flex align-items-center">
           <b>Data filtering:</b>
         </div>
 
-        <div class="col">
+        <div class="col d-flex align-items-center">
           <Modal-Multi-Selector
             class="m-2"
             button-label-singular="species"
@@ -52,8 +64,9 @@
           <ObservationStatusSelector
             v-if="frontendConfig.authenticatedUser"
             v-model="filters.status"
-            :counter-url="frontendConfig.apiEndpoints.observationsCounterUrl"
+            :endpoints-urls="frontendConfig.apiEndpoints"
             :filters="filters"
+            @markAsSeenQueued="showInProgressMessage = true"
           ></ObservationStatusSelector>
         </div>
       </div>
@@ -81,9 +94,10 @@ import {
 import axios from "axios";
 
 import ModalMultiSelector from "../ModalMultiSelector.vue";
-
 import ObservationStatusSelector from "../ObservationStatusSelector.vue";
 import Observations from "../Observations.vue";
+import BootstrapAlert from "../BootstrapAlert.vue";
+
 import { debounce, DebouncedFunc } from "lodash";
 import { dateTimeToFilterParam } from "../../helpers";
 
@@ -98,12 +112,14 @@ interface IndexPageRootComponentData {
   availableDataImports: DataImportInformation[];
   filters: DashboardFilters;
   debouncedUpdateDateFilters: null | DebouncedFunc<(range: DateRange) => void>;
+  showInProgressMessage: boolean;
 }
 
 export default defineComponent({
   name: "IndexPageRootComponent",
 
   components: {
+    BootstrapAlert,
     Observations,
     ObservationStatusSelector,
     ModalMultiSelector,
@@ -120,6 +136,7 @@ export default defineComponent({
       filters: initialFilters,
 
       debouncedUpdateDateFilters: null,
+      showInProgressMessage: false,
     };
   },
   computed: {

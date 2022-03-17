@@ -1,15 +1,24 @@
 <template>
-  <ObservationStatusSelector
-    v-model="filters.status"
-    :counter-url="frontendConfig.apiEndpoints.observationsCounterUrl"
-    :filters="filters"
-  ></ObservationStatusSelector>
+  <bootstrap-alert
+    v-if="showInProgressMessage"
+    @clickClose="showInProgressMessage = false"
+    alert-type="success"
+    class="my-2"
+  >
+    <i class="bi bi-info-circle"></i>
+    The observations are marked as seen in the background. This might takes a
+    couple of minutes if there are a lot of observations. Don't hesitate to
+    refresh the page.
+  </bootstrap-alert>
 
-  <p>
-    <a @click="markAllObservationsAsSeen()" href="#"
-      >Mark all observations as seen</a
-    >
-  </p>
+  <div class="my-3">
+    <ObservationStatusSelector
+      v-model="filters.status"
+      :endpoints-urls="frontendConfig.apiEndpoints"
+      :filters="filters"
+      @markAsSeenQueued="showInProgressMessage = true"
+    ></ObservationStatusSelector>
+  </div>
 
   <Observations
     :frontend-config="frontendConfig"
@@ -24,8 +33,9 @@ import Observations from "../Observations.vue";
 import { DashboardFilters, DateRange, FrontEndConfig } from "../../interfaces";
 import axios from "axios";
 import { debounce, DebouncedFunc } from "lodash";
-import { dateTimeToFilterParam, filtersToQuerystring } from "../../helpers";
+import { dateTimeToFilterParam } from "../../helpers";
 import ObservationStatusSelector from "../ObservationStatusSelector.vue";
+import BootstrapAlert from "../BootstrapAlert.vue";
 
 declare const ripariasConfig: FrontEndConfig;
 declare const alertId: number;
@@ -35,6 +45,7 @@ interface AlertDetailsPageRootComponentData {
   frontendConfig: FrontEndConfig;
   filters: DashboardFilters;
   debouncedUpdateDateFilters: null | DebouncedFunc<(range: DateRange) => void>;
+  showInProgressMessage: boolean;
 }
 
 export default defineComponent({
@@ -42,6 +53,7 @@ export default defineComponent({
   components: {
     Observations,
     ObservationStatusSelector,
+    BootstrapAlert,
   },
   data: function (): AlertDetailsPageRootComponentData {
     return {
@@ -57,20 +69,8 @@ export default defineComponent({
         status: null,
       },
       debouncedUpdateDateFilters: null,
+      showInProgressMessage: false,
     };
-  },
-  methods: {
-    markAllObservationsAsSeen: function () {
-      axios
-        .post(
-          this.frontendConfig.apiEndpoints.markObservationsAsSeenUrl,
-          filtersToQuerystring(this.filters),
-          { headers: { "X-CSRFToken": (window as any).CSRF_TOKEN } }
-        )
-        .then((response) => {
-          console.log("response");
-        });
-    },
   },
   mounted: function () {
     axios
