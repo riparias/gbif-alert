@@ -1,8 +1,7 @@
 <template>
-  <button type="button" class="btn btn-sm btn-dark">
-    <span class="badge badge-light">{{ formattedCount }}</span> matching
-    {{ observationStrPluralized }}
-  </button>
+  <span class="small"
+    >{{ formattedCount }} matching {{ observationStrPluralized }}</span
+  >
 </template>
 
 <script lang="ts">

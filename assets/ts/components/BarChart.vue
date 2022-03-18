@@ -1,4 +1,26 @@
 <template>
+  <div class="form-check my-2">
+    <input
+      type="checkbox"
+      class="form-check-input"
+      id="checkbox"
+      v-model="dateRangeFilteringEnabled"
+    />
+    <label for="checkbox" class="form-check-label small"
+      >Enable date range filtering</label
+    >
+  </div>
+  <range-slider
+    v-if="dataLoaded && dateRangeFilteringEnabled"
+    :numberOfMonths="numberOfMonths"
+    :initialValues="[selectedRangeStartIndex, selectedRangeEndIndex]"
+    :leftMargin="this.svgStyle.margin.left"
+    :rightMargin="this.svgStyle.margin.right"
+    :sliderDisabled="!this.dateRangeFilteringEnabled"
+    @update-value="rangeUpdated"
+  >
+  </range-slider>
+
   <svg
     class="d-block mx-auto"
     :width="svgStyle.width"
@@ -30,28 +52,6 @@
       </g>
     </g>
   </svg>
-
-  <div class="form-check ms-5">
-    <input
-      type="checkbox"
-      class="form-check-input"
-      id="checkbox"
-      v-model="dateRangeFilteringEnabled"
-    />
-    <label for="checkbox" class="form-check-label small"
-      >Enable date range filtering</label
-    >
-  </div>
-  <new-range-slider
-    v-if="dataLoaded && dateRangeFilteringEnabled"
-    :numberOfMonths="numberOfMonths"
-    :initialValues="[selectedRangeStartIndex, selectedRangeEndIndex]"
-    :leftMargin="this.svgStyle.margin.left"
-    :rightMargin="this.svgStyle.margin.right"
-    :sliderDisabled="!this.dateRangeFilteringEnabled"
-    @update-value="rangeUpdated"
-  >
-  </new-range-slider>
 </template>
 
 <script lang="ts">
@@ -62,11 +62,11 @@ import { PreparedHistogramDataEntry } from "../interfaces";
 import { axisBottom, axisLeft, ScaleBand, select } from "d3";
 import { DateTime } from "luxon";
 import { Interval } from "luxon";
-import NewRangeSlider from "./NewRangeSlider.vue";
+import RangeSlider from "./RangeSlider.vue";
 
 export default defineComponent({
   name: "BarChart",
-  components: { NewRangeSlider },
+  components: { RangeSlider },
   props: {
     barData: {
       // Data must be sorted before being passed to the chart
@@ -92,7 +92,7 @@ export default defineComponent({
           left: 40,
         },
         width: 1116,
-        height: 220,
+        height: 170,
       },
       selectedRangeStart: this.datetimeToMonthStr(
         DateTime.now().minus({ years: 1 })
@@ -252,10 +252,7 @@ export default defineComponent({
 }
 
 .selected {
-  fill: red !important;
-}
-
-.riparias-bar:hover {
+  fill: #198754 !important;
   opacity: 1;
 }
 </style>

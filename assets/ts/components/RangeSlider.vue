@@ -16,12 +16,12 @@ import { defineComponent } from "vue";
 import noUiSlider, { API } from "nouislider";
 import "nouislider/dist/nouislider.css";
 
-interface NewRangeSliderData {
+interface RangeSliderData {
   slider: API | null;
 }
 
 export default defineComponent({
-  name: "NewRangeSlider",
+  name: "RangeSlider",
   props: {
     numberOfMonths: {
       required: true,
@@ -45,7 +45,7 @@ export default defineComponent({
     },
   },
   emits: ["updateValue"],
-  data: function (): NewRangeSliderData {
+  data: function (): RangeSliderData {
     return {
       slider: null,
     };
@@ -98,8 +98,8 @@ export default defineComponent({
 }
 
 #slider-round .noUi-connect {
-  background: red;
-  opacity: 0.3;
+  background: #198754;
+  opacity: 1;
 }
 
 #slider-round[disabled] .noUi-connect {

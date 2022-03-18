@@ -2,7 +2,16 @@
   <div>
     <div class="row">
       <div class="col">
-        <Custom-observations-time-line
+        <Observations-counter
+          class="float-end"
+          :counter-url="frontendConfig.apiEndpoints.observationsCounterUrl"
+          :filters="filters"
+        ></Observations-counter>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <Observations-time-line
           :filters="filters"
           :histogram-data-url="
             frontendConfig.apiEndpoints.observationsHistogramDataUrl
@@ -18,13 +27,6 @@
           v-model="selectedTab"
           :tab-names="availableTabs"
         ></Tab-switcher>
-      </div>
-      <div class="col align-self-center">
-        <Observations-counter
-          class="float-end"
-          :counter-url="frontendConfig.apiEndpoints.observationsCounterUrl"
-          :filters="filters"
-        ></Observations-counter>
       </div>
     </div>
 
@@ -57,7 +59,7 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 
-import CustomObservationsTimeLine from "./CustomObservationTimeLine.vue";
+import ObservationsTimeLine from "./ObservationTimeLine.vue";
 import TabSwitcher from "./TabSwitcher.vue";
 import ObservationsCounter from "./ObservationsCounter.vue";
 import ObservationsTable from "./ObservationsTable.vue";
@@ -72,7 +74,7 @@ interface ObservationsComponentData {
 export default defineComponent({
   name: "Observations",
   components: {
-    CustomObservationsTimeLine,
+    ObservationsTimeLine,
     TabSwitcher,
     ObservationsCounter,
     ObservationsTable,

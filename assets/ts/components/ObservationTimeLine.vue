@@ -25,7 +25,7 @@ interface HistogramDataEntry {
   count: number;
 }
 
-interface CustomObservationsTimeLineData {
+interface ObservationsTimeLineData {
   histogramDataFromServer: HistogramDataEntry[];
   dataLoaded: boolean;
   selectedRange: DateRange;
@@ -35,7 +35,7 @@ const range = (start: number, end: number): number[] =>
   Array.from({ length: end - start }, (v, k) => k + start);
 
 export default defineComponent({
-  name: "CustomObservationsTimeLine",
+  name: "ObservationsTimeLine",
   components: {
     BarChart,
   },
@@ -58,7 +58,7 @@ export default defineComponent({
     },
   },
   emits: ["selectedDateRangeUpdated"],
-  data: function (): CustomObservationsTimeLineData {
+  data: function (): ObservationsTimeLineData {
     return {
       histogramDataFromServer: [],
       dataLoaded: false,
