@@ -92,9 +92,7 @@ class AlertWebPagesTests(TestCase):
             mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
         )
 
-    my_alerts_navbar_snippet = (
-        '<a class="nav-link " aria-current="page" href="/my_alerts">My alerts</a>'
-    )
+    my_alerts_navbar_snippet = '<a class="nav-link " aria-current="page" href="/my_alerts"><i class="bi bi-exclamation-square"></i>My alerts</a>'
 
     def test_navbar_my_alerts_authenticated(self):
         """Authenticated users have a 'my alerts' link in the navbar"""

@@ -28,9 +28,9 @@ def index_page(request: HttpRequest):
     )
 
 
-def about_page(request: HttpRequest):
+def about_data_page(request: HttpRequest):
     data_imports = DataImport.objects.all().order_by("-start")
-    return render(request, "dashboard/about.html", {"data_imports": data_imports})
+    return render(request, "dashboard/about_data.html", {"data_imports": data_imports})
 
 
 def observation_details_page(request: HttpRequest, stable_id: str):

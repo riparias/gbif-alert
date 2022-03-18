@@ -1,17 +1,17 @@
 <nav id="riparias-main-navbar" class="navbar navbar-expand-lg navbar-dark mb-2">
     <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'dashboard:pages:index' %}">LIFE RIPARIAS early alert</a>
+        <a class="navbar-brand" href="{% url 'dashboard:pages:index' %}"><i class="bi bi-megaphone"></i> LIFE RIPARIAS early alert</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
                 aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto">
-                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:index' label='Explore all observations' %}
+                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:index' label='Explore all observations' icon_identifier='bi-map' %}
                 {% if user.is_authenticated %}
-                    {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:my-alerts' label='My alerts' %}
+                    {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:my-alerts' label='My alerts' icon_identifier='bi-exclamation-square' %}
                 {% endif %}
-                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:about' label='About' %}
+                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:about-data' label='About the data' icon_identifier='bi-server' %}
             </ul>
 
             <ul class="navbar-nav ms-auto">
@@ -19,11 +19,11 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
                            data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle"></i> {{ user.username }}
+                            <i class="bi bi-person-square"></i> {{ user.username }}
                         </a>
 
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{% url 'dashboard:pages:profile' %}"><i class="bi bi-person-circle"></i> My profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'dashboard:pages:profile' %}"><i class="bi bi-person-square"></i> My profile</a></li>
                             <li><a class="dropdown-item" href="{% url 'dashboard:pages:my-alerts' %}"><i class="bi bi-exclamation-square"></i> My alerts</a></li>
                             <li>
                                 <hr class="dropdown-divider">
