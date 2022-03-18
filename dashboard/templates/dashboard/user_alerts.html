@@ -6,7 +6,7 @@
     <div class="container">
         <div class="row">
             <div class="col text-end">
-                <a href="{% url 'dashboard:pages:alert-create' %}" class="btn btn-success">Create a new alert</a>
+                <a href="{% url 'dashboard:pages:alert-create' %}" class="btn btn-success"><i class="bi bi-plus-circle-fill"></i> Create a new alert</a>
             </div>
         </div>
 
@@ -19,8 +19,9 @@
         <div class="row">
             <div class="col">
                {% for alert in alerts %}
-                <div class="card">
+                <div class="card my-2">
                     <div class="card-body">
+                        <h4 class="card-title">Alert #{{ alert.pk }}</h4>
                         <p class="card-text">
                             <ul class="list-group list-group-flush">
                                 <li class="list-group-item"><b>Areas:</b> {{ alert.areas_list|default:"all" }}</li>
@@ -29,7 +30,7 @@
                                 <li class="list-group-item"><b>Email notifications frequency:</b> {{ alert.get_email_notifications_frequency_display }}</li>
                             </ul>
                         </p>
-                        <a href="{% url 'dashboard:pages:alert-details' alert_id=alert.id%}" class="btn btn-sm btn-primary">See alert details</a>
+                        <a href="{% url 'dashboard:pages:alert-details' alert_id=alert.id%}" class="btn btn-sm btn-primary"><i class="bi bi-clipboard-data-fill"></i> See alert details</a>
                         <form class="d-inline" action="{% url 'dashboard:actions:delete-alert'%}" method="post">
                             {% csrf_token %}
                             <input type="hidden" name="alert_id" value="{{ alert.pk }}" />
