@@ -1,4 +1,5 @@
 {% extends 'dashboard/base.html' %}
+{% load page_fragments %}
 
 {% load static %}
 
@@ -9,8 +10,11 @@
     const initialFilters = {{ initialFilters|safe }};
 </script>
 
-<div class="container" id="app">
-    <IndexPageRootComponent></IndexPageRootComponent>
+<div class="container">
+    {% get_page_fragment 'welcome_text' %}
+    <div id="app">
+        <IndexPageRootComponent></IndexPageRootComponent>
+    </div>
 </div>
 
 <script>
