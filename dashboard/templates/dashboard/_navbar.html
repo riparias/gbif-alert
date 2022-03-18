@@ -11,6 +11,7 @@
                 {% if user.is_authenticated %}
                     {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:my-alerts' label='My alerts' icon_identifier='bi-exclamation-square' %}
                 {% endif %}
+                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:about-site' label='About this site' icon_identifier='bi-window' %}
                 {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:about-data' label='About the data' icon_identifier='bi-server' %}
             </ul>
 

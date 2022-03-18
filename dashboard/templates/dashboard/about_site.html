@@ -1,0 +1,16 @@
+{% extends 'dashboard/base.html' %}
+
+{% load page_fragments %}
+
+{% block page_title %}About this site - LIFE RIPARIAS early alert{% endblock %}
+
+{% block after_messages %}
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <h1>About this site</h1>
+                {% get_page_fragment 'about_this_site_page_content' %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

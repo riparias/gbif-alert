@@ -6,6 +6,7 @@ app_name = "dashboard"
 
 pages_urls = [
     path("", views.index_page, name="index"),
+    path("about_site", views.about_site_page, name="about-site"),
     path("about_data", views.about_data_page, name="about-data"),
     path("alert/<int:alert_id>", views.alert_details_page, name="alert-details"),
     path("my_alerts", views.user_alerts_page, name="my-alerts"),

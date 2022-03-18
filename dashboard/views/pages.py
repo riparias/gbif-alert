@@ -28,6 +28,10 @@ def index_page(request: HttpRequest):
     )
 
 
+def about_site_page(request: HttpRequest):
+    return render(request, "dashboard/about_site.html")
+
+
 def about_data_page(request: HttpRequest):
     data_imports = DataImport.objects.all().order_by("-start")
     return render(request, "dashboard/about_data.html", {"data_imports": data_imports})
