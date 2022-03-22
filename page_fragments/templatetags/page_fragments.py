@@ -11,8 +11,11 @@ register = template.Library()
 def get_page_fragment(context, identifier):
     """Return rendered HTML for the page fragment with identifier, in the current language"""
 
-    fragment = PageFragment.objects.get(identifier=identifier)
+    try:
+        fragment = PageFragment.objects.get(identifier=identifier)
 
-    return mark_safe(
-        markdownify(fragment.get_content_in(context.request.LANGUAGE_CODE))
-    )
+        return mark_safe(
+            markdownify(fragment.get_content_in(context.request.LANGUAGE_CODE))
+        )
+    except PageFragment.DoesNotExist:
+        return ""
