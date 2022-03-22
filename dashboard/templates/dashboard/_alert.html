@@ -1,0 +1,30 @@
+<div class="card my-2">
+    <div class="card-body">
+        <h4 class="card-title">Alert #{{ alert.pk }}</h4>
+        <p class="card-text">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><b>Areas:</b> {{ alert.areas_list|default:"all" }}</li>
+            <li class="list-group-item"><b>Species:</b> {{ alert.species_list|default:"all" }}</li>
+            <li class="list-group-item"><b>Datasets:</b> {{ alert.datasets_list|default:"all" }}</li>
+            <li class="list-group-item">
+                <b>Email notifications frequency:</b>
+                {{ alert.get_email_notifications_frequency_display }}
+
+                <span class="text-muted small">
+                    -- Last email sent:
+                    {{ alert.last_email_sent_on|default_if_none:"never" }}
+                </span>
+            </li>
+        </ul>
+        </p>
+        <a href="{% url 'dashboard:pages:alert-details' alert_id=alert.id %}" class="btn btn-sm btn-primary"><i
+                class="bi bi-clipboard-data-fill"></i> See alert details</a>
+        <form class="d-inline" action="{% url 'dashboard:actions:delete-alert' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="alert_id" value="{{ alert.pk }}"/>
+            <button type="submit" class="btn btn-sm btn-danger">
+                <i class="bi bi-trash"></i> Delete alert
+            </button>
+        </form>
+    </div>
+</div>

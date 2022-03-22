@@ -466,6 +466,8 @@ class Alert(models.Model):
         max_length=3, choices=EMAIL_NOTIFICATION_CHOICES, default=WEEKLY_EMAILS
     )
 
+    last_email_sent_on = models.DateTimeField(blank=True, null=True, default=None)
+
     def get_absolute_url(self) -> str:
         return reverse("dashboard:pages:alert-details", kwargs={"alert_id": self.id})
 
