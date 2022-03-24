@@ -593,13 +593,14 @@ class Alert(models.Model):
     def send_notification_email(self):
         """Send the notification e-mail"""
         msg_html = render_to_string(
-            "dashboard/emails/alert_notification.html", {"alert": self}
+            "dashboard/emails/alert_notification.html",
+            {"alert": self, "site_base_url": settings.SITE_BASE_URL},
         )
 
         msg_plain = html2text.html2text(msg_html)
 
         send_mail(
-            f"{settings.EMAIL_SUBJECT_PREFIX}",
+            f"{settings.EMAIL_SUBJECT_PREFIX} {self.unseen_observations().count()} unseen observation for your alert #{self.pk}",
             msg_plain,
             settings.SERVER_EMAIL,
             [self.user.email],
