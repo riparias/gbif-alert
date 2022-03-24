@@ -562,7 +562,7 @@ class Alert(models.Model):
             areas_ids=[a.pk for a in self.areas.all()],
             start_date=None,
             end_date=None,
-            initial_data_import_ids=None,
+            initial_data_import_ids=[],
             status_for_user="unseen",
             user=self.user,
         )
@@ -574,7 +574,7 @@ class Alert(models.Model):
         """
         if (
             self.email_notifications_frequency != self.NO_EMAILS
-            and self.unseen_observations().count > 0
+            and self.unseen_observations().count() > 0
         ):
             if (
                 self.last_email_sent_on is None

@@ -74,7 +74,7 @@ class AreaAdmin(admin.OSMGeoAdmin):
     list_display = ("name", "owner")
 
 
-@admin.action(description="Send e-mail notifications now for selected alerts")
+@admin.action(description="Send e-mail notifications now for selected alerts")  # type: ignore
 def send_alert_notification_email(modeladmin, request, queryset):
     for alert in queryset:
         alert.send_notification_email()
