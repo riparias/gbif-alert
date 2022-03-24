@@ -5,14 +5,12 @@
 {% block after_messages %}
     <div class="container">
         <div class="row">
-            <div class="col text-end">
-                <a href="{% url 'dashboard:pages:alert-create' %}" class="btn btn-success"><i class="bi bi-plus-circle-fill"></i> Create a new alert</a>
-            </div>
-        </div>
-
-        <div class="row">
             <div class="col">
                 <h1>My alerts</h1>
+            </div>
+
+            <div class="col text-end">
+                <a href="{% url 'dashboard:pages:alert-create' %}" class="btn btn-success"><i class="bi bi-plus-circle-fill"></i> Create a new alert</a>
             </div>
         </div>
 

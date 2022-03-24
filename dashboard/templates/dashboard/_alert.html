@@ -19,7 +19,7 @@
         </p>
         {% if show_buttons %}
             <a href="{% url 'dashboard:pages:alert-details' alert_id=alert.id %}" class="btn btn-sm btn-primary position-relative">
-                <i class="bi bi-clipboard-data-fill"></i> See alert details
+                <i class="bi bi-clipboard-data-fill"></i> Matching observations
 
                 {% if alert.unseen_observations.count > 0 %}
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">

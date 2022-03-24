@@ -41,6 +41,7 @@ class Species(models.Model):
 
     class Meta:
         verbose_name_plural = "species"
+        ordering = ["name"]
 
     def __str__(self) -> str:
         return self.name
@@ -69,6 +70,9 @@ class Dataset(models.Model):
         self.__original_gbif_dataset_key = (
             self.gbif_dataset_key
         )  # So we're able to check if it has changed in save()
+
+    class Meta:
+        ordering = ["name"]
 
     @property
     def as_dict(self) -> dict[str, Any]:
@@ -428,6 +432,9 @@ class Area(models.Model):
 
     objects = MyAreaManager()
 
+    class Meta:
+        ordering = ["name"]
+
     @property
     def is_public(self) -> bool:
         return self.owner is None
@@ -505,17 +512,26 @@ class Alert(models.Model):
     species = models.ManyToManyField(
         Species,
         blank=True,
-        help_text="Alert is restricted to the following species (no selection: all species)",
+        help_text=(
+            "Optional (no selection = notify me for all species). To select multiple items, press and hold the "
+            "Ctrl or Command key and click the items."
+        ),
     )
     datasets = models.ManyToManyField(
         Dataset,
         blank=True,
-        help_text="Alert is restricted to the following datasets (no selection: all datasets)",
+        help_text=(
+            "Optional (no selection = notify me for all datasets). To select multiple items, press and hold the "
+            "Ctrl or Command key and click the items."
+        ),
     )
     areas = models.ManyToManyField(
         Area,
         blank=True,
-        help_text="Alert is restricted to the following areas (no selection: all areas)",
+        help_text=(
+            "Optional (no selection = notify me for all areas). To select multiple items, press and hold the "
+            "Ctrl or Command key and click the items."
+        ),
     )
 
     email_notifications_frequency = models.CharField(
