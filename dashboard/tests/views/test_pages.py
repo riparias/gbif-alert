@@ -187,7 +187,7 @@ class AlertWebPagesTests(TestCase):
         self.assertIn('<form method="post">', response.content.decode())
         self.assertContains(
             response,
-            '<input class="btn btn-primary btn-sm" type="submit" value="Create alert">',
+            '<input class="btn btn-primary" type="submit" value="Create alert">',
             html=True,
         )
 
