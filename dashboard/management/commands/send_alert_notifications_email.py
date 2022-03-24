@@ -7,22 +7,33 @@ from dashboard.models import Alert
 
 class Command(BaseCommand):
     def handle_alert(self, alert: Alert):
-        self.stdout.write(f"Handling alert f{alert.pk}")
+        self.stdout.write(f"Handling alert {alert.pk}")
+        self.stdout.write(
+            f"Alert details: frequency: {alert.get_email_notifications_frequency_display()} - "
+            f"last sent on: {alert.last_email_sent_on}) - "
+            f"{alert.unseen_observations().count()} unseen observations."
+        )
 
         if alert.email_notifications_frequency == Alert.NO_EMAILS:
-            self.stdout.write(f"User requested no emails, skipping")
+            self.stdout.write("User requested no emails, skipping")
         else:
             if alert.email_should_be_sent_now():
+                self.stdout.write("We will send an email nor this alert")
+                success = alert.send_notification_email()
+                if success:
+                    self.stdout.write("Mail successfully sent!")
+                else:
+                    self.stdout.write(
+                        "Error sending the email, please consult the logs"
+                    )
+            else:
                 self.stdout.write(
-                    f"""An email should be sent now (frequency: {alert.get_email_notifications_frequency_display()} 
-                    / last sent on: {alert.last_email_sent_on}) 
-                    / {alert.unseen_observations().count()} unseen observations"""
+                    "Sending an email is not deemed necessary now for this alert"
                 )
-                alert.send_notification_email()
 
     def handle(self, *args, **options) -> None:
         self.stdout.write(
-            f"Will sent all necessary alert notifications. Current time is {timezone.now}"
+            f"Will sent all necessary alert notifications. Current time is {timezone.now()}"
         )
         for alert in Alert.objects.all():
             try:  # In a try block so one alert failing will not prevent others from being sent

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import datetime
 import hashlib
+import logging
+import smtplib
 
 from typing import Optional, Union, Any, Dict, List
 
@@ -606,7 +608,7 @@ class Alert(models.Model):
                     return True
         return False
 
-    def send_notification_email(self):
+    def send_notification_email(self) -> bool:
         """Send the notification e-mail"""
         msg_html = render_to_string(
             "dashboard/emails/alert_notification.html",
@@ -615,13 +617,18 @@ class Alert(models.Model):
 
         msg_plain = html2text.html2text(msg_html)
 
-        send_mail(
-            f"{settings.EMAIL_SUBJECT_PREFIX} {self.unseen_observations().count()} unseen observation(s) for your alert #{self.pk}",
-            msg_plain,
-            settings.SERVER_EMAIL,
-            [self.user.email],
-            html_message=msg_html,
-        )
+        try:
+            send_mail(
+                f"{settings.EMAIL_SUBJECT_PREFIX} {self.unseen_observations().count()} unseen observation(s) for your alert #{self.pk}",
+                msg_plain,
+                settings.SERVER_EMAIL,
+                [self.user.email],
+                html_message=msg_html,
+            )
+        except smtplib.SMTPException:
+            logging.exception("Error sending notification emails")
+            return False
 
         self.last_email_sent_on = timezone.now()
         self.save(update_fields=["last_email_sent_on"])
+        return True
