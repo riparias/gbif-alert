@@ -6,11 +6,11 @@ app_name = "dashboard"
 
 pages_urls = [
     path("", views.index_page, name="index"),
-    path("about_site", views.about_site_page, name="about-site"),
-    path("about_data", views.about_data_page, name="about-data"),
+    path("about-site", views.about_site_page, name="about-site"),
+    path("about-data", views.about_data_page, name="about-data"),
     path("alert/<int:alert_id>", views.alert_details_page, name="alert-details"),
-    path("my_alerts", views.user_alerts_page, name="my-alerts"),
-    path("new_alert", views.alert_create_page, name="alert-create"),
+    path("my-alerts", views.user_alerts_page, name="my-alerts"),
+    path("new-alert", views.alert_create_page, name="alert-create"),
     path(
         "observation/<stable_id>",
         views.observation_details_page,
@@ -22,7 +22,7 @@ pages_urls = [
 
 maps_api_urls = [
     path(
-        "min_max_per_hexagon",
+        "min-max-per-hexagon",
         views.observation_min_max_in_hex_grid_json,
         name="mvt-min-max-per-hexagon",
     ),
@@ -32,7 +32,7 @@ maps_api_urls = [
         name="mvt-tiles",
     ),
     path(
-        "tiles/observations/hexagon_grid_aggregated/<int:zoom>/<int:x>/<int:y>.mvt",
+        "tiles/observations/hexagon-grid-aggregated/<int:zoom>/<int:x>/<int:y>.mvt",
         views.mvt_tiles_observations_hexagon_grid_aggregated,
         name="mvt-tiles-hexagon-grid-aggregated",
     ),
@@ -44,31 +44,31 @@ public_api_urls = [
 
 internal_api_urls = [
     path(
-        "alert/as_filters",
+        "alert/as-filters",
         views.alert_as_filters,
         name="alert-as-filters-json",
     ),
     path("area/<int:id>", views.area_geojson, name="area-geojson"),
     path("areas", views.areas_list_json, name="areas-list-json"),
-    path("dataimports", views.dataimports_list_json, name="dataimports-list-json"),
+    path("data-imports", views.dataimports_list_json, name="dataimports-list-json"),
     path("datasets", views.datasets_list_json, name="datasets-list-json"),
     path(
-        "filtered_observations/counter",
+        "filtered-observations/counter",
         views.filtered_observations_counter_json,
         name="filtered-observations-counter",
     ),
     path(
-        "filtered_observations/data_page",
+        "filtered-observations/data_page",
         views.filtered_observations_data_page_json,
         name="filtered-observations-data-page",
     ),
     path(
-        "filtered_observations/mark_as_seen",
+        "filtered-observations/mark_as_seen",
         views.filtered_observations_mark_as_seen,
         name="filtered-observations-mark-as-seen",
     ),
     path(
-        "filtered_observations/monthly_histogram",
+        "filtered-observations/monthly_histogram",
         views.filtered_observations_monthly_histogram_json,
         name="filtered-observations-monthly-histogram",
     ),
@@ -83,7 +83,7 @@ internal_api_urls = [
 actions_urls = [
     path("delete_alert", views.delete_alert, name="delete-alert"),
     path(
-        "mark_observation_as_unseen",
+        "mark-observation-as-unseen",
         views.mark_observation_as_unseen,
         name="mark-observation-as-unseen",
     ),

@@ -92,7 +92,7 @@ class AlertWebPagesTests(TestCase):
             mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
         )
 
-    my_alerts_navbar_snippet = '<a class="nav-link " aria-current="page" href="/my_alerts"><i class="bi bi-exclamation-square"></i>My alerts</a>'
+    my_alerts_navbar_snippet = '<a class="nav-link " aria-current="page" href="/my-alerts"><i class="bi bi-exclamation-square"></i>My alerts</a>'
 
     def test_navbar_my_alerts_authenticated(self):
         """Authenticated users have a 'my alerts' link in the navbar"""
@@ -147,12 +147,12 @@ class AlertWebPagesTests(TestCase):
         # 1) GET
         response = self.client.get(reverse("dashboard:pages:alert-create"))
         self.assertEqual(response.status_code, 302)  # We got redirected to sign in
-        self.assertEqual(response.url, "/accounts/signin/?next=/new_alert")
+        self.assertEqual(response.url, "/accounts/signin/?next=/new-alert")
 
         # 2) POST
         response = self.client.post(reverse("dashboard:pages:alert-create"))
         self.assertEqual(response.status_code, 302)  # We got redirected to sign in
-        self.assertEqual(response.url, "/accounts/signin/?next=/new_alert")
+        self.assertEqual(response.url, "/accounts/signin/?next=/new-alert")
 
     def test_get_new_alert_page(self):
         """An authenticated has a page allowing to create an alert"""
@@ -282,7 +282,7 @@ class AlertWebPagesTests(TestCase):
 
         # The user gets redirected to the "my alerts" page
         self.assertEqual(response.status_code, 302)  # We got redirected to sign in
-        self.assertEqual(response.url, "/my_alerts")
+        self.assertEqual(response.url, "/my-alerts")
 
     def test_delete_non_existing_alert(self):
         """We get an error 404 when trying to delete an alert that doesn't exist"""
