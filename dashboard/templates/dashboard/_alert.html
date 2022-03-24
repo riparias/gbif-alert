@@ -18,9 +18,18 @@
             </ul>
         </p>
         {% if show_buttons %}
-            <a href="{% url 'dashboard:pages:alert-details' alert_id=alert.id %}" class="btn btn-sm btn-primary"><i
-                    class="bi bi-clipboard-data-fill"></i> See alert details</a>
-            <form class="d-inline" action="{% url 'dashboard:actions:delete-alert' %}" method="post">
+            <a href="{% url 'dashboard:pages:alert-details' alert_id=alert.id %}" class="btn btn-sm btn-primary position-relative">
+                <i class="bi bi-clipboard-data-fill"></i> See alert details
+
+                {% if alert.unseen_observations.count > 0 %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        {{ alert.unseen_observations.count }} unseen
+                    </span>
+                {% endif %}
+            </a>
+
+
+            <form class="d-inline float-end" action="{% url 'dashboard:actions:delete-alert' %}" method="post">
                 {% csrf_token %}
                 <input type="hidden" name="alert_id" value="{{ alert.pk }}"/>
                 <button type="submit" class="btn btn-sm btn-danger">

@@ -74,6 +74,12 @@ class AreaAdmin(admin.OSMGeoAdmin):
     list_display = ("name", "owner")
 
 
+@admin.action(description="Send e-mail notifications now for selected alerts")
+def send_alert_notification_email(modeladmin, request, queryset):
+    for alert in queryset:
+        alert.send_notification_email()
+
+
 @admin.register(Alert)
 class AlertAdmin(admin.ModelAdmin):
     list_display = (
@@ -84,3 +90,5 @@ class AlertAdmin(admin.ModelAdmin):
         "email_notifications_frequency",
     )
     list_filter = ["user", "email_notifications_frequency"]
+
+    actions = [send_alert_notification_email]

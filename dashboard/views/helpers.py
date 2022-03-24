@@ -5,11 +5,10 @@ import datetime
 from typing import Tuple, List, Optional, Dict
 from urllib.parse import unquote
 
-from django.contrib.gis.db.models.aggregates import Union
 from django.db.models import QuerySet
 from django.http import HttpRequest, JsonResponse, QueryDict
 
-from dashboard.models import Observation, Area, User, ObservationView
+from dashboard.models import Observation, User
 
 
 # This class is only defined to make Mypy happy
@@ -95,40 +94,25 @@ def filtered_observations_from_request(request: HttpRequest) -> QuerySet[Observa
         datasets_ids,
         start_date,
         end_date,
-        area_ids,
+        areas_ids,
         status_for_user,
         initial_data_import_ids,
     ) = filters_from_request(request)
 
-    # !! IMPORTANT !! Make sure the observation filtering here is equivalent to what's done in
-    # views.maps.JINJASQL_FRAGMENT_FILTER_OBSERVATIONS. Otherwise, observations returned on the map and on other
-    # components (table, ...) will be inconsistent.
-    # !! If adding new filters, make also sure they are properly documented in the docstrings of "api.py"
-    qs = Observation.objects.all()
+    user = None
+    if request.user.is_authenticated:
+        user = request.user
 
-    if species_ids:
-        qs = qs.filter(species_id__in=species_ids)
-    if datasets_ids:
-        qs = qs.filter(source_dataset_id__in=datasets_ids)
-    if start_date:
-        qs = qs.filter(date__gte=start_date)
-    if end_date:
-        qs = qs.filter(date__lte=end_date)
-    if area_ids:
-        combined_areas = Area.objects.filter(pk__in=area_ids).aggregate(
-            area=Union("mpoly")
-        )["area"]
-        qs = qs.filter(location__within=combined_areas)
-    if initial_data_import_ids:
-        qs = qs.filter(initial_data_import_id__in=initial_data_import_ids)
-    if status_for_user and request.user.is_authenticated:
-        ov = ObservationView.objects.filter(user=request.user)
-        if status_for_user == "seen":
-            qs = qs.filter(observationview__in=ov)
-        elif status_for_user == "unseen":
-            qs = qs.exclude(observationview__in=ov)
-
-    return qs
+    return Observation.objects.filtered_from_my_params(
+        species_ids=species_ids,
+        datasets_ids=datasets_ids,
+        start_date=start_date,
+        end_date=end_date,
+        areas_ids=areas_ids,
+        status_for_user=status_for_user,
+        initial_data_import_ids=initial_data_import_ids,
+        user=user,
+    )
 
 
 def filters_from_request(
@@ -146,7 +130,7 @@ def filters_from_request(
     datasets_ids = extract_int_array_request(request, "datasetsIds[]")
     start_date = extract_date_request(request, "startDate")
     end_date = extract_date_request(request, "endDate")
-    area_ids = extract_int_array_request(request, "areaIds[]")
+    areas_ids = extract_int_array_request(request, "areaIds[]")
     status_for_user = extract_str_request(request, "status")
     initial_data_import_ids = extract_int_array_request(
         request, "initialDataImportIds[]"
@@ -157,7 +141,7 @@ def filters_from_request(
         datasets_ids,
         start_date,
         end_date,
-        area_ids,
+        areas_ids,
         status_for_user,
         initial_data_import_ids,
     )

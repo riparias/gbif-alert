@@ -1,0 +1,13 @@
+You have {{ alert.unseen_observations.count }} unseen observation for the following alert:
+
+#{{ alert.pk }}
+
+(show here alert details: list of species, areas, ...)
+
+(show here a preview of the unseen observations?)
+
+Don't hesitate to check it out on the <a href="{% url "dashboard:pages:alert-details" alert_id=alert.pk %}">Alert page</a>
+
+Thanks,
+
+The RIPARIAS early alert team

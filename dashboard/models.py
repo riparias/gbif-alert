@@ -3,12 +3,16 @@ from __future__ import annotations
 import datetime
 import hashlib
 
-from typing import Optional, Union, Any, Dict
+from typing import Optional, Union, Any, Dict, List
 
+import html2text
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, AnonymousUser
 from django.contrib.gis.db import models
+from django.contrib.gis.db.models.aggregates import Union as AggregateUnion
+from django.core.mail import send_mail
 from django.db.models import QuerySet, Q
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import localize
@@ -124,6 +128,50 @@ class DataImport(models.Model):
         }
 
 
+class ObservationManager(models.Manager):
+    def filtered_from_my_params(
+        self,
+        species_ids: List[int],
+        datasets_ids: List[int],
+        start_date: Optional[datetime.date],
+        end_date: Optional[datetime.date],
+        areas_ids: List[int],
+        status_for_user: Optional[str],
+        initial_data_import_ids: List[int],
+        user: Optional[User],  # mandatory if status_for_user is set
+    ) -> QuerySet[Observation]:
+        # !! IMPORTANT !! Make sure the observation filtering here is equivalent to what's done in
+        # views.maps.JINJASQL_FRAGMENT_FILTER_OBSERVATIONS. Otherwise, observations returned on the map and on other
+        # components (table, ...) will be inconsistent.
+        # !! If adding new filters, make also sure they are properly documented in the docstrings of "api.py"
+        qs = self.model.objects.all()
+
+        if species_ids:
+            qs = qs.filter(species_id__in=species_ids)
+        if datasets_ids:
+            qs = qs.filter(source_dataset_id__in=datasets_ids)
+        if start_date:
+            qs = qs.filter(date__gte=start_date)
+        if end_date:
+            qs = qs.filter(date__lte=end_date)
+        if areas_ids:
+            combined_areas = Area.objects.filter(pk__in=areas_ids).aggregate(
+                area=AggregateUnion("mpoly")
+            )["area"]
+            qs = qs.filter(location__within=combined_areas)
+        if initial_data_import_ids:
+            qs = qs.filter(initial_data_import_id__in=initial_data_import_ids)
+
+        if status_for_user and user:
+            ov = ObservationView.objects.filter(user=user)
+            if status_for_user == "seen":
+                qs = qs.filter(observationview__in=ov)
+            elif status_for_user == "unseen":
+                qs = qs.exclude(observationview__in=ov)
+
+        return qs
+
+
 class Observation(models.Model):
     # Pay attention to the fact that this model actually has 4(!) different "identifiers" which serve different
     # purposes. gbif_id, occurrence_id and stable_id are documented below, Django also adds the usual and implicit "pk"
@@ -158,6 +206,8 @@ class Observation(models.Model):
         related_name="occurrences_initially_imported",
     )
     source_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+
+    objects = ObservationManager()
 
     class Meta:
         unique_together = [("gbif_id", "data_import"), ("stable_id", "data_import")]
@@ -445,6 +495,12 @@ class Alert(models.Model):
         (MONTHLY_EMAILS, "Monthly"),
     ]
 
+    EMAIL_NOTIFICATION_DELTAS = {  # After how much time should we sent a new email
+        DAILY_EMAILS: datetime.timedelta(hours=22),
+        WEEKLY_EMAILS: datetime.timedelta(days=6, hours=22),
+        MONTHLY_EMAILS: datetime.timedelta(weeks=4),
+    }
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     species = models.ManyToManyField(
         Species,
@@ -498,3 +554,57 @@ class Alert(models.Model):
             "endDate": None,
             "status": None,
         }
+
+    def unseen_observations(self) -> QuerySet[Observation]:
+        return Observation.objects.filtered_from_my_params(
+            species_ids=[s.pk for s in self.species.all()],
+            datasets_ids=[d.pk for d in self.datasets.all()],
+            areas_ids=[a.pk for a in self.areas.all()],
+            start_date=None,
+            end_date=None,
+            initial_data_import_ids=None,
+            status_for_user="unseen",
+            user=self.user,
+        )
+
+    def email_should_be_sent_now(self) -> bool:
+        """Returns true if a notification email for this alert should be sent (now)
+
+        Use some margins so emails are sent at a decent frequency if this is called daily.
+        """
+        if (
+            self.email_notifications_frequency != self.NO_EMAILS
+            and self.unseen_observations().count > 0
+        ):
+            if (
+                self.last_email_sent_on is None
+            ):  # the user wants e-mails, has unseen observations and has not received yet...
+                return True  # ...so, now is  a good time
+            else:
+                # the user wants e-mails, has unseen observations but as already received notifications.
+                # Is it now a good time for a new one?
+                delta = self.EMAIL_NOTIFICATION_DELTAS[
+                    self.email_notifications_frequency
+                ]
+                if self.last_email_sent_on + delta < timezone.now():
+                    return True
+        return False
+
+    def send_notification_email(self):
+        """Send the notification e-mail"""
+        msg_html = render_to_string(
+            "dashboard/emails/alert_notification.html", {"alert": self}
+        )
+
+        msg_plain = html2text.html2text(msg_html)
+
+        send_mail(
+            f"{settings.EMAIL_SUBJECT_PREFIX}",
+            msg_plain,
+            settings.SERVER_EMAIL,
+            [self.user.email],
+            html_message=msg_html,
+        )
+
+        self.last_email_sent_on = timezone.now()
+        self.save(update_fields=["last_email_sent_on"])

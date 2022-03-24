@@ -322,6 +322,14 @@ setproctitle = ["setproctitle"]
 tornado = ["tornado (>=0.2)"]
 
 [[package]]
+name = "html2text"
+version = "2020.1.16"
+description = "Turn HTML into equivalent Markdown-structured text."
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
+[[package]]
 name = "idna"
 version = "3.3"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -846,7 +854,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "757e583633fff6cb268b471304b0397ec34d8e986dd5aac9b982f60b4f74c9b6"
+content-hash = "07c1844f63d58dbcb5bb37c0888652155bcd9d6a0827404a735de411ff370a24"
 
 [metadata.files]
 asgiref = [
@@ -955,6 +963,10 @@ gbif-blocking-occurrence-download = [
 gunicorn = [
     {file = "gunicorn-20.1.0-py3-none-any.whl", hash = "sha256:9dcc4547dbb1cb284accfb15ab5667a0e5d1881cc443e0677b4882a4067a807e"},
     {file = "gunicorn-20.1.0.tar.gz", hash = "sha256:e0a968b5ba15f8a328fdfd7ab1fcb5af4470c28aaf7e55df02a99bc13138e6e8"},
+]
+html2text = [
+    {file = "html2text-2020.1.16-py3-none-any.whl", hash = "sha256:c7c629882da0cf377d66f073329ccf34a12ed2adf0169b9285ae4e63ef54c82b"},
+    {file = "html2text-2020.1.16.tar.gz", hash = "sha256:e296318e16b059ddb97f7a8a1d6a5c1d7af4544049a01e261731d2d5cc277bbb"},
 ]
 idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},
