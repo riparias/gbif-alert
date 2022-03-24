@@ -74,6 +74,11 @@ class AreaAdmin(admin.OSMGeoAdmin):
     list_display = ("name", "owner")
 
 
+# Beware: the following action is mostly for debugging purposes and will send an email if the usual criteria are not
+# met, for example:
+# - no unseen observations for the alert
+# - the alert is configured for no email notifications
+# - a notification e-mail has already been sent recently
 @admin.action(description="Send e-mail notifications now for selected alerts")  # type: ignore
 def send_alert_notification_email(modeladmin, request, queryset):
     for alert in queryset:

@@ -600,7 +600,7 @@ class Alert(models.Model):
         msg_plain = html2text.html2text(msg_html)
 
         send_mail(
-            f"{settings.EMAIL_SUBJECT_PREFIX} {self.unseen_observations().count()} unseen observation for your alert #{self.pk}",
+            f"{settings.EMAIL_SUBJECT_PREFIX} {self.unseen_observations().count()} unseen observation(s) for your alert #{self.pk}",
             msg_plain,
             settings.SERVER_EMAIL,
             [self.user.email],
