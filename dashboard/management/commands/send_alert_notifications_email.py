@@ -1,6 +1,7 @@
 from django.core.management import BaseCommand
 
 from django.utils import timezone
+from maintenance_mode.core import get_maintenance_mode
 
 from dashboard.models import Alert
 
@@ -35,10 +36,15 @@ class Command(BaseCommand):
         self.stdout.write(
             f"Will sent all necessary alert notifications. Current time is {timezone.now()}"
         )
-        for alert in Alert.objects.all():
-            try:  # In a try block so one alert failing will not prevent others from being sent
-                self.handle_alert(alert)
-            except Exception as e:
-                self.stdout.write(f"Unexpected error handling alert: {e}")
 
-        self.stdout.write("All done!")
+        maintenance_mode = get_maintenance_mode()
+        if not maintenance_mode:
+            for alert in Alert.objects.all():
+                try:  # In a try block so one alert failing will not prevent others from being sent
+                    self.handle_alert(alert)
+                except Exception as e:
+                    self.stdout.write(f"Unexpected error handling alert: {e}")
+
+            self.stdout.write("All done!")
+        else:
+            self.stdout.write("Error: Maintenance mode is set, skipping the operation!")
