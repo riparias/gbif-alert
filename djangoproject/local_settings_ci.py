@@ -27,6 +27,9 @@ RQ_QUEUES = {
     },
 }
 
+# used to refer to the website in emails! Points to the site root, includes protocol, host, port... No trailing slash.
+SITE_BASE_URL = "http://localhost"
+
 # A Gbif.org is necessary to automatically download observations via the `import_observations` command
 RIPARIAS["GBIF_USERNAME"] = "xxx"
 RIPARIAS["GBIF_PASSWORD"] = "yyy"
