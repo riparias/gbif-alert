@@ -1,7 +1,7 @@
 import datetime
 from unittest import mock
 
-import pytz
+from backports.zoneinfo import ZoneInfo
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -31,7 +31,7 @@ class InternalApiTests(TestCase):
             name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
         )
 
-        mocked = datetime.datetime(2022, 2, 11, 15, 10, 0, tzinfo=pytz.utc)
+        mocked = datetime.datetime(2022, 2, 11, 15, 10, 0, tzinfo=ZoneInfo("UTC"))
         with mock.patch("django.utils.timezone.now", mock.Mock(return_value=mocked)):
             cls.di = DataImport.objects.create(start=timezone.now())
 

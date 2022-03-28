@@ -1,7 +1,7 @@
 import datetime
 from unittest import mock
 
-import pytz
+from backports.zoneinfo import ZoneInfo
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -379,7 +379,7 @@ class WebPagesTests(TestCase):
         )
 
         # Let's force an earlier date for auto_add_now
-        mocked = datetime.datetime(2018, 4, 4, 0, 0, 0, tzinfo=pytz.utc)
+        mocked = datetime.datetime(2018, 4, 4, 0, 0, 0, tzinfo=ZoneInfo("UTC"))
         with mock.patch("django.utils.timezone.now", mock.Mock(return_value=mocked)):
             ObservationView.objects.create(
                 observation=cls.second_obs, user=comment_author

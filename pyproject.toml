@@ -6,7 +6,7 @@ authors = ["Nicolas Noé <nicolas.noe@inbo.be>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-Django = "^3.2"
+Django = "^4.0"
 psycopg2-binary = "^2.9.1"
 requests = "^2.26.0"
 gbif-blocking-occurrence-download = "^0.1.0"
@@ -17,7 +17,7 @@ crispy-bootstrap5 = "^0.6"
 django-maintenance-mode = "^0.16.1"
 django-import-export = "^2.7.1"
 django-cors-headers = "^3.11.0"
-django-markdownx = "^3.0.1"
+django-markdownx = "4.0.0b1"
 django-rq = "^2.5.1"
 html2text = "^2020.1.16"
 Jinja2 = "3.0.3" # just needed for JinjaSQL, but it currently has a tendency to download an incompatible version (3.1.1). I hope we'll be able to remove that fake dependency once JinjaSQL gets updated (https://github.com/sripathikrishnan/jinjasql/issues/50)
