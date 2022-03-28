@@ -5,7 +5,7 @@ description = "LIFE RIPARIAS early alert web application"
 authors = ["Nicolas Noé <nicolas.noe@inbo.be>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 Django = "^4.0"
 psycopg2-binary = "^2.9.1"
 requests = "^2.26.0"
