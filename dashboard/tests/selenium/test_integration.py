@@ -11,10 +11,41 @@ from selenium.webdriver.support.wait import WebDriverWait  # type: ignore
 from selenium.webdriver.support import expected_conditions as EC  # type: ignore
 from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
 
-from dashboard.models import Species, DataImport, Dataset, Observation, ObservationView
+from dashboard.models import (
+    Species,
+    DataImport,
+    Dataset,
+    Observation,
+    ObservationView,
+    Alert,
+)
+
+HEADLESS_MODE = True
 
 
-class RipariasSeleniumTests(StaticLiveServerTestCase):
+class RipariasSeleniumTestsCommon(StaticLiveServerTestCase):
+    """Common test data and Selenium-related plumbing"""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Selenium setup
+        options = webdriver.ChromeOptions()
+        options.add_argument("--no-sandbox")
+        if HEADLESS_MODE:
+            options.add_argument("--headless")
+        options.add_argument("--window-size=2560,1440")
+        cls.selenium = webdriver.Chrome(
+            ChromeDriverManager().install(),
+            options=options,
+        )
+        cls.selenium.implicitly_wait(2)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.selenium.quit()
+        super().tearDownClass()
+
     def setUp(self):
         super().setUp()
         # Create test users
@@ -36,6 +67,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         )
 
         di = DataImport.objects.create(start=timezone.now())
+
         first_dataset = Dataset.objects.create(
             name="Test dataset", gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
         )
@@ -78,27 +110,58 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         # Obs 1 (and only obs_1) has been seen by the user
         ObservationView.objects.create(observation=obs_1, user=normal_user)
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        # Selenium setup
-        options = webdriver.ChromeOptions()
-        options.add_argument("--no-sandbox")
-        options.add_argument("--headless")
-        options.add_argument("--window-size=2560,1440")
-        cls.selenium = webdriver.Chrome(
-            # Temporarily downgrade Chrome Driver because of the following bug:
-            # https://github.com/SeleniumHQ/selenium/issues/10318
-            ChromeDriverManager().install(),
-            options=options,
+        Alert.objects.create(
+            user=normal_user, email_notifications_frequency=Alert.DAILY_EMAILS
         )
-        cls.selenium.implicitly_wait(5)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.selenium.quit()
-        super().tearDownClass()
 
+class RipariasSeleniumAlertTests(RipariasSeleniumTestsCommon):
+    """Integration tests for the alert-related features"""
+
+    def test_alert_delete_scenario(self):
+        # Action 1: login
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
+        username_field = self.selenium.find_element_by_id("id_username")
+        password_field = self.selenium.find_element_by_id("id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("testuser")
+        password_field.send_keys("12345")
+        signin_button = self.selenium.find_element_by_id("riparias-signin-button")
+        signin_button.click()
+        WebDriverWait(self.selenium, 3)
+
+        # Check 1: There a "my alerts" link we can follow
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        navbar.find_element_by_link_text("My alerts").click()
+        WebDriverWait(self.selenium, 3)
+
+        # Check 2: on the page, there's a single delete form with a button (only one alert)
+        delete_forms = self.selenium.find_elements_by_class_name(
+            "riparias-alert-delete-form"
+        )
+        self.assertEqual(len(delete_forms), 1)
+        delete_button = delete_forms[0].find_element_by_tag_name("button")
+
+        # Action 2: click the delete button
+        delete_button.click()
+        WebDriverWait(self.selenium, 3)
+
+        # Check 3: we're back on the "my alerts" page, with a success message and no remaining alerts
+        self.assertIn("/my-alerts", self.selenium.current_url)
+        self.assertIn("Alert deleted.", self.selenium.page_source)
+        self.assertIn(
+            "You currently don't have any configured alerts.", self.selenium.page_source
+        )
+        self.assertEqual(
+            len(
+                self.selenium.find_elements_by_class_name("riparias-alert-delete-form")
+            ),
+            0,
+        )
+
+
+class RipariasSeleniumTests(RipariasSeleniumTestsCommon):
     def test_seen_unseen_observations_table(self):
         """Dashboard page with a few seen and unseen observations: play with the status selector and check effect on the results table"""
 
@@ -112,7 +175,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         password_field.send_keys("12345")
         signin_button = self.selenium.find_element_by_id("riparias-signin-button")
         signin_button.click()
-        WebDriverWait(self.selenium, 5)
+        WebDriverWait(self.selenium, 3)
 
         # Action 2: select table view
         table_tab = self.selenium.find_element_by_id("tab-table-view")
@@ -324,7 +387,7 @@ class RipariasSeleniumTests(StaticLiveServerTestCase):
         # There's no more "Logged as testuser" message
         with self.assertRaises(NoSuchElementException):
             navbar.find_element_by_link_text("Logged as testuser")
-        # There's a sign in in link again
+        # There's a sign inlink again
         navbar.find_element_by_link_text("Sign in")
 
     def test_signup_scenario_existing_username(self):
