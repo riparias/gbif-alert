@@ -26,6 +26,12 @@ We make use of GitHub Actions when possible. They're currently used to:
 - Run Django tests and `mypy` on push
 - Deploy to dev server on push
 
+## Working with branches
+
+After the release of the first public version (end March 2022), we'll keep the `main` branch in an "always deployable"
+state. That means that only very minor changes (typo, ...) can happen there, all the rest will be done on specific 
+branches.
+
 ## Dependencies
 
 We try to frequently update dependencies. Process is:
