@@ -413,28 +413,36 @@ class WebPagesTests(TestCase):
         # A few checks on the basic content
         self.assertContains(response, '<a href="https://www.gbif.org/occurrence/1">')
         self.assertContains(
-            response, "<b>Species: </b><i>Procambarus fallax</i>", html=True
+            response, "<dt>Species</dt><dd><i>Procambarus fallax</i></dd>", html=True
         )
-        self.assertContains(response, "<b>Individual count: </b> 2", html=True)
-        self.assertContains(response, "<b>Source dataset: </b> Test dataset", html=True)
+        self.assertContains(response, "<dt>Individual count</dt><dd>2</dd>", html=True)
         self.assertContains(
-            response, "<b>Basis of record: </b> HUMAN_OBSERVATION", html=True
+            response, "<dt>Source dataset</dt><dd>Test dataset</dd>", html=True
+        )
+        self.assertContains(
+            response, "<dt>Basis of record</dt><dd>HUMAN_OBSERVATION</dd>", html=True
         )
         self.assertContains(
             response,
-            f"<b>Date: </b>{formats.date_format(self.__class__.first_obs.date, 'DATE_FORMAT')}",
+            f"<dt>Date</dt><dd>{formats.date_format(self.__class__.first_obs.date, 'DATE_FORMAT')}</dd>",
             html=True,
         )
         self.assertContains(
             response,
-            "<b>Coordinates: </b> (5.095129999999999, 50.48940999999999)",
+            "<dt>Coordinates</dt><dd>(5.095129999999999, 50.48940999999999)</dd>",
             html=True,
         )
-        self.assertContains(response, "<b>Municipality: </b> Andenne", html=True)
-        self.assertContains(response, "<b>Locality: </b> Andenne centre", html=True)
-        self.assertContains(response, "<b>Recorded by: </b> Nicolas Noé", html=True)
         self.assertContains(
-            response, "<b>Coordinates uncertainty: </b> 10 meters", html=True
+            response, "<dt>Municipality</dt><dd>Andenne</dd>", html=True
+        )
+        self.assertContains(
+            response, "<dt>Locality</dt><dd>Andenne centre</dd>", html=True
+        )
+        self.assertContains(
+            response, "<dt>Recorded by</dt><dd>Nicolas Noé</dd>", html=True
+        )
+        self.assertContains(
+            response, "<dt>Coordinates uncertainty</dt><dd>10 meters</dd>", html=True
         )
 
     def test_observation_details_coordinates_uncertainty_format(self):
@@ -465,7 +473,7 @@ class WebPagesTests(TestCase):
         )
 
         self.assertContains(
-            response, "<b>Coordinates uncertainty: </b> unknown", html=True
+            response, "<dt>Coordinates uncertainty</dt><dd>unknown</dd>", html=True
         )
 
         # case 2: 1 meter => singular value
@@ -479,7 +487,7 @@ class WebPagesTests(TestCase):
         )
 
         self.assertContains(
-            response, "<b>Coordinates uncertainty: </b> 1 meter", html=True
+            response, "<dt>Coordinates uncertainty</dt><dd>1 meter</dd>", html=True
         )
 
         # case 2: 3 meters => plural value
@@ -493,7 +501,7 @@ class WebPagesTests(TestCase):
         )
 
         self.assertContains(
-            response, "<b>Coordinates uncertainty: </b> 3 meters", html=True
+            response, "<dt>Coordinates uncertainty</dt><dd>3 meters</dd>", html=True
         )
 
         # case 3: 5 meters => do not display ".0" when not necessary
@@ -507,7 +515,7 @@ class WebPagesTests(TestCase):
         )
 
         self.assertContains(
-            response, "<b>Coordinates uncertainty: </b> 5 meters", html=True
+            response, "<dt>Coordinates uncertainty</dt><dd>5 meters</dd>", html=True
         )
 
         # case 4: display 1 decimal place when necessary:
@@ -521,7 +529,7 @@ class WebPagesTests(TestCase):
         )
 
         self.assertContains(
-            response, "<b>Coordinates uncertainty: </b> 3.1 meters", html=True
+            response, "<dt>Coordinates uncertainty</dt><dd>3.1 meters</dd>", html=True
         )
 
     def test_observation_details_comments_empty(self):

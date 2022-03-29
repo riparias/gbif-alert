@@ -44,7 +44,7 @@
                     <dt>Source dataset</dt>
                     <dd>{{ observation.source_dataset.name }}</dd>
 
-                    <dt>Basis of record:</dt>
+                    <dt>Basis of record</dt>
                     <dd>{{ observation.basis_of_record }}</dd>
 
                     <dt>Date</dt>
@@ -55,8 +55,7 @@
 
                     <dt>Coordinates uncertainty</dt>
                     <dd>{% if observation.coordinate_uncertainty_in_meters %}
-                        {{ observation.coordinate_uncertainty_in_meters|floatformat }} meter
-                        {{ observation.coordinate_uncertainty_in_meters|pluralize }}
+                        {{ observation.coordinate_uncertainty_in_meters|floatformat }} meter{{ observation.coordinate_uncertainty_in_meters|pluralize }}
                     {% else %}
                         unknown
                     {% endif %}
