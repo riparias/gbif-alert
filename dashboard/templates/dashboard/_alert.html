@@ -37,5 +37,9 @@
                 </button>
             </form>
         {% endif %}
+
+        {% if show_link_alerts_list %}
+            <a href="{% url "dashboard:pages:my-alerts" %}">Show all my alerts</a>
+        {% endif %}
     </div>
 </div>
