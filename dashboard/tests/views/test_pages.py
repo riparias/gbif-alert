@@ -350,6 +350,7 @@ class WebPagesTests(TestCase):
             recorded_by="Nicolas Noé",
             basis_of_record="HUMAN_OBSERVATION",
             coordinate_uncertainty_in_meters=10,
+            references="https://www.google.com",
         )
 
         cls.second_obs = Observation.objects.create(
@@ -363,6 +364,7 @@ class WebPagesTests(TestCase):
             initial_data_import=di,
             source_dataset=dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
+            references="this is not an URL",
         )
 
         User = get_user_model()
@@ -443,6 +445,70 @@ class WebPagesTests(TestCase):
         )
         self.assertContains(
             response, "<dt>Coordinates uncertainty</dt><dd>10 meters</dd>", html=True
+        )
+
+    def test_observation_details_references_formatted(self):
+        """Check the 'references' field is properly formatted"""
+
+        di = DataImport.objects.create(start=timezone.now())
+        new_obs = Observation.objects.create(
+            gbif_id=3,
+            occurrence_id="3",
+            species=Species.objects.create(
+                name="AAA BBB", gbif_taxon_key=22, group="CR"
+            ),
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            data_import=di,
+            initial_data_import=di,
+            source_dataset=Dataset.objects.create(
+                name="Test dataset",
+                gbif_dataset_key="azerty",
+            ),
+            location=Point(5.09513, 50.48941, srid=4326),
+        )
+
+        # case 1: no references is data: field is not shown
+        response = self.client.get(
+            reverse(
+                "dashboard:pages:observation-details",
+                kwargs={"stable_id": new_obs.stable_id},
+            )
+        )
+
+        self.assertNotContains(response, "<dt>References</dt>", html=True)
+
+        # case 2: reference is a URL, it is displayed in a clickable format
+        response = self.client.get(
+            reverse(
+                "dashboard:pages:observation-details",
+                kwargs={"stable_id": self.__class__.first_obs.stable_id},
+            )
+        )
+
+        self.assertContains(
+            response,
+            '<dt>References</dt><dd><a href="https://www.google.com">https://www.google.com</a></dd>',
+            html=True,
+        )
+
+        # case 3: Reference is a string, displayed without a link
+        response = self.client.get(
+            reverse(
+                "dashboard:pages:observation-details",
+                kwargs={"stable_id": self.__class__.second_obs.stable_id},
+            )
+        )
+
+        self.assertNotContains(
+            response,
+            '<dt>References</dt><dd><a href="this is not an URL">this is not an URL</a></dd>',
+            html=True,
+        )
+
+        self.assertContains(
+            response,
+            "<dt>References</dt><dd>this is not an URL</dd>",
+            html=True,
         )
 
     def test_observation_details_coordinates_uncertainty_format(self):

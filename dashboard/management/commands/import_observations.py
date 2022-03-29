@@ -169,6 +169,7 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
             basis_of_record=get_string_data(row, field_name=qn("basisOfRecord")),
             recorded_by=get_string_data(row, field_name=qn("recordedBy")),
             coordinate_uncertainty_in_meters=coordinates_uncertainty,
+            references=get_string_data(row, field_name=qn("references")),
         )
         new_observation.set_or_migrate_initial_data_import(
             current_data_import=current_data_import

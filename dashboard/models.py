@@ -207,6 +207,7 @@ class Observation(models.Model):
     basis_of_record = models.TextField(blank=True)
     recorded_by = models.TextField(blank=True)
     coordinate_uncertainty_in_meters = models.FloatField(blank=True, null=True)
+    references = models.TextField(blank=True)
 
     data_import = models.ForeignKey(DataImport, on_delete=models.PROTECT)
     initial_data_import = models.ForeignKey(

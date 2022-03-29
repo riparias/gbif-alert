@@ -207,6 +207,9 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertAlmostEqual(lat, 50.664364)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
         self.assertEqual(occ.source_dataset.name, "iNaturalist")
+        self.assertEqual(
+            occ.references, "https://www.inaturalist.org/observations/42577016"
+        )
 
         occ = observations[
             2

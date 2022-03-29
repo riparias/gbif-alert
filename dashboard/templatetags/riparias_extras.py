@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Any
 from urllib.parse import urlencode
 
@@ -106,3 +107,25 @@ def gbif_download_url(value):
 @register.filter
 def gbif_occurrence_url(value):
     return f"https://www.gbif.org/occurrence/{value}"
+
+
+def _is_url(s: str) -> bool:
+    regex_url = re.compile(
+        r"^(?:http|ftp)s?://"  # http:// or https://
+        r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|"  # domain...
+        r"localhost|"  # localhost...
+        r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...or ip
+        r"(?::\d+)?"  # optional port
+        r"(?:/?|[/?]\S+)$",
+        re.IGNORECASE,
+    )
+
+    return re.match(regex_url, s) is not None
+
+
+@register.filter
+def as_link_if_url(value):
+    if _is_url(value):
+        return mark_safe(f'<a href="{value}">{value}</a>')
+    else:
+        return value
