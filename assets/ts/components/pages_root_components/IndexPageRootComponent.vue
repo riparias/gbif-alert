@@ -163,7 +163,7 @@ export default defineComponent({
     },
     availableDataimportsAsEntries: function (): SelectionEntry[] {
       return this.availableDataImports
-        .sort((a, b) => (a.str > b.str ? 1 : -1))
+        .sort((a, b) => (b.id > a.id ? 1 : -1))
         .map((d) => {
           return { id: d.id, label: d.str };
         });

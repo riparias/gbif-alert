@@ -106,6 +106,9 @@ class DataImport(models.Model):
         blank=True, null=True
     )  # Null if a DwC-A file was provided - no GBIF download
 
+    class Meta:
+        ordering = ["-pk"]
+
     def set_gbif_download_id(self, download_id: str) -> None:
         """Set the download id and immediately save the entry"""
         self.gbif_download_id = download_id
