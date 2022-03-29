@@ -3,8 +3,8 @@
         <h4 class="card-title">Alert #{{ alert.pk }}</h4>
         <p class="card-text">
             <ul class="list-group list-group-flush">
-                <li class="list-group-item"><b>Areas:</b> {{ alert.areas_list|default:"all" }}</li>
                 <li class="list-group-item"><b>Species:</b> {{ alert.species_list|default:"all" }}</li>
+                <li class="list-group-item"><b>Areas:</b> {{ alert.areas_list|default:"all" }}</li>
                 <li class="list-group-item"><b>Datasets:</b> {{ alert.datasets_list|default:"all" }}</li>
                 <li class="list-group-item">
                     <b>Email notifications frequency:</b>

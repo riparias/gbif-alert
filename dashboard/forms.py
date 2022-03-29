@@ -16,8 +16,8 @@ class AlertForm(forms.ModelForm):
         model = Alert
         fields: Tuple[str, ...] = (
             "species",
-            "datasets",
             "areas",
+            "datasets",
             "email_notifications_frequency",
         )
 
