@@ -20,17 +20,18 @@
 
         <div class="col d-flex align-items-center">
           <Modal-Multi-Selector
-            class="m-2"
+            class="mx-2"
             button-label-singular="species"
             button-label-plural="species"
             modal-title="Species to include"
+            label-class="fst-italic"
             :entries="availableSpeciesAsEntries"
             :initially-selected-entries-ids="filters.speciesIds"
             @entries-changed="changeSelectedSpecies"
           ></Modal-Multi-Selector>
 
           <Modal-Multi-Selector
-            class="m-2"
+            class="mx-2"
             button-label-singular="dataset"
             button-label-plural="datasets"
             modal-title="Datasets to include"
@@ -40,7 +41,7 @@
           ></Modal-Multi-Selector>
 
           <Modal-Multi-Selector
-            class="m-2"
+            class="mx-2"
             button-label-singular="area"
             button-label-plural="areas"
             no-selection-button-label="Everywhere"
@@ -51,7 +52,7 @@
           ></Modal-Multi-Selector>
 
           <Modal-Multi-Selector
-            class="m-2"
+            class="mx-2"
             button-label-singular="initial data import"
             button-label-plural="initial data imports"
             no-selection-button-label="Imported at all time"

@@ -41,6 +41,7 @@
             />
             <label
               class="form-check-label"
+              :class="labelClass"
               :for="'mms-entry-' + uuid + '-' + entry.id"
             >
               {{ entry.label }}
@@ -71,6 +72,7 @@ export default defineComponent({
     buttonLabelPlural: { type: String, required: true },
     modalTitle: { type: String, required: true },
     noSelectionButtonLabel: { type: String, required: false },
+    labelClass: { type: String, default: "" },
     entries: {
       type: Array as () => SelectionEntry[],
       default: [],
