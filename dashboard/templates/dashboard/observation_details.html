@@ -6,66 +6,83 @@
 {% block after_messages %}
     <div class="container my-3">
         <div class="row">
-            <div class="col">
-                <h2>Observation details</h2>
+            <div class="col-9">
+                <h2>Observation of <i>{{ observation.species.name }}</i> on {{ observation.date }}</h2>
+            </div>
+            <div class="col-3 col-text-end">
                 {% if user.is_superuser %}
-                    <a class="btn btn-sm btn-danger" href="{{ observation.get_admin_url }}">See observation in the admin section</a>
+                    <a class="btn btn-sm btn-danger" href="{{ observation.get_admin_url }}">Show observation in the
+                        admin section</a>
                 {% endif %}
             </div>
-
-            {% if user.is_authenticated and first_seen_by_user_timestamp %}
+        </div>
+        {% if user.is_authenticated and first_seen_by_user_timestamp %}
+            <div class="row">
                 <div class="col">
-                    <small class="text-muted">You have first seen this observation on <span id="observation-view-timestamp">{{ first_seen_by_user_timestamp }}</span></small>
-                    <form method="post" action="{% url "dashboard:actions:mark-observation-as-unseen" %}">
+                    <small class="text-muted">You have first seen this observation on <span
+                            id="observation-view-timestamp">{{ first_seen_by_user_timestamp }}</span></small>
+                    <form class="d-inline-block" method="post" action="{% url "dashboard:actions:mark-observation-as-unseen" %}">
                         {% csrf_token %}
                         <input type="hidden" id="observationId" name="observationId" value="{{ observation.pk }}">
                         <button type="submit" class="btn btn-warning btn-sm">Mark this observation as unseen</button>
                     </form>
                 </div>
-            {% endif %}
-        </div>
-        <div class="row">
-            <div class="col">
-                <ul>
-                    <li><b>GBIF Id: </b><a href="{{ observation.gbif_id|gbif_occurrence_url }}">{{ observation.gbif_id }}</a></li>
-                    <li><b>Species: </b><i>{{ observation.species.name }}</i></li>
-                    <li><b>Individual count: </b>{{ observation.individual_count }}</li>
-                    <li><b>Source dataset: </b>{{ observation.source_dataset.name }}</li>
-                    <li><b>Basis of record: </b>{{ observation.basis_of_record }}</li>
-                    <li><b>Date: </b>{{ observation.date }}</li>
-                    <li><b>Coordinates: </b> {{ observation.lonlat_4326_tuple }}</li>
-                    <li>
-                        <b>Coordinates uncertainty: </b>
-                        {% if observation.coordinate_uncertainty_in_meters %}
-                            {{ observation.coordinate_uncertainty_in_meters|floatformat }} meter{{ observation.coordinate_uncertainty_in_meters|pluralize }}
-                        {% else %}
-                            unknown
-                        {% endif %}
-                    </li>
-                    <li><b>Municipality: </b> {{ observation.municipality }}</li>
-                    <li><b>Locality: </b> {{ observation.locality }}</li>
-                    <li><b>Recorded by: </b> {{ observation.recorded_by }}</li>
-                    <li><b>First imported during: </b> {{ observation.initial_data_import }}</li>
-                </ul>
             </div>
-            <div class="col" id="app">
-                <single-observation-map :height="400" :lat="{{ observation.lat }}" :lon="{{ observation.lon }}"></single-observation-map>
+        {% endif %}
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <dl>
+                    <dt>GBIF Id</dt>
+                    <dd><a href="{{ observation.gbif_id|gbif_occurrence_url }}">{{ observation.gbif_id }}</a></dd>
+
+                    <dt>Species</dt>
+                    <dd><i>{{ observation.species.name }}</i></dd>
+
+                    <dt>Individual count</dt>
+                    <dd>{{ observation.individual_count }}</dd>
+
+                    <dt>Source dataset</dt>
+                    <dd>{{ observation.source_dataset.name }}</dd>
+
+                    <dt>Basis of record:</dt>
+                    <dd>{{ observation.basis_of_record }}</dd>
+
+                    <dt>Date</dt>
+                    <dd>{{ observation.date }}</dd>
+
+                    <dt>Coordinates</dt>
+                    <dd>{{ observation.lonlat_4326_tuple }}</dd>
+
+                    <dt>Coordinates uncertainty</dt>
+                    <dd>{% if observation.coordinate_uncertainty_in_meters %}
+                        {{ observation.coordinate_uncertainty_in_meters|floatformat }} meter
+                        {{ observation.coordinate_uncertainty_in_meters|pluralize }}
+                    {% else %}
+                        unknown
+                    {% endif %}
+                    </dd>
+
+                    <dt>Municipality</dt>
+                    <dd>{{ observation.municipality }}</dd>
+
+                    <dt>Locality</dt>
+                    <dd>{{ observation.locality }}</dd>
+
+                    <dt>Recorded by</dt>
+                    <dd>{{ observation.recorded_by }}</dd>
+
+                    <dt>First imported during</dt>
+                    <dd>{{ observation.initial_data_import }}</dd>
+                </dl>
+            </div>
+            <div class="col-md-6" id="app">
+                <single-observation-map :height="400" :lat="{{ observation.lat }}"
+                                        :lon="{{ observation.lon }}"></single-observation-map>
             </div>
         </div>
         <div class="row">
             <div class="col">
                 <h2>User comments</h2>
-                {% if user.is_authenticated %}
-                    <h3>New comment</h3>
-                    <form method="post">
-                    {% csrf_token %}
-                    {{ new_comment_form|crispy }}
-                    <button type="submit" class="btn btn-primary">Post</button>
-                </form>
-                {% else %}
-                    <p class="alert alert-info"><i class="bi bi-info-circle"></i> Please <a href="{% url 'signin' %}?next={{ request.path }}">sign in</a> to be able to post comments.</p>
-                {% endif %}
-
                 {% for comment in observation.sorted_comments_set.all %}
                     <div class="riparias-observation-comment">
                         <p class="small text-muted">by {{ comment.author.username }} on {{ comment.created_at }}</p>
@@ -75,12 +92,25 @@
                 {% empty %}
                     <p>No comments yet for this observation!</p>
                 {% endfor %}
+
+                {% if user.is_authenticated %}
+                    <h3>New comment</h3>
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ new_comment_form|crispy }}
+                        <button type="submit" class="btn btn-primary">Post</button>
+                    </form>
+                {% else %}
+                    <p class="alert alert-info"><i class="bi bi-info-circle"></i> Please <a
+                            href="{% url 'signin' %}?next={{ request.path }}">sign in</a> to be able to post comments.
+                    </p>
+                {% endif %}
             </div>
         </div>
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function (event) {
+        document.addEventListener("DOMContentLoaded", function () {
             initObservationDetailsPage();
         });
     </script>
