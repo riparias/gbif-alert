@@ -59,7 +59,7 @@ import { defineComponent } from "vue";
 import { scaleLinear, scaleBand } from "d3-scale";
 import { max } from "d3-array";
 import { PreparedHistogramDataEntry } from "../interfaces";
-import { axisBottom, axisLeft, ScaleBand, select } from "d3";
+import { axisBottom, axisLeft, format, ScaleBand, select } from "d3";
 import { DateTime } from "luxon";
 import { Interval } from "luxon";
 import RangeSlider from "./RangeSlider.vue";
@@ -108,8 +108,16 @@ export default defineComponent({
     yaxis: {
       beforeUpdate(el, binding): void {
         const scaleFunction = binding.value.scale;
-        const d3Axis = axisLeft<number>(scaleFunction).ticks(5);
-        d3Axis(select(el as unknown as SVGGElement));
+
+        // Filter out non-integer values
+        const yAxisTicks = scaleFunction
+          .ticks(4)
+          .filter((tick: Number) => Number.isInteger(tick));
+
+        const yAxis = axisLeft<number>(scaleFunction)
+          .tickValues(yAxisTicks)
+          .tickFormat(format("d"));
+        yAxis(select(el as unknown as SVGGElement));
       },
     },
     xaxis: {
