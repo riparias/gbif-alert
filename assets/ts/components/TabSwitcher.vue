@@ -8,7 +8,8 @@
           active: tabName === modelValue,
           'bg-light': tabName === modelValue,
         }"
-        href="#"
+        :href="void 0"
+        role="button"
         @click="$emit('update:modelValue', tabName)"
         >{{ tabName }}
       </a>
