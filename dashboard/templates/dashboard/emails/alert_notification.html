@@ -1,9 +1,5 @@
 <p>You have {{ alert.unseen_observations.count }} unseen observation for the following alert: #{{ alert.pk }}</p>
 
-<p>(show here alert details: list of species, areas, ...)</p>
-
-<p>(show here a preview of the unseen observations?)</p>
-
 <p></p>Don't hesitate to check it out on the <a href="{{ site_base_url }}{% url "dashboard:pages:alert-details" alert_id=alert.pk %}">Alert page</a></p>
 
 <p>
