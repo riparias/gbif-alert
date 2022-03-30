@@ -1,10 +1,10 @@
 <template>
   <div>
-    <div class="row pt-2">
-      <div class="col">
+    <div class="row py-3">
+      <div class="col col-sm-1">
         <label for="mapBaseSelector" class="col-form-label col-form-label-sm"
-          >Base layer</label
-        >
+          >Base layer
+        </label>
       </div>
       <div class="col">
         <select
@@ -17,15 +17,15 @@
           </option>
         </select>
       </div>
-      <div class="col">
+      <div class="col col-sm-2">
         <label for="opacity" class="col-form-label col-form-label-sm"
-          >Data layer opacity</label
-        >
+          >Data layer opacity
+        </label>
       </div>
       <div class="col">
         <input
           type="range"
-          class="custom-range"
+          class="custom-range form-range"
           id="opacity"
           min="0"
           max="1"
