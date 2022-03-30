@@ -31,6 +31,7 @@ mypy = "^0.910"
 django-stubs = "^1.8.0"
 selenium = "^3.141.0"
 webdriver-manager = "^3.4.2"
+types-requests = "^2.27.15"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -5,6 +5,7 @@ from typing import Dict, Optional
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
+
 from django.core.mail import mail_admins
 from django.core.management.base import BaseCommand, CommandParser, CommandError
 from django.db import transaction
@@ -16,6 +17,7 @@ from dwca.rows import CoreRow  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
 from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
+from dashboard.management.commands._helpers import get_dataset_name_from_gbif_api
 from dashboard.models import Species, Observation, DataImport, Dataset
 
 
@@ -134,6 +136,10 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
             row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
         )
         dataset_name = get_string_data(row, field_name=qn("datasetName"))
+        # Ugly hack necessary to circumvent a GBIF bug. See https://github.com/riparias/early-warning-webapp/issues/41
+        if dataset_name == "":
+            dataset_name = get_dataset_name_from_gbif_api(gbif_dataset_key)
+
         dataset, _ = Dataset.objects.get_or_create(
             gbif_dataset_key=gbif_dataset_key,
             defaults={"name": dataset_name},
