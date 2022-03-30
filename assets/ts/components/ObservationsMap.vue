@@ -362,7 +362,10 @@ export default defineComponent({
           this.popup.setPosition(evt.coordinate);
           this.popover = new Popover(this.popup.getElement() as HTMLElement, {
             html: true,
-            content: "<ul>" + clickedFeaturesHtmlList.join("") + "</ul>",
+            content:
+              "<ul class='list-unstyled'>" +
+              clickedFeaturesHtmlList.join("") +
+              "</ul>",
           });
           this.popover.show();
         }
