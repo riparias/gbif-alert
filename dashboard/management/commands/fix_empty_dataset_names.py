@@ -8,7 +8,7 @@
 
 from django.core.management import BaseCommand
 
-from dashboard.management.commands._helpers import get_dataset_name_from_gbif_api
+from .helpers import get_dataset_name_from_gbif_api
 from dashboard.models import Dataset
 
 

@@ -17,7 +17,7 @@ from dwca.rows import CoreRow  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
 from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
-from dashboard.management.commands._helpers import get_dataset_name_from_gbif_api
+from .helpers import get_dataset_name_from_gbif_api
 from dashboard.models import Species, Observation, DataImport, Dataset
 
 
