@@ -80,8 +80,12 @@
                 </dl>
             </div>
             <div class="col-md-6" id="app">
-                <single-observation-map :height="400" :lat="{{ observation.lat }}"
-                                        :lon="{{ observation.lon }}"></single-observation-map>
+                <single-observation-map
+                        :height="400"
+                        :lat="{{ observation.lat }}"
+                        :lon="{{ observation.lon }}"
+                        :coordinates-uncertainty-in-meters="{{ observation.coordinate_uncertainty_in_meters|default_if_none:"undefined" }}">
+                </single-observation-map>
             </div>
         </div>
         <div class="row">

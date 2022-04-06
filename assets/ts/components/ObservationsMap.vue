@@ -29,6 +29,7 @@ import { Geometry } from "ol/geom";
 import BaseLayer from "ol/layer/Base";
 import { baseLayers } from "../map_config";
 import { Popover } from "bootstrap";
+import { StyleFunction } from "ol/style/Style";
 
 interface MapContainerData {
   map: Map | null;
@@ -40,10 +41,6 @@ interface MapContainerData {
   availableBaseLayers: BaseLayerEntry[];
   areasOverlayCollection: Collection<VectorLayer<VectorSource<Geometry>>>;
   popover: Popover | null;
-}
-
-interface OlStyleFunction {
-  (feature: Feature<any> | RenderFeature): Style;
 }
 
 export default defineComponent({
@@ -181,7 +178,7 @@ export default defineComponent({
         this.HexMaxOccCount,
       ]);
     },
-    aggregatedDataLayerStyleFunction: function (): OlStyleFunction {
+    aggregatedDataLayerStyleFunction: function (): StyleFunction {
       let vm = this;
       return function (feature: Feature<any> | RenderFeature): Style {
         const featuresCount = feature.getProperties()["count"];
