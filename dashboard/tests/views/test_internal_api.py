@@ -356,7 +356,7 @@ class InternalApiTests(TestCase):
         response = self.client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
-        # Check that it's sorted by GBIF id
+        # Check that it's sorted by GBIF ID
         self.assertEqual(json_data["results"][0]["gbifId"], "1")
         self.assertEqual(json_data["results"][1]["gbifId"], "2")
         self.assertEqual(json_data["results"][2]["gbifId"], "3")

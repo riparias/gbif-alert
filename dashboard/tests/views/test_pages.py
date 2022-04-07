@@ -431,7 +431,7 @@ class WebPagesTests(TestCase):
         )
         self.assertContains(
             response,
-            "<dt>Coordinates</dt><dd>(5.095129999999999, 50.48940999999999)</dd>",
+            "<dt>Coordinates</dt><dd>5.095129999999999, 50.48940999999999</dd>",
             html=True,
         )
         self.assertContains(
@@ -442,9 +442,6 @@ class WebPagesTests(TestCase):
         )
         self.assertContains(
             response, "<dt>Recorded by</dt><dd>Nicolas Noé</dd>", html=True
-        )
-        self.assertContains(
-            response, "<dt>Coordinates uncertainty</dt><dd>10 meters</dd>", html=True
         )
 
     def test_observation_details_references_formatted(self):
@@ -539,7 +536,10 @@ class WebPagesTests(TestCase):
         )
 
         self.assertContains(
-            response, "<dt>Coordinates uncertainty</dt><dd>unknown</dd>", html=True
+            response,
+            """<dt>Coordinates uncertainty</dt>
+               <dd> unknown<br><small><i class="bi bi-info-circle"></i> represented as a 100m <b>red</b> circle</small></dd>""",
+            html=True,
         )
 
         # case 2: 1 meter => singular value
@@ -553,7 +553,10 @@ class WebPagesTests(TestCase):
         )
 
         self.assertContains(
-            response, "<dt>Coordinates uncertainty</dt><dd>1 meter</dd>", html=True
+            response,
+            """<dt>Coordinates uncertainty</dt>
+               <dd> 1 meter<br><small><i class="bi bi-info-circle"></i> the <b>green circle</b> accurately represents the coordinates uncertainty</small></dd>""",
+            html=True,
         )
 
         # case 2: 3 meters => plural value
@@ -567,7 +570,10 @@ class WebPagesTests(TestCase):
         )
 
         self.assertContains(
-            response, "<dt>Coordinates uncertainty</dt><dd>3 meters</dd>", html=True
+            response,
+            """<dt>Coordinates uncertainty</dt>
+               <dd> 3 meters<br><small><i class="bi bi-info-circle"></i> the <b>green circle</b> accurately represents the coordinates uncertainty</small></dd>""",
+            html=True,
         )
 
         # case 3: 5 meters => do not display ".0" when not necessary
@@ -581,7 +587,10 @@ class WebPagesTests(TestCase):
         )
 
         self.assertContains(
-            response, "<dt>Coordinates uncertainty</dt><dd>5 meters</dd>", html=True
+            response,
+            """<dt>Coordinates uncertainty</dt>
+               <dd> 5 meters<br><small><i class="bi bi-info-circle"></i> the <b>green circle</b> accurately represents the coordinates uncertainty</small></dd>""",
+            html=True,
         )
 
         # case 4: display 1 decimal place when necessary:
@@ -595,7 +604,10 @@ class WebPagesTests(TestCase):
         )
 
         self.assertContains(
-            response, "<dt>Coordinates uncertainty</dt><dd>3.1 meters</dd>", html=True
+            response,
+            """<dt>Coordinates uncertainty</dt>
+               <dd> 3.1 meters<br><small><i class="bi bi-info-circle"></i> the <b>green circle</b> accurately represents the coordinates uncertainty</small></dd>""",
+            html=True,
         )
 
     def test_observation_details_comments_empty(self):

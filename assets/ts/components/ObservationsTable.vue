@@ -169,7 +169,7 @@ export default defineComponent({
         // Beware: the actual data display occurs in ObservationsTablePage component, make sure the header and data shown
         // stay synchronised
         { sortId: null, label: "" },
-        { sortId: "gbif_id", label: "GBIF Id" },
+        { sortId: "gbif_id", label: "GBIF ID" },
         { sortId: null, label: "Lat" },
         { sortId: null, label: "Lon" },
         { sortId: null, label: "Date" },
