@@ -377,12 +377,18 @@ class MVTServerCommonTestsMixin(object):
 
     The following attributes should be present in the "mixing in" classes:
 
-    - mvt_server_example_url
+    - server_url_name
     """
+
+    def _build_valid_tile_url(self):
+        return reverse(
+            self.server_url_name,
+            kwargs={"zoom": 1, "x": 1, "y": 1},
+        )
 
     def test_status_and_content_type(self):
         """The server responds with the correct status code and content-type"""
-        response = self.client.get(self.mvt_server_example_url)
+        response = self.client.get(self._build_valid_tile_url())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.headers["Content-Type"], "application/vnd.mapbox-vector-tile"
@@ -391,7 +397,7 @@ class MVTServerCommonTestsMixin(object):
     def test_zoom_levels(self):
         """Zoom levels 1-20 are supported"""
         for zoom_level in range(1, 21):
-            response = self.client.get(self.mvt_server_example_url)
+            response = self.client.get(self._build_valid_tile_url())
             self.assertEqual(response.status_code, 200)
             mapbox_vector_tile.decode(response.content)
 
@@ -399,10 +405,10 @@ class MVTServerCommonTestsMixin(object):
 class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, TestCase):
     """Tests covering the MVT server (tiles generation) for non-aggregated observations"""
 
-    mvt_server_example_url = reverse(
-        "dashboard:internal-api:maps:mvt-tiles",
-        kwargs={"zoom": 1, "x": 1, "y": 1},
-    )
+    server_url_name = "dashboard:internal-api:maps:mvt-tiles"
+
+    def test_tiles_no_filter(self):
+        pass
 
 
 class MVTServerAggregatedObsTests(
@@ -410,10 +416,7 @@ class MVTServerAggregatedObsTests(
 ):
     """Tests covering the MVT server (tiles generation) for hexagon-aggregated observations"""
 
-    mvt_server_example_url = reverse(
-        "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
-        kwargs={"zoom": 1, "x": 1, "y": 1},
-    )
+    server_url_name = "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated"
 
     def test_tiles_null_filters_ignored(self):
         """Regression test: filters at null in the URL don't create problems, the filter is just ignored.
@@ -421,7 +424,7 @@ class MVTServerAggregatedObsTests(
         Derived from test_basic_data_in_hexagons()
         """
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?startDate=null&endDate=null"
@@ -442,7 +445,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 1: large view over Wallonia
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},  # Large views over Wallonia
         )
         url_with_params = (
@@ -459,7 +462,7 @@ class MVTServerAggregatedObsTests(
         # Case 2: A tile that covers an important part of Wallonia, including Andenne and Braine. Should have a single
         # hexagon (because of the area filtering)
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
         url_with_params = (
@@ -476,7 +479,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 3: A zoomed tile with just Andenne and the close neighborhood, the hex should still be there
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = (
@@ -493,7 +496,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 4: A zoomed time on Lillois, should be empty because of the filtering
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = (
@@ -507,7 +510,7 @@ class MVTServerAggregatedObsTests(
         """Similar to test_tiles_status_filter_case1() but anonymous => filter is ignored"""
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?status=seen"
@@ -525,7 +528,7 @@ class MVTServerAggregatedObsTests(
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         self.client.login(username="frusciante", password="12345")
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?status=all"
@@ -541,7 +544,7 @@ class MVTServerAggregatedObsTests(
         self.client.login(username="frusciante", password="12345")
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?status=seen"
@@ -559,7 +562,7 @@ class MVTServerAggregatedObsTests(
         self.client.login(username="frusciante", password="12345")
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?status=unseen"
@@ -578,7 +581,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 2.1: it still appears when zoomed on Andenne
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = f"{base_url}?status=unseen"
@@ -593,7 +596,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 2.2: there's nothing when zoomed on Lillois
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = f"{base_url}?status=unseen"
@@ -608,7 +611,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
@@ -625,7 +628,7 @@ class MVTServerAggregatedObsTests(
         # Case 2: A tile that covers an important part of Wallonia, including Andenne and Braine. Should have a single
         # polygon this time
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
@@ -640,7 +643,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 3: A zoomed tile with just Andenne and the close neighborhood, the hex should still be there
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
@@ -655,7 +658,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 4: A zoomed time on Lillois, should be empty because of the filtering
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
@@ -666,7 +669,7 @@ class MVTServerAggregatedObsTests(
     def test_tiles_multiple_dataset_filters(self):
         """Explicitely requesting all datasets give the same results than no filtering"""
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?&datasetsIds[]={self.__class__.first_dataset.pk}&datasetsIds[]={self.__class__.second_dataset.pk}"
@@ -686,7 +689,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?&datasetsIds[]={self.__class__.first_dataset.pk}"
@@ -703,7 +706,7 @@ class MVTServerAggregatedObsTests(
         # Case 2: A tile that covers an important part of Wallonia, including Andenne and Braine. Should have a single
         # polygon this time
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
@@ -718,7 +721,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 3: A zoomed tile with just Andenne and the close neighborhood, the hex should still be there
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
@@ -733,7 +736,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 4: A zoomed time on Lillois, should be empty because of the filtering
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
@@ -781,7 +784,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 1: Large-scale view: a single hex over Wallonia
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
@@ -797,7 +800,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 2: A tile that covers an important part of Wallonia, including Andenne and Lillois. Should have two polygons
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
@@ -812,7 +815,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 3: A zoomed tile with just Andenne and the close neighborhood, the hex should still be there
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
@@ -827,7 +830,7 @@ class MVTServerAggregatedObsTests(
 
         # Case 4: A zoomed time on Lillois, we expect the three tetraodon observations
         base_url = reverse(
-            "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+            self.server_url_name,
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
@@ -847,7 +850,7 @@ class MVTServerAggregatedObsTests(
         # https://openlayers.org/en/latest/examples/canvas-tiles.html
         response = self.client.get(
             reverse(
-                "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+                self.server_url_name,
                 kwargs={"zoom": 2, "x": 2, "y": 1},
             )
         )
@@ -870,7 +873,7 @@ class MVTServerAggregatedObsTests(
         # Another very large tile, over Greenland. Should be empty
         response = self.client.get(
             reverse(
-                "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+                self.server_url_name,
                 kwargs={"zoom": 2, "x": 1, "y": 0},
             )
         )
@@ -880,7 +883,7 @@ class MVTServerAggregatedObsTests(
         # A tile that covers an important part of Wallonia, including Andenne and Braine. Should have two polygons
         response = self.client.get(
             reverse(
-                "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+                self.server_url_name,
                 kwargs={"zoom": 8, "x": 131, "y": 86},
             )
         )
@@ -899,7 +902,7 @@ class MVTServerAggregatedObsTests(
         # The tile east of it should be empty
         response = self.client.get(
             reverse(
-                "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+                self.server_url_name,
                 kwargs={"zoom": 8, "x": 132, "y": 86},
             )
         )
@@ -909,7 +912,7 @@ class MVTServerAggregatedObsTests(
         # A tile with just Andenne and the close neighborhood
         response = self.client.get(
             reverse(
-                "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+                self.server_url_name,
                 kwargs={"zoom": 10, "x": 526, "y": 345},
             )
         )
@@ -924,7 +927,7 @@ class MVTServerAggregatedObsTests(
         # The one on the west is empty
         response = self.client.get(
             reverse(
-                "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+                self.server_url_name,
                 kwargs={"zoom": 10, "x": 525, "y": 345},
             )
         )
@@ -934,7 +937,7 @@ class MVTServerAggregatedObsTests(
         # Let's get a very small tile containing the Lillois observations
         response = self.client.get(
             reverse(
-                "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+                self.server_url_name,
                 kwargs={"zoom": 17, "x": 67123, "y": 44083},
             )
         )
@@ -949,7 +952,7 @@ class MVTServerAggregatedObsTests(
         # The next one is empty
         response = self.client.get(
             reverse(
-                "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+                self.server_url_name,
                 kwargs={"zoom": 17, "x": 67124, "y": 44083},
             )
         )
