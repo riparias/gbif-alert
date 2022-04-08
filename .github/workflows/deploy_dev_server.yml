@@ -1,7 +1,7 @@
-name: Deployment on dev server
+name: Automatic deployment of the devel branch on development server
 on:
   push:
-    branches: [ main ]
+    branches: [ devel ]
 jobs:
   deploy:
     runs-on: ubuntu-latest
