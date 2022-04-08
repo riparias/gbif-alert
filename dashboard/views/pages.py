@@ -3,6 +3,7 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import BadRequest
 from django.http import HttpResponseForbidden, HttpRequest
 from django.shortcuts import render, get_object_or_404, redirect
 
@@ -17,7 +18,11 @@ from dashboard.views.helpers import AuthenticatedHttpRequest, extract_dict_reque
 
 
 def index_page(request: HttpRequest):
-    filters_from_url = extract_dict_request(request, "filters")
+    try:
+        filters_from_url = extract_dict_request(request, "filters")
+    except ValueError:
+        #  Common case of malformed input by bots, see https://github.com/riparias/early-warning-webapp/issues/106
+        raise BadRequest("Invalid filter parameters.")
 
     if filters_from_url is not None:
         filters_for_template = filters_from_url

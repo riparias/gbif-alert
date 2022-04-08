@@ -21,6 +21,31 @@ from dashboard.models import (
 )
 
 
+class IndexPageTests(TestCase):
+    """Tests for the home/index page"""
+
+    def test_index_base(self):
+        """There's a Bootstrap-powered page at /"""
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "container")
+        self.assertTemplateUsed(response, "dashboard/index.html")
+
+    def test_index_rejects_malformed_filters_param(self):
+        # See https://github.com/riparias/early-warning-webapp/issues/106 (common issue with bots)
+        response = self.client.get(
+            "/?filters=%7B%27initialDataImportIds%27%3A%2B%5B18%5D%7D"
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_index_accept_well_formed_filters_param(self):
+        # See https://github.com/riparias/early-warning-webapp/issues/106 (common issue with bots)
+        response = self.client.get(
+            "/?filters=%7B%27initialDataImportIds%27%3A+%5B18%5D%7D"
+        )
+        self.assertEqual(response.status_code, 200)
+
+
 class AlertWebPagesTests(TestCase):
     """Alerts-related web page tests"""
 
@@ -386,13 +411,6 @@ class WebPagesTests(TestCase):
             ObservationView.objects.create(
                 observation=cls.second_obs, user=comment_author
             )
-
-    def test_homepage(self):
-        """There's a Bootstrap-powered page at /"""
-        response = self.client.get("/")
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "container")
-        self.assertTemplateUsed(response, "dashboard/index.html")
 
     def test_observation_details_not_found(self):
         response = self.client.get(
