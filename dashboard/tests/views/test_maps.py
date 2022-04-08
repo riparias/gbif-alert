@@ -372,23 +372,50 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
         self.assertEqual(response.json()["max"], 2)
 
 
-class VectorTilesServerTests(MapsTestDataMixin, TestCase):
-    """Tests covering the MVT server (tiles generation)"""
+class MVTServerCommonTestsMixin(object):
+    """Common tests to be mixed in any MVT server test class
 
-    def test_base_mvt_server(self):
-        """There's a tile server returning the appropriate MIME type"""
-        response = self.client.get(
-            reverse(
-                "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
-                kwargs={"zoom": 1, "x": 1, "y": 1},
-            )
-        )
+    The following attributes should be present in the "mixing in" classes:
+
+    - mvt_server_example_url
+    """
+
+    def test_status_and_content_type(self):
+        """The server responds with the correct status code and content-type"""
+        response = self.client.get(self.mvt_server_example_url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.headers["Content-Type"], "application/vnd.mapbox-vector-tile"
         )
 
-    def test_aggregated_tiles_null_filters_ignored(self):
+    def test_zoom_levels(self):
+        """Zoom levels 1-20 are supported"""
+        for zoom_level in range(1, 21):
+            response = self.client.get(self.mvt_server_example_url)
+            self.assertEqual(response.status_code, 200)
+            mapbox_vector_tile.decode(response.content)
+
+
+class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, TestCase):
+    """Tests covering the MVT server (tiles generation) for non-aggregated observations"""
+
+    mvt_server_example_url = reverse(
+        "dashboard:internal-api:maps:mvt-tiles",
+        kwargs={"zoom": 1, "x": 1, "y": 1},
+    )
+
+
+class MVTServerAggregatedObsTests(
+    MapsTestDataMixin, MVTServerCommonTestsMixin, TestCase
+):
+    """Tests covering the MVT server (tiles generation) for hexagon-aggregated observations"""
+
+    mvt_server_example_url = reverse(
+        "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
+        kwargs={"zoom": 1, "x": 1, "y": 1},
+    )
+
+    def test_tiles_null_filters_ignored(self):
         """Regression test: filters at null in the URL don't create problems, the filter is just ignored.
 
         Derived from test_basic_data_in_hexagons()
@@ -409,7 +436,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             the_feature["properties"]["count"], 2
         )  # It has a "count" property with the value 2
 
-    def test_aggregated_tiles_area_filter(self):
+    def test_tiles_area_filter(self):
         # We explore tiles at different zoom levels. In all cases the observation in Lillois should be filtered out by
         # the areaId filtering.
 
@@ -419,7 +446,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             kwargs={"zoom": 2, "x": 2, "y": 1},  # Large views over Wallonia
         )
         url_with_params = (
-            f"{base_url}?areaIds[]={VectorTilesServerTests.public_area_andenne.pk}"
+            f"{base_url}?areaIds[]={self.__class__.public_area_andenne.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -436,7 +463,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
         url_with_params = (
-            f"{base_url}?areaIds[]={VectorTilesServerTests.public_area_andenne.pk}"
+            f"{base_url}?areaIds[]={self.__class__.public_area_andenne.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -453,7 +480,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = (
-            f"{base_url}?areaIds[]={VectorTilesServerTests.public_area_andenne.pk}"
+            f"{base_url}?areaIds[]={self.__class__.public_area_andenne.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -470,13 +497,13 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = (
-            f"{base_url}?areaIds[]={VectorTilesServerTests.public_area_andenne.pk}"
+            f"{base_url}?areaIds[]={self.__class__.public_area_andenne.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
 
-    def test_aggregated_tiles_status_filter_anonymous(self):
+    def test_tiles_status_filter_anonymous(self):
         """Similar to test_tiles_status_filter_case1() but anonymous => filter is ignored"""
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
@@ -492,7 +519,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
         the_feature = decoded_tile["default"]["features"][0]
         self.assertEqual(the_feature["properties"]["count"], 2)
 
-    def test_aggregated_tiles_status_filter_invalid_filter_value(self):
+    def test_tiles_status_filter_invalid_filter_value(self):
         """Similar to test_tiles_status_filter_case1() but with a filter that's not seen | unseen => filter is ignored
         and everything is included"""
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
@@ -510,7 +537,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
         the_feature = decoded_tile["default"]["features"][0]
         self.assertEqual(the_feature["properties"]["count"], 2)
 
-    def test_aggregated_tiles_status_filter_case1(self):
+    def test_tiles_status_filter_case1(self):
         self.client.login(username="frusciante", password="12345")
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
@@ -528,7 +555,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             the_feature["properties"]["count"], 1
         )  # Only one observation this time, due to the filter
 
-    def test_aggregated_tiles_status_filter_case2(self):
+    def test_tiles_status_filter_case2(self):
         self.client.login(username="frusciante", password="12345")
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(
@@ -574,7 +601,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
 
-    def test_aggregated_tiles_species_filter(self):
+    def test_tiles_species_filter(self):
         # We explore tiles at different zoom levels. In all cases the observation in Lillois should be filtered out by
         # the speciesId filtering.
         # Multiple cases where only the observation in Andenne is visible
@@ -584,9 +611,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
-        url_with_params = (
-            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
-        )
+        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -603,9 +628,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
-        url_with_params = (
-            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
-        )
+        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -620,9 +643,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
-        url_with_params = (
-            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
-        )
+        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -637,20 +658,18 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
-        url_with_params = (
-            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
-        )
+        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
 
-    def test_aggregated_tiles_multiple_dataset_filters(self):
+    def test_tiles_multiple_dataset_filters(self):
         """Explicitely requesting all datasets give the same results than no filtering"""
         base_url = reverse(
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
-        url_with_params = f"{base_url}?&datasetsIds[]={VectorTilesServerTests.first_dataset.pk}&datasetsIds[]={VectorTilesServerTests.second_dataset.pk}"
+        url_with_params = f"{base_url}?&datasetsIds[]={self.__class__.first_dataset.pk}&datasetsIds[]={self.__class__.second_dataset.pk}"
         response = self.client.get(url_with_params)
         decoded_tile_explicit_filters = mapbox_vector_tile.decode(response.content)
 
@@ -659,7 +678,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
 
         self.assertEqual(decoded_tile_no_filters, decoded_tile_explicit_filters)
 
-    def test_aggregated_tiles_dataset_filter(self):
+    def test_tiles_dataset_filter(self):
         # Inspired by test_tiles_species_filter
 
         # Multiple cases where only the observation in Andenne is visible
@@ -670,9 +689,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
-        url_with_params = (
-            f"{base_url}?&datasetsIds[]={VectorTilesServerTests.first_dataset.pk}"
-        )
+        url_with_params = f"{base_url}?&datasetsIds[]={self.__class__.first_dataset.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -689,9 +706,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
-        url_with_params = (
-            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
-        )
+        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -706,9 +721,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
-        url_with_params = (
-            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
-        )
+        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -723,14 +736,12 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
-        url_with_params = (
-            f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}"
-        )
+        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
 
-    def test_aggregated_tiles_species_multiple_species_filters(self):
+    def test_tiles_species_multiple_species_filters(self):
         # Test based on test_tiles_species_filter(self), but with two species explicitly requested
 
         # We need first to add a new species and related observations:
@@ -742,9 +753,9 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             occurrence_id="1000",
             species=species_tetraodon,
             date=datetime.date.today(),
-            data_import=VectorTilesServerTests.di,
-            initial_data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.first_dataset,
+            data_import=self.__class__.di,
+            initial_data_import=self.__class__.di,
+            source_dataset=self.__class__.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
         Observation.objects.create(
@@ -752,9 +763,9 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             occurrence_id="1001",
             species=species_tetraodon,
             date=datetime.date.today(),
-            data_import=VectorTilesServerTests.di,
-            initial_data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.first_dataset,
+            data_import=self.__class__.di,
+            initial_data_import=self.__class__.di,
+            source_dataset=self.__class__.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
         Observation.objects.create(
@@ -762,9 +773,9 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             occurrence_id="1002",
             species=species_tetraodon,
             date=datetime.date.today(),
-            data_import=VectorTilesServerTests.di,
-            initial_data_import=VectorTilesServerTests.di,
-            source_dataset=VectorTilesServerTests.first_dataset,
+            data_import=self.__class__.di,
+            initial_data_import=self.__class__.di,
+            source_dataset=self.__class__.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
@@ -773,7 +784,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
-        url_with_params = f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -789,7 +800,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
-        url_with_params = f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(len(decoded_tile["default"]["features"]), 2)
@@ -804,7 +815,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
-        url_with_params = f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -819,7 +830,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
-        url_with_params = f"{base_url}?speciesIds[]={VectorTilesServerTests.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -829,7 +840,7 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
             decoded_tile["default"]["features"][0]["properties"]["count"], 3
         )
 
-    def test_aggregated_tiles_basic_data_in_hexagons(self):
+    def test_tiles_basic_data_in_hexagons(self):
         # Very large view (big part of Europe, Africa and Russia: e expect a single hexagon over Belgium
         #
         # Those tests can be more easily debugged with a "TileDebug" layer in OpenLayers:
@@ -944,15 +955,3 @@ class VectorTilesServerTests(MapsTestDataMixin, TestCase):
         )
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
-
-    def test_zoom_levels(self):
-        """Zoom levels 1-20 are supported"""
-        for zoom_level in range(1, 21):
-            response = self.client.get(
-                reverse(
-                    "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated",
-                    kwargs={"zoom": zoom_level, "x": 1, "y": 1},
-                )
-            )
-            self.assertEqual(response.status_code, 200)
-            mapbox_vector_tile.decode(response.content)
