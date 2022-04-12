@@ -222,6 +222,9 @@ class Observation(models.Model):
     class Meta:
         unique_together = [("gbif_id", "data_import"), ("stable_id", "data_import")]
 
+    def __str__(self):
+        return f"Observation of {self.species} on {self.date} (stable_id: {self.stable_id})"
+
     class OtherIdenticalObservationIsNewer(Exception):
         pass
 

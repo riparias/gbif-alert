@@ -97,3 +97,10 @@ class AlertAdmin(admin.ModelAdmin):
     list_filter = ["user", "email_notifications_frequency"]
 
     actions = [send_alert_notification_email]
+
+
+@admin.register(ObservationComment)
+class ObservationCommentAdmin(admin.ModelAdmin):
+    list_display = ("author", "observation")
+    list_filter = ["author"]
+    pass
