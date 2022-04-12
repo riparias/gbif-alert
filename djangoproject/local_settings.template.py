@@ -34,8 +34,10 @@ EMAIL_HOST_USER = "yyy"
 EMAIL_HOST_PASSWORD = "xxx"
 EMAIL_SUBJECT_PREFIX = "[dev-alert.riparias.be] "
 EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = "info@dev-alert.riparias.be"  # Used for normal messages
-SERVER_EMAIL = "info@dev-alert.riparias.be"  # Used to contact admins for errors, ...
+DEFAULT_FROM_EMAIL = (
+    "LIFE RIPARIAS early alert <info@dev-alert.localhost>"  # Used for normal messages
+)
+SERVER_EMAIL = "LIFE RIPARIAS early alert <info@dev-alert.riparias.be>"  # Used to contact admins for errors, ...
 
 # used to refer to the website in emails! Points to the site root, includes protocol, host, port... No trailing slash.
 SITE_BASE_URL = "http://dev-alert.riparias.be"
