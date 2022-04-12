@@ -407,8 +407,167 @@ class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, Test
 
     server_url_name = "dashboard:internal-api:maps:mvt-tiles"
 
+    def test_tiles_features_type(self):
+        """The server return points"""
+        response = self.client.get(
+            reverse(
+                self.server_url_name,
+                kwargs={"zoom": 2, "x": 2, "y": 1},
+            )
+        )
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        for feature in decoded_tile["default"]["features"]:
+            self.assertEqual(feature["geometry"]["type"], "Point")
+
     def test_tiles_no_filter(self):
-        pass
+        # Case 1: A large view over Wallonia
+        response = self.client.get(
+            reverse(
+                self.server_url_name,
+                kwargs={"zoom": 2, "x": 2, "y": 1},
+            )
+        )
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        # 2 points are present
+        self.assertEqual(len(decoded_tile["default"]["features"]), 2)
+        for feature in decoded_tile["default"]["features"]:
+            self.assertIn(feature["properties"]["gbif_id"], ["1", "2"])
+
+        # Case 2: Zoom to Andenne
+        response = self.client.get(
+            reverse(
+                self.server_url_name,
+                kwargs={"zoom": 10, "x": 526, "y": 345},
+            )
+        )
+
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(len(decoded_tile["default"]["features"]), 1)
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "1"
+        )
+
+    def test_tiles_area_filter(self):
+        # Case 1: A large view over Wallonia
+        base_url = reverse(
+            self.server_url_name,
+            kwargs={"zoom": 2, "x": 2, "y": 1},
+        )
+
+        url_with_params = (
+            f"{base_url}?areaIds[]={self.__class__.public_area_andenne.pk}"
+        )
+
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        # only one point is present because of the area filtering
+        self.assertEqual(len(decoded_tile["default"]["features"]), 1)
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "1"
+        )
+
+        # Case 2: Zoom to Andenne, the point there shouldn't be impacted by the filtering
+        base_url = reverse(
+            self.server_url_name,
+            kwargs={"zoom": 10, "x": 526, "y": 345},
+        )
+        url_with_params = (
+            f"{base_url}?areaIds[]={self.__class__.public_area_andenne.pk}"
+        )
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+
+        self.assertEqual(len(decoded_tile["default"]["features"]), 1)
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "1"
+        )
+
+    def test_tiles_dataset_filter(self):
+        # Case 1: A large view over Wallonia
+        base_url = reverse(
+            self.server_url_name,
+            kwargs={"zoom": 2, "x": 2, "y": 1},
+        )
+
+        url_with_params = f"{base_url}?datasetsIds[]={self.__class__.second_dataset.pk}"
+
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        # only one point is present because of the dataset filtering
+        self.assertEqual(len(decoded_tile["default"]["features"]), 1)
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "2"
+        )
+
+        # Case 2: Zoom to Andenne, there should be no observation because of the filtering
+        base_url = reverse(
+            self.server_url_name,
+            kwargs={"zoom": 10, "x": 526, "y": 345},
+        )
+        url_with_params = f"{base_url}?datasetsIds[]={self.__class__.second_dataset.pk}"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(decoded_tile, {})
+
+        # Case 3: Zoom to Lillois, the obs should be seen again
+        base_url = reverse(
+            self.server_url_name,
+            kwargs={"zoom": 17, "x": 67123, "y": 44083},
+        )
+        url_with_params = f"{base_url}?datasetsIds[]={self.__class__.second_dataset.pk}"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(len(decoded_tile["default"]["features"]), 1)
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "2"
+        )
+
+    def test_tiles_combined_filters(self):
+        # Test a combination of filters per status (seen/unseen) and species
+        self.client.login(username="frusciante", password="12345")
+
+        # Case 1: Large-scale view: a single hex over Wallonia
+        base_url = reverse(
+            self.server_url_name,
+            kwargs={"zoom": 2, "x": 2, "y": 1},
+        )
+
+        # First, all seen observations for the user => only the one in Lillois
+        url_with_params = f"{base_url}?status=seen"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(len(decoded_tile["default"]["features"]), 1)
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "2"
+        )
+
+        # All unseen observations => only the one in Andenne
+        url_with_params = f"{base_url}?status=unseen"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(len(decoded_tile["default"]["features"]), 1)
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "1"
+        )
+
+        # Same, but we add some species filtering that doesn't filter anything out
+        url_with_params = (
+            f"{base_url}?status=unseen&?speciesIds[]={self.__class__.first_species.pk}"
+        )
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(len(decoded_tile["default"]["features"]), 1)
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "1"
+        )
+
+        # Finally, we remove the observation by applying another species filter
+        url_with_params = (
+            f"{base_url}?status=unseen&speciesIds[]={self.__class__.second_species.pk}"
+        )
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(decoded_tile, {})
 
 
 class MVTServerAggregatedObsTests(
@@ -417,6 +576,21 @@ class MVTServerAggregatedObsTests(
     """Tests covering the MVT server (tiles generation) for hexagon-aggregated observations"""
 
     server_url_name = "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated"
+
+    def test_tiles_features_type(self):
+        """The server return 6-sided polygons"""
+        response = self.client.get(
+            reverse(
+                self.server_url_name,
+                kwargs={"zoom": 2, "x": 2, "y": 1},
+            )
+        )
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        for feature in decoded_tile["default"]["features"]:
+            self.assertEqual(feature["geometry"]["type"], "Polygon")
+            self.assertEqual(
+                len(feature["geometry"]["coordinates"][0]), 7
+            )  # 7 coordinates pair = 6 sides
 
     def test_tiles_null_filters_ignored(self):
         """Regression test: filters at null in the URL don't create problems, the filter is just ignored.
