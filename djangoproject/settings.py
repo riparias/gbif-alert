@@ -157,3 +157,13 @@ CORS_ALLOW_METHODS = [
 PAGE_FRAGMENTS_FALLBACK_LANGUAGE = "en"
 
 RQ_SHOW_ADMIN_LINK = True
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_not_maintenance_mode_503": {
+            "()": "maintenance_mode.logging.RequireNotMaintenanceMode503",
+        },
+    },
+}
