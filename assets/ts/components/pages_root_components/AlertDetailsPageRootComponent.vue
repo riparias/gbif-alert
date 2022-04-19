@@ -6,7 +6,7 @@
     class="my-2"
   >
     <i class="bi bi-info-circle"></i>
-    The observations are marked as seen in the background. This might takes a
+    The observations are marked as seen in the background. This might take a
     couple of minutes if there are a lot of observations. Don't hesitate to
     refresh the page.
   </bootstrap-alert>
