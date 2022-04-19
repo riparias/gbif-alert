@@ -1,4 +1,4 @@
-name: Automatic deployment of the devel branch on development server
+name: Automatic deployment - dev
 on:
   push:
     branches: [ devel ]

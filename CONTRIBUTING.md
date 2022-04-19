@@ -24,21 +24,22 @@ Those should be run frequently on the developer's machines, but will also be exe
 We make use of GitHub Actions when possible. They're currently used to:
 
 - Run Django tests and `mypy` on every push
-- Automatically deploy the `main` and `devel` branches to the respective servers when code is pushed (see `Working with 
+- Automatically deploy the `devel` branches to the respective server when code is pushed (see `Working with 
   branches` below) 
 
 ## Working with branches
 
-The `main` branch is automatically deployed to the production server. That means it's crucial to keep it in an "always 
-deployable" state and that code should **never** be committed directly to the `main` branch.
+While deployment in production is currently manually run, it's crucial to keep it in an "always 
+deployable" state and code should **never** be committed directly to the `main` branch.
 
-The currenrt workflow is:
+The current workflow is:
 
 1) New features and bug fixes are implemented in their own specific branches (created from `main`). 
 2) After been checked locally and deemed satisfactory, the new branch is merged to `devel`
 3) `devel` is pushed to GitHub: the updated version can be tested on the development server and shared with stakeholders.
 4) after everything is confirmed ok, the `devel` branch is merged to `main`
-5) `main` is pushed to GitHub: the change is now deployed to production
+5) `main` is pushed to GitHub
+6) code is (currently) manually deployed in production via the `deploy_main.sh` script
 
 For small, non-risky changes, steps 1-3 can be avoided by committing directly to the `devel` branch.
 
