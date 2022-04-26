@@ -148,6 +148,37 @@ class AlertWebPagesTests(TestCase):
         response = self.client.get(page_url)
         self.assertEqual(response.status_code, 200)
 
+    def test_last_email_sent_display_never(self):
+        """The alert details page show the last time the notification email has been sent: never"""
+        self.client.login(username="frusciante", password="12345")
+        page_url = reverse(
+            "dashboard:pages:alert-details",
+            kwargs={"alert_id": self.__class__.alert.id},
+        )
+        response = self.client.get(page_url)
+        self.assertContains(
+            response,
+            '<span class="text-muted small"> -- Last email sent: never</span>',
+            html=True,
+        )
+
+    def test_last_email_sent_display_value(self):
+        """The alert details page show the last time the notification email has been sent"""
+        self.__class__.alert.last_email_sent_on = datetime.datetime(2022, 8, 2)
+        self.__class__.alert.save()
+
+        self.client.login(username="frusciante", password="12345")
+        page_url = reverse(
+            "dashboard:pages:alert-details",
+            kwargs={"alert_id": self.__class__.alert.id},
+        )
+        response = self.client.get(page_url)
+        self.assertContains(
+            response,
+            '<span class="text-muted small"> -- Last email sent:  Aug. 2, 2022, midnight</span>',
+            html=True,
+        )
+
     def test_anonymous_cant_access_alert_details(self):
         """An anonymous user is invited to log in when trying to see an alert details"""
         page_url = reverse(
