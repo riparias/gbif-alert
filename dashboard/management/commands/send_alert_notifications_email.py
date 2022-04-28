@@ -24,9 +24,7 @@ class Command(BaseCommand):
                 if success:
                     self.stdout.write("Mail successfully sent!")
                 else:
-                    self.stdout.write(
-                        "Error sending the email, please consult the logs"
-                    )
+                    self.stdout.write("Error sending the email, please check the logs")
             else:
                 self.stdout.write(
                     "Sending an email is not deemed necessary now for this alert"

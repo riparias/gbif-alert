@@ -593,7 +593,7 @@ class Alert(models.Model):
         )
 
     def email_should_be_sent_now(self) -> bool:
-        """Returns true if a notification email for this alert should be sent (now)
+        """Returns true if a notification email for this alert should be sent at the present time.
 
         Use some margins so emails are sent at a decent frequency if this is called daily.
         """
@@ -616,7 +616,11 @@ class Alert(models.Model):
         return False
 
     def send_notification_email(self) -> bool:
-        """Send the notification e-mail"""
+        """Send the notification e-mail
+
+        No checks are done, it's the responsibility of the caller to use email_should_be_sent_now() before calling this
+        method.
+        """
         msg_html = render_to_string(
             "dashboard/emails/alert_notification.html",
             {"alert": self, "site_base_url": settings.SITE_BASE_URL},
