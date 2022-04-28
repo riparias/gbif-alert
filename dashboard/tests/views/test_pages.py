@@ -265,13 +265,14 @@ class AlertWebPagesTests(TestCase):
             reverse("dashboard:pages:alert-create"),
             {"email_notifications_frequency": "D"},
         )
+        new_alert = Alert.objects.latest("id")
+
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, "/alert/2")
+        self.assertEqual(response.url, f"/alert/{new_alert.pk}")
         self.assertEqual(
             Alert.objects.filter(user=self.__class__.first_user).count(), 2
         )
         # Values check:
-        new_alert = Alert.objects.get(pk=2)
         self.assertEqual(new_alert.user, self.__class__.first_user)
         self.assertEqual(new_alert.email_notifications_frequency, "D")
         self.assertEqual(new_alert.areas.count(), 0)
@@ -291,13 +292,13 @@ class AlertWebPagesTests(TestCase):
                 "areas": self.__class__.public_area_andenne.pk,
             },
         )
+        new_alert = Alert.objects.latest("id")
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, "/alert/3")
+        self.assertEqual(response.url, f"/alert/{new_alert.pk}")
         self.assertEqual(
             Alert.objects.filter(user=self.__class__.first_user).count(), 3
         )
 
-        new_alert = Alert.objects.get(pk=3)
         self.assertEqual(new_alert.user, self.__class__.first_user)
         self.assertEqual(new_alert.email_notifications_frequency, "W")
         self.assertEqual(new_alert.areas.count(), 1)
