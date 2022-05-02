@@ -168,6 +168,7 @@ LOGGING = {
         "mail_admins": {
             "level": "ERROR",
             "class": "django.utils.log.AdminEmailHandler",
+            "filters": ["require_not_maintenance_mode_503"],
             "include_html": True,
         },
     },
