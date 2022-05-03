@@ -25,7 +25,13 @@ DATA_SRID = 3857  # Let's keep everything in Google Mercator to avoid reprojecti
 
 
 class User(AbstractUser):
-    pass
+    @property
+    def has_alerts_with_unseen_observations(self) -> bool:
+        """True if the users has unseen observations in one of their alerts"""
+        for alert in self.alert_set.all():
+            if alert.has_unseen_observations:
+                return True
+        return False
 
 
 WebsiteUser = Union[User, AnonymousUser]
@@ -511,11 +517,13 @@ class Alert(models.Model):
         (MONTHLY_EMAILS, "Monthly"),
     ]
 
-    EMAIL_NOTIFICATION_DELTAS = {  # After how much time should we sent a new email
-        DAILY_EMAILS: datetime.timedelta(hours=22),
-        WEEKLY_EMAILS: datetime.timedelta(days=6, hours=22),
-        MONTHLY_EMAILS: datetime.timedelta(weeks=4),
-    }
+    EMAIL_NOTIFICATION_DELTAS = (
+        {  # After how much time should we be ready to send a new email
+            DAILY_EMAILS: datetime.timedelta(hours=22),
+            WEEKLY_EMAILS: datetime.timedelta(days=6, hours=22),
+            MONTHLY_EMAILS: datetime.timedelta(weeks=4),
+        }
+    )
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     species = models.ManyToManyField(
@@ -592,6 +600,16 @@ class Alert(models.Model):
             user=self.user,
         )
 
+    @property
+    def unseen_observations_count(self) -> int:
+        """The number of unseen observations for this alert"""
+        return self.unseen_observations().count()
+
+    @property
+    def has_unseen_observations(self) -> bool:
+        """True if this alert has unseen observations"""
+        return self.unseen_observations_count > 0
+
     def email_should_be_sent_now(self) -> bool:
         """Returns true if a notification email for this alert should be sent at the present time.
 
@@ -599,7 +617,7 @@ class Alert(models.Model):
         """
         if (
             self.email_notifications_frequency != self.NO_EMAILS
-            and self.unseen_observations().count() > 0
+            and self.unseen_observations_count > 0
         ):
             if (
                 self.last_email_sent_on is None

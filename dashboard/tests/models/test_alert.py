@@ -48,6 +48,63 @@ class AlertTests(TestCase):
 
         # No ObservationView created in setupTestData(): at the beginning of test_* methods, the observation is unseen
 
+    def test_unseen_observations_count_one(self):
+        """There's one unseen observation (same data as test_has_unseen_observations_true())"""
+        alert = Alert.objects.create(
+            user=self.__class__.user, email_notifications_frequency=Alert.DAILY_EMAILS
+        )
+        self.assertEqual(alert.unseen_observations_count, 1)
+
+    def test_unseen_observations_count_zero_case_1(self):
+        # The observation matches the alert, but has already been seen
+        alert = Alert.objects.create(
+            user=self.__class__.user, email_notifications_frequency=Alert.DAILY_EMAILS
+        )
+        ObservationView.objects.create(
+            observation=self.__class__.observation, user=self.__class__.user
+        )
+        self.assertEqual(alert.unseen_observations_count, 0)
+
+    def test_unseen_observations_count_zero_case_2(self):
+        # The observation is unseen, but doesn't match the alert
+        another_species = Species.objects.create(
+            name="Lixus Bardanae", gbif_taxon_key=48435, group="CR"
+        )
+        alert = Alert.objects.create(
+            user=self.__class__.user,
+            email_notifications_frequency=Alert.DAILY_EMAILS,
+        )
+        alert.species.add(another_species)
+        self.assertEqual(alert.unseen_observations_count, 0)
+
+    def test_has_unseen_observations_true(self):
+        alert = Alert.objects.create(
+            user=self.__class__.user, email_notifications_frequency=Alert.DAILY_EMAILS
+        )
+        self.assertTrue(alert.has_unseen_observations)
+
+    def test_has_unseen_observations_false_case_1(self):
+        # The observation matches the alert, but has already been seen
+        alert = Alert.objects.create(
+            user=self.__class__.user, email_notifications_frequency=Alert.DAILY_EMAILS
+        )
+        ObservationView.objects.create(
+            observation=self.__class__.observation, user=self.__class__.user
+        )
+        self.assertFalse(alert.has_unseen_observations)
+
+    def test_has_unseen_observations_false_case_2(self):
+        # The observation is unseen, but doesn't match the alert
+        another_species = Species.objects.create(
+            name="Lixus Bardanae", gbif_taxon_key=48435, group="CR"
+        )
+        alert = Alert.objects.create(
+            user=self.__class__.user,
+            email_notifications_frequency=Alert.DAILY_EMAILS,
+        )
+        alert.species.add(another_species)
+        self.assertFalse(alert.has_unseen_observations)
+
     def test_email_should_be_sent_now_no_notifications(self):
         """When the alert is configured for no emails, it's never a good time for notifications"""
 

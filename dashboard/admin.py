@@ -89,6 +89,7 @@ def send_alert_notification_email(modeladmin, request, queryset):
 class AlertAdmin(admin.ModelAdmin):
     list_display = (
         "user",
+        "unseen_observations_count",
         "species_list",
         "datasets_list",
         "areas_list",

@@ -8,9 +8,11 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto">
                 {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:index' label='Explore all observations' icon_identifier='bi-map' %}
+
                 {% if user.is_authenticated %}
-                    {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:my-alerts' label='My alerts' icon_identifier='bi-exclamation-square' %}
+                    {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:my-alerts' label='My alerts' icon_identifier='bi-exclamation-square' show_dot=user.has_alerts_with_unseen_observations %}
                 {% endif %}
+
                 {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:about-site' label='About this site' icon_identifier='bi-window' %}
                 {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:about-data' label='About the data' icon_identifier='bi-server' %}
             </ul>
@@ -25,7 +27,15 @@
 
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="{% url 'dashboard:pages:profile' %}"><i class="bi bi-person-square"></i> My profile</a></li>
-                            <li><a class="dropdown-item" href="{% url 'dashboard:pages:my-alerts' %}"><i class="bi bi-exclamation-square"></i> My alerts</a></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'dashboard:pages:my-alerts' %}">
+                                    <i class="bi bi-exclamation-square"></i> My alerts
+                                    {% if user.has_alerts_with_unseen_observations %}
+                                        <span class="align-baseline red-dot"></span>
+                                    {% endif %}
+                                </a>
+                            </li>
+
                             <li>
                                 <hr class="dropdown-divider">
                             </li>

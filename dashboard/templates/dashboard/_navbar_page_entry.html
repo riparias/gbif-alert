@@ -8,5 +8,8 @@
             <i class="bi {{ icon_identifier }}"></i>
         {% endif %}
         {{ label }}
+        {% if show_dot %}
+            <span class="align-baseline red-dot"></span>
+        {% endif %}
     </a>
 </li>

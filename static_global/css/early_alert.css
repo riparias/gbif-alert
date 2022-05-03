@@ -16,3 +16,11 @@ footer a {
 footer a:hover {
     color: white;
 }
+
+.red-dot {
+  height: 10px;
+  width: 10px;
+  background-color: rgb(220,53,69);
+  border-radius: 50%;
+  display: inline-block;
+}

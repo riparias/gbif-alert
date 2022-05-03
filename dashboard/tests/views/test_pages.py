@@ -1,5 +1,6 @@
 import datetime
 from unittest import mock
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
@@ -136,6 +137,26 @@ class AlertWebPagesTests(TestCase):
             response,
             self.my_alerts_navbar_snippet,
             html=True,
+        )
+
+    @patch("dashboard.models.User.has_alerts_with_unseen_observations", True)
+    def test_navbar_unseen_observations_in_alerts(self):
+        """If there are unseen observations for some user alerts, a red dot is shown in the navbar"""
+        self.client.login(username="frusciante", password="12345")
+
+        response = self.client.get("/")
+        self.assertContains(
+            response, '<span class="align-baseline red-dot">', html=True
+        )
+
+    @patch("dashboard.models.User.has_alerts_with_unseen_observations", False)
+    def test_navbar_no_unseen_observations_in_alerts(self):
+        """If there are no unseen observations for some user alerts, a red dot is **not** shown in the navbar"""
+        self.client.login(username="frusciante", password="12345")
+
+        response = self.client.get("/")
+        self.assertNotContains(
+            response, '<span class="align-baseline red-dot">', html=True
         )
 
     def test_user_can_access_own_alert_details(self):
