@@ -380,15 +380,15 @@ class MVTServerCommonTestsMixin(object):
     - server_url_name
     """
 
-    def _build_valid_tile_url(self):
+    def _build_valid_tile_url(self, zoom: int) -> str:
         return reverse(
             self.server_url_name,
-            kwargs={"zoom": 1, "x": 1, "y": 1},
+            kwargs={"zoom": zoom, "x": 1, "y": 1},
         )
 
     def test_status_and_content_type(self):
         """The server responds with the correct status code and content-type"""
-        response = self.client.get(self._build_valid_tile_url())
+        response = self.client.get(self._build_valid_tile_url(zoom=1))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.headers["Content-Type"], "application/vnd.mapbox-vector-tile"
@@ -397,7 +397,7 @@ class MVTServerCommonTestsMixin(object):
     def test_zoom_levels(self):
         """Zoom levels 1-20 are supported"""
         for zoom_level in range(1, 21):
-            response = self.client.get(self._build_valid_tile_url())
+            response = self.client.get(self._build_valid_tile_url(zoom=zoom_level))
             self.assertEqual(response.status_code, 200)
             mapbox_vector_tile.decode(response.content)
 
