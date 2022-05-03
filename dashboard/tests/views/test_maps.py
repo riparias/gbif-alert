@@ -383,7 +383,8 @@ class MVTServerCommonTestsMixin(object):
     def _build_valid_tile_url(self, zoom: int) -> str:
         return reverse(
             self.server_url_name,
-            kwargs={"zoom": zoom, "x": 1, "y": 1},
+            # X and Y are at zero so it works at all zoom level (zoom level 0: a single tile for the whole world)
+            kwargs={"zoom": zoom, "x": 0, "y": 0},
         )
 
     def test_status_and_content_type(self):
@@ -395,8 +396,8 @@ class MVTServerCommonTestsMixin(object):
         )
 
     def test_zoom_levels(self):
-        """Zoom levels 1-20 are supported"""
-        for zoom_level in range(1, 21):
+        """Zoom levels 0-21 are supported"""
+        for zoom_level in range(0, 21):
             response = self.client.get(self._build_valid_tile_url(zoom=zoom_level))
             self.assertEqual(response.status_code, 200)
             mapbox_vector_tile.decode(response.content)

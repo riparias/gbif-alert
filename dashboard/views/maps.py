@@ -24,6 +24,7 @@ DB_DATE_EXCHANGE_FORMAT_POSTGRES = "YYYY-MM-DD"  # To be used in SQL queries
 # all zoom levels
 ZOOM_TO_HEX_SIZE_MULTIPLIER = 2
 ZOOM_TO_HEX_SIZE_BASELINE = {
+    0: 640000,
     1: 320000,
     2: 160000,
     3: 80000,
