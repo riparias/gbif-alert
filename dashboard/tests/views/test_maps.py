@@ -380,6 +380,8 @@ class MVTServerCommonTestsMixin(object):
     - server_url_name
     """
 
+    server_url_name = ""  # To be configured in classes that use this mixin
+
     def _build_valid_tile_url(self, zoom: int) -> str:
         return reverse(
             self.server_url_name,
