@@ -52,6 +52,13 @@ def dashboard_url_filtered_by_data_import(data_import: DataImport) -> str:
 @register.simple_tag(takes_context=True)
 def js_config_object(context):
     # When adding stuff here, don't forget to update the corresponding TypeScript interface in assets/ts/interfaces.ts
+    observation_details_url_template = reverse(
+        "dashboard:pages:observation-details", kwargs={"stable_id": 1}
+    ).replace("1", "{stable_id}")
+    observation_details_url_template_with_origin = (
+        f"{observation_details_url_template}?origin={{origin}}"
+    )
+
     conf = {
         "authenticatedUser": context.request.user.is_authenticated,
         "apiEndpoints": {
@@ -76,9 +83,7 @@ def js_config_object(context):
             "tileServerUrlTemplate": _build_mvt_url_template(
                 "dashboard:internal-api:maps:mvt-tiles"
             ),
-            "observationDetailsUrlTemplate": reverse(
-                "dashboard:pages:observation-details", kwargs={"stable_id": 1}
-            ).replace("1", "{stable_id}"),
+            "observationDetailsUrlTemplate": observation_details_url_template_with_origin,
             "areasUrlTemplate": reverse(
                 "dashboard:internal-api:area-geojson", kwargs={"id": 1}
             ).replace("1", "{id}"),

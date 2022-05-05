@@ -16,9 +16,9 @@
                 {% endif %}
             </div>
         </div>
-        {% if user.is_authenticated and first_seen_by_user_timestamp %}
-            <div class="row mb-3">
-                <div class="col">
+        <div class="row mb-3">
+            <div class="col">
+                {% if user.is_authenticated and first_seen_by_user_timestamp %}
                     <small class="text-muted">You have first seen this observation on <span
                             id="observation-view-timestamp">{{ first_seen_by_user_timestamp }}</span></small>
                     <form class="d-inline-block" method="post"
@@ -27,9 +27,14 @@
                         <input type="hidden" id="observationId" name="observationId" value="{{ observation.pk }}">
                         <button type="submit" class="btn btn-warning btn-sm">Mark this observation as unseen</button>
                     </form>
-                </div>
+                {% endif %}
+
+                {% if origin_url %}
+                    <a class="btn btn-secondary btn-sm" href="{{ origin_url }}">Go back to previous page</a>
+                {% endif %}
             </div>
-        {% endif %}
+        </div>
+
         <div class="row mb-3">
             <div class="col-md-6">
                 <dl>
@@ -77,25 +82,26 @@
                         <h5 class="card-title">Location</h5>
                         <p class="card-text">
                             <dt>Coordinates</dt>
-                            <dd>{{ observation.lon }}, {{ observation.lat }}</dd>
+                        <dd>{{ observation.lon }}, {{ observation.lat }}</dd>
 
-                            <dt>Coordinates uncertainty</dt>
-                            <dd>
-                                {% if observation.coordinate_uncertainty_in_meters %}
-                                    {{ observation.coordinate_uncertainty_in_meters|floatformat }}
-                                    meter{{ observation.coordinate_uncertainty_in_meters|pluralize }}<br>
-                                    <small><i class="bi bi-info-circle"></i> the <b>green circle</b> accurately represents the coordinates uncertainty</small>
-                                {% else %}
-                                    unknown<br>
-                                    <small><i class="bi bi-info-circle"></i> represented as a 100m <b>red</b> circle</small>
-                                {% endif %}
-                            </dd>
+                        <dt>Coordinates uncertainty</dt>
+                        <dd>
+                            {% if observation.coordinate_uncertainty_in_meters %}
+                                {{ observation.coordinate_uncertainty_in_meters|floatformat }}
+                                meter{{ observation.coordinate_uncertainty_in_meters|pluralize }}<br>
+                                <small><i class="bi bi-info-circle"></i> the <b>green circle</b> accurately represents
+                                    the coordinates uncertainty</small>
+                            {% else %}
+                                unknown<br>
+                                <small><i class="bi bi-info-circle"></i> represented as a 100m <b>red</b> circle</small>
+                            {% endif %}
+                        </dd>
 
-                            <dt>Municipality</dt>
-                            <dd>{{ observation.municipality|default:"unknown" }}</dd>
+                        <dt>Municipality</dt>
+                        <dd>{{ observation.municipality|default:"unknown" }}</dd>
 
-                            <dt>Locality</dt>
-                            <dd>{{ observation.locality|default:"unknown" }}</dd>
+                        <dt>Locality</dt>
+                        <dd>{{ observation.locality|default:"unknown" }}</dd>
                         </p>
                     </div>
                 </div>

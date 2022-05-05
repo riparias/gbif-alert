@@ -14,7 +14,11 @@ from dashboard.forms import (
     AlertForm,
 )
 from dashboard.models import DataImport, Observation, Alert
-from dashboard.views.helpers import AuthenticatedHttpRequest, extract_dict_request
+from dashboard.views.helpers import (
+    AuthenticatedHttpRequest,
+    extract_dict_request,
+    extract_str_request,
+)
 
 
 def index_page(request: HttpRequest):
@@ -28,8 +32,11 @@ def index_page(request: HttpRequest):
         filters_for_template = filters_from_url
     else:
         filters_for_template = {}
+
     return render(
-        request, "dashboard/index.html", {"initialFilters": filters_for_template}
+        request,
+        "dashboard/index.html",
+        {"initialFilters": filters_for_template},
     )
 
 
@@ -63,6 +70,8 @@ def observation_details_page(request: HttpRequest, stable_id: str):
     else:
         form = NewObservationCommentForm()
 
+    origin_url = extract_str_request(request, "origin")
+
     return render(
         request,
         "dashboard/observation_details.html",
@@ -70,6 +79,7 @@ def observation_details_page(request: HttpRequest, stable_id: str):
             "observation": observation,
             "new_comment_form": form,
             "first_seen_by_user_timestamp": first_seen,
+            "origin_url": origin_url,
         },
     )
 

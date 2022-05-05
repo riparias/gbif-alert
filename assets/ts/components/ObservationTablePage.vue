@@ -54,7 +54,7 @@ export default defineComponent({
           url: this.observationPageUrlTemplate!.replace(
             "{stable_id}",
             occ.stableId
-          ),
+          ).replace("{origin}", window.location.pathname),
           seenByCurrentUser: occ.seenByCurrentUser,
         };
       });
