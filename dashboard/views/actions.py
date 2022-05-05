@@ -6,16 +6,21 @@ from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect
 
 from dashboard.models import Observation, Alert
-from dashboard.views.helpers import AuthenticatedHttpRequest
+from dashboard.views.helpers import AuthenticatedHttpRequest, extract_str_request
 
 
 @login_required
 def mark_observation_as_unseen(request: AuthenticatedHttpRequest):
     if request.method == "POST":
         observation = get_object_or_404(Observation, id=request.POST["observationId"])
+        origin_url = extract_str_request(request, "originUrl")
         success = observation.mark_as_unseen_by(user=request.user)
         if success:
-            return redirect("dashboard:pages:index")
+            if origin_url:
+                destination = origin_url
+            else:
+                destination = "dashboard:pages:index"
+            return redirect(destination)
         else:
             return redirect(observation)  # Error? Stay where we came from
 

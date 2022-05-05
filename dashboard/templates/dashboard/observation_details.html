@@ -25,6 +25,7 @@
                           action="{% url "dashboard:actions:mark-observation-as-unseen" %}">
                         {% csrf_token %}
                         <input type="hidden" id="observationId" name="observationId" value="{{ observation.pk }}">
+                        <input type="hidden" id="originUrl" name="originUrl" value="{{ origin_url }}">
                         <button type="submit" class="btn btn-warning btn-sm">Mark this observation as unseen</button>
                     </form>
                 {% endif %}
