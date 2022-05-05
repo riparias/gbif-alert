@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Point
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.utils import timezone
+from django.test import override_settings
 from selenium import webdriver  # type: ignore
 from selenium.common.exceptions import NoSuchElementException  # type: ignore
 from selenium.webdriver.support.wait import WebDriverWait  # type: ignore
@@ -23,6 +24,9 @@ from dashboard.models import (
 HEADLESS_MODE = True
 
 
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
 class RipariasSeleniumTestsCommon(StaticLiveServerTestCase):
     """Common test data and Selenium-related plumbing"""
 

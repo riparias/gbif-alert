@@ -1,5 +1,5 @@
 import datetime
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from django.contrib.gis.geos import Point
 from django.utils import timezone
@@ -11,6 +11,9 @@ SAMPLE_OCCURRENCE_ID = "BR:IFBL: 00494798"
 EXPECTED_STABLE_ID = "e58dabf7bcc72dc6b3e057859ed89a453eea527d"
 
 
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
 class StableIdentifiersTests(TestCase):
     def setUp(self):
         # Not possible to replace this by setUpTestData because some methods alter the observation => this code should

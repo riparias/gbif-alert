@@ -2,7 +2,7 @@ import datetime
 
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Point, MultiPolygon, Polygon
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 import mapbox_vector_tile
@@ -107,6 +107,9 @@ class MapsTestDataMixin(object):
         ObservationView.objects.create(observation=second_obs, user=cls.user)
 
 
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
 class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
     """Tests covering the min_max_in_hexagon endpoint"""
 
@@ -405,6 +408,9 @@ class MVTServerCommonTestsMixin(object):
             mapbox_vector_tile.decode(response.content)
 
 
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
 class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, TestCase):
     """Tests covering the MVT server (tiles generation) for non-aggregated observations"""
 
@@ -573,6 +579,9 @@ class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, Test
         self.assertEqual(decoded_tile, {})
 
 
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
 class MVTServerAggregatedObsTests(
     MapsTestDataMixin, MVTServerCommonTestsMixin, TestCase
 ):

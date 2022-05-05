@@ -4,7 +4,7 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.contrib.gis.geos import Point, MultiPolygon, Polygon
 from django.utils import timezone, formats
@@ -22,6 +22,9 @@ from dashboard.models import (
 )
 
 
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
 class IndexPageTests(TestCase):
     """Tests for the home/index page"""
 
@@ -47,6 +50,9 @@ class IndexPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
 class AlertWebPagesTests(TestCase):
     """Alerts-related web page tests"""
 
@@ -399,6 +405,9 @@ class AlertWebPagesTests(TestCase):
         self.assertEqual(response.status_code, 403)
 
 
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
 class WebPagesTests(TestCase):
     """Various web page tests  # TODO: split in multiple classes?"""
 

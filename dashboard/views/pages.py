@@ -53,6 +53,7 @@ def observation_details_page(request: HttpRequest, stable_id: str):
     observation = get_object_or_404(Observation, stable_id=stable_id)
     observation.mark_as_seen_by(request.user)
     first_seen = observation.first_seen_at(request.user)
+    origin_url = extract_str_request(request, "origin")
 
     if request.method == "POST":
         if (
@@ -69,8 +70,6 @@ def observation_details_page(request: HttpRequest, stable_id: str):
             form = NewObservationCommentForm()  # Show a new empty one to the user
     else:
         form = NewObservationCommentForm()
-
-    origin_url = extract_str_request(request, "origin")
 
     return render(
         request,

@@ -3,7 +3,7 @@ from unittest import mock
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.contrib.gis.geos import Point, MultiPolygon, Polygon
 from django.utils import timezone
@@ -21,6 +21,9 @@ SEPTEMBER_13_2021 = datetime.datetime.strptime("2021-09-13", "%Y-%m-%d").date()
 OCTOBER_8_2021 = datetime.datetime.strptime("2021-10-08", "%Y-%m-%d").date()
 
 
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
 class InternalApiTests(TestCase):
     @classmethod
     def setUpTestData(cls):

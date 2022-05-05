@@ -1,5 +1,5 @@
 import datetime
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from django.contrib.gis.geos import Point
 from django.utils import timezone
@@ -17,6 +17,9 @@ from dashboard.models import (
 SEPTEMBER_13_2021 = datetime.datetime.strptime("2021-09-13", "%Y-%m-%d").date()
 
 
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
 class AlertTests(TestCase):
     @classmethod
     def setUpTestData(cls):

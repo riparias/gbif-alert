@@ -3,7 +3,7 @@ import datetime
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.gis.geos import Point
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from dashboard.models import (
@@ -19,6 +19,9 @@ SAMPLE_DATASET_KEY = "940821c0-3269-11df-855a-b8a03c50a862"
 SAMPLE_OCCURRENCE_ID = "BR:IFBL: 00494798"
 
 
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
 class ObservationTests(TestCase):
     def setUp(self):
         # Not possible to replace this by setUpTestData because some methods alter the observation => this code should
