@@ -16,7 +16,7 @@ def mark_observation_as_unseen(request: AuthenticatedHttpRequest):
         origin_url = extract_str_request(request, "originUrl")
         success = observation.mark_as_unseen_by(user=request.user)
         if success:
-            if origin_url:
+            if origin_url and origin_url != "None":
                 destination = origin_url
             else:
                 destination = "dashboard:pages:index"
