@@ -161,7 +161,7 @@ export default defineComponent({
       firstPage: 1,
       lastPage: 1,
       totalObservationsCount: null,
-      sortBy: "id",
+      sortBy: "-date",
       observations: [],
 
       cols: [
@@ -172,7 +172,7 @@ export default defineComponent({
         { sortId: "gbif_id", label: "GBIF ID" },
         { sortId: null, label: "Lat" },
         { sortId: null, label: "Lon" },
-        { sortId: null, label: "Date" },
+        { sortId: "-date", label: "Date" },
         { sortId: "species__name", label: "Species" },
         { sortId: "source_dataset__name", label: "Dataset" },
       ],
