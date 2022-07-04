@@ -110,8 +110,13 @@ def gbif_download_url(value):
 
 
 @register.filter
-def gbif_occurrence_url(value):
-    return f"https://www.gbif.org/occurrence/{value}"
+def gbif_occurrence_url(occurrence_id: str) -> str:
+    return f"https://www.gbif.org/occurrence/{occurrence_id}"
+
+
+@register.filter
+def gbif_dataset_url(dataset_key: str) -> str:
+    return f"https://www.gbif.org/dataset/{dataset_key}"
 
 
 def _is_url(s: str) -> bool:

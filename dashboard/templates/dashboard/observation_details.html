@@ -49,7 +49,9 @@
                     <dd>{{ observation.individual_count }}</dd>
 
                     <dt>Source dataset</dt>
-                    <dd>{{ observation.source_dataset.name }}</dd>
+                    <dd>
+                        <a href="{{ observation.source_dataset.gbif_dataset_key|gbif_dataset_url }}">{{ observation.source_dataset.name }}</a>
+                    </dd>
 
                     <dt>Basis of record</dt>
                     <dd>{{ observation.basis_of_record }}</dd>
