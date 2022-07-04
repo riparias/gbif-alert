@@ -499,7 +499,9 @@ class WebPagesTests(TestCase):
         )
         self.assertContains(response, "<dt>Individual count</dt><dd>2</dd>", html=True)
         self.assertContains(
-            response, "<dt>Source dataset</dt><dd>Test dataset</dd>", html=True
+            response,
+            '<dt>Source dataset</dt><dd><a href="https://www.gbif.org/dataset/4fa7b334-ce0d-4e88-aaae-2e0c138d049e">Test dataset</a></dd>',
+            html=True,
         )
         self.assertContains(
             response, "<dt>Basis of record</dt><dd>HUMAN_OBSERVATION</dd>", html=True
