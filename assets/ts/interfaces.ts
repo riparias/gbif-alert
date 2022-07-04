@@ -26,6 +26,7 @@ export interface DashboardFilters {
 export interface SpeciesInformation {
   id: number;
   scientificName: string;
+  vernacularName: string;
   gbifTaxonKey: number;
   groupCode: string;
   categoryCode: string;

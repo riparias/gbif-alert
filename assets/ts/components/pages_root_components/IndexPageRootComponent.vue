@@ -145,7 +145,11 @@ export default defineComponent({
       return this.availableSpecies
         .sort((a, b) => (a.scientificName > b.scientificName ? 1 : -1))
         .map((s) => {
-          return { id: s.id, label: s.scientificName };
+          let label = s.scientificName;
+          if (s.vernacularName !== "") {
+            label = label + " (" + s.vernacularName + ")";
+          }
+          return { id: s.id, label: label };
         });
     },
     availableDatasetsAsEntries: function (): SelectionEntry[] {
