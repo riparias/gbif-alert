@@ -35,7 +35,7 @@ deployable" state and code should **never** be committed directly to the `main` 
 The current workflow is:
 
 1) New features and bug fixes are implemented in their own specific branches (created from `main`). 
-2) After been checked locally and deemed satisfactory, the new branch is merged to `devel`
+2) After being checked locally and deemed satisfactory, the new branch is merged to `devel`
 3) `devel` is pushed to GitHub: the updated version can be tested on the development server and shared with stakeholders.
 4) after everything is confirmed ok, the `devel` branch is merged to `main`
 5) `main` is pushed to GitHub
