@@ -527,6 +527,7 @@ class Alert(models.Model):
         }
     )
 
+    name = models.CharField(max_length=255)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     species = models.ManyToManyField(
         Species,
@@ -558,6 +559,9 @@ class Alert(models.Model):
     )
 
     last_email_sent_on = models.DateTimeField(blank=True, null=True, default=None)
+
+    class Meta:
+        unique_together = [("user", "name")]
 
     def get_absolute_url(self) -> str:
         return reverse("dashboard:pages:alert-details", kwargs={"alert_id": self.id})
@@ -647,10 +651,14 @@ class Alert(models.Model):
         )
 
         msg_plain = html2text.html2text(msg_html)
+        subject = (
+            f"{settings.EMAIL_SUBJECT_PREFIX} {self.unseen_observations().count()} unseen observation(s) for "
+            f'your alert "{self.name}"'
+        )
 
         try:
             send_mail(
-                f"{settings.EMAIL_SUBJECT_PREFIX} {self.unseen_observations().count()} unseen observation(s) for your alert #{self.pk}",
+                subject,
                 msg_plain,
                 settings.SERVER_EMAIL,
                 [self.user.email],

@@ -8,7 +8,7 @@ from dashboard.models import Alert
 
 class Command(BaseCommand):
     def handle_alert(self, alert: Alert):
-        self.stdout.write(f"Handling alert {alert.pk}")
+        self.stdout.write(f"Handling alert {alert.name} (#{alert.pk})")
         self.stdout.write(
             f"Alert details: frequency: {alert.get_email_notifications_frequency_display()} - "
             f"last sent on: {alert.last_email_sent_on}) - "

@@ -151,9 +151,11 @@ class AlertTests(TestCase):
             Alert.WEEKLY_EMAILS,
             Alert.MONTHLY_EMAILS,
         ]
-        for frequency in frequencies_to_be_checked:
+        for i, frequency in enumerate(frequencies_to_be_checked):
             alert = Alert.objects.create(
-                user=self.__class__.user, email_notifications_frequency=frequency
+                name=f"My new test alert #{i}",
+                user=self.__class__.user,
+                email_notifications_frequency=frequency,
             )
             self.assertTrue(alert.email_should_be_sent_now())
 

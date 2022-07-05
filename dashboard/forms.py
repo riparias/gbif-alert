@@ -15,6 +15,7 @@ class AlertForm(forms.ModelForm):
     class Meta:
         model = Alert
         fields: Tuple[str, ...] = (
+            "name",
             "species",
             "areas",
             "datasets",

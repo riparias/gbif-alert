@@ -1,4 +1,4 @@
-<p>You have {{ alert.unseen_observations.count }} unseen observation for the following alert: #{{ alert.pk }}</p>
+<p>You have {{ alert.unseen_observations.count }} unseen observation for the following alert: {{ alert.name }}</p>
 
 <p></p>Don't hesitate to check it out on the <a href="{{ site_base_url }}{% url "dashboard:pages:alert-details" alert_id=alert.pk %}">Alert page</a></p>
 

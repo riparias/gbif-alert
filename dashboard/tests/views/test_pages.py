@@ -277,20 +277,22 @@ class AlertWebPagesTests(TestCase):
     def test_post_new_alert_page(self):
         self.client.login(username="frusciante", password="12345")
 
-        # Attempt 1: post no data: we stay on the same page because there's one field required (email_notifications_frequency)
+        # Attempt 1: post no data: we stay on the same page because there are two field required (name and
+        # email_notifications_frequency)
         response = self.client.post(reverse("dashboard:pages:alert-create"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context["form"].errors), 1)
+        self.assertEqual(len(response.context["form"].errors), 2)
+        self.assertIn("name", response.context["form"].errors)
         self.assertIn("email_notifications_frequency", response.context["form"].errors)
         # No new alert was created in the database
         self.assertEqual(
             Alert.objects.filter(user=self.__class__.first_user).count(), 1
         )
 
-        # Attempt 2: post email_notifications_frequency: the alerts gets created and the user is redirected to the alert details page
+        # Attempt 2: add mandatory fields: the alerts gets created and the user is redirected to the alert details page
         response = self.client.post(
             reverse("dashboard:pages:alert-create"),
-            {"email_notifications_frequency": "D"},
+            {"email_notifications_frequency": "D", "name": "Test alert"},
         )
         new_alert = Alert.objects.latest("id")
 
@@ -310,6 +312,7 @@ class AlertWebPagesTests(TestCase):
         response = self.client.post(
             reverse("dashboard:pages:alert-create"),
             {
+                "name": "Another test alert",
                 "email_notifications_frequency": "W",
                 "species": [
                     self.__class__.first_species.pk,
