@@ -5,13 +5,26 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.core.exceptions import ValidationError
 
-from dashboard.models import ObservationComment, Alert, Area
+from dashboard.models import ObservationComment, Alert, Area, User
+
+
+def get_initial_alert_name(user: User) -> str:
+    """Return a nice name such as "My alert #3", depending on the existing user alerts"""
+    alert_number = 1
+    existing_alert_names = Alert.objects.filter(user=user).values_list(
+        "name", flat=True
+    )
+    while f"My alert #{alert_number}" in existing_alert_names:
+        alert_number += 1
+
+    return f"My alert #{alert_number}"
 
 
 class AlertForm(forms.ModelForm):
     def __init__(self, for_user, *args, **kwargs):
         super(AlertForm, self).__init__(*args, **kwargs)
         self.user = for_user
+        self.fields["name"].initial = get_initial_alert_name(self.user)
         self.fields["areas"].queryset = Area.objects.available_to(user=self.user)
 
     class Meta:
