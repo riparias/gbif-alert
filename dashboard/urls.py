@@ -73,7 +73,7 @@ internal_api_urls = [
         name="filtered-observations-monthly-histogram",
     ),
     path(
-        "maps",
+        "maps/",
         include(
             (maps_api_urls, "maps"),
         ),
@@ -97,7 +97,7 @@ urlpatterns = [
         ),
     ),
     path(
-        "api",
+        "api/",
         include(
             (public_api_urls, "public-api"),
         ),
