@@ -40,6 +40,11 @@ maps_api_urls = [
 
 public_api_urls = [
     path("species", views.species_list_json, name="species-list-json"),
+    path(
+        "species-per-polygon",
+        views.species_per_polygon_json,
+        name="species-per-polygon-json",
+    ),
 ]
 
 internal_api_urls = [
