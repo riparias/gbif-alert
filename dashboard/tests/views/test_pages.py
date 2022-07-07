@@ -329,6 +329,7 @@ class AlertWebPagesTests(TestCase):
             Alert.objects.filter(user=self.__class__.first_user).count(), 3
         )
 
+        self.assertEqual(new_alert.name, "Another test alert")
         self.assertEqual(new_alert.user, self.__class__.first_user)
         self.assertEqual(new_alert.email_notifications_frequency, "W")
         self.assertEqual(new_alert.areas.count(), 1)
@@ -339,6 +340,26 @@ class AlertWebPagesTests(TestCase):
         self.assertIn("Orconectes virilis", new_alert_species_name)
         self.assertEqual(new_alert.datasets.count(), 1)
         self.assertEqual(new_alert.datasets.first().name, "Test dataset")
+
+        # Attempt 4: post an alert with a duplicate name for an existing user: validation fails
+        response = self.client.post(
+            reverse("dashboard:pages:alert-create"),
+            {
+                "name": "Another test alert",
+                "email_notifications_frequency": "W",
+                "species": [
+                    self.__class__.first_species.pk,
+                ],
+                "datasets": self.__class__.first_dataset.pk,
+                "areas": self.__class__.public_area_andenne.pk,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context["form"].errors), 1)
+        self.assertIn(
+            "You already have an alert with this name. Please choose a different name.",
+            response.context["form"].errors["__all__"],
+        )
 
     def test_delete_alert_anonymous(self):
         """An anonymous user cannot delete an alert"""
