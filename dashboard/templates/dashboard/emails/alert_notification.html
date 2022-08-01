@@ -1,6 +1,56 @@
 <p>You have {{ alert.unseen_observations.count }} unseen observation for the following alert: {{ alert.name }}</p>
 
-<p></p>Don't hesitate to check it out on the <a href="{{ site_base_url }}{% url "dashboard:pages:alert-details" alert_id=alert.pk %}">Alert page</a></p>
+<h3>Alert details</h3>
+<ul>
+    <li><b>Alert name:</b> {{ alert.name }}</li>
+    <li><b>Species:</b> {{ alert.species_list|default:"all" }}</li>
+    <li><b>Areas:</b> {{ alert.areas_list|default:"all" }}</li>
+    <li><b>Datasets: </b> {{ alert.datasets_list|default:"all" }}</li>
+    <li><b>Email notifications frequency:</b>{{ alert.get_email_notifications_frequency_display }}</li>
+</ul>
+
+<h3>Unseen observations</h3>
+{# For user familiarity, make sure the structure of this table stay more or less in sync with the table show on the website pages #}
+<table>
+    <thead>
+        <tr>
+            <th>GBIF ID</th>
+            <th>Lat</th>
+            <th>Lon</th>
+            <th>Date</th>
+            <th>Species</th>
+            <th>Dataset</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for observation in alert.unseen_observations_sample %}
+        <tr>
+            <td>
+                <a href="{{ site_base_url }}{% url "dashboard:pages:observation-details" stable_id=observation.stable_id %}">
+                    {{ observation.gbif_id }}
+                </a>
+            </td>
+            <td>{{ observation.lat }}</td>
+            <td>{{ observation.lon }}</td>
+            <td>{{ observation.date }}</td>
+            <td><i>{{ observation.species.name }}</i> ({{ observation.species.varnacular_name }})</td>
+            <td>{{ observation.dataset.name }}</td>
+        </tr>
+        {% endfor %}
+
+        {#  One more row so users understand it's only a sample... #}
+        <tr>
+            <td>...</td>
+            <td>...</td>
+            <td>...</td>
+            <td>...</td>
+            <td>...</td>
+            <td>...</td>
+        </tr>
+    </tbody>
+</table>
+
+<p></p>Don't hesitate to check it out on the <a href="{{ site_base_url }}{% url "dashboard:pages:alert-details" alert_id=alert.pk %}">Alert page</a> for more details</p>
 
 <p>
     Thanks,<br/>

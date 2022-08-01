@@ -168,6 +168,9 @@ export default defineComponent({
         // sortId: must match django QS filter (null = non-sortable), label: what's displayed in header
         // Beware: the actual data display occurs in ObservationsTablePage component, make sure the header and data shown
         // stay synchronised
+        //
+        // If changing/adding fields there, please also consider adding them to the email notifications
+        // (alert_notification.html)
         { sortId: null, label: "" },
         { sortId: "gbif_id", label: "GBIF ID" },
         { sortId: null, label: "Lat" },

@@ -606,6 +606,14 @@ class Alert(models.Model):
             user=self.user,
         )
 
+    def unseen_observations_sample(self) -> QuerySet[Observation]:
+        """For notification emails: show max 10 observations, most recent first"""
+        obs = self.unseen_observations().order_by("-date")
+        if obs.count() > 10:
+            obs = obs[:10]
+
+        return obs
+
     @property
     def unseen_observations_count(self) -> int:
         """The number of unseen observations for this alert"""
