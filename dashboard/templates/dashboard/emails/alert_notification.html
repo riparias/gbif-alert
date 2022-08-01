@@ -1,23 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        table {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
 <p>You have <b>{{ alert.unseen_observations.count }}</b> unseen observation for this alert.</p>
 
 <h3>Sample of unseen observations</h3>
 {# For user familiarity, make sure the structure of this table stay more or less in sync with the table show on the website pages #}
 <table>
     <thead>
-        <tr>
-            <th>GBIF ID</th>
-            <th>Lat</th>
-            <th>Lon</th>
-            <th>Date</th>
-            <th>Species</th>
-            <th>Dataset</th>
-        </tr>
+    <tr>
+        <th>GBIF ID</th>
+        <th>Lat</th>
+        <th>Lon</th>
+        <th>Date</th>
+        <th>Species</th>
+        <th>Dataset</th>
+    </tr>
     </thead>
     <tbody>
-        {% for observation in alert.unseen_observations_sample %}
+    {% for observation in alert.unseen_observations_sample %}
         <tr>
             <td>
-                <a href="{{ site_base_url }}{% url "dashboard:pages:observation-details" stable_id=observation.stable_id %}">
+                <a href="
+
+                        {{ site_base_url }}{% url "dashboard:pages:observation-details" stable_id=observation.stable_id %}">
                     {{ observation.gbif_id }}
                 </a>
             </td>
@@ -27,21 +46,23 @@
             <td><i>{{ observation.species.name }}</i> ({{ observation.species.varnacular_name }})</td>
             <td>{{ observation.source_dataset.name }}</td>
         </tr>
-        {% endfor %}
+    {% endfor %}
 
-        {#  One more row so users understand it's only a sample... #}
-        <tr>
-            <td>...</td>
-            <td>...</td>
-            <td>...</td>
-            <td>...</td>
-            <td>...</td>
-            <td>...</td>
-        </tr>
+    {#  One more row so users understand it's only a sample... #}
+    <tr>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+    </tr>
     </tbody>
 </table>
 
-<p></p>Don't hesitate to check it out on the <a href="{{ site_base_url }}{% url "dashboard:pages:alert-details" alert_id=alert.pk %}">Alert page</a> for more observations and details</p>
+<p></p>Don't hesitate to check it out on the <a
+        href="{{ site_base_url }}{% url "dashboard:pages:alert-details" alert_id=alert.pk %}">Alert page</a> for more
+observations and details</p>
 
 <h3>Alert details</h3>
 <ul>
@@ -57,3 +78,5 @@
     The RIPARIAS early alert team
 </p>
 
+</body>
+</html>
