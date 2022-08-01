@@ -21,7 +21,7 @@
     </style>
 </head>
 <body>
-<p>You have <b>{{ alert.unseen_observations.count }}</b> unseen observation for this alert.</p>
+<p>You have <b>{{ alert.unseen_observations.count }}</b> unseen observation(s) for this alert.</p>
 
 <h3>Sample of unseen observations</h3>
 {# For user familiarity, make sure the structure of this table stay more or less in sync with the table show on the website pages #}
@@ -49,7 +49,7 @@
             <td>{{ observation.lat|floatformat:4 }}</td>
             <td>{{ observation.lon|floatformat:4 }}</td>
             <td>{{ observation.date }}</td>
-            <td><i>{{ observation.species.name }}</i> ({{ observation.species.varnacular_name }})</td>
+            <td>{{ observation.species.display_name_html|safe }}</td>
             <td>{{ observation.source_dataset.name }}</td>
         </tr>
     {% endfor %}

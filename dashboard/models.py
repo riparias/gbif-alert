@@ -55,6 +55,13 @@ class Species(models.Model):
     def __str__(self) -> str:
         return self.name
 
+    def display_name_html(self) -> str:
+        name = f"<i>{self.name}</i>"
+        if self.vernacular_name:
+            name = name + f" ({self.vernacular_name})"
+
+        return name
+
     @property
     def as_dict(self) -> dict[str, Any]:
         return {  # To be consumed on the frontend: we use JS naming conventions
