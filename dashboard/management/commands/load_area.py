@@ -13,6 +13,7 @@ SOURCE_DIRECTORY = os.path.join(THIS_DIR, "../../../source_data/public_areas")
 LAYER_MAPPING_CONFIGURATION = {  # key: filename / value: mapping
     "Riparias_Official_StudyArea.geojson": {"name": "BEKNAAM", "mpoly": "POLYGON"},
     "belgian_regions/belgian_regions.shp": {"name": "NAME_1", "mpoly": "POLYGON"},
+    "belgian_provinces/belgian_provinces.shp": {"name": "NAME_2", "mpoly": "POLYGON"},
 }
 
 
