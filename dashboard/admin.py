@@ -105,4 +105,4 @@ class AlertAdmin(admin.ModelAdmin):
 class ObservationCommentAdmin(admin.ModelAdmin):
     list_display = ("author", "observation")
     list_filter = ["author"]
-    pass
+    raw_id_fields = ("observation",)
