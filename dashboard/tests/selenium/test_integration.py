@@ -11,6 +11,7 @@ from selenium.common.exceptions import NoSuchElementException  # type: ignore
 from selenium.webdriver.support.wait import WebDriverWait  # type: ignore
 from selenium.webdriver.support import expected_conditions as EC  # type: ignore
 from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
+from webdriver_manager.core.utils import ChromeType
 
 from dashboard.models import (
     Species,
@@ -40,7 +41,7 @@ class RipariasSeleniumTestsCommon(StaticLiveServerTestCase):
             options.add_argument("--headless")
         options.add_argument("--window-size=2560,1440")
         cls.selenium = webdriver.Chrome(
-            ChromeDriverManager().install(),
+            ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install(),
             options=options,
         )
         cls.selenium.implicitly_wait(2)
