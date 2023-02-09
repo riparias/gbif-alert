@@ -54,17 +54,17 @@ class AlertTests(TestCase):
     def test_unseen_observations_count_one(self):
         """There's one unseen observation (same data as test_has_unseen_observations_true())"""
         alert = Alert.objects.create(
-            user=self.__class__.user, email_notifications_frequency=Alert.DAILY_EMAILS
+            user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
         )
         self.assertEqual(alert.unseen_observations_count, 1)
 
     def test_unseen_observations_count_zero_case_1(self):
         # The observation matches the alert, but has already been seen
         alert = Alert.objects.create(
-            user=self.__class__.user, email_notifications_frequency=Alert.DAILY_EMAILS
+            user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
         )
         ObservationView.objects.create(
-            observation=self.__class__.observation, user=self.__class__.user
+            observation=self.observation, user=self.user
         )
         self.assertEqual(alert.unseen_observations_count, 0)
 
@@ -74,7 +74,7 @@ class AlertTests(TestCase):
             name="Lixus Bardanae", gbif_taxon_key=48435, group="CR"
         )
         alert = Alert.objects.create(
-            user=self.__class__.user,
+            user=self.user,
             email_notifications_frequency=Alert.DAILY_EMAILS,
         )
         alert.species.add(another_species)
@@ -82,17 +82,17 @@ class AlertTests(TestCase):
 
     def test_has_unseen_observations_true(self):
         alert = Alert.objects.create(
-            user=self.__class__.user, email_notifications_frequency=Alert.DAILY_EMAILS
+            user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
         )
         self.assertTrue(alert.has_unseen_observations)
 
     def test_has_unseen_observations_false_case_1(self):
         # The observation matches the alert, but has already been seen
         alert = Alert.objects.create(
-            user=self.__class__.user, email_notifications_frequency=Alert.DAILY_EMAILS
+            user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
         )
         ObservationView.objects.create(
-            observation=self.__class__.observation, user=self.__class__.user
+            observation=self.observation, user=self.user
         )
         self.assertFalse(alert.has_unseen_observations)
 
@@ -102,7 +102,7 @@ class AlertTests(TestCase):
             name="Lixus Bardanae", gbif_taxon_key=48435, group="CR"
         )
         alert = Alert.objects.create(
-            user=self.__class__.user,
+            user=self.user,
             email_notifications_frequency=Alert.DAILY_EMAILS,
         )
         alert.species.add(another_species)
@@ -112,7 +112,7 @@ class AlertTests(TestCase):
         """When the alert is configured for no emails, it's never a good time for notifications"""
 
         alert = Alert.objects.create(
-            user=self.__class__.user, email_notifications_frequency=Alert.NO_EMAILS
+            user=self.user, email_notifications_frequency=Alert.NO_EMAILS
         )
 
         # Situation:
@@ -127,11 +127,11 @@ class AlertTests(TestCase):
         """When nothing is unseen, it's not a god time for notifications"""
 
         alert = Alert.objects.create(
-            user=self.__class__.user, email_notifications_frequency=Alert.DAILY_EMAILS
+            user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
         )
 
         ObservationView.objects.create(
-            observation=self.__class__.observation, user=self.__class__.user
+            observation=self.observation, user=self.user
         )
 
         # Situation:
@@ -154,14 +154,14 @@ class AlertTests(TestCase):
         for i, frequency in enumerate(frequencies_to_be_checked):
             alert = Alert.objects.create(
                 name=f"My new test alert #{i}",
-                user=self.__class__.user,
+                user=self.user,
                 email_notifications_frequency=frequency,
             )
             self.assertTrue(alert.email_should_be_sent_now())
 
     def test_email_should_be_sent_now_daily_too_early(self):
         alert = Alert.objects.create(
-            user=self.__class__.user,
+            user=self.user,
             email_notifications_frequency=Alert.DAILY_EMAILS,
             last_email_sent_on=timezone.now() - datetime.timedelta(hours=16),
         )
@@ -169,7 +169,7 @@ class AlertTests(TestCase):
 
     def test_email_should_be_sent_now_daily(self):
         alert = Alert.objects.create(
-            user=self.__class__.user,
+            user=self.user,
             email_notifications_frequency=Alert.DAILY_EMAILS,
             last_email_sent_on=timezone.now() - datetime.timedelta(hours=26),
         )
@@ -177,7 +177,7 @@ class AlertTests(TestCase):
 
     def test_email_should_be_sent_now_weekly_too_early(self):
         alert = Alert.objects.create(
-            user=self.__class__.user,
+            user=self.user,
             email_notifications_frequency=Alert.WEEKLY_EMAILS,
             last_email_sent_on=timezone.now() - datetime.timedelta(days=6),
         )
@@ -185,7 +185,7 @@ class AlertTests(TestCase):
 
     def test_email_should_be_sent_now_weekly(self):
         alert = Alert.objects.create(
-            user=self.__class__.user,
+            user=self.user,
             email_notifications_frequency=Alert.WEEKLY_EMAILS,
             last_email_sent_on=timezone.now() - datetime.timedelta(days=8),
         )
@@ -193,7 +193,7 @@ class AlertTests(TestCase):
 
     def test_email_should_be_sent_now_monthly_too_early(self):
         alert = Alert.objects.create(
-            user=self.__class__.user,
+            user=self.user,
             email_notifications_frequency=Alert.MONTHLY_EMAILS,
             last_email_sent_on=timezone.now() - datetime.timedelta(days=25),
         )
@@ -201,7 +201,7 @@ class AlertTests(TestCase):
 
     def test_email_should_be_sent_now_montly(self):
         alert = Alert.objects.create(
-            user=self.__class__.user,
+            user=self.user,
             email_notifications_frequency=Alert.MONTHLY_EMAILS,
             last_email_sent_on=timezone.now() - datetime.timedelta(days=32),
         )
