@@ -11,7 +11,7 @@ from selenium.common.exceptions import NoSuchElementException  # type: ignore
 from selenium.webdriver.support.wait import WebDriverWait  # type: ignore
 from selenium.webdriver.support import expected_conditions as EC  # type: ignore
 from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
-from webdriver_manager.core.utils import ChromeType
+from webdriver_manager.core.utils import ChromeType  # type: ignore
 
 from dashboard.models import (
     Species,
