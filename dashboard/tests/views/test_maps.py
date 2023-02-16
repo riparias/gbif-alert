@@ -130,9 +130,9 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             occurrence_id="3",
             species=Species.objects.all()[0],
             date=datetime.date.today(),
-            data_import=self.__class__.di,
-            initial_data_import=self.__class__.di,
-            source_dataset=self.__class__.first_dataset,
+            data_import=self.di,
+            initial_data_import=self.di,
+            source_dataset=self.first_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
@@ -165,17 +165,17 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
         Observation.objects.create(
             gbif_id=3,
             occurrence_id="3LKDVC",
-            species=self.__class__.second_species,
+            species=self.second_species,
             date=datetime.date.today(),
-            data_import=self.__class__.di,
-            initial_data_import=self.__class__.di,
-            source_dataset=self.__class__.first_dataset,
+            data_import=self.di,
+            initial_data_import=self.di,
+            source_dataset=self.first_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
         response = self.client.get(
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 8, "speciesIds[]": self.__class__.first_species.pk},
+            data={"zoom": 8, "speciesIds[]": self.first_species.pk},
         )
         self.assertEqual(response.json()["min"], 1)
         self.assertEqual(response.json()["max"], 1)
@@ -185,7 +185,7 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
-                "speciesIds[]": [self.__class__.second_species.pk],
+                "speciesIds[]": [self.second_species.pk],
             },
         )
 
@@ -196,17 +196,17 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
         Observation.objects.create(
             gbif_id=4,
             occurrence_id="4",
-            species=self.__class__.second_species,
+            species=self.second_species,
             date=datetime.date.today(),
-            data_import=self.__class__.di,
-            initial_data_import=self.__class__.di,
-            source_dataset=self.__class__.first_dataset,
+            data_import=self.di,
+            initial_data_import=self.di,
+            source_dataset=self.first_dataset,
             location=Point(5.095610, 50.48800, srid=4326),
         )
 
         response = self.client.get(
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 8, "speciesIds[]": self.__class__.second_species.pk},
+            data={"zoom": 8, "speciesIds[]": self.second_species.pk},
         )
 
         self.assertEqual(response.json()["min"], 1)
@@ -217,17 +217,17 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
         Observation.objects.create(
             gbif_id=3,
             occurrence_id="3DSRZER",
-            species=self.__class__.second_species,
+            species=self.second_species,
             date=datetime.date.today(),
-            data_import=self.__class__.di,
-            initial_data_import=self.__class__.di,
-            source_dataset=self.__class__.second_dataset,
+            data_import=self.di,
+            initial_data_import=self.di,
+            source_dataset=self.second_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
         response = self.client.get(
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 8, "datasetsIds[]": self.__class__.first_dataset.pk},
+            data={"zoom": 8, "datasetsIds[]": self.first_dataset.pk},
         )
         self.assertEqual(response.json()["min"], 1)
         self.assertEqual(response.json()["max"], 1)
@@ -237,7 +237,7 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
-                "speciesIds[]": [self.__class__.second_species.pk],
+                "speciesIds[]": [self.second_species.pk],
             },
         )
 
@@ -248,17 +248,17 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
         Observation.objects.create(
             gbif_id=4,
             occurrence_id="4",
-            species=self.__class__.second_species,
+            species=self.second_species,
             date=datetime.date.today(),
-            data_import=self.__class__.di,
-            initial_data_import=self.__class__.di,
-            source_dataset=self.__class__.first_dataset,
+            data_import=self.di,
+            initial_data_import=self.di,
+            source_dataset=self.first_dataset,
             location=Point(5.095610, 50.48800, srid=4326),
         )
 
         response = self.client.get(
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 8, "speciesIds[]": self.__class__.second_species.pk},
+            data={"zoom": 8, "speciesIds[]": self.second_species.pk},
         )
 
         self.assertEqual(response.json()["min"], 1)
@@ -279,11 +279,11 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
         Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
-            species=self.__class__.second_species,
+            species=self.second_species,
             date=datetime.date.today(),
-            data_import=self.__class__.di,
-            initial_data_import=self.__class__.di,
-            source_dataset=self.__class__.second_dataset,
+            data_import=self.di,
+            initial_data_import=self.di,
+            source_dataset=self.second_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
@@ -306,11 +306,11 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
         Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
-            species=self.__class__.second_species,
+            species=self.second_species,
             date=datetime.date.today(),
-            data_import=self.__class__.di,
-            initial_data_import=self.__class__.di,
-            source_dataset=self.__class__.second_dataset,
+            data_import=self.di,
+            initial_data_import=self.di,
+            source_dataset=self.second_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
@@ -330,11 +330,11 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
         Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
-            species=self.__class__.second_species,
+            species=self.second_species,
             date=datetime.date.today(),
-            data_import=self.__class__.di,
-            initial_data_import=self.__class__.di,
-            source_dataset=self.__class__.second_dataset,
+            data_import=self.di,
+            initial_data_import=self.di,
+            source_dataset=self.second_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
@@ -343,7 +343,7 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
-                "areaIds[]": self.__class__.public_area_andenne.pk,
+                "areaIds[]": self.public_area_andenne.pk,
             },
         )
         self.assertEqual(response.json()["min"], 1)
@@ -354,7 +354,7 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
             data={
                 "zoom": 8,
-                "areaIds[]": self.__class__.public_area_lillois.pk,
+                "areaIds[]": self.public_area_lillois.pk,
             },
         )
         self.assertEqual(response.json()["min"], 2)
@@ -366,8 +366,8 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             data={
                 "zoom": 8,
                 "areaIds[]": [
-                    self.__class__.public_area_lillois.pk,
-                    self.__class__.public_area_andenne.pk,
+                    self.public_area_lillois.pk,
+                    self.public_area_andenne.pk,
                 ],
             },
         )
@@ -464,7 +464,7 @@ class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, Test
         )
 
         url_with_params = (
-            f"{base_url}?areaIds[]={self.__class__.public_area_andenne.pk}"
+            f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
         )
 
         response = self.client.get(url_with_params)
@@ -481,7 +481,7 @@ class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, Test
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = (
-            f"{base_url}?areaIds[]={self.__class__.public_area_andenne.pk}"
+            f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -498,7 +498,7 @@ class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, Test
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
 
-        url_with_params = f"{base_url}?datasetsIds[]={self.__class__.second_dataset.pk}"
+        url_with_params = f"{base_url}?datasetsIds[]={self.second_dataset.pk}"
 
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -513,7 +513,7 @@ class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, Test
             self.server_url_name,
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
-        url_with_params = f"{base_url}?datasetsIds[]={self.__class__.second_dataset.pk}"
+        url_with_params = f"{base_url}?datasetsIds[]={self.second_dataset.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
@@ -523,7 +523,7 @@ class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, Test
             self.server_url_name,
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
-        url_with_params = f"{base_url}?datasetsIds[]={self.__class__.second_dataset.pk}"
+        url_with_params = f"{base_url}?datasetsIds[]={self.second_dataset.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(len(decoded_tile["default"]["features"]), 1)
@@ -561,7 +561,7 @@ class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, Test
 
         # Same, but we add some species filtering that doesn't filter anything out
         url_with_params = (
-            f"{base_url}?status=unseen&?speciesIds[]={self.__class__.first_species.pk}"
+            f"{base_url}?status=unseen&?speciesIds[]={self.first_species.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -572,7 +572,7 @@ class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, Test
 
         # Finally, we remove the observation by applying another species filter
         url_with_params = (
-            f"{base_url}?status=unseen&speciesIds[]={self.__class__.second_species.pk}"
+            f"{base_url}?status=unseen&speciesIds[]={self.second_species.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -635,7 +635,7 @@ class MVTServerAggregatedObsTests(
             kwargs={"zoom": 2, "x": 2, "y": 1},  # Large views over Wallonia
         )
         url_with_params = (
-            f"{base_url}?areaIds[]={self.__class__.public_area_andenne.pk}"
+            f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -652,7 +652,7 @@ class MVTServerAggregatedObsTests(
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
         url_with_params = (
-            f"{base_url}?areaIds[]={self.__class__.public_area_andenne.pk}"
+            f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -669,7 +669,7 @@ class MVTServerAggregatedObsTests(
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
         url_with_params = (
-            f"{base_url}?areaIds[]={self.__class__.public_area_andenne.pk}"
+            f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -686,7 +686,7 @@ class MVTServerAggregatedObsTests(
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
         url_with_params = (
-            f"{base_url}?areaIds[]={self.__class__.public_area_andenne.pk}"
+            f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
         )
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -800,7 +800,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
-        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -817,7 +817,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
-        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -832,7 +832,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
-        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -847,7 +847,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
-        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
@@ -858,7 +858,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
-        url_with_params = f"{base_url}?&datasetsIds[]={self.__class__.first_dataset.pk}&datasetsIds[]={self.__class__.second_dataset.pk}"
+        url_with_params = f"{base_url}?&datasetsIds[]={self.first_dataset.pk}&datasetsIds[]={self.second_dataset.pk}"
         response = self.client.get(url_with_params)
         decoded_tile_explicit_filters = mapbox_vector_tile.decode(response.content)
 
@@ -878,7 +878,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
-        url_with_params = f"{base_url}?&datasetsIds[]={self.__class__.first_dataset.pk}"
+        url_with_params = f"{base_url}?&datasetsIds[]={self.first_dataset.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -895,7 +895,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
-        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -910,7 +910,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
-        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -925,7 +925,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
-        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
@@ -942,9 +942,9 @@ class MVTServerAggregatedObsTests(
             occurrence_id="1000",
             species=species_tetraodon,
             date=datetime.date.today(),
-            data_import=self.__class__.di,
-            initial_data_import=self.__class__.di,
-            source_dataset=self.__class__.first_dataset,
+            data_import=self.di,
+            initial_data_import=self.di,
+            source_dataset=self.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
         Observation.objects.create(
@@ -952,9 +952,9 @@ class MVTServerAggregatedObsTests(
             occurrence_id="1001",
             species=species_tetraodon,
             date=datetime.date.today(),
-            data_import=self.__class__.di,
-            initial_data_import=self.__class__.di,
-            source_dataset=self.__class__.first_dataset,
+            data_import=self.di,
+            initial_data_import=self.di,
+            source_dataset=self.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
         Observation.objects.create(
@@ -962,9 +962,9 @@ class MVTServerAggregatedObsTests(
             occurrence_id="1002",
             species=species_tetraodon,
             date=datetime.date.today(),
-            data_import=self.__class__.di,
-            initial_data_import=self.__class__.di,
-            source_dataset=self.__class__.first_dataset,
+            data_import=self.di,
+            initial_data_import=self.di,
+            source_dataset=self.first_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
 
@@ -973,7 +973,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
-        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -989,7 +989,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
-        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(len(decoded_tile["default"]["features"]), 2)
@@ -1004,7 +1004,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
-        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -1019,7 +1019,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
-        url_with_params = f"{base_url}?speciesIds[]={self.__class__.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
+        url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(

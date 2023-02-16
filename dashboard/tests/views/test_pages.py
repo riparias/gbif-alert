@@ -170,7 +170,7 @@ class AlertWebPagesTests(TestCase):
         self.client.login(username="frusciante", password="12345")
         page_url = reverse(
             "dashboard:pages:alert-details",
-            kwargs={"alert_id": self.__class__.alert.id},
+            kwargs={"alert_id": self.alert.id},
         )
         response = self.client.get(page_url)
         self.assertEqual(response.status_code, 200)
@@ -180,7 +180,7 @@ class AlertWebPagesTests(TestCase):
         self.client.login(username="frusciante", password="12345")
         page_url = reverse(
             "dashboard:pages:alert-details",
-            kwargs={"alert_id": self.__class__.alert.id},
+            kwargs={"alert_id": self.alert.id},
         )
         response = self.client.get(page_url)
         self.assertContains(
@@ -191,13 +191,13 @@ class AlertWebPagesTests(TestCase):
 
     def test_last_email_sent_display_value(self):
         """The alert details page show the last time the notification email has been sent"""
-        self.__class__.alert.last_email_sent_on = datetime.datetime(2022, 8, 2)
-        self.__class__.alert.save()
+        self.alert.last_email_sent_on = datetime.datetime(2022, 8, 2)
+        self.alert.save()
 
         self.client.login(username="frusciante", password="12345")
         page_url = reverse(
             "dashboard:pages:alert-details",
-            kwargs={"alert_id": self.__class__.alert.id},
+            kwargs={"alert_id": self.alert.id},
         )
         response = self.client.get(page_url)
         self.assertContains(
@@ -210,7 +210,7 @@ class AlertWebPagesTests(TestCase):
         """An anonymous user is invited to log in when trying to see an alert details"""
         page_url = reverse(
             "dashboard:pages:alert-details",
-            kwargs={"alert_id": self.__class__.alert.id},
+            kwargs={"alert_id": self.alert.id},
         )
         response = self.client.get(page_url)
         self.assertEqual(response.status_code, 302)  # We got redirected to sign in
@@ -220,7 +220,7 @@ class AlertWebPagesTests(TestCase):
         self.client.login(username="other_user", password="12345")
         page_url = reverse(
             "dashboard:pages:alert-details",
-            kwargs={"alert_id": self.__class__.alert.id},
+            kwargs={"alert_id": self.alert.id},
         )
         response = self.client.get(page_url)
         self.assertEqual(response.status_code, 403)
@@ -286,7 +286,7 @@ class AlertWebPagesTests(TestCase):
         self.assertIn("email_notifications_frequency", response.context["form"].errors)
         # No new alert was created in the database
         self.assertEqual(
-            Alert.objects.filter(user=self.__class__.first_user).count(), 1
+            Alert.objects.filter(user=self.first_user).count(), 1
         )
 
         # Attempt 2: add mandatory fields: the alerts gets created and the user is redirected to the alert details page
@@ -299,10 +299,10 @@ class AlertWebPagesTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, f"/alert/{new_alert.pk}")
         self.assertEqual(
-            Alert.objects.filter(user=self.__class__.first_user).count(), 2
+            Alert.objects.filter(user=self.first_user).count(), 2
         )
         # Values check:
-        self.assertEqual(new_alert.user, self.__class__.first_user)
+        self.assertEqual(new_alert.user, self.first_user)
         self.assertEqual(new_alert.email_notifications_frequency, "D")
         self.assertEqual(new_alert.areas.count(), 0)
         self.assertEqual(new_alert.species.count(), 0)
@@ -315,22 +315,22 @@ class AlertWebPagesTests(TestCase):
                 "name": "Another test alert",
                 "email_notifications_frequency": "W",
                 "species": [
-                    self.__class__.first_species.pk,
-                    self.__class__.second_species.pk,
+                    self.first_species.pk,
+                    self.second_species.pk,
                 ],
-                "datasets": self.__class__.first_dataset.pk,
-                "areas": self.__class__.public_area_andenne.pk,
+                "datasets": self.first_dataset.pk,
+                "areas": self.public_area_andenne.pk,
             },
         )
         new_alert = Alert.objects.latest("id")
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, f"/alert/{new_alert.pk}")
         self.assertEqual(
-            Alert.objects.filter(user=self.__class__.first_user).count(), 3
+            Alert.objects.filter(user=self.first_user).count(), 3
         )
 
         self.assertEqual(new_alert.name, "Another test alert")
-        self.assertEqual(new_alert.user, self.__class__.first_user)
+        self.assertEqual(new_alert.user, self.first_user)
         self.assertEqual(new_alert.email_notifications_frequency, "W")
         self.assertEqual(new_alert.areas.count(), 1)
         self.assertEqual(new_alert.areas.first().name, "Public polygon - Andenne")
@@ -348,10 +348,10 @@ class AlertWebPagesTests(TestCase):
                 "name": "Another test alert",
                 "email_notifications_frequency": "W",
                 "species": [
-                    self.__class__.first_species.pk,
+                    self.first_species.pk,
                 ],
-                "datasets": self.__class__.first_dataset.pk,
-                "areas": self.__class__.public_area_andenne.pk,
+                "datasets": self.first_dataset.pk,
+                "areas": self.public_area_andenne.pk,
             },
         )
         self.assertEqual(response.status_code, 200)
@@ -365,7 +365,7 @@ class AlertWebPagesTests(TestCase):
         """An anonymous user cannot delete an alert"""
         response = self.client.post(
             reverse("dashboard:actions:delete-alert"),
-            {"alert_id": self.__class__.alert.pk},
+            {"alert_id": self.alert.pk},
         )
         self.assertEqual(response.status_code, 302)  # We got redirected to sign in
         self.assertEqual(response.url, "/accounts/signin/?next=/actions/delete_alert")
@@ -376,16 +376,16 @@ class AlertWebPagesTests(TestCase):
 
         # Situation before: there's an alert for this user
         self.assertEqual(
-            Alert.objects.filter(user=self.__class__.first_user).count(), 1
+            Alert.objects.filter(user=self.first_user).count(), 1
         )
 
         response = self.client.post(
             reverse("dashboard:actions:delete-alert"),
-            {"alert_id": self.__class__.alert.pk},
+            {"alert_id": self.alert.pk},
         )
         # No more alerts for this user
         self.assertEqual(
-            Alert.objects.filter(user=self.__class__.first_user).count(), 0
+            Alert.objects.filter(user=self.first_user).count(), 0
         )
 
         # The user gets redirected to the "my alerts" page
@@ -398,7 +398,7 @@ class AlertWebPagesTests(TestCase):
 
         # Situation before: there's an alert for this user
         self.assertEqual(
-            Alert.objects.filter(user=self.__class__.first_user).count(), 1
+            Alert.objects.filter(user=self.first_user).count(), 1
         )
 
         response = self.client.post(
@@ -407,7 +407,7 @@ class AlertWebPagesTests(TestCase):
         )
         # The user alert has been untouched
         self.assertEqual(
-            Alert.objects.filter(user=self.__class__.first_user).count(), 1
+            Alert.objects.filter(user=self.first_user).count(), 1
         )
 
         self.assertEqual(response.status_code, 404)
@@ -421,7 +421,7 @@ class AlertWebPagesTests(TestCase):
 
         response = self.client.post(
             reverse("dashboard:actions:delete-alert"),
-            {"alert_id": self.__class__.alert.pk},
+            {"alert_id": self.alert.pk},
         )
         # Alerts are unchanged in the database
         self.assertEqual(Alert.objects.all().count(), 1)
@@ -505,7 +505,7 @@ class WebPagesTests(TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_observation_details_base(self):
-        obs_stable_id = self.__class__.first_obs.stable_id
+        obs_stable_id = self.first_obs.stable_id
 
         page_url = reverse(
             "dashboard:pages:observation-details",
@@ -532,7 +532,7 @@ class WebPagesTests(TestCase):
         )
         self.assertContains(
             response,
-            f"<dt>Date</dt><dd>{formats.date_format(self.__class__.first_obs.date, 'DATE_FORMAT')}</dd>",
+            f"<dt>Date</dt><dd>{formats.date_format(self.first_obs.date, 'DATE_FORMAT')}</dd>",
             html=True,
         )
         self.assertContains(
@@ -584,7 +584,7 @@ class WebPagesTests(TestCase):
         response = self.client.get(
             reverse(
                 "dashboard:pages:observation-details",
-                kwargs={"stable_id": self.__class__.first_obs.stable_id},
+                kwargs={"stable_id": self.first_obs.stable_id},
             )
         )
 
@@ -598,7 +598,7 @@ class WebPagesTests(TestCase):
         response = self.client.get(
             reverse(
                 "dashboard:pages:observation-details",
-                kwargs={"stable_id": self.__class__.second_obs.stable_id},
+                kwargs={"stable_id": self.second_obs.stable_id},
             )
         )
 
@@ -721,7 +721,7 @@ class WebPagesTests(TestCase):
         response = self.client.get(
             reverse(
                 "dashboard:pages:observation-details",
-                kwargs={"stable_id": self.__class__.first_obs.stable_id},
+                kwargs={"stable_id": self.first_obs.stable_id},
             )
         )
 
@@ -732,7 +732,7 @@ class WebPagesTests(TestCase):
         response = self.client.get(
             reverse(
                 "dashboard:pages:observation-details",
-                kwargs={"stable_id": self.__class__.second_obs.stable_id},
+                kwargs={"stable_id": self.second_obs.stable_id},
             )
         )
 
@@ -745,7 +745,7 @@ class WebPagesTests(TestCase):
         response = self.client.get(
             reverse(
                 "dashboard:pages:observation-details",
-                kwargs={"stable_id": self.__class__.second_obs.stable_id},
+                kwargs={"stable_id": self.second_obs.stable_id},
             )
         )
         self.assertIn(
@@ -754,7 +754,7 @@ class WebPagesTests(TestCase):
 
     def test_observation_details_attempt_to_post_comment_not_logged(self):
         """We attempt to post a comment without being authenticated, that doesn't work"""
-        observation = self.__class__.second_obs
+        observation = self.second_obs
 
         number_comments_before = ObservationComment.objects.filter(
             observation=observation
@@ -777,7 +777,7 @@ class WebPagesTests(TestCase):
 
     def test_observation_details_attempt_to_post_comment_logged(self):
         """We attempt to post a comment (authenticated this time), that should work"""
-        observation = self.__class__.second_obs
+        observation = self.second_obs
 
         number_comments_before = ObservationComment.objects.filter(
             observation=observation
@@ -809,7 +809,7 @@ class WebPagesTests(TestCase):
 
     def test_observation_details_observation_view_anonymous(self):
         """Visiting the observation details page anonymously: no 'first seen' timestamp, nor button to mark as not seen"""
-        obs_stable_id = self.__class__.first_obs.stable_id
+        obs_stable_id = self.first_obs.stable_id
 
         page_url = reverse(
             "dashboard:pages:observation-details",
@@ -826,7 +826,7 @@ class WebPagesTests(TestCase):
         In this case, this is the first time we see the observation, so the timestamp is very recent
         """
         self.client.login(username="frusciante", password="12345")
-        obs_stable_id = self.__class__.first_obs.stable_id
+        obs_stable_id = self.first_obs.stable_id
 
         page_url = reverse(
             "dashboard:pages:observation-details",
@@ -845,7 +845,7 @@ class WebPagesTests(TestCase):
         In this case, the user show a previously seen observation: timestamp is older
         """
         self.client.login(username="frusciante", password="12345")
-        obs_stable_id = self.__class__.second_obs.stable_id
+        obs_stable_id = self.second_obs.stable_id
 
         page_url = reverse(
             "dashboard:pages:observation-details",

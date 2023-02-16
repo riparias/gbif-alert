@@ -53,25 +53,25 @@ class UserTests(TestCase):
 
     def test_has_alerts_with_unseen_observations_false_no_alerts(self):
         """The user has no alerts, so this should be false"""
-        self.assertFalse(self.__class__.jason.has_alerts_with_unseen_observations)
+        self.assertFalse(self.jason.has_alerts_with_unseen_observations)
 
     def test_has_alerts_with_unseen_observations_true(self):
         """The user has an alert with an unseen observation"""
         Alert.objects.create(
-            user=self.__class__.jason, email_notifications_frequency=Alert.DAILY_EMAILS
+            user=self.jason, email_notifications_frequency=Alert.DAILY_EMAILS
         )
-        self.assertTrue(self.__class__.jason.has_alerts_with_unseen_observations)
+        self.assertTrue(self.jason.has_alerts_with_unseen_observations)
 
     def test_has_alerts_with_unseen_observations_false_already_seen(self):
         """The user has an alert, but all the observations have already been seen"""
         Alert.objects.create(
-            user=self.__class__.jason, email_notifications_frequency=Alert.DAILY_EMAILS
+            user=self.jason, email_notifications_frequency=Alert.DAILY_EMAILS
         )
         ObservationView.objects.create(
-            observation=self.__class__.observation, user=self.__class__.jason
+            observation=self.observation, user=self.jason
         )
 
-        self.assertFalse(self.__class__.jason.has_alerts_with_unseen_observations)
+        self.assertFalse(self.jason.has_alerts_with_unseen_observations)
 
     def test_has_alert_with_unseen_observations_false_no_match(self):
         """The user has one unseen observation, but it doesn't match the alert"""
@@ -79,8 +79,8 @@ class UserTests(TestCase):
             name="Lixus Bardanae", gbif_taxon_key=48435, group="CR"
         )
         alert = Alert.objects.create(
-            user=self.__class__.jason, email_notifications_frequency=Alert.DAILY_EMAILS
+            user=self.jason, email_notifications_frequency=Alert.DAILY_EMAILS
         )
         alert.species.add(another_species)
 
-        self.assertFalse(self.__class__.jason.has_alerts_with_unseen_observations)
+        self.assertFalse(self.jason.has_alerts_with_unseen_observations)
