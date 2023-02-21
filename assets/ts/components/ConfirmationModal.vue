@@ -15,6 +15,7 @@
         </div>
         <div class="modal-footer">
           <button
+            id="modal-button-yes"
             type="button"
             class="btn btn-danger"
             @click="$emit('click-yes')"
@@ -22,6 +23,7 @@
             Yes, I'm sure
           </button>
           <button
+            id="modal-button-no"
             type="button"
             class="btn btn-secondary"
             @click="$emit('click-no')"

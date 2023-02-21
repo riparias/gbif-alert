@@ -1,5 +1,5 @@
 <template>
-  <button :class="$attrs.class" @click="confirmationModalOpen = true">
+  <button :id="buttonId" :class="$attrs.class" @click="confirmationModalOpen = true">
     {{ buttonLabel }}
   </button>
 
@@ -22,6 +22,10 @@ export default defineComponent({
   components: {ConfirmationModal},
   props: {
     buttonLabel: {
+      type: String,
+      required: true,
+    },
+    buttonId: {
       type: String,
       required: true,
     },

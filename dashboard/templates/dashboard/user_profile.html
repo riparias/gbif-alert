@@ -20,7 +20,7 @@
         <div class="row">
             <div class="col">
                 <div id="app">
-                    <delete-account-button form-action="{% url "dashboard:actions:delete-own-account" %}">
+                    <delete-account-button button-id="riparias-profile-delete-account-button"  form-action="{% url "dashboard:actions:delete-own-account" %}">
                         {% csrf_token %}
                     </delete-account-button>
                 </div>
