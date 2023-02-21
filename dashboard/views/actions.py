@@ -35,3 +35,11 @@ def delete_alert(request: AuthenticatedHttpRequest):
             return redirect("dashboard:pages:my-alerts")
         else:
             return HttpResponseForbidden()
+
+
+@login_required
+def delete_own_account(request: AuthenticatedHttpRequest):
+    if request.method == "POST":
+        request.user.delete()
+        messages.success(request, "Your account has been deleted.")
+        return redirect("dashboard:pages:index")

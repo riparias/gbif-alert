@@ -1,0 +1,25 @@
+{% with deleted=comment.emptied_because_author_deleted_account %}
+    <div class="riparias-observation-comment">
+        <p class="small text-muted">
+            by
+            <em>
+                {% if not deleted %}
+                    {{ comment.author.username }}
+                {% else %}
+                    [deleted user]
+                {% endif %}
+            </em>
+
+            on {{ comment.created_at }}
+        </p>
+
+        <p>
+            {% if not deleted %}
+                {{ comment.text }}
+            {% else %}
+                <em>[deleted comment]</em>
+            {% endif %}
+        </p>
+        <hr>
+    </div>
+{% endwith %}

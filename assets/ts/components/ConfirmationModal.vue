@@ -8,10 +8,10 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Are you sure?</h5>
+          <h5 class="modal-title">{{ confirmationMessageTitle }}</h5>
         </div>
         <div class="modal-body">
-          <p>This operation can't be undone!</p>
+          <p>{{ confirmationMessageBody }}</p>
         </div>
         <div class="modal-footer">
           <button
@@ -44,6 +44,14 @@ export default defineComponent({
     modalOpen: {
       type: Boolean,
       default: false,
+    },
+    confirmationMessageTitle: {
+      type: String,
+      default: "Are you sure?",
+    },
+    confirmationMessageBody: {
+      type: String,
+      default: "This operation can't be undone!",
     },
   },
   emits: ["click-yes", "click-no"],
