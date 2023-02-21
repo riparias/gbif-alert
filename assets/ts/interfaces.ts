@@ -4,9 +4,6 @@ import Stamen from "ol/source/Stamen";
 import OSM from "ol/source/OSM";
 import { XYZ } from "ol/source";
 import { DateTime } from "luxon";
-import { Feature } from "ol";
-import RenderFeature from "ol/render/Feature";
-import { Style } from "ol/style";
 
 export interface SelectionEntry {
   id: string | number;

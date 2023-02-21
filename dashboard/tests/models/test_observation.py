@@ -83,7 +83,7 @@ class ObservationTests(TestCase):
         )
 
     def test_as_dict_observation_seen_anonymous(self):
-        """The as_dict() method does not contains observation_view data for anonymous users"""
+        """The as_dict() method does not contain observation_view data for anonymous users"""
         with self.assertRaises(KeyError):
             self.obs.as_dict(for_user=AnonymousUser())["seenByCurrentUser"]
 

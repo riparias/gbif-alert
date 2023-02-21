@@ -9,17 +9,17 @@ class PageFragmentAdmin(MarkdownxModelAdmin):
     list_display = ("identifier", "get_summary_nl", "get_summary_en", "get_summary_fr")
 
     @staticmethod
-    def summarize_str(str):
-        return (str[:75] + "...") if len(str) > 75 else str
+    def summarize_str(string: str) -> str:
+        return (string[:75] + "...") if len(string) > 75 else string
 
     @admin.action(description="Content NL")
-    def get_summary_nl(self, obj):
+    def get_summary_nl(self, obj) -> str:
         return self.summarize_str(obj.content_nl)
 
     @admin.action(description="Content EN")
-    def get_summary_en(self, obj):
+    def get_summary_en(self, obj) -> str:
         return self.summarize_str(obj.content_en)
 
     @admin.action(description="Content FR")
-    def get_summary_fr(self, obj):
+    def get_summary_fr(self, obj) -> str:
         return self.summarize_str(obj.content_fr)

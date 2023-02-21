@@ -80,7 +80,7 @@ class AreaAdmin(admin.OSMGeoAdmin):
 # - the alert is configured for no email notifications
 # - a notification e-mail has already been sent recently
 @admin.action(description="Send e-mail notifications now for selected alerts")  # type: ignore
-def send_alert_notification_email(modeladmin, request, queryset):
+def send_alert_notification_email(_modeladmin, _request, queryset):
     for alert in queryset:
         alert.send_notification_email()
 

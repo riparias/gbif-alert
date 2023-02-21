@@ -203,12 +203,6 @@ export default defineComponent({
     startDate(): DateTime {
       return this.endDate.minus({ month: this.numberOfMonths });
     },
-    startMonth(): string {
-      return this.xScaleDomain[0];
-    },
-    endMonth(): string {
-      return this.xScaleDomain[this.xScaleDomain.length - 1];
-    },
     xScaleDomain(): string[] {
       function* months(interval: Interval) {
         let cursor = interval.start.startOf("month");
