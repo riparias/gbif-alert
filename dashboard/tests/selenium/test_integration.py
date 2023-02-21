@@ -589,7 +589,7 @@ class RipariasSeleniumTests(RipariasSeleniumTestsCommon):
         logged_as_peterpan.click()
         signout_link = self.selenium.find_element_by_link_text("Sign out")
 
-        # We can click the sign out link
+        # We can click the sign-out link
         signout_link.click()
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Home"))
@@ -598,7 +598,7 @@ class RipariasSeleniumTests(RipariasSeleniumTestsCommon):
         # There's a "sign in" link again
         signin_link = navbar.find_element_by_link_text("Sign in")
 
-        # We can follow it to the sign in page
+        # We can follow it to the sign-in page
         signin_link.click()
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
@@ -753,3 +753,99 @@ class RipariasSeleniumTests(RipariasSeleniumTestsCommon):
         # In this test we check that feature works as expected
         # TODO: implement
         pass
+
+    def test_delete_account_scenario(self):
+        """A user wants to delete his account, and need to confirm the action"""
+        self.selenium.get(self.live_server_url)
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        signin_link = navbar.find_element_by_link_text("Sign in")
+
+        # We can follow it to the sign in page
+        signin_link.click()
+        wait = WebDriverWait(self.selenium, 3)
+        wait.until(EC.title_contains("Sign in"))
+
+        # And successfully sign in
+        username_field = self.selenium.find_element_by_id("id_username")
+        password_field = self.selenium.find_element_by_id("id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("testuser")
+        password_field.send_keys("12345")
+        signin_button = self.selenium.find_element_by_id("riparias-signin-button")
+        signin_button.click()
+        wait = WebDriverWait(self.selenium, 3)
+
+        # Now, we should be redirected to the home page, and see the username in the navbar
+        wait.until(EC.title_contains("Home"))
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        menu = navbar.find_element_by_link_text("testuser")
+        menu.click()
+
+        # We can navigate to the "profile" page
+        my_profile = navbar.find_element_by_link_text("My profile")
+        my_profile.click()
+        wait = WebDriverWait(self.selenium, 3)
+        wait.until(EC.title_contains("My profile"))
+
+        delete_account_button = self.selenium.find_element_by_id(
+            "riparias-profile-delete-account-button"
+        )
+        delete_account_button.click()
+        modal = self.selenium.find_element_by_class_name("modal")
+        modal_title = modal.find_element_by_class_name("modal-title")
+        self.assertEqual(modal_title.text, "Are you sure?")
+        # Is the modal visible?
+        self.assertIn("show", modal.get_attribute("class"))
+
+        # Let's cancel the action
+        cancel_button = modal.find_element_by_id("modal-button-no")
+        cancel_button.click()
+
+        # The modal should now be closed
+        self.assertNotIn("show", modal.get_attribute("class"))
+
+        # Let's open it again!
+        delete_account_button.click()
+
+        # Let's confirm the action
+        confirm_button = modal.find_element_by_id("modal-button-yes")
+        confirm_button.click()
+
+        # We should now be redirected to the home page, with a proper message
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Home"))
+        self.assertIn("Your account has been deleted.", self.selenium.page_source)
+
+        # We should be visibly logged out
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        # There's no more "Logged as testuser" message
+        with self.assertRaises(NoSuchElementException):
+            navbar.find_element_by_link_text("Logged as testuser")
+        # There's a sign in link again
+        signin_link = navbar.find_element_by_link_text("Sign in")
+
+        # Let's try to sign in again...
+        signin_link.click()
+        wait = WebDriverWait(self.selenium, 3)
+        wait.until(EC.title_contains("Sign in"))
+        username_field = self.selenium.find_element_by_id("id_username")
+        password_field = self.selenium.find_element_by_id("id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("testuser")
+        password_field.send_keys("12345")
+        signin_button = self.selenium.find_element_by_id("riparias-signin-button")
+        signin_button.click()
+
+        # This is not possible anymore...
+        # ... so we're still on the same page, with an error message
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Sign in"))
+        error_message = self.selenium.find_element_by_id(
+            "riparias-invalid-credentials-message"
+        )
+        self.assertEqual(
+            error_message.text,
+            "Your username and password didn't match. Please try again.",
+        )

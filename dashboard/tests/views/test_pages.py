@@ -285,9 +285,7 @@ class AlertWebPagesTests(TestCase):
         self.assertIn("name", response.context["form"].errors)
         self.assertIn("email_notifications_frequency", response.context["form"].errors)
         # No new alert was created in the database
-        self.assertEqual(
-            Alert.objects.filter(user=self.first_user).count(), 1
-        )
+        self.assertEqual(Alert.objects.filter(user=self.first_user).count(), 1)
 
         # Attempt 2: add mandatory fields: the alerts gets created and the user is redirected to the alert details page
         response = self.client.post(
@@ -298,9 +296,7 @@ class AlertWebPagesTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, f"/alert/{new_alert.pk}")
-        self.assertEqual(
-            Alert.objects.filter(user=self.first_user).count(), 2
-        )
+        self.assertEqual(Alert.objects.filter(user=self.first_user).count(), 2)
         # Values check:
         self.assertEqual(new_alert.user, self.first_user)
         self.assertEqual(new_alert.email_notifications_frequency, "D")
@@ -325,9 +321,7 @@ class AlertWebPagesTests(TestCase):
         new_alert = Alert.objects.latest("id")
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, f"/alert/{new_alert.pk}")
-        self.assertEqual(
-            Alert.objects.filter(user=self.first_user).count(), 3
-        )
+        self.assertEqual(Alert.objects.filter(user=self.first_user).count(), 3)
 
         self.assertEqual(new_alert.name, "Another test alert")
         self.assertEqual(new_alert.user, self.first_user)
@@ -375,18 +369,14 @@ class AlertWebPagesTests(TestCase):
         self.client.login(username="frusciante", password="12345")
 
         # Situation before: there's an alert for this user
-        self.assertEqual(
-            Alert.objects.filter(user=self.first_user).count(), 1
-        )
+        self.assertEqual(Alert.objects.filter(user=self.first_user).count(), 1)
 
         response = self.client.post(
             reverse("dashboard:actions:delete-alert"),
             {"alert_id": self.alert.pk},
         )
         # No more alerts for this user
-        self.assertEqual(
-            Alert.objects.filter(user=self.first_user).count(), 0
-        )
+        self.assertEqual(Alert.objects.filter(user=self.first_user).count(), 0)
 
         # The user gets redirected to the "my alerts" page
         self.assertEqual(response.status_code, 302)  # We got redirected to sign in
@@ -397,18 +387,14 @@ class AlertWebPagesTests(TestCase):
         self.client.login(username="frusciante", password="12345")
 
         # Situation before: there's an alert for this user
-        self.assertEqual(
-            Alert.objects.filter(user=self.first_user).count(), 1
-        )
+        self.assertEqual(Alert.objects.filter(user=self.first_user).count(), 1)
 
         response = self.client.post(
             reverse("dashboard:actions:delete-alert"),
             {"alert_id": 5},
         )
         # The user alert has been untouched
-        self.assertEqual(
-            Alert.objects.filter(user=self.first_user).count(), 1
-        )
+        self.assertEqual(Alert.objects.filter(user=self.first_user).count(), 1)
 
         self.assertEqual(response.status_code, 404)
 
@@ -487,13 +473,22 @@ class WebPagesTests(TestCase):
             email="frusciante@gmail.com",
         )
 
-        ObservationComment.objects.create(
-            observation=cls.second_obs, author=comment_author, text="This is my comment"
-        )
-
         # Let's force an earlier date for auto_add_now
         mocked = datetime.datetime(2018, 4, 4, 0, 0, 0, tzinfo=ZoneInfo("UTC"))
         with mock.patch("django.utils.timezone.now", mock.Mock(return_value=mocked)):
+            ObservationComment.objects.create(
+                observation=cls.second_obs,
+                author=comment_author,
+                text="This is my comment",
+            )
+
+            ObservationComment.objects.create(
+                observation=cls.second_obs,
+                author=None,
+                text="",
+                emptied_because_author_deleted_account=True,
+            )
+
             ObservationView.objects.create(
                 observation=cls.second_obs, user=comment_author
             )
@@ -736,9 +731,21 @@ class WebPagesTests(TestCase):
             )
         )
 
-        self.assertContains(response, "by frusciante on")
-        self.assertContains(response, "This is my comment")
-        # TODO: test with more details (multiple comments, ordering, ...)
+        # There's 2 comments on this page, one "normal" one and one "emptied" (author account deleted)
+        self.assertContains(
+            response,
+            '<p class="small text-muted">by <em>frusciante</em> on April 4, 2018, 2 a.m.</p>',
+            html=True,
+        )
+        self.assertContains(response, "This is my comment", html=True)
+
+        self.assertContains(
+            response,
+            '<p class="small text-muted">by <em>[deleted user]</em> on April 4, 2018, 2 a.m.</p><p><em>[deleted comment]</em></p>',
+            html=True,
+        )
+
+        # TODO: test with more details (ordering, ...)
 
     def test_observation_details_comment_post_not_logged(self):
         """Non-logged users are invited to sign in to post comments"""

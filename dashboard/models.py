@@ -14,6 +14,8 @@ from django.contrib.gis.db import models
 from django.contrib.gis.db.models.aggregates import Union as AggregateUnion
 from django.core.mail import send_mail
 from django.db.models import QuerySet, Q
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
@@ -32,6 +34,18 @@ class User(AbstractUser):
             if alert.has_unseen_observations:
                 return True
         return False
+
+    def empty_all_comments(self) -> None:
+        """Empty all comments for this user (to be used prior to deletion)"""
+        for comment in self.observationcomment_set.all():
+            comment.make_empty()
+
+
+# Make sure we empty all comments before deleting the user, regardless of the deletion method (bulk, individual,
+# admin, ...)
+@receiver(pre_delete, sender=User)
+def empty_user_comments(sender, instance, **kwargs):
+    instance.empty_all_comments()
 
 
 WebsiteUser = Union[User, AnonymousUser]
@@ -421,10 +435,30 @@ class Observation(models.Model):
 
 
 class ObservationComment(models.Model):
+    """ " A comment on an observation, left by an authenticated visitor"""
+
     observation = models.ForeignKey(Observation, on_delete=models.CASCADE)
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
+    )
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # If an author deletes their account, we keep track of the comment's existence
+    # (so a conversation under an observation doesn't seem too absurd) but delete its content. Such records can be
+    # detected with the 'emptied_because_author_deleted_account' flag
+    emptied_because_author_deleted_account = models.BooleanField(default=False)
+
+    def make_empty(self):
+        """
+        Make the comment empty, and mark it as such.
+
+        This is the method to be called before deleting a user account.
+        """
+        self.text = ""
+        self.author = None
+        self.emptied_because_author_deleted_account = True
+        self.save()
 
 
 class MyAreaManager(models.Manager):

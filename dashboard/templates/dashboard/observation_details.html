@@ -118,11 +118,7 @@
             <div class="col">
                 <h2>User comments</h2>
                 {% for comment in observation.sorted_comments_set.all %}
-                    <div class="riparias-observation-comment">
-                        <p class="small text-muted">by {{ comment.author.username }} on {{ comment.created_at }}</p>
-                        <p>{{ comment.text }}</p>
-                        <hr>
-                    </div>
+                    {% include "dashboard/_observation_comment.html" with comment=comment only %}
                 {% empty %}
                     <p>No comments yet for this observation!</p>
                 {% endfor %}

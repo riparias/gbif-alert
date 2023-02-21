@@ -16,6 +16,22 @@
                 </form>
             </div>
         </div>
+
+        <div class="row">
+            <div class="col">
+                <div id="app">
+                    <delete-account-button button-id="riparias-profile-delete-account-button"  form-action="{% url "dashboard:actions:delete-own-account" %}">
+                        {% csrf_token %}
+                    </delete-account-button>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            initUserProfilePage();
+        });
+    </script>
 
 {% endblock %}

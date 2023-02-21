@@ -92,6 +92,7 @@ actions_urls = [
         views.mark_observation_as_unseen,
         name="mark-observation-as-unseen",
     ),
+    path("delete-own-account", views.delete_own_account, name="delete-own-account"),
 ]
 
 urlpatterns = [
