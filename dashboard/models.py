@@ -4,7 +4,6 @@ import datetime
 import hashlib
 import logging
 import smtplib
-
 from typing import Optional, Union, Any, Dict, List
 
 import html2text

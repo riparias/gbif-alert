@@ -18,8 +18,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
-import { kebabCase } from "lodash";
+import {defineComponent} from "vue";
+import {kebabCase} from "lodash";
 
 export default defineComponent({
   name: "TabSwitcher",

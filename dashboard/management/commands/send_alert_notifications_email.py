@@ -1,5 +1,4 @@
 from django.core.management import BaseCommand
-
 from django.utils import timezone
 from maintenance_mode.core import get_maintenance_mode  # type: ignore
 

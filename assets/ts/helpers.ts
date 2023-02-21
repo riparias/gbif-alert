@@ -1,5 +1,6 @@
-import { DashboardFilters } from "./interfaces";
-import { DateTime } from "luxon";
+import {DashboardFilters} from "./interfaces";
+import {DateTime} from "luxon";
+
 const qs = require("qs");
 
 export function filtersToQuerystring(filters: DashboardFilters): string {

@@ -1,7 +1,7 @@
 import datetime
-from django.test import TestCase, override_settings
 
 from django.contrib.gis.geos import Point
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from dashboard.models import (
@@ -63,9 +63,7 @@ class AlertTests(TestCase):
         alert = Alert.objects.create(
             user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
         )
-        ObservationView.objects.create(
-            observation=self.observation, user=self.user
-        )
+        ObservationView.objects.create(observation=self.observation, user=self.user)
         self.assertEqual(alert.unseen_observations_count, 0)
 
     def test_unseen_observations_count_zero_case_2(self):
@@ -91,9 +89,7 @@ class AlertTests(TestCase):
         alert = Alert.objects.create(
             user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
         )
-        ObservationView.objects.create(
-            observation=self.observation, user=self.user
-        )
+        ObservationView.objects.create(observation=self.observation, user=self.user)
         self.assertFalse(alert.has_unseen_observations)
 
     def test_has_unseen_observations_false_case_2(self):
@@ -130,9 +126,7 @@ class AlertTests(TestCase):
             user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
         )
 
-        ObservationView.objects.create(
-            observation=self.observation, user=self.user
-        )
+        ObservationView.objects.create(observation=self.observation, user=self.user)
 
         # Situation:
         # - No unseen observation

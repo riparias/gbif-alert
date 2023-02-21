@@ -43,12 +43,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import {defineComponent} from "vue";
 import ObservationStatusSelectorEntry from "./ObservationStatusSelectorEntry.vue";
 import ConfirmationModal from "./ConfirmationModal.vue";
-import { DashboardFilters, EndpointsUrls } from "../interfaces";
+import {DashboardFilters, EndpointsUrls} from "../interfaces";
 import axios from "axios";
-import { filtersToQuerystring } from "../helpers";
+import {filtersToQuerystring} from "../helpers";
 
 export default defineComponent({
   name: "ObservationStatusSelector",

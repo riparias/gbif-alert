@@ -1,7 +1,7 @@
 import datetime
-from django.test import TestCase
 
 from django.contrib.gis.geos import Point
+from django.test import TestCase
 from django.utils import timezone
 
 from dashboard.models import (

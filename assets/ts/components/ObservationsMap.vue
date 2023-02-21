@@ -4,32 +4,32 @@
 </template>
 
 <script lang="ts">
-import { Collection, Feature, Map, Overlay, View } from "ol";
-import { defineComponent, PropType } from "vue";
-import { fromLonLat } from "ol/proj";
+import {Collection, Feature, Map, Overlay, View} from "ol";
+import {defineComponent, PropType} from "vue";
+import {fromLonLat} from "ol/proj";
 import TileLayer from "ol/layer/Tile";
-import { VectorTile as VectorTileLayer } from "ol/layer";
+import {VectorTile as VectorTileLayer} from "ol/layer";
 import OSM from "ol/source/OSM";
 import Stamen from "ol/source/Stamen";
 import VectorTileSource from "ol/source/VectorTile";
-import { scaleSequentialLog, ScaleSequential } from "d3-scale";
-import { interpolateReds } from "d3-scale-chromatic";
-import { hsl } from "d3-color";
-import { BaseLayerEntry, DashboardFilters } from "../interfaces";
+import {ScaleSequential, scaleSequentialLog} from "d3-scale";
+import {interpolateReds} from "d3-scale-chromatic";
+import {hsl} from "d3-color";
+import {BaseLayerEntry, DashboardFilters} from "../interfaces";
 import "ol/ol.css";
-import { GeoJSON, MVT } from "ol/format";
-import { Fill, Stroke, Style, Text, Circle } from "ol/style";
+import {GeoJSON, MVT} from "ol/format";
+import {Circle, Fill, Stroke, Style, Text} from "ol/style";
 import axios from "axios";
 import RenderFeature from "ol/render/Feature";
 import VectorSource from "ol/source/Vector";
-import { filtersToQuerystring } from "../helpers";
+import {filtersToQuerystring} from "../helpers";
 import LayerGroup from "ol/layer/Group";
 import VectorLayer from "ol/layer/Vector";
-import { Geometry } from "ol/geom";
+import {Geometry} from "ol/geom";
 import BaseLayer from "ol/layer/Base";
-import { baseLayers } from "../map_config";
-import { Popover } from "bootstrap";
-import { StyleFunction } from "ol/style/Style";
+import {baseLayers} from "../map_config";
+import {Popover} from "bootstrap";
+import {StyleFunction} from "ol/style/Style";
 
 interface MapContainerData {
   map: Map | null;

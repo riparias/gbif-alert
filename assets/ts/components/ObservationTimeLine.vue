@@ -7,16 +7,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
-import {
-  DashboardFilters,
-  DateRange,
-  PreparedHistogramDataEntry,
-} from "../interfaces";
+import {defineComponent} from "vue";
+import {DashboardFilters, DateRange, PreparedHistogramDataEntry,} from "../interfaces";
 import axios from "axios";
-import { filtersToQuerystring } from "../helpers";
+import {filtersToQuerystring} from "../helpers";
 import BarChart from "./BarChart.vue";
-import { DateTime } from "luxon";
+import {DateTime} from "luxon";
 
 interface HistogramDataEntry {
   // As received from the server

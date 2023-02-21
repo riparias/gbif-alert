@@ -4,9 +4,9 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
+from django.contrib.gis.geos import Point, MultiPolygon, Polygon
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.contrib.gis.geos import Point, MultiPolygon, Polygon
 from django.utils import timezone, formats
 from django.utils.html import strip_tags
 

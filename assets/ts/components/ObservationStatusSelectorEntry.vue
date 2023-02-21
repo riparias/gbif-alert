@@ -19,8 +19,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
-import { formatCount } from "../helpers";
+import {defineComponent} from "vue";
+import {formatCount} from "../helpers";
 
 export default defineComponent({
   name: "ObservationStatusSelectorEntry",

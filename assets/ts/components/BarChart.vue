@@ -55,13 +55,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
-import { scaleLinear, scaleBand } from "d3-scale";
-import { max } from "d3-array";
-import { PreparedHistogramDataEntry } from "../interfaces";
-import { axisBottom, axisLeft, format, ScaleBand, select } from "d3";
-import { DateTime } from "luxon";
-import { Interval } from "luxon";
+import {defineComponent} from "vue";
+import {scaleBand, scaleLinear} from "d3-scale";
+import {max} from "d3-array";
+import {PreparedHistogramDataEntry} from "../interfaces";
+import {axisBottom, axisLeft, format, ScaleBand, select} from "d3";
+import {DateTime, Interval} from "luxon";
 import RangeSlider from "./RangeSlider.vue";
 
 export default defineComponent({

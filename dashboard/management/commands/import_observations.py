@@ -1,24 +1,23 @@
 import argparse
-import tempfile
 import datetime
+import tempfile
 from typing import Dict, Optional
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
-
 from django.core.mail import mail_admins
 from django.core.management.base import BaseCommand, CommandParser, CommandError
 from django.db import transaction
 from django.db.models import QuerySet
 from django.utils import timezone
-from dwca.read import DwCAReader  # type: ignore
 from dwca.darwincore.utils import qualname as qn  # type: ignore
+from dwca.read import DwCAReader  # type: ignore
 from dwca.rows import CoreRow  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
 from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
-from .helpers import get_dataset_name_from_gbif_api
 from dashboard.models import Species, Observation, DataImport, Dataset
+from .helpers import get_dataset_name_from_gbif_api
 
 
 def build_gbif_predicate(country_code: str, species_list: QuerySet[Species]) -> Dict:

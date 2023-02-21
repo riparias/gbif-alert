@@ -1,5 +1,5 @@
-from django.contrib.gis import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.gis import admin
 from import_export import resources  # type: ignore
 from import_export.admin import ImportExportModelAdmin  # type: ignore
 

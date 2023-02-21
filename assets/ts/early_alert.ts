@@ -1,13 +1,13 @@
 import * as bootstrap from "bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
-require("bootstrap-icons/font/bootstrap-icons.css");
-
 import IndexPageRootComponent from "./components/pages_root_components/IndexPageRootComponent.vue";
 import AlertDetailsPageRootComponent from "./components/pages_root_components/AlertDetailsPageRootComponent.vue";
 import SingleObservationMap from "./components/SingleObservationMap.vue";
 import DeleteAccountButton from "./components/DeleteAccountButton.vue";
 
-import { Component, createApp } from "vue";
+import {Component, createApp} from "vue";
+
+require("bootstrap-icons/font/bootstrap-icons.css");
 
 function initDropDown() {
   var dropdownElementList = [].slice.call(

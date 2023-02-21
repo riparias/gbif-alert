@@ -55,9 +55,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
-import { SelectionEntry } from "../interfaces";
-import { v4 as uuidv4 } from "uuid";
+import {defineComponent, PropType} from "vue";
+import {SelectionEntry} from "../interfaces";
+import {v4 as uuidv4} from "uuid";
 
 interface ModalMultiSelectorData {
   modalActive: boolean;

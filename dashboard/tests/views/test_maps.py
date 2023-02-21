@@ -1,11 +1,10 @@
 import datetime
 
+import mapbox_vector_tile
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Point, MultiPolygon, Polygon
 from django.test import TestCase, override_settings
 from django.urls import reverse
-
-import mapbox_vector_tile
 from django.utils import timezone
 
 from dashboard.models import (

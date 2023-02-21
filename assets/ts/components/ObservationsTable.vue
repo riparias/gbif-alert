@@ -43,11 +43,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
-import { DashboardFilters } from "../interfaces";
+import {defineComponent} from "vue";
+import {DashboardFilters} from "../interfaces";
 import axios from "axios";
 import ObservationTablePage from "./ObservationTablePage.vue";
-import { filtersToQuerystring } from "../helpers";
+import {filtersToQuerystring} from "../helpers";
 
 interface ColDefinition {
   sortId: string | null;

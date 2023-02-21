@@ -2,7 +2,7 @@ import TileLayer from "ol/layer/Tile";
 import Stamen from "ol/source/Stamen";
 import OSM from "ol/source/OSM";
 import XYZ from "ol/source/XYZ";
-import { BaseLayerEntry } from "./interfaces";
+import {BaseLayerEntry} from "./interfaces";
 
 export const baseLayers = [
   {

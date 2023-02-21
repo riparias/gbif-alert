@@ -28,12 +28,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import {defineComponent} from "vue";
 import Observations from "../Observations.vue";
-import { DashboardFilters, DateRange, FrontEndConfig } from "../../interfaces";
+import {DashboardFilters, DateRange, FrontEndConfig} from "../../interfaces";
 import axios from "axios";
-import { debounce, DebouncedFunc } from "lodash";
-import { dateTimeToFilterParam } from "../../helpers";
+import {debounce, DebouncedFunc} from "lodash";
+import {dateTimeToFilterParam} from "../../helpers";
 import ObservationStatusSelector from "../ObservationStatusSelector.vue";
 import BootstrapAlert from "../BootstrapAlert.vue";
 

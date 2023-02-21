@@ -2,8 +2,8 @@
 import TileLayer from "ol/layer/Tile";
 import Stamen from "ol/source/Stamen";
 import OSM from "ol/source/OSM";
-import { XYZ } from "ol/source";
-import { DateTime } from "luxon";
+import {XYZ} from "ol/source";
+import {DateTime} from "luxon";
 
 export interface SelectionEntry {
   id: string | number;

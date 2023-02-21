@@ -3,18 +3,18 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import {defineComponent} from "vue";
 import Feature from "ol/Feature";
 import Map from "ol/Map";
-import { fromLonLat } from "ol/proj";
+import {fromLonLat} from "ol/proj";
 
 import "ol/ol.css";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { baseLayers } from "../map_config";
-import { ScaleLine } from "ol/control";
-import { Circle } from "ol/geom";
-import { Fill, Stroke, Style } from "ol/style";
+import {baseLayers} from "../map_config";
+import {ScaleLine} from "ol/control";
+import {Circle} from "ol/geom";
+import {Fill, Stroke, Style} from "ol/style";
 
 declare interface SingleObservationMapData {
   map: Map | null;

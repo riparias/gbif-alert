@@ -81,16 +81,16 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import {defineComponent} from "vue";
 import {
+  AreaInformation,
   DashboardFilters,
+  DataImportInformation,
   DatasetInformation,
-  SpeciesInformation,
+  DateRange,
   FrontEndConfig,
   SelectionEntry,
-  AreaInformation,
-  DateRange,
-  DataImportInformation,
+  SpeciesInformation,
 } from "../../interfaces";
 import axios from "axios";
 
@@ -99,8 +99,8 @@ import ObservationStatusSelector from "../ObservationStatusSelector.vue";
 import Observations from "../Observations.vue";
 import BootstrapAlert from "../BootstrapAlert.vue";
 
-import { debounce, DebouncedFunc } from "lodash";
-import { dateTimeToFilterParam } from "../../helpers";
+import {debounce, DebouncedFunc} from "lodash";
+import {dateTimeToFilterParam} from "../../helpers";
 
 declare const ripariasConfig: FrontEndConfig;
 declare const initialFilters: DashboardFilters;

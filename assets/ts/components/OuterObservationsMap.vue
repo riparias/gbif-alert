@@ -64,12 +64,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
-import {
-  DashboardFilters,
-  FrontEndConfig,
-  SelectionEntry,
-} from "../interfaces";
+import {defineComponent} from "vue";
+import {DashboardFilters, FrontEndConfig, SelectionEntry,} from "../interfaces";
 import ObservationsMap from "./ObservationsMap.vue";
 
 interface OuterObservationsMapComponentData {

@@ -24,8 +24,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
-import { JsonObservation } from "../interfaces";
+import {defineComponent} from "vue";
+import {JsonObservation} from "../interfaces";
 
 interface ObservationForDisplay {
   // Similar to JsonObservation, but ready to display

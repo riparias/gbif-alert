@@ -57,14 +57,14 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import {defineComponent} from "vue";
 
 import ObservationsTimeLine from "./ObservationTimeLine.vue";
 import TabSwitcher from "./TabSwitcher.vue";
 import ObservationsCounter from "./ObservationsCounter.vue";
 import ObservationsTable from "./ObservationsTable.vue";
 import OuterObservationsMap from "./OuterObservationsMap.vue";
-import { DashboardFilters, DateRange, FrontEndConfig } from "../interfaces";
+import {DashboardFilters, DateRange, FrontEndConfig} from "../interfaces";
 
 interface ObservationsComponentData {
   selectedTab: string;

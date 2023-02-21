@@ -12,8 +12,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
-import noUiSlider, { API } from "nouislider";
+import {defineComponent} from "vue";
+import noUiSlider, {API} from "nouislider";
 import "nouislider/dist/nouislider.css";
 
 interface RangeSliderData {

@@ -5,11 +5,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
-import { DashboardFilters } from "../interfaces";
+import {defineComponent} from "vue";
+import {DashboardFilters} from "../interfaces";
 import axios from "axios";
-import { filtersToQuerystring } from "../helpers";
-import { formatCount } from "../helpers";
+import {filtersToQuerystring, formatCount} from "../helpers";
 
 export default defineComponent({
   // This component only shows a total counter, according to the passed filters (see also ObservationsCounterPerStatus)
