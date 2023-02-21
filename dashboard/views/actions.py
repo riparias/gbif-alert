@@ -1,6 +1,7 @@
 """Actions are simple views that issue a redirect"""
 
 from django.contrib import messages
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect
@@ -37,9 +38,14 @@ def delete_alert(request: AuthenticatedHttpRequest):
             return HttpResponseForbidden()
 
 
-@login_required
+# We don't use the @login_required decorator here because we don't want a redirect to the login page, but rather
+# a simple 403. We do that in the function body.
 def delete_own_account(request: AuthenticatedHttpRequest):
     if request.method == "POST":
-        request.user.delete()
-        messages.success(request, "Your account has been deleted.")
-        return redirect("dashboard:pages:index")
+        if request.user.is_authenticated:
+            request.user.delete()
+            logout(request)
+            messages.success(request, "Your account has been deleted.")
+            return redirect("dashboard:pages:index")
+        else:
+            return HttpResponseForbidden()

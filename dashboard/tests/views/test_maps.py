@@ -19,7 +19,7 @@ from dashboard.models import (
 
 
 class MapsTestDataMixin(object):
-    """Multiple test cases share the test data via this mixin"""
+    """Multiple test cases share some test data via this mixin"""
 
     @classmethod
     def setUpTestData(cls):
@@ -463,9 +463,7 @@ class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, Test
             kwargs={"zoom": 2, "x": 2, "y": 1},
         )
 
-        url_with_params = (
-            f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
-        )
+        url_with_params = f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
 
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -480,9 +478,7 @@ class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, Test
             self.server_url_name,
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
-        url_with_params = (
-            f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
-        )
+        url_with_params = f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
 
@@ -634,9 +630,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},  # Large views over Wallonia
         )
-        url_with_params = (
-            f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
-        )
+        url_with_params = f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
 
@@ -651,9 +645,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 8, "x": 131, "y": 86},
         )
-        url_with_params = (
-            f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
-        )
+        url_with_params = f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -668,9 +660,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 10, "x": 526, "y": 345},
         )
-        url_with_params = (
-            f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
-        )
+        url_with_params = f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(
@@ -685,9 +675,7 @@ class MVTServerAggregatedObsTests(
             self.server_url_name,
             kwargs={"zoom": 17, "x": 67123, "y": 44083},
         )
-        url_with_params = (
-            f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
-        )
+        url_with_params = f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
         response = self.client.get(url_with_params)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         self.assertEqual(decoded_tile, {})
