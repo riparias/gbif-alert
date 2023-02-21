@@ -1,8 +1,8 @@
 {% url url_pattern as the_url %}
 
 
-<li class="nav-item">
-    <a class="nav-link {% if request.get_full_path == the_url %}active{% endif %}"
+<li class="nav-item mx-2">
+    <a class="nav-link fw-bold {% if request.get_full_path == the_url %}active{% endif %}"
        aria-current="page" href="{{ the_url }}">
         {% if icon_identifier %}
             <i class="bi {{ icon_identifier }}"></i>
