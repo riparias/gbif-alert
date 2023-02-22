@@ -39,6 +39,9 @@ class User(AbstractUser):
         for comment in self.observationcomment_set.all():
             comment.make_empty()
 
+    class Meta(object):
+        unique_together = ("email",)
+
 
 # Make sure we empty all comments before deleting the user, regardless of the deletion method (bulk, individual,
 # admin, ...)
