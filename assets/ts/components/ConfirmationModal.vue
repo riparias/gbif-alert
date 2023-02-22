@@ -28,7 +28,7 @@
             class="btn btn-secondary btn-sm"
             @click="$emit('click-no')"
           >
-            No
+            Cancel
           </button>
         </div>
       </div>

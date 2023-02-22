@@ -2,7 +2,7 @@
   <button-with-confirmation
       class="btn btn-danger btn-sm float-end riparias-delete-alert-button"
       :button-id="buttonId"
-      confirmation-message-body="Do you really want to this alert? This can't be undone"
+      confirmation-message-body="Do you really want to this alert? This can't be undone."
       @user-confirmed="userConfirmedDeletion()">
       <i class="bi bi-trash"></i> Delete this alert
   </button-with-confirmation>
