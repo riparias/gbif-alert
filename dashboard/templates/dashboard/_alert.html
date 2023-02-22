@@ -17,7 +17,7 @@
                 </li>
             </ul>
         </p>
-        {% if show_buttons %}
+        {% if show_management_buttons %}
             <a href="{% url 'dashboard:pages:alert-details' alert_id=alert.id %}" class="btn btn-sm btn-primary position-relative">
                 <i class="bi bi-clipboard-data-fill"></i> Matching observations
 
@@ -28,14 +28,10 @@
                 {% endif %}
             </a>
 
-
-            <form class="d-inline float-end riparias-alert-delete-form" action="{% url 'dashboard:actions:delete-alert' %}" method="post">
+            <delete-alert-button button-id="riparias-delete-alert-button-{{ alert.pk }}"  form-action="{% url "dashboard:actions:delete-alert" %}">
                 {% csrf_token %}
                 <input type="hidden" name="alert_id" value="{{ alert.pk }}"/>
-                <button type="submit" class="btn btn-sm btn-danger">
-                    <i class="bi bi-trash"></i> Delete alert
-                </button>
-            </form>
+            </delete-alert-button>
         {% endif %}
 
         {% if show_link_alerts_list %}

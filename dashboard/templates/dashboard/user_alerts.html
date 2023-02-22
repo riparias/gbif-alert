@@ -15,13 +15,19 @@
         </div>
 
         <div class="row">
-            <div class="col">
+            <div id="app" class="col">
                {% for alert in alerts %}
-                    {% include "dashboard/_alert.html" with alert=alert show_buttons=True %}
+                    {% include "dashboard/_alert.html" with alert=alert show_management_buttons=True %}
                 {% empty %}
                     You currently don't have any configured alerts.
                 {% endfor %}
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            initUserAlertsPage();
+        });
+    </script>
 {% endblock after_messages %}

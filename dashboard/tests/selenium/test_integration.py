@@ -142,25 +142,50 @@ class RipariasSeleniumAlertTests(RipariasSeleniumTestsCommon):
         WebDriverWait(self.selenium, 3)
 
         # Check 2: on the page, there's a single delete form with a button (only one alert)
-        delete_forms = self.selenium.find_elements_by_class_name(
-            "riparias-alert-delete-form"
+        delete_buttons = self.selenium.find_elements_by_class_name(
+            "riparias-delete-alert-button"
         )
-        self.assertEqual(len(delete_forms), 1)
-        delete_button = delete_forms[0].find_element_by_tag_name("button")
+        self.assertEqual(len(delete_buttons), 1)
+        delete_button = delete_buttons[0]
 
-        # Action 2: click the delete button
+        # Action 2: click the delete button, then cancel
         delete_button.click()
         WebDriverWait(self.selenium, 3)
 
+        modal = self.selenium.find_element_by_class_name("modal")
+        modal_title = modal.find_element_by_class_name("modal-title")
+        self.assertEqual(modal_title.text, "Are you sure?")
+        # Is the modal visible?
+        self.assertIn("show", modal.get_attribute("class"))
+
+        # Let's cancel the action
+        cancel_button = modal.find_element_by_id("modal-button-no")
+        cancel_button.click()
+
+        # The modal should now be closed
+        self.assertNotIn("show", modal.get_attribute("class"))
+
+        # Action 3: click the delete button again, then confirm
+        # Let's open it again!
+        delete_button.click()
+
+        # Let's confirm the action
+        confirm_button = modal.find_element_by_id("modal-button-yes")
+        confirm_button.click()
+
         # Check 3: we're back on the "my alerts" page, with a success message and no remaining alerts
-        self.assertIn("/my-alerts", self.selenium.current_url)
-        self.assertIn("Alert deleted.", self.selenium.page_source)
+        wait = WebDriverWait(self.selenium, 3)
+        wait.until(EC.title_contains("My alerts"))
+        self.assertIn("Your alert has been deleted.", self.selenium.page_source)
+
         self.assertIn(
             "You currently don't have any configured alerts.", self.selenium.page_source
         )
         self.assertEqual(
             len(
-                self.selenium.find_elements_by_class_name("riparias-alert-delete-form")
+                self.selenium.find_elements_by_class_name(
+                    "riparias-delete-alert-button"
+                )
             ),
             0,
         )

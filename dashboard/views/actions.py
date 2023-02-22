@@ -32,7 +32,7 @@ def delete_alert(request: AuthenticatedHttpRequest):
         alert = get_object_or_404(Alert, pk=request.POST.get("alert_id"))
         if alert.user == request.user:
             alert.delete()
-            messages.success(request, "Alert deleted.")
+            messages.success(request, "Your alert has been deleted.")
             return redirect("dashboard:pages:my-alerts")
         else:
             return HttpResponseForbidden()

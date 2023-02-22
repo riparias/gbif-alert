@@ -4,8 +4,7 @@ import IndexPageRootComponent from "./components/pages_root_components/IndexPage
 import AlertDetailsPageRootComponent from "./components/pages_root_components/AlertDetailsPageRootComponent.vue";
 import SingleObservationMap from "./components/SingleObservationMap.vue";
 import DeleteAccountButton from "./components/DeleteAccountButton.vue";
-
-import {Component, createApp} from "vue";
+import DeleteAlertButton from "./components/DeleteAlertButton.vue";import {Component, createApp} from "vue";
 
 require("bootstrap-icons/font/bootstrap-icons.css");
 
@@ -46,6 +45,14 @@ function createAndMountRootComponent(component: Component) {
   createApp({
     components: {
       DeleteAccountButton
+    },
+  }).mount("#app");
+};
+
+(window as any).initUserAlertsPage = function () {
+  createApp({
+    components: {
+      DeleteAlertButton
     },
   }).mount("#app");
 };
