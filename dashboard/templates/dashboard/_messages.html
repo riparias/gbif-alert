@@ -4,6 +4,16 @@
             <div class="col">
                 {% for message in messages %}
                     <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}" role="alert">
+                        {% if message.tags == "success" %}
+                            <i class="bi bi-hand-thumbs-up-fill"></i>
+                        {% elif message.tags == "warning" %}
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        {% elif message.tags == "error" %}
+                            <i class="bi bi-sign-stop-fill"></i>
+                        {% elif message.tags == "info" %}
+                            <i class="bi bi-info-circle-fill"></i>
+                        {% endif %}
+
                         {{ message }}
                     </div>
                 {% endfor %}
