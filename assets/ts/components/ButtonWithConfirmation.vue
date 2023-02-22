@@ -1,6 +1,6 @@
 <template>
   <button :id="buttonId" :class="$attrs.class" @click="confirmationModalOpen = true">
-    {{ buttonLabel }}
+    <slot></slot>
   </button>
 
   <confirmation-modal
@@ -21,10 +21,6 @@ export default defineComponent({
   emits: ["user-confirmed"],
   components: {ConfirmationModal},
   props: {
-    buttonLabel: {
-      type: String,
-      required: true,
-    },
     buttonId: {
       type: String,
       required: true,
