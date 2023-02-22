@@ -13,6 +13,7 @@
                     {% csrf_token %}
                     {{ form|crispy }}
                     <input class="btn btn-primary" type="submit" value="Create alert">
+                    <a class="btn btn-secondary" href="{% url "dashboard:pages:my-alerts" %}">Cancel</a>
                 </form>
             </div>
         </div>
