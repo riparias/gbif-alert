@@ -12,8 +12,8 @@
                 <form method="post">
                     {% csrf_token %}
                     {{ form|crispy }}
-                    <input class="btn btn-primary" type="submit" value="Create alert">
-                    <a class="btn btn-secondary" href="{% url "dashboard:pages:my-alerts" %}">Cancel</a>
+                    <input class="btn btn-primary btn-sm" type="submit" value="Create alert">
+                    <a class="btn btn-secondary btn-sm" href="{% url "dashboard:pages:my-alerts" %}">Cancel</a>
                 </form>
             </div>
         </div>

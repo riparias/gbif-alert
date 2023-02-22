@@ -128,7 +128,7 @@
                     <form method="post">
                         {% csrf_token %}
                         {{ new_comment_form|crispy }}
-                        <button type="submit" class="btn btn-primary">Post</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Post comment</button>
                     </form>
                 {% else %}
                     <p class="alert alert-info"><i class="bi bi-info-circle"></i> Please <a

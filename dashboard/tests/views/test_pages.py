@@ -124,7 +124,7 @@ class AlertWebPagesTests(TestCase):
             mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
         )
 
-    my_alerts_navbar_snippet = '<a class="nav-link " aria-current="page" href="/my-alerts"><i class="bi bi-exclamation-square"></i>My alerts</a>'
+    my_alerts_navbar_snippet = '<a class="nav-link fw-bold" aria-current="page" href="/my-alerts"><i class="bi bi-exclamation-square"></i>My alerts</a>'
 
     def test_navbar_my_alerts_authenticated(self):
         """Authenticated users have a 'my alerts' link in the navbar"""
@@ -270,7 +270,7 @@ class AlertWebPagesTests(TestCase):
         self.assertIn('<form method="post">', response.content.decode())
         self.assertContains(
             response,
-            '<input class="btn btn-primary" type="submit" value="Create alert">',
+            '<input class="btn btn-primary btn-sm" type="submit" value="Create alert">',
             html=True,
         )
 

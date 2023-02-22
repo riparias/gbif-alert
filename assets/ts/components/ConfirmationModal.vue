@@ -17,7 +17,7 @@
           <button
             id="modal-button-yes"
             type="button"
-            class="btn btn-danger"
+            class="btn btn-danger btn-sm"
             @click="$emit('click-yes')"
           >
             Yes, I'm sure
@@ -25,7 +25,7 @@
           <button
             id="modal-button-no"
             type="button"
-            class="btn btn-secondary"
+            class="btn btn-secondary btn-sm"
             @click="$emit('click-no')"
           >
             No
