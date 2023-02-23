@@ -47,7 +47,6 @@ import {defineComponent} from "vue";
 import {DashboardFilters} from "../interfaces";
 import axios from "axios";
 import ObservationTablePage from "./ObservationTablePage.vue";
-import {filtersToQuerystring} from "../helpers";
 
 interface ColDefinition {
   sortId: string | null;
@@ -133,7 +132,6 @@ export default defineComponent({
       axios
         .get(this.observationsJsonUrl, {
           params: params,
-          paramsSerializer: filtersToQuerystring,
         })
         .then((response) => {
           this.observations = response.data.results;

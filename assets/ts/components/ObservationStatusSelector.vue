@@ -94,7 +94,6 @@ export default defineComponent({
       axios
         .get(this.endpointsUrls.observationsCounterUrl, {
           params: { ...filters, status: "seen" },
-          paramsSerializer: filtersToQuerystring,
         })
         .then((response) => {
           this.counts.seen = response.data.count;
@@ -103,7 +102,6 @@ export default defineComponent({
       axios
         .get(this.endpointsUrls.observationsCounterUrl, {
           params: { ...filters, status: "unseen" },
-          paramsSerializer: filtersToQuerystring,
         })
         .then((response) => {
           this.counts.unseen = response.data.count;

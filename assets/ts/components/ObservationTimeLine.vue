@@ -10,7 +10,6 @@
 import {defineComponent} from "vue";
 import {DashboardFilters, DateRange, PreparedHistogramDataEntry,} from "../interfaces";
 import axios from "axios";
-import {filtersToQuerystring} from "../helpers";
 import BarChart from "./BarChart.vue";
 import {DateTime} from "luxon";
 
@@ -107,7 +106,6 @@ export default defineComponent({
       axios
         .get(this.histogramDataUrl, {
           params: strippedFilters,
-          paramsSerializer: filtersToQuerystring,
         })
         .then((response) => {
           if (response.data.length === 0) {

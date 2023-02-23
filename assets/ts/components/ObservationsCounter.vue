@@ -8,7 +8,7 @@
 import {defineComponent} from "vue";
 import {DashboardFilters} from "../interfaces";
 import axios from "axios";
-import {filtersToQuerystring, formatCount} from "../helpers";
+import {formatCount} from "../helpers";
 
 export default defineComponent({
   // This component only shows a total counter, according to the passed filters (see also ObservationsCounterPerStatus)
@@ -38,7 +38,7 @@ export default defineComponent({
       axios
         .get(this.counterUrl, {
           params: filters,
-          paramsSerializer: filtersToQuerystring,
+
         })
         .then((response) => {
           this.count = response.data.count;
