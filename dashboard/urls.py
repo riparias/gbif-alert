@@ -8,6 +8,7 @@ pages_urls = [
     path("", views.index_page, name="index"),
     path("about-site", views.about_site_page, name="about-site"),
     path("about-data", views.about_data_page, name="about-data"),
+    path("whats-new", views.news_page, name="news"),
     path("alert/<int:alert_id>", views.alert_details_page, name="alert-details"),
     path("my-alerts", views.user_alerts_page, name="my-alerts"),
     path("new-alert", views.alert_create_page, name="alert-create"),

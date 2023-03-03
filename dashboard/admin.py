@@ -1,4 +1,4 @@
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.gis import admin
 from import_export import resources  # type: ignore
 from import_export.admin import ImportExportModelAdmin  # type: ignore
@@ -19,8 +19,17 @@ admin.site.site_header = "LIFE RIPARIAS early warning administration"
 
 
 @admin.register(User)
-class RipariasUserAdmin(UserAdmin):
-    pass
+class RipariasUserAdmin(DjangoUserAdmin):
+    fieldsets = DjangoUserAdmin.fieldsets + (
+        (
+            'Custom fields',
+            {
+                'fields': (
+                    'last_visit_news_page',
+                ),
+            },
+        ),
+    )
 
 
 class ObservationCommentCommentInline(admin.TabularInline):

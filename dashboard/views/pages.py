@@ -49,6 +49,13 @@ def about_data_page(request: HttpRequest):
     return render(request, "dashboard/about_data.html", {"data_imports": data_imports})
 
 
+def news_page(request: HttpRequest):
+    if request.user.is_authenticated:
+        request.user.mark_news_as_visited_now()
+
+    return render(request, "dashboard/news.html")
+
+
 def observation_details_page(request: HttpRequest, stable_id: str):
     observation = get_object_or_404(Observation, stable_id=stable_id)
     observation.mark_as_seen_by(request.user)

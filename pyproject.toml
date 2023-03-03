@@ -23,7 +23,7 @@ html2text = "^2020.1.16"
 Jinja2 = "3.0.3" # just needed for JinjaSQL, but it currently has a tendency to download an incompatible version (3.1.1). I hope we'll be able to remove that fake dependency once JinjaSQL gets updated (https://github.com/sripathikrishnan/jinjasql/issues/50)
 protobuf = "3.20"  # Indirect dependency for https://github.com/tilezen/mapbox-vector-tile/issues/113, that is used in tests. I hope we'll be able to remove that fake dependency once mapbox-vector-tile gets updated.
 [tool.poetry.dev-dependencies]
-black = "^21.8b0"
+black = "^23.1.0"
 mapbox-vector-tile = "^1.2.1"
 gunicorn = "^20.1.0"
 requests-mock = "^1.9.3"

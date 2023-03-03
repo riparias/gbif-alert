@@ -1,0 +1,16 @@
+{% extends 'dashboard/base.html' %}
+
+{% load page_fragments %}
+
+{% block page_title %}What's new - LIFE RIPARIAS early alert{% endblock %}
+
+{% block after_messages %}
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <h1 id="whats-new">What's new</h1>
+                {% get_page_fragment riparias_news_page_fragment_id %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

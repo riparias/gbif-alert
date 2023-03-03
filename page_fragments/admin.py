@@ -7,6 +7,7 @@ from page_fragments.models import PageFragment
 @admin.register(PageFragment)
 class PageFragmentAdmin(MarkdownxModelAdmin):
     list_display = ("identifier", "get_summary_nl", "get_summary_en", "get_summary_fr")
+    readonly_fields = ("updated_at",)
 
     @staticmethod
     def summarize_str(string: str) -> str:

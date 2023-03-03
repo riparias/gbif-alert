@@ -22,10 +22,14 @@ from django.utils.formats import localize
 from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 
+from page_fragments.models import PageFragment, NEWS_PAGE_IDENTIFIER
+
 DATA_SRID = 3857  # Let's keep everything in Google Mercator to avoid reprojections
 
 
 class User(AbstractUser):
+    last_visit_news_page = models.DateTimeField(null=True, blank=True)
+
     @property
     def has_alerts_with_unseen_observations(self) -> bool:
         """True if the users has unseen observations in one of their alerts"""
@@ -33,6 +37,18 @@ class User(AbstractUser):
             if alert.has_unseen_observations:
                 return True
         return False
+
+    def mark_news_as_visited_now(self) -> None:
+        """Mark the news page as visited now"""
+        self.last_visit_news_page = timezone.now()
+        self.save()
+
+    @property
+    def has_unseen_news(self) -> bool:
+        """True if the user has unseen news"""
+        return self.last_visit_news_page is None or self.last_visit_news_page < PageFragment.objects.get(
+            identifier=NEWS_PAGE_IDENTIFIER
+        ).updated_at
 
     def empty_all_comments(self) -> None:
         """Empty all comments for this user (to be used prior to deletion)"""

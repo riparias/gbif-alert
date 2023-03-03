@@ -9,8 +9,10 @@
             <ul class="navbar-nav me-auto">
                 {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:index' label='Explore all observations' icon_identifier='bi-map' %}
 
+                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:news' label="What's new" icon_identifier='bi-boombox' show_dot=user.has_unseen_news dot_id="unseen-news-dot" %}
+
                 {% if user.is_authenticated %}
-                    {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:my-alerts' label='My alerts' icon_identifier='bi-exclamation-square' show_dot=user.has_alerts_with_unseen_observations %}
+                    {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:my-alerts' label='My alerts' icon_identifier='bi-exclamation-square' show_dot=user.has_alerts_with_unseen_observations dot_id="unseen-observations-dot"%}
                 {% endif %}
 
                 {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:about-site' label='About this site' icon_identifier='bi-window' %}

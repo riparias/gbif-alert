@@ -5,6 +5,7 @@ from django.http import HttpRequest
 
 from dashboard.models import DataImport
 from dashboard.utils import human_readable_git_version_number
+from page_fragments.models import NEWS_PAGE_IDENTIFIER
 
 
 def latest_data_import_processor(_: HttpRequest):
@@ -17,6 +18,10 @@ def latest_data_import_processor(_: HttpRequest):
         "git_version_number": human_readable_git_version_number,
     }
 
+def riparias_various(_: HttpRequest):
+    return {
+        "riparias_news_page_fragment_id": NEWS_PAGE_IDENTIFIER,
+    }
 
 def riparias_settings(_: HttpRequest):
     return {

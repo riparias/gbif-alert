@@ -152,7 +152,9 @@ class AlertWebPagesTests(TestCase):
 
         response = self.client.get("/")
         self.assertContains(
-            response, '<span class="align-baseline red-dot">', html=True
+            response,
+            '<span id="unseen-observations-dot" class="align-baseline red-dot">',
+            html=True,
         )
 
     @patch("dashboard.models.User.has_alerts_with_unseen_observations", False)
@@ -162,7 +164,9 @@ class AlertWebPagesTests(TestCase):
 
         response = self.client.get("/")
         self.assertNotContains(
-            response, '<span class="align-baseline red-dot">', html=True
+            response,
+            '<span id="unseen-observations-dot" class="align-baseline red-dot">',
+            html=True,
         )
 
     def test_user_can_access_own_alert_details(self):
