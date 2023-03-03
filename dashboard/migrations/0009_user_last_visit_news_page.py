@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dashboard', '0008_alter_user_options_alter_user_unique_together'),
+        ("dashboard", "0008_alter_user_options_alter_user_unique_together"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='last_visit_news_page',
+            model_name="user",
+            name="last_visit_news_page",
             field=models.DateTimeField(blank=True, null=True),
         ),
     ]

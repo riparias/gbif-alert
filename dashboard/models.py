@@ -46,9 +46,11 @@ class User(AbstractUser):
     @property
     def has_unseen_news(self) -> bool:
         """True if the user has unseen news"""
-        return self.last_visit_news_page is None or self.last_visit_news_page < PageFragment.objects.get(
-            identifier=NEWS_PAGE_IDENTIFIER
-        ).updated_at
+        return (
+            self.last_visit_news_page is None
+            or self.last_visit_news_page
+            < PageFragment.objects.get(identifier=NEWS_PAGE_IDENTIFIER).updated_at
+        )
 
     def empty_all_comments(self) -> None:
         """Empty all comments for this user (to be used prior to deletion)"""

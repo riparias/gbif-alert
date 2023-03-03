@@ -18,10 +18,12 @@ def latest_data_import_processor(_: HttpRequest):
         "git_version_number": human_readable_git_version_number,
     }
 
+
 def riparias_various(_: HttpRequest):
     return {
         "riparias_news_page_fragment_id": NEWS_PAGE_IDENTIFIER,
     }
+
 
 def riparias_settings(_: HttpRequest):
     return {

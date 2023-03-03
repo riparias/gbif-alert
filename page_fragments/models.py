@@ -5,6 +5,7 @@ from markdownx.models import MarkdownxField  # type: ignore
 
 NEWS_PAGE_IDENTIFIER = "news_page_content"
 
+
 class PageFragment(models.Model):
     identifier = models.SlugField(unique=True)
     content_nl = MarkdownxField(blank=True)

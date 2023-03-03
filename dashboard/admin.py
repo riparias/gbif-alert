@@ -22,11 +22,9 @@ admin.site.site_header = "LIFE RIPARIAS early warning administration"
 class RipariasUserAdmin(DjangoUserAdmin):
     fieldsets = DjangoUserAdmin.fieldsets + (
         (
-            'Custom fields',
+            "Custom fields",
             {
-                'fields': (
-                    'last_visit_news_page',
-                ),
+                "fields": ("last_visit_news_page",),
             },
         ),
     )
