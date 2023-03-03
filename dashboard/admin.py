@@ -20,7 +20,7 @@ admin.site.site_header = "LIFE RIPARIAS early warning administration"
 
 @admin.register(User)
 class RipariasUserAdmin(DjangoUserAdmin):
-    fieldsets = DjangoUserAdmin.fieldsets + (
+    fieldsets = DjangoUserAdmin.fieldsets + (  # type: ignore
         (
             "Custom fields",
             {
