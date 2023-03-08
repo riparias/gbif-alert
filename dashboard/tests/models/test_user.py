@@ -1,4 +1,6 @@
 import datetime
+from unittest import mock
+from zoneinfo import ZoneInfo
 
 from django.contrib.gis.geos import Point
 from django.test import TestCase, override_settings
@@ -14,6 +16,7 @@ from dashboard.models import (
     ObservationView,
     ObservationComment,
 )
+from page_fragments.models import PageFragment
 
 SEPTEMBER_13_2021 = datetime.datetime.strptime("2021-09-13", "%Y-%m-%d").date()
 
@@ -105,3 +108,35 @@ class UserTests(TestCase):
         self.assertEqual(self.jasons_comment.author, None)
         self.assertEqual(self.jasons_comment.text, "")
         self.assertTrue(self.jasons_comment.emptied_because_author_deleted_account)
+
+    def test_user_never_visited_news_page(self):
+        """The user has never visited the news page, has_unseen_news should be True"""
+        self.assertTrue(self.jason.has_unseen_news)
+
+    def test_user_visited_news_page_recent(self):
+        """The user has visited the news page after its last update, has_unseen_news should be False"""
+
+        mocked = datetime.datetime(2022, 2, 11, 15, 10, 0, tzinfo=ZoneInfo("UTC"))
+        with mock.patch("django.utils.timezone.now", mock.Mock(return_value=mocked)):
+            f = PageFragment.objects.get(identifier="news_page_content")
+            f.content = "New content"
+            f.save()
+
+        self.jason.mark_news_as_visited_now()
+
+        self.jason.refresh_from_db()
+        self.assertFalse(self.jason.has_unseen_news)
+
+    def test_user_visited_news_page_old(self):
+        """The last visit to the news page predates its last update, so has_unseen_news should be True"""
+
+        mocked = datetime.datetime(2020, 2, 11, 15, 10, 0, tzinfo=ZoneInfo("UTC"))
+        with mock.patch("django.utils.timezone.now", mock.Mock(return_value=mocked)):
+            self.jason.mark_news_as_visited_now()
+
+        f = PageFragment.objects.get(identifier="news_page_content")
+        f.content = "New content"
+        f.save()
+
+        self.jason.refresh_from_db()
+        self.assertTrue(self.jason.has_unseen_news)
