@@ -169,6 +169,49 @@ class AlertWebPagesTests(TestCase):
             html=True,
         )
 
+    @patch("dashboard.models.User.has_unseen_news", True)
+    def test_navbar_unseen_news(self):
+        """If there are unseen news, a red dot is shown in the navbar"""
+        self.client.login(username="frusciante", password="12345")
+
+        response = self.client.get("/")
+        self.assertContains(
+            response,
+            '<span id="unseen-news-dot" class="align-baseline red-dot">',
+            html=True,
+        )
+
+    @patch("dashboard.models.User.has_unseen_news", False)
+    def test_navbar_no_unseen_news(self):
+        """If there are no unseen news, no red dot is shown next to the news link in the navbar"""
+        self.client.login(username="frusciante", password="12345")
+
+        response = self.client.get("/")
+        self.assertNotContains(
+            response,
+            '<span id="unseen-news-dot" class="align-baseline red-dot">',
+            html=True,
+        )
+
+    def test_navbar_news_anonymous(self):
+        """Anonymous users **don't** have a red dot next to the 'news' link in the navbar"""
+        response = self.client.get("/")
+        self.assertNotContains(
+            response,
+            '<span id="unseen-news-dot" class="align-baseline red-dot">',
+            html=True,
+        )
+
+    def test_news_page_visit_update_last_visit_news_page(self):
+        """Visiting the news page updates the last_visit_news_page field of the user"""
+        self.client.login(username="frusciante", password="12345")
+        value_before = self.first_user.last_visit_news_page
+
+        self.client.get(reverse("dashboard:pages:news"))
+        self.first_user.refresh_from_db()
+        value_after = self.first_user.last_visit_news_page
+        self.assertNotEqual(value_before, value_after)
+
     def test_user_can_access_own_alert_details(self):
         """An authenticated user has access to details of their own alerts"""
         self.client.login(username="frusciante", password="12345")
