@@ -18,20 +18,30 @@
             </ul>
         </p>
         {% if show_management_buttons %}
-            <a href="{% url 'dashboard:pages:alert-details' alert_id=alert.id %}" class="btn btn-sm btn-primary position-relative">
-                <i class="bi bi-clipboard-data-fill"></i> Matching observations
+            <div id="alert-management-buttons">
+                <a href="{% url 'dashboard:pages:alert-details' alert_id=alert.id %}" class="btn btn-sm btn-primary position-relative">
+                    <i class="bi bi-clipboard-data-fill"></i> Matching observations
 
-                {% if alert.unseen_observations.count > 0 %}
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        {{ alert.unseen_observations.count }} unseen
-                    </span>
-                {% endif %}
-            </a>
+                    {% if alert.unseen_observations.count > 0 %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ alert.unseen_observations.count }} unseen
+                        </span>
+                    {% endif %}
+                </a>
 
-            <delete-alert-button button-id="riparias-delete-alert-button-{{ alert.pk }}"  form-action="{% url "dashboard:actions:delete-alert" %}">
-                {% csrf_token %}
-                <input type="hidden" name="alert_id" value="{{ alert.pk }}"/>
-            </delete-alert-button>
+                <div class="float-end">
+                    <a href="{% url 'dashboard:pages:alert-edit' alert_id=alert.id %}" class="btn btn-sm btn-warning mx-2">
+                        <i class="bi bi-pencil-fill"></i> Edit this alert
+                    </a>
+
+                    <delete-alert-button button-id="riparias-delete-alert-button-{{ alert.pk }}"  form-action="{% url "dashboard:actions:delete-alert" %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="alert_id" value="{{ alert.pk }}"/>
+                    </delete-alert-button>
+                </div>
+
+            </div>
+
         {% endif %}
 
         {% if show_link_alerts_list %}

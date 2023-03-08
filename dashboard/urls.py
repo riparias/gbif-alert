@@ -12,6 +12,7 @@ pages_urls = [
     path("alert/<int:alert_id>", views.alert_details_page, name="alert-details"),
     path("my-alerts", views.user_alerts_page, name="my-alerts"),
     path("new-alert", views.alert_create_page, name="alert-create"),
+    path("edit-alert/<int:alert_id>", views.alert_edit_page, name="alert-edit"),
     path(
         "observation/<stable_id>",
         views.observation_details_page,

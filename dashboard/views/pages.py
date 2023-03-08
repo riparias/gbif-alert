@@ -116,6 +116,26 @@ def alert_create_page(request: AuthenticatedHttpRequest):
     return render(request, "dashboard/alert_create.html", {"form": form})
 
 
+@login_required
+def alert_edit_page(request: AuthenticatedHttpRequest, alert_id: int):
+    alert = get_object_or_404(Alert, id=alert_id)
+
+    if alert.user == request.user:
+        if request.method == "POST":
+            form = AlertForm(request.user, request.POST, instance=alert)
+            if form.is_valid():
+                alert = form.save(commit=False)
+                alert.user = request.user
+                alert.save()
+                form.save_m2m()
+                return redirect(alert)
+        else:
+            form = AlertForm(for_user=request.user, instance=alert)
+        return render(request, "dashboard/alert_edit.html", {"form": form})
+    else:
+        return HttpResponseForbidden()
+
+
 def user_signup_page(request: HttpRequest):
     if request.method == "POST":
         form = SignUpForm(request.POST)

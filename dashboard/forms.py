@@ -40,9 +40,13 @@ class AlertForm(forms.ModelForm):
     def clean(self):
         cleaned_data = self.cleaned_data
         try:
-            if Alert.objects.filter(name=cleaned_data["name"], user=self.user).exists():
+            if (
+                Alert.objects.filter(name=cleaned_data["name"], user=self.user)
+                .exclude(pk=self.instance.pk)
+                .exists()
+            ):
                 raise ValidationError(
-                    "You already have an alert with this name. Please choose a different name."
+                    "You already have another alert with this name. Please choose a different name."
                 )
         except KeyError:  # name is not provided, skip the check
             pass

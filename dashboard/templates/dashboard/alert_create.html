@@ -1,5 +1,4 @@
 {% extends 'dashboard/base.html' %}
-{% load crispy_forms_tags %}
 
 {% block page_title %}New alert - LIFE RIPARIAS early alert{% endblock %}
 
@@ -9,12 +8,7 @@
             <div class="col">
                 <h1>Create a new alert</h1>
 
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form|crispy }}
-                    <input class="btn btn-primary btn-sm" type="submit" value="Create alert">
-                    <a class="btn btn-secondary btn-sm" href="{% url "dashboard:pages:my-alerts" %}">Cancel</a>
-                </form>
+                {% include "dashboard/_alert_form.html" with form=form button_label="Create"%}
             </div>
         </div>
     </div>
