@@ -317,7 +317,7 @@ class AlertWebPagesTests(TestCase):
         self.assertIn('<form method="post">', response.content.decode())
         self.assertContains(
             response,
-            '<input class="btn btn-primary btn-sm" type="submit" value="Create alert">',
+            '<input class="btn btn-primary btn-sm" type="submit" value="Create">',
             html=True,
         )
 
@@ -398,7 +398,7 @@ class AlertWebPagesTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context["form"].errors), 1)
         self.assertIn(
-            "You already have an alert with this name. Please choose a different name.",
+            "You already have another alert with this name. Please choose a different name.",
             response.context["form"].errors["__all__"],
         )
 
