@@ -49,7 +49,6 @@
       "
       :min-max-url="frontendConfig.apiEndpoints.minMaxOccPerHexagonUrl"
       :filters="filters"
-      :show-counters="true"
       :base-layer-name="mapBaseLayer"
       :data-layer-opacity="dataLayerOpacity"
       :areas-to-show="filters.areaIds"

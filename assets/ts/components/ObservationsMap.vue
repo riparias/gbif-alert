@@ -72,7 +72,6 @@ export default defineComponent({
       type: String,
       required: true,
     },
-    showCounters: Boolean,
     baseLayerName: String,
     dataLayerOpacity: Number,
     areasToShow: {
@@ -183,7 +182,7 @@ export default defineComponent({
       return function (feature: Feature<any> | RenderFeature): Style {
         const featuresCount = feature.getProperties()["count"];
         const fillColor = vm.colorScale(featuresCount);
-        const textValue = vm.showCounters ? "" + featuresCount : "";
+        const textColor = vm.legibleColor(fillColor);
 
         return new Style({
           stroke: new Stroke({
@@ -194,8 +193,8 @@ export default defineComponent({
             color: fillColor,
           }),
           text: new Text({
-            text: textValue,
-            fill: new Fill({ color: vm.legibleColor(fillColor) }),
+            text: featuresCount.toString(),
+            fill: new Fill({ color: textColor }),
           }),
         });
       };
