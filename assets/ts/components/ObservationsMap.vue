@@ -122,7 +122,7 @@ export default defineComponent({
       handler: function () {
         if (this.aggregatedDataLayer) {
           this.aggregatedDataLayer.setStyle(
-            this.aggregatedDataLayerStyleFunction
+              this.aggregatedDataLayerStyleFunction
           );
         }
       },
@@ -131,7 +131,7 @@ export default defineComponent({
       handler: function () {
         if (this.aggregatedDataLayer) {
           this.aggregatedDataLayer.setStyle(
-            this.aggregatedDataLayerStyleFunction
+              this.aggregatedDataLayerStyleFunction
           );
         }
       },
@@ -145,7 +145,7 @@ export default defineComponent({
       const availableBaseLayers = this.availableBaseLayers as BaseLayerEntry[]; // Don't understand why the type is not inferred automatically
 
       const found = availableBaseLayers.find(
-        (l) => this.baseLayerName === l.name
+          (l) => this.baseLayerName === l.name
       );
       if (found) {
         return found;
@@ -176,7 +176,7 @@ export default defineComponent({
           }),
           text: new Text({
             text: featuresCount.toString(),
-            fill: new Fill({ color: textColor }),
+            fill: new Fill({color: textColor}),
           }),
         });
       };
@@ -194,34 +194,34 @@ export default defineComponent({
 
       for (const areaId of areaIds) {
         axios
-          .get(this.apiEndpoints.areasUrlTemplate.replace("{id}", areaId.toString()))
-          .then((response) => {
-            const vectorSource = new VectorSource({
-              features: new GeoJSON().readFeatures(response.data, {
-                dataProjection: "EPSG:4326",
-                featureProjection: "EPSG:3857",
-              }),
-            });
-
-            const vectorLayer = new VectorLayer({
-              source: vectorSource,
-              style: new Style({
-                stroke: new Stroke({
-                  color: "#0b6efd",
-                  width: 3,
+            .get(this.apiEndpoints.areasUrlTemplate.replace("{id}", areaId.toString()))
+            .then((response) => {
+              const vectorSource = new VectorSource({
+                features: new GeoJSON().readFeatures(response.data, {
+                  dataProjection: "EPSG:4326",
+                  featureProjection: "EPSG:3857",
                 }),
-              }),
-            });
+              });
 
-            this.areasOverlayCollection.push(vectorLayer);
-          });
+              const vectorLayer = new VectorLayer({
+                source: vectorSource,
+                style: new Style({
+                  stroke: new Stroke({
+                    color: "#0b6efd",
+                    width: 3,
+                  }),
+                }),
+              });
+
+              this.areasOverlayCollection.push(vectorLayer);
+            });
       }
     },
     loadOccMinMax: function (zoomLevel: number, filters: DashboardFilters) {
-      let params = { ...filters } as any;
+      let params = {...filters} as any;
       params.zoom = zoomLevel;
 
-      axios.get(this.apiEndpoints.minMaxOccPerHexagonUrl, { params: params }).then((response) => {
+      axios.get(this.apiEndpoints.minMaxOccPerHexagonUrl, {params: params}).then((response) => {
         this.HexMinOccCount = response.data.min;
         this.HexMaxOccCount = response.data.max;
       });
@@ -257,14 +257,14 @@ export default defineComponent({
         source: new VectorTileSource({
           format: new MVT(),
           url:
-            this.apiEndpoints.tileServerUrlTemplate +
-            "?" +
-            filtersToQuerystring(this.filters),
+              this.apiEndpoints.tileServerUrlTemplate +
+              "?" +
+              filtersToQuerystring(this.filters),
         }),
         style: new Style({
           image: new Circle({
             radius: 7,
-            fill: new Fill({ color: "red" }),
+            fill: new Fill({color: "red"}),
           }),
         }),
         opacity: this.dataLayerOpacity,
@@ -276,9 +276,9 @@ export default defineComponent({
         source: new VectorTileSource({
           format: new MVT(),
           url:
-            this.apiEndpoints.tileServerAggregatedUrlTemplate +
-            "?" +
-            filtersToQuerystring(this.filters),
+              this.apiEndpoints.tileServerAggregatedUrlTemplate +
+              "?" +
+              filtersToQuerystring(this.filters),
         }),
         style: this.aggregatedDataLayerStyleFunction,
         opacity: this.dataLayerOpacity,
@@ -292,7 +292,7 @@ export default defineComponent({
           this.selectedBaseLayer,
           new LayerGroup({
             layers: this
-              .areasOverlayCollection as unknown as Collection<BaseLayer>,
+                .areasOverlayCollection as unknown as Collection<BaseLayer>,
             zIndex: 1000,
           }),
         ],
@@ -311,8 +311,8 @@ export default defineComponent({
 
     this.map.on("click", (evt) => {
       if (
-        this.map &&
-        this.map.getView().getZoom()! >= this.layerSwitchZoomLevel
+          this.map &&
+          this.map.getView().getZoom()! >= this.layerSwitchZoomLevel
       ) {
         const features = this.map.getFeaturesAtPixel(evt.pixel);
 
@@ -321,8 +321,8 @@ export default defineComponent({
           return {
             gbifId: properties["gbif_id"],
             url: this.apiEndpoints.observationDetailsUrlTemplate.replace(
-              "{stable_id}",
-              properties["stable_id"]
+                "{stable_id}",
+                properties["stable_id"]
             ),
           };
         });
@@ -341,9 +341,9 @@ export default defineComponent({
           this.popover = new Popover(this.popup.getElement() as HTMLElement, {
             html: true,
             content:
-              "<ul class='list-unstyled'>" +
-              clickedFeaturesHtmlList.join("") +
-              "</ul>",
+                "<ul class='list-unstyled'>" +
+                clickedFeaturesHtmlList.join("") +
+                "</ul>",
           });
           this.popover.show();
         }
