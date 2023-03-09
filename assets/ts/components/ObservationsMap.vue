@@ -15,7 +15,7 @@ import VectorTileSource from "ol/source/VectorTile";
 import {ScaleSequential, scaleSequentialLog} from "d3-scale";
 import {interpolateReds} from "d3-scale-chromatic";
 import {hsl} from "d3-color";
-import {BaseLayerEntry, DashboardFilters} from "../interfaces";
+import {BaseLayerEntry, DashboardFilters, EndpointsUrls, MapConfig} from "../interfaces";
 import "ol/ol.css";
 import {GeoJSON, MVT} from "ol/format";
 import {Circle, Fill, Stroke, Style, Text} from "ol/style";
@@ -50,26 +50,16 @@ export default defineComponent({
       type: Number, // Map height, in pixels
       required: true,
     },
-    initialZoom: {
-      type: Number,
+    initialPosition: {
+      type: Object as () => MapConfig,
       required: true,
     },
-    initialLat: {
-      type: Number,
+    apiEndpoints: {
+      type: Object as () => EndpointsUrls,
       required: true,
     },
-    initialLon: {
-      type: Number,
-      required: true,
-    },
-    tileServerUrlTemplate: String,
-    tileServerAggregatedUrlTemplate: String,
     filters: {
       type: Object as () => DashboardFilters,
-      required: true,
-    },
-    minMaxUrl: {
-      type: String,
       required: true,
     },
     baseLayerName: String,
@@ -78,18 +68,10 @@ export default defineComponent({
       type: Array as PropType<Array<number>>, // Array of area ids
       default: [],
     },
-    areasEndpointUrlTemplate: {
-      type: String,
-      required: true,
-    },
     layerSwitchZoomLevel: {
       // At which zoom level do we switch to the "individual observation" layer
       type: Number,
       default: 13,
-    },
-    observationPageUrlTemplate: {
-      type: String,
-      required: true,
     },
   },
   data: function () {
@@ -201,8 +183,8 @@ export default defineComponent({
     },
     mapView: function (): View {
       return new View({
-        zoom: this.initialZoom,
-        center: fromLonLat([this.initialLon, this.initialLat]),
+        zoom: this.initialPosition.initialZoom,
+        center: fromLonLat([this.initialPosition.initialLon, this.initialPosition.initialLat]),
       });
     },
   },
@@ -212,7 +194,7 @@ export default defineComponent({
 
       for (const areaId of areaIds) {
         axios
-          .get(this.areasEndpointUrlTemplate.replace("{id}", areaId.toString()))
+          .get(this.apiEndpoints.areasUrlTemplate.replace("{id}", areaId.toString()))
           .then((response) => {
             const vectorSource = new VectorSource({
               features: new GeoJSON().readFeatures(response.data, {
@@ -239,7 +221,7 @@ export default defineComponent({
       let params = { ...filters } as any;
       params.zoom = zoomLevel;
 
-      axios.get(this.minMaxUrl, { params: params }).then((response) => {
+      axios.get(this.apiEndpoints.minMaxOccPerHexagonUrl, { params: params }).then((response) => {
         this.HexMinOccCount = response.data.min;
         this.HexMaxOccCount = response.data.max;
       });
@@ -262,7 +244,7 @@ export default defineComponent({
         if (this.aggregatedDataLayer) {
           this.map.removeLayer(this.aggregatedDataLayer as VectorTileLayer);
         }
-        this.loadOccMinMax(this.initialZoom, this.filters);
+        this.loadOccMinMax(this.initialPosition.initialZoom, this.filters);
         this.aggregatedDataLayer = this.createAggregatedDataLayer();
         this.map.addLayer(this.aggregatedDataLayer as VectorTileLayer);
       }
@@ -275,7 +257,7 @@ export default defineComponent({
         source: new VectorTileSource({
           format: new MVT(),
           url:
-            this.tileServerUrlTemplate +
+            this.apiEndpoints.tileServerUrlTemplate +
             "?" +
             filtersToQuerystring(this.filters),
         }),
@@ -294,7 +276,7 @@ export default defineComponent({
         source: new VectorTileSource({
           format: new MVT(),
           url:
-            this.tileServerAggregatedUrlTemplate +
+            this.apiEndpoints.tileServerAggregatedUrlTemplate +
             "?" +
             filtersToQuerystring(this.filters),
         }),
@@ -338,7 +320,7 @@ export default defineComponent({
           const properties = f.getProperties();
           return {
             gbifId: properties["gbif_id"],
-            url: this.observationPageUrlTemplate!.replace(
+            url: this.apiEndpoints.observationDetailsUrlTemplate.replace(
               "{stable_id}",
               properties["stable_id"]
             ),

@@ -64,7 +64,7 @@ export interface EndpointsUrls {
   alertAsFiltersUrl: string;
 }
 
-interface MapConfig {
+export interface MapConfig {
   initialZoom: number;
   initialLat: number;
   initialLon: number;
