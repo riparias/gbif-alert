@@ -31,7 +31,7 @@ import {baseLayers} from "../map_config";
 import {Popover} from "bootstrap";
 import {StyleFunction} from "ol/style/Style";
 
-interface MapContainerData {
+interface ObservationMapData {
   map: Map | null;
   aggregatedDataLayer: VectorTileLayer | null;
   simpleDataLayer: VectorTileLayer | null;
@@ -69,7 +69,7 @@ export default defineComponent({
       default: [],
     },
     layerSwitchZoomLevel: {
-      // At which zoom level do we switch to the "individual observation" layer
+      // At which zoom level do we switch from the aggregated hexagons to the "individual observation" layer
       type: Number,
       default: 13,
     },
@@ -85,7 +85,7 @@ export default defineComponent({
       availableBaseLayers: baseLayers,
       areasOverlayCollection: new Collection(),
       popover: null,
-    } as MapContainerData;
+    } as ObservationMapData;
   },
   watch: {
     areasToShow: {
