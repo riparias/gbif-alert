@@ -44,7 +44,7 @@ interface MapContainerData {
 }
 
 export default defineComponent({
-  name: "MapContainer",
+  name: "ObservationsMap",
   props: {
     height: {
       type: Number, // Map height, in pixels
