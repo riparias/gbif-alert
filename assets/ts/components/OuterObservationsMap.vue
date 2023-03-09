@@ -38,9 +38,9 @@
 
     <Observations-Map
       :height="600"
-      :initial-zoom="8"
-      :initial-lat="50.501"
-      :initial-lon="4.4764"
+      :initial-zoom="frontendConfig.mainMapConfig.initialZoom"
+      :initial-lat="frontendConfig.mainMapConfig.initialLat"
+      :initial-lon="frontendConfig.mainMapConfig.initialLon"
       :tile-server-aggregated-url-template="
         frontendConfig.apiEndpoints.tileServerAggregatedUrlTemplate
       "
