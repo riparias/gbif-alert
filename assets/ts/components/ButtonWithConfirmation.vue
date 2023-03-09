@@ -1,52 +1,37 @@
 <template>
-  <button :id="buttonId" :class="$attrs.class" @click="confirmationModalOpen = true">
+  <button :id="props.buttonId" :class="$attrs.class" @click="confirmationModalOpen = true">
     <slot></slot>
   </button>
 
   <confirmation-modal
       :modal-open="confirmationModalOpen"
-      :confirmation-message-title="confirmationMessageTitle"
-      :confirmation-message-body="confirmationMessageBody"
+      :confirmation-message-title="props.confirmationMessageTitle"
+      :confirmation-message-body="props.confirmationMessageBody"
       @click-yes="clickYes()"
       @click-no="clickNo()"
   ></confirmation-modal>
 </template>
 
-<script lang="ts">
-import {defineComponent, ref} from "vue";
+<script setup lang="ts">
+import {ref} from "vue";
 import ConfirmationModal from "./ConfirmationModal.vue";
 
-export default defineComponent({
-  name: "ButtonWithConfirmation",
-  emits: ["user-confirmed"],
-  components: {ConfirmationModal},
-  props: {
-    buttonId: {
-      type: String,
-      required: true,
-    },
-    confirmationMessageTitle: {
-      type: String,
-      required: false,
-    },
-    confirmationMessageBody: {
-      type: String,
-      required: false,
-    },
-  },
-  setup(props, context) {
-    const confirmationModalOpen = ref(false);
+const props = defineProps<{
+  buttonId: string
+  confirmationMessageTitle?: string
+  confirmationMessageBody?: string
+}>()
 
-    const clickYes = function () {
-      context.emit("user-confirmed");
-      confirmationModalOpen.value = false;
-    }
+const confirmationModalOpen = ref(false);
 
-    const clickNo = function () {
-      confirmationModalOpen.value = false;
-    }
+const emit = defineEmits(["user-confirmed"]);
 
-    return {confirmationModalOpen, clickYes, clickNo};
-  }
-});
+const clickYes = function () {
+  emit("user-confirmed");
+  confirmationModalOpen.value = false;
+}
+
+const clickNo = function () {
+  confirmationModalOpen.value = false;
+}
 </script>
