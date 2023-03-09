@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts">
-import {defineComponent} from "vue";
+import {defineComponent, ref} from "vue";
 import ConfirmationModal from "./ConfirmationModal.vue";
 
 export default defineComponent({
@@ -34,19 +34,19 @@ export default defineComponent({
       required: false,
     },
   },
-  data: function () {
-    return {
-      confirmationModalOpen: false,
-    };
-  },
-  methods: {
-    clickYes: function () {
-      this.$emit("user-confirmed");
-      this.confirmationModalOpen = false;
-    },
-    clickNo: function () {
-      this.confirmationModalOpen = false;
-    },
-  },
+  setup(props, context) {
+    const confirmationModalOpen = ref(false);
+
+    const clickYes = function () {
+      context.emit("user-confirmed");
+      confirmationModalOpen.value = false;
+    }
+
+    const clickNo = function () {
+      confirmationModalOpen.value = false;
+    }
+
+    return {confirmationModalOpen, clickYes, clickNo};
+  }
 });
 </script>
