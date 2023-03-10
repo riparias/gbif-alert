@@ -15,20 +15,18 @@ import {computed} from "vue";
 
 interface Props {
   alertType?: string // "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark"
-  dissmissible?: boolean
+  dismissible?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   alertType: "primary",
-  dissmissible: true,
+  dismissible: true,
 });
 
 const emit = defineEmits(["clickClose"]);
 
 const alertClasses = computed(() => {
   const styleClass = `alert-${props.alertType}`;
-  return { [styleClass]: true, "alert-dismissible": props.dissmissible };
+  return { [styleClass]: true, "alert-dismissible": props.dismissible };
 });
-
-
 </script>
