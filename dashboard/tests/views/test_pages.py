@@ -68,7 +68,7 @@ class AlertWebPagesTests(TestCase):
             email="frusciante@gmail.com",
         )
 
-        second_user = User.objects.create_user(
+        cls.second_user = User.objects.create_user(
             username="other_user",
             password="12345",
             first_name="Aaa",
@@ -106,7 +106,9 @@ class AlertWebPagesTests(TestCase):
         )
 
         cls.alert = Alert.objects.create(
+            name="Test alert",
             user=cls.first_user,
+            email_notifications_frequency="N",
         )
         cls.alert.species.add(cls.first_species)
         cls.alert.datasets.add(cls.first_dataset)
@@ -120,7 +122,7 @@ class AlertWebPagesTests(TestCase):
 
         cls.second_user_area = Area.objects.create(
             name="Second user polygon",
-            owner=second_user,
+            owner=cls.second_user,
             mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
         )
 
@@ -337,7 +339,7 @@ class AlertWebPagesTests(TestCase):
         # Attempt 2: add mandatory fields: the alerts gets created and the user is redirected to the alert details page
         response = self.client.post(
             reverse("dashboard:pages:alert-create"),
-            {"email_notifications_frequency": "D", "name": "Test alert"},
+            {"email_notifications_frequency": "D", "name": "My Test alert"},
         )
         new_alert = Alert.objects.latest("id")
 
@@ -460,6 +462,114 @@ class AlertWebPagesTests(TestCase):
         self.assertEqual(Alert.objects.all().count(), 1)
 
         self.assertEqual(response.status_code, 403)
+
+    def test_edit_other_user_alert(self):
+        """A user cannot edit an alert owned by someone else"""
+        self.client.login(username="other_user", password="12345")
+
+        response = self.client.post(
+            reverse("dashboard:pages:alert-edit", kwargs={"alert_id": self.alert.pk}),
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_edit_alert_get(self):
+        """GET requests return alert details so the form can be populated"""
+        self.client.login(username="frusciante", password="12345")
+
+        response = self.client.get(
+            reverse("dashboard:pages:alert-edit", kwargs={"alert_id": self.alert.pk}),
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.context["form"]["name"].value(), "Test alert")
+        self.assertEqual(
+            response.context["form"]["email_notifications_frequency"].value(), "N"
+        )
+        self.assertEqual(
+            response.context["form"]["species"].value(), [self.first_species.pk]
+        )
+        self.assertEqual(
+            response.context["form"]["datasets"].value(), [self.first_dataset.pk]
+        )
+        self.assertEqual(
+            response.context["form"]["areas"].value(), [self.public_area_andenne.pk]
+        )
+
+    def test_edit_alert_success(self):
+        """A user can edit its own alerts"""
+        self.client.login(username="frusciante", password="12345")
+
+        self.client.post(
+            reverse("dashboard:pages:alert-edit", kwargs={"alert_id": self.alert.pk}),
+            {
+                "name": "New alert name",
+                "email_notifications_frequency": "M",
+                "species": [],
+                "datasets": [],
+                "areas": [],
+            },
+        )
+
+        self.alert.refresh_from_db()
+        self.assertEqual(self.alert.name, "New alert name")
+        self.assertEqual(self.alert.email_notifications_frequency, "M")
+        self.assertEqual(self.alert.species.count(), 0)
+        self.assertEqual(self.alert.datasets.count(), 0)
+        self.assertEqual(self.alert.areas.count(), 0)
+
+    def test_edit_alert_can_keep_name(self):
+        """A user can edit its own alerts and keep the same name without errors"""
+        self.client.login(username="frusciante", password="12345")
+
+        response = self.client.post(
+            reverse("dashboard:pages:alert-edit", kwargs={"alert_id": self.alert.pk}),
+            {
+                "name": "Test alert",
+                "email_notifications_frequency": "M",
+                "species": [],
+                "datasets": [],
+                "areas": [],
+            },
+        )
+        # If we get redirected, the edition was successful
+        self.assertRedirects(response, f"/alert/{self.alert.pk}")
+
+    def test_edit_alert_cannot_duplicate_names(self):
+        """A user cannot edit its own alerts and use the same name as another alert"""
+
+        Alert.objects.create(name="Test alert 2", user=self.first_user)
+
+        self.client.login(username="frusciante", password="12345")
+        response = self.client.post(
+            reverse("dashboard:pages:alert-edit", kwargs={"alert_id": self.alert.pk}),
+            {
+                "name": "Test alert 2",
+                "email_notifications_frequency": "M",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["form"].errors["__all__"][0],
+            "You already have another alert with this name. Please choose a different name.",
+        )
+
+    def test_edit_alert_no_duplicate_names_between_users(self):
+        """Duplicate alert names are allowed between users"""
+        Alert.objects.create(name="Test alert 2", user=self.second_user)
+
+        self.client.login(username="frusciante", password="12345")
+        response = self.client.post(
+            reverse("dashboard:pages:alert-edit", kwargs={"alert_id": self.alert.pk}),
+            {
+                "name": "Test alert 2",
+                "email_notifications_frequency": "M",
+            },
+        )
+        # If we get redirected, the edition was successful
+        self.assertRedirects(response, f"/alert/{self.alert.pk}")
 
 
 @override_settings(
