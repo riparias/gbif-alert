@@ -10,27 +10,23 @@
   </div>
 </template>
 
-<script lang="ts">
-import {defineComponent} from "vue";
+<script setup lang="ts">
+import {computed} from "vue";
 
-export default defineComponent({
-  name: "BootstrapAlert",
-  props: {
-    alertType: {
-      type: String, // "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark"
-      default: "primary",
-    },
-    dissmissible: {
-      type: Boolean,
-      default: true,
-    },
-  },
-  emits: ["clickClose"],
-  computed: {
-    alertClasses: function (): Object {
-      const styleClass = `alert-${this.alertType}`;
-      return { [styleClass]: true, "alert-dismissible": this.dissmissible };
-    },
-  },
+interface Props {
+  alertType?: string // "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark"
+  dismissible?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  alertType: "primary",
+  dismissible: true,
+});
+
+const emit = defineEmits(["clickClose"]);
+
+const alertClasses = computed(() => {
+  const styleClass = `alert-${props.alertType}`;
+  return { [styleClass]: true, "alert-dismissible": props.dismissible };
 });
 </script>

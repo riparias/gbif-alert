@@ -38,27 +38,12 @@
 
     <Observations-Map
       :height="600"
-      :initial-zoom="8"
-      :initial-lat="50.501"
-      :initial-lon="4.4764"
-      :tile-server-aggregated-url-template="
-        frontendConfig.apiEndpoints.tileServerAggregatedUrlTemplate
-      "
-      :tile-server-url-template="
-        frontendConfig.apiEndpoints.tileServerUrlTemplate
-      "
-      :min-max-url="frontendConfig.apiEndpoints.minMaxOccPerHexagonUrl"
+      :initial-position="frontendConfig.mainMapConfig"
+      :api-endpoints="frontendConfig.apiEndpoints"
       :filters="filters"
-      :show-counters="true"
       :base-layer-name="mapBaseLayer"
       :data-layer-opacity="dataLayerOpacity"
       :areas-to-show="filters.areaIds"
-      :areas-endpoint-url-template="
-        frontendConfig.apiEndpoints.areasUrlTemplate
-      "
-      :observation-page-url-template="
-        frontendConfig.apiEndpoints.observationDetailsUrlTemplate
-      "
     ></Observations-Map>
   </div>
 </template>

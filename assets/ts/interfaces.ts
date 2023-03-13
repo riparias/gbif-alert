@@ -64,12 +64,19 @@ export interface EndpointsUrls {
   alertAsFiltersUrl: string;
 }
 
+export interface MapConfig {
+  initialZoom: number;
+  initialLat: number;
+  initialLon: number;
+}
+
 // Keep in sync with templatetags.riparias_extras.js_config_object
 export interface FrontEndConfig {
   ripariasAreaGeojsonUrl: string;
   apiEndpoints: EndpointsUrls;
   authenticatedUser: boolean;
   userId?: number; // Only set if authenticatedUser is true
+  mainMapConfig: MapConfig;
 }
 
 // Keep in sync with Models.Observation.as_dict()

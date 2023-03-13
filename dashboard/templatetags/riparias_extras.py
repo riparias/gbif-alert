@@ -4,6 +4,7 @@ from typing import Any
 from urllib.parse import urlencode
 
 from django import template
+from django.conf import settings
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
@@ -97,6 +98,7 @@ def js_config_object(context):
                 "dashboard:internal-api:alert-as-filters-json"
             ),
         },
+        "mainMapConfig": settings.MAIN_MAP_CONFIG,
     }
     if context.request.user.is_authenticated:
         conf["userId"] = context.request.user.pk
