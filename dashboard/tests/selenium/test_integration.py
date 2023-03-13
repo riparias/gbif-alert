@@ -9,6 +9,7 @@ from django.utils import timezone
 from selenium import webdriver  # type: ignore
 from selenium.common.exceptions import NoSuchElementException  # type: ignore
 from selenium.webdriver.support import expected_conditions as EC  # type: ignore
+from selenium.webdriver.support.select import Select  # type: ignore
 from selenium.webdriver.support.wait import WebDriverWait  # type: ignore
 from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
 from webdriver_manager.core.utils import ChromeType  # type: ignore
@@ -116,12 +117,113 @@ class RipariasSeleniumTestsCommon(StaticLiveServerTestCase):
         ObservationView.objects.create(observation=obs_1, user=normal_user)
 
         Alert.objects.create(
-            user=normal_user, email_notifications_frequency=Alert.DAILY_EMAILS
+            name="Test alert",
+            user=normal_user,
+            email_notifications_frequency=Alert.DAILY_EMAILS,
         )
 
 
 class RipariasSeleniumAlertTests(RipariasSeleniumTestsCommon):
     """Integration tests for the alert-related features"""
+
+    def test_alert_edit_cancel_scenario(self):
+        """The user go to the edit alert page, but change its mind and cancel"""
+        # Action 1: login
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
+        username_field = self.selenium.find_element_by_id("id_username")
+        password_field = self.selenium.find_element_by_id("id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("testuser")
+        password_field.send_keys("12345")
+        signin_button = self.selenium.find_element_by_id("riparias-signin-button")
+        signin_button.click()
+        WebDriverWait(self.selenium, 3)
+
+        # Check 1: There a "my alerts" link we can follow
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        navbar.find_element_by_link_text("My alerts").click()
+        WebDriverWait(self.selenium, 3)
+
+        # Check 2: on the page, there's a single edit alert button (only one alert)
+        edit_buttons = self.selenium.find_elements_by_class_name(
+            "riparias-edit-alert-button"
+        )
+        self.assertEqual(len(edit_buttons), 1)
+        edit_button = edit_buttons[0]
+        edit_button.click()
+        WebDriverWait(self.selenium, 3)
+
+        # Om the edit alert page, let's click the cancel button and make sure we go back to the alerts list
+        cancel_button = self.selenium.find_element_by_link_text("Cancel")
+        cancel_button.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("My alerts"))
+
+    def test_alert_edit_scenario(self):
+        """The user go to the edit alert page, make edits and save them"""
+        # Action 1: login
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
+        username_field = self.selenium.find_element_by_id("id_username")
+        password_field = self.selenium.find_element_by_id("id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("testuser")
+        password_field.send_keys("12345")
+        signin_button = self.selenium.find_element_by_id("riparias-signin-button")
+        signin_button.click()
+        WebDriverWait(self.selenium, 3)
+
+        # Check 1: There a "my alerts" link we can follow
+        navbar = self.selenium.find_element_by_id("riparias-main-navbar")
+        navbar.find_element_by_link_text("My alerts").click()
+        WebDriverWait(self.selenium, 3)
+
+        # Check 2: on the page, there's a single edit alert button (only one alert)
+        edit_buttons = self.selenium.find_elements_by_class_name(
+            "riparias-edit-alert-button"
+        )
+        self.assertEqual(len(edit_buttons), 1)
+        edit_button = edit_buttons[0]
+        edit_button.click()
+        WebDriverWait(self.selenium, 3)
+
+        # Edit alert name
+        name_field = self.selenium.find_element_by_id("id_name")
+        name_field.clear()
+        name_field.send_keys("Edited alert name")
+
+        # Edit selected species (initially: no selection -> all species)
+        species_select = Select(self.selenium.find_element_by_id("id_species"))
+        species_select.select_by_visible_text("Orconectes virilis")
+
+        # Edit selected datasets (initially: no selection -> all datasets)
+        datasets_select = Select(self.selenium.find_element_by_id("id_datasets"))
+        datasets_select.select_by_visible_text("Test dataset #2")
+
+        # Change test alert frequency to "weekly"
+        frequency_select = Select(
+            self.selenium.find_element_by_id("id_email_notifications_frequency")
+        )
+        frequency_select.select_by_visible_text("Weekly")
+
+        # Click the save button, gets redirected to the alerts details page
+        save_button = self.selenium.find_element_by_id("riparias-alert-save-btn")
+        save_button.click()
+
+        wait = WebDriverWait(self.selenium, 3)
+        # The page title contains the updated alert name
+        wait.until(EC.title_contains("Alert Edited alert name details"))
+
+        # Check the values are actually updated
+        title = self.selenium.find_element_by_class_name("riparias-alert-title")
+        self.assertEqual(title.text, "Edited alert name")
+
+        species_list = self.selenium.find_element_by_id("riparias-alert-species-list")
+        self.assertEqual(species_list.text, "Species: Orconectes virilis")
+
+        datasets_list = self.selenium.find_element_by_id("riparias-alert-datasets-list")
+        self.assertEqual(datasets_list.text, "Datasets: Test dataset #2")
 
     def test_alert_delete_scenario(self):
         # Action 1: login
