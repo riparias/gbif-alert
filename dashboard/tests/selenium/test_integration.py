@@ -315,7 +315,7 @@ class RipariasSeleniumTests(RipariasSeleniumTestsCommon):
 
         # Check 1: have a look at the all/seen/unseen button/counters
         observation_status_selector = self.selenium.find_element_by_id(
-            "riparias-obs-status-selector"
+            "pterois-obs-status-selector"
         )
         seen_button = observation_status_selector.find_element_by_id(
             "label-btnRadioSeen"

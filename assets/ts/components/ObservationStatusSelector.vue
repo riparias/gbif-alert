@@ -4,7 +4,7 @@
     <div
       class="btn-group btn-group-sm"
       role="group"
-      id="riparias-obs-status-selector"
+      id="pterois-obs-status-selector"
     >
       <ObservationStatusSelectorEntry
         entry-label="All"
