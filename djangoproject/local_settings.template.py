@@ -47,10 +47,11 @@ ADMINS = [
 ]
 
 PTEROIS = {
-    "TARGET_COUNTRY_CODE": "BE",
-    # A Gbif.org account is necessary to automatically download observations via the `import_observations` command
-    "GBIF_USERNAME": "riparias-dev",
-    "GBIF_PASSWORD": "riparias-dev",
+    "GBIF_DOWNLOAD_CONFIG": {
+        "USERNAME": "riparias-dev",
+        "PASSWORD": "riparias-dev",
+        "COUNTRY_CODE": "BE",  # Only download observations from this country
+    },
     "SHOW_DEV_VERSION_WARNING": False,
     "MAIN_MAP_CONFIG": {
         "initialZoom": 8,

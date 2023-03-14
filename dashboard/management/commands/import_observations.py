@@ -261,13 +261,13 @@ class Command(BaseCommand):
             source_data_path = tmp_file.name
             # This might takes several minutes...
             gbif_predicate = build_gbif_predicate(
-                country_code=settings.PTEROIS["TARGET_COUNTRY_CODE"],
+                country_code=settings.PTEROIS["GBIF_DOWNLOAD_CONFIG"]["COUNTRY_CODE"],
                 species_list=Species.objects.all(),
             )
             download_gbif_occurrences(
                 gbif_predicate,
-                username=settings.PTEROIS["GBIF_USERNAME"],
-                password=settings.PTEROIS["GBIF_PASSWORD"],
+                username=settings.PTEROIS["GBIF_DOWNLOAD_CONFIG"]["USERNAME"],
+                password=settings.PTEROIS["GBIF_DOWNLOAD_CONFIG"]["PASSWORD"],
                 output_path=source_data_path,
             )
             self.stdout.write("Observations downloaded")
