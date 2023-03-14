@@ -8,7 +8,9 @@
     <div class="container">
         <div class="row">
             <div class="col">
-                {% include "dashboard/_alert.html" with alert=alert show_management_buttons=False show_link_alerts_list=True only %}
+                <div id="app-alert-metadata">
+                    {% include "dashboard/_alert.html" with alert=alert show_details_buttons=False show_link_alerts_list=True %}
+                </div>
             </div>
         </div>
 
