@@ -46,6 +46,15 @@ ADMINS = [
     ("Nicolas", "nicolas.noe@inbo.be"),
 ]
 
-# A Gbif.org account is necessary to automatically download observations via the `import_observations` command
-PTEROIS["GBIF_USERNAME"] = "xxx"
-PTEROIS["GBIF_PASSWORD"] = "yyy"
+PTEROIS = {
+    "TARGET_COUNTRY_CODE": "BE",
+    # A Gbif.org account is necessary to automatically download observations via the `import_observations` command
+    "GBIF_USERNAME": "riparias-dev",
+    "GBIF_PASSWORD": "riparias-dev",
+    "SHOW_DEV_VERSION_WARNING": False,
+    "MAIN_MAP_CONFIG": {
+        "initialZoom": 8,
+        "initialLat": 50.50,
+        "initialLon": 4.47,
+    },
+}

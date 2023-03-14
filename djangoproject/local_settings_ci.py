@@ -30,6 +30,15 @@ RQ_QUEUES = {
 # used to refer to the website in emails! Points to the site root, includes protocol, host, port... No trailing slash.
 SITE_BASE_URL = "http://localhost"
 
-# A Gbif.org is necessary to automatically download observations via the `import_observations` command
-PTEROIS["GBIF_USERNAME"] = "xxx"
-PTEROIS["GBIF_PASSWORD"] = "yyy"
+PTEROIS = {
+    "TARGET_COUNTRY_CODE": "BE",
+    # A Gbif.org account is necessary to automatically download observations via the `import_observations` command
+    "GBIF_USERNAME": "riparias-dev",
+    "GBIF_PASSWORD": "riparias-dev",
+    "SHOW_DEV_VERSION_WARNING": False,
+    "MAIN_MAP_CONFIG": {
+        "initialZoom": 8,
+        "initialLat": 50.50,
+        "initialLon": 4.47,
+    },
+}

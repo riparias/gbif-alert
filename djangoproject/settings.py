@@ -177,11 +177,3 @@ LOGGING = {
 }
 
 MARKDOWNX_MARKDOWN_EXTENSIONS = ["markdown.extensions.toc"]
-
-PTEROIS = {"TARGET_COUNTRY_CODE": "BE"}
-
-MAIN_MAP_CONFIG = {
-    "initialZoom": 8,
-    "initialLat": 50.50,
-    "initialLon": 4.47,
-}
