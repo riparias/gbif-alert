@@ -31,5 +31,5 @@ RQ_QUEUES = {
 SITE_BASE_URL = "http://localhost"
 
 # A Gbif.org is necessary to automatically download observations via the `import_observations` command
-RIPARIAS["GBIF_USERNAME"] = "xxx"
-RIPARIAS["GBIF_PASSWORD"] = "yyy"
+PTEROIS["GBIF_USERNAME"] = "xxx"
+PTEROIS["GBIF_PASSWORD"] = "yyy"

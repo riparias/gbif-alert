@@ -78,7 +78,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "dashboard.context_processors.latest_data_import_processor",
-                "dashboard.context_processors.riparias_settings",
+                "dashboard.context_processors.pterois_settings",
                 "dashboard.context_processors.riparias_various",
             ],
         },
@@ -178,7 +178,7 @@ LOGGING = {
 
 MARKDOWNX_MARKDOWN_EXTENSIONS = ["markdown.extensions.toc"]
 
-RIPARIAS = {"TARGET_COUNTRY_CODE": "BE"}
+PTEROIS = {"TARGET_COUNTRY_CODE": "BE"}
 
 MAIN_MAP_CONFIG = {
     "initialZoom": 8,

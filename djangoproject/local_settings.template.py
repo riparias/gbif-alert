@@ -47,5 +47,5 @@ ADMINS = [
 ]
 
 # A Gbif.org account is necessary to automatically download observations via the `import_observations` command
-RIPARIAS["GBIF_USERNAME"] = "xxx"
-RIPARIAS["GBIF_PASSWORD"] = "yyy"
+PTEROIS["GBIF_USERNAME"] = "xxx"
+PTEROIS["GBIF_PASSWORD"] = "yyy"

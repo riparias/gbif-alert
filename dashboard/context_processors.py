@@ -25,7 +25,7 @@ def riparias_various(_: HttpRequest):
     }
 
 
-def riparias_settings(_: HttpRequest):
+def pterois_settings(_: HttpRequest):
     return {
-        "riparias_settings": django_settings.RIPARIAS,
+        "pterois_settings": django_settings.PTEROIS,
     }
