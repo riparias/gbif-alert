@@ -1,3 +1,5 @@
+from typing import Dict, Any
+
 from .settings import *
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -46,7 +48,7 @@ ADMINS = [
     ("Nicolas", "nicolas.noe@inbo.be"),
 ]
 
-PTEROIS = {
+PTEROIS: Dict[str, Any] = {
     "GBIF_DOWNLOAD_CONFIG": {
         "USERNAME": "riparias-dev",
         "PASSWORD": "riparias-dev",

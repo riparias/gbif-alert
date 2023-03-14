@@ -1,3 +1,5 @@
+from typing import Dict, Any
+
 from .settings import *
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -30,7 +32,7 @@ RQ_QUEUES = {
 # used to refer to the website in emails! Points to the site root, includes protocol, host, port... No trailing slash.
 SITE_BASE_URL = "http://localhost"
 
-PTEROIS = {
+PTEROIS: Dict[str, Any] = {
     "GBIF_DOWNLOAD_CONFIG": {
         "USERNAME": "riparias-dev",
         "PASSWORD": "riparias-dev",
