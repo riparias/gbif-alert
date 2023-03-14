@@ -30,7 +30,7 @@
       :transform="`translate(${svgStyle.margin.left}, ${svgStyle.margin.top})`"
     >
       <rect
-        class="riparias-bar"
+        class="pterois-bar"
         v-for="(barDataEntry, index) in truncatedBarData"
         :class="{
           selected:
@@ -247,7 +247,7 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.riparias-bar {
+.pterois-bar {
   fill: #00a58d;
   opacity: 0.3;
 }
