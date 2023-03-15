@@ -12,7 +12,7 @@
                 <form method="post">
                     {% csrf_token %}
                     {{ form|crispy }}
-                    <button id="riparias-profile-save-button" type="submit" class="btn btn-primary btn-sm">Save</button>
+                    <button id="pterois-profile-save-button" type="submit" class="btn btn-primary btn-sm">Save</button>
                 </form>
             </div>
         </div>
@@ -20,7 +20,7 @@
         <div class="row">
             <div class="col">
                 <div id="app">
-                    <delete-account-button button-id="riparias-profile-delete-account-button"  form-action="{% url "dashboard:actions:delete-own-account" %}">
+                    <delete-account-button button-id="pterois-profile-delete-account-button"  form-action="{% url "dashboard:actions:delete-own-account" %}">
                         {% csrf_token %}
                     </delete-account-button>
                 </div>

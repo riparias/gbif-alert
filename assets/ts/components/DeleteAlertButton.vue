@@ -1,6 +1,6 @@
 <template>
   <button-with-confirmation
-      class="btn btn-danger btn-sm riparias-delete-alert-button"
+      class="btn btn-danger btn-sm pterois-delete-alert-button"
       :button-id="buttonId"
       confirmation-message-body="Do you really want to this alert? This can't be undone."
       @user-confirmed="userConfirmedDeletion()">

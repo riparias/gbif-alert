@@ -1,12 +1,12 @@
 <div class="card my-2">
     <div class="card-body">
-        <h4 class="card-title riparias-alert-title" id="alert-{{ alert.pk }}-title">{{ alert.name }}</h4>
+        <h4 class="card-title pterois-alert-title" id="alert-{{ alert.pk }}-title">{{ alert.name }}</h4>
         <p class="card-text">
         <ul class="list-group list-group-flush">
-            <li class="list-group-item" id="riparias-alert-species-list">
+            <li class="list-group-item" id="pterois-alert-species-list">
                 <b>Species:</b> {{ alert.species_list|default:"all" }}</li>
             <li class="list-group-item"><b>Areas:</b> {{ alert.areas_list|default:"all" }}</li>
-            <li class="list-group-item" id="riparias-alert-datasets-list">
+            <li class="list-group-item" id="pterois-alert-datasets-list">
                 <b>Datasets:</b> {{ alert.datasets_list|default:"all" }}</li>
             <li class="list-group-item">
                 <b>Email notifications frequency:</b>
@@ -36,11 +36,11 @@
 
             <div class="float-end">
                 <a href="{% url 'dashboard:pages:alert-edit' alert_id=alert.id %}"
-                   class="btn btn-sm btn-warning mx-2 riparias-edit-alert-button">
+                   class="btn btn-sm btn-warning mx-2 pterois-edit-alert-button">
                     <i class="bi bi-pencil-fill"></i> Edit this alert
                 </a>
 
-                <delete-alert-button button-id="riparias-delete-alert-button-{{ alert.pk }}"
+                <delete-alert-button button-id="pterois-delete-alert-button-{{ alert.pk }}"
                                      form-action="{% url "dashboard:actions:delete-alert" %}">
                     {% csrf_token %}
                     <input type="hidden" name="alert_id" value="{{ alert.pk }}"/>
