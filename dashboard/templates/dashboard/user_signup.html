@@ -2,7 +2,7 @@
 
 {% load crispy_forms_tags %}
 
-{% block page_title %}Sign up - RIPARIAS early alert{% endblock %}
+{% block page_title %}{% include "dashboard/_page_title.html" with page_name="Sign up" %}{% endblock %}
 
 {% block after_messages %}
     <div class="container">

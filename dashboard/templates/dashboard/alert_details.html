@@ -2,7 +2,7 @@
 
 {% load static %}
 
-{% block page_title %}Alert {{ alert.name }} details - LIFE RIPARIAS early alert{% endblock %}
+{% block page_title %}{% include "dashboard/_page_title.html" with page_name="Alert details" %}{% endblock %}
 
 {% block after_messages %}
     <div class="container">

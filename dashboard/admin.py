@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.gis import admin
 from import_export import resources  # type: ignore
@@ -15,11 +16,11 @@ from .models import (
     Alert,
 )
 
-admin.site.site_header = "LIFE RIPARIAS early warning administration"
+admin.site.site_header = f'{settings.PTEROIS["SITE_NAME"]} administration'
 
 
 @admin.register(User)
-class RipariasUserAdmin(DjangoUserAdmin):
+class PteroisUserAdmin(DjangoUserAdmin):
     fieldsets = DjangoUserAdmin.fieldsets + (  # type: ignore
         (
             "Custom fields",

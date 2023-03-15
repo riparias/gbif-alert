@@ -2,7 +2,7 @@
 
 {% load page_fragments %}
 
-{% block page_title %}About this site - LIFE RIPARIAS early alert{% endblock %}
+{% block page_title %}{% include "dashboard/_page_title.html" with page_name="About this site" %}{% endblock %}
 
 {% block after_messages %}
     <div class="container">

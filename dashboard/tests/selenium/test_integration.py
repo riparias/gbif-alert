@@ -212,8 +212,7 @@ class PteroisSeleniumAlertTests(PteroisSeleniumTestsCommon):
         save_button.click()
 
         wait = WebDriverWait(self.selenium, 3)
-        # The page title contains the updated alert name
-        wait.until(EC.title_contains("Alert Edited alert name details"))
+        wait.until(EC.title_contains("Alert details"))
 
         # Check the values are actually updated
         title = self.selenium.find_element_by_class_name("pterois-alert-title")
