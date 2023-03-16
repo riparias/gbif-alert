@@ -49,6 +49,7 @@ ADMINS = [
 ]
 
 PTEROIS: Dict[str, Any] = {
+    "SITE_NAME": "LIFE RIPARIAS early alert",
     "GBIF_DOWNLOAD_CONFIG": {
         "USERNAME": "riparias-dev",
         "PASSWORD": "riparias-dev",

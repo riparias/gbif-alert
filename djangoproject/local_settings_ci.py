@@ -33,6 +33,7 @@ RQ_QUEUES = {
 SITE_BASE_URL = "http://localhost"
 
 PTEROIS: Dict[str, Any] = {
+    "SITE_NAME": "LIFE RIPARIAS early alert",
     "GBIF_DOWNLOAD_CONFIG": {
         "USERNAME": "riparias-dev",
         "PASSWORD": "riparias-dev",
