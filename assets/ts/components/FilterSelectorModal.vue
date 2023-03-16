@@ -4,6 +4,7 @@
       class="modal fade show d-block"
       tabindex="-1"
       role="dialog"
+      @click="modalClicked($event);"
   >
     <div class="modal-dialog" role="document">
       <div class="modal-content">
@@ -38,7 +39,7 @@
       </div>
     </div>
   </div>
-  <div class="modal-backdrop fade show"></div>
+  <div class="modal-backdrop fade show" @click="emit('clickedClose')"></div>
 </template>
 
 <script setup lang="ts">
@@ -65,6 +66,13 @@ const props = withDefaults(defineProps<Props>(), {
 const selectedEntriesIds = ref<number[]>(props.modelValue);
 
 const emit = defineEmits(['clickedClose', 'update:modelValue']);
+
+const modalClicked = (event: Event) => {
+  if (event.target === event.currentTarget) {
+    // Backdrop was clicked
+    emit('clickedClose');
+  }
+}
 
 watch(selectedEntriesIds, (newVal) => {
   emit('update:modelValue', newVal)
