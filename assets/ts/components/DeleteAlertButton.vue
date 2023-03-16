@@ -7,7 +7,7 @@
       <i class="bi bi-trash"></i> Delete this alert
   </button-with-confirmation>
 
-  <form method="post" ref="form" class="d-inline float-end riparias-alert-delete-form" :action="formAction">
+  <form method="post" ref="form" class="d-inline float-end pterois-alert-delete-form" :action="formAction">
     <slot></slot>
   </form>
 
