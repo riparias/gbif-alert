@@ -19,9 +19,9 @@ def latest_data_import_processor(_: HttpRequest):
     }
 
 
-def riparias_various(_: HttpRequest):
+def pterois_various(_: HttpRequest):
     return {
-        "riparias_news_page_fragment_id": NEWS_PAGE_IDENTIFIER,
+        "pterois_news_page_fragment_id": NEWS_PAGE_IDENTIFIER,
     }
 
 

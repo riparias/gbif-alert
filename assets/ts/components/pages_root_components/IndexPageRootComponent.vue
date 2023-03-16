@@ -102,7 +102,7 @@ import BootstrapAlert from "../BootstrapAlert.vue";
 import {debounce, DebouncedFunc} from "lodash";
 import {dateTimeToFilterParam} from "../../helpers";
 
-declare const ripariasConfig: FrontEndConfig;
+declare const pteroisConfig: FrontEndConfig;
 declare const initialFilters: DashboardFilters;
 
 interface IndexPageRootComponentData {
@@ -127,7 +127,7 @@ export default defineComponent({
   },
   data: function (): IndexPageRootComponentData {
     return {
-      frontendConfig: ripariasConfig,
+      frontendConfig: pteroisConfig,
 
       availableSpecies: [],
       availableDatasets: [],

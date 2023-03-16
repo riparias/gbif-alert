@@ -79,7 +79,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "dashboard.context_processors.latest_data_import_processor",
                 "dashboard.context_processors.pterois_settings",
-                "dashboard.context_processors.riparias_various",
+                "dashboard.context_processors.pterois_various",
             ],
         },
     },
