@@ -1,25 +1,29 @@
 <div class="card my-2">
     <div class="card-body">
-        <h4 class="card-title riparias-alert-title" id="alert-{{ alert.pk }}-title">{{ alert.name }}</h4>
+        <h4 class="card-title pterois-alert-title" id="alert-{{ alert.pk }}-title">{{ alert.name }}</h4>
         <p class="card-text">
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item" id="riparias-alert-species-list"><b>Species:</b> {{ alert.species_list|default:"all" }}</li>
-                <li class="list-group-item"><b>Areas:</b> {{ alert.areas_list|default:"all" }}</li>
-                <li class="list-group-item" id="riparias-alert-datasets-list"><b>Datasets:</b> {{ alert.datasets_list|default:"all" }}</li>
-                <li class="list-group-item">
-                    <b>Email notifications frequency:</b>
-                    {{ alert.get_email_notifications_frequency_display }}
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item" id="pterois-alert-species-list">
+                <b>Species:</b> {{ alert.species_list|default:"all" }}</li>
+            <li class="list-group-item"><b>Areas:</b> {{ alert.areas_list|default:"all" }}</li>
+            <li class="list-group-item" id="pterois-alert-datasets-list">
+                <b>Datasets:</b> {{ alert.datasets_list|default:"all" }}</li>
+            <li class="list-group-item">
+                <b>Email notifications frequency:</b>
+                {{ alert.get_email_notifications_frequency_display }}
 
-                    <span class="text-muted small">
+                <span class="text-muted small">
                         -- Last email sent:
                         {{ alert.last_email_sent_on|default_if_none:"never" }}
                     </span>
-                </li>
-            </ul>
+            </li>
+        </ul>
         </p>
-        {% if show_management_buttons %}
-            <div id="alert-management-buttons">
-                <a href="{% url 'dashboard:pages:alert-details' alert_id=alert.id %}" class="btn btn-sm btn-primary position-relative">
+
+        <div id="alert-buttons">
+            {% if show_details_buttons %}
+                <a href="{% url 'dashboard:pages:alert-details' alert_id=alert.id %}"
+                   class="btn btn-sm btn-primary position-relative">
                     <i class="bi bi-clipboard-data-fill"></i> Matching observations
 
                     {% if alert.unseen_observations.count > 0 %}
@@ -28,24 +32,28 @@
                         </span>
                     {% endif %}
                 </a>
+            {% endif %}
 
-                <div class="float-end">
-                    <a href="{% url 'dashboard:pages:alert-edit' alert_id=alert.id %}" class="btn btn-sm btn-warning mx-2 riparias-edit-alert-button">
-                        <i class="bi bi-pencil-fill"></i> Edit this alert
-                    </a>
+            <div class="float-end">
+                <a href="{% url 'dashboard:pages:alert-edit' alert_id=alert.id %}"
+                   class="btn btn-sm btn-warning mx-2 pterois-edit-alert-button">
+                    <i class="bi bi-pencil-fill"></i> Edit this alert
+                </a>
 
-                    <delete-alert-button button-id="riparias-delete-alert-button-{{ alert.pk }}"  form-action="{% url "dashboard:actions:delete-alert" %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="alert_id" value="{{ alert.pk }}"/>
-                    </delete-alert-button>
-                </div>
-
+                <delete-alert-button button-id="pterois-delete-alert-button-{{ alert.pk }}"
+                                     form-action="{% url "dashboard:actions:delete-alert" %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="alert_id" value="{{ alert.pk }}"/>
+                </delete-alert-button>
             </div>
 
-        {% endif %}
+        </div>
+
 
         {% if show_link_alerts_list %}
-            <a href="{% url "dashboard:pages:my-alerts" %}">Show all my alerts</a>
+            <a class="btn btn-sm btn-primary" href="{% url "dashboard:pages:my-alerts" %}">
+                <i class="bi bi-exclamation-square"></i> Show all my alerts
+            </a>
         {% endif %}
     </div>
 </div>

@@ -70,7 +70,7 @@ export interface MapConfig {
   initialLon: number;
 }
 
-// Keep in sync with templatetags.riparias_extras.js_config_object
+// Keep in sync with templatetags.pterois_extras.js_config_object
 export interface FrontEndConfig {
   ripariasAreaGeojsonUrl: string;
   apiEndpoints: EndpointsUrls;

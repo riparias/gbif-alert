@@ -2,14 +2,14 @@
 
 {% load page_fragments %}
 
-{% block page_title %}What's new - LIFE RIPARIAS early alert{% endblock %}
+{% block page_title %}{% include "dashboard/_page_title.html" with page_name="What's new" %}{% endblock %}
 
 {% block after_messages %}
     <div class="container">
         <div class="row">
             <div class="col">
                 <h1 id="whats-new">What's new</h1>
-                {% get_page_fragment riparias_news_page_fragment_id %}
+                {% get_page_fragment pterois_news_page_fragment_id %}
             </div>
         </div>
     </div>

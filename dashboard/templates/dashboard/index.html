@@ -3,7 +3,7 @@
 
 {% load static %}
 
-{% block page_title %}Home - RIPARIAS early alert{% endblock %}
+{% block page_title %}{% include "dashboard/_page_title.html" with page_name="Home" %}{% endblock page_title %}
 
 {% block after_messages %}
 <script type="text/javascript">

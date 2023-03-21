@@ -98,7 +98,7 @@ def js_config_object(context):
                 "dashboard:internal-api:alert-as-filters-json"
             ),
         },
-        "mainMapConfig": settings.MAIN_MAP_CONFIG,
+        "mainMapConfig": settings.PTEROIS["MAIN_MAP_CONFIG"],
     }
     if context.request.user.is_authenticated:
         conf["userId"] = context.request.user.pk

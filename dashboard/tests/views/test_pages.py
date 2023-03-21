@@ -319,7 +319,7 @@ class AlertWebPagesTests(TestCase):
         self.assertIn('<form method="post">', response.content.decode())
         self.assertContains(
             response,
-            '<input id="riparias-alert-save-btn" class="btn btn-primary btn-sm" type="submit" value="Create">',
+            '<input id="pterois-alert-save-btn" class="btn btn-primary btn-sm" type="submit" value="Create">',
             html=True,
         )
 

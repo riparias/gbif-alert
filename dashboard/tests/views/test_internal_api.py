@@ -573,6 +573,13 @@ class InternalApiTests(TestCase):
         ]
         self.assertEqual(filtered_unseen_results_gbif_ids, ["1", "3"])
 
+    def test_observations_json_no_repeated_queries(self):
+        """Getting occurrences doesn't generate a deluge of queries to the dataset and species tables"""
+        with self.assertNumQueries(2):
+            self.client.get(
+                reverse("dashboard:internal-api:filtered-observations-data-page")
+            )
+
     def test_observations_json_multiple_areas_filter(self):
         """The areaIds parameter can take multiple values (OR)"""
         base_url = reverse("dashboard:internal-api:filtered-observations-data-page")
@@ -586,15 +593,15 @@ class InternalApiTests(TestCase):
     def test_observations_json_multiple_datasets_filter_case1(self):
         """observations_json accept to filter per multiple datasets
 
-        Case 1: Explicitly requests all datasets. Results should be the same than no filter
+        Case 1: Explicitly requests all datasets. Results should be the same as no filter
         """
         base_url = reverse("dashboard:internal-api:filtered-observations-data-page")
 
         json_data_all_species = self.client.get(
-            f"{base_url}?limit=10&page_number=1&datasetsIds[]={self.first_dataset.pk}&datasetsIds[]={self.second_dataset.pk}"
+            f"{base_url}?limit=10&page_number=1&datasetsIds[]={self.first_dataset.pk}&datasetsIds[]={self.second_dataset.pk}&order=id"
         ).json()
         json_data_no_species_filters = self.client.get(
-            f"{base_url}?limit=10&page_number=1"
+            f"{base_url}?limit=10&page_number=1&order=id"
         ).json()
         self.assertEqual(json_data_all_species, json_data_no_species_filters)
 
@@ -606,10 +613,10 @@ class InternalApiTests(TestCase):
         base_url = reverse("dashboard:internal-api:filtered-observations-data-page")
 
         json_data_all_species = self.client.get(
-            f"{base_url}?limit=10&page_number=1&speciesIds[]={self.second_species.pk}&speciesIds[]={self.first_species.pk}"
+            f"{base_url}?limit=10&page_number=1&speciesIds[]={self.second_species.pk}&speciesIds[]={self.first_species.pk}&order=id"
         ).json()
         json_data_no_species_filters = self.client.get(
-            f"{base_url}?limit=10&page_number=1"
+            f"{base_url}?limit=10&page_number=1&order=id"
         ).json()
         self.assertEqual(json_data_all_species, json_data_no_species_filters)
 

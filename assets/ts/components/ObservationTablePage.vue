@@ -7,7 +7,7 @@
             occ.hasOwnProperty('seenByCurrentUser') && // Anonymous users don't have the property, so if we don't do this all would appear us unseen
             occ.seenByCurrentUser === false
           "
-          class="badge rounded-pill bg-danger riparias-unseen-badge"
+          class="badge rounded-pill bg-danger pterois-unseen-badge"
           >Unseen</span
         >
       </td>

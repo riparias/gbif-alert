@@ -1,6 +1,6 @@
 {% extends 'dashboard/base.html' %}
 
-{% block page_title %}New alert - LIFE RIPARIAS early alert{% endblock %}
+{% block page_title %}{% include "dashboard/_page_title.html" with page_name="New alert" %}{% endblock %}
 
 {% block after_messages %}
     <div class="container">

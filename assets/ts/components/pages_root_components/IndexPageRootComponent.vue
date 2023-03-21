@@ -19,7 +19,7 @@
         </div>
 
         <div class="col d-flex align-items-center">
-          <Modal-Multi-Selector
+          <Filter-Selector
             class="mx-2"
             button-label-singular="Species"
             button-label-plural="species"
@@ -28,9 +28,9 @@
             :entries="availableSpeciesAsEntries"
             :initially-selected-entries-ids="filters.speciesIds"
             @entries-changed="changeSelectedSpecies"
-          ></Modal-Multi-Selector>
+          ></Filter-Selector>
 
-          <Modal-Multi-Selector
+          <Filter-Selector
             class="mx-2"
             button-label-singular="Dataset"
             button-label-plural="datasets"
@@ -38,9 +38,9 @@
             :entries="availableDatasetsAsEntries"
             :initially-selected-entries-ids="filters.datasetsIds"
             @entries-changed="changeSelectedDatasets"
-          ></Modal-Multi-Selector>
+          ></Filter-Selector>
 
-          <Modal-Multi-Selector
+          <Filter-Selector
             class="mx-2"
             button-label-singular="Area"
             button-label-plural="areas"
@@ -49,9 +49,9 @@
             :entries="availableAreasAsEntries"
             :initially-selected-entries-ids="filters.areaIds"
             @entries-changed="changeSelectedAreas"
-          ></Modal-Multi-Selector>
+          ></Filter-Selector>
 
-          <Modal-Multi-Selector
+          <Filter-Selector
             class="mx-2"
             button-label-singular="Initial data import"
             button-label-plural="initial data imports"
@@ -60,7 +60,7 @@
             :entries="availableDataimportsAsEntries"
             :initially-selected-entries-ids="filters.initialDataImportIds"
             @entries-changed="changeSelectedInitialDataImport"
-          ></Modal-Multi-Selector>
+          ></Filter-Selector>
 
           <ObservationStatusSelector
             v-if="frontendConfig.authenticatedUser"
@@ -94,7 +94,7 @@ import {
 } from "../../interfaces";
 import axios from "axios";
 
-import ModalMultiSelector from "../ModalMultiSelector.vue";
+import FilterSelector from "../FilterSelector.vue";
 import ObservationStatusSelector from "../ObservationStatusSelector.vue";
 import Observations from "../Observations.vue";
 import BootstrapAlert from "../BootstrapAlert.vue";
@@ -102,7 +102,7 @@ import BootstrapAlert from "../BootstrapAlert.vue";
 import {debounce, DebouncedFunc} from "lodash";
 import {dateTimeToFilterParam} from "../../helpers";
 
-declare const ripariasConfig: FrontEndConfig;
+declare const pteroisConfig: FrontEndConfig;
 declare const initialFilters: DashboardFilters;
 
 interface IndexPageRootComponentData {
@@ -123,11 +123,11 @@ export default defineComponent({
     BootstrapAlert,
     Observations,
     ObservationStatusSelector,
-    ModalMultiSelector,
+    FilterSelector,
   },
   data: function (): IndexPageRootComponentData {
     return {
-      frontendConfig: ripariasConfig,
+      frontendConfig: pteroisConfig,
 
       availableSpecies: [],
       availableDatasets: [],

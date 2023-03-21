@@ -202,7 +202,10 @@ class ObservationManager(models.Manager):
         # views.maps.JINJASQL_FRAGMENT_FILTER_OBSERVATIONS. Otherwise, observations returned on the map and on other
         # components (table, ...) will be inconsistent.
         # !! If adding new filters, make also sure they are properly documented in the docstrings of "api.py"
-        qs = self.model.objects.all()
+        qs = self.model.objects.select_related(
+            "species",
+            "source_dataset",
+        ).all()
 
         if species_ids:
             qs = qs.filter(species_id__in=species_ids)

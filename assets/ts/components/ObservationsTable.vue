@@ -2,7 +2,7 @@
   <div id="table-outer">
     <table
       class="table table-striped table-sm table-hover small"
-      id="riparias-observations-table"
+      id="pterois-observations-table"
     >
       <thead class="thead-dark">
         <tr>

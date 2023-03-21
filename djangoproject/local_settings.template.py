@@ -1,3 +1,5 @@
+from typing import Dict, Any
+
 from .settings import *
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -46,6 +48,17 @@ ADMINS = [
     ("Nicolas", "nicolas.noe@inbo.be"),
 ]
 
-# A Gbif.org account is necessary to automatically download observations via the `import_observations` command
-RIPARIAS["GBIF_USERNAME"] = "xxx"
-RIPARIAS["GBIF_PASSWORD"] = "yyy"
+PTEROIS: Dict[str, Any] = {
+    "SITE_NAME": "LIFE RIPARIAS early alert",
+    "GBIF_DOWNLOAD_CONFIG": {
+        "USERNAME": "riparias-dev",
+        "PASSWORD": "riparias-dev",
+        "COUNTRY_CODE": "BE",  # Only download observations from this country
+    },
+    "SHOW_DEV_VERSION_WARNING": False,
+    "MAIN_MAP_CONFIG": {
+        "initialZoom": 8,
+        "initialLat": 50.50,
+        "initialLon": 4.47,
+    },
+}

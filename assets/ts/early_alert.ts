@@ -31,6 +31,12 @@ function createAndMountRootComponent(component: Component) {
 
 (window as any).initAlertDetailsPage = function () {
   createAndMountRootComponent(AlertDetailsPageRootComponent);
+
+  createApp({
+    components: {
+      DeleteAlertButton
+    },
+  }).mount("#app-alert-metadata");
 };
 
 (window as any).initObservationDetailsPage = function () {
