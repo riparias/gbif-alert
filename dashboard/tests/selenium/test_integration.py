@@ -6,11 +6,13 @@ from django.contrib.gis.geos import Point
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.test import override_settings
 from django.utils import timezone
-from selenium import webdriver  # type: ignore
-from selenium.common.exceptions import NoSuchElementException  # type: ignore
-from selenium.webdriver.support import expected_conditions as EC  # type: ignore
-from selenium.webdriver.support.select import Select  # type: ignore
-from selenium.webdriver.support.wait import WebDriverWait  # type: ignore
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.chrome.service import Service as ChromiumService
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.select import Select
+from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
 from webdriver_manager.core.utils import ChromeType  # type: ignore
 
@@ -42,7 +44,9 @@ class PteroisSeleniumTestsCommon(StaticLiveServerTestCase):
             options.add_argument("--headless")
         options.add_argument("--window-size=2560,1440")
         cls.selenium = webdriver.Chrome(
-            ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install(),
+            service=ChromiumService(
+                ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
+            ),
             options=options,
         )
         cls.selenium.implicitly_wait(2)
@@ -130,24 +134,24 @@ class PteroisSeleniumAlertTests(PteroisSeleniumTestsCommon):
         """The user go to the edit alert page, but change its mind and cancel"""
         # Action 1: login
         self.selenium.get(self.live_server_url + "/accounts/signin/")
-        username_field = self.selenium.find_element_by_id("id_username")
-        password_field = self.selenium.find_element_by_id("id_password")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("12345")
-        signin_button = self.selenium.find_element_by_id("pterois-signin-button")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
         signin_button.click()
         WebDriverWait(self.selenium, 3)
 
         # Check 1: There a "my alerts" link we can follow
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        navbar.find_element_by_link_text("My alerts").click()
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        navbar.find_element(By.LINK_TEXT, "My alerts").click()
         WebDriverWait(self.selenium, 3)
 
         # Check 2: on the page, there's a single edit alert button (only one alert)
-        edit_buttons = self.selenium.find_elements_by_class_name(
-            "pterois-edit-alert-button"
+        edit_buttons = self.selenium.find_elements(
+            By.CLASS_NAME, "pterois-edit-alert-button"
         )
         self.assertEqual(len(edit_buttons), 1)
         edit_button = edit_buttons[0]
@@ -155,7 +159,7 @@ class PteroisSeleniumAlertTests(PteroisSeleniumTestsCommon):
         WebDriverWait(self.selenium, 3)
 
         # Om the edit alert page, let's click the cancel button and make sure we go back to the alerts list
-        cancel_button = self.selenium.find_element_by_link_text("Cancel")
+        cancel_button = self.selenium.find_element(By.LINK_TEXT, "Cancel")
         cancel_button.click()
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("My alerts"))
@@ -164,24 +168,24 @@ class PteroisSeleniumAlertTests(PteroisSeleniumTestsCommon):
         """The user go to the edit alert page, make edits and save them"""
         # Action 1: login
         self.selenium.get(self.live_server_url + "/accounts/signin/")
-        username_field = self.selenium.find_element_by_id("id_username")
-        password_field = self.selenium.find_element_by_id("id_password")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("12345")
-        signin_button = self.selenium.find_element_by_id("pterois-signin-button")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
         signin_button.click()
         WebDriverWait(self.selenium, 3)
 
         # Check 1: There a "my alerts" link we can follow
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        navbar.find_element_by_link_text("My alerts").click()
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        navbar.find_element(By.LINK_TEXT, "My alerts").click()
         WebDriverWait(self.selenium, 3)
 
         # Check 2: on the page, there's a single edit alert button (only one alert)
-        edit_buttons = self.selenium.find_elements_by_class_name(
-            "pterois-edit-alert-button"
+        edit_buttons = self.selenium.find_elements(
+            By.CLASS_NAME, "pterois-edit-alert-button"
         )
         self.assertEqual(len(edit_buttons), 1)
         edit_button = edit_buttons[0]
@@ -189,62 +193,62 @@ class PteroisSeleniumAlertTests(PteroisSeleniumTestsCommon):
         WebDriverWait(self.selenium, 3)
 
         # Edit alert name
-        name_field = self.selenium.find_element_by_id("id_name")
+        name_field = self.selenium.find_element(By.ID, "id_name")
         name_field.clear()
         name_field.send_keys("Edited alert name")
 
         # Edit selected species (initially: no selection -> all species)
-        species_select = Select(self.selenium.find_element_by_id("id_species"))
+        species_select = Select(self.selenium.find_element(By.ID, "id_species"))
         species_select.select_by_visible_text("Orconectes virilis")
 
         # Edit selected datasets (initially: no selection -> all datasets)
-        datasets_select = Select(self.selenium.find_element_by_id("id_datasets"))
+        datasets_select = Select(self.selenium.find_element(By.ID, "id_datasets"))
         datasets_select.select_by_visible_text("Test dataset #2")
 
         # Change test alert frequency to "weekly"
         frequency_select = Select(
-            self.selenium.find_element_by_id("id_email_notifications_frequency")
+            self.selenium.find_element(By.ID, "id_email_notifications_frequency")
         )
         frequency_select.select_by_visible_text("Weekly")
 
         # Click the save button, gets redirected to the alerts details page
-        save_button = self.selenium.find_element_by_id("pterois-alert-save-btn")
+        save_button = self.selenium.find_element(By.ID, "pterois-alert-save-btn")
         save_button.click()
 
         wait = WebDriverWait(self.selenium, 3)
         wait.until(EC.title_contains("Alert details"))
 
         # Check the values are actually updated
-        title = self.selenium.find_element_by_class_name("pterois-alert-title")
+        title = self.selenium.find_element(By.CLASS_NAME, "pterois-alert-title")
         self.assertEqual(title.text, "Edited alert name")
 
-        species_list = self.selenium.find_element_by_id("pterois-alert-species-list")
+        species_list = self.selenium.find_element(By.ID, "pterois-alert-species-list")
         self.assertEqual(species_list.text, "Species: Orconectes virilis")
 
-        datasets_list = self.selenium.find_element_by_id("pterois-alert-datasets-list")
+        datasets_list = self.selenium.find_element(By.ID, "pterois-alert-datasets-list")
         self.assertEqual(datasets_list.text, "Datasets: Test dataset #2")
 
     def test_alert_delete_scenario(self):
         # Action 1: login
         self.selenium.get(self.live_server_url + "/accounts/signin/")
-        username_field = self.selenium.find_element_by_id("id_username")
-        password_field = self.selenium.find_element_by_id("id_password")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("12345")
-        signin_button = self.selenium.find_element_by_id("pterois-signin-button")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
         signin_button.click()
         WebDriverWait(self.selenium, 3)
 
         # Check 1: There a "my alerts" link we can follow
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        navbar.find_element_by_link_text("My alerts").click()
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        navbar.find_element(By.LINK_TEXT, "My alerts").click()
         WebDriverWait(self.selenium, 3)
 
         # Check 2: on the page, there's a single delete form with a button (only one alert)
-        delete_buttons = self.selenium.find_elements_by_class_name(
-            "pterois-delete-alert-button"
+        delete_buttons = self.selenium.find_elements(
+            By.CLASS_NAME, "pterois-delete-alert-button"
         )
         self.assertEqual(len(delete_buttons), 1)
         delete_button = delete_buttons[0]
@@ -253,14 +257,14 @@ class PteroisSeleniumAlertTests(PteroisSeleniumTestsCommon):
         delete_button.click()
         WebDriverWait(self.selenium, 3)
 
-        modal = self.selenium.find_element_by_class_name("modal")
-        modal_title = modal.find_element_by_class_name("modal-title")
+        modal = self.selenium.find_element(By.CLASS_NAME, "modal")
+        modal_title = modal.find_element(By.CLASS_NAME, "modal-title")
         self.assertEqual(modal_title.text, "Are you sure?")
         # Is the modal visible?
         self.assertIn("show", modal.get_attribute("class"))
 
         # Let's cancel the action
-        cancel_button = modal.find_element_by_id("modal-button-no")
+        cancel_button = modal.find_element(By.ID, "modal-button-no")
         cancel_button.click()
 
         # The modal should now be closed
@@ -271,7 +275,7 @@ class PteroisSeleniumAlertTests(PteroisSeleniumTestsCommon):
         delete_button.click()
 
         # Let's confirm the action
-        confirm_button = modal.find_element_by_id("modal-button-yes")
+        confirm_button = modal.find_element(By.ID, "modal-button-yes")
         confirm_button.click()
 
         # Check 3: we're back on the "my alerts" page, with a success message and no remaining alerts
@@ -284,7 +288,9 @@ class PteroisSeleniumAlertTests(PteroisSeleniumTestsCommon):
         )
         self.assertEqual(
             len(
-                self.selenium.find_elements_by_class_name("pterois-delete-alert-button")
+                self.selenium.find_elements(
+                    By.CLASS_NAME, "pterois-delete-alert-button"
+                )
             ),
             0,
         )
@@ -296,74 +302,74 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
 
         # Action 1: login
         self.selenium.get(self.live_server_url + "/accounts/signin/")
-        username_field = self.selenium.find_element_by_id("id_username")
-        password_field = self.selenium.find_element_by_id("id_password")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("12345")
-        signin_button = self.selenium.find_element_by_id("pterois-signin-button")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
         signin_button.click()
         WebDriverWait(self.selenium, 3)
 
         # Action 2: select table view
-        table_tab = self.selenium.find_element_by_id("tab-table-view")
+        table_tab = self.selenium.find_element(By.ID, "tab-table-view")
         table_tab.click()
 
         # Check 1: have a look at the all/seen/unseen button/counters
-        observation_status_selector = self.selenium.find_element_by_id(
-            "pterois-obs-status-selector"
+        observation_status_selector = self.selenium.find_element(
+            By.ID, "pterois-obs-status-selector"
         )
-        seen_button = observation_status_selector.find_element_by_id(
-            "label-btnRadioSeen"
+        seen_button = observation_status_selector.find_element(
+            By.ID, "label-btnRadioSeen"
         )
-        seen_tab_counter_badge = seen_button.find_element_by_tag_name("span")
+        seen_tab_counter_badge = seen_button.find_element(By.TAG_NAME, "span")
         self.assertEqual(seen_tab_counter_badge.text, "1")
 
-        unseen_button = observation_status_selector.find_element_by_id(
-            "label-btnRadioUnseen"
+        unseen_button = observation_status_selector.find_element(
+            By.ID, "label-btnRadioUnseen"
         )
-        unseen_tab_counter_badge = unseen_button.find_element_by_tag_name("span")
+        unseen_tab_counter_badge = unseen_button.find_element(By.TAG_NAME, "span")
         self.assertEqual(unseen_tab_counter_badge.text, "2")
 
         # Action 3: make sure "all" is selected
-        observation_status_selector.find_element_by_id("label-btnRadioAll").click()
+        observation_status_selector.find_element(By.ID, "label-btnRadioAll").click()
 
         # Check 2: make sure there are 3 rows in the table, but only 2 "unseen" badges
-        obs_table = self.selenium.find_element_by_id("pterois-observations-table")
-        obs_table_body = obs_table.find_element_by_tag_name("tbody")
-        result_rows = obs_table_body.find_elements_by_tag_name("tr")
+        obs_table = self.selenium.find_element(By.ID, "pterois-observations-table")
+        obs_table_body = obs_table.find_element(By.TAG_NAME, "tbody")
+        result_rows = obs_table_body.find_elements(By.TAG_NAME, "tr")
         self.assertEqual(len(result_rows), 3)  # 3 result rows
-        unseen_badges = obs_table_body.find_elements_by_class_name(
-            "pterois-unseen-badge"
+        unseen_badges = obs_table_body.find_elements(
+            By.CLASS_NAME, "pterois-unseen-badge"
         )
         self.assertEqual(len(unseen_badges), 2)
 
         # Action 4: select "seen"
-        observation_status_selector.find_element_by_id("label-btnRadioSeen").click()
+        observation_status_selector.find_element(By.ID, "label-btnRadioSeen").click()
         time.sleep(1)
 
         # Check 3: only 1 result row, no "unseen" badge
-        obs_table = self.selenium.find_element_by_id("pterois-observations-table")
-        obs_table_body = obs_table.find_element_by_tag_name("tbody")
-        result_rows = obs_table_body.find_elements_by_tag_name("tr")
+        obs_table = self.selenium.find_element(By.ID, "pterois-observations-table")
+        obs_table_body = obs_table.find_element(By.TAG_NAME, "tbody")
+        result_rows = obs_table_body.find_elements(By.TAG_NAME, "tr")
         self.assertEqual(len(result_rows), 1)
-        unseen_badges = obs_table_body.find_elements_by_class_name(
-            "pterois-unseen-badge"
+        unseen_badges = obs_table_body.find_elements(
+            By.CLASS_NAME, "pterois-unseen-badge"
         )
         self.assertEqual(len(unseen_badges), 0)
 
         # Action 5: select "unseen"
-        observation_status_selector.find_element_by_id("label-btnRadioUnseen").click()
+        observation_status_selector.find_element(By.ID, "label-btnRadioUnseen").click()
         time.sleep(1)
 
         # Check 4: 2 results row, both with "unseen" badge
-        obs_table = self.selenium.find_element_by_id("pterois-observations-table")
-        obs_table_body = obs_table.find_element_by_tag_name("tbody")
-        result_rows = obs_table_body.find_elements_by_tag_name("tr")
+        obs_table = self.selenium.find_element(By.ID, "pterois-observations-table")
+        obs_table_body = obs_table.find_element(By.TAG_NAME, "tbody")
+        result_rows = obs_table_body.find_elements(By.TAG_NAME, "tr")
         self.assertEqual(len(result_rows), 2)
-        unseen_badges = obs_table_body.find_elements_by_class_name(
-            "pterois-unseen-badge"
+        unseen_badges = obs_table_body.find_elements(
+            By.CLASS_NAME, "pterois-unseen-badge"
         )
         self.assertEqual(len(unseen_badges), 2)
 
@@ -374,21 +380,21 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
     def test_normal_user_has_no_admin_access(self):
         # Sign in as a normal user
         self.selenium.get(self.live_server_url + "/accounts/signin/")
-        username_field = self.selenium.find_element_by_id("id_username")
-        password_field = self.selenium.find_element_by_id("id_password")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("12345")
-        signin_button = self.selenium.find_element_by_id("pterois-signin-button")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
         signin_button.click()
         WebDriverWait(self.selenium, 5)
 
         # There's no "Admin panel" link
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        navbar.find_element_by_link_text("testuser").click()
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        navbar.find_element(By.LINK_TEXT, "testuser").click()
         with self.assertRaises(NoSuchElementException):
-            navbar.find_element_by_link_text("Admin panel")
+            navbar.find_element(By.LINK_TEXT, "Admin panel")
 
         # Trying to access the "/admin" directly is not possible neither
         self.selenium.get(self.live_server_url + "/admin")
@@ -399,22 +405,22 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
     def test_superuser_has_admin_access(self):
         # sign in as a superuser
         self.selenium.get(self.live_server_url + "/accounts/signin/")
-        username_field = self.selenium.find_element_by_id("id_username")
-        password_field = self.selenium.find_element_by_id("id_password")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("adminuser")
         password_field.send_keys("67890")
-        signin_button = self.selenium.find_element_by_id("pterois-signin-button")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
         signin_button.click()
         WebDriverWait(self.selenium, 5)
 
         # There's an "Admin panel" link
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        navbar.find_element_by_link_text(
-            "adminuser"
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        navbar.find_element(
+            By.LINK_TEXT, "adminuser"
         ).click()  # We need to open the menu first
-        admin_link = navbar.find_element_by_link_text("Admin panel")
+        admin_link = navbar.find_element(By.LINK_TEXT, "Admin panel")
         admin_link.click()
         WebDriverWait(self.selenium, 5)
 
@@ -424,8 +430,8 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
     def test_signin_signout_scenario(self):
         # We are initially not logged in and can see a "sign in" link
         self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        signin_link = navbar.find_element_by_link_text("Sign in")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
 
         # Let's click on it
         signin_link.click()
@@ -436,30 +442,30 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
 
         # We've never submitted the form, so we shouldn't have any error message
         with self.assertRaises(NoSuchElementException):
-            self.selenium.find_element_by_id("pterois-invalid-credentials-message")
+            self.selenium.find_element(By.ID, "pterois-invalid-credentials-message")
 
         # There are required username and password fields
-        username_field = self.selenium.find_element_by_id("id_username")
-        password_field = self.selenium.find_element_by_id("id_password")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
         self.assertEqual(username_field.get_attribute("required"), "true")
         self.assertEqual(password_field.get_attribute("required"), "true")
 
         # There is also a link to find a lost password on this page
-        self.selenium.find_element_by_link_text("Lost password?")
+        self.selenium.find_element(By.LINK_TEXT, "Lost password?")
 
         # Trying to sign in with incorrect credentials
         username_field.clear()
         password_field.clear()
         username_field.send_keys("aaa")
         password_field.send_keys("bbb")
-        signin_button = self.selenium.find_element_by_id("pterois-signin-button")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
         signin_button.click()
 
         # We're still on the same page, with an error message
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
-        error_message = self.selenium.find_element_by_id(
-            "pterois-invalid-credentials-message"
+        error_message = self.selenium.find_element(
+            By.ID, "pterois-invalid-credentials-message"
         )
         self.assertEqual(
             error_message.text,
@@ -467,18 +473,18 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         )
 
         # Trying with a correct username but wrong password, we should be denied too
-        username_field = self.selenium.find_element_by_id("id_username")
-        password_field = self.selenium.find_element_by_id("id_password")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("wrong_password")
-        signin_button = self.selenium.find_element_by_id("pterois-signin-button")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
         signin_button.click()
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
-        error_message = self.selenium.find_element_by_id(
-            "pterois-invalid-credentials-message"
+        error_message = self.selenium.find_element(
+            By.ID, "pterois-invalid-credentials-message"
         )
         self.assertEqual(
             error_message.text,
@@ -486,24 +492,24 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         )
 
         # Trying with correct credentials, we should be redirected to home page and properly logged
-        username_field = self.selenium.find_element_by_id("id_username")
-        password_field = self.selenium.find_element_by_id("id_password")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("12345")
-        signin_button = self.selenium.find_element_by_id("pterois-signin-button")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
         signin_button.click()
         wait = WebDriverWait(self.selenium, 5)
 
         # Now, we should be redirected to the home page, and see the username in the navbar
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        logged_as_testuser = navbar.find_element_by_link_text("testuser")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        logged_as_testuser = navbar.find_element(By.LINK_TEXT, "testuser")
 
         # We can click "logged as testuser" and get a menu with an option to sign out
         logged_as_testuser.click()
-        signout_link = self.selenium.find_element_by_link_text("Sign out")
+        signout_link = self.selenium.find_element(By.LINK_TEXT, "Sign out")
 
         # We can click the signout link
         signout_link.click()
@@ -511,13 +517,13 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
 
         # Now, we're still on the home page
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
 
         # There's no more "Logged as testuser" message
         with self.assertRaises(NoSuchElementException):
-            navbar.find_element_by_link_text("Logged as testuser")
-        # There's a sign inlink again
-        navbar.find_element_by_link_text("Sign in")
+            navbar.find_element(By.LINK_TEXT, "Logged as testuser")
+        # There's a sign in link again
+        navbar.find_element(By.LINK_TEXT, "Sign in")
 
     def test_signup_scenario_existing_username(self):
         User = get_user_model()
@@ -525,8 +531,8 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
 
         # We are initially not logged in and can see a "sign in" link
         self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        signup_link = navbar.find_element_by_link_text("Sign up")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        signup_link = navbar.find_element(By.LINK_TEXT, "Sign up")
 
         # Let's click on it
         signup_link.click()
@@ -536,11 +542,11 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         wait.until(EC.title_contains("Sign up"))
 
         # Fill in the mandatory fields
-        username_field = self.selenium.find_element_by_id("id_username")
-        email_field = self.selenium.find_element_by_id("id_email")
-        password1_field = self.selenium.find_element_by_id("id_password1")
-        password2_field = self.selenium.find_element_by_id("id_password2")
-        signup_button = self.selenium.find_element_by_id("pterois-signup-button")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        email_field = self.selenium.find_element(By.ID, "id_email")
+        password1_field = self.selenium.find_element(By.ID, "id_password1")
+        password2_field = self.selenium.find_element(By.ID, "id_password2")
+        signup_button = self.selenium.find_element(By.ID, "pterois-signup-button")
 
         username_field.clear()
         username_field.send_keys("testuser")
@@ -571,8 +577,8 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
 
         # We are initially not logged in and can see a "sign up" link
         self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        signup_link = navbar.find_element_by_link_text("Sign up")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        signup_link = navbar.find_element(By.LINK_TEXT, "Sign up")
 
         # Let's click on it
         signup_link.click()
@@ -580,13 +586,13 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         wait.until(EC.title_contains("Sign up"))
 
         # Get the elems
-        username_field = self.selenium.find_element_by_id("id_username")
-        first_name_field = self.selenium.find_element_by_id("id_first_name")
-        last_name_field = self.selenium.find_element_by_id("id_last_name")
-        email_field = self.selenium.find_element_by_id("id_email")
-        password1_field = self.selenium.find_element_by_id("id_password1")
-        password2_field = self.selenium.find_element_by_id("id_password2")
-        signup_button = self.selenium.find_element_by_id("pterois-signup-button")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        first_name_field = self.selenium.find_element(By.ID, "id_first_name")
+        last_name_field = self.selenium.find_element(By.ID, "id_last_name")
+        email_field = self.selenium.find_element(By.ID, "id_email")
+        password1_field = self.selenium.find_element(By.ID, "id_password1")
+        password2_field = self.selenium.find_element(By.ID, "id_password2")
+        signup_button = self.selenium.find_element(By.ID, "pterois-signup-button")
 
         # Assert the proper fields are required
         self.assertEqual(username_field.get_attribute("required"), "true")
@@ -609,8 +615,8 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
 
         # We are initially not logged in and can see a "sign up" link
         self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        signup_link = navbar.find_element_by_link_text("Sign up")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        signup_link = navbar.find_element(By.LINK_TEXT, "Sign up")
 
         # Let's click on it
         signup_link.click()
@@ -618,11 +624,11 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         wait.until(EC.title_contains("Sign up"))
 
         # Fill in the mandatory fields
-        username_field = self.selenium.find_element_by_id("id_username")
-        email_field = self.selenium.find_element_by_id("id_email")
-        password1_field = self.selenium.find_element_by_id("id_password1")
-        password2_field = self.selenium.find_element_by_id("id_password2")
-        signup_button = self.selenium.find_element_by_id("pterois-signup-button")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        email_field = self.selenium.find_element(By.ID, "id_email")
+        password1_field = self.selenium.find_element(By.ID, "id_password1")
+        password2_field = self.selenium.find_element(By.ID, "id_password2")
+        signup_button = self.selenium.find_element(By.ID, "pterois-signup-button")
 
         username_field.clear()
         username_field.send_keys("testuser2")
@@ -653,8 +659,8 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
 
         # We are initially not logged in and can see a "sign up" link
         self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        signup_link = navbar.find_element_by_link_text("Sign up")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        signup_link = navbar.find_element(By.LINK_TEXT, "Sign up")
 
         # Let's click on it
         signup_link.click()
@@ -662,13 +668,13 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         wait.until(EC.title_contains("Sign up"))
 
         # Fill in the mandatory fields
-        username_field = self.selenium.find_element_by_id("id_username")
-        email_field = self.selenium.find_element_by_id("id_email")
-        password1_field = self.selenium.find_element_by_id("id_password1")
-        password2_field = self.selenium.find_element_by_id("id_password2")
-        signup_button = self.selenium.find_element_by_id("pterois-signup-button")
-        first_name_field = self.selenium.find_element_by_id("id_first_name")
-        last_name_field = self.selenium.find_element_by_id("id_last_name")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        email_field = self.selenium.find_element(By.ID, "id_email")
+        password1_field = self.selenium.find_element(By.ID, "id_password1")
+        password2_field = self.selenium.find_element(By.ID, "id_password2")
+        signup_button = self.selenium.find_element(By.ID, "pterois-signup-button")
+        first_name_field = self.selenium.find_element(By.ID, "id_first_name")
+        last_name_field = self.selenium.find_element(By.ID, "id_last_name")
 
         username_field.clear()
         username_field.send_keys("peterpan")
@@ -694,8 +700,8 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         wait.until(EC.title_contains("Home"))
 
         # We appear logged
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        logged_as_peterpan = navbar.find_element_by_link_text("peterpan")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        logged_as_peterpan = navbar.find_element(By.LINK_TEXT, "peterpan")
 
         # A new user is added to the database
         self.assertEqual(number_users_before + 1, User.objects.count())
@@ -711,16 +717,16 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
 
         # We can sign out and sign in again with the chosen credentials
         logged_as_peterpan.click()
-        signout_link = self.selenium.find_element_by_link_text("Sign out")
+        signout_link = self.selenium.find_element(By.LINK_TEXT, "Sign out")
 
         # We can click the sign-out link
         signout_link.click()
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
 
         # There's a "sign in" link again
-        signin_link = navbar.find_element_by_link_text("Sign in")
+        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
 
         # We can follow it to the sign-in page
         signin_link.click()
@@ -728,20 +734,20 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         wait.until(EC.title_contains("Sign in"))
 
         # And successfully sign in
-        username_field = self.selenium.find_element_by_id("id_username")
-        password_field = self.selenium.find_element_by_id("id_password")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("peterpan")
         password_field.send_keys("kjdshfjksd678@")
-        signin_button = self.selenium.find_element_by_id("pterois-signin-button")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
         signin_button.click()
         wait = WebDriverWait(self.selenium, 5)
 
         # Now, we should be redirected to the home page, and see the username in the navbar
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        navbar.find_element_by_link_text("peterpan")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        navbar.find_element(By.LINK_TEXT, "peterpan")
 
     def test_signup_too_common_password(self):
         User = get_user_model()
@@ -749,8 +755,8 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
 
         # We are initially not logged in and can see a "sign up" link
         self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        signup_link = navbar.find_element_by_link_text("Sign up")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        signup_link = navbar.find_element(By.LINK_TEXT, "Sign up")
 
         # Let's click on it
         signup_link.click()
@@ -758,11 +764,11 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         wait.until(EC.title_contains("Sign up"))
 
         # Fill in the mandatory fields
-        username_field = self.selenium.find_element_by_id("id_username")
-        email_field = self.selenium.find_element_by_id("id_email")
-        password1_field = self.selenium.find_element_by_id("id_password1")
-        password2_field = self.selenium.find_element_by_id("id_password2")
-        signup_button = self.selenium.find_element_by_id("pterois-signup-button")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        email_field = self.selenium.find_element(By.ID, "id_email")
+        password1_field = self.selenium.find_element(By.ID, "id_password1")
+        password2_field = self.selenium.find_element(By.ID, "id_password2")
+        signup_button = self.selenium.find_element(By.ID, "pterois-signup-button")
 
         username_field.clear()
         username_field.send_keys("testuser2")
@@ -787,8 +793,8 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
 
     def test_edit_profile_scenario(self):
         self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        signin_link = navbar.find_element_by_link_text("Sign in")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
 
         # We can follow it to the sign in page
         signin_link.click()
@@ -796,37 +802,37 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         wait.until(EC.title_contains("Sign in"))
 
         # And successfully sign in
-        username_field = self.selenium.find_element_by_id("id_username")
-        password_field = self.selenium.find_element_by_id("id_password")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("12345")
-        signin_button = self.selenium.find_element_by_id("pterois-signin-button")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
         signin_button.click()
         wait = WebDriverWait(self.selenium, 5)
 
         # Now, we should be redirected to the home page, and see the username in the navbar
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        menu = navbar.find_element_by_link_text("testuser")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        menu = navbar.find_element(By.LINK_TEXT, "testuser")
         menu.click()
 
         # We can navigate to the "profile" page
-        my_profile = navbar.find_element_by_link_text("My profile")
+        my_profile = navbar.find_element(By.LINK_TEXT, "My profile")
         my_profile.click()
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("My profile"))
 
         # Basic checks on the form fields
-        username_field = self.selenium.find_element_by_id("id_username")
+        username_field = self.selenium.find_element(By.ID, "id_username")
         self.assertEqual(username_field.get_attribute("disabled"), "true")
         self.assertEqual(username_field.get_attribute("value"), "testuser")
-        first_name_field = self.selenium.find_element_by_id("id_first_name")
+        first_name_field = self.selenium.find_element(By.ID, "id_first_name")
         self.assertEqual(first_name_field.get_attribute("value"), "John")
-        last_name_field = self.selenium.find_element_by_id("id_last_name")
+        last_name_field = self.selenium.find_element(By.ID, "id_last_name")
         self.assertEqual(last_name_field.get_attribute("value"), "Frusciante")
-        email_field = self.selenium.find_element_by_id("id_email")
+        email_field = self.selenium.find_element(By.ID, "id_email")
         self.assertEqual(email_field.get_attribute("value"), "frusciante@gmail.com")
 
         # Let's update the values
@@ -836,7 +842,7 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         last_name_field.send_keys("Palmer")
         email_field.clear()
         email_field.send_keys("palmer@gmail.com")
-        save_button = self.selenium.find_element_by_id("pterois-profile-save-button")
+        save_button = self.selenium.find_element(By.ID, "pterois-profile-save-button")
         save_button.click()
 
         # Check for the success message
@@ -847,21 +853,21 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         )
 
         # Go to the profile again to check the values were updated
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        menu = navbar.find_element_by_link_text("testuser")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        menu = navbar.find_element(By.LINK_TEXT, "testuser")
         menu.click()
-        my_profile = navbar.find_element_by_link_text("My profile")
+        my_profile = navbar.find_element(By.LINK_TEXT, "My profile")
         my_profile.click()
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("My profile"))
 
-        username_field = self.selenium.find_element_by_id("id_username")
+        username_field = self.selenium.find_element(By.ID, "id_username")
         self.assertEqual(username_field.get_attribute("value"), "testuser")
-        first_name_field = self.selenium.find_element_by_id("id_first_name")
+        first_name_field = self.selenium.find_element(By.ID, "id_first_name")
         self.assertEqual(first_name_field.get_attribute("value"), "Amanda")
-        last_name_field = self.selenium.find_element_by_id("id_last_name")
+        last_name_field = self.selenium.find_element(By.ID, "id_last_name")
         self.assertEqual(last_name_field.get_attribute("value"), "Palmer")
-        email_field = self.selenium.find_element_by_id("id_email")
+        email_field = self.selenium.find_element(By.ID, "id_email")
         self.assertEqual(email_field.get_attribute("value"), "palmer@gmail.com")
 
     def test_no_profile_page_if_not_logged(self):
@@ -881,8 +887,8 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
     def test_delete_account_scenario(self):
         """A user wants to delete his account, and need to confirm the action"""
         self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        signin_link = navbar.find_element_by_link_text("Sign in")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
 
         # We can follow it to the sign in page
         signin_link.click()
@@ -890,40 +896,40 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         wait.until(EC.title_contains("Sign in"))
 
         # And successfully sign in
-        username_field = self.selenium.find_element_by_id("id_username")
-        password_field = self.selenium.find_element_by_id("id_password")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("12345")
-        signin_button = self.selenium.find_element_by_id("pterois-signin-button")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
         signin_button.click()
         wait = WebDriverWait(self.selenium, 3)
 
         # Now, we should be redirected to the home page, and see the username in the navbar
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
-        menu = navbar.find_element_by_link_text("testuser")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        menu = navbar.find_element(By.LINK_TEXT, "testuser")
         menu.click()
 
         # We can navigate to the "profile" page
-        my_profile = navbar.find_element_by_link_text("My profile")
+        my_profile = navbar.find_element(By.LINK_TEXT, "My profile")
         my_profile.click()
         wait = WebDriverWait(self.selenium, 3)
         wait.until(EC.title_contains("My profile"))
 
-        delete_account_button = self.selenium.find_element_by_id(
-            "pterois-profile-delete-account-button"
+        delete_account_button = self.selenium.find_element(
+            By.ID, "pterois-profile-delete-account-button"
         )
         delete_account_button.click()
-        modal = self.selenium.find_element_by_class_name("modal")
-        modal_title = modal.find_element_by_class_name("modal-title")
+        modal = self.selenium.find_element(By.CLASS_NAME, "modal")
+        modal_title = modal.find_element(By.CLASS_NAME, "modal-title")
         self.assertEqual(modal_title.text, "Are you sure?")
         # Is the modal visible?
         self.assertIn("show", modal.get_attribute("class"))
 
         # Let's cancel the action
-        cancel_button = modal.find_element_by_id("modal-button-no")
+        cancel_button = modal.find_element(By.ID, "modal-button-no")
         cancel_button.click()
 
         # The modal should now be closed
@@ -933,7 +939,7 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         delete_account_button.click()
 
         # Let's confirm the action
-        confirm_button = modal.find_element_by_id("modal-button-yes")
+        confirm_button = modal.find_element(By.ID, "modal-button-yes")
         confirm_button.click()
 
         # We should now be redirected to the home page, with a proper message
@@ -942,32 +948,32 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         self.assertIn("Your account has been deleted.", self.selenium.page_source)
 
         # We should be visibly logged out
-        navbar = self.selenium.find_element_by_id("pterois-main-navbar")
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
         # There's no more "Logged as testuser" message
         with self.assertRaises(NoSuchElementException):
-            navbar.find_element_by_link_text("Logged as testuser")
+            navbar.find_element(By.LINK_TEXT, "Logged as testuser")
         # There's a sign in link again
-        signin_link = navbar.find_element_by_link_text("Sign in")
+        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
 
         # Let's try to sign in again...
         signin_link.click()
         wait = WebDriverWait(self.selenium, 3)
         wait.until(EC.title_contains("Sign in"))
-        username_field = self.selenium.find_element_by_id("id_username")
-        password_field = self.selenium.find_element_by_id("id_password")
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
         password_field.clear()
         username_field.send_keys("testuser")
         password_field.send_keys("12345")
-        signin_button = self.selenium.find_element_by_id("pterois-signin-button")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
         signin_button.click()
 
         # This is not possible anymore...
         # ... so we're still on the same page, with an error message
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
-        error_message = self.selenium.find_element_by_id(
-            "pterois-invalid-credentials-message"
+        error_message = self.selenium.find_element(
+            By.ID, "pterois-invalid-credentials-message"
         )
         self.assertEqual(
             error_message.text,

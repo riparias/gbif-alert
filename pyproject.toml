@@ -33,6 +33,9 @@ selenium = "^3.141.0"
 webdriver-manager = "^3.4.2"
 types-requests = "^2.27.15"
 
+[tool.poetry.group.dev.dependencies]
+selenium = "^4.8.2"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
