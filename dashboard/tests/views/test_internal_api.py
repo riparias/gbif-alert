@@ -586,7 +586,8 @@ class InternalApiTests(TestCase):
     def test_observations_json_multiple_datasets_filter_case1(self):
         """observations_json accept to filter per multiple datasets
 
-        Case 1: Explicitly requests all datasets. Results should be the same than no filter"""
+        Case 1: Explicitly requests all datasets. Results should be the same than no filter
+        """
         base_url = reverse("dashboard:internal-api:filtered-observations-data-page")
 
         json_data_all_species = self.client.get(
@@ -600,7 +601,8 @@ class InternalApiTests(TestCase):
     def test_observations_json_multiple_species_filter_case1(self):
         """observations_json accept to filter per multiple species
 
-        Case 1: Explicitly requests all species. Results should be the same than no filter"""
+        Case 1: Explicitly requests all species. Results should be the same than no filter
+        """
         base_url = reverse("dashboard:internal-api:filtered-observations-data-page")
 
         json_data_all_species = self.client.get(
