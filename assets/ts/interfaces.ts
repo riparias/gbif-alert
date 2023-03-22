@@ -29,6 +29,11 @@ export interface SpeciesInformation {
   groupCode: string;
 }
 
+// Extends SpeciesInformation with a label property. Since it has all properties of SelectionEntry, it can be used as a SelectionEntry
+export interface SpeciesInformationWithLabel extends SpeciesInformation {
+    label: string;
+}
+
 export interface DatasetInformation {
   id: number;
   gbifKey: number;

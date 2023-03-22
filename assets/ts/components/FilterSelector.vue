@@ -13,18 +13,21 @@
 
   <Filter-Selector-Modal v-if="modalActive"
                          :modal-title="modalTitle"
-                         :entries="entries"
-                         :label-class="labelClass"
-                         v-model="selectedEntriesIds"
                          @clicked-close="modalActive = false">
+
+    <SpeciesSelector v-if="speciesMode" :available-species="entries" v-model="selectedEntriesIds"  />
+    <Filter-Selector-Modal-Entries v-else :entries="entries" v-model="selectedEntriesIds" />
+
   </Filter-Selector-Modal>
 
 </template>
 
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
-import {SelectionEntry} from "../interfaces";
+import {SelectionEntry, SpeciesInformationWithLabel} from "../interfaces";
 import FilterSelectorModal from "./FilterSelectorModal.vue";
+import FilterSelectorModalEntries from "./FilterSelectorModalEntries.vue";
+import SpeciesSelector from "./SpeciesSelector.vue";
 
 interface ModalMultiSelectorData {
   modalActive: boolean;
@@ -33,15 +36,18 @@ interface ModalMultiSelectorData {
 
 export default defineComponent({
   name: "FilterSelector",
-  components: {FilterSelectorModal},
+  components: {SpeciesSelector, FilterSelectorModal, FilterSelectorModalEntries},
   props: {
+    // Is species mode:
+    //  - a different component is used as the modal body
+    //  - entries type should be SpeciesInformation[] instead of SelectionEntry[]
+    speciesMode: { type: Boolean, required: false, default: false },
     buttonLabelSingular: { type: String, required: true },
     buttonLabelPlural: { type: String, required: true },
     modalTitle: { type: String, required: true },
     noSelectionButtonLabel: { type: String, required: false },
-    labelClass: { type: String, default: "" },
     entries: {
-      type: Array as () => SelectionEntry[],
+      type: Array as () => SelectionEntry[] | SpeciesInformationWithLabel[],
       default: [],
     },
     initiallySelectedEntriesIds: {

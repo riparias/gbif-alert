@@ -26,9 +26,10 @@ import {ref, watch} from "vue";
 
 const props = defineProps<{
   availableSpecies: SpeciesInformation[]
+  modelValue: number[]
 }>()
 
-const selectedSpeciesIds = ref<number[]>([]);
+const selectedSpeciesIds = ref<number[]>(props.modelValue);
 
 const emit = defineEmits(['update:modelValue']);
 

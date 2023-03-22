@@ -19,12 +19,7 @@
           ></button>
         </div>
         <div class="modal-body">
-          <Filter-Selector-Modal-Entries
-              :entries="props.entries"
-              :label-class="props.labelClass"
-              v-model="selectedEntriesIds"
-          >
-          </Filter-Selector-Modal-Entries>
+          <slot></slot>
         </div>
       </div>
     </div>
@@ -33,27 +28,12 @@
 </template>
 
 <script setup lang="ts">
-import {SelectionEntry} from "../interfaces";
-import {ref, watch} from "vue";
-import FilterSelectorModalEntries from "./FilterSelectorModalEntries.vue";
 
-interface Props {
-  modalTitle: string,
-  entries: SelectionEntry[]
-  labelClass?: string
-  modelValue: number[]
-}
+const props = defineProps<{
+  modalTitle: string
+}>()
 
-const props = withDefaults(defineProps<Props>(), {
-  //modalTitle: "",
-  entries:[],
-  labelClass: "",
-  modelValue: []
-});
-
-const selectedEntriesIds = ref<number[]>(props.modelValue);
-
-const emit = defineEmits(['clickedClose', 'update:modelValue']);
+const emit = defineEmits(['clickedClose']);
 
 const modalClicked = (event: Event) => {
   if (event.target === event.currentTarget) {
@@ -62,7 +42,4 @@ const modalClicked = (event: Event) => {
   }
 }
 
-watch(selectedEntriesIds, (newVal) => {
-  emit('update:modelValue', newVal)
-})
 </script>

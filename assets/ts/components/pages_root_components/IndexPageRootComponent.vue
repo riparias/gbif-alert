@@ -1,11 +1,4 @@
 <template>
-
-  <div class="row">
-    <div class="col">
-      <SpeciesSelector :available-species="availableSpecies"></SpeciesSelector>
-    </div>
-  </div>
-
   <div class="row">
     <div class="col-sm my-2">
       <bootstrap-alert
@@ -31,8 +24,8 @@
               button-label-singular="Species"
               button-label-plural="species"
               modal-title="Species to include"
-              label-class="fst-italic"
-              :entries="availableSpeciesAsEntries"
+              :species-mode="true"
+              :entries="availableSpeciesWithLabels"
               :initially-selected-entries-ids="filters.speciesIds"
               @entries-changed="changeSelectedSpecies"
           ></Filter-Selector>
@@ -97,7 +90,7 @@ import {
   DateRange,
   FrontEndConfig,
   SelectionEntry,
-  SpeciesInformation,
+  SpeciesInformation, SpeciesInformationWithLabel,
 } from "../../interfaces";
 import axios from "axios";
 
@@ -150,17 +143,15 @@ export default defineComponent({
     };
   },
   computed: {
-    availableSpeciesAsEntries: function (): SelectionEntry[] {
-      return this.availableSpecies
-          .sort((a, b) => (a.scientificName > b.scientificName ? 1 : -1))
-          .map((s) => {
-            let label = s.scientificName;
-            if (s.vernacularName !== "") {
-              label = label + " (" + s.vernacularName + ")";
-            }
-            return {id: s.id, label: label};
-          });
+    availableSpeciesWithLabels: function (): SpeciesInformationWithLabel[] {
+      return this.availableSpecies.map((obj) => {
+        return {
+          ...obj,
+          label: obj.scientificName,
+        };
+      });
     },
+
     availableDatasetsAsEntries: function (): SelectionEntry[] {
       return this.availableDatasets
           .sort((a, b) => (a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1))

@@ -9,7 +9,6 @@
     />
     <label
         class="form-check-label"
-        :class="props.labelClass"
         :for="'pterois-mms-entry-' + uuid + '-' + entry.id"
     >
       {{ entry.label }}
@@ -27,13 +26,11 @@ const uuid = uuidV4();
 
 interface Props {
   entries: SelectionEntry[]
-  labelClass?: string
   modelValue: number[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   entries:[],
-  labelClass: "",
   modelValue: []
 });
 
