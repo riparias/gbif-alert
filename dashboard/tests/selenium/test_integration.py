@@ -1,6 +1,7 @@
 import datetime
 import time
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Point
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -43,12 +44,18 @@ class PteroisSeleniumTestsCommon(StaticLiveServerTestCase):
         if HEADLESS_MODE:
             options.add_argument("--headless")
         options.add_argument("--window-size=2560,1440")
+
+        # Workaround for https://github.com/SergeyPirogov/webdriver_manager/issues/500
+        if hasattr(settings, "SELENIUM_CHROMEDRIVER_VERSION"):
+            chromedriver_args = {"version": settings.SELENIUM_CHROMEDRIVER_VERSION}
+        else:
+            chromedriver_args = {"chrome_type": ChromeType.CHROMIUM}
+
         cls.selenium = webdriver.Chrome(
-            service=ChromiumService(
-                ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
-            ),
+            service=ChromiumService(ChromeDriverManager(**chromedriver_args).install()),
             options=options,
         )
+
         cls.selenium.implicitly_wait(2)
 
     @classmethod
