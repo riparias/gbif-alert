@@ -1,6 +1,6 @@
 <template>
   <div class="pterois-species-selector">
-    <p v-for="species in props.availableSpecies">
+    <p v-for="species in props.availableSpecies" class="form-check">
       <input
           class="form-check-input"
           type="checkbox"
