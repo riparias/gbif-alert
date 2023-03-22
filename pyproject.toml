@@ -27,13 +27,13 @@ black = "^23.1.0"
 mapbox-vector-tile = "^1.2.1"
 gunicorn = "^20.1.0"
 requests-mock = "^1.9.3"
-mypy = "^0.910"
-django-stubs = "^1.8.0"
 webdriver-manager = "^3.4.2"
 types-requests = "^2.27.15"
 
 [tool.poetry.group.dev.dependencies]
 selenium = "^4.8.2"
+mypy = "^1.1.1"
+django-stubs = "^1.16.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -10,6 +10,7 @@ from django.utils import timezone
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.service import Service as ChromiumService
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import Select
@@ -26,7 +27,28 @@ from dashboard.models import (
     Alert,
 )
 
-HEADLESS_MODE = True
+
+def _get_webdriver() -> WebDriver:
+    # Selenium setup
+    options = webdriver.ChromeOptions()
+    options.add_argument("--no-sandbox")
+    if settings.SELENIUM_HEADLESS_MODE:
+        options.add_argument("--headless")
+    options.add_argument("--window-size=2560,1440")
+
+    # Workaround for https://github.com/SergeyPirogov/webdriver_manager/issues/500
+    if hasattr(settings, "SELENIUM_CHROMEDRIVER_VERSION"):
+        chromedriver_args = {"version": settings.SELENIUM_CHROMEDRIVER_VERSION}  # type: ignore
+    else:
+        chromedriver_args = {"chrome_type": ChromeType.CHROMIUM}
+
+    selenium = webdriver.Chrome(
+        service=ChromiumService(ChromeDriverManager(**chromedriver_args).install()),
+        options=options,
+    )
+
+    selenium.implicitly_wait(2)
+    return selenium
 
 
 @override_settings(
@@ -38,25 +60,7 @@ class PteroisSeleniumTestsCommon(StaticLiveServerTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        # Selenium setup
-        options = webdriver.ChromeOptions()
-        options.add_argument("--no-sandbox")
-        if HEADLESS_MODE:
-            options.add_argument("--headless")
-        options.add_argument("--window-size=2560,1440")
-
-        # Workaround for https://github.com/SergeyPirogov/webdriver_manager/issues/500
-        if hasattr(settings, "SELENIUM_CHROMEDRIVER_VERSION"):
-            chromedriver_args = {"version": settings.SELENIUM_CHROMEDRIVER_VERSION}
-        else:
-            chromedriver_args = {"chrome_type": ChromeType.CHROMIUM}
-
-        cls.selenium = webdriver.Chrome(
-            service=ChromiumService(ChromeDriverManager(**chromedriver_args).install()),
-            options=options,
-        )
-
-        cls.selenium.implicitly_wait(2)
+        cls.selenium = _get_webdriver()
 
     @classmethod
     def tearDownClass(cls):

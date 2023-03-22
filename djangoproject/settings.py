@@ -177,3 +177,5 @@ LOGGING = {
 }
 
 MARKDOWNX_MARKDOWN_EXTENSIONS = ["markdown.extensions.toc"]
+
+SELENIUM_HEADLESS_MODE = True

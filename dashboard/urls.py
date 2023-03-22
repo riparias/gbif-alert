@@ -113,7 +113,7 @@ urlpatterns = [
     path(
         "internal-api/",
         include(
-            (internal_api_urls, "internal-api"),
+            (internal_api_urls, "internal-api"),  # type: ignore
         ),
     ),
     path(

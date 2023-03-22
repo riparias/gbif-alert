@@ -72,7 +72,8 @@ class CommonUsersFields(forms.ModelForm):
 
 
 class EditProfileForm(CommonUsersFields, UserChangeForm):
-    password = None  # No password change on the profile form
+    # No password change on the profile form
+    password = None  # type: ignore
 
     def __init__(self, *args, **kwargs):
         super(UserChangeForm, self).__init__(*args, **kwargs)

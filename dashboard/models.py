@@ -186,7 +186,7 @@ class DataImport(models.Model):
         }
 
 
-class ObservationManager(models.Manager):
+class ObservationManager(models.Manager["Observation"]):
     def filtered_from_my_params(
         self,
         species_ids: List[int],
@@ -484,7 +484,7 @@ class ObservationComment(models.Model):
         self.save()
 
 
-class MyAreaManager(models.Manager):
+class MyAreaManager(models.Manager["Area"]):
     def owned_by(self, user: WebsiteUser) -> QuerySet[Area]:
         return super(MyAreaManager, self).get_queryset().filter(owner=user)
 
