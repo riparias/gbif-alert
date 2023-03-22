@@ -36,14 +36,14 @@ class IndexPageTests(TestCase):
         self.assertTemplateUsed(response, "dashboard/index.html")
 
     def test_index_rejects_malformed_filters_param(self):
-        # See https://github.com/riparias/early-warning-webapp/issues/106 (common issue with bots)
+        # See https://github.com/riparias/early-alert-webapp/issues/106 (common issue with bots)
         response = self.client.get(
             "/?filters=%7B%27initialDataImportIds%27%3A%2B%5B18%5D%7D"
         )
         self.assertEqual(response.status_code, 400)
 
     def test_index_accept_well_formed_filters_param(self):
-        # See https://github.com/riparias/early-warning-webapp/issues/106 (common issue with bots)
+        # See https://github.com/riparias/early-alert-webapp/issues/106 (common issue with bots)
         response = self.client.get(
             "/?filters=%7B%27initialDataImportIds%27%3A+%5B18%5D%7D"
         )

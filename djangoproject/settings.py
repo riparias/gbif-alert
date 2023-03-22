@@ -152,7 +152,7 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_METHODS = [
     "GET"
-]  # Probably needed, but just to be on the safe side. See https://github.com/riparias/early-warning-webapp/issues/100
+]  # Probably needed, but just to be on the safe side. See https://github.com/riparias/early-alert-webapp/issues/100
 
 PAGE_FRAGMENTS_FALLBACK_LANGUAGE = "en"
 

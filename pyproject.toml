@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "riparias-early-warning-webapp"
+name = "riparias-early-alert-webapp"
 version = "0.1.0"
 description = "LIFE RIPARIAS early alert web application"
-authors = ["Nicolas Noé <nicolas.noe@inbo.be>"]
+authors = ["Nicolas Noé <nicolas@niconoe.eu>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"

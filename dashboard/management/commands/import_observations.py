@@ -135,7 +135,7 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
             row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
         )
         dataset_name = get_string_data(row, field_name=qn("datasetName"))
-        # Ugly hack necessary to circumvent a GBIF bug. See https://github.com/riparias/early-warning-webapp/issues/41
+        # Ugly hack necessary to circumvent a GBIF bug. See https://github.com/riparias/early-alert-webapp/issues/41
         if dataset_name == "":
             dataset_name = get_dataset_name_from_gbif_api(gbif_dataset_key)
 

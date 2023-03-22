@@ -239,7 +239,7 @@ class Observation(models.Model):
     # field.
 
     # The GBIF-assigned identifier. We show it to the user (links to GBIF.org, ...) but don't rely on it as a stable
-    # identifier anymore. See: https://github.com/riparias/early-warning-webapp/issues/35#issuecomment-944073702 and
+    # identifier anymore. See: https://github.com/riparias/early-alert-webapp/issues/35#issuecomment-944073702 and
     # https://github.com/gbif/pipelines/issues/604,
     gbif_id = models.CharField(max_length=100)
 
