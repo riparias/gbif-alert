@@ -1,11 +1,18 @@
 <template>
+
+  <div class="row">
+    <div class="col">
+      <SpeciesSelector :available-species="availableSpecies"></SpeciesSelector>
+    </div>
+  </div>
+
   <div class="row">
     <div class="col-sm my-2">
       <bootstrap-alert
-        v-if="showInProgressMessage"
-        @clickClose="showInProgressMessage = false"
-        alert-type="success"
-        class="my-2"
+          v-if="showInProgressMessage"
+          @clickClose="showInProgressMessage = false"
+          alert-type="success"
+          class="my-2"
       >
         <i class="bi bi-info-circle"></i>
         The observations are marked as seen in the background. This might take a
@@ -20,63 +27,63 @@
 
         <div class="col d-flex align-items-center">
           <Filter-Selector
-            class="mx-2"
-            button-label-singular="Species"
-            button-label-plural="species"
-            modal-title="Species to include"
-            label-class="fst-italic"
-            :entries="availableSpeciesAsEntries"
-            :initially-selected-entries-ids="filters.speciesIds"
-            @entries-changed="changeSelectedSpecies"
+              class="mx-2"
+              button-label-singular="Species"
+              button-label-plural="species"
+              modal-title="Species to include"
+              label-class="fst-italic"
+              :entries="availableSpeciesAsEntries"
+              :initially-selected-entries-ids="filters.speciesIds"
+              @entries-changed="changeSelectedSpecies"
           ></Filter-Selector>
 
           <Filter-Selector
-            class="mx-2"
-            button-label-singular="Dataset"
-            button-label-plural="datasets"
-            modal-title="Datasets to include"
-            :entries="availableDatasetsAsEntries"
-            :initially-selected-entries-ids="filters.datasetsIds"
-            @entries-changed="changeSelectedDatasets"
+              class="mx-2"
+              button-label-singular="Dataset"
+              button-label-plural="datasets"
+              modal-title="Datasets to include"
+              :entries="availableDatasetsAsEntries"
+              :initially-selected-entries-ids="filters.datasetsIds"
+              @entries-changed="changeSelectedDatasets"
           ></Filter-Selector>
 
           <Filter-Selector
-            class="mx-2"
-            button-label-singular="Area"
-            button-label-plural="areas"
-            no-selection-button-label="Everywhere"
-            modal-title="Restrict to specific areas"
-            :entries="availableAreasAsEntries"
-            :initially-selected-entries-ids="filters.areaIds"
-            @entries-changed="changeSelectedAreas"
+              class="mx-2"
+              button-label-singular="Area"
+              button-label-plural="areas"
+              no-selection-button-label="Everywhere"
+              modal-title="Restrict to specific areas"
+              :entries="availableAreasAsEntries"
+              :initially-selected-entries-ids="filters.areaIds"
+              @entries-changed="changeSelectedAreas"
           ></Filter-Selector>
 
           <Filter-Selector
-            class="mx-2"
-            button-label-singular="Initial data import"
-            button-label-plural="initial data imports"
-            no-selection-button-label="Imported at all time"
-            modal-title="First imported during data imports"
-            :entries="availableDataimportsAsEntries"
-            :initially-selected-entries-ids="filters.initialDataImportIds"
-            @entries-changed="changeSelectedInitialDataImport"
+              class="mx-2"
+              button-label-singular="Initial data import"
+              button-label-plural="initial data imports"
+              no-selection-button-label="Imported at all time"
+              modal-title="First imported during data imports"
+              :entries="availableDataimportsAsEntries"
+              :initially-selected-entries-ids="filters.initialDataImportIds"
+              @entries-changed="changeSelectedInitialDataImport"
           ></Filter-Selector>
 
           <ObservationStatusSelector
-            v-if="frontendConfig.authenticatedUser"
-            v-model="filters.status"
-            :endpoints-urls="frontendConfig.apiEndpoints"
-            :filters="filters"
-            @markAsSeenQueued="showInProgressMessage = true"
+              v-if="frontendConfig.authenticatedUser"
+              v-model="filters.status"
+              :endpoints-urls="frontendConfig.apiEndpoints"
+              :filters="filters"
+              @markAsSeenQueued="showInProgressMessage = true"
           ></ObservationStatusSelector>
         </div>
       </div>
     </div>
   </div>
   <Observations
-    :frontend-config="frontendConfig"
-    :filters="filters"
-    @selectedDateRangeUpdated="debouncedUpdateDateFilters"
+      :frontend-config="frontendConfig"
+      :filters="filters"
+      @selectedDateRangeUpdated="debouncedUpdateDateFilters"
   ></Observations>
 </template>
 
@@ -101,6 +108,7 @@ import BootstrapAlert from "../BootstrapAlert.vue";
 
 import {debounce, DebouncedFunc} from "lodash";
 import {dateTimeToFilterParam} from "../../helpers";
+import SpeciesSelector from "../SpeciesSelector.vue";
 
 declare const pteroisConfig: FrontEndConfig;
 declare const initialFilters: DashboardFilters;
@@ -120,6 +128,7 @@ export default defineComponent({
   name: "IndexPageRootComponent",
 
   components: {
+    SpeciesSelector,
     BootstrapAlert,
     Observations,
     ObservationStatusSelector,
@@ -143,35 +152,35 @@ export default defineComponent({
   computed: {
     availableSpeciesAsEntries: function (): SelectionEntry[] {
       return this.availableSpecies
-        .sort((a, b) => (a.scientificName > b.scientificName ? 1 : -1))
-        .map((s) => {
-          let label = s.scientificName;
-          if (s.vernacularName !== "") {
-            label = label + " (" + s.vernacularName + ")";
-          }
-          return { id: s.id, label: label };
-        });
+          .sort((a, b) => (a.scientificName > b.scientificName ? 1 : -1))
+          .map((s) => {
+            let label = s.scientificName;
+            if (s.vernacularName !== "") {
+              label = label + " (" + s.vernacularName + ")";
+            }
+            return {id: s.id, label: label};
+          });
     },
     availableDatasetsAsEntries: function (): SelectionEntry[] {
       return this.availableDatasets
-        .sort((a, b) => (a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1))
-        .map((d) => {
-          return { id: d.id, label: d.name };
-        });
+          .sort((a, b) => (a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1))
+          .map((d) => {
+            return {id: d.id, label: d.name};
+          });
     },
     availableAreasAsEntries: function (): SelectionEntry[] {
       return this.availableAreas
-        .sort((a, b) => (a.name > b.name ? 1 : -1))
-        .map((a: AreaInformation) => {
-          return { id: a.id, label: a.name };
-        });
+          .sort((a, b) => (a.name > b.name ? 1 : -1))
+          .map((a: AreaInformation) => {
+            return {id: a.id, label: a.name};
+          });
     },
     availableDataimportsAsEntries: function (): SelectionEntry[] {
       return this.availableDataImports
-        .sort((a, b) => (b.id > a.id ? 1 : -1))
-        .map((d) => {
-          return { id: d.id, label: d.str };
-        });
+          .sort((a, b) => (b.id > a.id ? 1 : -1))
+          .map((d) => {
+            return {id: d.id, label: d.str};
+          });
     },
   },
   created() {
@@ -203,31 +212,31 @@ export default defineComponent({
     },
     populateAvailableDatasets: function () {
       axios
-        .get(this.frontendConfig.apiEndpoints.datasetsListUrl)
-        .then((response) => {
-          this.availableDatasets = response.data;
-        });
+          .get(this.frontendConfig.apiEndpoints.datasetsListUrl)
+          .then((response) => {
+            this.availableDatasets = response.data;
+          });
     },
     populateAvailableSpecies: function () {
       axios
-        .get(this.frontendConfig.apiEndpoints.speciesListUrl)
-        .then((response) => {
-          this.availableSpecies = response.data;
-        });
+          .get(this.frontendConfig.apiEndpoints.speciesListUrl)
+          .then((response) => {
+            this.availableSpecies = response.data;
+          });
     },
     populateAvailableAreas: function () {
       axios
-        .get(this.frontendConfig.apiEndpoints.areasListUrl)
-        .then((response) => {
-          this.availableAreas = response.data;
-        });
+          .get(this.frontendConfig.apiEndpoints.areasListUrl)
+          .then((response) => {
+            this.availableAreas = response.data;
+          });
     },
     populateAvailableDataImports: function () {
       axios
-        .get(this.frontendConfig.apiEndpoints.dataImportsListUrl)
-        .then((response) => {
-          this.availableDataImports = response.data;
-        });
+          .get(this.frontendConfig.apiEndpoints.dataImportsListUrl)
+          .then((response) => {
+            this.availableDataImports = response.data;
+          });
     },
   },
 

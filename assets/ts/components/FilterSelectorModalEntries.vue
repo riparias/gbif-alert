@@ -1,0 +1,47 @@
+<template>
+  <div v-for="entry in props.entries" class="form-check">
+    <input
+        class="form-check-input"
+        type="checkbox"
+        :value="entry.id"
+        :id="'pterois-mms-entry-' + uuid + '-' + entry.id"
+        v-model="selectedEntriesIds"
+    />
+    <label
+        class="form-check-label"
+        :class="props.labelClass"
+        :for="'pterois-mms-entry-' + uuid + '-' + entry.id"
+    >
+      {{ entry.label }}
+    </label>
+  </div>
+</template>
+
+<script setup lang="ts">
+
+import {SelectionEntry} from "@/assets/ts/interfaces";
+import {ref, watch} from "vue";
+import {v4 as uuidV4} from "uuid";
+
+const uuid = uuidV4();
+
+interface Props {
+  entries: SelectionEntry[]
+  labelClass?: string
+  modelValue: number[]
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  entries:[],
+  labelClass: "",
+  modelValue: []
+});
+
+const selectedEntriesIds = ref<number[]>(props.modelValue);
+
+const emit = defineEmits(['update:modelValue']);
+
+watch(selectedEntriesIds, (newVal) => {
+  emit('update:modelValue', newVal)
+})
+</script>

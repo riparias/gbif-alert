@@ -20,13 +20,13 @@ export interface DashboardFilters {
   initialDataImportIds: Number[];
 }
 
+// Data comes directly from the backend, keep in sync with Species.as_dict()
 export interface SpeciesInformation {
   id: number;
   scientificName: string;
   vernacularName: string;
   gbifTaxonKey: number;
   groupCode: string;
-  categoryCode: string;
 }
 
 export interface DatasetInformation {

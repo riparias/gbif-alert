@@ -98,6 +98,7 @@ class Species(models.Model):
 
     @property
     def as_dict(self) -> dict[str, Any]:
+        # ! keep the return value in sync with the frontend's SpeciesInformation interface
         return {  # To be consumed on the frontend: we use JS naming conventions
             "id": self.pk,
             "scientificName": self.name,

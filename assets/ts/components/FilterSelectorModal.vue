@@ -19,22 +19,12 @@
           ></button>
         </div>
         <div class="modal-body">
-          <div v-for="entry in props.entries" class="form-check">
-            <input
-                class="form-check-input"
-                type="checkbox"
-                :value="entry.id"
-                :id="'mms-entry-' + uuid + '-' + entry.id"
-                v-model="selectedEntriesIds"
-            />
-            <label
-                class="form-check-label"
-                :class="props.labelClass"
-                :for="'mms-entry-' + uuid + '-' + entry.id"
-            >
-              {{ entry.label }}
-            </label>
-          </div>
+          <Filter-Selector-Modal-Entries
+              :entries="props.entries"
+              :label-class="props.labelClass"
+              v-model="selectedEntriesIds"
+          >
+          </Filter-Selector-Modal-Entries>
         </div>
       </div>
     </div>
@@ -43,11 +33,9 @@
 </template>
 
 <script setup lang="ts">
-import {v4 as uuidV4} from "uuid";
 import {SelectionEntry} from "../interfaces";
 import {ref, watch} from "vue";
-
-const uuid = uuidV4();
+import FilterSelectorModalEntries from "./FilterSelectorModalEntries.vue";
 
 interface Props {
   modalTitle: string,
