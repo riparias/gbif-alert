@@ -73,15 +73,9 @@ WebsiteUser = Union[User, AnonymousUser]
 
 
 class Species(models.Model):
-    GROUP_PLANT = "PL"
-    GROUP_CRAYFISH = "CR"
-
-    GROUP_CHOICES = [(GROUP_PLANT, _("Plants")), (GROUP_CRAYFISH, _("Crayfishes"))]
-
     name = models.CharField(max_length=100)  # Scientific name
     vernacular_name = models.CharField(max_length=100, blank=True)
     gbif_taxon_key = models.IntegerField(unique=True)
-    group = models.CharField(max_length=3, choices=GROUP_CHOICES)
 
     tags = TaggableManager()
 
@@ -107,7 +101,6 @@ class Species(models.Model):
             "scientificName": self.name,
             "vernacularName": self.vernacular_name,
             "gbifTaxonKey": self.gbif_taxon_key,
-            "groupCode": self.group,
             "tags": [tag.name for tag in self.tags.all()],
         }
 

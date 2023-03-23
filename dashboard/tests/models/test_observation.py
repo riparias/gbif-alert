@@ -31,7 +31,7 @@ class ObservationTests(TestCase):
         )
 
         species_p_fallax = Species.objects.create(
-            name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+            name="Procambarus fallax", gbif_taxon_key=8879526
         )
 
         di = DataImport.objects.create(start=timezone.now())

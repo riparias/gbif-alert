@@ -36,7 +36,7 @@ class ObservationCommentTestCase(TestCase):
             gbif_id=1,
             occurrence_id="1",
             species=Species.objects.create(
-                name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+                name="Procambarus fallax", gbif_taxon_key=8879526
             ),
             date=SEPTEMBER_13_2021,
             data_import=di,

@@ -41,7 +41,7 @@ class UserTests(TestCase):
             gbif_id=1,
             occurrence_id="1",
             species=Species.objects.create(
-                name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+                name="Procambarus fallax", gbif_taxon_key=8879526
             ),
             date=SEPTEMBER_13_2021,
             data_import=di,
@@ -85,7 +85,7 @@ class UserTests(TestCase):
     def test_has_alert_with_unseen_observations_false_no_match(self):
         """The user has one unseen observation, but it doesn't match the alert"""
         another_species = Species.objects.create(
-            name="Lixus Bardanae", gbif_taxon_key=48435, group="CR"
+            name="Lixus Bardanae", gbif_taxon_key=48435
         )
         alert = Alert.objects.create(
             user=self.jason, email_notifications_frequency=Alert.DAILY_EMAILS

@@ -28,10 +28,10 @@ class InternalApiTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.first_species = Species.objects.create(
-            name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+            name="Procambarus fallax", gbif_taxon_key=8879526
         )
         cls.second_species = Species.objects.create(
-            name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
+            name="Orconectes virilis", gbif_taxon_key=2227064
         )
 
         mocked = datetime.datetime(2022, 2, 11, 15, 10, 0, tzinfo=ZoneInfo("UTC"))
@@ -627,7 +627,7 @@ class InternalApiTests(TestCase):
         """
         # We need one more species and one related observation to perform this test
         species_tetraodon = Species.objects.create(
-            name="Tetraodon fluviatilis", gbif_taxon_key=5213564, group="PL"
+            name="Tetraodon fluviatilis", gbif_taxon_key=5213564
         )
         Observation.objects.create(
             gbif_id=1000,
@@ -834,7 +834,7 @@ class InternalApiTests(TestCase):
         """We add a third species and check we can ask a count for species 2 and 3 only"""
         # We need one more species and related observations to perform this test
         species_tetraodon = Species.objects.create(
-            name="Tetraodon fluviatilis", gbif_taxon_key=5213564, group="PL"
+            name="Tetraodon fluviatilis", gbif_taxon_key=5213564
         )
         Observation.objects.create(
             gbif_id=1000,

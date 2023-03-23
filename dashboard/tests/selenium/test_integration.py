@@ -81,10 +81,10 @@ class PteroisSeleniumTestsCommon(StaticLiveServerTestCase):
         User.objects.create_superuser(username="adminuser", password="67890")
 
         first_species = Species.objects.create(
-            name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+            name="Procambarus fallax", gbif_taxon_key=8879526
         )
         second_species = Species.objects.create(
-            name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
+            name="Orconectes virilis", gbif_taxon_key=2227064
         )
 
         di = DataImport.objects.create(start=timezone.now())

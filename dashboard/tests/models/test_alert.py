@@ -37,7 +37,7 @@ class AlertTests(TestCase):
             gbif_id=1,
             occurrence_id="1",
             species=Species.objects.create(
-                name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+                name="Procambarus fallax", gbif_taxon_key=8879526
             ),
             date=SEPTEMBER_13_2021,
             data_import=di,
@@ -69,7 +69,7 @@ class AlertTests(TestCase):
     def test_unseen_observations_count_zero_case_2(self):
         # The observation is unseen, but doesn't match the alert
         another_species = Species.objects.create(
-            name="Lixus Bardanae", gbif_taxon_key=48435, group="CR"
+            name="Lixus Bardanae", gbif_taxon_key=48435
         )
         alert = Alert.objects.create(
             user=self.user,
@@ -95,7 +95,7 @@ class AlertTests(TestCase):
     def test_has_unseen_observations_false_case_2(self):
         # The observation is unseen, but doesn't match the alert
         another_species = Species.objects.create(
-            name="Lixus Bardanae", gbif_taxon_key=48435, group="CR"
+            name="Lixus Bardanae", gbif_taxon_key=48435
         )
         alert = Alert.objects.create(
             user=self.user,

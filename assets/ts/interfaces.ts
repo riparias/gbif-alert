@@ -26,7 +26,6 @@ export interface SpeciesInformation {
   scientificName: string;
   vernacularName: string;
   gbifTaxonKey: number;
-  groupCode: string; // TODO: remove this field, it is not used (also backend)
   tags: string[];
 }
 

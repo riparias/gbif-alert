@@ -23,10 +23,10 @@ class MapsTestDataMixin(object):
     @classmethod
     def setUpTestData(cls):
         cls.first_species = Species.objects.create(
-            name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+            name="Procambarus fallax", gbif_taxon_key=8879526
         )
         cls.second_species = Species.objects.create(
-            name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
+            name="Orconectes virilis", gbif_taxon_key=2227064
         )
 
         cls.di = DataImport.objects.create(start=timezone.now())
@@ -922,7 +922,7 @@ class MVTServerAggregatedObsTests(
 
         # We need first to add a new species and related observations:
         species_tetraodon = Species.objects.create(
-            name="Tetraodon fluviatilis", gbif_taxon_key=5213564, group="PL"
+            name="Tetraodon fluviatilis", gbif_taxon_key=5213564
         )
         Observation.objects.create(
             gbif_id=1000,

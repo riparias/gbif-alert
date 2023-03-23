@@ -11,10 +11,10 @@ class PublicApiTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.first_species = Species.objects.create(
-            name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+            name="Procambarus fallax", gbif_taxon_key=8879526
         )
         cls.second_species = Species.objects.create(
-            name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
+            name="Orconectes virilis", gbif_taxon_key=2227064
         )
 
     def test_species_list_json(self):

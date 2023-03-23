@@ -77,10 +77,10 @@ class AlertWebPagesTests(TestCase):
         )
 
         cls.first_species = Species.objects.create(
-            name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+            name="Procambarus fallax", gbif_taxon_key=8879526
         )
         cls.second_species = Species.objects.create(
-            name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
+            name="Orconectes virilis", gbif_taxon_key=2227064
         )
 
         cls.public_area_andenne = Area.objects.create(
@@ -591,7 +591,7 @@ class WebPagesTests(TestCase):
             gbif_id=1,
             occurrence_id="1",
             species=Species.objects.create(
-                name="Procambarus fallax", gbif_taxon_key=8879526, group="CR"
+                name="Procambarus fallax", gbif_taxon_key=8879526
             ),
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=di,
@@ -611,7 +611,8 @@ class WebPagesTests(TestCase):
             gbif_id=2,
             occurrence_id="2",
             species=Species.objects.create(
-                name="Orconectes virilis", gbif_taxon_key=2227064, group="CR"
+                name="Orconectes virilis",
+                gbif_taxon_key=2227064,
             ),
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=di,
@@ -709,9 +710,7 @@ class WebPagesTests(TestCase):
         new_obs = Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
-            species=Species.objects.create(
-                name="AAA BBB", gbif_taxon_key=22, group="CR"
-            ),
+            species=Species.objects.create(name="AAA BBB", gbif_taxon_key=22),
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=di,
             initial_data_import=di,
@@ -772,9 +771,7 @@ class WebPagesTests(TestCase):
         new_obs = Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
-            species=Species.objects.create(
-                name="AAA BBB", gbif_taxon_key=22, group="CR"
-            ),
+            species=Species.objects.create(name="AAA BBB", gbif_taxon_key=22),
             date=datetime.date.today() - datetime.timedelta(days=1),
             data_import=di,
             initial_data_import=di,
