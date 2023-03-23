@@ -3,7 +3,7 @@
     <div class="row align-items-center mb-3">
       <div class="col">
         <div class="small input-group">
-          <input class="form-control form-control-sm" type="text" placeholder="filter per name / GBIF key..." aria-label="search form" v-model="textFilter">
+          <input class="form-control form-control-sm" type="text" placeholder="Filter per name / GBIF taxon key..." aria-label="search form" v-model="textFilter">
           <button class="btn btn-outline-secondary btn-sm" type="button" id="button-addon2" v-if="textFilter != ''" @click="textFilter=''"><i class="bi bi-x-circle-fill"></i></button>
         </div>
       </div>
@@ -58,9 +58,9 @@
                 v-model="selectedSpeciesIds"
             />
           </td>
-          <td><i>{{ line.scientificName }}</i></td>
-          <td>{{ line.vernacularName }}</td>
-          <td>{{ line.gbifTaxonKey }}</td>
+          <td><i v-html="highlightText(line.scientificName, textFilter)"></i></td>
+          <td v-html="highlightText(line.vernacularName, textFilter)"></td>
+          <td v-html="highlightText(line.gbifTaxonKey.toString(), textFilter)"></td>
           <td>
             <span v-for="tag in line.tags"
                   :style="getStyleForTag(tag)"
@@ -157,6 +157,16 @@ const getStyleForTag = (tag: string) => {
     backgroundColor: wordToColor(tag) + '!important',
     color: legibleColor(wordToColor(tag)) + '!important'
   }
+}
+
+const highlightText = (text: string, substring: string) => {
+  // Highlight a substring in a text, returns an HTML string
+  const index = text.toLowerCase().indexOf(substring.toLowerCase());
+  if (index === -1) {
+    return text;
+  }
+
+  return text.substring(0, index) + '<span style="background: yellow">' + text.substring(index, index + substring.length) + '</span>' + text.substring(index + substring.length);
 }
 
 // Various
