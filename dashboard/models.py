@@ -20,8 +20,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import localize
 from django.utils.timezone import localtime
-from django.utils.translation import gettext_lazy as _
-from taggit.managers import TaggableManager
+from taggit.managers import TaggableManager  # type: ignore
 
 from page_fragments.models import PageFragment, NEWS_PAGE_IDENTIFIER
 
