@@ -4,7 +4,7 @@
       <div class="col">
         <div class="small input-group">
           <input class="form-control form-control-sm" type="text" placeholder="Filter per name / GBIF taxon key..." aria-label="search form" v-model="textFilter">
-          <button class="btn btn-outline-secondary btn-sm" type="button" id="button-addon2" v-if="textFilter != ''" @click="textFilter=''"><i class="bi bi-x-circle-fill"></i></button>
+          <button class="btn btn-outline-secondary btn-sm" type="button" id="button-addon2" v-if="textFilter !== ''" @click="textFilter=''"><i class="bi bi-x-circle-fill"></i></button>
         </div>
       </div>
 
@@ -176,7 +176,8 @@ watch(selectedSpeciesIds, (newVal) => {
 })
 </script>
 
-<style scoped>
+<style>
+/* Unfortunately we cannot scope the style due to https://github.com/vuejs/vue-loader/issues/1915 */
 .tag-filter-enabled {
   opacity: 1;
 }
