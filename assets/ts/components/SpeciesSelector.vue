@@ -1,19 +1,24 @@
 <template>
   <div class="pterois-species-selector">
-    <div class="small mb-3 input-group">
-      <input class="form-control form-control-sm" type="text" placeholder="type here to filter species..." aria-label="search form" v-model="textFilter">
-      <button class="btn btn-outline-secondary btn-sm" type="button" id="button-addon2" v-if="textFilter != ''" @click="textFilter=''"><i class="bi bi-x-circle-fill"></i></button>
-    </div>
-    <div class="small">
-      Filter by tags:
-      <span v-for="tag in availableTags"
-            :style="getStyleForTag(tag)"
-            :class="tagFilter === tag ? 'tag-filter-enabled' : 'tag-filter-disabled'"
-            class="badge bg-secondary mx-1"
-            @click="tagFilter = tagFilter === tag ? '' : tag"
-      >
-        {{ tag }}
-        </span>
+    <div class="row align-items-center mb-3">
+      <div class="col">
+        <div class="small input-group">
+          <input class="form-control form-control-sm" type="text" placeholder="filter per name / GBIF key..." aria-label="search form" v-model="textFilter">
+          <button class="btn btn-outline-secondary btn-sm" type="button" id="button-addon2" v-if="textFilter != ''" @click="textFilter=''"><i class="bi bi-x-circle-fill"></i></button>
+        </div>
+      </div>
+
+      <div class="col small">
+        Filter by tags:
+        <span v-for="tag in availableTags"
+              :style="getStyleForTag(tag)"
+              :class="tagFilter === tag ? 'tag-filter-enabled' : 'tag-filter-disabled'"
+              class="badge bg-secondary mx-1"
+              @click="tagFilter = tagFilter === tag ? '' : tag"
+        >
+          {{ tag }}
+          </span>
+      </div>
     </div>
 
     <table v-if="lines.length > 0" class="table table-hover table-sm">
