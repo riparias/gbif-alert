@@ -26,7 +26,8 @@ export interface SpeciesInformation {
   scientificName: string;
   vernacularName: string;
   gbifTaxonKey: number;
-  groupCode: string;
+  groupCode: string; // TODO: remove this field, it is not used (also backend)
+  tags: string[];
 }
 
 // Extends SpeciesInformation with a label property. Since it has all properties of SelectionEntry, it can be used as a SelectionEntry

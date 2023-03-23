@@ -1,5 +1,6 @@
 import {DashboardFilters} from "./interfaces";
 import {DateTime} from "luxon";
+import {hsl} from "d3-color";
 
 const qs = require("qs");
 
@@ -17,4 +18,21 @@ export function dateTimeToFilterParam(dt: DateTime | null): string | null {
 
 export function formatCount(val: number): string {
   return new Intl.NumberFormat().format(val);
+}
+
+export function wordToColor(word: string): string {
+  let hash = 0;
+  for (let i = 0; i < word.length; i++) {
+    hash = word.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  let color = "#";
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xff;
+    color += ("00" + value.toString(16)).substr(-2);
+  }
+  return color;
+}
+
+export function legibleColor (color: string): string {
+  return hsl(color).l > 0.5 ? "#000" : "#fff";
 }

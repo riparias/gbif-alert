@@ -22,7 +22,7 @@ import {Circle, Fill, Stroke, Style, Text} from "ol/style";
 import axios from "axios";
 import RenderFeature from "ol/render/Feature";
 import VectorSource from "ol/source/Vector";
-import {filtersToQuerystring} from "../helpers";
+import {filtersToQuerystring, legibleColor} from "../helpers";
 import LayerGroup from "ol/layer/Group";
 import VectorLayer from "ol/layer/Vector";
 import {Geometry} from "ol/geom";
@@ -164,7 +164,7 @@ export default defineComponent({
       return function (feature: Feature<any> | RenderFeature): Style {
         const featuresCount = feature.getProperties()["count"];
         const fillColor = vm.colorScale(featuresCount);
-        const textColor = vm.legibleColor(fillColor);
+        const textColor = legibleColor(fillColor);
 
         return new Style({
           stroke: new Stroke({
@@ -248,9 +248,6 @@ export default defineComponent({
         this.aggregatedDataLayer = this.createAggregatedDataLayer();
         this.map.addLayer(this.aggregatedDataLayer as VectorTileLayer);
       }
-    },
-    legibleColor: function (color: string): string {
-      return hsl(color).l > 0.5 ? "#000" : "#fff";
     },
     createSimpleDataLayer: function (): VectorTileLayer {
       return new VectorTileLayer({

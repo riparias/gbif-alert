@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "markdownx",
     "django_rq",
+    "taggit",
     # Local/custom
     "dashboard",
     "page_fragments",
@@ -177,5 +178,7 @@ LOGGING = {
 }
 
 MARKDOWNX_MARKDOWN_EXTENSIONS = ["markdown.extensions.toc"]
+
+TAGGIT_CASE_INSENSITIVE = True
 
 SELENIUM_HEADLESS_MODE = True

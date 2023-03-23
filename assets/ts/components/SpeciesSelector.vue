@@ -26,6 +26,10 @@
           <th scope="col" :class="{'text-primary': sortBy === 'gbifKey' }" @click="sortBy = 'gbifKey'">
             GBIF taxon key
           </th>
+
+          <th scope="col">
+            Tags
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -41,6 +45,13 @@
           <td><i>{{ line.scientificName }}</i></td>
           <td>{{ line.vernacularName }}</td>
           <td>{{ line.gbifTaxonKey }}</td>
+          <td>
+            <span v-for="tag in line.tags"
+                  :style="'background-color: '  + wordToColor(tag) + '!important' + '; ' + 'color: ' + legibleColor(wordToColor(tag)) + '!important'"
+                  class="badge bg-secondary mx-1">
+              {{ tag }}
+            </span>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -51,8 +62,9 @@
 </template>
 
 <script setup lang="ts">
-import {SpeciesInformation} from "@/assets/ts/interfaces";
+import {SpeciesInformation} from "../interfaces";
 import {computed, ref, watch} from "vue";
+import {legibleColor, wordToColor} from "../helpers";
 
 // Props
 const props = defineProps<{

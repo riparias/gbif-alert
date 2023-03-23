@@ -21,6 +21,7 @@ from django.utils import timezone
 from django.utils.formats import localize
 from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
+from taggit.managers import TaggableManager
 
 from page_fragments.models import PageFragment, NEWS_PAGE_IDENTIFIER
 
@@ -82,6 +83,8 @@ class Species(models.Model):
     gbif_taxon_key = models.IntegerField(unique=True)
     group = models.CharField(max_length=3, choices=GROUP_CHOICES)
 
+    tags = TaggableManager()
+
     class Meta:
         verbose_name_plural = "species"
         ordering = ["name"]
@@ -105,6 +108,7 @@ class Species(models.Model):
             "vernacularName": self.vernacular_name,
             "gbifTaxonKey": self.gbif_taxon_key,
             "groupCode": self.group,
+            "tags": [tag.name for tag in self.tags.all()],
         }
 
 
