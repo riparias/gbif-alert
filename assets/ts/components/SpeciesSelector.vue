@@ -23,7 +23,7 @@
             Vernacular name
           </th>
 
-          <th scope="col">
+          <th scope="col" :class="{'text-primary': sortBy === 'gbifKey' }" @click="sortBy = 'gbifKey'">
             GBIF taxon key
           </th>
         </tr>
@@ -73,15 +73,18 @@ const lines = computed(() => {
   species = species.filter((s) => {
     const scientificNameMatches = s.scientificName.toLowerCase().includes(search.value.toLowerCase());
     const vernacularNameMatches = s.vernacularName.toLowerCase().includes(search.value.toLowerCase());
+    const gbifKeyMatches = s.gbifTaxonKey.toString().includes(search.value);
 
-    return scientificNameMatches || vernacularNameMatches;
+    return scientificNameMatches || vernacularNameMatches || gbifKeyMatches;
   });
 
   species = species.sort((a, b) => {
     if (sortBy.value === 'scientific') {
       return a.scientificName.localeCompare(b.scientificName);
-    } else {
+    } else if (sortBy.value === 'vernacular') {
       return a.vernacularName.localeCompare(b.vernacularName);
+    } else {
+      return a.gbifTaxonKey - b.gbifTaxonKey;
     }
   });
 
