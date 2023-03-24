@@ -66,6 +66,11 @@ class SpeciesResource(resources.ModelResource):
 @admin.register(Species)
 class SpeciesAdmin(ImportExportModelAdmin):
     resource_class = SpeciesResource
+    list_display = ("name", "vernacular_name", "gbif_taxon_key", "tag_list")
+    search_fields = ["name", "vernacular_name", "gbif_taxon_key"]
+
+    def tag_list(self, obj):
+        return ", ".join(o.name for o in obj.tags.all())
 
 
 @admin.register(DataImport)
