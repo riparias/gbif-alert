@@ -76,7 +76,7 @@ class Species(models.Model):
     vernacular_name = models.CharField(max_length=100, blank=True)
     gbif_taxon_key = models.IntegerField(unique=True)
 
-    tags = TaggableManager()
+    tags = TaggableManager(blank=True)
 
     class Meta:
         verbose_name_plural = "species"
