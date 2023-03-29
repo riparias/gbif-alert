@@ -149,3 +149,19 @@ want to let users access the website, nor send e-mail notifications).
 
 This tool can also be used to manually activate maintenance mode during complex maintenance tasks, look at 
 [django-maintenance-mode documentation](https://github.com/fabiocaccamo/django-maintenance-mode).
+
+## Internationalization (i18n)
+
+- Use the standard Django i18n tools (see [Django documentation](https://docs.djangoproject.com/en/4.1/topics/i18n/))
+
+### Short summary
+- In code, use the appropriate `gettext` functions (e.g. `_()`, `gettext()`, `ngettext()`, etc.), the `trans` template tag, etc.
+- Update PO files with `$ python manage.py makemessages --ignore="node_modules/*" -l fr -l nl`
+- Fill in the translations in the PO files
+- Compile the PO files to MO with `$ python manage.py compilemessages`
+
+TODO i18n:
+- call compilemessages at deploy time (dev, prod, ci), might need more dependencies for this
+- make gettext work with Vue components
+- make sure vernacular names are translatable
+- make sure page fragments are translatable 

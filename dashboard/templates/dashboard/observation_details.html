@@ -1,5 +1,6 @@
 {% extends 'dashboard/base.html' %}
 {% load crispy_forms_filters %}
+{% load i18n %}
 {% load static %}
 {% load pterois_extras %}
 
@@ -22,7 +23,7 @@
                     <small class="text-muted">You have first seen this observation on <span
                             id="observation-view-timestamp">{{ first_seen_by_user_timestamp }}</span></small>
                     <form class="d-inline-block" method="post"
-                          action="{% url "dashboard:actions:mark-observation-as-unseen" %}">
+                          action="{% url 'dashboard:actions:mark-observation-as-unseen' %}">
                         {% csrf_token %}
                         <input type="hidden" id="observationId" name="observationId" value="{{ observation.pk }}">
                         <input type="hidden" id="originUrl" name="originUrl" value="{{ origin_url }}">
@@ -42,7 +43,7 @@
                     <dt>GBIF ID</dt>
                     <dd><a href="{{ observation.gbif_id|gbif_occurrence_url }}">{{ observation.gbif_id }}</a></dd>
 
-                    <dt>Species</dt>
+                    <dt>{% translate "Species" %}</dt>
                     <dd>{{ observation.species.display_name_html|safe }}</dd>
 
                     <dt>Individual count</dt>

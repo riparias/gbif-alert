@@ -20,6 +20,7 @@
             </ul>
 
             <ul class="navbar-nav ms-auto">
+                {% include "dashboard/_language_selector.html" %}
                 {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"

@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import List
 
 from django.contrib import messages
+from django.utils.translation import gettext_lazy as _
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -113,9 +114,15 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
+LANGUAGES = [
+    ("en", _("English")),
+    ("fr", _("French")),
+    ("nl", _("Dutch")),
+]
+
 TIME_ZONE = "Europe/Brussels"
 
-USE_I18N = False
+USE_I18N = True
 
 USE_L10N = True
 
