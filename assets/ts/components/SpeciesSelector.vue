@@ -12,9 +12,9 @@
         Filter by tags:
         <span v-for="tag in availableTags"
               :style="getStyleForTag(tag)"
-              :class="tagFilter === tag ? 'tag-filter-enabled' : 'tag-filter-disabled'"
+              :class="tagsFilter.includes(tag) ? 'tag-filter-enabled' : 'tag-filter-disabled'"
               class="badge bg-secondary mx-1"
-              @click="tagFilter = tagFilter === tag ? '' : tag"
+              @click="tagsFilter.includes(tag) ? tagsFilter = tagsFilter.filter((t) => t !== tag) : tagsFilter.push(tag)"
         >
           {{ tag }}
           </span>
@@ -92,7 +92,7 @@ const props = defineProps<{
 const selectedSpeciesIds = ref<number[]>(props.modelValue);
 const sortBy = ref<string>('scientific');
 const textFilter = ref<string>('');
-const tagFilter = ref<string>('');
+const tagsFilter = ref<string[]>([]);
 
 // Computed data
 const lines = computed(() => {
@@ -109,8 +109,10 @@ const lines = computed(() => {
   });
 
   // Filtering by tag
-  if (tagFilter.value !== '') {
-    species = species.filter((s) => s.tags.includes(tagFilter.value));
+  if (tagsFilter.value.length > 0) {
+    species = species.filter((s) => {
+      return tagsFilter.value.every((tag) => s.tags.includes(tag));
+    });
   }
 
   // Sorting
