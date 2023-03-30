@@ -1,13 +1,15 @@
+{%  load i18n %}
+
 <footer class="py-2">
     <div class="container">
         <div class="row">
             <div class="col-lg">
-                Created by the <a href="https://oscibio.inbo.be/">Open science lab for biodiversity</a> for <a href="https://www.riparias.be/">LIFE RIPARIAS</a>.
+                {% blocktranslate with oscibio_url="https://oscibio.inbo.be/" riparias_url="https://www.riparias.be/" %}Created by the <a href="{{ oscibio_url }}">Open science lab for biodiversity</a> for <a href="{{ riparias_url }}">LIFE RIPARIAS</a>.{% endblocktranslate %}
             </div>
             <div class="col-lg">
-                Latest data import: <a href="{% url "dashboard:pages:about-data" %}">#{{ latest_data_import.pk }}</a>- {{ latest_data_import.start }}<br/>
-                Source code version: <a href="https://github.com/riparias/early-alert-webapp/tree/{{ git_version_number }}">{{ git_version_number }}</a><br/>
-                <a href="https://www.riparias.be/367">Privacy policy</a>
+                {% translate "Latest data import:" %} <a href="{% url "dashboard:pages:about-data" %}">#{{ latest_data_import.pk }}</a>- {{ latest_data_import.start }}<br/>
+                {% translate "Source code version:" %} <a href="https://github.com/riparias/early-alert-webapp/tree/{{ git_version_number }}">{{ git_version_number }}</a><br/>
+                <a href="https://www.riparias.be/367">{% translate "Privacy policy" %}</a>
             </div>
         </div>
     </div>

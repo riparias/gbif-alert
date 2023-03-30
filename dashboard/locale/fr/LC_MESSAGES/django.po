@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-03-29 12:18+0200\n"
+"POT-Creation-Date: 2023-03-30 12:48+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,69 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: dashboard/templates/dashboard/_footer.html:7
+#, python-format
+msgid ""
+"Created by the <a href=\"%(oscibio_url)s\">Open science lab for "
+"biodiversity</a> for <a href=\"%(riparias_url)s\">LIFE RIPARIAS</a>."
+msgstr ""
+"Créé par <a href=\"%(oscibio_url)s\">Open science lab for "
+"biodiversity</a> pour le projet <a href=\"%(riparias_url)s\">LIFE RIPARIAS</a>."
+
+#: dashboard/templates/dashboard/_footer.html:10
+msgid "Latest data import:"
+msgstr "Dernier import de données :"
+
+#: dashboard/templates/dashboard/_footer.html:11
+msgid "Source code version:"
+msgstr "Version du code source :"
+
+#: dashboard/templates/dashboard/_footer.html:12
+msgid "Privacy policy"
+msgstr "Politique de confidentialité"
+
+#: dashboard/templates/dashboard/_navbar.html:12
+msgid "Explore all observations"
+msgstr "Voir toutes les observations"
+
+#: dashboard/templates/dashboard/_navbar.html:15
+msgid "What's new"
+msgstr "Nouveautés"
+
+#: dashboard/templates/dashboard/_navbar.html:19
+#: dashboard/templates/dashboard/_navbar.html:43
+msgid "My alerts"
+msgstr "Mes alertes"
+
+#: dashboard/templates/dashboard/_navbar.html:23
+msgid "About this site"
+msgstr "A propos de ce site"
+
+#: dashboard/templates/dashboard/_navbar.html:26
+msgid "About the data"
+msgstr "A propos des données"
+
+#: dashboard/templates/dashboard/_navbar.html:40
+msgid "My profile"
+msgstr "Mon profil"
+
+#: dashboard/templates/dashboard/_navbar.html:54
+msgid "Admin panel"
+msgstr "Panneau d'administration"
+
+#: dashboard/templates/dashboard/_navbar.html:56
+msgid "Sign out"
+msgstr "Se déconnecter"
+
+#: dashboard/templates/dashboard/_navbar.html:60
+msgid "Sign in"
+msgstr "Se connecter"
+
+#: dashboard/templates/dashboard/_navbar.html:61
+msgid "Sign up"
+msgstr "S'inscrire"
+
 #: dashboard/templates/dashboard/observation_details.html:46
 msgid "Species"
 msgstr "Espèce"

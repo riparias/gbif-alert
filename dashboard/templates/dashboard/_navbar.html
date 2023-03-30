@@ -1,3 +1,5 @@
+{% load i18n %}
+
 <nav id="pterois-main-navbar" class="navbar navbar-expand-lg navbar-dark mb-4 shadow">
     <div class="container-fluid">
         <a class="navbar-brand me-4" href="{% url 'dashboard:pages:index' %}"> {{ pterois_settings.SITE_NAME }} <i class="bi bi-megaphone"></i> </a>
@@ -7,16 +9,22 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto">
-                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:index' label='Explore all observations' icon_identifier='bi-map' %}
+                {% translate "Explore all observations" as explore_entry_label %}
+                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:index' label=explore_entry_label icon_identifier='bi-map' %}
 
-                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:news' label="What's new" icon_identifier='bi-boombox' show_dot=user.has_unseen_news dot_id="unseen-news-dot" %}
+                {% translate "What's new" as news_entry_label %}
+                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:news' label=news_entry_label icon_identifier='bi-boombox' show_dot=user.has_unseen_news dot_id="unseen-news-dot" %}
 
                 {% if user.is_authenticated %}
-                    {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:my-alerts' label='My alerts' icon_identifier='bi-exclamation-square' show_dot=user.has_alerts_with_unseen_observations dot_id="unseen-observations-dot"%}
+                    {% translate "My alerts" as my_alerts_entry_label %}
+                    {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:my-alerts' label=my_alerts_entry_label icon_identifier='bi-exclamation-square' show_dot=user.has_alerts_with_unseen_observations dot_id="unseen-observations-dot"%}
                 {% endif %}
 
-                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:about-site' label='About this site' icon_identifier='bi-window' %}
-                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:about-data' label='About the data' icon_identifier='bi-server' %}
+                {% translate "About this site" as about_site_entry_label %}
+                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:about-site' label=about_site_entry_label icon_identifier='bi-window' %}
+
+                {% translate "About the data" as about_data_entry_label %}
+                {% include "dashboard/_navbar_page_entry.html" with url_pattern='dashboard:pages:about-data' label=about_data_entry_label icon_identifier='bi-server' %}
             </ul>
 
             <ul class="navbar-nav ms-auto">
@@ -29,10 +37,10 @@
                         </a>
 
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{% url 'dashboard:pages:profile' %}"><i class="bi bi-person-square"></i> My profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'dashboard:pages:profile' %}"><i class="bi bi-person-square"></i> {% translate "My profile" %}</a></li>
                             <li>
                                 <a class="dropdown-item" href="{% url 'dashboard:pages:my-alerts' %}">
-                                    <i class="bi bi-exclamation-square"></i> My alerts
+                                    <i class="bi bi-exclamation-square"></i> {% translate "My alerts" %}
                                     {% if user.has_alerts_with_unseen_observations %}
                                         <span class="align-baseline red-dot"></span>
                                     {% endif %}
@@ -43,14 +51,14 @@
                                 <hr class="dropdown-divider">
                             </li>
                             {% if request.user.is_superuser %}
-                                <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-key"></i> Admin panel</a></li>
+                                <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-key"></i> {% translate "Admin panel" %}</a></li>
                             {% endif %}
-                            <li><a class="dropdown-item" href="{% url 'signout' %}"><i class="bi bi-power"></i> Sign out</a></li>
+                            <li><a class="dropdown-item" href="{% url 'signout' %}"><i class="bi bi-power"></i> {% translate "Sign out" %}</a></li>
                         </ul>
                     </li>
                 {% else %}
-                    <a class="btn btn-dark btn-sm mx-1" href="{% url 'signin' %}"><i class="bi bi-lock-fill"></i> Sign in</a>
-                    <a class="btn btn-dark btn-sm mx-1" href="{% url 'dashboard:pages:signup' %}"><i class="bi bi-person-plus-fill"></i> Sign up</a>
+                    <a class="btn btn-dark btn-sm mx-1" href="{% url 'signin' %}"><i class="bi bi-lock-fill"></i> {% translate "Sign in" %}</a>
+                    <a class="btn btn-dark btn-sm mx-1" href="{% url 'dashboard:pages:signup' %}"><i class="bi bi-person-plus-fill"></i> {% translate "Sign up" %}</a>
                 {% endif %}
             </ul>
         </div>
