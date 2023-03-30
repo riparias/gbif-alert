@@ -52,7 +52,7 @@ function createAndMountComponent(component: Component, rootContainer = "#app") {
 };
 
 (window as any).initObservationDetailsPage = function () {
-    createAndMountComponent({components: {SingleObservationMap}});
+    createAndMountComponent({components: {SingleObservationMap}}, "#single-observation-app");
 };
 
 (window as any).initUserProfilePage = function () {

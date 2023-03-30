@@ -72,14 +72,14 @@
                     <dd>{{ observation.initial_data_import }}</dd>
                 </dl>
             </div>
-            <div class="col-md-6" id="app">
+            <div class="col-md-6">
                 <div class="card">
-                    <div id="app" class="card-img-top">
+                    <div id="single-observation-app" class="card-img-top">
                         <single-observation-map
                                 :height="400"
-                                :lat="{{ observation.lat }}"
-                                :lon="{{ observation.lon }}"
-                                :coordinates-uncertainty-in-meters="{{ observation.coordinate_uncertainty_in_meters|default_if_none:"undefined" }}">
+                                :lat="{{ observation.lat|stringformat:"f" }}"
+                                :lon="{{ observation.lon|stringformat:"f" }}"
+                                :coordinates-uncertainty-in-meters="{{ observation.coordinate_uncertainty_in_meters|stringformat:"f"|default_if_none:"undefined" }}">
                         </single-observation-map>
                     </div>
                     <div class="card-body">
