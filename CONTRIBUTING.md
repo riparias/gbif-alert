@@ -152,16 +152,21 @@ This tool can also be used to manually activate maintenance mode during complex 
 
 ## Internationalization (i18n)
 
-- Use the standard Django i18n tools (see [Django documentation](https://docs.djangoproject.com/en/4.1/topics/i18n/))
+- For template-based / backend translations, we use the standard Django i18n tools (see [Django documentation](https://docs.djangoproject.com/en/4.1/topics/i18n/)) 
+- For Vue components, we use https://vue-i18n.intlify.dev/ instead.
+- Finally, there are a few data-related translations that should be provided directly in the database via Django Admin: page fragments, vernacular names, ...
 
-### Short summary
+### How to update translations: Django
 - In code, use the appropriate `gettext` functions (e.g. `_()`, `gettext()`, `ngettext()`, etc.), the `trans` template tag, etc.
 - Update PO files with `$ python manage.py makemessages --ignore="node_modules/*" -l fr -l nl`
 - Fill in the translations in the PO files
 - Compile the PO files to MO with `$ python manage.py compilemessages`
 
+### How to update translations: Vue
+- Update the `messages` object in assets/ts/translations.ts. Please keep the keys in alphabetical order.
+
+
 TODO i18n:
 - call compilemessages at deploy time (dev, prod, ci), might need more dependencies for this. Dev/prod: already installed the gettext package and added the compilemessages command to scripts. CI: added gettext package to the workflow
-- make gettext work with Vue components
 - make sure vernacular names are translatable
 - make sure page fragments are translatable 

@@ -22,7 +22,6 @@ urlpatterns = [
     path("", include("dashboard.urls")),
     # User accounts
     path("i18n/", include("django.conf.urls.i18n")),
-    path("jsi18n/", JavaScriptCatalog.as_view(), name="javascript-catalog"),
     path(
         "accounts/signin/",
         auth_views.LoginView.as_view(template_name="dashboard/signin.html"),

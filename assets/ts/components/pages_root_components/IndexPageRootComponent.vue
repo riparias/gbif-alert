@@ -15,7 +15,7 @@
 
       <div class="row">
         <div class="col-2 d-flex align-items-center">
-          <b>Data filtering:</b>
+          <b>{{ $t("message.filters") }}</b>
         </div>
 
         <div class="col d-flex align-items-center">

@@ -4,61 +4,61 @@ import IndexPageRootComponent from "./components/pages_root_components/IndexPage
 import AlertDetailsPageRootComponent from "./components/pages_root_components/AlertDetailsPageRootComponent.vue";
 import SingleObservationMap from "./components/SingleObservationMap.vue";
 import DeleteAccountButton from "./components/DeleteAccountButton.vue";
-import DeleteAlertButton from "./components/DeleteAlertButton.vue";import {Component, createApp} from "vue";
+import DeleteAlertButton from "./components/DeleteAlertButton.vue";
+import {Component, createApp} from "vue";
+import {createI18n} from "vue-i18n";
+import {messages} from "./translations";
 
 require("bootstrap-icons/font/bootstrap-icons.css");
 
+// Enable bootstrap dropdowns
 function initDropDown() {
-  var dropdownElementList = [].slice.call(
-    document.querySelectorAll(".dropdown-toggle")
-  );
-  dropdownElementList.map(function (dropdownToggleEl) {
-    return new bootstrap.Dropdown(dropdownToggleEl);
-  });
+    var dropdownElementList = [].slice.call(
+        document.querySelectorAll(".dropdown-toggle")
+    );
+    dropdownElementList.map(function (dropdownToggleEl) {
+        return new bootstrap.Dropdown(dropdownToggleEl);
+    });
 }
 
 document.addEventListener("DOMContentLoaded", function (event) {
-  initDropDown();
+    initDropDown();
 });
 
-function createAndMountRootComponent(component: Component) {
-  createApp(component).mount("#app");
+// Vue-related stuff
+const i18n = createI18n({
+    locale: (window as any).LANGUAGE_CODE,
+    fallbackLocale: 'en',
+    messages,
+});
+
+function createAndMountComponent(component: Component, rootContainer = "#app") {
+    const app = createApp(component);
+    app.use(i18n);
+    app.mount(rootContainer);
 }
 
 (window as any).initIndexPage = function () {
-  createAndMountRootComponent(IndexPageRootComponent);
+    createAndMountComponent(IndexPageRootComponent);
 };
 
 (window as any).initAlertDetailsPage = function () {
-  createAndMountRootComponent(AlertDetailsPageRootComponent);
-
-  createApp({
-    components: {
-      DeleteAlertButton
-    },
-  }).mount("#app-alert-metadata");
+    createAndMountComponent(AlertDetailsPageRootComponent);
+    createAndMountComponent({
+        components: {
+            DeleteAlertButton
+        }
+    }, "#app-alert-metadata");
 };
 
 (window as any).initObservationDetailsPage = function () {
-  createApp({
-    components: {
-      SingleObservationMap,
-    },
-  }).mount("#app");
+    createAndMountComponent({components: {SingleObservationMap}});
 };
 
 (window as any).initUserProfilePage = function () {
-  createApp({
-    components: {
-      DeleteAccountButton
-    },
-  }).mount("#app");
+    createAndMountComponent({components: {DeleteAccountButton}});
 };
 
 (window as any).initUserAlertsPage = function () {
-  createApp({
-    components: {
-      DeleteAlertButton
-    },
-  }).mount("#app");
+    createAndMountComponent({components: {DeleteAlertButton}});
 };
