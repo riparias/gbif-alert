@@ -161,7 +161,7 @@ This tool can also be used to manually activate maintenance mode during complex 
 - Compile the PO files to MO with `$ python manage.py compilemessages`
 
 TODO i18n:
-- call compilemessages at deploy time (dev, prod, ci), might need more dependencies for this
+- call compilemessages at deploy time (dev, prod, ci), might need more dependencies for this. Dev/prod: already installed the gettext package and added the compilemessages command to scripts. CI: added gettext package to the workflow
 - make gettext work with Vue components
 - make sure vernacular names are translatable
 - make sure page fragments are translatable 
