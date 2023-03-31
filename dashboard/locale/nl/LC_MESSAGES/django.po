@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-03-30 12:48+0200\n"
+"POT-Creation-Date: 2023-03-31 15:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -71,6 +71,8 @@ msgid "Sign out"
 msgstr ""
 
 #: dashboard/templates/dashboard/_navbar.html:60
+#: dashboard/templates/dashboard/signin.html:11
+#: dashboard/templates/dashboard/signin.html:36
 msgid "Sign in"
 msgstr ""
 
@@ -81,3 +83,25 @@ msgstr ""
 #: dashboard/templates/dashboard/observation_details.html:46
 msgid "Species"
 msgstr "Soort"
+
+#: dashboard/templates/dashboard/signin.html:18
+msgid ""
+"Your account doesn't have access to this page. To proceed, please sign in "
+"with an account that has access."
+msgstr ""
+
+#: dashboard/templates/dashboard/signin.html:20
+msgid "Please sign in to see this page."
+msgstr ""
+
+#: dashboard/templates/dashboard/signin.html:27
+msgid "Username:"
+msgstr ""
+
+#: dashboard/templates/dashboard/signin.html:32
+msgid "Password:"
+msgstr ""
+
+#: dashboard/templates/dashboard/signin.html:37
+msgid "Lost password?"
+msgstr ""

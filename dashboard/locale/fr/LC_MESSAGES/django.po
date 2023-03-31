@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-03-30 12:48+0200\n"
+"POT-Creation-Date: 2023-03-31 15:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -24,8 +24,8 @@ msgid ""
 "Created by the <a href=\"%(oscibio_url)s\">Open science lab for "
 "biodiversity</a> for <a href=\"%(riparias_url)s\">LIFE RIPARIAS</a>."
 msgstr ""
-"Créé par <a href=\"%(oscibio_url)s\">Open science lab for "
-"biodiversity</a> pour le projet <a href=\"%(riparias_url)s\">LIFE RIPARIAS</a>."
+"Créé par <a href=\"%(oscibio_url)s\">Open science lab for biodiversity</a> "
+"pour le projet <a href=\"%(riparias_url)s\">LIFE RIPARIAS</a>."
 
 #: dashboard/templates/dashboard/_footer.html:10
 msgid "Latest data import:"
@@ -73,6 +73,8 @@ msgid "Sign out"
 msgstr "Se déconnecter"
 
 #: dashboard/templates/dashboard/_navbar.html:60
+#: dashboard/templates/dashboard/signin.html:11
+#: dashboard/templates/dashboard/signin.html:36
 msgid "Sign in"
 msgstr "Se connecter"
 
@@ -83,3 +85,27 @@ msgstr "S'inscrire"
 #: dashboard/templates/dashboard/observation_details.html:46
 msgid "Species"
 msgstr "Espèce"
+
+#: dashboard/templates/dashboard/signin.html:18
+msgid ""
+"Your account doesn't have access to this page. To proceed, please sign in "
+"with an account that has access."
+msgstr ""
+"Votre compte ne permet pas d'accéder à cette page. Pour continuer, veuillez "
+"vous connecter avec un compte ayant les permissions suffisantes."
+
+#: dashboard/templates/dashboard/signin.html:20
+msgid "Please sign in to see this page."
+msgstr "Veuillez vous connecter pour voir cette page."
+
+#: dashboard/templates/dashboard/signin.html:27
+msgid "Username:"
+msgstr "Nom d'utilisateur :"
+
+#: dashboard/templates/dashboard/signin.html:32
+msgid "Password:"
+msgstr "Mot de passe :"
+
+#: dashboard/templates/dashboard/signin.html:37
+msgid "Lost password?"
+msgstr "Mot de passe oublié ?"
