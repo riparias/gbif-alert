@@ -7,9 +7,11 @@
         {% get_available_languages as LANGUAGES %}
         {% get_language_info_list for LANGUAGES as languages %}
         {% for language in languages %}
-        <option value="{{ language.code }}" {% if language.code == LANGUAGE_CODE %} selected{% endif %}>
-            {{ language.name_local }} ({{ language.code }})
-        </option>
+            {% if language.code in pterois_settings.ENABLED_LANGUAGES %}
+                <option value="{{ language.code }}" {% if language.code == LANGUAGE_CODE %} selected{% endif %}>
+                    {{ language.name_local }} ({{ language.code }})
+                </option>
+            {% endif %}
         {% endfor %}
     </select>
 </form>

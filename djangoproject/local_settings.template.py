@@ -50,6 +50,10 @@ ADMINS = [
 
 PTEROIS: Dict[str, Any] = {
     "SITE_NAME": "LIFE RIPARIAS early alert",
+    "ENABLED_LANGUAGES": (
+        "en",
+        "fr",
+    ),  # Languages available in the interface. Subset of the languages in `LANGUAGES`.
     "GBIF_DOWNLOAD_CONFIG": {
         "USERNAME": "riparias-dev",
         "PASSWORD": "riparias-dev",
