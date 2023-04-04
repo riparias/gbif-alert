@@ -1,9 +1,14 @@
 {% extends 'dashboard/base.html' %}
-{% load page_fragments %}
 
 {% load static %}
+{% load i18n %}
 
-{% block page_title %}{% include "dashboard/_page_title.html" with page_name="Home" %}{% endblock page_title %}
+{% load page_fragments %}
+
+{% block page_title %}
+    {% translate "Home" as page_title %}
+    {% include "dashboard/_page_title.html" with page_name=page_title %}
+{% endblock page_title %}
 
 {% block after_messages %}
 <script type="text/javascript">

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-03-31 15:32+0200\n"
+"POT-Creation-Date: 2023-04-04 13:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,10 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: dashboard/templates/503.html:7
+msgid "In maintenance"
+msgstr "Maintenance en cours"
 
 #: dashboard/templates/dashboard/_footer.html:7
 #, python-format
@@ -44,15 +48,18 @@ msgid "Explore all observations"
 msgstr "Voir toutes les observations"
 
 #: dashboard/templates/dashboard/_navbar.html:15
+#: dashboard/templates/dashboard/news.html:7
 msgid "What's new"
 msgstr "Nouveautés"
 
 #: dashboard/templates/dashboard/_navbar.html:19
 #: dashboard/templates/dashboard/_navbar.html:43
+#: dashboard/templates/dashboard/user_alerts.html:5
 msgid "My alerts"
 msgstr "Mes alertes"
 
 #: dashboard/templates/dashboard/_navbar.html:23
+#: dashboard/templates/dashboard/about_site.html:7
 msgid "About this site"
 msgstr "A propos de ce site"
 
@@ -61,6 +68,7 @@ msgid "About the data"
 msgstr "A propos des données"
 
 #: dashboard/templates/dashboard/_navbar.html:40
+#: dashboard/templates/dashboard/user_profile.html:7
 msgid "My profile"
 msgstr "Mon profil"
 
@@ -73,20 +81,97 @@ msgid "Sign out"
 msgstr "Se déconnecter"
 
 #: dashboard/templates/dashboard/_navbar.html:60
-#: dashboard/templates/dashboard/signin.html:11
-#: dashboard/templates/dashboard/signin.html:36
+#: dashboard/templates/dashboard/signin.html:6
+#: dashboard/templates/dashboard/signin.html:14
+#: dashboard/templates/dashboard/signin.html:39
 msgid "Sign in"
 msgstr "Se connecter"
 
 #: dashboard/templates/dashboard/_navbar.html:61
+#: dashboard/templates/dashboard/user_signup.html:7
 msgid "Sign up"
 msgstr "S'inscrire"
+
+#: dashboard/templates/dashboard/alert_create.html:6
+msgid "New alert"
+msgstr "Mouvelle alerte"
+
+#: dashboard/templates/dashboard/alert_details.html:7
+msgid "Alert details"
+msgstr "Détails de l'alerte"
+
+#: dashboard/templates/dashboard/alert_edit.html:6
+msgid "Edit alert"
+msgstr "Modifier une alerte"
+
+#: dashboard/templates/dashboard/index.html:9
+msgid "Home"
+msgstr "Accueil"
 
 #: dashboard/templates/dashboard/observation_details.html:46
 msgid "Species"
 msgstr "Espèce"
 
-#: dashboard/templates/dashboard/signin.html:18
+#: dashboard/templates/dashboard/password_reset.html:7
+#: dashboard/templates/dashboard/password_reset.html:15
+msgid "Forgot your password?"
+msgstr "Mot de passe oublié ?"
+
+#: dashboard/templates/dashboard/password_reset.html:16
+msgid ""
+"Enter your email address below, and we'll email instructions for setting a "
+"new one."
+msgstr ""
+"Saisissez votre adresse email ci-dessous, et nous vous enverrons les "
+"instructions pour en définir un nouveau."
+
+#: dashboard/templates/dashboard/password_reset.html:21
+msgid "Send me instructions!"
+msgstr "Envoyez-moi les instructions !"
+
+#: dashboard/templates/dashboard/password_reset_complete.html:5
+#: dashboard/templates/dashboard/password_reset_complete.html:13
+msgid "Password reset complete"
+msgstr "Mot de passe réinitialisé"
+
+#: dashboard/templates/dashboard/password_reset_complete.html:17
+#, python-format
+msgid ""
+"\n"
+"                        Your new password has been set. You can now <a "
+"href=\"%(signin_url)s\">sign in</a>.\n"
+"                    "
+msgstr "\nVotre nouveau mot de passe a été défini. Vous pouvez maintenant <a href=\"%(signin_url)s\">vous connecter</a>."
+
+#: dashboard/templates/dashboard/password_reset_confirm.html:7
+msgid "Reset your password"
+msgstr "Reinitialiser votre mot de passe"
+
+#: dashboard/templates/dashboard/password_reset_confirm.html:16
+msgid "Set a new password!"
+msgstr "Choisissez un nouveau mot de passe !"
+
+#: dashboard/templates/dashboard/password_reset_confirm.html:24
+msgid ""
+"The password reset link was invalid, possibly because it has already been "
+"used. Please request a new password reset."
+msgstr "Le lien de réinitialisation du mot de passe est invalide, il a peut-être déjà été utilisé. Veuillez demander une nouvelle réinitialisation du mot de passe."
+
+#: dashboard/templates/dashboard/password_reset_done.html:6
+msgid "Instructions sent"
+msgstr "Instructions envoyées"
+
+#: dashboard/templates/dashboard/password_reset_done.html:14
+msgid "Check your inbox."
+msgstr "Vérifiez votre boîte de réception."
+
+#: dashboard/templates/dashboard/password_reset_done.html:16
+msgid ""
+"We've emailed you instructions for setting your password. You should receive "
+"the email shortly!"
+msgstr "Nous vous avons envoyé des instructions pour définir votre mot de passe. Vous devriez recevoir l'email sous peu !"
+
+#: dashboard/templates/dashboard/signin.html:21
 msgid ""
 "Your account doesn't have access to this page. To proceed, please sign in "
 "with an account that has access."
@@ -94,18 +179,18 @@ msgstr ""
 "Votre compte ne permet pas d'accéder à cette page. Pour continuer, veuillez "
 "vous connecter avec un compte ayant les permissions suffisantes."
 
-#: dashboard/templates/dashboard/signin.html:20
+#: dashboard/templates/dashboard/signin.html:23
 msgid "Please sign in to see this page."
 msgstr "Veuillez vous connecter pour voir cette page."
 
-#: dashboard/templates/dashboard/signin.html:27
+#: dashboard/templates/dashboard/signin.html:30
 msgid "Username:"
 msgstr "Nom d'utilisateur :"
 
-#: dashboard/templates/dashboard/signin.html:32
+#: dashboard/templates/dashboard/signin.html:35
 msgid "Password:"
 msgstr "Mot de passe :"
 
-#: dashboard/templates/dashboard/signin.html:37
+#: dashboard/templates/dashboard/signin.html:40
 msgid "Lost password?"
 msgstr "Mot de passe oublié ?"

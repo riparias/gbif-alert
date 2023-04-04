@@ -1,8 +1,12 @@
 {% extends 'dashboard/base.html' %}
 
+{% load i18n %}
 {% load page_fragments %}
 
-{% block page_title %}{% include "dashboard/_page_title.html" with page_name="About this site" %}{% endblock %}
+{% block page_title %}
+    {% translate "About this site" as page_title %}
+    {% include "dashboard/_page_title.html" with page_name=page_title %}
+{% endblock %}
 
 {% block after_messages %}
     <div class="container">

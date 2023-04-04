@@ -2,7 +2,10 @@
 
 {% load i18n %}
 
-{% block page_title %}{% include "dashboard/_page_title.html" with page_name="Sign in" %}{% endblock %}
+{% block page_title %}
+    {% translate "Sign in" as page_title %}
+    {% include "dashboard/_page_title.html" with page_name=page_title %}
+{% endblock %}
 
 {% block after_messages %}
     <div class="container">
