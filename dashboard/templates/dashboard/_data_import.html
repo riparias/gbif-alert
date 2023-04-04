@@ -1,31 +1,34 @@
 {% load humanize %}
+{% load i18n %}
 {% load pterois_extras %}
 
 <div class="card my-2">
-    <h5 class="card-header" id="data-import-{{ data_import.pk }}">Data import: #{{ data_import.pk }}</h5>
+    <h5 class="card-header" id="data-import-{{ data_import.pk }}">{% translate "Data import: #" %}{{ data_import.pk }}</h5>
     <div class="card-body">
         <dl>
-            <dt>Time</dt>
+            <dt>{% translate "Date/time" %}</dt>
             <dd>{{ data_import.start }} - {{ data_import.end }}</dd>
         </dl>
 
         <dl>
-            <dt>Imported observations</dt>
+            <dt>{% translate "Imported observations" %}</dt>
             <dd>{{ data_import.imported_observations_counter|intcomma }}</dd>
         </dl>
 
         <dl>
-            <dt>New observations in this import</dt>
+            <dt>{% translate "New observations in this import" %}</dt>
             <dd><a href="{% dashboard_url_filtered_by_data_import data_import %}">{{ data_import.occurrences_initially_imported.count|intcomma }}</a></dd>
         </dl>
 
         <dl>
-            <dt>Skipped observations in <a href="{{ data_import.gbif_download_id|gbif_download_url }}">GBIF download</a></dt>
+            <dt>
+                {% blocktranslate with gbif_url=data_import.gbif_download_id|gbif_download_url %}Skipped observations in <a href="{{ gbif_url }}">GBIF download</a>{% endblocktranslate %}
+            </dt>
             <dd>{{ data_import.skipped_observations_counter|intcomma }}</dd>
         </dl>
 
         <dl>
-            <dt>GBIF predicate</dt>
+            <dt>{% translate "GBIF predicate" %}</dt>
             <dd><code>{{ data_import.gbif_predicate }}</code></dd>
         </dl>
     </div>

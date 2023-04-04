@@ -10,11 +10,11 @@
     <div class="container">
         <div class="row">
             <div class="col">
-                <h1>My alerts</h1>
+                <h1>{% translate "My alerts" %}</h1>
             </div>
 
             <div class="col text-end">
-                <a href="{% url 'dashboard:pages:alert-create' %}" class="btn btn-success btn-sm"><i class="bi bi-plus-circle-fill"></i> Create a new alert</a>
+                <a href="{% url 'dashboard:pages:alert-create' %}" class="btn btn-success btn-sm"><i class="bi bi-plus-circle-fill"></i> {% translate "Create a new alert" %}</a>
             </div>
         </div>
 
@@ -23,7 +23,7 @@
                {% for alert in alerts %}
                     {% include "dashboard/_alert.html" with alert=alert show_details_buttons=True %}
                 {% empty %}
-                    You currently don't have any configured alerts.
+                   {% translate "You currently don't have any configured alerts." %}
                 {% endfor %}
             </div>
         </div>

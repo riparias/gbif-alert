@@ -11,9 +11,10 @@
     <div class="container">
         <div class="row">
             <div class="col">
-                <h1>Create a new alert</h1>
+                <h1>{% translate "Create a new alert" %}</h1>
 
-                {% include "dashboard/_alert_form.html" with form=form button_label="Create"%}
+                {% translate "Create" as button_label %}
+                {% include "dashboard/_alert_form.html" with form=form button_label=button_label %}
             </div>
         </div>
     </div>

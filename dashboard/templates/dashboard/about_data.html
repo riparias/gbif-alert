@@ -1,25 +1,31 @@
 {% extends 'dashboard/base.html' %}
 
 {% load static %}
+{% load i18n %}
+
+{% block page_title %}
+    {% translate "About the data" as page_title %}
+    {% include "dashboard/_page_title.html" with page_name=page_title %}
+{% endblock %}
 
 {% block after_messages %}
     <div class="container">
         <div class="row">
             <div class="col">
-                <h1 id="about-the-data">About the data</h1>
-                <h2 id="data-imports">Data imports</h2>
-                <p>The data (observations) shown in this application is frequently and automatically refreshed from <a
-                        href="https://www.gbif.org">GBIF</a>.</p>
+                <h1 id="about-the-data">{% translate "About the data" %}</h1>
+                <h2 id="data-imports">{% translate "Data imports" %}</h2>
+                <p>
+                    {% blocktranslate %}The data (observations) shown in this application is frequently and automatically refreshed from <a href="https://www.gbif.org">GBIF</a>.{% endblocktranslate %}
+                </p>
 
                 {% with data_imports|first as first_data_import %}
-                    <p>The following data import was performed to populate the data currently visible in the
-                        application:</p>
+                    <p>{% translate "The following data import was performed to populate the data currently visible in the application:" %}</p>
                     {% include 'dashboard/_data_import.html' with data_import=first_data_import only %}
                 {% endwith %}
 
                 {% if data_imports|length > 1 %}
                     <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#completeList">
-                        Show complete list of data imports
+                        {% translate "Show all data imports" %}
                     </button>
 
                     <div class="collapse" id="completeList">

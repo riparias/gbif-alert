@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-04 13:38+0200\n"
+"POT-Creation-Date: 2023-04-04 14:46+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,6 +21,37 @@ msgstr ""
 #: dashboard/templates/503.html:7
 msgid "In maintenance"
 msgstr "Maintenance en cours"
+
+#: dashboard/templates/dashboard/_alert_form.html:8
+msgid "Cancel"
+msgstr "Annuler"
+
+#: dashboard/templates/dashboard/_data_import.html:6
+msgid "Data import: #"
+msgstr "Import de données #"
+
+#: dashboard/templates/dashboard/_data_import.html:9
+msgid "Date/time"
+msgstr "Date/heure"
+
+#: dashboard/templates/dashboard/_data_import.html:14
+msgid "Imported observations"
+msgstr "Observations importées"
+
+#: dashboard/templates/dashboard/_data_import.html:19
+msgid "New observations in this import"
+msgstr "Nouvelles observations dans cet import"
+
+#: dashboard/templates/dashboard/_data_import.html:25
+#, python-format
+msgid "Skipped observations in <a href=\"%(gbif_url)s\">GBIF download</a>"
+msgstr ""
+"Observations ignorées dans le <a href=\"%(gbif_url)s\">téléchargement GBIF</"
+"a>"
+
+#: dashboard/templates/dashboard/_data_import.html:31
+msgid "GBIF predicate"
+msgstr "Prédicat GBIF"
 
 #: dashboard/templates/dashboard/_footer.html:7
 #, python-format
@@ -49,21 +80,26 @@ msgstr "Voir toutes les observations"
 
 #: dashboard/templates/dashboard/_navbar.html:15
 #: dashboard/templates/dashboard/news.html:7
+#: dashboard/templates/dashboard/news.html:15
 msgid "What's new"
 msgstr "Nouveautés"
 
 #: dashboard/templates/dashboard/_navbar.html:19
 #: dashboard/templates/dashboard/_navbar.html:43
 #: dashboard/templates/dashboard/user_alerts.html:5
+#: dashboard/templates/dashboard/user_alerts.html:13
 msgid "My alerts"
 msgstr "Mes alertes"
 
 #: dashboard/templates/dashboard/_navbar.html:23
 #: dashboard/templates/dashboard/about_site.html:7
+#: dashboard/templates/dashboard/about_site.html:15
 msgid "About this site"
 msgstr "A propos de ce site"
 
 #: dashboard/templates/dashboard/_navbar.html:26
+#: dashboard/templates/dashboard/about_data.html:7
+#: dashboard/templates/dashboard/about_data.html:15
 msgid "About the data"
 msgstr "A propos des données"
 
@@ -92,9 +128,43 @@ msgstr "Se connecter"
 msgid "Sign up"
 msgstr "S'inscrire"
 
+#: dashboard/templates/dashboard/about_data.html:16
+msgid "Data imports"
+msgstr "Imports de données :"
+
+#: dashboard/templates/dashboard/about_data.html:18
+msgid ""
+"The data (observations) shown in this application is frequently and "
+"automatically refreshed from <a href=\"https://www.gbif.org\">GBIF</a>."
+msgstr ""
+"Les données (observations) affichées dans cette application sont "
+"régulièrement et automatiquement mises à jour depuis <a href=\"https://www."
+"gbif.org\">GBIF</a>."
+
+#: dashboard/templates/dashboard/about_data.html:22
+msgid ""
+"The following data import was performed to populate the data currently "
+"visible in the application:"
+msgstr ""
+"Les données suivantes ont été importées pour alimenter les données "
+"actuellement visibles dans l'application :"
+
+#: dashboard/templates/dashboard/about_data.html:28
+msgid "Show all data imports"
+msgstr "Montrer tous les imports de données"
+
 #: dashboard/templates/dashboard/alert_create.html:6
 msgid "New alert"
 msgstr "Mouvelle alerte"
+
+#: dashboard/templates/dashboard/alert_create.html:14
+#: dashboard/templates/dashboard/user_alerts.html:17
+msgid "Create a new alert"
+msgstr "Créer une nouvelle alerte"
+
+#: dashboard/templates/dashboard/alert_create.html:16
+msgid "Create"
+msgstr "Créer"
 
 #: dashboard/templates/dashboard/alert_details.html:7
 msgid "Alert details"
@@ -141,7 +211,10 @@ msgid ""
 "                        Your new password has been set. You can now <a "
 "href=\"%(signin_url)s\">sign in</a>.\n"
 "                    "
-msgstr "\nVotre nouveau mot de passe a été défini. Vous pouvez maintenant <a href=\"%(signin_url)s\">vous connecter</a>."
+msgstr ""
+"\n"
+"Votre nouveau mot de passe a été défini. Vous pouvez maintenant <a "
+"href=\"%(signin_url)s\">vous connecter</a>."
 
 #: dashboard/templates/dashboard/password_reset_confirm.html:7
 msgid "Reset your password"
@@ -155,7 +228,10 @@ msgstr "Choisissez un nouveau mot de passe !"
 msgid ""
 "The password reset link was invalid, possibly because it has already been "
 "used. Please request a new password reset."
-msgstr "Le lien de réinitialisation du mot de passe est invalide, il a peut-être déjà été utilisé. Veuillez demander une nouvelle réinitialisation du mot de passe."
+msgstr ""
+"Le lien de réinitialisation du mot de passe est invalide, il a peut-être "
+"déjà été utilisé. Veuillez demander une nouvelle réinitialisation du mot de "
+"passe."
 
 #: dashboard/templates/dashboard/password_reset_done.html:6
 msgid "Instructions sent"
@@ -169,7 +245,9 @@ msgstr "Vérifiez votre boîte de réception."
 msgid ""
 "We've emailed you instructions for setting your password. You should receive "
 "the email shortly!"
-msgstr "Nous vous avons envoyé des instructions pour définir votre mot de passe. Vous devriez recevoir l'email sous peu !"
+msgstr ""
+"Nous vous avons envoyé des instructions pour définir votre mot de passe. "
+"Vous devriez recevoir l'email sous peu !"
 
 #: dashboard/templates/dashboard/signin.html:21
 msgid ""
@@ -194,3 +272,7 @@ msgstr "Mot de passe :"
 #: dashboard/templates/dashboard/signin.html:40
 msgid "Lost password?"
 msgstr "Mot de passe oublié ?"
+
+#: dashboard/templates/dashboard/user_alerts.html:26
+msgid "You currently don't have any configured alerts."
+msgstr "Vous n'avez actuellement aucune alerte configurée."

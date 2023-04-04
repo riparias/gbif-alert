@@ -1,8 +1,9 @@
 {% load crispy_forms_tags %}
+{% load i18n %}
 
 <form method="post">
     {% csrf_token %}
     {{ form|crispy }}
     <input class="btn btn-primary btn-sm" type="submit" value="{{ button_label }}" id="pterois-alert-save-btn">
-    <a class="btn btn-secondary btn-sm" href="{% url 'dashboard:pages:my-alerts' %}">Cancel</a>
+    <a class="btn btn-secondary btn-sm" href="{% url 'dashboard:pages:my-alerts' %}">{% translate "Cancel" %}</a>
 </form>
