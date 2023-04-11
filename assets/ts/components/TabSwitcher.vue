@@ -1,17 +1,17 @@
 <template>
   <ul class="nav nav-tabs">
-    <li v-for="tabName in tabNames" class="nav-item">
+    <li v-for="tab in tabs" class="nav-item">
       <a
-        :id="generateTabId(tabName)"
+        :id="generateTabId(tab.id)"
         class="nav-link"
         :class="{
-          active: tabName === modelValue,
-          'bg-light': tabName === modelValue,
+          active: tab.id === modelValue,
+          'bg-light': tab.id === modelValue,
         }"
         :href="void 0"
         role="button"
-        @click="$emit('update:modelValue', tabName)"
-        >{{ tabName }}
+        @click="$emit('update:modelValue', tab.id)"
+        >{{ tab.name }}
       </a>
     </li>
   </ul>
@@ -25,7 +25,7 @@ export default defineComponent({
   name: "TabSwitcher",
   props: {
     modelValue: String,
-    tabNames: Array,
+    tabs: Array,
   },
   methods: {
     generateTabId(tabName: string): string {

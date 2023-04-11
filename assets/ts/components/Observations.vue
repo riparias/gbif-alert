@@ -24,8 +24,8 @@
     <div class="row mt-3">
       <div class="col">
         <Tab-switcher
-          v-model="selectedTab"
-          :tab-names="availableTabs"
+          v-model="selectedTabId"
+          :tabs="availableTabs"
         ></Tab-switcher>
       </div>
     </div>
@@ -34,13 +34,13 @@
       <div class="col">
         <div class="px-4 bg-light border-start border-end">
           <OuterObservationsMap
-            v-show="selectedTab === 'Map view'"
+            v-show="selectedTabId === 'mapView'"
             :filters="filters"
             :frontend-config="frontendConfig"
           ></OuterObservationsMap>
 
           <Observations-Table
-            v-show="selectedTab === 'Table view'"
+            v-show="selectedTabId === 'tableView'"
             :filters="filters"
             :observations-json-url="
               frontendConfig.apiEndpoints.observationsJsonUrl
@@ -66,9 +66,14 @@ import ObservationsTable from "./ObservationsTable.vue";
 import OuterObservationsMap from "./OuterObservationsMap.vue";
 import {DashboardFilters, DateRange, FrontEndConfig} from "../interfaces";
 
+interface Tab {
+  name: string;
+  id: string;
+}
+
 interface ObservationsComponentData {
-  selectedTab: string;
-  availableTabs: string[];
+  selectedTabId: string;
+  availableTabs: Tab[];
 }
 
 export default defineComponent({
@@ -99,8 +104,11 @@ export default defineComponent({
   },
   data: function (): ObservationsComponentData {
     return {
-      selectedTab: "Map view",
-      availableTabs: ["Map view", "Table view"],
+      selectedTabId: "mapView",
+      availableTabs: [
+          {name: this.$t("message.mapView"), id: "mapView"},
+          {name: this.$t("message.tableView"), id: "tableView"}
+      ],
     };
   },
 });
