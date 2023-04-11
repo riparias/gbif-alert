@@ -64,12 +64,7 @@ import TabSwitcher from "./TabSwitcher.vue";
 import ObservationsCounter from "./ObservationsCounter.vue";
 import ObservationsTable from "./ObservationsTable.vue";
 import OuterObservationsMap from "./OuterObservationsMap.vue";
-import {DashboardFilters, DateRange, FrontEndConfig} from "../interfaces";
-
-interface Tab {
-  name: string;
-  id: string;
-}
+import {DashboardFilters, DateRange, FrontEndConfig, Tab} from "../interfaces";
 
 interface ObservationsComponentData {
   selectedTabId: string;

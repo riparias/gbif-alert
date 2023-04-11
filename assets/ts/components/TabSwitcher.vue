@@ -1,6 +1,6 @@
 <template>
   <ul class="nav nav-tabs">
-    <li v-for="tab in tabs" class="nav-item">
+    <li v-for="tab in props.tabs" class="nav-item">
       <a
         :id="generateTabId(tab.id)"
         class="nav-link"
@@ -17,20 +17,19 @@
   </ul>
 </template>
 
-<script lang="ts">
-import {defineComponent} from "vue";
+<script setup lang="ts">
+import {Tab} from "@/assets/ts/interfaces";
 import {kebabCase} from "lodash";
 
-export default defineComponent({
-  name: "TabSwitcher",
-  props: {
-    modelValue: String,
-    tabs: Array,
-  },
-  methods: {
-    generateTabId(tabName: string): string {
-      return `tab-${kebabCase(tabName)}`;
-    },
-  },
-});
+interface Props {
+  modelValue: string;
+  tabs: Tab[];
+}
+
+const props = defineProps<Props>();
+
+const generateTabId = (tabName: string): string => {
+  return `tab-${kebabCase(tabName)}`;
+};
+
 </script>

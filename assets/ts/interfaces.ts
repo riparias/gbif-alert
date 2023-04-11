@@ -10,6 +10,11 @@ export interface SelectionEntry {
   label: string;
 }
 
+export interface Tab {
+  name: string;
+  id: string;
+}
+
 export interface DashboardFilters {
   speciesIds: Number[];
   datasetsIds: Number[];
