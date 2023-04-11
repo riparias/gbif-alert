@@ -3,6 +3,7 @@ export const messages = {
         message: {
             filters: 'Filters',
             mapView: 'Map',
+            matchingObservations: 'No matching observations | One matching observation | {count} matching observations',
             tableView: 'Table',
         },
     },
@@ -10,6 +11,7 @@ export const messages = {
         message: {
             filters: 'Filtres',
             mapView: 'Carte',
+            matchingObservations: 'Aucune observation correspondante | Une observation correspondante | {count} observations correspondantes',
             tableView: 'Table',
         }
     }
