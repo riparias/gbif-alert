@@ -48,6 +48,12 @@ module.exports = {
             "__VUE_OPTIONS_API__": true,
             "__VUE_PROD_DEVTOOLS__": false,
         }),
+        // To avoid a warning in console, see https://github.com/intlify/vue-i18n-next/issues/789
+        new webpack.DefinePlugin({
+            '__VUE_I18N_FULL_INSTALL__': JSON.stringify(true),
+            '__VUE_I18N_LEGACY_API__': JSON.stringify(true),
+            '__INTLIFY_PROD_DEVTOOLS__': JSON.stringify(true)
+        })
     ],
     resolve: {
         extensions: ['.ts', '.js', '.json'],
