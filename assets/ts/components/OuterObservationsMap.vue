@@ -1,9 +1,9 @@
 <template>
   <div>
     <div class="row py-3">
-      <div class="col col-sm-1">
-        <label for="mapBaseSelector" class="col-form-label col-form-label-sm"
-          >Base layer
+      <div class="col col-sm-2">
+        <label for="mapBaseSelector" class="col-form-label col-form-label-sm">
+            {{ $t("message.baseLayer") }}
         </label>
       </div>
       <div class="col">
@@ -18,8 +18,8 @@
         </select>
       </div>
       <div class="col col-sm-2">
-        <label for="opacity" class="col-form-label col-form-label-sm"
-          >Data layer opacity
+        <label for="opacity" class="col-form-label col-form-label-sm">
+            {{ $t("message.dataLayerOpacity") }}
         </label>
       </div>
       <div class="col">

@@ -27,16 +27,16 @@
         class="btn btn-outline-primary btn-sm"
         @click="currentPage -= 1"
       >
-        Previous
+        {{ $t("message.previous") }}
       </button>
-      Page {{ currentPage }} / {{ lastPage }}
+      {{ $t("message.page") }} {{ currentPage }} / {{ lastPage }}
       <button
         type="button"
         :disabled="!hasNextPage"
         class="btn btn-outline-primary btn-sm"
         @click="currentPage += 1"
       >
-        Next
+        {{ $t("message.next") }}
       </button>
     </p>
   </div>
@@ -170,12 +170,12 @@ export default defineComponent({
         // If changing/adding fields there, please also consider adding them to the email notifications
         // (alert_notification.html)
         { sortId: null, label: "" },
-        { sortId: "gbif_id", label: "GBIF ID" },
-        { sortId: null, label: "Lat" },
-        { sortId: null, label: "Lon" },
-        { sortId: "-date", label: "Date" },
-        { sortId: "species__name", label: "Species" },
-        { sortId: "source_dataset__name", label: "Dataset" },
+        { sortId: "gbif_id", label: this.$t("message.gbifId") },
+        { sortId: null, label: this.$t("message.latitude") },
+        { sortId: null, label: this.$t("message.longitude") },
+        { sortId: "-date", label: this.$t("message.date")},
+        { sortId: "species__name", label: this.$t("message.scientificName") },
+        { sortId: "source_dataset__name", label: this.$t("message.dataset") },
       ],
     };
   },

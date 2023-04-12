@@ -3,13 +3,13 @@
     <div class="row align-items-center mb-3">
       <div class="col">
         <div class="small input-group">
-          <input class="form-control form-control-sm" type="text" placeholder="Filter per name / GBIF taxon key..." aria-label="search form" v-model="textFilter">
+          <input class="form-control form-control-sm" type="text" :placeholder="$t('message.filterByNameOrTaxonKey')" aria-label="search form" v-model="textFilter">
           <button class="btn btn-outline-secondary btn-sm" type="button" id="button-addon2" v-if="textFilter !== ''" @click="textFilter=''"><i class="bi bi-x-circle-fill"></i></button>
         </div>
       </div>
 
       <div class="col small">
-        Filter by tags:
+        {{ $t("message.filterByTags") }}
         <span v-for="tag in availableTags"
               :style="getStyleForTag(tag)"
               :class="tagsFilter.includes(tag) ? 'tag-filter-enabled' : 'tag-filter-disabled'"
@@ -32,19 +32,19 @@
           </th>
 
           <th scope="col" :class="{'text-primary': sortBy === 'scientific'}" @click="sortBy = 'scientific'">
-            Scientific name
+            {{ $t("message.scientificName") }}
           </th>
 
           <th scope="col" :class="{'text-primary': sortBy === 'vernacular' }" @click="sortBy = 'vernacular'">
-            Vernacular name
+            {{ $t("message.vernacularName") }}
           </th>
 
           <th scope="col" :class="{'text-primary': sortBy === 'gbifKey' }" @click="sortBy = 'gbifKey'">
-            GBIF taxon key
+            {{ $t("message.gbifTaxonKey") }}
           </th>
 
           <th scope="col">
-            Tags
+            {{ $t("message.tags") }}
           </th>
         </tr>
       </thead>
@@ -72,7 +72,7 @@
       </tbody>
     </table>
 
-    <p v-else class="small">No matching species found.</p>
+    <p v-else class="small">{{ $t("message.noMatchingSpeciesFound") }}</p>
 
   </div>
 </template>
