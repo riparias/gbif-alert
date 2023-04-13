@@ -43,9 +43,9 @@ export default defineComponent({
     //  - entries type should be SpeciesInformation[] instead of SelectionEntry[]
     speciesMode: { type: Boolean, required: false, default: false },
     buttonLabelSingular: { type: String, required: true },
-    buttonLabelPlural: { type: String, required: true },
+    buttonLabelSuffixPlural: { type: String, required: true },
     modalTitle: { type: String, required: true },
-    noSelectionButtonLabel: { type: String, required: false },
+    noSelectionButtonLabel: { type: String, required: true },
     entries: {
       type: Array as () => SelectionEntry[] | SpeciesInformationWithLabel[],
       default: [],
@@ -64,12 +64,7 @@ export default defineComponent({
   computed: {
     preparedButtonLabel: function (): string {
       if (!this.selectionMade) {
-        // No selection: default label
-        if (this.noSelectionButtonLabel) {
           return this.noSelectionButtonLabel;
-        } else {
-          return "All " + this.buttonLabelPlural;
-        }
       } else {
         // 1 single selection: show the value
         if (this.selectedEntriesIds.length === 1 && this.entries.length > 0) {
@@ -81,9 +76,7 @@ export default defineComponent({
         } else {
           // Multiple selection, return a counter
           return (
-            this.selectedEntriesIds.length +
-            " selected " +
-            this.buttonLabelPlural
+            this.selectedEntriesIds.length + " " + this.buttonLabelSuffixPlural
           );
         }
       }

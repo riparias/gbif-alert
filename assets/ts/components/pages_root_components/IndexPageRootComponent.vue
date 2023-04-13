@@ -21,8 +21,9 @@
         <div class="col d-flex align-items-center">
           <Filter-Selector
               class="mx-2"
-              button-label-singular="Species"
-              button-label-plural="species"
+              :button-label-singular="$t('message.species')"
+              :button-label-suffix-plural="$t('message.xSelectedSpecies')"
+              :no-selection-button-label="$t('message.allSpecies')"
               :modal-title="$t('message.speciesToInclude')"
               :species-mode="true"
               :entries="availableSpeciesWithLabels"
@@ -32,8 +33,9 @@
 
           <Filter-Selector
               class="mx-2"
-              button-label-singular="Dataset"
-              button-label-plural="datasets"
+              :button-label-singular="$t('message.dataset')"
+              :button-label-suffix-plural="$t('message.xSelectedDatasets')"
+              :no-selection-button-label="$t('message.allDatasets')"
               :modal-title="$t('message.datasetsToInclude')"
               :entries="availableDatasetsAsEntries"
               :initially-selected-entries-ids="filters.datasetsIds"
@@ -42,9 +44,9 @@
 
           <Filter-Selector
               class="mx-2"
-              button-label-singular="Area"
-              button-label-plural="areas"
-              no-selection-button-label="Everywhere"
+              :button-label-singular="$t('message.area')"
+              :button-label-suffix-plural="$t('message.xSelectedAreas')"
+              :no-selection-button-label="$t('message.everywhere')"
               :modal-title="$t('message.restrictToSpecificAreas')"
               :entries="availableAreasAsEntries"
               :initially-selected-entries-ids="filters.areaIds"
@@ -53,9 +55,9 @@
 
           <Filter-Selector
               class="mx-2"
-              button-label-singular="Initial data import"
-              button-label-plural="initial data imports"
-              no-selection-button-label="Imported at all time"
+              :button-label-singular="$t('message.initialDataImport')"
+              :button-label-suffix-plural="$t('message.xSelectedInitialDataImports')"
+              :no-selection-button-label="$t('message.importedAnytime')"
               :modal-title="$t('message.firstImportedDuringDataImports')"
               :entries="availableDataimportsAsEntries"
               :initially-selected-entries-ids="filters.initialDataImportIds"
