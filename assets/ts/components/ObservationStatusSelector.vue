@@ -1,24 +1,24 @@
 <template>
   <div class="small d-inline-block mx-3">
-    Status:
+    {{ $t("message.observationStatus") }}
     <div
       class="btn-group btn-group-sm"
       role="group"
       id="pterois-obs-status-selector"
     >
       <ObservationStatusSelectorEntry
-        entry-label="All"
+        :entry-label="$t('message.all')"
         :checked="modelValue === null || modelValue === undefined"
         @entry-selected="myEmit(null)"
       ></ObservationStatusSelectorEntry>
       <ObservationStatusSelectorEntry
-        entry-label="Seen"
+        :entry-label="$t('message.seen')"
         :checked="modelValue === 'seen'"
         :count="counts.seen"
         @entry-selected="myEmit('seen')"
       ></ObservationStatusSelectorEntry>
       <ObservationStatusSelectorEntry
-        entry-label="Unseen"
+        :entry-label="$t('message.unseen')"
         :checked="modelValue === 'unseen'"
         :count="counts.unseen"
         @entry-selected="myEmit('unseen')"
@@ -27,7 +27,7 @@
 
     <p class="m-0" v-if="counts.unseen > 0">
       <a @click="confirmationModalOpen = true" href="#"
-        >Mark all observations as seen</a
+        >{{ $t("message.markAllObservationsAsSeen")}}</a
       >
     </p>
 

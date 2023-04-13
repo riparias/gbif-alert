@@ -6,8 +6,9 @@
       id="checkbox"
       v-model="dateRangeFilteringEnabled"
     />
-    <label for="checkbox" class="form-check-label small"
-      >Enable date range filtering</label
+    <label for="checkbox" class="form-check-label small">
+        {{ $t("message.enableDateRangeFiltering")}}
+    </label
     >
   </div>
   <range-slider
