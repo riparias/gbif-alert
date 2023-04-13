@@ -8,10 +8,10 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">{{ confirmationMessageTitle }}</h5>
+          <h5 class="modal-title">{{ confirmationMessageTitleComputed }}</h5>
         </div>
         <div class="modal-body">
-          <p>{{ confirmationMessageBody }}</p>
+          <p>{{ confirmationMessageBodyComputed }}</p>
         </div>
         <div class="modal-footer">
           <button
@@ -20,7 +20,7 @@
             class="btn btn-danger btn-sm"
             @click="$emit('click-yes')"
           >
-            Yes, I'm sure
+              {{ $t("message.yesImSure") }}
           </button>
           <button
             id="modal-button-no"
@@ -28,7 +28,7 @@
             class="btn btn-secondary btn-sm"
             @click="$emit('click-no')"
           >
-            Cancel
+            {{ $t("message.cancel") }}
           </button>
         </div>
       </div>
@@ -49,13 +49,21 @@ export default defineComponent({
     },
     confirmationMessageTitle: {
       type: String,
-      default: "Are you sure?",
+      required: false
     },
     confirmationMessageBody: {
       type: String,
-      default: "This operation can't be undone!",
+      required: false
     },
   },
   emits: ["click-yes", "click-no"],
+  computed: {
+      confirmationMessageTitleComputed: function () {
+          return this.confirmationMessageTitle || this.$t("message.areYouSure");
+      },
+      confirmationMessageBodyComputed: function () {
+          return this.confirmationMessageBody || this.$t("message.thisOperationCantBeUndone");
+      }
+  },
 });
 </script>

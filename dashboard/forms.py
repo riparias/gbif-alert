@@ -4,6 +4,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 from dashboard.models import ObservationComment, Alert, Area, User
 
@@ -54,10 +55,16 @@ class AlertForm(forms.ModelForm):
 
 
 class CommonUsersFields(forms.ModelForm):
-    first_name = forms.CharField(max_length=30, required=False, help_text="Optional.")
-    last_name = forms.CharField(max_length=30, required=False, help_text="Optional.")
+    first_name = forms.CharField(
+        label=_("First name"), max_length=30, required=False, help_text=_("Optional.")
+    )
+    last_name = forms.CharField(
+        label=_("Last name"), max_length=30, required=False, help_text=_("Optional.")
+    )
     email = forms.EmailField(
-        max_length=254, help_text="Required. Enter a valid email address."
+        label=_("Email"),
+        max_length=254,
+        help_text=_("Required. Enter a valid email address."),
     )
 
     class Meta:

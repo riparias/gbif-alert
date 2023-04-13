@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-04 14:46+0200\n"
+"POT-Creation-Date: 2023-04-13 14:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,26 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: dashboard/forms.py:59
+msgid "First name"
+msgstr ""
+
+#: dashboard/forms.py:59 dashboard/forms.py:62
+msgid "Optional."
+msgstr ""
+
+#: dashboard/forms.py:62
+msgid "Last name"
+msgstr ""
+
+#: dashboard/forms.py:65
+msgid "Email"
+msgstr ""
+
+#: dashboard/forms.py:67
+msgid "Required. Enter a valid email address."
+msgstr ""
 
 #: dashboard/templates/503.html:7
 msgid "In maintenance"

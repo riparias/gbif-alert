@@ -12,11 +12,11 @@
     <div class="container">
         <div class="row">
             <div class="col">
-                <h1>My profile</h1>
+                <h1>{% translate "My profile" %}</h1>
                 <form method="post">
                     {% csrf_token %}
                     {{ form|crispy }}
-                    <button id="pterois-profile-save-button" type="submit" class="btn btn-primary btn-sm">Save</button>
+                    <button id="pterois-profile-save-button" type="submit" class="btn btn-primary btn-sm">{% translate "Save" %}</button>
                 </form>
             </div>
         </div>
