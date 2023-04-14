@@ -11,8 +11,10 @@
     <div class="container">
         <div class="row">
             <div class="col">
-                <h1>Edit an alert</h1>
-                {% include "dashboard/_alert_form.html" with form=form button_label="Save changes" %}
+                <h1>{% translate "Edit alert" %}</h1>
+
+                {% translate "Save" as save_translated %}
+                {% include "dashboard/_alert_form.html" with form=form button_label=save_translated %}
             </div>
         </div>
     </div>

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-13 14:11+0200\n"
+"POT-Creation-Date: 2023-04-14 11:41+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -38,9 +38,69 @@ msgstr "Email"
 msgid "Required. Enter a valid email address."
 msgstr "Requis. Entrez une adresse email valide."
 
+#: dashboard/models.py:578
+msgid "No emails"
+msgstr "Pas d'emails"
+
+#: dashboard/models.py:579
+msgid "Daily"
+msgstr "Journalier"
+
+#: dashboard/models.py:580
+msgid "Weekly"
+msgstr "Hebdomadaire"
+
+#: dashboard/models.py:581
+msgid "Monthly"
+msgstr "Mensuel"
+
 #: dashboard/templates/503.html:7
 msgid "In maintenance"
 msgstr "Maintenance en cours"
+
+#: dashboard/templates/dashboard/_alert.html:8
+msgid "all"
+msgstr "tout"
+
+#: dashboard/templates/dashboard/_alert.html:10
+msgid "Species:"
+msgstr "Espèces :"
+
+#: dashboard/templates/dashboard/_alert.html:13
+msgid "Areas:"
+msgstr "Zones :"
+
+#: dashboard/templates/dashboard/_alert.html:16
+msgid "Datasets:"
+msgstr "Jeux de données :"
+
+#: dashboard/templates/dashboard/_alert.html:19
+msgid "Email notifications frequency:"
+msgstr "Fréquence des notifications par email :"
+
+#: dashboard/templates/dashboard/_alert.html:23
+msgid "Last email sent:"
+msgstr "Dernier email envoyé :"
+
+#: dashboard/templates/dashboard/_alert.html:24
+msgid "never"
+msgstr "jamais"
+
+#: dashboard/templates/dashboard/_alert.html:34
+msgid "Matching observations"
+msgstr "Observations correspondantes"
+
+#: dashboard/templates/dashboard/_alert.html:38
+msgid "unseen"
+msgstr "non vues"
+
+#: dashboard/templates/dashboard/_alert.html:47
+msgid "Edit this alert"
+msgstr "Modifier cette alerte"
+
+#: dashboard/templates/dashboard/_alert.html:62
+msgid "Show all my alerts"
+msgstr "Montrer toutes mes alertes"
 
 #: dashboard/templates/dashboard/_alert_form.html:8
 msgid "Cancel"
@@ -125,6 +185,7 @@ msgstr "A propos des données"
 
 #: dashboard/templates/dashboard/_navbar.html:40
 #: dashboard/templates/dashboard/user_profile.html:7
+#: dashboard/templates/dashboard/user_profile.html:15
 msgid "My profile"
 msgstr "Mon profil"
 
@@ -191,8 +252,13 @@ msgid "Alert details"
 msgstr "Détails de l'alerte"
 
 #: dashboard/templates/dashboard/alert_edit.html:6
+#: dashboard/templates/dashboard/alert_edit.html:14
 msgid "Edit alert"
 msgstr "Modifier une alerte"
+
+#: dashboard/templates/dashboard/alert_edit.html:16
+msgid "Save changes"
+msgstr ""
 
 #: dashboard/templates/dashboard/index.html:9
 msgid "Home"
@@ -296,3 +362,11 @@ msgstr "Mot de passe oublié ?"
 #: dashboard/templates/dashboard/user_alerts.html:26
 msgid "You currently don't have any configured alerts."
 msgstr "Vous n'avez actuellement aucune alerte configurée."
+
+#: dashboard/templates/dashboard/user_profile.html:19
+msgid "Save"
+msgstr "Enregistrer"
+
+#: dashboard/views/actions.py:36
+msgid "Your alert has been deleted."
+msgstr "Votre alerte a été supprimée."

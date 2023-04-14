@@ -1,34 +1,41 @@
+{% load i18n %}
+
 <div class="card my-2">
     <div class="card-body">
         <h4 class="card-title pterois-alert-title" id="alert-{{ alert.pk }}-title">{{ alert.name }}</h4>
         <p class="card-text">
         <ul class="list-group list-group-flush">
+            {% translate "all" as all_translated %}
             <li class="list-group-item" id="pterois-alert-species-list">
-                <b>Species:</b> {{ alert.species_list|default:"all" }}</li>
-            <li class="list-group-item"><b>Areas:</b> {{ alert.areas_list|default:"all" }}</li>
-            <li class="list-group-item" id="pterois-alert-datasets-list">
-                <b>Datasets:</b> {{ alert.datasets_list|default:"all" }}</li>
+                <b>{% translate "Species:" %}</b> {{ alert.species_list|default:all_translated }}
+            </li>
             <li class="list-group-item">
-                <b>Email notifications frequency:</b>
+                <b>{% translate "Areas:" %}</b> {{ alert.areas_list|default:all_translated }}
+            </li>
+            <li class="list-group-item" id="pterois-alert-datasets-list">
+                <b>{% translate "Datasets:" %}</b> {{ alert.datasets_list|default:all_translated }}
+            </li>
+            <li class="list-group-item">
+                <b>{% translate "Email notifications frequency:" %}</b>
                 {{ alert.get_email_notifications_frequency_display }}
 
                 <span class="text-muted small">
-                        -- Last email sent:
-                        {{ alert.last_email_sent_on|default_if_none:"never" }}
-                    </span>
+                    -- {% translate "Last email sent:" %}
+                    {% trans "never" as never_translated %}
+                    {{ alert.last_email_sent_on|default_if_none:never_translated }}
+                </span>
             </li>
         </ul>
-        </p>
 
         <div id="alert-buttons">
             {% if show_details_buttons %}
                 <a href="{% url 'dashboard:pages:alert-details' alert_id=alert.id %}"
                    class="btn btn-sm btn-primary position-relative">
-                    <i class="bi bi-clipboard-data-fill"></i> Matching observations
+                    <i class="bi bi-clipboard-data-fill"></i> {% translate "Matching observations" %}
 
                     {% if alert.unseen_observations.count > 0 %}
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            {{ alert.unseen_observations.count }} unseen
+                            {{ alert.unseen_observations.count }} {% translate "unseen" %}
                         </span>
                     {% endif %}
                 </a>
@@ -37,7 +44,7 @@
             <div class="float-end">
                 <a href="{% url 'dashboard:pages:alert-edit' alert_id=alert.id %}"
                    class="btn btn-sm btn-warning mx-2 pterois-edit-alert-button">
-                    <i class="bi bi-pencil-fill"></i> Edit this alert
+                    <i class="bi bi-pencil-fill"></i> {% translate "Edit this alert" %}
                 </a>
 
                 <delete-alert-button button-id="pterois-delete-alert-button-{{ alert.pk }}"
@@ -52,7 +59,7 @@
 
         {% if show_link_alerts_list %}
             <a class="btn btn-sm btn-primary" href="{% url "dashboard:pages:my-alerts" %}">
-                <i class="bi bi-exclamation-square"></i> Show all my alerts
+                <i class="bi bi-exclamation-square"></i> {% translate "Show all my alerts" %}
             </a>
         {% endif %}
     </div>

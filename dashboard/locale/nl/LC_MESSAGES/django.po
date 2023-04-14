@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-13 14:11+0200\n"
+"POT-Creation-Date: 2023-04-14 11:41+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -38,8 +38,70 @@ msgstr ""
 msgid "Required. Enter a valid email address."
 msgstr ""
 
+#: dashboard/models.py:578
+msgid "No emails"
+msgstr ""
+
+#: dashboard/models.py:579
+msgid "Daily"
+msgstr ""
+
+#: dashboard/models.py:580
+msgid "Weekly"
+msgstr ""
+
+#: dashboard/models.py:581
+msgid "Monthly"
+msgstr ""
+
 #: dashboard/templates/503.html:7
 msgid "In maintenance"
+msgstr ""
+
+#: dashboard/templates/dashboard/_alert.html:8
+msgid "all"
+msgstr ""
+
+#: dashboard/templates/dashboard/_alert.html:10
+#, fuzzy
+#| msgid "Species"
+msgid "Species:"
+msgstr "Soort"
+
+#: dashboard/templates/dashboard/_alert.html:13
+msgid "Areas:"
+msgstr ""
+
+#: dashboard/templates/dashboard/_alert.html:16
+msgid "Datasets:"
+msgstr ""
+
+#: dashboard/templates/dashboard/_alert.html:19
+msgid "Email notifications frequency:"
+msgstr ""
+
+#: dashboard/templates/dashboard/_alert.html:23
+msgid "Last email sent:"
+msgstr ""
+
+#: dashboard/templates/dashboard/_alert.html:24
+msgid "never"
+msgstr ""
+
+#: dashboard/templates/dashboard/_alert.html:34
+msgid "Matching observations"
+msgstr ""
+
+#: dashboard/templates/dashboard/_alert.html:38
+msgid "unseen"
+msgstr ""
+
+#: dashboard/templates/dashboard/_alert.html:47
+msgid "Edit this alert"
+msgstr ""
+
+#: dashboard/templates/dashboard/_alert.html:62
+msgid "Show all my alerts"
 msgstr ""
 
 #: dashboard/templates/dashboard/_alert_form.html:8
@@ -121,6 +183,7 @@ msgstr ""
 
 #: dashboard/templates/dashboard/_navbar.html:40
 #: dashboard/templates/dashboard/user_profile.html:7
+#: dashboard/templates/dashboard/user_profile.html:15
 msgid "My profile"
 msgstr ""
 
@@ -182,7 +245,12 @@ msgid "Alert details"
 msgstr ""
 
 #: dashboard/templates/dashboard/alert_edit.html:6
+#: dashboard/templates/dashboard/alert_edit.html:14
 msgid "Edit alert"
+msgstr ""
+
+#: dashboard/templates/dashboard/alert_edit.html:16
+msgid "Save changes"
 msgstr ""
 
 #: dashboard/templates/dashboard/index.html:9
@@ -274,4 +342,12 @@ msgstr ""
 
 #: dashboard/templates/dashboard/user_alerts.html:26
 msgid "You currently don't have any configured alerts."
+msgstr ""
+
+#: dashboard/templates/dashboard/user_profile.html:19
+msgid "Save"
+msgstr ""
+
+#: dashboard/views/actions.py:36
+msgid "Your alert has been deleted."
 msgstr ""

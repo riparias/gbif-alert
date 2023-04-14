@@ -2,6 +2,7 @@ export const messages = {
     en: {
         message: {
             accountDeletionConfirmationMessage: 'Do you really want to delete your account? This can\'t be undone, and all your data (alerts, observation comments, ...) will be lost!',
+            alertDeletionConfirmationMessage: 'Do you really want to this alert? This can\'t be undone.',
             all: 'All',
             allSpecies: 'All species',
             allDatasets: 'All datasets',
@@ -14,6 +15,7 @@ export const messages = {
             datasetsToInclude: 'Datasets to include',
             date: 'Date',
             deleteMyAccount: 'Delete my account',
+            deleteThisAlert: 'Delete this alert',
             enableDateRangeFiltering: 'Enable date range filtering',
             everywhere: 'Everywhere',
             filterByNameOrTaxonKey: 'Filter by name / GBIF taxon key...',
@@ -54,6 +56,7 @@ export const messages = {
     fr: {
         message: {
             accountDeletionConfirmationMessage: 'Voulez-vous vraiment supprimer votre compte ? Cette action est irréversible et toutes vos données (alertes, commentaires d\'observations, ...) seront perdues !',
+            alertDeletionConfirmationMessage: 'Voulez-vous vraiment supprimer cette alerte ? Cette action est irréversible.',
             all: 'Tous',
             allSpecies: 'Toutes les espèces',
             allDatasets: 'Tous les jeux de données',
@@ -66,6 +69,7 @@ export const messages = {
             datasetsToInclude: 'Jeux de données à inclure',
             date: 'Date',
             deleteMyAccount: 'Supprimer mon compte',
+            deleteThisAlert: 'Supprimer cette alerte',
             enableDateRangeFiltering: 'Activer le filtrage par intervalle de dates',
             everywhere: 'Partout',
             filterByNameOrTaxonKey: 'Filtrer par nom / clé taxonomique GBIF...',

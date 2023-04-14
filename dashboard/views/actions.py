@@ -5,6 +5,7 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect
+from django.utils.translation import gettext as _
 
 from dashboard.models import Observation, Alert
 from dashboard.views.helpers import AuthenticatedHttpRequest, extract_str_request
@@ -32,7 +33,7 @@ def delete_alert(request: AuthenticatedHttpRequest):
         alert = get_object_or_404(Alert, pk=request.POST.get("alert_id"))
         if alert.user == request.user:
             alert.delete()
-            messages.success(request, "Your alert has been deleted.")
+            messages.success(request, _("Your alert has been deleted."))
             return redirect("dashboard:pages:my-alerts")
         else:
             return HttpResponseForbidden()

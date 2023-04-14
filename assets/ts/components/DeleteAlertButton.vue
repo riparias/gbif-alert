@@ -2,9 +2,9 @@
   <button-with-confirmation
       class="btn btn-danger btn-sm pterois-delete-alert-button"
       :button-id="buttonId"
-      confirmation-message-body="Do you really want to this alert? This can't be undone."
+      :confirmation-message-body="$t('message.alertDeletionConfirmationMessage')"
       @user-confirmed="userConfirmedDeletion()">
-      <i class="bi bi-trash"></i> Delete this alert
+      <i class="bi bi-trash"></i> {{ $t("message.deleteThisAlert")}}
   </button-with-confirmation>
 
   <form method="post" ref="form" class="d-inline float-end pterois-alert-delete-form" :action="formAction">

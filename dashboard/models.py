@@ -20,6 +20,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import localize
 from django.utils.timezone import localtime
+from django.utils.translation import gettext_lazy as _
 from taggit.managers import TaggableManager
 
 from page_fragments.models import PageFragment, NEWS_PAGE_IDENTIFIER
@@ -574,10 +575,10 @@ class Alert(models.Model):
     MONTHLY_EMAILS = "M"
 
     EMAIL_NOTIFICATION_CHOICES = [
-        (NO_EMAILS, "No emails"),
-        (DAILY_EMAILS, "Daily"),
-        (WEEKLY_EMAILS, "Weekly"),
-        (MONTHLY_EMAILS, "Monthly"),
+        (NO_EMAILS, _("No emails")),
+        (DAILY_EMAILS, _("Daily")),
+        (WEEKLY_EMAILS, _("Weekly")),
+        (MONTHLY_EMAILS, _("Monthly")),
     ]
 
     EMAIL_NOTIFICATION_DELTAS = (
