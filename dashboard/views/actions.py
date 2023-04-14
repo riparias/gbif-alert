@@ -46,7 +46,7 @@ def delete_own_account(request: AuthenticatedHttpRequest):
         if request.user.is_authenticated:
             request.user.delete()
             logout(request)
-            messages.success(request, "Your account has been deleted.")
+            messages.success(request, _("Your account has been deleted."))
             return redirect("dashboard:pages:index")
         else:
             return HttpResponseForbidden()

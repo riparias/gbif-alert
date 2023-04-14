@@ -159,7 +159,7 @@ def user_profile_page(request: AuthenticatedHttpRequest) -> HttpResponse:
         form = EditProfileForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
-            messages.success(request, "Your profile was successfully updated.")
+            messages.success(request, _("Your profile was successfully updated."))
             return redirect("dashboard:pages:index")
     else:
         form = EditProfileForm(instance=request.user)

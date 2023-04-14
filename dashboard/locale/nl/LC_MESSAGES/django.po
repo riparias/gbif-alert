@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-14 11:41+0200\n"
+"POT-Creation-Date: 2023-04-14 12:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -52,6 +52,46 @@ msgstr ""
 
 #: dashboard/models.py:581
 msgid "Monthly"
+msgstr ""
+
+#: dashboard/models.py:592
+msgid "name"
+msgstr ""
+
+#: dashboard/models.py:596
+#, fuzzy
+#| msgid "Species"
+msgid "species"
+msgstr "Soort"
+
+#: dashboard/models.py:599
+msgid ""
+"Optional (no selection = notify me for all species). To select multiple "
+"items, press and hold the Ctrl or Command key and click the items."
+msgstr ""
+
+#: dashboard/models.py:605
+msgid "datasets"
+msgstr ""
+
+#: dashboard/models.py:608
+msgid ""
+"Optional (no selection = notify me for all datasets). To select multiple "
+"items, press and hold the Ctrl or Command key and click the items."
+msgstr ""
+
+#: dashboard/models.py:615
+msgid "areas"
+msgstr ""
+
+#: dashboard/models.py:617
+msgid ""
+"Optional (no selection = notify me for all areas). To select multiple items, "
+"press and hold the Ctrl or Command key and click the items."
+msgstr ""
+
+#: dashboard/models.py:626
+msgid "email notifications frequency"
 msgstr ""
 
 #: dashboard/templates/503.html:7
@@ -250,7 +290,8 @@ msgid "Edit alert"
 msgstr ""
 
 #: dashboard/templates/dashboard/alert_edit.html:16
-msgid "Save changes"
+#: dashboard/templates/dashboard/user_profile.html:19
+msgid "Save"
 msgstr ""
 
 #: dashboard/templates/dashboard/index.html:9
@@ -344,10 +385,14 @@ msgstr ""
 msgid "You currently don't have any configured alerts."
 msgstr ""
 
-#: dashboard/templates/dashboard/user_profile.html:19
-msgid "Save"
-msgstr ""
-
 #: dashboard/views/actions.py:36
 msgid "Your alert has been deleted."
+msgstr ""
+
+#: dashboard/views/actions.py:49
+msgid "Your account has been deleted."
+msgstr ""
+
+#: dashboard/views/pages.py:162
+msgid "Your profile was successfully updated."
 msgstr ""

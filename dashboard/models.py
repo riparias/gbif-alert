@@ -589,20 +589,22 @@ class Alert(models.Model):
         }
     )
 
-    name = models.CharField(max_length=255)
+    name = models.CharField(verbose_name=_("name"), max_length=255)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     species = models.ManyToManyField(
         Species,
+        verbose_name=_("species"),
         blank=True,
-        help_text=(
+        help_text=_(
             "Optional (no selection = notify me for all species). To select multiple items, press and hold the "
             "Ctrl or Command key and click the items."
         ),
     )
     datasets = models.ManyToManyField(
         Dataset,
+        verbose_name=_("datasets"),
         blank=True,
-        help_text=(
+        help_text=_(
             "Optional (no selection = notify me for all datasets). To select multiple items, press and hold the "
             "Ctrl or Command key and click the items."
         ),
@@ -610,14 +612,18 @@ class Alert(models.Model):
     areas = models.ManyToManyField(
         Area,
         blank=True,
-        help_text=(
+        verbose_name=_("areas"),
+        help_text=_(
             "Optional (no selection = notify me for all areas). To select multiple items, press and hold the "
             "Ctrl or Command key and click the items."
         ),
     )
 
     email_notifications_frequency = models.CharField(
-        max_length=3, choices=EMAIL_NOTIFICATION_CHOICES, default=WEEKLY_EMAILS
+        max_length=3,
+        choices=EMAIL_NOTIFICATION_CHOICES,
+        default=WEEKLY_EMAILS,
+        verbose_name=_("email notifications frequency"),
     )
 
     last_email_sent_on = models.DateTimeField(blank=True, null=True, default=None)

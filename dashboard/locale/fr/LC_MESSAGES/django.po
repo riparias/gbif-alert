@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-14 11:41+0200\n"
+"POT-Creation-Date: 2023-04-14 12:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -53,6 +53,53 @@ msgstr "Hebdomadaire"
 #: dashboard/models.py:581
 msgid "Monthly"
 msgstr "Mensuel"
+
+#: dashboard/models.py:592
+msgid "name"
+msgstr "nom"
+
+#: dashboard/models.py:596
+msgid "species"
+msgstr "espèces"
+
+#: dashboard/models.py:599
+msgid ""
+"Optional (no selection = notify me for all species). To select multiple "
+"items, press and hold the Ctrl or Command key and click the items."
+msgstr ""
+"Facultatif (aucune sélection = me notifier pour toutes les espèces). Pour "
+"sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
+"command' enfoncée "
+
+#: dashboard/models.py:605
+msgid "datasets"
+msgstr "jeux de données"
+
+#: dashboard/models.py:608
+msgid ""
+"Optional (no selection = notify me for all datasets). To select multiple "
+"items, press and hold the Ctrl or Command key and click the items."
+msgstr ""
+"Facultatif (aucune sélection = me notifier pour tous les jeux de données). "
+"Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
+"command' enfoncée "
+
+#: dashboard/models.py:615
+msgid "areas"
+msgstr "zones"
+
+#: dashboard/models.py:617
+msgid ""
+"Optional (no selection = notify me for all areas). To select multiple items, "
+"press and hold the Ctrl or Command key and click the items."
+msgstr ""
+"Facultatif (aucune sélection = me notifier pour toutes les zones). Pour "
+"sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
+"command' enfoncée "
+
+#: dashboard/models.py:626
+msgid "email notifications frequency"
+msgstr "fréquence des notifications par email"
 
 #: dashboard/templates/503.html:7
 msgid "In maintenance"
@@ -257,8 +304,9 @@ msgid "Edit alert"
 msgstr "Modifier une alerte"
 
 #: dashboard/templates/dashboard/alert_edit.html:16
-msgid "Save changes"
-msgstr ""
+#: dashboard/templates/dashboard/user_profile.html:19
+msgid "Save"
+msgstr "Enregistrer"
 
 #: dashboard/templates/dashboard/index.html:9
 msgid "Home"
@@ -363,10 +411,14 @@ msgstr "Mot de passe oublié ?"
 msgid "You currently don't have any configured alerts."
 msgstr "Vous n'avez actuellement aucune alerte configurée."
 
-#: dashboard/templates/dashboard/user_profile.html:19
-msgid "Save"
-msgstr "Enregistrer"
-
 #: dashboard/views/actions.py:36
 msgid "Your alert has been deleted."
 msgstr "Votre alerte a été supprimée."
+
+#: dashboard/views/actions.py:49
+msgid "Your account has been deleted."
+msgstr "Votre compte utilisateur a été supprimé."
+
+#: dashboard/views/pages.py:162
+msgid "Your profile was successfully updated."
+msgstr "Votre profil a été mis à jour avec succès."
