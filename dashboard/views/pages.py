@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import BadRequest
 from django.http import HttpResponseForbidden, HttpRequest, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
+from django.utils.translation import gettext as _
 
 from dashboard.forms import (
     SignUpForm,

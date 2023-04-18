@@ -25,7 +25,7 @@ class PteroisUserAdmin(DjangoUserAdmin):
         (
             "Custom fields",
             {
-                "fields": ("last_visit_news_page",),
+                "fields": ("last_visit_news_page", "language"),
             },
         ),
     )

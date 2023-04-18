@@ -114,6 +114,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
+# Beware: when adding a new language, you also need to run `python manage.py makemigrations` (it is referenced from the user profile model)
 LANGUAGES = [
     ("en", _("English")),
     ("fr", _("French")),

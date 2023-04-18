@@ -30,6 +30,9 @@ DATA_SRID = 3857  # Let's keep everything in Google Mercator to avoid reprojecti
 
 class User(AbstractUser):
     last_visit_news_page = models.DateTimeField(null=True, blank=True)
+    language = models.CharField(
+        max_length=10, choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE
+    )
 
     @property
     def has_alerts_with_unseen_observations(self) -> bool:

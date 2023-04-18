@@ -1,6 +1,7 @@
 from typing import Tuple
 
 from django import forms
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.core.exceptions import ValidationError
@@ -47,7 +48,9 @@ class AlertForm(forms.ModelForm):
                 .exists()
             ):
                 raise ValidationError(
-                    "You already have another alert with this name. Please choose a different name."
+                    _(
+                        "You already have another alert with this name. Please choose a different name."
+                    )
                 )
         except KeyError:  # name is not provided, skip the check
             pass
@@ -67,6 +70,8 @@ class CommonUsersFields(forms.ModelForm):
         help_text=_("Required. Enter a valid email address."),
     )
 
+    language = forms.ChoiceField(label=_("Language"), choices=settings.LANGUAGES)
+
     class Meta:
         model = get_user_model()
 
@@ -74,6 +79,7 @@ class CommonUsersFields(forms.ModelForm):
             "username",
             "first_name",
             "last_name",
+            "language",
             "email",
         )
 
@@ -94,6 +100,7 @@ class SignUpForm(CommonUsersFields, UserCreationForm):
             "first_name",
             "last_name",
             "email",
+            "language",
             "password1",
             "password2",
         )
