@@ -57,6 +57,20 @@ class AlertForm(forms.ModelForm):
         return cleaned_data
 
 
+def _enabled_languages_as_tuple() -> Tuple[Tuple[str, str], ...]:
+    """
+    Return a tuple of tuples of the form (language_code, language_name) for all enabled languages
+
+    Enabled languages: according to the PTEROIS["ENABLED_LANGUAGES"] settings
+    Output format: identical to the settings.LANGUAGES format, so it can be used as a replacement
+    """
+    return tuple(
+        (language_code, language_name)
+        for language_code, language_name in settings.LANGUAGES
+        if language_code in settings.PTEROIS["ENABLED_LANGUAGES"]
+    )
+
+
 class CommonUsersFields(forms.ModelForm):
     first_name = forms.CharField(
         label=_("First name"), max_length=30, required=False, help_text=_("Optional.")
@@ -70,7 +84,9 @@ class CommonUsersFields(forms.ModelForm):
         help_text=_("Required. Enter a valid email address."),
     )
 
-    language = forms.ChoiceField(label=_("Language"), choices=settings.LANGUAGES)
+    language = forms.ChoiceField(
+        label=_("Language"), choices=_enabled_languages_as_tuple()
+    )
 
     class Meta:
         model = get_user_model()
