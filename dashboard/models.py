@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import hashlib
 import logging
+import os
 import smtplib
 from typing import Optional, Union, Any, Dict, List
 
@@ -26,6 +27,24 @@ from taggit.managers import TaggableManager
 from page_fragments.models import PageFragment, NEWS_PAGE_IDENTIFIER
 
 DATA_SRID = 3857  # Let's keep everything in Google Mercator to avoid reprojections
+
+import gettext
+
+THIS_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+# Approach from https://stackoverflow.com/questions/37998300/python-gettext-specify-locale-in
+def get_translator(lang: str = "en"):
+    if lang == "en":
+        # Don't try to get a translation if the language is English (would raise an exception)
+        return lambda s: s
+    else:
+        trans = gettext.translation(
+            "django",
+            localedir=os.path.join(THIS_FILE_DIR, "locale"),
+            languages=(lang,),
+        )
+        return trans.gettext
 
 
 class User(AbstractUser):
@@ -724,16 +743,24 @@ class Alert(models.Model):
         No checks are done, it's the responsibility of the caller to use email_should_be_sent_now() before calling this
         method.
         """
+        language_code = self.user.language
+
+        # Message subject
+        _ = get_translator(language_code)
+        unseen_obs_translated = _("unseen observation(s) for your alert")
+        subject = f"{settings.EMAIL_SUBJECT_PREFIX} {self.unseen_observations().count()} {unseen_obs_translated} {self.name}"
+
+        # Message body
         msg_html = render_to_string(
-            "dashboard/emails/alert_notification.html",
-            {"alert": self, "site_base_url": settings.SITE_BASE_URL},
+            f"dashboard/emails/alert_notification.{language_code}.html",
+            {
+                "alert": self,
+                "site_base_url": settings.SITE_BASE_URL,
+                "site_name": settings.PTEROIS["SITE_NAME"],
+            },
         )
 
         msg_plain = html2text.html2text(msg_html)
-        subject = (
-            f"{settings.EMAIL_SUBJECT_PREFIX} {self.unseen_observations().count()} unseen observation(s) for "
-            f'your alert "{self.name}"'
-        )
 
         try:
             send_mail(

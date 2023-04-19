@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-18 13:50+0200\n"
+"POT-Creation-Date: 2023-04-19 10:42+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,57 +22,59 @@ msgstr ""
 msgid ""
 "You already have another alert with this name. Please choose a different "
 "name."
-msgstr "Vous avez déjà une autre alerte avec ce nom. Veuillez choisir un nom différent."
+msgstr ""
+"Vous avez déjà une autre alerte avec ce nom. Veuillez choisir un nom "
+"différent."
 
-#: dashboard/forms.py:62
+#: dashboard/forms.py:76
 msgid "First name"
 msgstr "Prénom"
 
-#: dashboard/forms.py:62 dashboard/forms.py:65
+#: dashboard/forms.py:76 dashboard/forms.py:79
 msgid "Optional."
 msgstr "Facultatif."
 
-#: dashboard/forms.py:65
+#: dashboard/forms.py:79
 msgid "Last name"
 msgstr "Nom de famille"
 
-#: dashboard/forms.py:68
+#: dashboard/forms.py:82
 msgid "Email"
 msgstr "Email"
 
-#: dashboard/forms.py:70
+#: dashboard/forms.py:84
 msgid "Required. Enter a valid email address."
 msgstr "Requis. Entrez une adresse email valide."
 
-#: dashboard/forms.py:73
+#: dashboard/forms.py:88
 msgid "Language"
 msgstr "Langue"
 
-#: dashboard/models.py:581
+#: dashboard/models.py:589
 msgid "No emails"
 msgstr "Pas d'emails"
 
-#: dashboard/models.py:582
+#: dashboard/models.py:590
 msgid "Daily"
 msgstr "Journalier"
 
-#: dashboard/models.py:583
+#: dashboard/models.py:591
 msgid "Weekly"
 msgstr "Hebdomadaire"
 
-#: dashboard/models.py:584
+#: dashboard/models.py:592
 msgid "Monthly"
 msgstr "Mensuel"
 
-#: dashboard/models.py:595
+#: dashboard/models.py:603
 msgid "name"
 msgstr "nom"
 
-#: dashboard/models.py:599
+#: dashboard/models.py:607
 msgid "species"
 msgstr "espèces"
 
-#: dashboard/models.py:602
+#: dashboard/models.py:610
 msgid ""
 "Optional (no selection = notify me for all species). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
@@ -81,11 +83,11 @@ msgstr ""
 "sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:608
+#: dashboard/models.py:616
 msgid "datasets"
 msgstr "jeux de données"
 
-#: dashboard/models.py:611
+#: dashboard/models.py:619
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
@@ -94,11 +96,11 @@ msgstr ""
 "Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:618
+#: dashboard/models.py:626
 msgid "areas"
 msgstr "zones"
 
-#: dashboard/models.py:620
+#: dashboard/models.py:628
 msgid ""
 "Optional (no selection = notify me for all areas). To select multiple items, "
 "press and hold the Ctrl or Command key and click the items."
@@ -107,9 +109,13 @@ msgstr ""
 "sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:629
+#: dashboard/models.py:637
 msgid "email notifications frequency"
 msgstr "fréquence des notifications par email"
+
+#: dashboard/models.py:739
+msgid "unseen observation(s) for your alert"
+msgstr "observation(s) non vue(s) pour votre alerte"
 
 #: dashboard/templates/503.html:7
 msgid "In maintenance"

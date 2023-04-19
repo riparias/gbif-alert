@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-18 13:50+0200\n"
+"POT-Creation-Date: 2023-04-19 10:42+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -24,84 +24,88 @@ msgid ""
 "name."
 msgstr ""
 
-#: dashboard/forms.py:62
+#: dashboard/forms.py:76
 msgid "First name"
 msgstr ""
 
-#: dashboard/forms.py:62 dashboard/forms.py:65
+#: dashboard/forms.py:76 dashboard/forms.py:79
 msgid "Optional."
 msgstr ""
 
-#: dashboard/forms.py:65
+#: dashboard/forms.py:79
 msgid "Last name"
 msgstr ""
 
-#: dashboard/forms.py:68
+#: dashboard/forms.py:82
 msgid "Email"
 msgstr ""
 
-#: dashboard/forms.py:70
+#: dashboard/forms.py:84
 msgid "Required. Enter a valid email address."
 msgstr ""
 
-#: dashboard/forms.py:73
+#: dashboard/forms.py:88
 msgid "Language"
 msgstr ""
 
-#: dashboard/models.py:581
+#: dashboard/models.py:589
 msgid "No emails"
 msgstr ""
 
-#: dashboard/models.py:582
+#: dashboard/models.py:590
 msgid "Daily"
 msgstr ""
 
-#: dashboard/models.py:583
+#: dashboard/models.py:591
 msgid "Weekly"
 msgstr ""
 
-#: dashboard/models.py:584
+#: dashboard/models.py:592
 msgid "Monthly"
 msgstr ""
 
-#: dashboard/models.py:595
+#: dashboard/models.py:603
 msgid "name"
 msgstr ""
 
-#: dashboard/models.py:599
+#: dashboard/models.py:607
 #, fuzzy
 #| msgid "Species"
 msgid "species"
 msgstr "Soort"
 
-#: dashboard/models.py:602
+#: dashboard/models.py:610
 msgid ""
 "Optional (no selection = notify me for all species). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
 msgstr ""
 
-#: dashboard/models.py:608
+#: dashboard/models.py:616
 msgid "datasets"
 msgstr ""
 
-#: dashboard/models.py:611
+#: dashboard/models.py:619
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
 msgstr ""
 
-#: dashboard/models.py:618
+#: dashboard/models.py:626
 msgid "areas"
 msgstr ""
 
-#: dashboard/models.py:620
+#: dashboard/models.py:628
 msgid ""
 "Optional (no selection = notify me for all areas). To select multiple items, "
 "press and hold the Ctrl or Command key and click the items."
 msgstr ""
 
-#: dashboard/models.py:629
+#: dashboard/models.py:637
 msgid "email notifications frequency"
+msgstr ""
+
+#: dashboard/models.py:739
+msgid "unseen observation(s) for your alert"
 msgstr ""
 
 #: dashboard/templates/503.html:7

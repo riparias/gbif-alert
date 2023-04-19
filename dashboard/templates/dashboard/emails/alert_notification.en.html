@@ -1,26 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            color: black;
-            font-family: Verdana, sans-serif;
-        }
+{% extends "dashboard/emails/alert_notification_base.html" %}
 
-        table {
-            border: 1px solid black;
-            border-collapse: collapse;
-        }
+{% load i18n %}
 
-        th, td {
-            border: 1px solid black;
-            padding: 5px;
-        }
-    </style>
-</head>
-<body>
+{% block body %}
 <p>You have <b>{{ alert.unseen_observations.count }}</b> unseen observation(s) for this alert.</p>
 
 <h3>Sample of unseen observations</h3>
@@ -76,13 +58,13 @@ observations and details</p>
     <li><b>Species:</b> {{ alert.species_list|default:"all" }}</li>
     <li><b>Areas:</b> {{ alert.areas_list|default:"all" }}</li>
     <li><b>Datasets: </b> {{ alert.datasets_list|default:"all" }}</li>
-    <li><b>Email notifications frequency:</b>{{ alert.get_email_notifications_frequency_display }}</li>
+    <li>
+        <b>Email notifications frequency:</b>
+        {% language "en" %}{{ alert.get_email_notifications_frequency_display }}{% endlanguage %}</li>
 </ul>
 
 <p>
     Thanks,<br/>
-    The RIPARIAS early alert team
+    The <a href="{{ site_base_url }}">{{ site_name }}</a> team
 </p>
-
-</body>
-</html>
+{% endblock body %}

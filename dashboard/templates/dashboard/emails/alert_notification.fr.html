@@ -1,0 +1,70 @@
+{% extends "dashboard/emails/alert_notification_base.html" %}
+{% load i18n %}
+
+{% block body %}
+<p>Il y a <b>{{ alert.unseen_observations.count }}</b> observations non-vues pour cette alerte.</p>
+
+<h3>Extrait des observations non-vues</h3>
+{# For user familiarity, make sure the structure of this table stay more or less in sync with the table show on the website pages #}
+<table>
+    <thead>
+    <tr>
+        <th>Identifiant GBIF</th>
+        <th>Latitude</th>
+        <th>Longitude</th>
+        <th>Date</th>
+        <th>Espèce</th>
+        <th>Jeu de données</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for observation in alert.unseen_observations_sample %}
+        <tr>
+            <td>
+                <a href="
+
+                        {{ site_base_url }}{% url "dashboard:pages:observation-details" stable_id=observation.stable_id %}">
+                    {{ observation.gbif_id }}
+                </a>
+            </td>
+            <td>{{ observation.lat|floatformat:4 }}</td>
+            <td>{{ observation.lon|floatformat:4 }}</td>
+            <td>{{ observation.date }}</td>
+            <td>{{ observation.species.display_name_html|safe }}</td>
+            <td>{{ observation.source_dataset.name }}</td>
+        </tr>
+    {% endfor %}
+
+    {#  One more row so users understand it's only a sample... #}
+    <tr>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+    </tr>
+    </tbody>
+</table>
+
+<p></p>N'hésitez pas à visiter la <a
+        href="{{ site_base_url }}{% url "dashboard:pages:alert-details" alert_id=alert.pk %}">page de l'alerte</a> pour voir toutes les observations et plus de détails.</p>
+
+<h3>Détails de l'alerte</h3>
+<ul>
+    <li><b>Nom de l'alerte:</b> {{ alert.name }}</li>
+    <li><b>Espèces:</b> {{ alert.species_list|default:"all" }}</li>
+    <li><b>Zones:</b> {{ alert.areas_list|default:"all" }}</li>
+    <li><b>Jeu de données: </b> {{ alert.datasets_list|default:"all" }}</li>
+    <li>
+        <b>Fréquence des notifications par email: </b>
+        {% language "fr" %}{{ alert.get_email_notifications_frequency_display }}{% endlanguage %}
+    </li>
+</ul>
+
+<p>
+    Merci,<br/>
+    L'équipe de <a href="{{ site_base_url }}">{{ site_name }}</a>
+</p>
+
+{% endblock body %}
