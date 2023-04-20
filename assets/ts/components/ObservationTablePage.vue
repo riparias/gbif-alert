@@ -13,9 +13,7 @@
       <td>
         <a :href="occ.url">{{ occ.gbifId }}</a>
       </td>
-      <td>{{ occ.lat }}</td>
-      <td>{{ occ.lon }}</td>
-      <td>{{ occ.date }}</td>
+      <td>{{ occ.lat }}, {{ occ.lon }}</td>
       <td class="fst-italic">{{ occ.speciesName }}</td>
       <td>{{ occ.datasetName }}</td>
     </tr>
@@ -45,8 +43,8 @@ export default defineComponent({
       return this.observations.map((occ) => {
         return {
           gbifId: occ.gbifId,
-          lat: occ.lat ? occ.lat.toFixed(4) : "",
-          lon: occ.lon ? occ.lon.toFixed(4) : "",
+          lat: occ.lat ? occ.lat.toFixed(3) : "",
+          lon: occ.lon ? occ.lon.toFixed(3) : "",
           date: occ.date,
           speciesName: occ.speciesName,
           datasetName: this.truncateString(occ.datasetName, 30),

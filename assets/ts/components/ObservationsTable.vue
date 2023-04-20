@@ -171,8 +171,7 @@ export default defineComponent({
         // (alert_notification.html)
         { sortId: null, label: "" },
         { sortId: "gbif_id", label: this.$t("message.gbifId") },
-        { sortId: null, label: this.$t("message.latitude") },
-        { sortId: null, label: this.$t("message.longitude") },
+        { sortId: null, label: this.$t("message.coordinates") },
         { sortId: "-date", label: this.$t("message.date")},
         { sortId: "species__name", label: this.$t("message.scientificName") },
         { sortId: "source_dataset__name", label: this.$t("message.dataset") },
