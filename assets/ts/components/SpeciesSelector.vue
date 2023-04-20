@@ -60,7 +60,11 @@
           </td>
           <td><i v-html="highlightText(line.scientificName, textFilter)"></i></td>
           <td v-html="highlightText(line.vernacularName, textFilter)"></td>
-          <td v-html="highlightText(line.gbifTaxonKey.toString(), textFilter)"></td>
+          <td>
+              <a :href="'https://www.gbif.org/species/' + line.gbifTaxonKey.toString()" target="_blank">
+                  <span v-html="highlightText(line.gbifTaxonKey.toString(), textFilter)"></span>
+              </a>
+          </td>
           <td>
             <span v-for="tag in line.tags"
                   :style="getStyleForTag(tag)"
