@@ -22,21 +22,39 @@
     </table>
     <p class="text-center">
       <button
+         type="button"
+         :disabled="!hasPreviousPage"
+         class="btn btn-outline-primary btn-sm mx-1"
+         @click="currentPage = 1"
+       >
+          <i class="bi bi-chevron-double-left"></i>
+      </button>
+
+      <button
         type="button"
         :disabled="!hasPreviousPage"
-        class="btn btn-outline-primary btn-sm"
+        class="btn btn-outline-primary btn-sm mx-1"
         @click="currentPage -= 1"
       >
-        {{ $t("message.previous") }}
+          <i class="bi bi-chevron-left"></i>
       </button>
       {{ $t("message.page") }} {{ currentPage }} / {{ lastPage }}
       <button
         type="button"
         :disabled="!hasNextPage"
-        class="btn btn-outline-primary btn-sm"
+        class="btn btn-outline-primary btn-sm mx-1"
         @click="currentPage += 1"
       >
-        {{ $t("message.next") }}
+          <i class="bi bi-chevron-right"></i>
+      </button>
+
+      <button
+         type="button"
+         :disabled="!hasNextPage"
+         class="btn btn-outline-primary btn-sm mx-1"
+         @click="currentPage = lastPage"
+       >
+          <i class="bi bi-chevron-double-right"></i>
       </button>
     </p>
   </div>
