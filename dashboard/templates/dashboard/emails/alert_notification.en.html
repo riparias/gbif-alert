@@ -3,6 +3,8 @@
 {% load i18n %}
 
 {% block body %}
+
+{% language "en" %}
 <p>You have <b>{{ alert.unseen_observations.count }}</b> unseen observation(s) for this alert.</p>
 
 <h3>Sample of unseen observations</h3>
@@ -60,11 +62,13 @@ observations and details</p>
     <li><b>Datasets: </b> {{ alert.datasets_list|default:"all" }}</li>
     <li>
         <b>Email notifications frequency:</b>
-        {% language "en" %}{{ alert.get_email_notifications_frequency_display }}{% endlanguage %}</li>
+        {{ alert.get_email_notifications_frequency_display }}</li>
 </ul>
 
 <p>
     Thanks,<br/>
     The <a href="{{ site_base_url }}">{{ site_name }}</a> team
 </p>
+
+{% endlanguage %}
 {% endblock body %}

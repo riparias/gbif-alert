@@ -2,6 +2,8 @@
 {% load i18n %}
 
 {% block body %}
+{% language "fr" %}
+
 <p>Il y a <b>{{ alert.unseen_observations.count }}</b> observations non-vues pour cette alerte.</p>
 
 <h3>Extrait des observations non-vues</h3>
@@ -58,7 +60,7 @@
     <li><b>Jeu de données: </b> {{ alert.datasets_list|default:"all" }}</li>
     <li>
         <b>Fréquence des notifications par email: </b>
-        {% language "fr" %}{{ alert.get_email_notifications_frequency_display }}{% endlanguage %}
+        {{ alert.get_email_notifications_frequency_display }}
     </li>
 </ul>
 
@@ -67,4 +69,5 @@
     L'équipe de <a href="{{ site_base_url }}">{{ site_name }}</a>
 </p>
 
+{% endlanguage %}
 {% endblock body %}

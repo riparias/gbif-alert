@@ -31,6 +31,7 @@ ALLOWED_HOSTS: List[str] = []
 
 INSTALLED_APPS = [
     # Django
+    "modeltranslation",  # Must be placed before the admin app: https://github.com/deschler/django-modeltranslation/issues/408
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
     "markdownx",
     "django_rq",
     "taggit",
+    # Beware, there's also "modeltranslation", but it had to be placed before the admin app
     # Local/custom
     "dashboard",
     "page_fragments",

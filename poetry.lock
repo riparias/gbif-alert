@@ -461,6 +461,22 @@ Markdown = "*"
 Pillow = "*"
 
 [[package]]
+name = "django-modeltranslation"
+version = "0.18.9"
+description = "Translates Django models using a registration approach."
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "django-modeltranslation-0.18.9.tar.gz", hash = "sha256:d92bcd004e48946ae3824289ee76d36faa670f6e3da4a0412cdaeb4fc2526627"},
+    {file = "django_modeltranslation-0.18.9-py3-none-any.whl", hash = "sha256:f79ec5548053ffa2153b7b5ca646f59da1bf9e4c2c62085e21ead662a9c2faf8"},
+]
+
+[package.dependencies]
+Django = ">=3.2"
+typing-extensions = "*"
+
+[[package]]
 name = "django-rq"
 version = "2.7.0"
 description = "An app that provides django integration for RQ (Redis Queue)"
@@ -1765,7 +1781,7 @@ files = [
 name = "typing-extensions"
 version = "4.5.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1886,4 +1902,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "0c694fd41237ff0d469f2918c81c3bbd48c59f8d10983b689d59335ff881f6ec"
+content-hash = "cbc6d2955c41c6bb1251a1f3c995d5b869cadde0542fa6387b9806f70ad54057"

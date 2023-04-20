@@ -153,8 +153,9 @@ This tool can also be used to manually activate maintenance mode during complex 
 ## Internationalization (i18n)
 
 - For template-based / backend translations, we use the standard Django i18n tools (see [Django documentation](https://docs.djangoproject.com/en/4.1/topics/i18n/)) 
+- (don't forget the translation for the notification e-mails: see `dashboard/templates/dashboard/emails` )
 - For Vue components, we use https://vue-i18n.intlify.dev/ instead.
-- Finally, there are a few data-related translations that should be provided directly in the database via Django Admin: page fragments, vernacular names, ...
+- Data-related translations that should be provided directly in the database via Django Admin: page fragments, vernacular names, ...
 
 ### How to update translations: Django
 - In code, use the appropriate `gettext` functions (e.g. `_()`, `gettext()`, `ngettext()`, etc.), the `trans` template tag, etc.
@@ -168,5 +169,3 @@ This tool can also be used to manually activate maintenance mode during complex 
 
 TODO i18n:
 - call compilemessages at deploy time (dev, prod, ci), might need more dependencies for this. Dev/prod: already installed the gettext package and added the compilemessages command to scripts. CI: added gettext package to the workflow
-- make sure vernacular names are translatable
-- make sure page fragments are translatable 

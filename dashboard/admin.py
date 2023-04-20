@@ -3,6 +3,7 @@ from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.gis import admin
 from import_export import resources  # type: ignore
 from import_export.admin import ImportExportModelAdmin  # type: ignore
+from modeltranslation.admin import TranslationAdmin
 
 from .models import (
     Species,
@@ -64,7 +65,7 @@ class SpeciesResource(resources.ModelResource):
 
 
 @admin.register(Species)
-class SpeciesAdmin(ImportExportModelAdmin):
+class SpeciesAdmin(ImportExportModelAdmin, TranslationAdmin):
     resource_class = SpeciesResource
     list_display = ("name", "vernacular_name", "gbif_taxon_key", "tag_list")
     search_fields = ["name", "vernacular_name", "gbif_taxon_key"]
