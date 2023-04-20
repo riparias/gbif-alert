@@ -20,7 +20,9 @@ from dashboard.models import Species, Observation, DataImport, Dataset
 from .helpers import get_dataset_name_from_gbif_api
 
 
-def build_gbif_predicate(country_code: str, species_list: QuerySet[Species]) -> Dict:
+def build_gbif_predicate(
+    country_code: str, minimum_year: int, species_list: QuerySet[Species]
+) -> Dict:
     """Build a GBIF predicate (for occurrence download) targeting a specific country and a list of species"""
     return {
         "predicate": {
@@ -33,6 +35,11 @@ def build_gbif_predicate(country_code: str, species_list: QuerySet[Species]) -> 
                     "values": [f"{s.gbif_taxon_key}" for s in species_list],
                 },
                 {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"},
+                {
+                    "type": "greaterThanOrEquals",
+                    "key": "YEAR",
+                    "value": str(minimum_year),
+                },
             ],
         }
     }
@@ -262,6 +269,7 @@ class Command(BaseCommand):
             # This might takes several minutes...
             gbif_predicate = build_gbif_predicate(
                 country_code=settings.PTEROIS["GBIF_DOWNLOAD_CONFIG"]["COUNTRY_CODE"],
+                minimum_year=settings.PTEROIS["GBIF_DOWNLOAD_CONFIG"]["MINIMUM_YEAR"],
                 species_list=Species.objects.all(),
             )
             download_gbif_occurrences(

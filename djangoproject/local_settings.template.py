@@ -58,6 +58,7 @@ PTEROIS: Dict[str, Any] = {
         "USERNAME": "riparias-dev",
         "PASSWORD": "riparias-dev",
         "COUNTRY_CODE": "BE",  # Only download observations from this country
+        "MINIMUM_YEAR": 2000,  # Observations must be from this year or later
     },
     "SHOW_DEV_VERSION_WARNING": False,
     "MAIN_MAP_CONFIG": {
