@@ -14,7 +14,7 @@
         <a :href="occ.url">{{ occ.gbifId }}</a>
       </td>
       <td>{{ occ.lat }}, {{ occ.lon }}</td>
-      <td>{{ occ.speciesName }}</td>
+      <td>{{ occ.date }}</td>
       <td class="fst-italic">{{ occ.speciesName }}</td>
       <td>{{ occ.datasetName }}</td>
     </tr>
