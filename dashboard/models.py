@@ -35,11 +35,6 @@ THIS_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Approach from https://stackoverflow.com/questions/37998300/python-gettext-specify-locale-in
 def get_translator(lang: str = "en"):
-    if (
-        lang == "en-us"
-    ):  # Users who inherited the default from settings get en-us, users with an explicit choice get "en"
-        lang = "en"
-
     if lang == "en":
         # Don't try to get a translation if the language is English (would raise an exception)
         return lambda s: s
@@ -57,6 +52,12 @@ class User(AbstractUser):
     language = models.CharField(
         max_length=10, choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE
     )
+
+    def get_language(self) -> str:
+        # Use this method instead of self.language to get the language code (some got en-us as a default value, that will cause issues)
+        if self.language == "en-us":
+            return "en"
+        return self.language
 
     @property
     def has_alerts_with_unseen_observations(self) -> bool:
@@ -748,7 +749,7 @@ class Alert(models.Model):
         No checks are done, it's the responsibility of the caller to use email_should_be_sent_now() before calling this
         method.
         """
-        language_code = self.user.language
+        language_code = self.user.get_language()
 
         # Message subject
         _ = get_translator(language_code)
