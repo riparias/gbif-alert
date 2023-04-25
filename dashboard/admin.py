@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.gis import admin
 from import_export import resources  # type: ignore
 from import_export.admin import ImportExportModelAdmin  # type: ignore
-from modeltranslation.admin import TranslationAdmin
+from modeltranslation.admin import TranslationAdmin  # type: ignore
 
 from .models import (
     Species,

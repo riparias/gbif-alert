@@ -100,7 +100,7 @@ def empty_user_comments(sender, instance, **kwargs):
 WebsiteUser = Union[User, AnonymousUser]
 
 
-class Species(models.Model):
+class Species(models.Model):  # type: ignore
     name = models.CharField(max_length=100)  # Scientific name
     vernacular_name = models.CharField(max_length=100, blank=True)
     gbif_taxon_key = models.IntegerField(unique=True)

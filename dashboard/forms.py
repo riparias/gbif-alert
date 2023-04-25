@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.core.exceptions import ValidationError
+from django.utils.functional import _StrPromise
 from django.utils.translation import gettext_lazy as _
 
 from dashboard.models import ObservationComment, Alert, Area, User
@@ -57,7 +58,7 @@ class AlertForm(forms.ModelForm):
         return cleaned_data
 
 
-def _enabled_languages_as_tuple() -> Tuple[Tuple[str, str], ...]:
+def _enabled_languages_as_tuple() -> Tuple[Tuple[str, _StrPromise], ...]:
     """
     Return a tuple of tuples of the form (language_code, language_name) for all enabled languages
 

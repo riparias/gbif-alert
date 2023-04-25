@@ -1,4 +1,4 @@
-from modeltranslation.translator import register, TranslationOptions
+from modeltranslation.translator import register, TranslationOptions  # type: ignore
 
 from dashboard.models import Species
 
