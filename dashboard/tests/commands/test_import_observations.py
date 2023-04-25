@@ -390,6 +390,16 @@ class ImportObservationsTest(TransactionTestCase):
                 request_history = m.request_history
                 self.assertEqual(len(request_history), 0)
 
+    @override_settings(
+        PTEROIS={
+            "GBIF_DOWNLOAD_CONFIG": {
+                "COUNTRY_CODE": "BE",  # Only download observations from this country
+                "MINIMUM_YEAR": 2010,  # Observations must be from this year or later
+                "USERNAME": "riparias-dev",
+                "PASSWORD": "riparias-dev",
+            },
+        }
+    )
     def test_gbif_request(self) -> None:
         """The correct HTTP requests are emitted to gbif.org"""
         with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
@@ -414,7 +424,7 @@ class ImportObservationsTest(TransactionTestCase):
                 )
                 self.assertEqual(
                     request_history[0].text,
-                    '{"predicate": {"type": "and", "predicates": [{"type": "equals", "key": "COUNTRY", "value": "BE"}, {"type": "in", "key": "TAXON_KEY", "values": ["1224034", "7972617"]}, {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"}]}}',
+                    '{"predicate": {"type": "and", "predicates": [{"type": "equals", "key": "COUNTRY", "value": "BE"}, {"type": "in", "key": "TAXON_KEY", "values": ["1224034", "7972617"]}, {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"}, {"type": "greaterThanOrEquals", "key": "YEAR", "value": "2010"}]}}',
                 )
 
                 # 2. A request to download the DwCA file was subsequently emitted
@@ -424,6 +434,16 @@ class ImportObservationsTest(TransactionTestCase):
                     "https://api.gbif.org/v1/occurrence/download/request/1000",
                 )
 
+    @override_settings(
+        PTEROIS={
+            "GBIF_DOWNLOAD_CONFIG": {
+                "COUNTRY_CODE": "BE",  # Only download observations from this country
+                "MINIMUM_YEAR": 2010,  # Observations must be from this year or later
+                "USERNAME": "riparias-dev",
+                "PASSWORD": "riparias-dev",
+            },
+        }
+    )
     def test_gbif_predicate_stored(self):
         """In case of GBIF request, the predicate is stored in the DataImport object"""
         with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
@@ -439,7 +459,7 @@ class ImportObservationsTest(TransactionTestCase):
                 call_command("import_observations")
 
                 di = DataImport.objects.latest("id")
-                self.assertEqual(
+                self.assertDictEqual(
                     di.gbif_predicate,
                     {
                         "predicate": {
@@ -455,6 +475,11 @@ class ImportObservationsTest(TransactionTestCase):
                                     "key": "OCCURRENCE_STATUS",
                                     "type": "equals",
                                     "value": "present",
+                                },
+                                {
+                                    "key": "YEAR",
+                                    "type": "greaterThanOrEquals",
+                                    "value": "2010",
                                 },
                             ],
                         }
