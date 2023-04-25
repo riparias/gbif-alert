@@ -35,7 +35,12 @@ THIS_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Approach from https://stackoverflow.com/questions/37998300/python-gettext-specify-locale-in
 def get_translator(lang: str = "en"):
-    if lang == "en" or lang == "en-us":
+    if (
+        lang == "en-us"
+    ):  # Users who inherited the default from settings get en-us, users with an explicit choice get "en"
+        lang = "en"
+
+    if lang == "en":
         # Don't try to get a translation if the language is English (would raise an exception)
         return lambda s: s
     else:
