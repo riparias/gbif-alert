@@ -178,23 +178,70 @@ PAGE_FRAGMENTS_FALLBACK_LANGUAGE = "en"
 
 RQ_SHOW_ADMIN_LINK = True
 
+# Logging: unfortunately for us, I am not able to override the default logging config as suggested in Django's documentation (changes are ignored)
+# This is similar to https://stackoverflow.com/questions/62334688/django-logger-not-logging-but-all-other-loggers-work
+# I therefore copy-pasted the default config from Django's source code and modified it to my needs.
+# Currently applied changes:
+# - Added a filter to ignore 503 errors when in maintenance mode
+# - "include_html": True for the emails to admins in case of errors
+LOGGING_CONFIG = None
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "filters": {
-        "require_not_maintenance_mode_503": {
-            "()": "maintenance_mode.logging.RequireNotMaintenanceMode503",
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
         },
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+        # Temporarily disabled because: https://github.com/fabiocaccamo/django-maintenance-mode/issues/59
+        # "require_not_maintenance_mode_503": {
+        #    "()": "maintenance_mode.logging.RequireNotMaintenanceMode503",
+        # },
+    },
+    "formatters": {
+        "django.server": {
+            "()": "django.utils.log.ServerFormatter",
+            "format": "[{server_time}] {message}",
+            "style": "{",
+        }
     },
     "handlers": {
+        "console": {
+            "level": "INFO",
+            "filters": ["require_debug_true"],
+            "class": "logging.StreamHandler",
+        },
+        "django.server": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "django.server",
+        },
         "mail_admins": {
             "level": "ERROR",
+            # Temporarily disabled because: https://github.com/fabiocaccamo/django-maintenance-mode/issues/59
+            # "filters": ["require_debug_false", "require_not_maintenance_mode_503"],
+            "filters": ["require_debug_false"],
             "class": "django.utils.log.AdminEmailHandler",
-            "filters": ["require_not_maintenance_mode_503"],
             "include_html": True,
         },
     },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "mail_admins"],
+            "level": "INFO",
+        },
+        "django.server": {
+            "handlers": ["django.server"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
 }
+import logging.config
+
+logging.config.dictConfig(LOGGING)
 
 MARKDOWNX_MARKDOWN_EXTENSIONS = ["markdown.extensions.toc"]
 
