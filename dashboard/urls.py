@@ -20,6 +20,7 @@ pages_urls = [
     ),
     path("profile", views.user_profile_page, name="profile"),
     path("signup", views.user_signup_page, name="signup"),
+    path("my-custom-areas", views.user_areas_page, name="my-custom-areas"),
 ]
 
 maps_api_urls = [

@@ -48,6 +48,12 @@
                             </li>
 
                             <li>
+                                <a class="dropdown-item" href="{% url 'dashboard:pages:my-custom-areas' %}">
+                                    <i class="bi bi-map"></i> {% translate "My custom areas" %}
+                                </a>
+                            </li>
+
+                            <li>
                                 <hr class="dropdown-divider">
                             </li>
                             {% if request.user.is_superuser %}

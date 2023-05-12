@@ -22,6 +22,17 @@ def get_initial_alert_name(user: User) -> str:
     return f"My alert #{alert_number}"
 
 
+class NewCustomAreaForm(forms.Form):
+    name = forms.CharField(
+        label=_("Area name"),
+        max_length=255,
+        help_text=_("A short name to identify this area"),
+    )
+    data_file = forms.FileField(
+        label=_("Data file"),
+    )
+
+
 class AlertForm(forms.ModelForm):
     def __init__(self, for_user, *args, **kwargs):
         super(AlertForm, self).__init__(*args, **kwargs)

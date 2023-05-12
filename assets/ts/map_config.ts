@@ -4,6 +4,10 @@ import OSM from "ol/source/OSM";
 import XYZ from "ol/source/XYZ";
 import {BaseLayerEntry} from "./interfaces";
 
+export const osmHotSource = new OSM({
+        url: "http://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",}
+)
+
 export const baseLayers = [
   {
     name: "toner",
@@ -12,9 +16,7 @@ export const baseLayers = [
   {
     name: "osmHot",
     layer: new TileLayer({
-      source: new OSM({
-        url: "http://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
-      }),
+      source: osmHotSource
     }),
   },
   {

@@ -1,0 +1,43 @@
+{% extends 'dashboard/base.html' %}
+{% load pterois_extras %}
+{% load crispy_forms_filters %}
+{% load i18n %}
+
+{% block page_title %}
+    {% translate "My custom areas" as page_title %}
+    {% include "dashboard/_page_title.html" with page_name=page_title %}
+{% endblock %}
+
+{% block after_messages %}
+    <script type="text/javascript">
+        window.pteroisConfig = pteroisConfig;
+    </script>
+
+    <div class="container">
+        <div class="row">
+            <div id="vue-app" class="col">
+                <h1>{% translate "My custom areas" %}</h1>
+
+                <h2>{% translate "Existing areas" %}</h2>
+                <User-areas-page-root-component :area-ids="{{ user_areas_ids|safe }}"></User-areas-page-root-component>
+
+                <h2>{% translate "Upload a new area" %}</h2>
+                {% load crispy_forms_tags %}
+                {% load i18n %}
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ new_custom_area_form|crispy }}
+                    <input class="btn btn-primary btn-sm" type="submit" value="{% translate "Save" %}"
+                           id="pterois-area-save-btn">
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            initUserAreasPage();
+        });
+    </script>
+{% endblock %}

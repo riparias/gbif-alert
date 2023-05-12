@@ -1,8 +1,10 @@
 """Views that return HTML pages"""
+import tempfile
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.contrib.gis.gdal import DataSource
 from django.core.exceptions import BadRequest
 from django.http import HttpResponseForbidden, HttpRequest, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
@@ -13,8 +15,9 @@ from dashboard.forms import (
     EditProfileForm,
     NewObservationCommentForm,
     AlertForm,
+    NewCustomAreaForm,
 )
-from dashboard.models import DataImport, Observation, Alert
+from dashboard.models import DataImport, Observation, Alert, Area
 from dashboard.views.helpers import (
     AuthenticatedHttpRequest,
     extract_dict_request,
@@ -171,3 +174,61 @@ def user_profile_page(request: AuthenticatedHttpRequest) -> HttpResponse:
 def user_alerts_page(request: AuthenticatedHttpRequest) -> HttpResponse:
     alerts = Alert.objects.filter(user=request.user).order_by("id")
     return render(request, "dashboard/user_alerts.html", {"alerts": alerts})
+
+
+# TODO: detailed exceptionsinstead of returning None
+# Testing: no 1 layer, no 1 feature in layer, no multipolygon or polygon
+# no SRS. SRS: provided: make sure reprojection is done
+# Document / test other file formats
+# Currently works with GPKG in 3857 of type mulipolygon
+def uploaded_shapefile_to_multipolygon(
+    data_path: str,
+):
+    ds = DataSource(data_path)
+    if ds.layer_count != 1:
+        return None
+    layer = ds[0]
+
+    if layer.num_feat != 1:
+        return None
+
+    if layer.srs is None:
+        return None
+
+    if layer.geom_type.name == "MultiPolygon":
+        feature = list(layer)[0]
+        return feature.geom.wkt
+    # elif layer.geom_type.name == "Polygon":
+    #     feature = list(layer)[0]
+    #     return MultiPolygon(feature.geom)
+    else:
+        return None
+
+
+@login_required
+def user_areas_page(request: AuthenticatedHttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        form = NewCustomAreaForm(request.POST, request.FILES)
+
+        # UploadedFile may be in memory (if it's small), so it lacks a proper path, need to hack with a temporary file
+        with tempfile.NamedTemporaryFile(
+            suffix=request.FILES["data_file"].name
+        ) as temp:
+            temp.write(request.FILES["data_file"].read())
+            mp = uploaded_shapefile_to_multipolygon(temp.name)
+
+            if form.is_valid() and mp is not None:
+                Area.objects.create(
+                    mpoly=mp, owner=request.user, name=form.cleaned_data["name"]
+                )
+    else:
+        form = NewCustomAreaForm()
+
+    return render(
+        request,
+        "dashboard/user_areas.html",
+        {
+            "user_areas_ids": [a.pk for a in Area.objects.filter(owner=request.user)],
+            "new_custom_area_form": form,
+        },
+    )

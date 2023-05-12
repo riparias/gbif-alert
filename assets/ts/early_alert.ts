@@ -8,6 +8,7 @@ import DeleteAlertButton from "./components/DeleteAlertButton.vue";
 import {Component, createApp} from "vue";
 import {createI18n} from "vue-i18n";
 import {messages} from "./translations";
+import UserAreasPageRootComponent from "./components/pages_root_components/UserAreasPageRootComponent.vue";
 
 require("bootstrap-icons/font/bootstrap-icons.css");
 
@@ -62,3 +63,8 @@ function createAndMountComponent(component: Component, rootContainer = "#app") {
 (window as any).initUserAlertsPage = function () {
     createAndMountComponent({components: {DeleteAlertButton}});
 };
+
+(window as any).initUserAreasPage = function () {
+    //createAndMountComponent({components: {SingleAreaMap}}, "#vue-app");
+    createAndMountComponent({components: {UserAreasPageRootComponent}}, "#vue-app");
+}
