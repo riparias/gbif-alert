@@ -18,6 +18,10 @@
     <SpeciesSelector v-if="speciesMode" :available-species="entries" v-model="selectedEntriesIds"  />
     <Filter-Selector-Modal-Entries v-else :entries="entries" v-model="selectedEntriesIds" />
 
+      <!-- Let's pass a slot from parent directly to children... -->
+      <template v-slot:body-top>
+          <slot name="modal-body-top"></slot>
+      </template>
   </Filter-Selector-Modal>
 
 </template>

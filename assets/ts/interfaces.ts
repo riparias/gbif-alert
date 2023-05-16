@@ -69,6 +69,7 @@ export interface EndpointsUrls {
   observationsJsonUrl: string;
   observationsHistogramDataUrl: string;
   observationDetailsUrlTemplate: string;
+  myCustomAreasUrl: string;
   markObservationsAsSeenUrl: string;
   minMaxOccPerHexagonUrl: string;
   alertAsFiltersUrl: string;

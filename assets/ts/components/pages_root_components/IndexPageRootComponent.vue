@@ -51,7 +51,16 @@
               :entries="availableAreasAsEntries"
               :initially-selected-entries-ids="filters.areaIds"
               @entries-changed="changeSelectedAreas"
-          ></Filter-Selector>
+          >
+              <template v-slot:modal-body-top>
+                  <div class="my-2">
+                      <i class="bi bi-info-circle"></i>&nbsp;
+                      <i18n-t keypath="message.customAreasInfoMessage" tag="false" for="message.customAreasLinkLabel">
+                          <a :href="frontendConfig.apiEndpoints.myCustomAreasUrl">{{ $t('message.customAreasLinkLabel') }}</a>
+                      </i18n-t>
+                  </div>
+              </template>
+          </Filter-Selector>
 
           <Filter-Selector
               class="mx-2"

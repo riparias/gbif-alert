@@ -85,6 +85,9 @@ def js_config_object(context):
                 "dashboard:internal-api:maps:mvt-tiles"
             ),
             "observationDetailsUrlTemplate": observation_details_url_template_with_origin,
+            "myCustomAreasUrl": reverse(
+                "dashboard:pages:my-custom-areas"
+            ),  # TODO: some entries are not API endpoints, but regular pages URLs. Maybe we should have a separate object for those? OR just rename this "apiEndpoints" to "urls"?
             "areasUrlTemplate": reverse(
                 "dashboard:internal-api:area-geojson", kwargs={"id": 1}
             ).replace("1", "{id}"),

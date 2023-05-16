@@ -19,6 +19,7 @@
           ></button>
         </div>
         <div class="modal-body">
+          <slot name="body-top"></slot>
           <slot></slot>
         </div>
       </div>
