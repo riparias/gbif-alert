@@ -36,3 +36,10 @@ export function wordToColor(word: string): string {
 export function legibleColor (color: string): string {
   return hsl(color).l > 0.5 ? "#000" : "#fff";
 }
+
+export function getStyleForTag (tag: string){
+  return {
+    backgroundColor: wordToColor(tag) + '!important',
+    color: legibleColor(wordToColor(tag)) + '!important'
+  }
+}

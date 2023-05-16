@@ -174,7 +174,11 @@ export default defineComponent({
       return this.availableAreas
           .sort((a, b) => (a.name > b.name ? 1 : -1))
           .map((a: AreaInformation) => {
-            return {id: a.id, label: a.name};
+            let data: SelectionEntry = {id: a.id, label: a.name};
+            if (a.isUserSpecific) {
+              data.tags = [this.$t("message.custom")]
+            }
+            return data;
           });
     },
     availableDataimportsAsEntries: function (): SelectionEntry[] {

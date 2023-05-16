@@ -8,6 +8,7 @@ import {DateTime} from "luxon";
 export interface SelectionEntry {
   id: string | number;
   label: string;
+  tags?: string[];
 }
 
 export interface Tab {

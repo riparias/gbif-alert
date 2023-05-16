@@ -84,7 +84,7 @@
 <script setup lang="ts">
 import {SpeciesInformation} from "../interfaces";
 import {computed, ref, watch} from "vue";
-import {legibleColor, wordToColor} from "../helpers";
+import {getStyleForTag} from "../helpers";
 
 // Props
 const props = defineProps<{
@@ -158,12 +158,6 @@ const availableTags = computed(() => {
 });
 
 // Methods
-const getStyleForTag = (tag: string) => {
-  return {
-    backgroundColor: wordToColor(tag) + '!important',
-    color: legibleColor(wordToColor(tag)) + '!important'
-  }
-}
 
 const highlightText = (text: string, substring: string) => {
   // Highlight a substring in a text, returns an HTML string
