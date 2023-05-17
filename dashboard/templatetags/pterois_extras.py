@@ -91,6 +91,9 @@ def js_config_object(context):
             "areasUrlTemplate": reverse(
                 "dashboard:internal-api:area-geojson", kwargs={"id": 1}
             ).replace("1", "{id}"),
+            "areaDeleteUrlTemplate": reverse(
+                "dashboard:actions:area-delete", kwargs={"id": 1}
+            ).replace("1", "{id}"),
             "minMaxOccPerHexagonUrl": reverse(
                 "dashboard:internal-api:maps:mvt-min-max-per-hexagon"
             ),

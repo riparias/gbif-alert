@@ -1,7 +1,6 @@
 <template>
     <h2>{{areaName}}</h2>
     <div ref="mapRoot" :style="{ width: props.mapWidth, height: props.mapHeight }"></div>
-    <h3>Delete button</h3>
 </template>
 
 <script setup lang="ts">

@@ -1,13 +1,14 @@
 """Actions are simple views that issue a redirect"""
+from typing import Union
 
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.translation import gettext as _
 
-from dashboard.models import Observation, Alert
+from dashboard.models import Observation, Alert, Area
 from dashboard.views.helpers import AuthenticatedHttpRequest, extract_str_request
 
 
@@ -50,3 +51,20 @@ def delete_own_account(request: AuthenticatedHttpRequest):
             return redirect("dashboard:pages:index")
         else:
             return HttpResponseForbidden()
+
+
+@login_required
+def area_delete(
+    request: AuthenticatedHttpRequest, id: int
+) -> Union[JsonResponse, HttpResponseForbidden]:
+    """Delete an area"""
+    if request.method == "POST":
+        area = get_object_or_404(Area, pk=id)
+        if area.owner == request.user:
+            area.delete()
+            messages.success(request, _("The area has been deleted."))
+            return redirect("dashboard:pages:my-custom-areas")
+        else:
+            return HttpResponseForbidden()
+    area = get_object_or_404(Area, pk=id)
+    # TODO: implement (check user is the owner of the area)

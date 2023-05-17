@@ -36,6 +36,7 @@ const i18n = createI18n({
 function createAndMountComponent(component: Component, rootContainer = "#app") {
     const app = createApp(component);
     app.use(i18n);
+    app.config.globalProperties.window = window;
     app.mount(rootContainer);
 }
 

@@ -62,6 +62,7 @@ export interface EndpointsUrls {
   speciesListUrl: string;
   datasetsListUrl: string;
   areasListUrl: string;
+  areaDeleteUrlTemplate: string;
   dataImportsListUrl: string;
   tileServerAggregatedUrlTemplate: string; // On this URL, observations are aggregated per hexagon
   tileServerUrlTemplate: string; // On this URL, observations are *not* aggregated

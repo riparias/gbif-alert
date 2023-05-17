@@ -10,7 +10,6 @@
   <form method="post" ref="form" class="d-inline float-end pterois-alert-delete-form" :action="formAction">
     <slot></slot>
   </form>
-
 </template>
 
 <script lang="ts">

@@ -96,6 +96,7 @@ actions_urls = [
         name="mark-observation-as-unseen",
     ),
     path("delete-own-account", views.delete_own_account, name="delete-own-account"),
+    path("area/delete/<int:id>", views.area_delete, name="area-delete"),
 ]
 
 urlpatterns = [
