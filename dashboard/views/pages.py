@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.gis.gdal import DataSource
+from django.contrib.gis.gdal.geometries import MultiPolygon
 from django.core.exceptions import BadRequest
 from django.http import HttpResponseForbidden, HttpRequest, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
@@ -17,7 +18,7 @@ from dashboard.forms import (
     AlertForm,
     NewCustomAreaForm,
 )
-from dashboard.models import DataImport, Observation, Alert, Area
+from dashboard.models import DataImport, Observation, Alert, Area, DATA_SRID
 from dashboard.views.helpers import (
     AuthenticatedHttpRequest,
     extract_dict_request,
@@ -176,33 +177,39 @@ def user_alerts_page(request: AuthenticatedHttpRequest) -> HttpResponse:
     return render(request, "dashboard/user_alerts.html", {"alerts": alerts})
 
 
-# TODO: detailed exceptionsinstead of returning None
-# Testing: no 1 layer, no 1 feature in layer, no multipolygon or polygon
-# no SRS. SRS: provided: make sure reprojection is done
-# Document / test other file formats
-# Currently works with GPKG in 3857 of type mulipolygon
-def uploaded_shapefile_to_multipolygon(
+# Return a wkt string f type multipolygon in the requested EPSG
+def _file_to_wkt_multipolygon(
     data_path: str,
-):
+    dest_srid: int = DATA_SRID,
+) -> str:
     ds = DataSource(data_path)
     if ds.layer_count != 1:
         return None
     layer = ds[0]
 
     if layer.num_feat != 1:
-        return None
+        raise ValueError(
+            f"The file must contain a single feature, {layer.num_feat} features found"
+        )
 
     if layer.srs is None:
-        return None
+        raise ValueError(
+            f"The file does not contain a SRS, please provide a file with a SRS"
+        )
+
+    feature = list(layer)[0]
+    reprojected_geom = feature.geom.transform(dest_srid, clone=True)
 
     if layer.geom_type.name == "MultiPolygon":
-        feature = list(layer)[0]
-        return feature.geom.wkt
-    # elif layer.geom_type.name == "Polygon":
-    #     feature = list(layer)[0]
-    #     return MultiPolygon(feature.geom)
+        return reprojected_geom.wkt
+    elif layer.geom_type.name == "Polygon":
+        m = MultiPolygon("MULTIPOLYGON EMPTY")
+        m.add(reprojected_geom)
+        return m.wkt
     else:
-        return None
+        raise ValueError(
+            f"The file must contains a single layer of type Polygon or MultiPolygon, {layer.geom_type.name} found"
+        )
 
 
 @login_required
@@ -215,7 +222,7 @@ def user_areas_page(request: AuthenticatedHttpRequest) -> HttpResponse:
             suffix=request.FILES["data_file"].name
         ) as temp:
             temp.write(request.FILES["data_file"].read())
-            mp = uploaded_shapefile_to_multipolygon(temp.name)
+            mp = _file_to_wkt_multipolygon(temp.name)
 
             if form.is_valid() and mp is not None:
                 Area.objects.create(

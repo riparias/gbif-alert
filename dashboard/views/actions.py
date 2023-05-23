@@ -4,7 +4,7 @@ from typing import Union
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.translation import gettext as _
 
@@ -56,7 +56,7 @@ def delete_own_account(request: AuthenticatedHttpRequest):
 @login_required
 def area_delete(
     request: AuthenticatedHttpRequest, id: int
-) -> Union[JsonResponse, HttpResponseForbidden]:
+) -> Union[HttpResponseRedirect, HttpResponseForbidden]:
     """Delete an area"""
     if request.method == "POST":
         area = get_object_or_404(Area, pk=id)
@@ -64,7 +64,5 @@ def area_delete(
             area.delete()
             messages.success(request, _("The area has been deleted."))
             return redirect("dashboard:pages:my-custom-areas")
-        else:
-            return HttpResponseForbidden()
-    area = get_object_or_404(Area, pk=id)
-    # TODO: implement (check user is the owner of the area)
+
+    return HttpResponseForbidden()
