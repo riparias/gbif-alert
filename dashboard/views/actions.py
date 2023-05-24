@@ -61,8 +61,16 @@ def area_delete(
     if request.method == "POST":
         area = get_object_or_404(Area, pk=id)
         if area.owner == request.user:
-            area.delete()
-            messages.success(request, _("The area has been deleted."))
+            try:
+                area.delete()
+                messages.success(request, _("The area has been deleted."))
+            except Area.HasAlerts:
+                messages.error(
+                    request,
+                    _(
+                        "The area could not be deleted because it has alerts associated with it."
+                    ),
+                )
             return redirect("dashboard:pages:my-custom-areas")
 
     return HttpResponseForbidden()

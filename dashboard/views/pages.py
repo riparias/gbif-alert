@@ -184,7 +184,9 @@ def _file_to_wkt_multipolygon(
 ) -> str:
     ds = DataSource(data_path)
     if ds.layer_count != 1:
-        return None
+        raise ValueError(
+            f"The file must contain a single layer, {ds.layer_count} layers found"
+        )
     layer = ds[0]
 
     if layer.num_feat != 1:

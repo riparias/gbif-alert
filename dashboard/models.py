@@ -542,6 +542,14 @@ class Area(models.Model):
     class Meta:
         ordering = ["name"]
 
+    class HasAlerts(Exception):
+        """This area is referenced by at least one alert"""
+
+    def delete(self, *args, **kwargs):
+        if self.alert_set.count() > 0:
+            raise Area.HasAlerts
+        super(Area, self).delete(*args, **kwargs)
+
     @property
     def is_public(self) -> bool:
         return self.owner is None
