@@ -16,16 +16,3 @@ Developer documentation is available in [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Next steps
 
 See [open issues](https://github.com/riparias/early-alert-webapp/issues) and [milestones](https://github.com/riparias/early-alert-webapp/milestones).
-
-
-TODO:
-
-- My area page:
-  - Better styling
-  - Add specific instructions for file requirements. minimal:
-    - geopackage / shapefile / geojson?
-    - EPSG data present (tested with 4326, 3857 and Lambert 72)
-    - 1 single polygon or a multipolygon?
-  - Add tests... 
-
-- Write a test to make sure areas and species must be explicitly selected when creating an alert
