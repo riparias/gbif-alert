@@ -537,6 +537,7 @@ class Area(models.Model):
     )  # an area can be public or user-specific
     name = models.CharField(max_length=255)
 
+    tags = TaggableManager(blank=True)
     objects = MyAreaManager()
 
     class Meta:
@@ -564,6 +565,7 @@ class Area(models.Model):
             "id": self.pk,
             "name": self.name,
             "isUserSpecific": self.is_user_specific,
+            "tags": [tag.name for tag in self.tags.all()],
         }
 
         if include_geojson:
