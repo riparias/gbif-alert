@@ -326,11 +326,11 @@ class AlertWebPagesTests(TestCase):
     def test_post_new_alert_page(self):
         self.client.login(username="frusciante", password="12345")
 
-        # Attempt 1: post no data: we stay on the same page because there are two field required (name and
-        # email_notifications_frequency)
+        # Attempt 1: post no data: we stay on the same page because there are 3 fields required (name,
+        # email_notifications_frequency and species)
         response = self.client.post(reverse("dashboard:pages:alert-create"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context["form"].errors), 2)
+        self.assertEqual(len(response.context["form"].errors), 3)
         self.assertIn("name", response.context["form"].errors)
         self.assertIn("email_notifications_frequency", response.context["form"].errors)
         # No new alert was created in the database
@@ -339,7 +339,11 @@ class AlertWebPagesTests(TestCase):
         # Attempt 2: add mandatory fields: the alerts gets created and the user is redirected to the alert details page
         response = self.client.post(
             reverse("dashboard:pages:alert-create"),
-            {"email_notifications_frequency": "D", "name": "My Test alert"},
+            {
+                "email_notifications_frequency": "D",
+                "name": "My Test alert",
+                "species": [self.first_species.pk],
+            },
         )
         new_alert = Alert.objects.latest("id")
 
@@ -350,7 +354,7 @@ class AlertWebPagesTests(TestCase):
         self.assertEqual(new_alert.user, self.first_user)
         self.assertEqual(new_alert.email_notifications_frequency, "D")
         self.assertEqual(new_alert.areas.count(), 0)
-        self.assertEqual(new_alert.species.count(), 0)
+        self.assertEqual(new_alert.species.count(), 1)
         self.assertEqual(new_alert.datasets.count(), 0)
 
         # Attempt 3: post all fields: the alerts gets created and the user is redirected to the alert details page
@@ -506,7 +510,7 @@ class AlertWebPagesTests(TestCase):
             {
                 "name": "New alert name",
                 "email_notifications_frequency": "M",
-                "species": [],
+                "species": [s.pk for s in self.alert.species.all()],
                 "datasets": [],
                 "areas": [],
             },
@@ -515,7 +519,7 @@ class AlertWebPagesTests(TestCase):
         self.alert.refresh_from_db()
         self.assertEqual(self.alert.name, "New alert name")
         self.assertEqual(self.alert.email_notifications_frequency, "M")
-        self.assertEqual(self.alert.species.count(), 0)
+        self.assertEqual(self.alert.species.count(), 1)
         self.assertEqual(self.alert.datasets.count(), 0)
         self.assertEqual(self.alert.areas.count(), 0)
 
@@ -528,7 +532,7 @@ class AlertWebPagesTests(TestCase):
             {
                 "name": "Test alert",
                 "email_notifications_frequency": "M",
-                "species": [],
+                "species": [s.pk for s in self.alert.species.all()],
                 "datasets": [],
                 "areas": [],
             },
@@ -566,6 +570,7 @@ class AlertWebPagesTests(TestCase):
             {
                 "name": "Test alert 2",
                 "email_notifications_frequency": "M",
+                "species": [s.pk for s in self.alert.species.all()],
             },
         )
         # If we get redirected, the edition was successful

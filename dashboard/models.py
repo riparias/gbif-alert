@@ -594,7 +594,10 @@ class Alert(models.Model):
     """The per-user configured alerts
 
     An alert is user specific.
-    Species, datasets and areas are optional filters. If left blank, the alert targets all species/datasets/areas.
+    Datasets is an optional filter. If left blank, all source datasets will be taken into account.
+    Area is an optional filter. If left blank, data is not filtered by location (which might be more than the selection of all areas)
+    We choose to not extend this logic to species. By keeping this list explicit, we allow site administrators
+    to add new species and areas without having to worry about silently editing user alerts.
     """
 
     NO_EMAILS = "N"
@@ -622,9 +625,9 @@ class Alert(models.Model):
     species = models.ManyToManyField(
         Species,
         verbose_name=_("species"),
-        blank=True,
+        blank=False,
         help_text=_(
-            "Optional (no selection = notify me for all species). To select multiple items, press and hold the "
+            "To select multiple items, press and hold the "
             "Ctrl or Command key and click the items."
         ),
     )
@@ -642,7 +645,7 @@ class Alert(models.Model):
         blank=True,
         verbose_name=_("areas"),
         help_text=_(
-            "Optional (no selection = notify me for all areas). To select multiple items, press and hold the "
+            "Optional (no selection = notify me for all data in the system). To select multiple items, press and hold the "
             "Ctrl or Command key and click the items."
         ),
     )

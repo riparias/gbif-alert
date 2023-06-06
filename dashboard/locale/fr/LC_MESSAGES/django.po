@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-19 10:42+0200\n"
+"POT-Creation-Date: 2023-06-06 10:01+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -50,44 +50,43 @@ msgstr "Requis. Entrez une adresse email valide."
 msgid "Language"
 msgstr "Langue"
 
-#: dashboard/models.py:589
+#: dashboard/models.py:609
 msgid "No emails"
 msgstr "Pas d'emails"
 
-#: dashboard/models.py:590
+#: dashboard/models.py:610
 msgid "Daily"
 msgstr "Journalier"
 
-#: dashboard/models.py:591
+#: dashboard/models.py:611
 msgid "Weekly"
 msgstr "Hebdomadaire"
 
-#: dashboard/models.py:592
+#: dashboard/models.py:612
 msgid "Monthly"
 msgstr "Mensuel"
 
-#: dashboard/models.py:603
+#: dashboard/models.py:623
 msgid "name"
 msgstr "nom"
 
-#: dashboard/models.py:607
+#: dashboard/models.py:627
 msgid "species"
 msgstr "espèces"
 
-#: dashboard/models.py:610
+#: dashboard/models.py:630
 msgid ""
-"Optional (no selection = notify me for all species). To select multiple "
-"items, press and hold the Ctrl or Command key and click the items."
+"To select multiple items, press and hold the Ctrl or Command key and click "
+"the items."
 msgstr ""
-"Facultatif (aucune sélection = me notifier pour toutes les espèces). Pour "
-"sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
+"Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:616
+#: dashboard/models.py:636
 msgid "datasets"
 msgstr "jeux de données"
 
-#: dashboard/models.py:619
+#: dashboard/models.py:639
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
@@ -96,24 +95,24 @@ msgstr ""
 "Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:626
+#: dashboard/models.py:646
 msgid "areas"
 msgstr "zones"
 
-#: dashboard/models.py:628
+#: dashboard/models.py:648
 msgid ""
-"Optional (no selection = notify me for all areas). To select multiple items, "
-"press and hold the Ctrl or Command key and click the items."
+"Optional (no selection = notify me for all data in the system). To select "
+"multiple items, press and hold the Ctrl or Command key and click the items."
 msgstr ""
-"Facultatif (aucune sélection = me notifier pour toutes les zones). Pour "
-"sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
+"Facultatif (aucune sélection = me notifier pour toutes les données du système). "
+"Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:637
+#: dashboard/models.py:657
 msgid "email notifications frequency"
 msgstr "fréquence des notifications par email"
 
-#: dashboard/models.py:739
+#: dashboard/models.py:759
 msgid "unseen observation(s) for your alert"
 msgstr "observation(s) non vue(s) pour votre alerte"
 
@@ -438,3 +437,11 @@ msgstr "Votre compte utilisateur a été supprimé."
 #: dashboard/views/pages.py:163
 msgid "Your profile was successfully updated."
 msgstr "Votre profil a été mis à jour avec succès."
+
+#~ msgid ""
+#~ "Optional (no selection = notify me for all species). To select multiple "
+#~ "items, press and hold the Ctrl or Command key and click the items."
+#~ msgstr ""
+#~ "Facultatif (aucune sélection = me notifier pour toutes les espèces). Pour "
+#~ "sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
+#~ "command' enfoncée "
