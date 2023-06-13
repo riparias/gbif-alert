@@ -93,7 +93,16 @@ const props = defineProps<{
 }>()
 
 // Reactive data
-const selectedSpeciesIds = ref<number[]>(props.modelValue);
+const selectedSpeciesIds = computed({
+  get () {
+    return props.modelValue;
+  },
+
+  set (value) {
+    return emit('update:modelValue', value)
+  }
+});
+
 const sortBy = ref<string>('scientific');
 const textFilter = ref<string>('');
 const tagsFilter = ref<string[]>([]);
@@ -177,9 +186,6 @@ const highlightText = (text: string, substring: string) => {
 
 // Various
 const emit = defineEmits(['update:modelValue']);
-watch(selectedSpeciesIds, (newVal) => {
-  emit('update:modelValue', newVal)
-})
 </script>
 
 <style>

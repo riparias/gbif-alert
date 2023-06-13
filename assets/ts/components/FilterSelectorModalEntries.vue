@@ -19,7 +19,7 @@
 <script setup lang="ts">
 
 import {SelectionEntry} from "@/assets/ts/interfaces";
-import {ref, watch} from "vue";
+import {computed} from "vue";
 import {v4 as uuidV4} from "uuid";
 
 const uuid = uuidV4();
@@ -34,11 +34,15 @@ const props = withDefaults(defineProps<Props>(), {
   modelValue: []
 });
 
-const selectedEntriesIds = ref<number[]>(props.modelValue);
+const selectedEntriesIds = computed({
+  get() {
+    return props.modelValue;
+  },
+  set(newVal) {
+    emit('update:modelValue', newVal)
+  }
+});
 
 const emit = defineEmits(['update:modelValue']);
 
-watch(selectedEntriesIds, (newVal) => {
-  emit('update:modelValue', newVal)
-})
 </script>
