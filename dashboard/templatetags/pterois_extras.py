@@ -97,6 +97,9 @@ def js_config_object(context):
             "alertAsFiltersUrl": reverse(
                 "dashboard:internal-api:alert-as-filters-json"
             ),
+            "alertPageUrlTemplate": reverse(
+                "dashboard:pages:alert-details", kwargs={"alert_id": 1}
+            ).replace("1", "{id}"),
         },
         "mainMapConfig": settings.PTEROIS["MAIN_MAP_CONFIG"],
     }

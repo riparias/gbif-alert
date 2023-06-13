@@ -20,6 +20,7 @@
           </span>
       </div>
     </div>
+    <p class="small">{{ $tc('message.selectedSpecies', numSelectedSpecies, {count: numSelectedSpecies}) }} </p>
 
     <table v-if="lines.length > 0" class="table table-hover table-sm">
       <thead>
@@ -102,6 +103,10 @@ const selectedSpeciesIds = computed({
     return emit('update:modelValue', value)
   }
 });
+
+const numSelectedSpecies = computed(function () {
+  return selectedSpeciesIds.value.length;
+})
 
 const sortBy = ref<string>('scientific');
 const textFilter = ref<string>('');

@@ -695,6 +695,17 @@ class Alert(models.Model):
             "status": None,
         }
 
+    @property
+    def as_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.pk,
+            "name": self.name,
+            "speciesIds": [s.pk for s in self.species.all()],
+            "datasetIds": [d.pk for d in self.datasets.all()],
+            "areaIds": [a.pk for a in self.areas.all()],
+            "emailNotificationsFrequency": self.email_notifications_frequency,
+        }
+
     def unseen_observations(self) -> QuerySet[Observation]:
         return Observation.objects.filtered_from_my_params(
             species_ids=[s.pk for s in self.species.all()],

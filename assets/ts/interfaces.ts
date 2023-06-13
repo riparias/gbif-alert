@@ -72,6 +72,7 @@ export interface EndpointsUrls {
   markObservationsAsSeenUrl: string;
   minMaxOccPerHexagonUrl: string;
   alertAsFiltersUrl: string;
+  alertPageUrlTemplate: string;
 }
 
 export interface MapConfig {

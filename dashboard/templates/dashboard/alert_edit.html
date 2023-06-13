@@ -8,14 +8,32 @@
 {% endblock %}
 
 {% block after_messages %}
-    <div class="container">
+    <div id="app" class="container">
         <div class="row">
             <div class="col">
                 <h1>{% translate "Edit alert" %}</h1>
 
-                {% translate "Save" as save_translated %}
-                {% include "dashboard/_alert_form.html" with form=form button_label=save_translated %}
+                    <alert-form
+                            :alert-id="{{ alert.pk }}"
+                            alert-url="{% url "dashboard:internal-api:alert" %}"
+                            alerts-list-page-url="{% url "dashboard:pages:my-alerts" %}"
+                            species-list-url="{% url "dashboard:public-api:species-list-json" %}"
+                            areas-list-url="{% url "dashboard:internal-api:areas-list-json" %}"
+                            datasets-list-url="{% url "dashboard:internal-api:datasets-list-json" %}"
+                            notifications-frequencies-url="{% url "dashboard:internal-api:available-alert-intervals" %}"
+                    >
+
+                    </alert-form>
+
+{#                {% translate "Save" as save_translated %}#}
+{#                {% include "dashboard/_alert_form.html" with form=form button_label=save_translated %}#}
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            initEditAlertPage();
+        });
+    </script>
 {% endblock %}

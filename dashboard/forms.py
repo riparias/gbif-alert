@@ -22,6 +22,7 @@ def get_initial_alert_name(user: User) -> str:
     return f"My alert #{alert_number}"
 
 
+# TODO: I guess this will not be necessary anymore?
 class AlertForm(forms.ModelForm):
     def __init__(self, for_user, *args, **kwargs):
         super(AlertForm, self).__init__(*args, **kwargs)
@@ -39,6 +40,7 @@ class AlertForm(forms.ModelForm):
             "email_notifications_frequency",
         )
 
+    # TODO: Move this to model?
     def clean(self):
         cleaned_data = self.cleaned_data
         try:
