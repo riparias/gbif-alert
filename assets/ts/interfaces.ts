@@ -1,10 +1,25 @@
-// To use with <select>, checkboxes, ...
 import TileLayer from "ol/layer/Tile";
 import Stamen from "ol/source/Stamen";
 import OSM from "ol/source/OSM";
 import {XYZ} from "ol/source";
 import {DateTime} from "luxon";
 
+
+// Selector data: array of DataRow objects
+export interface DataRow {
+    id: number;
+    tags?: string[];
+    columnData: (string | number)[];
+}
+
+// Selector configuration: array of ColumnMetadata objects
+export interface ColumnMetadata {
+    label: string; // Label to display in the table header
+    dataIndex: number; // Index in the columnData array of the DataRow object
+    formatter?: (value: string | number) => string; // Optional: function to format the value
+}
+
+// To use with <select>, checkboxes, ...
 export interface SelectionEntry {
   id: string | number;
   label: string;
@@ -32,11 +47,6 @@ export interface SpeciesInformation {
   vernacularName: string;
   gbifTaxonKey: number;
   tags: string[];
-}
-
-// Extends SpeciesInformation with a label property. Since it has all properties of SelectionEntry, it can be used as a SelectionEntry
-export interface SpeciesInformationWithLabel extends SpeciesInformation {
-    label: string;
 }
 
 export interface DatasetInformation {

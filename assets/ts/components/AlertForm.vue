@@ -4,7 +4,7 @@
   </div>
 
   <div v-else>
-    <p ref="hasErrorsParagraph" v-show="hasErrors">{{ $t("message.pleaseFixErrors")}}</p>
+    <p ref="hasErrorsParagraph" v-show="hasErrors">{{ $t("message.pleaseFixErrors") }}</p>
 
     <ul class="list-unstyled">
       <li class="pterois-form-error" v-for="error in errors['__all__']">{{ error }}</li>
@@ -28,7 +28,11 @@
         <ul class="list-unstyled">
           <li class="pterois-form-error" v-for="error in errors.species">{{ error }}</li>
         </ul>
-        <SpeciesSelector :available-species="availableSpecies" v-model="alertData.speciesIds"/>
+        <Selector :available-entries="availableSpeciesAsDataRows" :columns-config="[
+                  {label: $t('message.scientificName'), dataIndex: 0, formatter: (v) => {return `<i>${v}</i>` } },
+                  {label: $t('message.vernacularName'), dataIndex: 1},
+                  {label: $t('message.gbifTaxonKey'), dataIndex: 2, formatter: (v) => {return `<a href='https://www.gbif.org/species/${v}' target='_blank'>${v}</a>` } },]"
+                  v-model="alertData.speciesIds"></Selector>
       </div>
     </div>
 
@@ -36,7 +40,8 @@
       <h3><label class="form-label">{{ $t("message.areasToInclude") }}</label></h3>
       <div class="col offset-md-1">
         <p>{{ $t("message.noAreaSelection") }}</p>
-        <Filter-Selector-Modal-Entries :entries="availableAreasAsEntries" v-model="alertData.areaIds"/>
+        <Selector :available-entries="availableAreasAsDataRows"
+                  :columns-config="[{label: $t('message.name'), dataIndex: 0}]" v-model="alertData.areaIds"></Selector>
       </div>
     </div>
 
@@ -44,7 +49,9 @@
       <h3><label class="form-label">{{ $t("message.datasetsToInclude") }}</label></h3>
       <div class="col offset-md-1">
         <p>{{ $t("message.noDatasetSelection") }}</p>
-        <Filter-Selector-Modal-Entries :entries="availableDatasetsAsEntries" v-model="alertData.datasetIds"/>
+        <Selector :available-entries="availableDatasetsAsDataRows"
+                  :columns-config="[{label: $t('message.name'), dataIndex: 0}]"
+                  v-model="alertData.datasetIds"></Selector>
       </div>
     </div>
 
@@ -52,7 +59,10 @@
       <h3><label class="form-label">{{ $t("message.alertNotificationsFrequency") }}</label></h3>
       <div class="col offset-md-1">
         <select v-model="alertData.emailNotificationsFrequency" class="form-select">
-          <option v-for="frequency in availableNotificationFrequencies" :value="frequency.id">{{ frequency.label }}</option>
+          <option v-for="frequency in availableNotificationFrequencies" :value="frequency.id">{{
+              frequency.label
+            }}
+          </option>
         </select>
       </div>
     </div>
@@ -73,9 +83,9 @@
 <script setup lang="ts">
 import {computed, onMounted, ref} from "vue";
 import axios from "axios";
-import SpeciesSelector from "./SpeciesSelector.vue";
-import FilterSelectorModalEntries from "./FilterSelectorModalEntries.vue";
-import {AreaInformation, DatasetInformation, FrontEndConfig, SelectionEntry} from "@/assets/ts/interfaces";
+
+import {AreaInformation, DataRow, DatasetInformation, FrontEndConfig, SpeciesInformation} from "../interfaces";
+import Selector from "./Selector.vue";
 
 interface Props {
   alertUrl: string
@@ -92,9 +102,9 @@ declare const pteroisConfig: FrontEndConfig;
 
 const props = withDefaults(defineProps<Props>(), {});
 
-const availableSpecies = ref([]);
-const availableAreas = ref([]);
-const availableDatasets = ref([]);
+const availableSpecies = ref<SpeciesInformation[]>([]);
+const availableAreas = ref<AreaInformation[]>([]);
+const availableDatasets = ref<DatasetInformation[]>([]);
 
 const availableNotificationFrequencies = ref([]);
 
@@ -111,7 +121,6 @@ const alertData = ref({
 });
 
 const alertIdFromServer = ref<number | null>(null);
-
 
 const newAlert = computed(() => props.alertId == null) // true if creating a new alert, false if editing an existing one
 const successfullySaved = ref(false);
@@ -158,32 +167,45 @@ const populateAvailableDatasets = function () {
 }
 
 const populateAvailaableNotificationFrequencies = function () {
-    axios
-        .get(props.notificationsFrequenciesUrl)
-        .then((response) => {
-          availableNotificationFrequencies.value = response.data;
-        })
+  axios
+      .get(props.notificationsFrequenciesUrl)
+      .then((response) => {
+        availableNotificationFrequencies.value = response.data;
+      })
 }
 
 
-const availableAreasAsEntries = computed(
-    (): SelectionEntry[] => {
+const availableAreasAsDataRows = computed(
+    (): DataRow[] => {
       return availableAreas.value
-      .sort((a: AreaInformation, b: AreaInformation) => (a.name > b.name ? 1 : -1))
-      .map((a: AreaInformation) => {
-        return {id: a.id, label: a.name};
-      });
-    }
+          .map((a: AreaInformation) => {
+            return {
+              id: a.id,
+              columnData: [a.name]
+            };
+          });
+    },
 );
 
-const availableDatasetsAsEntries = computed(
-    (): SelectionEntry[] => {
+const availableDatasetsAsDataRows = computed(
+    (): DataRow[] => {
       return availableDatasets.value
-          .sort((a: DatasetInformation, b: DatasetInformation) => (a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1))
           .map((d: DatasetInformation) => {
-            return {id: d.id, label: d.name};
+            return {
+              id: d.id,
+              columnData: [d.name]
+            };
           });
-  }
+    },
+);
+
+const availableSpeciesAsDataRows = computed(
+    (): DataRow[] => {
+      return availableSpecies.value
+          .map((s) => {
+            return {id: s.id, columnData: [s.scientificName, s.vernacularName, s.gbifTaxonKey], tags: s.tags};
+          });
+    },
 );
 
 onMounted(() => {
@@ -194,7 +216,7 @@ onMounted(() => {
 
   populateAvailaableNotificationFrequencies();
 
-  if (newAlert.value === false) {
+  if (!newAlert.value) {
     populateAlertData();
   } else {
     getAlertNameSuggestion();
@@ -212,17 +234,15 @@ const submit = function () {
   })
 }
 
-const scrollToError = function() {
+const scrollToError = function () {
   const element = hasErrorsParagraph.value;
   window.scrollTo(0, element!.scrollHeight)
 }
 
-// TODO: new alert? Generate a unique name like we do in Python
-
 </script>
 
 <style scoped>
-  .pterois-form-error {
-    color: red;
-  }
+.pterois-form-error {
+  color: red;
+}
 </style>
