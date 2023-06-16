@@ -35,8 +35,10 @@
       </th>
 
       <th v-for="columnConfig in props.columnsConfig" scope="col"
-          :class="{'text-primary': sortBy === columnConfig.dataIndex}" @click="sortBy = columnConfig.dataIndex">
+          :class="{'text-primary': sortBy === columnConfig.dataIndex}" @click="changeSort(columnConfig.dataIndex)">
         {{ columnConfig.label }}
+        <i v-if="sortBy === columnConfig.dataIndex"
+           :class="sortDirection === 'asc' ? 'bi bi-caret-up-fill' : 'bi bi-caret-down-fill'"></i>
       </th>
 
       <th v-if="tagsEnabled" scope="col">
@@ -84,6 +86,7 @@ import {legibleColor, wordToColor} from "../helpers";
 const textFilter = ref<string>('');
 const tagsFilter = ref<string[]>([]);
 const sortBy = ref<number>(0);  // index of the field (in the DataRow columnData array) to sort by
+const sortDirection = ref<'asc' | 'desc'>('asc');
 
 interface Props {
   columnsConfig: ColumnMetadata[]
@@ -182,8 +185,24 @@ const linesForDisplay = computed((): DataRow[] => {
     }
   });
 
+  if (sortDirection.value === 'desc') {
+    lines = lines.reverse();
+  }
+
   return lines;
 });
+
+const changeSort = (dataIndex: number) => {
+  // Change the sort column
+  if (dataIndex === sortBy.value) {
+    // Same column, change direction
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    // New column, sort ascending
+    sortBy.value = dataIndex;
+    sortDirection.value = 'asc';
+  }
+}
 
 const getStyleForTag = (tag: string) => {
   return {
