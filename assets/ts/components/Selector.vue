@@ -22,7 +22,7 @@
     </div>
   </div>
 
-  <p class="small">{{ $tc('message.selectedEntries', numSelectedEntries) }} </p>
+  <p class="small">{{ $t('message.selectedEntries') }} {{ numSelectedEntries }}/{{ numAvailableEntries }}</p>
 
   <table v-if="linesForDisplay.length > 0" class="table table-hover table-sm">
     <thead>
@@ -92,8 +92,8 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  availableEntries: [],
-  modelValue: []
+  availableEntries: () => [],
+  modelValue: () => []
 });
 
 const selectedEntriesIds = computed({
@@ -107,6 +107,10 @@ const selectedEntriesIds = computed({
 
 const numSelectedEntries = computed(function () {
   return selectedEntriesIds.value.length;
+})
+
+const numAvailableEntries = computed(function () {
+  return props.availableEntries.length;
 })
 
 const availableTags = computed(() => {
@@ -200,3 +204,13 @@ const highlightText = (text: string, substring: string): string => {
 
 const emit = defineEmits(['update:modelValue']);
 </script>
+
+<style>
+/* Unfortunately we cannot scope the style due to https://github.com/vuejs/vue-loader/issues/1915 */
+.tag-filter-enabled {
+  opacity: 1;
+}
+.tag-filter-disabled {
+  opacity: 0.4;
+}
+</style>
