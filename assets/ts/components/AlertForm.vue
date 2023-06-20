@@ -4,7 +4,9 @@
   </div>
 
   <div v-else>
-    <p ref="hasErrorsParagraph" v-show="hasErrors">{{ $t("message.pleaseFixErrors") }}</p>
+    <BootstrapAlert alert-type="danger" v-show="hasErrors" :dismissible="false">
+      <i class="bi bi-sign-stop-fill"></i> <span ref="hasErrorsParagraph">{{ $t("message.pleaseFixErrors") }}</span>
+    </BootstrapAlert>
 
     <ul class="list-unstyled">
       <li class="pterois-form-error" v-for="error in errors['__all__']">{{ error }}</li>
@@ -39,7 +41,9 @@
     <div class="mb-3">
       <h3><label class="form-label">{{ $t("message.areasToInclude") }}</label></h3>
       <div class="col offset-md-1">
-        <p>{{ $t("message.noAreaSelection") }}</p>
+        <BootstrapAlert :dismissible="false" alert-type="info">
+          <i class="bi bi-info-circle-fill"></i> {{ $t("message.noAreaSelection") }}
+        </BootstrapAlert>
         <Selector :available-entries="availableAreasAsDataRows"
                   :columns-config="[{label: $t('message.name'), dataIndex: 0}]" v-model="alertData.areaIds"></Selector>
       </div>
@@ -48,7 +52,9 @@
     <div class="mb-3">
       <h3><label class="form-label">{{ $t("message.datasetsToInclude") }}</label></h3>
       <div class="col offset-md-1">
-        <p>{{ $t("message.noDatasetSelection") }}</p>
+        <BootstrapAlert :dismissible="false" alert-type="info">
+          <i class="bi bi-info-circle-fill"></i> {{ $t("message.noDatasetSelection") }}
+        </BootstrapAlert>
         <Selector :available-entries="availableDatasetsAsDataRows"
                   :columns-config="[{label: $t('message.name'), dataIndex: 0}]"
                   v-model="alertData.datasetIds"></Selector>
@@ -86,6 +92,7 @@ import axios from "axios";
 
 import {AreaInformation, DataRow, DatasetInformation, FrontEndConfig, SpeciesInformation} from "../interfaces";
 import Selector from "./Selector.vue";
+import BootstrapAlert from "./BootstrapAlert.vue";
 
 interface Props {
   alertUrl: string
@@ -166,7 +173,7 @@ const populateAvailableDatasets = function () {
       })
 }
 
-const populateAvailaableNotificationFrequencies = function () {
+const populateAvailableNotificationFrequencies = function () {
   axios
       .get(props.notificationsFrequenciesUrl)
       .then((response) => {
@@ -214,7 +221,7 @@ onMounted(() => {
   populateAvailableAreas();
   populateAvailableDatasets();
 
-  populateAvailaableNotificationFrequencies();
+  populateAvailableNotificationFrequencies();
 
   if (!newAlert.value) {
     populateAlertData();

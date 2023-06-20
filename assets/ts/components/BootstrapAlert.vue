@@ -1,7 +1,7 @@
 <template>
   <div class="alert" :class="alertClasses" role="alert">
     <slot></slot>
-    <button
+    <button v-if="dismissible"
       type="button"
       class="btn-close"
       aria-label="Close"
