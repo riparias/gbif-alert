@@ -22,12 +22,15 @@
     </div>
   </div>
 
-  <p class="small">{{ $t('message.selectedEntries') }} {{ numSelectedEntries }}/{{ numAvailableEntries }}</p>
+  <p class="small">{{ $t('message.selectedEntries') }} <b>{{ numSelectedEntries }}/{{ numAvailableEntries }}</b></p>
 
-  <table v-if="linesForDisplay.length > 0" class="table table-hover table-sm">
+  <table v-if="linesForDisplay.length > 0" class="table table-hover table-sm overflow-auto d-inline-block" style="max-height: 500px;">
     <thead>
     <tr>
-      <th scope="col"><input
+
+      <th scope="col">
+        <i class="bi bi-arrow-90deg-down"></i>
+        <input
           class="form-check-input"
           type="checkbox"
           v-model="allVisibleLinesSelected"

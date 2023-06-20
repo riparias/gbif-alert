@@ -30,6 +30,9 @@
         <ul class="list-unstyled">
           <li class="pterois-form-error" v-for="error in errors.species">{{ error }}</li>
         </ul>
+        <BootstrapAlert :dismissible="false" alert-type="info">
+          <i class="bi bi-info-circle-fill"></i> {{ $t("message.atLeastOneSpeciesMustBeSelected") }}
+        </BootstrapAlert>
         <Selector :available-entries="availableSpeciesAsDataRows" :columns-config="[
                   {label: $t('message.scientificName'), dataIndex: 0, formatter: (v) => {return `<i>${v}</i>` } },
                   {label: $t('message.vernacularName'), dataIndex: 1},
