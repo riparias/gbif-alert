@@ -1,60 +1,60 @@
 <template>
   <div id="table-outer">
     <table
-      class="table table-striped table-sm table-hover small"
-      id="pterois-observations-table"
+        class="table table-striped table-sm table-hover small"
+        id="pterois-observations-table"
     >
       <thead class="thead-dark">
-        <tr>
-          <th
+      <tr>
+        <th
             :class="{ 'text-primary': sortBy === col.sortId }"
             v-for="col in cols"
             scope="col"
-          >
-            <span @click="changeSort(col.sortId)">{{ col.label }}</span>
-          </th>
-        </tr>
+        >
+          <span @click="changeSort(col.sortId)">{{ col.label }}</span>
+        </th>
+      </tr>
       </thead>
       <Observation-table-page
-        :observations="observations"
-        :observation-page-url-template="observationPageUrlTemplate"
+          :observations="observations"
+          :observation-page-url-template="observationPageUrlTemplate"
       ></Observation-table-page>
     </table>
     <p class="text-center">
       <button
-         type="button"
-         :disabled="!hasPreviousPage"
-         class="btn btn-outline-primary btn-sm mx-1"
-         @click="currentPage = 1"
-       >
-          <i class="bi bi-chevron-double-left"></i>
+          type="button"
+          :disabled="!hasPreviousPage"
+          class="btn btn-outline-primary btn-sm mx-1"
+          @click="currentPage = 1"
+      >
+        <i class="bi bi-chevron-double-left"></i>
       </button>
 
       <button
-        type="button"
-        :disabled="!hasPreviousPage"
-        class="btn btn-outline-primary btn-sm mx-1"
-        @click="currentPage -= 1"
+          type="button"
+          :disabled="!hasPreviousPage"
+          class="btn btn-outline-primary btn-sm mx-1"
+          @click="currentPage -= 1"
       >
-          <i class="bi bi-chevron-left"></i>
+        <i class="bi bi-chevron-left"></i>
       </button>
       {{ $t("message.page") }} {{ currentPage }} / {{ lastPage }}
       <button
-        type="button"
-        :disabled="!hasNextPage"
-        class="btn btn-outline-primary btn-sm mx-1"
-        @click="currentPage += 1"
+          type="button"
+          :disabled="!hasNextPage"
+          class="btn btn-outline-primary btn-sm mx-1"
+          @click="currentPage += 1"
       >
-          <i class="bi bi-chevron-right"></i>
+        <i class="bi bi-chevron-right"></i>
       </button>
 
       <button
-         type="button"
-         :disabled="!hasNextPage"
-         class="btn btn-outline-primary btn-sm mx-1"
-         @click="currentPage = lastPage"
-       >
-          <i class="bi bi-chevron-double-right"></i>
+          type="button"
+          :disabled="!hasNextPage"
+          class="btn btn-outline-primary btn-sm mx-1"
+          @click="currentPage = lastPage"
+      >
+        <i class="bi bi-chevron-double-right"></i>
       </button>
     </p>
   </div>
@@ -83,7 +83,7 @@ declare interface ObservationsTableData {
 
 export default defineComponent({
   name: "ObservationsTable",
-  components: { ObservationTablePage },
+  components: {ObservationTablePage},
   props: {
     filters: {
       type: Object as () => DashboardFilters,
@@ -93,7 +93,7 @@ export default defineComponent({
       type: String,
       required: true,
     },
-    observationPageUrlTemplate: String,
+    observationPageUrlTemplate: {type: String, required: true},
     pageSize: {
       type: Number,
       default: 20,
@@ -106,27 +106,27 @@ export default defineComponent({
       handler: function () {
         this.currentPage = 1;
         this.loadObservations(
-          this.filters,
-          this.sortBy,
-          this.pageSize,
-          this.currentPage
+            this.filters,
+            this.sortBy,
+            this.pageSize,
+            this.currentPage
         );
       },
     },
     currentPage: function () {
       this.loadObservations(
-        this.filters,
-        this.sortBy,
-        this.pageSize,
-        this.currentPage
+          this.filters,
+          this.sortBy,
+          this.pageSize,
+          this.currentPage
       );
     },
     sortBy: function () {
       this.loadObservations(
-        this.filters,
-        this.sortBy,
-        this.pageSize,
-        this.currentPage
+          this.filters,
+          this.sortBy,
+          this.pageSize,
+          this.currentPage
       );
     },
   },
@@ -137,26 +137,26 @@ export default defineComponent({
       }
     },
     loadObservations: function (
-      filters: DashboardFilters,
-      orderBy: string,
-      pageSize: number,
-      pageNumber: number
+        filters: DashboardFilters,
+        orderBy: string,
+        pageSize: number,
+        pageNumber: number
     ) {
-      let params = { ...filters } as any;
+      let params = {...filters} as any;
       params.order = orderBy;
       params.limit = pageSize;
       params.page_number = pageNumber;
 
       axios
-        .get(this.observationsJsonUrl, {
-          params: params,
-        })
-        .then((response) => {
-          this.observations = response.data.results;
-          this.firstPage = response.data.firstPage;
-          this.lastPage = response.data.lastPage;
-          this.totalObservationsCount = response.data.totalResultsCount;
-        });
+          .get(this.observationsJsonUrl, {
+            params: params,
+          })
+          .then((response) => {
+            this.observations = response.data.results;
+            this.firstPage = response.data.firstPage;
+            this.lastPage = response.data.lastPage;
+            this.totalObservationsCount = response.data.totalResultsCount;
+          });
 
       params.order = orderBy;
       params.limit = pageSize;
@@ -187,12 +187,12 @@ export default defineComponent({
         //
         // If changing/adding fields there, please also consider adding them to the email notifications
         // (alert_notification.html)
-        { sortId: null, label: "" },
-        { sortId: "gbif_id", label: this.$t("message.gbifId") },
-        { sortId: null, label: this.$t("message.coordinates") },
-        { sortId: "-date", label: this.$t("message.date")},
-        { sortId: "species__name", label: this.$t("message.scientificName") },
-        { sortId: "source_dataset__name", label: this.$t("message.dataset") },
+        {sortId: null, label: ""},
+        {sortId: "gbif_id", label: this.$t("message.gbifId")},
+        {sortId: null, label: this.$t("message.coordinates")},
+        {sortId: "-date", label: this.$t("message.date")},
+        {sortId: "species__name", label: this.$t("message.scientificName")},
+        {sortId: "source_dataset__name", label: this.$t("message.dataset")},
       ],
     };
   },

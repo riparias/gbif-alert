@@ -84,7 +84,7 @@ class ImportObservationsTest(TransactionTestCase):
             user=comment_author, observation=observation_to_be_replaced
         )
 
-        # We also create this one so we can check it gets deleted in the new import process, and that it doesn't prevent
+        # We also create this one, so we can check it gets deleted in the new import process, and that it doesn't prevent
         # the related observation to be deleted
         self.observation_view_to_delete = ObservationView.objects.create(
             user=comment_author, observation=observation_not_replaced
@@ -143,7 +143,7 @@ class ImportObservationsTest(TransactionTestCase):
                     call_command("import_observations", source_dwca=gbif_download_file)
 
         # We left the command due to an exception, so maintenance mode is still set
-        # We disable it so it doesn't break the rest of the test suite
+        # We disable it, so it doesn't break the rest of the test suite
         set_maintenance_mode(False)
 
         # Note: cannot use assertQuerySetEqual because of lazy evaluation

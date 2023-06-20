@@ -114,7 +114,7 @@ class ObservationTests(TestCase):
         self.assertIsNone(self.second_obs.first_seen_at(user=AnonymousUser()))
 
     def test_mark_as_seen_by_case_1(self):
-        """Standard case: we mark an previously unseen observation by a regular user"""
+        """Standard case: we mark a previously unseen observation by a regular user"""
         # Before we start, we have no entry
         self.assertEqual(
             ObservationView.objects.filter(observation=self.second_obs).count(), 0

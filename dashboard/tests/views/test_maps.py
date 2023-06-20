@@ -135,7 +135,7 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
-        # Now, at zoom level 8 we should have an hexagon with count=1 and another one with count=2
+        # Now, at zoom level 8 we should have a hexagon with count=1 and another one with count=2
         response = self.client.get(
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
             data={"zoom": 8},
@@ -387,7 +387,7 @@ class MVTServerCommonTestsMixin(object):
     def _build_valid_tile_url(self, zoom: int) -> str:
         return reverse(
             self.server_url_name,
-            # X and Y are at zero so it works at all zoom level (zoom level 0: a single tile for the whole world)
+            # X and Y are at zero, so it works at all zoom levels (zoom level 0: a single tile for the whole world)
             kwargs={"zoom": zoom, "x": 0, "y": 0},
         )
 
@@ -840,7 +840,7 @@ class MVTServerAggregatedObsTests(
         self.assertEqual(decoded_tile, {})
 
     def test_tiles_multiple_dataset_filters(self):
-        """Explicitely requesting all datasets give the same results than no filtering"""
+        """Explicitely requesting all datasets give the same results as no filtering"""
         base_url = reverse(
             self.server_url_name,
             kwargs={"zoom": 2, "x": 2, "y": 1},
@@ -858,7 +858,7 @@ class MVTServerAggregatedObsTests(
         # Inspired by test_tiles_species_filter
 
         # Multiple cases where only the observation in Andenne is visible
-        # (because we only ask for a the first dataset)
+        # (because we only ask for the first dataset)
 
         # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
         base_url = reverse(

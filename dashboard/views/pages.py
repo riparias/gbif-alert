@@ -12,7 +12,6 @@ from dashboard.forms import (
     SignUpForm,
     EditProfileForm,
     NewObservationCommentForm,
-    AlertForm,
 )
 from dashboard.models import DataImport, Observation, Alert
 from dashboard.views.helpers import (

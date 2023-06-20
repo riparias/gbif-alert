@@ -369,7 +369,7 @@ class Observation(models.Model):
     def set_or_migrate_initial_data_import(
         self, current_data_import: DataImport
     ) -> None:
-        """If this is the first import of this observation, set initial_data_import to the current import. Otherwise migrate its value from the previous observation."""
+        """If this is the first import of this observation, set initial_data_import to the current import. Otherwise, migrate its value from the previous observation."""
         replaced_observation = self.replaced_observation
         if replaced_observation is None:
             self.initial_data_import = current_data_import

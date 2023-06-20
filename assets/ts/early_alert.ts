@@ -14,7 +14,7 @@ require("bootstrap-icons/font/bootstrap-icons.css");
 
 // Enable bootstrap dropdowns
 function initDropDown() {
-    var dropdownElementList = [].slice.call(
+    const dropdownElementList = [].slice.call(
         document.querySelectorAll(".dropdown-toggle")
     );
     dropdownElementList.map(function (dropdownToggleEl) {
