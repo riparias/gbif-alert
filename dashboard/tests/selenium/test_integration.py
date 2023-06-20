@@ -807,7 +807,7 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
         signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
 
-        # We can follow it to the sign in page
+        # We can follow it to the sign-in page
         signin_link.click()
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
@@ -901,7 +901,7 @@ class PteroisSeleniumTests(PteroisSeleniumTestsCommon):
         navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
         signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
 
-        # We can follow it to the sign in page
+        # We can follow it to the sign-in page
         signin_link.click()
         wait = WebDriverWait(self.selenium, 3)
         wait.until(EC.title_contains("Sign in"))

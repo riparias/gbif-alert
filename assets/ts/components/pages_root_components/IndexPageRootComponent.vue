@@ -25,8 +25,12 @@
               :button-label-suffix-plural="$t('message.xSelectedSpecies')"
               :no-selection-button-label="$t('message.allSpecies')"
               :modal-title="$t('message.speciesToInclude')"
-              :species-mode="true"
-              :entries="availableSpeciesWithLabels"
+              :entries="availableSpeciesAsDataRows"
+              :selector-config="[
+                  {label: $t('message.scientificName'), dataIndex: 0, formatter: (v) => {return `<i>${v}</i>` } },
+                  {label: $t('message.vernacularName'), dataIndex: 1},
+                  {label: $t('message.gbifTaxonKey'), dataIndex: 2, formatter: (v) => {return `<a href='https://www.gbif.org/species/${v}' target='_blank'>${v}</a>` } },]"
+              :label-index="0"
               :initially-selected-entries-ids="filters.speciesIds"
               @entries-changed="changeSelectedSpecies"
           ></Filter-Selector>
@@ -37,7 +41,9 @@
               :button-label-suffix-plural="$t('message.xSelectedDatasets')"
               :no-selection-button-label="$t('message.allDatasets')"
               :modal-title="$t('message.datasetsToInclude')"
-              :entries="availableDatasetsAsEntries"
+              :entries="availableDatasetsAsDataRows"
+              :selector-config="[{label: $t('message.name'), dataIndex: 0}]"
+              :label-index="0"
               :initially-selected-entries-ids="filters.datasetsIds"
               @entries-changed="changeSelectedDatasets"
           ></Filter-Selector>
@@ -48,7 +54,9 @@
               :button-label-suffix-plural="$t('message.xSelectedAreas')"
               :no-selection-button-label="$t('message.everywhere')"
               :modal-title="$t('message.restrictToSpecificAreas')"
-              :entries="availableAreasAsEntries"
+              :entries="availableAreasAsDataRows"
+              :selector-config="[{label: $t('message.name'), dataIndex: 0}]"
+              :label-index="0"
               :initially-selected-entries-ids="filters.areaIds"
               @entries-changed="changeSelectedAreas"
           ></Filter-Selector>
@@ -59,7 +67,9 @@
               :button-label-suffix-plural="$t('message.xSelectedInitialDataImports')"
               :no-selection-button-label="$t('message.importedAnytime')"
               :modal-title="$t('message.firstImportedDuringDataImports')"
-              :entries="availableDataimportsAsEntries"
+              :entries="availableDataimportsAsDataRows"
+              :selector-config="[{label: $t('message.name'), dataIndex: 0}]"
+              :label-index="0"
               :initially-selected-entries-ids="filters.initialDataImportIds"
               @entries-changed="changeSelectedInitialDataImport"
           ></Filter-Selector>
@@ -88,11 +98,11 @@ import {
   AreaInformation,
   DashboardFilters,
   DataImportInformation,
+  DataRow,
   DatasetInformation,
   DateRange,
   FrontEndConfig,
-  SelectionEntry,
-  SpeciesInformation, SpeciesInformationWithLabel,
+  SpeciesInformation,
 } from "../../interfaces";
 import axios from "axios";
 
@@ -103,7 +113,6 @@ import BootstrapAlert from "../BootstrapAlert.vue";
 
 import {debounce, DebouncedFunc} from "lodash";
 import {dateTimeToFilterParam} from "../../helpers";
-import SpeciesSelector from "../SpeciesSelector.vue";
 
 declare const pteroisConfig: FrontEndConfig;
 declare const initialFilters: DashboardFilters;
@@ -123,7 +132,6 @@ export default defineComponent({
   name: "IndexPageRootComponent",
 
   components: {
-    SpeciesSelector,
     BootstrapAlert,
     Observations,
     ObservationStatusSelector,
@@ -145,34 +153,31 @@ export default defineComponent({
     };
   },
   computed: {
-    availableSpeciesWithLabels: function (): SpeciesInformationWithLabel[] {
-      return this.availableSpecies.map((obj) => {
-        return {
-          ...obj,
-          label: obj.scientificName,
-        };
-      });
+    availableSpeciesAsDataRows: function (): DataRow[] {
+      return this.availableSpecies
+          .map((s) => {
+            return {id: s.id, columnData: [s.scientificName, s.vernacularName, s.gbifTaxonKey], tags: s.tags};
+          });
     },
-
-    availableDatasetsAsEntries: function (): SelectionEntry[] {
+    availableDatasetsAsDataRows: function (): DataRow[] {
       return this.availableDatasets
-          .sort((a, b) => (a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1))
           .map((d) => {
-            return {id: d.id, label: d.name};
+            return {id: d.id, columnData: [d.name]};
           });
     },
-    availableAreasAsEntries: function (): SelectionEntry[] {
+    availableAreasAsDataRows: function (): DataRow[] {
       return this.availableAreas
-          .sort((a, b) => (a.name > b.name ? 1 : -1))
           .map((a: AreaInformation) => {
-            return {id: a.id, label: a.name};
+            return {
+              id: a.id,
+              columnData: [a.name]
+            };
           });
     },
-    availableDataimportsAsEntries: function (): SelectionEntry[] {
+    availableDataimportsAsDataRows: function (): DataRow[] {
       return this.availableDataImports
-          .sort((a, b) => (b.id > a.id ? 1 : -1))
           .map((d) => {
-            return {id: d.id, label: d.str};
+            return {id: d.id, columnData: [d.str]};
           });
     },
   },
@@ -192,11 +197,9 @@ export default defineComponent({
     changeSelectedSpecies: function (speciesIds: Number[]) {
       this.filters.speciesIds = speciesIds;
     },
-
     changeSelectedDatasets: function (datasetsIds: Number[]) {
       this.filters.datasetsIds = datasetsIds;
     },
-
     changeSelectedAreas: function (areasIds: Number[]) {
       this.filters.areaIds = areasIds;
     },

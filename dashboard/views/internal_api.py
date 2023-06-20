@@ -13,19 +13,31 @@ will):
 """
 from __future__ import annotations
 
+import json
+from typing import List
+
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.core.serializers import serialize
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
-from django.http import JsonResponse, HttpResponseForbidden, HttpResponse, HttpRequest
+from django.http import (
+    JsonResponse,
+    HttpResponseForbidden,
+    HttpResponse,
+    HttpRequest,
+    HttpResponseNotFound,
+)
 from django.shortcuts import get_object_or_404
+from django.utils.translation import gettext as _
 
 from dashboard.models import (
     Dataset,
     Area,
     Alert,
     DataImport,
+    User,
 )
 from dashboard.views.helpers import (
     filtered_observations_from_request,
@@ -208,3 +220,97 @@ def alert_as_filters(
         return JsonResponse(alert.as_dashboard_filters)
     else:
         return HttpResponseForbidden()
+
+
+def _create_or_update_alert(
+    alert_name: str,
+    species_ids: List[int],
+    area_ids: List[int],
+    dataset_ids: List[int],
+    email_notifications_frequency: str,
+    user: User,
+    alert_id: int = None,
+) -> JsonResponse:
+    """Create or update an alert, depending on the alert_id value"""
+    if alert_id:
+        alert = get_object_or_404(Alert.objects.filter(user=user), id=alert_id)
+    else:
+        alert = Alert(user=user)
+
+    alert.name = alert_name
+    alert.email_notifications_frequency = email_notifications_frequency
+
+    errors = {}
+
+    if len(species_ids) == 0:  # This is not catch by the model validation
+        errors["species"] = [_("At least one species must be selected")]
+
+    try:
+        alert.full_clean()
+    except ValidationError as e:
+        errors = errors | e.message_dict
+
+    if not errors:
+        alert.save()
+
+        # Finally add the m2m relations
+        alert.species.clear()
+        alert.species.add(*species_ids)
+        alert.areas.clear()
+        alert.areas.add(*area_ids)
+        alert.datasets.clear()
+        alert.datasets.add(*dataset_ids)
+
+    return JsonResponse(
+        {"alertId": alert.pk, "success": len(errors) == 0, "errors": errors}
+    )
+
+
+@login_required
+def alert(
+    request: AuthenticatedHttpRequest,
+) -> JsonResponse | HttpResponseForbidden | HttpResponseNotFound:
+    """This endpoint allows to create a new alert (if alert_id is not set), get details about an existing one and fially update it"""
+    if request.method == "GET":
+        alert_id = extract_int_request(request, "alert_id")
+        alert = get_object_or_404(Alert.objects.filter(user=request.user), id=alert_id)
+        return JsonResponse(alert.as_dict)
+    elif request.method == "POST":
+        alert_data = json.loads(request.body.decode("utf-8"))
+        try:
+            alert_id = alert_data["id"]
+        except KeyError:
+            alert_id = None
+
+        return _create_or_update_alert(
+            alert_name=alert_data["name"],
+            species_ids=alert_data["speciesIds"],
+            area_ids=alert_data["areaIds"],
+            dataset_ids=alert_data["datasetIds"],
+            email_notifications_frequency=alert_data["emailNotificationsFrequency"],
+            user=request.user,
+            alert_id=alert_id,
+        )
+
+
+def available_alert_intervals(_: HttpRequest) -> JsonResponse:
+    intervals = Alert.EMAIL_NOTIFICATION_CHOICES
+
+    intervals_as_objects = [
+        {"id": interval[0], "label": interval[1]} for interval in intervals
+    ]
+
+    return JsonResponse(intervals_as_objects, safe=False)
+
+
+@login_required
+def suggest_alert_name(request: AuthenticatedHttpRequest) -> JsonResponse:
+    """Suggest an alert name based on the user's existing alerts"""
+    alert_number = 1
+    existing_alert_names = Alert.objects.filter(user=request.user).values_list(
+        "name", flat=True
+    )
+    while f"My alert #{alert_number}" in existing_alert_names:
+        alert_number += 1
+
+    return JsonResponse({"name": f"My alert #{alert_number}"})

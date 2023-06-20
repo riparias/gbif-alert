@@ -2,6 +2,7 @@ import * as bootstrap from "bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import IndexPageRootComponent from "./components/pages_root_components/IndexPageRootComponent.vue";
 import AlertDetailsPageRootComponent from "./components/pages_root_components/AlertDetailsPageRootComponent.vue";
+import AlertForm from "./components/AlertForm.vue";
 import SingleObservationMap from "./components/SingleObservationMap.vue";
 import DeleteAccountButton from "./components/DeleteAccountButton.vue";
 import DeleteAlertButton from "./components/DeleteAlertButton.vue";
@@ -13,7 +14,7 @@ require("bootstrap-icons/font/bootstrap-icons.css");
 
 // Enable bootstrap dropdowns
 function initDropDown() {
-    var dropdownElementList = [].slice.call(
+    const dropdownElementList = [].slice.call(
         document.querySelectorAll(".dropdown-toggle")
     );
     dropdownElementList.map(function (dropdownToggleEl) {
@@ -61,4 +62,12 @@ function createAndMountComponent(component: Component, rootContainer = "#app") {
 
 (window as any).initUserAlertsPage = function () {
     createAndMountComponent({components: {DeleteAlertButton}});
+};
+
+(window as any).initCreateAlertPage = function () {
+    createAndMountComponent({components: {AlertForm}});
+};
+
+(window as any).initEditAlertPage = function () {
+    createAndMountComponent({components: {AlertForm}});
 };

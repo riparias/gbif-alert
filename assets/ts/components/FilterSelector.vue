@@ -1,12 +1,12 @@
 <template>
   <button
-    v-bind="$attrs"
-    type="button"
-    class="btn btn-sm btn-outline-success"
-    :class="{
+      v-bind="$attrs"
+      type="button"
+      class="btn btn-sm btn-outline-success"
+      :class="{
       active: selectionMade,
     }"
-    @click="modalActive = true"
+      @click="modalActive = true"
   >
     {{ preparedButtonLabel }}
   </button>
@@ -15,19 +15,16 @@
                          :modal-title="modalTitle"
                          @clicked-close="modalActive = false">
 
-    <SpeciesSelector v-if="speciesMode" :available-species="entries" v-model="selectedEntriesIds"  />
-    <Filter-Selector-Modal-Entries v-else :entries="entries" v-model="selectedEntriesIds" />
-
+    <Selector :available-entries="entries" v-model="selectedEntriesIds" :columns-config="selectorConfig"></Selector>
   </Filter-Selector-Modal>
 
 </template>
 
 <script lang="ts">
 import {defineComponent, PropType} from "vue";
-import {SelectionEntry, SpeciesInformationWithLabel} from "../interfaces";
+import {ColumnMetadata, DataRow} from "../interfaces";
 import FilterSelectorModal from "./FilterSelectorModal.vue";
-import FilterSelectorModalEntries from "./FilterSelectorModalEntries.vue";
-import SpeciesSelector from "./SpeciesSelector.vue";
+import Selector from "./Selector.vue";
 
 interface ModalMultiSelectorData {
   modalActive: boolean;
@@ -36,19 +33,23 @@ interface ModalMultiSelectorData {
 
 export default defineComponent({
   name: "FilterSelector",
-  components: {SpeciesSelector, FilterSelectorModal, FilterSelectorModalEntries},
+  components: {Selector, FilterSelectorModal},
   props: {
-    // Is species mode:
-    //  - a different component is used as the modal body
-    //  - entries type should be SpeciesInformation[] instead of SelectionEntry[]
-    speciesMode: { type: Boolean, required: false, default: false },
-    buttonLabelSingular: { type: String, required: true },
-    buttonLabelSuffixPlural: { type: String, required: true },
-    modalTitle: { type: String, required: true },
-    noSelectionButtonLabel: { type: String, required: true },
+    buttonLabelSingular: {type: String, required: true},
+    buttonLabelSuffixPlural: {type: String, required: true},
+    modalTitle: {type: String, required: true},
+    noSelectionButtonLabel: {type: String, required: true},
     entries: {
-      type: Array as () => SelectionEntry[] | SpeciesInformationWithLabel[],
+      type: Array as () => DataRow[],
       default: [],
+    },
+    labelIndex: {  // Index of the entry (in entries[x].columnData) that should be used as the button label (single selection)
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    selectorConfig: {
+      type: Array as () => ColumnMetadata[],
     },
     initiallySelectedEntriesIds: {
       type: Array as PropType<Array<number>>,
@@ -64,19 +65,19 @@ export default defineComponent({
   computed: {
     preparedButtonLabel: function (): string {
       if (!this.selectionMade) {
-          return this.noSelectionButtonLabel;
+        return this.noSelectionButtonLabel;
       } else {
         // 1 single selection: show the value
         if (this.selectedEntriesIds.length === 1 && this.entries.length > 0) {
           return (
-            this.buttonLabelSingular +
-            ": " +
-            this.getEntryPerId(this.selectedEntriesIds[0])!.label
+              this.buttonLabelSingular +
+              ": " +
+              this.getDataRowPerId(this.selectedEntriesIds[0])!.columnData[this.labelIndex]
           );
         } else {
           // Multiple selection, return a counter
           return (
-            this.selectedEntriesIds.length + " " + this.buttonLabelSuffixPlural
+              this.selectedEntriesIds.length + " " + this.buttonLabelSuffixPlural
           );
         }
       }
@@ -86,7 +87,7 @@ export default defineComponent({
     },
   },
   methods: {
-    getEntryPerId(id: number): SelectionEntry | undefined {
+    getDataRowPerId(id: number): DataRow | undefined {
       return this.entries.find((element) => element.id === id);
     },
   },

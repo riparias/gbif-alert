@@ -8,14 +8,31 @@
 {% endblock %}
 
 {% block after_messages %}
-    <div class="container">
+    <div id="app" class="container">
         <div class="row">
             <div class="col">
                 <h1>{% translate "Create a new alert" %}</h1>
 
-                {% translate "Create" as button_label %}
-                {% include "dashboard/_alert_form.html" with form=form button_label=button_label %}
+                <alert-form
+                        alert-url="{% url "dashboard:internal-api:alert" %}"
+                        alerts-list-page-url="{% url "dashboard:pages:my-alerts" %}"
+                        species-list-url="{% url "dashboard:public-api:species-list-json" %}"
+                        areas-list-url="{% url "dashboard:internal-api:areas-list-json" %}"
+                        datasets-list-url="{% url "dashboard:internal-api:datasets-list-json" %}"
+                        notifications-frequencies-url="{% url "dashboard:internal-api:available-alert-intervals" %}"
+                        suggest-alert-name-url="{% url "dashboard:internal-api:suggest-alert-name" %}"
+                >
+                </alert-form>
+
+{#                {% translate "Create" as button_label %}#}
+{#                {% include "dashboard/_alert_form.html" with form=form button_label=button_label %}#}
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            initCreateAlertPage();
+        });
+    </script>
 {% endblock %}

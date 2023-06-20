@@ -14,7 +14,6 @@ import Stamen from "ol/source/Stamen";
 import VectorTileSource from "ol/source/VectorTile";
 import {ScaleSequential, scaleSequentialLog} from "d3-scale";
 import {interpolateReds} from "d3-scale-chromatic";
-import {hsl} from "d3-color";
 import {BaseLayerEntry, DashboardFilters, EndpointsUrls, MapConfig} from "../interfaces";
 import "ol/ol.css";
 import {GeoJSON, MVT} from "ol/format";
