@@ -14,4 +14,5 @@ jobs:
           key: ${{ secrets.DEV_SERVER_KEY }}
           script: |
             cd early-warning-webapp
+            nvm use v20.3.1
             ./deploy_devel.sh
