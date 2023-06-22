@@ -16,7 +16,7 @@ export interface DataRow {
 export interface ColumnMetadata {
     label: string; // Label to display in the table header
     dataIndex: number; // Index in the columnData array of the DataRow object
-    formatter?: (value: string | number) => string; // Optional: function to format the value
+    formatter?: (rawValue: string | number, highlightedValue: string) => string; // Optional: function to format the value
 }
 
 // To use with <select>, checkboxes, ...

@@ -1,92 +1,92 @@
 <template>
-<!--  <div v-if="successfullySaved">-->
-<!--    <p>{{ $t('message.alertSuccessfullySaved') }}</p>-->
-<!--  </div>-->
+  <div v-if="successfullySaved">
+    <p>{{ $t('message.alertSuccessfullySaved') }}</p>
+  </div>
 
-<!--  <div v-else>-->
-<!--    <BootstrapAlert alert-type="danger" v-show="hasErrors" :dismissible="false">-->
-<!--      <i class="bi bi-sign-stop-fill"></i> <span ref="hasErrorsParagraph">{{ $t("message.pleaseFixErrors") }}</span>-->
-<!--    </BootstrapAlert>-->
+  <div v-else>
+    <BootstrapAlert alert-type="danger" v-show="hasErrors" :dismissible="false">
+      <i class="bi bi-sign-stop-fill"></i> <span ref="hasErrorsParagraph">{{ $t("message.pleaseFixErrors") }}</span>
+    </BootstrapAlert>
 
-<!--    <ul class="list-unstyled">-->
-<!--      <li class="pterois-form-error" v-for="error in globalErrors">{{ error }}</li>-->
-<!--    </ul>-->
+    <ul class="list-unstyled">
+      <li class="pterois-form-error" v-for="error in globalErrors">{{ error }}</li>
+    </ul>
 
-<!--    <div class="mb-3">-->
-<!--      <h3><label for="alertName" class="form-label">{{ $t("message.alertName") }}*</label></h3>-->
-<!--      <div class="row">-->
-<!--        <div class="col offset-md-1">-->
-<!--          <ul class="list-unstyled">-->
-<!--            <li class="pterois-form-error" v-for="error in nameErrors">{{ error }}</li>-->
-<!--          </ul>-->
-<!--          <input type="text" v-model="alertData.name" class="form-control" id="alertName">-->
-<!--        </div>-->
-<!--      </div>-->
-<!--    </div>-->
+    <div class="mb-3">
+      <h3><label for="alertName" class="form-label">{{ $t("message.alertName") }}*</label></h3>
+      <div class="row">
+        <div class="col offset-md-1">
+          <ul class="list-unstyled">
+            <li class="pterois-form-error" v-for="error in nameErrors">{{ error }}</li>
+          </ul>
+          <input type="text" v-model="alertData.name" class="form-control" id="alertName">
+        </div>
+      </div>
+    </div>
 
-<!--    <div class="mb-3">-->
-<!--      <h3><label class="form-label">{{ $t("message.speciesToInclude") }}*</label></h3>-->
-<!--      <div class="col offset-md-1">-->
-<!--        <ul class="list-unstyled">-->
-<!--          <li class="pterois-form-error" v-for="error in speciesErrors">{{ error }}</li>-->
-<!--        </ul>-->
-<!--        <BootstrapAlert :dismissible="false" alert-type="info">-->
-<!--          <i class="bi bi-info-circle-fill"></i> {{ $t("message.atLeastOneSpeciesMustBeSelected") }}-->
-<!--        </BootstrapAlert>-->
-<!--        <Selector :available-entries="availableSpeciesAsDataRows" :columns-config="[-->
-<!--                  {label: $t('message.scientificName'), dataIndex: 0, formatter: scientificNameFormatter },-->
-<!--                  {label: $t('message.vernacularName'), dataIndex: 1},-->
-<!--                  {label: $t('message.gbifTaxonKey'), dataIndex: 2, formatter: gbifTaxonKeyFormatter }]"-->
-<!--                  v-model="alertData.speciesIds"></Selector>-->
-<!--      </div>-->
-<!--    </div>-->
+    <div class="mb-3">
+      <h3><label class="form-label">{{ $t("message.speciesToInclude") }}*</label></h3>
+      <div class="col offset-md-1">
+        <ul class="list-unstyled">
+          <li class="pterois-form-error" v-for="error in speciesErrors">{{ error }}</li>
+        </ul>
+        <BootstrapAlert :dismissible="false" alert-type="info">
+          <i class="bi bi-info-circle-fill"></i> {{ $t("message.atLeastOneSpeciesMustBeSelected") }}
+        </BootstrapAlert>
+        <Selector :available-entries="availableSpeciesAsDataRows" :columns-config="[
+                  {label: $t('message.scientificName'), dataIndex: 0, formatter: scientificNameFormatter },
+                  {label: $t('message.vernacularName'), dataIndex: 1},
+                  {label: $t('message.gbifTaxonKey'), dataIndex: 2, formatter: gbifTaxonKeyFormatter }]"
+                  v-model="alertData.speciesIds"></Selector>
+      </div>
+    </div>
 
-<!--    <div class="mb-3">-->
-<!--      <h3><label class="form-label">{{ $t("message.areasToInclude") }}</label></h3>-->
-<!--      <div class="col offset-md-1">-->
-<!--        <BootstrapAlert :dismissible="false" alert-type="info">-->
-<!--          <i class="bi bi-info-circle-fill"></i> {{ $t("message.noAreaSelection") }}-->
-<!--        </BootstrapAlert>-->
-<!--        <Selector :available-entries="availableAreasAsDataRows"-->
-<!--                  :columns-config="[{label: $t('message.name'), dataIndex: 0}]" v-model="alertData.areaIds"></Selector>-->
-<!--      </div>-->
-<!--    </div>-->
+    <div class="mb-3">
+      <h3><label class="form-label">{{ $t("message.areasToInclude") }}</label></h3>
+      <div class="col offset-md-1">
+        <BootstrapAlert :dismissible="false" alert-type="info">
+          <i class="bi bi-info-circle-fill"></i> {{ $t("message.noAreaSelection") }}
+        </BootstrapAlert>
+        <Selector :available-entries="availableAreasAsDataRows"
+                  :columns-config="[{label: $t('message.name'), dataIndex: 0}]" v-model="alertData.areaIds"></Selector>
+      </div>
+    </div>
 
-<!--    <div class="mb-3">-->
-<!--      <h3><label class="form-label">{{ $t("message.datasetsToInclude") }}</label></h3>-->
-<!--      <div class="col offset-md-1">-->
-<!--        <BootstrapAlert :dismissible="false" alert-type="info">-->
-<!--          <i class="bi bi-info-circle-fill"></i> {{ $t("message.noDatasetSelection") }}-->
-<!--        </BootstrapAlert>-->
-<!--        <Selector :available-entries="availableDatasetsAsDataRows"-->
-<!--                  :columns-config="[{label: $t('message.name'), dataIndex: 0}]"-->
-<!--                  v-model="alertData.datasetIds"></Selector>-->
-<!--      </div>-->
-<!--    </div>-->
+    <div class="mb-3">
+      <h3><label class="form-label">{{ $t("message.datasetsToInclude") }}</label></h3>
+      <div class="col offset-md-1">
+        <BootstrapAlert :dismissible="false" alert-type="info">
+          <i class="bi bi-info-circle-fill"></i> {{ $t("message.noDatasetSelection") }}
+        </BootstrapAlert>
+        <Selector :available-entries="availableDatasetsAsDataRows"
+                  :columns-config="[{label: $t('message.name'), dataIndex: 0}]"
+                  v-model="alertData.datasetIds"></Selector>
+      </div>
+    </div>
 
 
-<!--    <div class="mb-3">-->
-<!--      <h3><label class="form-label">{{ $t("message.alertNotificationsFrequency") }}</label></h3>-->
-<!--      <div class="col offset-md-1">-->
-<!--        <select v-model="alertData.emailNotificationsFrequency" class="form-select">-->
-<!--          <option v-for="frequency in availableNotificationFrequencies" :value="frequency.id">{{-->
-<!--              frequency.label-->
-<!--            }}-->
-<!--          </option>-->
-<!--        </select>-->
-<!--      </div>-->
-<!--    </div>-->
+    <div class="mb-3">
+      <h3><label class="form-label">{{ $t("message.alertNotificationsFrequency") }}</label></h3>
+      <div class="col offset-md-1">
+        <select v-model="alertData.emailNotificationsFrequency" class="form-select">
+          <option v-for="frequency in availableNotificationFrequencies" :value="frequency.id">{{
+              frequency.label
+            }}
+          </option>
+        </select>
+      </div>
+    </div>
 
-<!--  </div>-->
+  </div>
 
-<!--  <div>-->
-<!--    <a class="btn btn-primary btn-sm" v-if="successfullySaved"-->
-<!--       :href="alertDetailsPageUrl">{{ $t('message.viewAlertObservations') }}</a>-->
-<!--    <input v-else class="btn btn-primary btn-sm" type="submit"-->
-<!--           :value="newAlert ? $t('message.createAlert') : $t('message.save')"-->
-<!--           id="pterois-alert-save-btn" @click="submit()">-->
-<!--    <a :href="props.alertsListPageUrl" class="btn btn-secondary btn-sm mx-2">{{ $t('message.backToAlertsList') }}</a>-->
-<!--  </div>-->
+  <div>
+    <a class="btn btn-primary btn-sm" v-if="successfullySaved"
+       :href="alertDetailsPageUrl">{{ $t('message.viewAlertObservations') }}</a>
+    <input v-else class="btn btn-primary btn-sm" type="submit"
+           :value="newAlert ? $t('message.createAlert') : $t('message.save')"
+           id="pterois-alert-save-btn" @click="submit()">
+    <a :href="props.alertsListPageUrl" class="btn btn-secondary btn-sm mx-2">{{ $t('message.backToAlertsList') }}</a>
+  </div>
 
 </template>
 
@@ -140,18 +140,8 @@ const alertData = ref({
 
 const alertIdFromServer = ref<number | null>(null);
 
-/*interface ServerResponse {
-  alertId: number | null;
-  success: boolean | null;
-  errors: {
-    __all__: string[];
-    name?: string[];
-    species?: string[];
-  }
-}*/
-
 const newAlert = computed(() => props.alertId == null) // true if creating a new alert, false if editing an existing one
-const successfullySaved = ref(false);
+const successfullySaved = ref<boolean>(false);
 
 // Backend-reported errors
 const nameErrors = ref<string[]>([]);
@@ -257,7 +247,9 @@ onMounted(() => {
 })
 
 const submit = function () {
-  axios.post(props.alertUrl, alertData.value, {headers: {"X-CSRFToken": (window as any).CSRF_TOKEN}}).then((response) => {
+  const headers = {"X-CSRFToken": (window as any).CSRF_TOKEN};
+
+  axios.post(props.alertUrl, alertData.value, {headers: headers}).then((response) => {
     alertIdFromServer.value = response.data.alertId;
     successfullySaved.value = response.data.success;
     if (successfullySaved.value !== true) {
@@ -276,7 +268,8 @@ const scrollToError = function () {
 
 </script>
 
-<style scoped>
+<style>
+/* Unfortunately we cannot scope the style due to https://github.com/vuejs/vue-loader/issues/1915 */
 .pterois-form-error {
   color: red;
 }

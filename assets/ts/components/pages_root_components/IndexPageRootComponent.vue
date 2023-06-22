@@ -196,11 +196,12 @@ export default defineComponent({
   },
   methods: {
     // TODO: remove duplication, original in helpers.ts
-    scientificNameFormatter: function (value: string): string {
-      return `<i>${value}</i>`;
+    scientificNameFormatter: function (rawValue: string, highlightedValue: string): string {
+      return `<i>${highlightedValue}</i>`;
     },
-    gbifTaxonKeyFormatter: function (value: string): string {
-      return `<a href="https://www.gbif.org/species/${value}" target="_blank">${value}</a>`;
+    // TODO: remove duplication, original in helpers.ts
+    gbifTaxonKeyFormatter: function (rawValue: string, highlightedValue: string): string {
+      return `<a href="https://www.gbif.org/species/${rawValue}" target="_blank">${highlightedValue}</a>`;
     },
     changeSelectedSpecies: function (speciesIds: Number[]) {
       this.filters.speciesIds = speciesIds;

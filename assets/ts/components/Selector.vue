@@ -64,7 +64,7 @@
         <span v-if="!columnConfig.formatter"
               v-html="highlightText(line.columnData[columnConfig.dataIndex].toString(), textFilter)"></span>
         <span v-else
-              v-html="columnConfig.formatter(highlightText(line.columnData[columnConfig.dataIndex].toString(), textFilter))"></span>
+              v-html="columnConfig.formatter(line.columnData[columnConfig.dataIndex].toString(), highlightText(line.columnData[columnConfig.dataIndex].toString(), textFilter))"></span>
       </td>
 
       <td v-if="tagsEnabled">
