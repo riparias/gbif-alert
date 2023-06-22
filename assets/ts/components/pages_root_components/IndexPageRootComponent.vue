@@ -27,9 +27,10 @@
               :modal-title="$t('message.speciesToInclude')"
               :entries="availableSpeciesAsDataRows"
               :selector-config="[
-                  {label: $t('message.scientificName'), dataIndex: 0, formatter: (v) => {return `<i>${v}</i>` } },
+                  {label: $t('message.scientificName'), dataIndex: 0, formatter: scientificNameFormatter },
                   {label: $t('message.vernacularName'), dataIndex: 1},
-                  {label: $t('message.gbifTaxonKey'), dataIndex: 2, formatter: (v) => {return `<a href='https://www.gbif.org/species/${v}' target='_blank'>${v}</a>` } },]"
+                  {label: $t('message.gbifTaxonKey'), dataIndex: 2, formatter: gbifTaxonKeyFormatter }
+              ]"
               :label-index="0"
               :initially-selected-entries-ids="filters.speciesIds"
               @entries-changed="changeSelectedSpecies"
@@ -112,7 +113,7 @@ import Observations from "../Observations.vue";
 import BootstrapAlert from "../BootstrapAlert.vue";
 
 import {debounce, DebouncedFunc} from "lodash";
-import {dateTimeToFilterParam} from "../../helpers";
+import {dateTimeToFilterParam, scientificNameFormatter} from "../../helpers";
 
 declare const pteroisConfig: FrontEndConfig;
 declare const initialFilters: DashboardFilters;
@@ -194,6 +195,13 @@ export default defineComponent({
     }
   },
   methods: {
+    // TODO: remove duplication, original in helpers.ts
+    scientificNameFormatter: function (value: string): string {
+      return `<i>${value}</i>`;
+    },
+    gbifTaxonKeyFormatter: function (value: string): string {
+      return `<a href="https://www.gbif.org/species/${value}" target="_blank">${value}</a>`;
+    },
     changeSelectedSpecies: function (speciesIds: Number[]) {
       this.filters.speciesIds = speciesIds;
     },

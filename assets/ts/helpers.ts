@@ -36,3 +36,11 @@ export function wordToColor(word: string): string {
 export function legibleColor (color: string): string {
   return hsl(color).l > 0.5 ? "#000" : "#fff";
 }
+
+export function scientificNameFormatter(value: string): string {
+  return `<i>${value}</i>`;
+}
+
+export function gbifTaxonKeyFormatter(value: string): string {
+  return `<a href="https://www.gbif.org/species/${value}" target="_blank">${value}</a>`;
+}
