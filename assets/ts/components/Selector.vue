@@ -98,6 +98,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  columnsConfig: () => [],
   availableEntries: () => [],
   modelValue: () => []
 });
@@ -123,7 +124,7 @@ const availableTags = computed(() => {
   // All available tags
   const tags = new Set<string>();
 
-  props.availableEntries.forEach((e) => {
+  props.availableEntries.forEach((e: DataRow) => {
     if (e.tags) {
       e.tags.forEach((t) => tags.add(t));
     }
@@ -156,7 +157,7 @@ const linesForDisplay = computed((): DataRow[] => {
   let lines = props.availableEntries.slice();
 
   // Filtering by text
-  lines = lines.filter((row) => {
+  lines = lines.filter((row: DataRow) => {
     return row.columnData.some((value) => {
       if (typeof value === 'string') {
         return value.toLowerCase().includes(textFilter.value.toLowerCase());
@@ -170,12 +171,12 @@ const linesForDisplay = computed((): DataRow[] => {
 
   // Filtering by tags
   if (tagsFilter.value.length > 0) {
-    lines = lines.filter((l) => {
+    lines = lines.filter((l: DataRow) => {
       return tagsFilter.value.every((tag) => l.tags && l.tags.includes(tag));
     });
   }
 
-  lines = lines.sort((a, b) => {
+  lines = lines.sort((a: DataRow, b: DataRow) => {
     const val_a = a.columnData[sortBy.value];
     const val_b = b.columnData[sortBy.value];
 
