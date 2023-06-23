@@ -100,7 +100,7 @@ import axios from "axios";
 import {AreaInformation, DataRow, DatasetInformation, FrontEndConfig, SpeciesInformation} from "../interfaces";
 import Selector from "./Selector.vue";
 import BootstrapAlert from "./BootstrapAlert.vue";
-import {gbifTaxonKeyFormatter, prepareAreasData, scientificNameFormatter} from "../helpers";
+import {gbifTaxonKeyFormatter, prepareAreasData, prepareSpeciesData, scientificNameFormatter} from "../helpers";
 import {useI18n} from "vue-i18n";
 
 interface Props {
@@ -120,7 +120,7 @@ interface FrequencyInformation {
 }
 
 declare const pteroisConfig: FrontEndConfig;
-const { t } = useI18n();
+const {t} = useI18n();
 
 const props = withDefaults(defineProps<Props>(), {});
 
@@ -223,10 +223,7 @@ const availableDatasetsAsDataRows = computed(
 
 const availableSpeciesAsDataRows = computed(
     (): DataRow[] => {
-      return availableSpecies.value
-          .map((s) => {
-            return {id: s.id, columnData: [s.scientificName, s.vernacularName, s.gbifTaxonKey], tags: s.tags};
-          });
+      return prepareSpeciesData(availableSpecies.value);
     },
 );
 

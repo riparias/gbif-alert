@@ -116,7 +116,7 @@ import Observations from "../Observations.vue";
 import BootstrapAlert from "../BootstrapAlert.vue";
 
 import {debounce, DebouncedFunc} from "lodash";
-import {dateTimeToFilterParam, prepareAreasData, scientificNameFormatter} from "../../helpers";
+import {dateTimeToFilterParam, prepareAreasData, prepareSpeciesData} from "../../helpers";
 
 declare const pteroisConfig: FrontEndConfig;
 declare const initialFilters: DashboardFilters;
@@ -158,10 +158,7 @@ export default defineComponent({
   },
   computed: {
     availableSpeciesAsDataRows: function (): DataRow[] {
-      return this.availableSpecies
-          .map((s) => {
-            return {id: s.id, columnData: [s.scientificName, s.vernacularName, s.gbifTaxonKey], tags: s.tags};
-          });
+      return prepareSpeciesData(this.availableSpecies);
     },
     availableDatasetsAsDataRows: function (): DataRow[] {
       return this.availableDatasets
