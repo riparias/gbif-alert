@@ -43,7 +43,10 @@
               :no-selection-button-label="$t('message.allDatasets')"
               :modal-title="$t('message.datasetsToInclude')"
               :entries="availableDatasetsAsDataRows"
-              :selector-config="[{label: $t('message.name'), dataIndex: 0}]"
+              :selector-config="[
+                  {label: $t('message.name'), dataIndex: 0},
+                  {label: $t('message.gbifDatasetKey'), dataIndex: 1, formatter: gbifDatasetKeyFormatter }
+              ]"
               :label-index="0"
               :initially-selected-entries-ids="filters.datasetsIds"
               @entries-changed="changeSelectedDatasets"
@@ -116,7 +119,7 @@ import Observations from "../Observations.vue";
 import BootstrapAlert from "../BootstrapAlert.vue";
 
 import {debounce, DebouncedFunc} from "lodash";
-import {dateTimeToFilterParam, prepareAreasData, prepareSpeciesData} from "../../helpers";
+import {dateTimeToFilterParam, prepareAreasData, prepareDatasetsData, prepareSpeciesData} from "../../helpers";
 
 declare const pteroisConfig: FrontEndConfig;
 declare const initialFilters: DashboardFilters;
@@ -161,10 +164,7 @@ export default defineComponent({
       return prepareSpeciesData(this.availableSpecies);
     },
     availableDatasetsAsDataRows: function (): DataRow[] {
-      return this.availableDatasets
-          .map((d) => {
-            return {id: d.id, columnData: [d.name]};
-          });
+      return prepareDatasetsData(this.availableDatasets);
     },
     availableAreasAsDataRows: function (): DataRow[] {
       return prepareAreasData(this.availableAreas, this.$t);
@@ -196,6 +196,9 @@ export default defineComponent({
     // TODO: remove duplication, original in helpers.ts
     gbifTaxonKeyFormatter: function (rawValue: string, highlightedValue: string): string {
       return `<a href="https://www.gbif.org/species/${rawValue}" target="_blank">${highlightedValue}</a>`;
+    },
+    gbifDatasetKeyFormatter: function (rawValue: string, highlightedValue: string): string {
+      return `<a class="small" href="https://www.gbif.org/dataset/${rawValue}" target="_blank">${highlightedValue}</a>`;
     },
     changeSelectedSpecies: function (speciesIds: Number[]) {
       this.filters.speciesIds = speciesIds;

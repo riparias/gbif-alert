@@ -62,7 +62,10 @@
           <i class="bi bi-info-circle-fill"></i> {{ $t("message.noDatasetSelection") }}
         </BootstrapAlert>
         <Selector :available-entries="availableDatasetsAsDataRows"
-                  :columns-config="[{label: $t('message.name'), dataIndex: 0}]"
+                  :columns-config="[
+                      {label: $t('message.name'), dataIndex: 0},
+                      {label: $t('message.gbifDatasetKey'), dataIndex: 1, formatter: gbifDatasetKeyFormatter }
+                  ]"
                   v-model="alertData.datasetIds"></Selector>
       </div>
     </div>
@@ -100,7 +103,14 @@ import axios from "axios";
 import {AreaInformation, DataRow, DatasetInformation, FrontEndConfig, SpeciesInformation} from "../interfaces";
 import Selector from "./Selector.vue";
 import BootstrapAlert from "./BootstrapAlert.vue";
-import {gbifTaxonKeyFormatter, prepareAreasData, prepareSpeciesData, scientificNameFormatter} from "../helpers";
+import {
+  gbifDatasetKeyFormatter,
+  gbifTaxonKeyFormatter,
+  prepareAreasData,
+  prepareDatasetsData,
+  prepareSpeciesData,
+  scientificNameFormatter
+} from "../helpers";
 import {useI18n} from "vue-i18n";
 
 interface Props {
@@ -211,13 +221,7 @@ const availableAreasAsDataRows = computed(
 
 const availableDatasetsAsDataRows = computed(
     (): DataRow[] => {
-      return availableDatasets.value
-          .map((d: DatasetInformation) => {
-            return {
-              id: d.id,
-              columnData: [d.name]
-            };
-          });
+      return prepareDatasetsData(availableDatasets.value);
     },
 );
 
