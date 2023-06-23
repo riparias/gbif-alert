@@ -1,6 +1,6 @@
 <template>
   <span class="small">
-      {{ $tc('message.matchingObservations', count, {count: count}) }}
+      {{ $t('message.matchingObservations', count, {count: count}) }}
   </span>
 </template>
 

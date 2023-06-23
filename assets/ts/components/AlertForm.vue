@@ -48,7 +48,10 @@
           <i class="bi bi-info-circle-fill"></i> {{ $t("message.noAreaSelection") }}
         </BootstrapAlert>
         <Selector :available-entries="availableAreasAsDataRows"
-                  :columns-config="[{label: $t('message.name'), dataIndex: 0}]" v-model="alertData.areaIds"></Selector>
+                  :columns-config="[
+                    {label: $t('message.name'), dataIndex: 0},
+                    {label: $t('message.areaType'), dataIndex: 1}
+                  ]" v-model="alertData.areaIds"></Selector>
       </div>
     </div>
 
@@ -97,7 +100,8 @@ import axios from "axios";
 import {AreaInformation, DataRow, DatasetInformation, FrontEndConfig, SpeciesInformation} from "../interfaces";
 import Selector from "./Selector.vue";
 import BootstrapAlert from "./BootstrapAlert.vue";
-import {gbifTaxonKeyFormatter, scientificNameFormatter} from "../helpers";
+import {gbifTaxonKeyFormatter, prepareAreasData, scientificNameFormatter} from "../helpers";
+import {useI18n} from "vue-i18n";
 
 interface Props {
   alertUrl: string
@@ -116,6 +120,7 @@ interface FrequencyInformation {
 }
 
 declare const pteroisConfig: FrontEndConfig;
+const { t } = useI18n();
 
 const props = withDefaults(defineProps<Props>(), {});
 
@@ -200,14 +205,7 @@ const populateAvailableNotificationFrequencies = function () {
 
 const availableAreasAsDataRows = computed(
     (): DataRow[] => {
-      return availableAreas.value
-          .map((a: AreaInformation) => {
-            return {
-              id: a.id,
-              columnData: [a.name],
-              tags: a.tags
-            };
-          });
+      return prepareAreasData(availableAreas.value, t);
     },
 );
 

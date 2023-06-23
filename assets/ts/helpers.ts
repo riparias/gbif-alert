@@ -1,4 +1,4 @@
-import {DashboardFilters} from "./interfaces";
+import {AreaInformation, DashboardFilters, DataRow} from "./interfaces";
 import {DateTime} from "luxon";
 import {hsl} from "d3-color";
 
@@ -43,4 +43,16 @@ export function scientificNameFormatter(rawValue: string, highlightedValue: stri
 
 export function gbifTaxonKeyFormatter(rawValue: string, highlightedValue: string): string {
   return `<a href="https://www.gbif.org/species/${rawValue}" target="_blank">${highlightedValue}</a>`;
+}
+
+export function prepareAreasData(areasData: AreaInformation[], translationFunction: (s: string) => string): DataRow[] {
+  // Input: areas data, as returned from the server
+  // Output: datarows suitable for the <selector> component
+  return areasData.map((a: AreaInformation) => {
+            return {
+              id: a.id,
+              columnData: [a.name, (a.isUserSpecific ? translationFunction('message.userSpecific') : translationFunction('message.shared'))],
+              tags: a.tags,
+            };
+          });
 }

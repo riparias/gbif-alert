@@ -56,7 +56,10 @@
               :no-selection-button-label="$t('message.everywhere')"
               :modal-title="$t('message.restrictToSpecificAreas')"
               :entries="availableAreasAsDataRows"
-              :selector-config="[{label: $t('message.name'), dataIndex: 0}]"
+              :selector-config="[
+                  {label: $t('message.name'), dataIndex: 0},
+                  {label: $t('message.areaType'), dataIndex: 1}
+              ]"
               :label-index="0"
               :initially-selected-entries-ids="filters.areaIds"
               @entries-changed="changeSelectedAreas"
@@ -113,7 +116,7 @@ import Observations from "../Observations.vue";
 import BootstrapAlert from "../BootstrapAlert.vue";
 
 import {debounce, DebouncedFunc} from "lodash";
-import {dateTimeToFilterParam, scientificNameFormatter} from "../../helpers";
+import {dateTimeToFilterParam, prepareAreasData, scientificNameFormatter} from "../../helpers";
 
 declare const pteroisConfig: FrontEndConfig;
 declare const initialFilters: DashboardFilters;
@@ -167,14 +170,7 @@ export default defineComponent({
           });
     },
     availableAreasAsDataRows: function (): DataRow[] {
-      return this.availableAreas
-          .map((a: AreaInformation) => {
-            return {
-              id: a.id,
-              columnData: [a.name],
-              tags: a.tags,
-            };
-          });
+      return prepareAreasData(this.availableAreas, this.$t);
     },
     availableDataimportsAsDataRows: function (): DataRow[] {
       return this.availableDataImports

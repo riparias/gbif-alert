@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", function (event) {
 const i18n = createI18n({
     locale: (window as any).LANGUAGE_CODE,
     fallbackLocale: 'en',
+    legacy: false,
     messages,
 });
 
