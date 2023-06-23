@@ -171,7 +171,8 @@ export default defineComponent({
           .map((a: AreaInformation) => {
             return {
               id: a.id,
-              columnData: [a.name]
+              columnData: [a.name],
+              tags: a.tags,
             };
           });
     },

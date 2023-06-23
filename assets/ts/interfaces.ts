@@ -59,6 +59,7 @@ export interface AreaInformation {
   id: number;
   name: string;
   isUserSpecific: boolean;
+  tags: string[];
 }
 
 export interface DataImportInformation {
