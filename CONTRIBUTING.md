@@ -112,7 +112,7 @@ The web application handle three categories of users:
   notifications). For Django, they are regular users without any specific group or permission (**not** 
   staff, **not** superuser)
 - Admins can do all that registered users can do + access the admin interface to configure the web application. For 
-  Django they have the **staff** and **superuser** flags set. Admins can be created by different means, for example 
+  Django, they have the **staff** and **superuser** flags set. Admins can be created by different means, for example 
   being upgraded to this status by an existing Admin after registering as a normal user, or via Django's 
   `createsuperuser` management command.
   

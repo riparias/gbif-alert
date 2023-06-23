@@ -2,6 +2,7 @@ import * as bootstrap from "bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import IndexPageRootComponent from "./components/pages_root_components/IndexPageRootComponent.vue";
 import AlertDetailsPageRootComponent from "./components/pages_root_components/AlertDetailsPageRootComponent.vue";
+import AlertForm from "./components/AlertForm.vue";
 import SingleObservationMap from "./components/SingleObservationMap.vue";
 import DeleteAccountButton from "./components/DeleteAccountButton.vue";
 import DeleteAlertButton from "./components/DeleteAlertButton.vue";
@@ -14,7 +15,7 @@ require("bootstrap-icons/font/bootstrap-icons.css");
 
 // Enable bootstrap dropdowns
 function initDropDown() {
-    var dropdownElementList = [].slice.call(
+    const dropdownElementList = [].slice.call(
         document.querySelectorAll(".dropdown-toggle")
     );
     dropdownElementList.map(function (dropdownToggleEl) {
@@ -30,6 +31,7 @@ document.addEventListener("DOMContentLoaded", function (event) {
 const i18n = createI18n({
     locale: (window as any).LANGUAGE_CODE,
     fallbackLocale: 'en',
+    legacy: false,
     messages,
 });
 
@@ -66,6 +68,13 @@ function createAndMountComponent(component: Component, rootContainer = "#app") {
 };
 
 (window as any).initUserAreasPage = function () {
-    //createAndMountComponent({components: {SingleAreaMap}}, "#vue-app");
     createAndMountComponent({components: {UserAreasPageRootComponent}}, "#vue-app");
-}
+};
+
+(window as any).initCreateAlertPage = function () {
+    createAndMountComponent({components: {AlertForm}});
+};
+
+(window as any).initEditAlertPage = function () {
+    createAndMountComponent({components: {AlertForm}});
+};

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-19 10:42+0200\n"
+"POT-Creation-Date: 2023-06-13 11:44+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: dashboard/forms.py:52
+#: dashboard/forms.py:54
 msgid ""
 "You already have another alert with this name. Please choose a different "
 "name."
@@ -26,68 +26,67 @@ msgstr ""
 "Vous avez déjà une autre alerte avec ce nom. Veuillez choisir un nom "
 "différent."
 
-#: dashboard/forms.py:76
+#: dashboard/forms.py:78
 msgid "First name"
 msgstr "Prénom"
 
-#: dashboard/forms.py:76 dashboard/forms.py:79
+#: dashboard/forms.py:78 dashboard/forms.py:81
 msgid "Optional."
 msgstr "Facultatif."
 
-#: dashboard/forms.py:79
+#: dashboard/forms.py:81
 msgid "Last name"
 msgstr "Nom de famille"
 
-#: dashboard/forms.py:82
+#: dashboard/forms.py:84
 msgid "Email"
 msgstr "Email"
 
-#: dashboard/forms.py:84
+#: dashboard/forms.py:86
 msgid "Required. Enter a valid email address."
 msgstr "Requis. Entrez une adresse email valide."
 
-#: dashboard/forms.py:88
+#: dashboard/forms.py:90
 msgid "Language"
 msgstr "Langue"
 
-#: dashboard/models.py:589
+#: dashboard/models.py:611
 msgid "No emails"
 msgstr "Pas d'emails"
 
-#: dashboard/models.py:590
+#: dashboard/models.py:612
 msgid "Daily"
 msgstr "Journalier"
 
-#: dashboard/models.py:591
+#: dashboard/models.py:613
 msgid "Weekly"
 msgstr "Hebdomadaire"
 
-#: dashboard/models.py:592
+#: dashboard/models.py:614
 msgid "Monthly"
 msgstr "Mensuel"
 
-#: dashboard/models.py:603
+#: dashboard/models.py:625
 msgid "name"
 msgstr "nom"
 
-#: dashboard/models.py:607
+#: dashboard/models.py:629
 msgid "species"
 msgstr "espèces"
 
-#: dashboard/models.py:610
+#: dashboard/models.py:632
 msgid ""
-"Optional (no selection = notify me for all species). To select multiple "
-"items, press and hold the Ctrl or Command key and click the items."
+"To select multiple items, press and hold the Ctrl or Command key and click "
+"the items."
 msgstr ""
-"Facultatif (aucune sélection = me notifier pour toutes les espèces). Pour "
-"sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
+"Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:616
+#: dashboard/models.py:638
 msgid "datasets"
 msgstr "jeux de données"
 
-#: dashboard/models.py:619
+#: dashboard/models.py:641
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
@@ -96,24 +95,24 @@ msgstr ""
 "Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:626
+#: dashboard/models.py:648
 msgid "areas"
 msgstr "zones"
 
-#: dashboard/models.py:628
+#: dashboard/models.py:650
 msgid ""
-"Optional (no selection = notify me for all areas). To select multiple items, "
-"press and hold the Ctrl or Command key and click the items."
+"Optional (no selection = notify me for all data in the system). To select "
+"multiple items, press and hold the Ctrl or Command key and click the items."
 msgstr ""
-"Facultatif (aucune sélection = me notifier pour toutes les zones). Pour "
-"sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
-"command' enfoncée "
+"Facultatif (aucune sélection = me notifier pour toutes les données du "
+"système). Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou "
+"'pomme / command' enfoncée "
 
-#: dashboard/models.py:637
+#: dashboard/models.py:659
 msgid "email notifications frequency"
 msgstr "fréquence des notifications par email"
 
-#: dashboard/models.py:739
+#: dashboard/models.py:772
 msgid "unseen observation(s) for your alert"
 msgstr "observation(s) non vue(s) pour votre alerte"
 
@@ -165,7 +164,7 @@ msgstr "Modifier cette alerte"
 msgid "Show all my alerts"
 msgstr "Montrer toutes mes alertes"
 
-#: dashboard/templates/dashboard/_alert_form.html:8
+#: dashboard/templates/dashboard/_alert_form.html:9
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -306,10 +305,6 @@ msgstr "Mouvelle alerte"
 msgid "Create a new alert"
 msgstr "Créer une nouvelle alerte"
 
-#: dashboard/templates/dashboard/alert_create.html:16
-msgid "Create"
-msgstr "Créer"
-
 #: dashboard/templates/dashboard/alert_details.html:7
 msgid "Alert details"
 msgstr "Détails de l'alerte"
@@ -318,11 +313,6 @@ msgstr "Détails de l'alerte"
 #: dashboard/templates/dashboard/alert_edit.html:14
 msgid "Edit alert"
 msgstr "Modifier une alerte"
-
-#: dashboard/templates/dashboard/alert_edit.html:16
-#: dashboard/templates/dashboard/user_profile.html:19
-msgid "Save"
-msgstr "Enregistrer"
 
 #: dashboard/templates/dashboard/index.html:9
 msgid "Home"
@@ -427,6 +417,10 @@ msgstr "Mot de passe oublié ?"
 msgid "You currently don't have any configured alerts."
 msgstr "Vous n'avez actuellement aucune alerte configurée."
 
+#: dashboard/templates/dashboard/user_profile.html:19
+msgid "Save"
+msgstr "Enregistrer"
+
 #: dashboard/views/actions.py:36
 msgid "Your alert has been deleted."
 msgstr "Votre alerte a été supprimée."
@@ -435,6 +429,21 @@ msgstr "Votre alerte a été supprimée."
 msgid "Your account has been deleted."
 msgstr "Votre compte utilisateur a été supprimé."
 
+#: dashboard/views/internal_api.py:246
+msgid "At least one species must be selected"
+msgstr "Au moins une espèce doit être sélectionnée"
+
 #: dashboard/views/pages.py:163
 msgid "Your profile was successfully updated."
 msgstr "Votre profil a été mis à jour avec succès."
+
+#~ msgid "Create"
+#~ msgstr "Créer"
+
+#~ msgid ""
+#~ "Optional (no selection = notify me for all species). To select multiple "
+#~ "items, press and hold the Ctrl or Command key and click the items."
+#~ msgstr ""
+#~ "Facultatif (aucune sélection = me notifier pour toutes les espèces). Pour "
+#~ "sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
+#~ "command' enfoncée "

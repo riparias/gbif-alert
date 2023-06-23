@@ -369,7 +369,7 @@ class Observation(models.Model):
     def set_or_migrate_initial_data_import(
         self, current_data_import: DataImport
     ) -> None:
-        """If this is the first import of this observation, set initial_data_import to the current import. Otherwise migrate its value from the previous observation."""
+        """If this is the first import of this observation, set initial_data_import to the current import. Otherwise, migrate its value from the previous observation."""
         replaced_observation = self.replaced_observation
         if replaced_observation is None:
             self.initial_data_import = current_data_import
@@ -537,6 +537,7 @@ class Area(models.Model):
     )  # an area can be public or user-specific
     name = models.CharField(max_length=255)
 
+    tags = TaggableManager(blank=True)
     objects = MyAreaManager()
 
     class Meta:
@@ -572,6 +573,7 @@ class Area(models.Model):
             "id": self.pk,
             "name": self.name,
             "isUserSpecific": self.is_user_specific,
+            "tags": [tag.name for tag in self.tags.all()],
         }
 
         if include_geojson:
@@ -602,7 +604,10 @@ class Alert(models.Model):
     """The per-user configured alerts
 
     An alert is user specific.
-    Species, datasets and areas are optional filters. If left blank, the alert targets all species/datasets/areas.
+    Datasets is an optional filter. If left blank, all source datasets will be taken into account.
+    Area is an optional filter. If left blank, data is not filtered by location (which might be more than the selection of all areas)
+    We choose to not extend this logic to species. By keeping this list explicit, we allow site administrators
+    to add new species and areas without having to worry about silently editing user alerts.
     """
 
     NO_EMAILS = "N"
@@ -630,9 +635,9 @@ class Alert(models.Model):
     species = models.ManyToManyField(
         Species,
         verbose_name=_("species"),
-        blank=True,
+        blank=False,
         help_text=_(
-            "Optional (no selection = notify me for all species). To select multiple items, press and hold the "
+            "To select multiple items, press and hold the "
             "Ctrl or Command key and click the items."
         ),
     )
@@ -650,7 +655,7 @@ class Alert(models.Model):
         blank=True,
         verbose_name=_("areas"),
         help_text=_(
-            "Optional (no selection = notify me for all areas). To select multiple items, press and hold the "
+            "Optional (no selection = notify me for all data in the system). To select multiple items, press and hold the "
             "Ctrl or Command key and click the items."
         ),
     )
@@ -698,6 +703,17 @@ class Alert(models.Model):
             "status": None,
         }
 
+    @property
+    def as_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.pk,
+            "name": self.name,
+            "speciesIds": [s.pk for s in self.species.all()],
+            "datasetIds": [d.pk for d in self.datasets.all()],
+            "areaIds": [a.pk for a in self.areas.all()],
+            "emailNotificationsFrequency": self.email_notifications_frequency,
+        }
+
     def unseen_observations(self) -> QuerySet[Observation]:
         return Observation.objects.filtered_from_my_params(
             species_ids=[s.pk for s in self.species.all()],
@@ -710,11 +726,11 @@ class Alert(models.Model):
             user=self.user,
         )
 
-    def unseen_observations_sample(self) -> QuerySet[Observation]:
-        """For notification emails: show max 10 observations, most recent first"""
+    def unseen_observations_sample(self, sample_size=10) -> QuerySet[Observation]:
+        """For notification emails: show max sample_size observations, most recent first"""
         obs = self.unseen_observations().order_by("-date")
-        if obs.count() > 10:
-            obs = obs[:10]
+        if obs.count() > sample_size:
+            obs = obs[:sample_size]
 
         return obs
 

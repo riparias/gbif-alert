@@ -56,8 +56,15 @@ internal_api_urls = [
         views.alert_as_filters,
         name="alert-as-filters-json",
     ),
+    path("alert", views.alert, name="alert"),
     path("area/<int:id>", views.area_geojson, name="area-geojson"),
     path("areas", views.areas_list_json, name="areas-list-json"),
+    path(
+        "available-alert-intervals",
+        views.available_alert_intervals,
+        name="available-alert-intervals",
+    ),
+    path("suggest-alert-name", views.suggest_alert_name, name="suggest-alert-name"),
     path("data-imports", views.dataimports_list_json, name="dataimports-list-json"),
     path("datasets", views.datasets_list_json, name="datasets-list-json"),
     path(

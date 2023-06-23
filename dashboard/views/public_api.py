@@ -21,7 +21,7 @@ def species_per_polygon_json(request: HttpRequest) -> JsonResponse:
     Method: GET
 
     Params:
-        p: the polygon as an URL-encoded Well-know text string (EPSG:4326)
+        p: the polygon as a URL-encoded Well-know text string (EPSG:4326)
 
     Sample output:
     [

@@ -124,8 +124,8 @@ export default defineComponent({
       beforeUpdate(el, binding): void {
         const scaleFunction = binding.value.scale;
         const numberOfTicks = binding.value.ticks;
-        const numberofElems = scaleFunction.domain().length;
-        const moduloVal = Math.floor(numberofElems / numberOfTicks);
+        const numberOfElems = scaleFunction.domain().length;
+        const moduloVal = Math.floor(numberOfElems / numberOfTicks);
 
         const d3Axis = axisBottom<number>(scaleFunction).tickValues(
           scaleFunction.domain().filter(function (d: string, i: number) {
@@ -174,12 +174,12 @@ export default defineComponent({
   },
   computed: {
     selectedRangeStartIndex(): number {
-      return this.truncatedBarData.findIndex((e) => {
+      return this.truncatedBarData.findIndex((e: PreparedHistogramDataEntry) => {
         return e.yearMonth === this.selectedRangeStart;
       });
     },
     selectedRangeEndIndex(): number {
-      return this.truncatedBarData.findIndex((e) => {
+      return this.truncatedBarData.findIndex((e: PreparedHistogramDataEntry) => {
         return e.yearMonth === this.selectedRangeEnd;
       });
     },
@@ -193,7 +193,7 @@ export default defineComponent({
       return maxVal ? maxVal : 0;
     },
     truncatedBarData(): PreparedHistogramDataEntry[] {
-      return this.barData.filter((e) =>
+      return this.barData.filter((e: PreparedHistogramDataEntry) =>
         this.xScaleDomain.includes(e.yearMonth)
       );
     },
@@ -205,8 +205,8 @@ export default defineComponent({
     },
     xScaleDomain(): string[] {
       function* months(interval: Interval) {
-        let cursor = interval.start.startOf("month");
-        while (cursor < interval.end) {
+        let cursor = interval.start!.startOf("month");
+        while (cursor < interval!.end!) {
           yield cursor;
           cursor = cursor.plus({ months: 1 });
         }

@@ -608,7 +608,7 @@ class InternalApiTests(TestCase):
     def test_observations_json_multiple_species_filter_case1(self):
         """observations_json accept to filter per multiple species
 
-        Case 1: Explicitly requests all species. Results should be the same than no filter
+        Case 1: Explicitly requests all species. Results should be the same as no filter
         """
         base_url = reverse("dashboard:internal-api:filtered-observations-data-page")
 
@@ -932,7 +932,7 @@ class InternalApiTests(TestCase):
         json_data = response.json()
         self.assertEqual(json_data["count"], 0)
 
-        # Case 6: similar to case 5), with with seen status
+        # Case 6: similar to case 5), with seen status
         self.client.login(username="frusciante1", password="12345")
         url_with_params = f"{base_url}?endDate={SEPTEMBER_13_2021.strftime('%Y-%m-%d')}&speciesIds[]={self.second_species.pk}&status=seen"
         response = self.client.get(url_with_params)

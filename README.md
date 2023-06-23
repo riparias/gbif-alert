@@ -17,3 +17,13 @@ Developer documentation is available in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 See [open issues](https://github.com/riparias/early-alert-webapp/issues) and [milestones](https://github.com/riparias/early-alert-webapp/milestones).
 
+TODO:
+
+  - Add automated tests (selemium-based?)
+
+New selector:
+- adjust alertform to use
+- test extensively
+
+
+!! http://localhost:8001/alert/34: plei nde resultats dans la table alors que ca devrait etre 0...
