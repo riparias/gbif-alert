@@ -1,4 +1,5 @@
 import datetime
+import json
 from unittest import mock
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
@@ -482,23 +483,21 @@ class AlertWebPagesTests(TestCase):
         self.client.login(username="frusciante", password="12345")
 
         response = self.client.get(
-            reverse("dashboard:pages:alert-edit", kwargs={"alert_id": self.alert.pk}),
+            reverse("dashboard:internal-api:alert"),
+            {"alert_id": self.alert.pk},
         )
 
         self.assertEqual(response.status_code, 200)
-
-        self.assertEqual(response.context["form"]["name"].value(), "Test alert")
-        self.assertEqual(
-            response.context["form"]["email_notifications_frequency"].value(), "N"
-        )
-        self.assertEqual(
-            response.context["form"]["species"].value(), [self.first_species.pk]
-        )
-        self.assertEqual(
-            response.context["form"]["datasets"].value(), [self.first_dataset.pk]
-        )
-        self.assertEqual(
-            response.context["form"]["areas"].value(), [self.public_area_andenne.pk]
+        self.assertDictEqual(
+            response.json(),
+            {
+                "areaIds": [self.public_area_andenne.pk],
+                "datasetIds": [self.first_dataset.pk],
+                "emailNotificationsFrequency": "N",
+                "id": self.alert.pk,
+                "name": "Test alert",
+                "speciesIds": [self.first_species.pk],
+            },
         )
 
     def test_edit_alert_success(self):
@@ -524,21 +523,27 @@ class AlertWebPagesTests(TestCase):
         self.assertEqual(self.alert.areas.count(), 0)
 
     def test_edit_alert_can_keep_name(self):
-        """A user can edit its own alerts and keep the same name without errors"""
+        """A user can edit its own alerts and keep the same name"""
         self.client.login(username="frusciante", password="12345")
-
+        post_data = {
+            "id": self.alert.pk,
+            "name": "Test alert",
+            "speciesIds": [s.pk for s in self.alert.species.all()],
+            "areaIds": [a.pk for a in self.alert.areas.all()],
+            "datasetIds": [d.pk for d in self.alert.datasets.all()],
+            "emailNotificationsFrequency": self.alert.email_notifications_frequency,
+        }
         response = self.client.post(
-            reverse("dashboard:pages:alert-edit", kwargs={"alert_id": self.alert.pk}),
-            {
-                "name": "Test alert",
-                "email_notifications_frequency": "M",
-                "species": [s.pk for s in self.alert.species.all()],
-                "datasets": [],
-                "areas": [],
-            },
+            reverse("dashboard:internal-api:alert"),
+            json.dumps(post_data),
+            content_type="application/json",
         )
-        # If we get redirected, the edition was successful
-        self.assertRedirects(response, f"/alert/{self.alert.pk}")
+
+        self.assertEqual(response.status_code, 200)
+        response_json = response.json()
+        self.assertEqual(response_json["alertId"], self.alert.pk)
+        self.assertEqual(response_json["success"], True)
+        self.assertEqual(response_json["errors"], {})
 
     def test_edit_alert_cannot_duplicate_names(self):
         """A user cannot edit its own alerts and use the same name as another alert"""
@@ -546,18 +551,31 @@ class AlertWebPagesTests(TestCase):
         Alert.objects.create(name="Test alert 2", user=self.first_user)
 
         self.client.login(username="frusciante", password="12345")
+        post_data = {
+            "id": self.alert.pk,
+            "name": "Test alert 2",
+            "speciesIds": [s.pk for s in self.alert.species.all()],
+            "areaIds": [a.pk for a in self.alert.areas.all()],
+            "datasetIds": [d.pk for d in self.alert.datasets.all()],
+            "emailNotificationsFrequency": self.alert.email_notifications_frequency,
+        }
         response = self.client.post(
-            reverse("dashboard:pages:alert-edit", kwargs={"alert_id": self.alert.pk}),
-            {
-                "name": "Test alert 2",
-                "email_notifications_frequency": "M",
-            },
+            reverse("dashboard:internal-api:alert"),
+            json.dumps(post_data),
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.context["form"].errors["__all__"][0],
-            "You already have another alert with this name. Please choose a different name.",
+        response_json = response.json()
+        self.assertDictEqual(
+            response_json,
+            {
+                "alertId": self.alert.pk,
+                "errors": {
+                    "__all__": ["Alert with this User and Name already exists."]
+                },
+                "success": False,
+            },
         )
 
     def test_edit_alert_no_duplicate_names_between_users(self):
