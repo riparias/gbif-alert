@@ -51,3 +51,5 @@ PTEROIS: Dict[str, Any] = {
         "initialLon": 4.47,
     },
 }
+
+SELENIUM_CHROMEDRIVER_VERSION = "114.0.5735.90"
