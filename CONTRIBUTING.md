@@ -1,12 +1,12 @@
 # Development setup and notes
 
 ## Technological backbone
-- [Python](https://www.python.org/) 3.9+, [(Geo)Django](https://www.djangoproject.com/) 4.0 [PostgreSQL](https://www.postgresql.org/), [PostGIS](https://postgis.net/) 3.1+, [Redis](https://redis.io/),  [TypeScript](https://www.typescriptlang.org/) and [Vue.js v3](https://vuejs.org/)
-- CSS: [Bootstrap](https://getbootstrap.com/) 5.1  
+- [Python](https://www.python.org/) 3.11+, [(Geo)Django](https://www.djangoproject.com/) 4.2 [PostgreSQL](https://www.postgresql.org/), [PostGIS](https://postgis.net/) 3.1+, [Redis](https://redis.io/),  [TypeScript](https://www.typescriptlang.org/) and [Vue.js v3](https://vuejs.org/)
+- CSS: [Bootstrap](https://getbootstrap.com/) 5.3  
 - [Poetry](https://python-poetry.org/) is used to manage dependencies (use `poetry add`, `poetry install`, ... instead of pip). PyCharm also has a Poetry plugin available.
 
 ## Dev environment configuration
-- Python>=3.9, PostGIS>=3.1, Redis and `npm` are required
+- Python>=3.11, PostGIS>=3.1, Redis and `npm` are required
 - Use [Poetry](https://python-poetry.org/) to create an isolated virtualenv and install dependencies (`poetry install`) 
 - Copy `local_settings.template.py` to `local_settings.py`, adjust those settings and point Django to `local_settings.py`
 - [Point Django to local_settings](https://docs.djangoproject.com/en/3.2/topics/settings/#designating-the-settings)
