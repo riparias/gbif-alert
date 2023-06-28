@@ -21,6 +21,105 @@ from dashboard.models import (
 SEPTEMBER_13_2021 = datetime.datetime.strptime("2021-09-13", "%Y-%m-%d").date()
 
 
+class ActionAlertTests(TestCase):
+    """Alert-related action tests"""
+
+    @classmethod
+    def setUpTestData(cls):
+        User = get_user_model()
+
+        cls.first_user = User.objects.create_user(
+            username="frusciante",
+            password="12345",
+            first_name="John",
+            last_name="Frusciante",
+            email="frusciante@gmail.com",
+        )
+
+        cls.second_user = User.objects.create_user(
+            username="other_user",
+            password="12345",
+            first_name="Aaa",
+            last_name="Bbb",
+            email="otheruser@gmail.com",
+        )
+
+        cls.first_species = Species.objects.create(
+            name="Procambarus fallax", gbif_taxon_key=8879526
+        )
+
+        cls.first_dataset = Dataset.objects.create(
+            name="Test dataset", gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+        )
+
+        cls.alert = Alert.objects.create(
+            name="Test alert",
+            user=cls.first_user,
+            email_notifications_frequency="N",
+        )
+        cls.alert.species.add(cls.first_species)
+        cls.alert.datasets.add(cls.first_dataset)
+
+    def test_delete_alert_anonymous(self):
+        """An anonymous user cannot delete an alert"""
+        response = self.client.post(
+            reverse("dashboard:actions:delete-alert"),
+            {"alert_id": self.alert.pk},
+        )
+        self.assertEqual(response.status_code, 302)  # We got redirected to sign in
+        self.assertEqual(response.url, "/accounts/signin/?next=/actions/delete_alert")
+
+    def test_delete_alert_success(self):
+        """A user can delete its own alerts"""
+        self.client.login(username="frusciante", password="12345")
+
+        # Situation before: there's an alert for this user
+        self.assertEqual(Alert.objects.filter(user=self.first_user).count(), 1)
+
+        response = self.client.post(
+            reverse("dashboard:actions:delete-alert"),
+            {"alert_id": self.alert.pk},
+        )
+        # No more alerts for this user
+        self.assertEqual(Alert.objects.filter(user=self.first_user).count(), 0)
+
+        # The user gets redirected to the "my alerts" page
+        self.assertEqual(response.status_code, 302)  # We got redirected to sign in
+        self.assertEqual(response.url, "/my-alerts")
+
+    def test_delete_non_existing_alert(self):
+        """We get an error 404 when trying to delete an alert that doesn't exist"""
+        self.client.login(username="frusciante", password="12345")
+
+        # Situation before: there's an alert for this user
+        self.assertEqual(Alert.objects.filter(user=self.first_user).count(), 1)
+
+        response = self.client.post(
+            reverse("dashboard:actions:delete-alert"),
+            {"alert_id": 5},
+        )
+        # The user alert has been untouched
+        self.assertEqual(Alert.objects.filter(user=self.first_user).count(), 1)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_other_user_alert(self):
+        """A user cannot delete an alert owned by someone else"""
+        self.client.login(username="other_user", password="12345")
+
+        # Situation before: there's an alert for this user
+        self.assertEqual(Alert.objects.all().count(), 1)
+
+        response = self.client.post(
+            reverse("dashboard:actions:delete-alert"),
+            {"alert_id": self.alert.pk},
+        )
+        # Alerts are unchanged in the database
+        self.assertEqual(Alert.objects.all().count(), 1)
+
+        self.assertEqual(response.status_code, 403)
+
+
 @override_settings(
     STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
 )

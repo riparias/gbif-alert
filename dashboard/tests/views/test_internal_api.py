@@ -1,4 +1,6 @@
 import datetime
+import json
+from typing import Dict, Any
 from unittest import mock
 from zoneinfo import ZoneInfo
 
@@ -15,16 +17,291 @@ from dashboard.models import (
     Dataset,
     Area,
     ObservationView,
+    Alert,
 )
 
 SEPTEMBER_13_2021 = datetime.datetime.strptime("2021-09-13", "%Y-%m-%d").date()
 OCTOBER_8_2021 = datetime.datetime.strptime("2021-10-08", "%Y-%m-%d").date()
 
 
+class InternalApiAlertTests(TestCase):
+    """Test the alert-related internal API endpoints"""
+
+    @classmethod
+    def setUpTestData(cls):
+        User = get_user_model()
+
+        cls.first_user = User.objects.create_user(
+            username="frusciante",
+            password="12345",
+            first_name="John",
+            last_name="Frusciante",
+            email="frusciante@gmail.com",
+        )
+
+        cls.second_user = User.objects.create_user(
+            username="other_user",
+            password="12345",
+            first_name="Aaa",
+            last_name="Bbb",
+            email="otheruser@gmail.com",
+        )
+
+        cls.first_species = Species.objects.create(
+            name="Procambarus fallax", gbif_taxon_key=8879526
+        )
+        cls.second_species = Species.objects.create(
+            name="Orconectes virilis", gbif_taxon_key=2227064
+        )
+
+        cls.public_area_andenne = Area.objects.create(
+            name="Public polygon - Andenne",
+            # Covers Namur-Liège area (includes Andenne but not Lillois)
+            mpoly=MultiPolygon(
+                Polygon(
+                    (
+                        (4.7866, 50.5200),
+                        (5.6271, 50.6839),
+                        (5.6930, 50.5724),
+                        (4.8306, 50.4116),
+                        (4.7866, 50.5200),
+                    ),
+                    srid=4326,
+                ),
+                srid=4326,
+            ),
+        )
+
+        cls.first_dataset = Dataset.objects.create(
+            name="Test dataset", gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+        )
+
+        cls.alert = Alert.objects.create(
+            name="Test alert",
+            user=cls.first_user,
+            email_notifications_frequency="N",
+        )
+        cls.alert.species.add(cls.first_species)
+        cls.alert.datasets.add(cls.first_dataset)
+        cls.alert.areas.add(cls.public_area_andenne)
+
+    def test_edit_alert_get(self):
+        """GET requests return alert details so the form can be populated"""
+        self.client.login(username="frusciante", password="12345")
+
+        response = self.client.get(
+            reverse("dashboard:internal-api:alert"),
+            {"alert_id": self.alert.pk},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "areaIds": [self.public_area_andenne.pk],
+                "datasetIds": [self.first_dataset.pk],
+                "emailNotificationsFrequency": "N",
+                "id": self.alert.pk,
+                "name": "Test alert",
+                "speciesIds": [self.first_species.pk],
+            },
+        )
+
+    def _post_to_alert_endpoint(self, post_data: Dict[str, Any]):
+        return self.client.post(
+            reverse("dashboard:internal-api:alert"),
+            json.dumps(post_data),
+            content_type="application/json",
+        )
+
+    def _assert_alert_endpoint_response(
+        self, response, expected_response, expected_status_code=200
+    ):
+        self.assertEqual(response.status_code, expected_status_code)
+        self.assertDictEqual(response.json(), expected_response)
+
+    def _assert_alert_unchanged(self):
+        """Assert that self.alert has not been changed"""
+        before = self.alert.as_dict
+        self.alert.refresh_from_db()
+        self.assertDictEqual(before, self.alert.as_dict)
+
+    def test_edit_alert_can_keep_name(self):
+        """A user can edit its own alerts and keep the same name"""
+        self.client.login(username="frusciante", password="12345")
+
+        post_data = {
+            "id": self.alert.pk,
+            "name": "Test alert",
+            "speciesIds": [s.pk for s in self.alert.species.all()],
+            "areaIds": [a.pk for a in self.alert.areas.all()],
+            "datasetIds": [d.pk for d in self.alert.datasets.all()],
+            "emailNotificationsFrequency": self.alert.email_notifications_frequency,
+        }
+        response = self._post_to_alert_endpoint(post_data)
+
+        self._assert_alert_endpoint_response(
+            response, {"alertId": self.alert.pk, "errors": {}, "success": True}
+        )
+
+    def test_edit_alert_cannot_duplicate_names(self):
+        """A user cannot edit its own alerts and use the same name as another alert"""
+
+        Alert.objects.create(name="Test alert 2", user=self.first_user)
+
+        self.client.login(username="frusciante", password="12345")
+        post_data = {
+            "id": self.alert.pk,
+            "name": "Test alert 2",
+            "speciesIds": [s.pk for s in self.alert.species.all()],
+            "areaIds": [a.pk for a in self.alert.areas.all()],
+            "datasetIds": [d.pk for d in self.alert.datasets.all()],
+            "emailNotificationsFrequency": self.alert.email_notifications_frequency,
+        }
+        response = self._post_to_alert_endpoint(post_data)
+
+        self._assert_alert_endpoint_response(
+            response,
+            {
+                "alertId": self.alert.pk,
+                "errors": {
+                    "__all__": ["Alert with this User and Name already exists."]
+                },
+                "success": False,
+            },
+        )
+
+        self._assert_alert_unchanged()
+
+    def test_edit_alert_no_duplicate_names_issues_between_users(self):
+        """Duplicate alert names are allowed between users"""
+        Alert.objects.create(name="Test alert 2", user=self.second_user)
+
+        self.client.login(username="frusciante", password="12345")
+        post_data = {
+            "id": self.alert.pk,
+            "name": "Test alert 2",
+            "speciesIds": [s.pk for s in self.alert.species.all()],
+            "areaIds": [a.pk for a in self.alert.areas.all()],
+            "datasetIds": [d.pk for d in self.alert.datasets.all()],
+            "emailNotificationsFrequency": self.alert.email_notifications_frequency,
+        }
+        response = self._post_to_alert_endpoint(post_data)
+
+        self._assert_alert_endpoint_response(
+            response, {"alertId": self.alert.pk, "errors": {}, "success": True}
+        )
+
+    def test_edit_alert_cannot_edit_other_users_alerts(self):
+        self.client.login(username="other_user", password="12345")
+
+        post_data = {
+            "id": self.alert.pk,
+            "name": "New alert name",
+            "speciesIds": [
+                self.first_species.pk,
+                self.second_species.pk,
+            ],  # Add a species
+            "areaIds": [],  # Remove the area
+            "datasetIds": [],  # Remove the dataset
+            "emailNotificationsFrequency": "M",
+        }
+
+        response = self._post_to_alert_endpoint(post_data)
+
+        # Check the response
+        self.assertEqual(response.status_code, 404)
+
+        self._assert_alert_unchanged()
+
+    def test_edit_alert_species_mandatory(self):
+        self.client.login(username="frusciante", password="12345")
+
+        post_data = {
+            "id": self.alert.pk,
+            "name": self.alert.name,
+            "speciesIds": [],  # Attempt to remove all species
+            "areaIds": [a.pk for a in self.alert.areas.all()],
+            "datasetIds": [d.pk for d in self.alert.datasets.all()],
+            "emailNotificationsFrequency": "M",
+        }
+
+        response = self._post_to_alert_endpoint(post_data)
+
+        self._assert_alert_endpoint_response(
+            response,
+            {
+                "alertId": self.alert.pk,
+                "errors": {"species": ["At least one species must be selected"]},
+                "success": False,
+            },
+        )
+
+        self._assert_alert_unchanged()
+
+    def test_edit_alert_name_mandatory(self):
+        self.client.login(username="frusciante", password="12345")
+
+        post_data = {
+            "id": self.alert.pk,
+            "name": "",  # Attempt to remove name
+            "speciesIds": [s.pk for s in self.alert.species.all()],
+            "areaIds": [a.pk for a in self.alert.areas.all()],
+            "datasetIds": [d.pk for d in self.alert.datasets.all()],
+            "emailNotificationsFrequency": "M",
+        }
+
+        response = self._post_to_alert_endpoint(post_data)
+
+        self._assert_alert_endpoint_response(
+            response,
+            {
+                "alertId": self.alert.pk,
+                "errors": {"name": ["This field cannot be blank."]},
+                "success": False,
+            },
+        )
+
+        self._assert_alert_unchanged()
+
+    def test_edit_alert_success(self):
+        """A user can edit its own alerts"""
+        self.client.login(username="frusciante", password="12345")
+
+        post_data = {
+            "id": self.alert.pk,
+            "name": "New alert name",
+            "speciesIds": [
+                self.first_species.pk,
+                self.second_species.pk,
+            ],  # Add a species
+            "areaIds": [],  # Remove the area
+            "datasetIds": [],  # Remove the dataset
+            "emailNotificationsFrequency": "M",
+        }
+
+        response = self._post_to_alert_endpoint(post_data)
+
+        # Check the response
+        self._assert_alert_endpoint_response(
+            response, {"alertId": self.alert.pk, "errors": {}, "success": True}
+        )
+
+        # Check the alert was updated in the database
+        self.alert.refresh_from_db()
+        self.assertEqual(self.alert.name, "New alert name")
+        self.assertEqual(self.alert.email_notifications_frequency, "M")
+        self.assertEqual(self.alert.species.count(), 2)
+        self.assertEqual(self.alert.datasets.count(), 0)
+        self.assertEqual(self.alert.areas.count(), 0)
+
+
 @override_settings(
     STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
 )
 class InternalApiTests(TestCase):
+    """Test the rest of the internal API endpoints"""
+
     @classmethod
     def setUpTestData(cls):
         cls.first_species = Species.objects.create(
