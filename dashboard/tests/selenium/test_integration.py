@@ -222,10 +222,10 @@ class PteroisSeleniumAlertTests(PteroisSeleniumTestsCommon):
         # Edit alert name
         name_field = self.selenium.find_element(By.ID, "alertName")
         # Sometimes, clear isn't enough...
-        name_field.clear()
         name_field.send_keys(Keys.CONTROL, "a")
         name_field.send_keys(Keys.COMMAND, "a")  # For Mac users
         name_field.send_keys(Keys.DELETE)
+        name_field.clear()
 
         name_field.send_keys("Edited alert name")
 
