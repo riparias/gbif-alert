@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Optional
 
-from django.contrib.gis.gdal import OGRGeometry
+from django.contrib.gis.gdal import OGRGeometry, SpatialReference
 from django.test import TestCase
 
 from dashboard.views.pages import _file_to_wkt_multipolygon
@@ -13,16 +13,20 @@ SAMPLE_DATA_PATH = THIS_SCRIPT_PATH / "sample_data"
 class AreaUploadTests(TestCase):
     def assertCorrectPolygon(self, wkt: Optional[str]) -> None:
         self.assertIsNotNone(wkt)
-        geom = OGRGeometry(wkt, srs=3857)
+        geom = OGRGeometry(wkt, SpatialReference(3857))
         geom.transform(
             4326
         )  # Transform to WGS84 for easier comparison to points and debugging
         self.assertEqual(geom.geom_type, "MultiPolygon")
         # Only one polygon in the collection
-        self.assertEqual(len(geom), 1)
+        self.assertEqual(len(geom), 1)  # type: ignore
         # The polygon contains the Brussels airport, but not the Charleroi airport
-        bru_airport = OGRGeometry("POINT (4.483998064 50.90082973)", srs=4326)
-        crl_airport = OGRGeometry("POINT (4.45166486 50.455998176)", srs=4326)
+        bru_airport = OGRGeometry(
+            "POINT (4.483998064 50.90082973)", SpatialReference(4326)
+        )
+        crl_airport = OGRGeometry(
+            "POINT (4.45166486 50.455998176)", SpatialReference(4326)
+        )
         self.assertTrue(geom.contains(bru_airport))
         self.assertFalse(geom.contains(crl_airport))
 

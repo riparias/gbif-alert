@@ -7,7 +7,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.gis.gdal import DataSource
 from django.contrib.gis.gdal.geometries import MultiPolygon
 from django.core.exceptions import BadRequest
-from django.http import HttpResponseForbidden, HttpRequest, HttpResponse
+from django.http import (
+    HttpResponseForbidden,
+    HttpRequest,
+    HttpResponse,
+    HttpResponseNotFound,
+)
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.translation import gettext as _
 
@@ -108,38 +113,18 @@ def alert_details_page(
 
 @login_required
 def alert_create_page(request: AuthenticatedHttpRequest) -> HttpResponse:
-    # if request.method == "POST":
-    #     form = AlertForm(request.user, request.POST)
-    #     if form.is_valid():
-    #         alert = form.save(commit=False)
-    #         alert.user = request.user
-    #         alert.save()
-    #         form.save_m2m()
-    #         return redirect(alert)
-    # else:
-    #     form = AlertForm(for_user=request.user)
-
     return render(request, "dashboard/alert_create.html")
 
 
 @login_required
-def alert_edit_page(request: AuthenticatedHttpRequest, alert_id: int) -> HttpResponse:
+def alert_edit_page(
+    request: AuthenticatedHttpRequest, alert_id: int
+) -> HttpResponse | HttpResponseForbidden | HttpResponseNotFound:
     alert = get_object_or_404(Alert, id=alert_id)
     if alert.user == request.user:
         return render(request, "dashboard/alert_edit.html", {"alert": alert})
-    #     if request.method == "POST":
-    #         form = AlertForm(request.user, request.POST, instance=alert)
-    #         if form.is_valid():
-    #             alert = form.save(commit=False)
-    #             alert.user = request.user
-    #             alert.save()
-    #             form.save_m2m()
-    #             return redirect(alert)
-    #     else:
-    #         form = AlertForm(for_user=request.user, instance=alert)
-    #     return render(request, "dashboard/alert_edit.html", {"form": form})
-    # else:
-    #     return HttpResponseForbidden()
+
+    return HttpResponseForbidden()
 
 
 def user_signup_page(request: HttpRequest) -> HttpResponse:
@@ -188,9 +173,10 @@ def _file_to_wkt_multipolygon(
         )
     layer = ds[0]
 
-    if layer.num_feat != 1:
+    num_feat = layer.num_feat  # type: ignore
+    if num_feat != 1:
         raise ValueError(
-            f"The file must contain a single feature, {layer.num_feat} features found"
+            f"The file must contain a single feature, {num_feat} features found"
         )
 
     if layer.srs is None:
@@ -220,9 +206,9 @@ def user_areas_page(request: AuthenticatedHttpRequest) -> HttpResponse:
 
         # UploadedFile may be in memory (if it's small), so it lacks a proper path, need to hack with a temporary file
         with tempfile.NamedTemporaryFile(
-            suffix=request.FILES["data_file"].name
+            suffix=request.FILES["data_file"].name  # type: ignore
         ) as temp:
-            temp.write(request.FILES["data_file"].read())
+            temp.write(request.FILES["data_file"].read())  # type: ignore
             mp = _file_to_wkt_multipolygon(temp.name)
 
             if form.is_valid() and mp is not None:
