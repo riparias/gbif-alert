@@ -188,7 +188,72 @@ class PteroisSeleniumAlertTests(PteroisSeleniumTestsCommon):
 
     def test_alert_edit_initial_values(self):
         """The user go to the edit alert page, and the initial values are correct for the alert"""
-        # TODO: implement this test
+        # Action 1: login
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
+
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("testuser")
+        password_field.send_keys("12345")
+        signin_button = self.selenium.find_element(By.ID, "pterois-signin-button")
+        signin_button.click()
+        WebDriverWait(self.selenium, 3)
+
+        # Check 1: There a "my alerts" link we can follow
+        navbar = self.selenium.find_element(By.ID, "pterois-main-navbar")
+        navbar.find_element(By.LINK_TEXT, "My alerts").click()
+        WebDriverWait(self.selenium, 3)
+
+        # Check 2: on the page, there's a single edit alert button (only one alert)
+        edit_buttons = self.selenium.find_elements(
+            By.CLASS_NAME, "pterois-edit-alert-button"
+        )
+        self.assertEqual(len(edit_buttons), 1)
+        edit_button = edit_buttons[0]
+        edit_button.click()
+        WebDriverWait(self.selenium, 3)
+
+        # Check 3: the initial values are correct
+        time.sleep(1)
+
+        #  3.1 - the name field is correct
+        name_field = self.selenium.find_element(By.ID, "alertName")
+        self.assertEqual(name_field.get_attribute("value"), "Test alert")
+
+        #  3.2 - the species selection is correct
+        species_section = self.selenium.find_element(
+            By.ID, "pterois-alert-species-selection"
+        )
+        first_species_checkbox = species_section.find_element(
+            By.CSS_SELECTOR, f"input[type='checkbox'][value='{self.first_species.pk}']"
+        )
+        second_species_checkbox = species_section.find_element(
+            By.CSS_SELECTOR, f"input[type='checkbox'][value='{self.second_species.pk}']"
+        )
+        self.assertTrue(first_species_checkbox.is_selected())
+        self.assertFalse(second_species_checkbox.is_selected())
+
+        #  3.3 - the datasets selection is correct
+        datasets_section = self.selenium.find_element(
+            By.ID, "pterois-alert-datasets-selection"
+        )
+
+        for value in [self.first_dataset.pk, self.second_dataset.pk]:
+            dataset_checkbox = datasets_section.find_element(
+                By.CSS_SELECTOR, f"input[type='checkbox'][value='{value}']"
+            )
+            self.assertFalse(dataset_checkbox.is_selected())
+
+        # 3.4 - no areas in test data, so list is empty, and we have nothing to test
+
+        # 3.5 - the email frequency field is correct
+        frequency_select = Select(
+            self.selenium.find_element(By.ID, "pterois-alert-frequency-select")
+        )
+
+        self.assertEqual(frequency_select.first_selected_option.text, "Daily")
 
     def test_alert_edit_scenario(self):
         """The user go to the edit alert page, make edits and save them"""
