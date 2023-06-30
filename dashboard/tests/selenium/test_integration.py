@@ -44,7 +44,7 @@ def _get_webdriver() -> WebDriver:
         chromedriver_args = {"chrome_type": ChromeType.CHROMIUM}
 
     selenium = webdriver.Chrome(
-        service=ChromiumService(ChromeDriverManager(**chromedriver_args).install()),
+        service=ChromiumService(ChromeDriverManager(**chromedriver_args).install()),  # type: ignore
         options=options,
     )
 
