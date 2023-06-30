@@ -1,5 +1,5 @@
 <template>
-  <div v-if="successfullySaved">
+  <div id="pterois-alert-successfully-saved" v-if="successfullySaved">
     <p>{{ $t('message.alertSuccessfullySaved') }}</p>
   </div>
 
@@ -24,7 +24,7 @@
       </div>
     </div>
 
-    <div class="mb-3">
+    <div id="pterois-alert-species-selection" class="mb-3">
       <h3><label class="form-label">{{ $t("message.speciesToInclude") }}*</label></h3>
       <div class="col offset-md-1">
         <ul class="list-unstyled">
@@ -41,7 +41,7 @@
       </div>
     </div>
 
-    <div class="mb-3">
+    <div id="pterois-alert-areas-selection" class="mb-3">
       <h3><label class="form-label">{{ $t("message.areasToInclude") }}</label></h3>
       <div class="col offset-md-1">
         <BootstrapAlert :dismissible="false" alert-type="info">
@@ -55,7 +55,7 @@
       </div>
     </div>
 
-    <div class="mb-3">
+    <div id="pterois-alert-datasets-selection" class="mb-3">
       <h3><label class="form-label">{{ $t("message.datasetsToInclude") }}</label></h3>
       <div class="col offset-md-1">
         <BootstrapAlert :dismissible="false" alert-type="info">
@@ -71,10 +71,10 @@
     </div>
 
 
-    <div class="mb-3">
+    <div id="pterois-alert-frequency-selection" class="mb-3">
       <h3><label class="form-label">{{ $t("message.alertNotificationsFrequency") }}</label></h3>
       <div class="col offset-md-1">
-        <select v-model="alertData.emailNotificationsFrequency" class="form-select">
+        <select id="pterois-alert-frequency-select" v-model="alertData.emailNotificationsFrequency" class="form-select">
           <option v-for="frequency in availableNotificationFrequencies" :value="frequency.id">{{
               frequency.label
             }}

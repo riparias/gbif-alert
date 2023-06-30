@@ -15,7 +15,7 @@
             <li class="list-group-item" id="pterois-alert-datasets-list">
                 <b>{% translate "Datasets:" %}</b> {{ alert.datasets_list|default:all_translated }}
             </li>
-            <li class="list-group-item">
+            <li class="list-group-item" id="pterois-alert-frequency">
                 <b>{% translate "Email notifications frequency:" %}</b>
                 {{ alert.get_email_notifications_frequency_display }}
 

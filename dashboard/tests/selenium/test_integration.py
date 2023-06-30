@@ -9,6 +9,7 @@ from django.test import override_settings
 from django.utils import timezone
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver import Keys
 from selenium.webdriver.chrome.service import Service as ChromiumService
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
@@ -80,19 +81,19 @@ class PteroisSeleniumTestsCommon(StaticLiveServerTestCase):
         )
         User.objects.create_superuser(username="adminuser", password="67890")
 
-        first_species = Species.objects.create(
+        self.first_species = Species.objects.create(
             name="Procambarus fallax", gbif_taxon_key=8879526
         )
-        second_species = Species.objects.create(
+        self.second_species = Species.objects.create(
             name="Orconectes virilis", gbif_taxon_key=2227064
         )
 
         di = DataImport.objects.create(start=timezone.now())
 
-        first_dataset = Dataset.objects.create(
+        self.first_dataset = Dataset.objects.create(
             name="Test dataset", gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
         )
-        second_dataset = Dataset.objects.create(
+        self.second_dataset = Dataset.objects.create(
             name="Test dataset #2",
             gbif_dataset_key="aaa7b334-ce0d-4e88-aaae-2e0c138d049f",
         )
@@ -100,42 +101,44 @@ class PteroisSeleniumTestsCommon(StaticLiveServerTestCase):
         obs_1 = Observation.objects.create(
             gbif_id=1,
             occurrence_id="1",
-            species=first_species,
+            species=self.first_species,
             date=datetime.date.today(),
             data_import=di,
             initial_data_import=di,
-            source_dataset=first_dataset,
+            source_dataset=self.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),
         )
         Observation.objects.create(
             gbif_id=2,
             occurrence_id="2",
-            species=second_species,
+            species=self.second_species,
             date=datetime.date.today(),
             data_import=di,
             initial_data_import=di,
-            source_dataset=second_dataset,
+            source_dataset=self.second_dataset,
             location=Point(4.35978, 50.64728, srid=4326),
         )
         Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
-            species=second_species,
+            species=self.second_species,
             date=datetime.date.today(),
             data_import=di,
             initial_data_import=di,
-            source_dataset=second_dataset,
+            source_dataset=self.second_dataset,
             location=Point(5.09513, 50.48941, srid=4326),
         )
 
         # Obs 1 (and only obs_1) has been seen by the user
         ObservationView.objects.create(observation=obs_1, user=normal_user)
 
-        Alert.objects.create(
+        alert = Alert.objects.create(
             name="Test alert",
             user=normal_user,
             email_notifications_frequency=Alert.DAILY_EMAILS,
         )
+
+        alert.species.add(self.first_species)
 
 
 class PteroisSeleniumAlertTests(PteroisSeleniumTestsCommon):
@@ -170,15 +173,28 @@ class PteroisSeleniumAlertTests(PteroisSeleniumTestsCommon):
         WebDriverWait(self.selenium, 3)
 
         # Om the edit alert page, let's click the cancel button and make sure we go back to the alerts list
-        cancel_button = self.selenium.find_element(By.LINK_TEXT, "Cancel")
-        cancel_button.click()
+        cancel_button = self.selenium.find_element(
+            By.LINK_TEXT, "Go back to alerts list"
+        )
+        self.selenium.execute_script("arguments[0].scrollIntoView();", cancel_button)
+        self.selenium.execute_script("arguments[0].click();", cancel_button)
+
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("My alerts"))
+
+    def test_alert_edit_validation_errors_scenario(self):
+        pass
+        # TODO: implement this test
+
+    def test_alert_edit_initial_values(self):
+        """The user go to the edit alert page, and the initial values are correct for the alert"""
+        # TODO: implement this test
 
     def test_alert_edit_scenario(self):
         """The user go to the edit alert page, make edits and save them"""
         # Action 1: login
         self.selenium.get(self.live_server_url + "/accounts/signin/")
+
         username_field = self.selenium.find_element(By.ID, "id_username")
         password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
@@ -204,40 +220,85 @@ class PteroisSeleniumAlertTests(PteroisSeleniumTestsCommon):
         WebDriverWait(self.selenium, 3)
 
         # Edit alert name
-        name_field = self.selenium.find_element(By.ID, "id_name")
+        name_field = self.selenium.find_element(By.ID, "alertName")
+        # Sometimes, clear isn't enough...
         name_field.clear()
+        name_field.send_keys(Keys.CONTROL, "a")
+        name_field.send_keys(Keys.COMMAND, "a")  # For Mac users
+        name_field.send_keys(Keys.DELETE)
+
         name_field.send_keys("Edited alert name")
 
-        # Edit selected species (initially: no selection -> all species)
-        species_select = Select(self.selenium.find_element(By.ID, "id_species"))
-        species_select.select_by_visible_text("Orconectes virilis")
+        # Edit selected species (initially: one species -> all species)
+        species_section = self.selenium.find_element(
+            By.ID, "pterois-alert-species-selection"
+        )
+        species_section.find_element(
+            By.CSS_SELECTOR, f"input[type='checkbox'][value='{self.second_species.pk}']"
+        ).click()  # Select also the second species
 
         # Edit selected datasets (initially: no selection -> all datasets)
-        datasets_select = Select(self.selenium.find_element(By.ID, "id_datasets"))
-        datasets_select.select_by_visible_text("Test dataset #2")
+        datasets_section = self.selenium.find_element(
+            By.ID, "pterois-alert-datasets-selection"
+        )
 
-        # Change test alert frequency to "weekly"
+        for value in [self.first_dataset.pk, self.second_dataset.pk]:
+            elem = datasets_section.find_element(
+                By.CSS_SELECTOR, f"input[type='checkbox'][value='{value}']"
+            )
+            self.selenium.execute_script("arguments[0].scrollIntoView();", elem)
+            self.selenium.execute_script("arguments[0].click();", elem)
+
+        # Change test alert frequency to "weekly" (initially daily)
         frequency_select = Select(
-            self.selenium.find_element(By.ID, "id_email_notifications_frequency")
+            self.selenium.find_element(By.ID, "pterois-alert-frequency-select")
         )
         frequency_select.select_by_visible_text("Weekly")
 
-        # Click the save button, gets redirected to the alerts details page
+        # Click the save button
+
         save_button = self.selenium.find_element(By.ID, "pterois-alert-save-btn")
+        self.selenium.execute_script("arguments[0].scrollIntoView();", save_button)
+        wait = WebDriverWait(self.selenium, 3)
+        wait.until(EC.element_to_be_clickable(save_button))
+        time.sleep(1)
         save_button.click()
 
+        # We get a success message
         wait = WebDriverWait(self.selenium, 3)
+        wait.until(
+            EC.presence_of_element_located((By.ID, "pterois-alert-successfully-saved"))
+        )
+
+        # We now have a button to see the details of the alert, let's click it
+        alert_page_button = self.selenium.find_element(
+            By.LINK_TEXT, "View alert observations"
+        )
+        alert_page_button.click()
+
+        wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Alert details"))
 
-        # Check the values are actually updated
-        title = self.selenium.find_element(By.CLASS_NAME, "pterois-alert-title")
-        self.assertEqual(title.text, "Edited alert name")
+        alert_title = self.selenium.find_element(By.CLASS_NAME, "pterois-alert-title")
+        self.assertEqual(alert_title.text, "Edited alert name")
 
-        species_list = self.selenium.find_element(By.ID, "pterois-alert-species-list")
-        self.assertEqual(species_list.text, "Species: Orconectes virilis")
+        species_list_text = self.selenium.find_element(
+            By.ID, "pterois-alert-species-list"
+        ).text
+        self.assertIn("Orconectes virilis", species_list_text)
+        self.assertIn("Procambarus fallax", species_list_text)
 
-        datasets_list = self.selenium.find_element(By.ID, "pterois-alert-datasets-list")
-        self.assertEqual(datasets_list.text, "Datasets: Test dataset #2")
+        datasets_list_text = self.selenium.find_element(
+            By.ID, "pterois-alert-datasets-list"
+        ).text
+        self.assertIn("Test dataset", datasets_list_text)
+        self.assertIn("Test dataset #2", datasets_list_text)
+
+        # Check that the alert frequency is weekly
+        frequency_text = self.selenium.find_element(
+            By.ID, "pterois-alert-frequency"
+        ).text
+        self.assertIn("Weekly", frequency_text)
 
     def test_alert_delete_scenario(self):
         # Action 1: login
