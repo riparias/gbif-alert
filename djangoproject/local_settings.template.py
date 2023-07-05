@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Any
 
 from .settings import *
 
@@ -48,7 +48,7 @@ ADMINS = [
     ("Nicolas", "nicolas.noe@inbo.be"),
 ]
 
-PTEROIS: Dict[str, Any] = {
+PTEROIS: dict[str, Any] = {
     "SITE_NAME": "LIFE RIPARIAS early alert",
     "ENABLED_LANGUAGES": (
         "en",

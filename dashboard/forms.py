@@ -1,24 +1,10 @@
-from typing import Tuple
-
 from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.utils.translation import gettext_lazy as _
 
-from dashboard.models import ObservationComment, Alert, Area, User
-
-
-def get_initial_alert_name(user: User) -> str:
-    """Return a nice name such as "My alert #3", depending on the existing user alerts"""
-    alert_number = 1
-    existing_alert_names = Alert.objects.filter(user=user).values_list(
-        "name", flat=True
-    )
-    while f"My alert #{alert_number}" in existing_alert_names:
-        alert_number += 1
-
-    return f"My alert #{alert_number}"
+from dashboard.models import ObservationComment
 
 
 class NewCustomAreaForm(forms.Form):
@@ -30,41 +16,6 @@ class NewCustomAreaForm(forms.Form):
     data_file = forms.FileField(
         label=_("Data file"),
     )
-
-
-class AlertForm(forms.ModelForm):
-    def __init__(self, for_user, *args, **kwargs):
-        super(AlertForm, self).__init__(*args, **kwargs)
-        self.user = for_user
-        self.fields["name"].initial = get_initial_alert_name(self.user)
-        self.fields["areas"].queryset = Area.objects.available_to(user=self.user)
-
-    class Meta:
-        model = Alert
-        fields: Tuple[str, ...] = (
-            "name",
-            "species",
-            "areas",
-            "datasets",
-            "email_notifications_frequency",
-        )
-
-    def clean(self):
-        cleaned_data = self.cleaned_data
-        try:
-            if (
-                Alert.objects.filter(name=cleaned_data["name"], user=self.user)
-                .exclude(pk=self.instance.pk)
-                .exists()
-            ):
-                raise ValidationError(
-                    _(
-                        "You already have another alert with this name. Please choose a different name."
-                    )
-                )
-        except KeyError:  # name is not provided, skip the check
-            pass
-        return cleaned_data
 
 
 def _enabled_languages_as_tuple():
@@ -101,7 +52,7 @@ class CommonUsersFields(forms.ModelForm):
     class Meta:
         model = get_user_model()
 
-        fields: Tuple[str, ...] = (
+        fields: tuple[str, ...] = (
             "username",
             "first_name",
             "last_name",

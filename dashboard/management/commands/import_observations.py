@@ -1,7 +1,6 @@
 import argparse
 import datetime
 import tempfile
-from typing import Dict, Optional
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
@@ -22,7 +21,7 @@ from .helpers import get_dataset_name_from_gbif_api
 
 def build_gbif_predicate(
     country_code: str, minimum_year: int, species_list: QuerySet[Species]
-) -> Dict:
+) -> dict:
     """Build a GBIF predicate (for occurrence download) targeting a specific country and a list of species"""
     return {
         "predicate": {
@@ -107,7 +106,7 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
     year_str = get_string_data(row, field_name=qn("year"))
 
     try:
-        point: Optional[Point] = Point(
+        point: Point | None = Point(
             get_float_data(row, field_name=qn("decimalLongitude")),
             get_float_data(row, field_name=qn("decimalLatitude")),
             srid=4326,
@@ -152,14 +151,14 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
         )
 
         try:
-            individual_count: Optional[int] = get_int_data(
+            individual_count: int | None = get_int_data(
                 row, field_name=qn("individualCount")
             )
         except ValueError:
             individual_count = None
 
         try:
-            coordinates_uncertainty: Optional[float] = get_float_data(
+            coordinates_uncertainty: float | None = get_float_data(
                 row, field_name=qn("coordinateUncertaintyInMeters")
             )
         except ValueError:

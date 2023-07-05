@@ -11,10 +11,8 @@ will):
     - status_for_user: seen | unseen. Ignored for anonymous users. If the parameter is not set or is set to any other
       value than seen or unseen, filtering is not applied
 """
-from __future__ import annotations
 
 import json
-from typing import List, Optional
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -224,12 +222,12 @@ def alert_as_filters(
 
 def _create_or_update_alert(
     alert_name: str,
-    species_ids: List[int],
-    area_ids: List[int],
-    dataset_ids: List[int],
+    species_ids: list[int],
+    area_ids: list[int],
+    dataset_ids: list[int],
     email_notifications_frequency: str,
     user: User,
-    alert_id: Optional[int] = None,
+    alert_id: int | None = None,
 ) -> JsonResponse:
     """Create or update an alert, depending on the alert_id value"""
     if alert_id:

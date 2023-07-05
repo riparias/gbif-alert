@@ -2,7 +2,6 @@
 
 import ast
 import datetime
-from typing import Tuple, List, Optional, Dict
 from urllib.parse import unquote
 
 from django.db.models import QuerySet
@@ -28,16 +27,16 @@ def _get_querydict_from_request(request: HttpRequest) -> QueryDict:
         return QueryDict(query_string=request.body)
 
 
-def extract_str_request(request: HttpRequest, param_name: str) -> Optional[str]:
+def extract_str_request(request: HttpRequest, param_name: str) -> str | None:
     return _get_querydict_from_request(request).get(param_name, None)
 
 
-def extract_int_array_request(request: HttpRequest, param_name: str) -> List[int]:
+def extract_int_array_request(request: HttpRequest, param_name: str) -> list[int]:
     """Like extract_array_request, but elements are converted to integers"""
     return list(map(lambda e: int(e), extract_array_request(request, param_name)))
 
 
-def extract_array_request(request: HttpRequest, param_name: str) -> List[str]:
+def extract_array_request(request: HttpRequest, param_name: str) -> list[str]:
     # Return an array of strings
     # Example:
     #   in: ?speciesIds[]=10&speciesIds[]=12 (params in URL string)
@@ -46,7 +45,7 @@ def extract_array_request(request: HttpRequest, param_name: str) -> List[str]:
     return _get_querydict_from_request(request).getlist(param_name)
 
 
-def extract_int_request(request: HttpRequest, param_name: str) -> Optional[int]:
+def extract_int_request(request: HttpRequest, param_name: str) -> int | None:
     """Returns an integer, or None if the parameter doesn't exist or is 'null'"""
     val = _get_querydict_from_request(request).get(param_name, None)
     if val == "" or val == "null" or val is None:
@@ -57,7 +56,7 @@ def extract_int_request(request: HttpRequest, param_name: str) -> Optional[int]:
 
 def extract_date_request(
     request: HttpRequest, param_name: str, date_format="%Y-%m-%d"
-) -> Optional[datetime.date]:
+) -> datetime.date | None:
     """Return a datetime.date object (or None is the param doesn't exist or is empty)
 
     format: see https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
@@ -70,7 +69,7 @@ def extract_date_request(
     return None
 
 
-def extract_dict_request(request: HttpRequest, param_name: str) -> Optional[Dict]:
+def extract_dict_request(request: HttpRequest, param_name: str) -> dict | None:
     """Returns a dict. The parameter is expected to be URL encoded via  urlencode() or similar
 
     Edge cases:
@@ -81,7 +80,7 @@ def extract_dict_request(request: HttpRequest, param_name: str) -> Optional[Dict
     val = extract_str_request(request, param_name)
     if val is not None:
         evaluated = ast.literal_eval(unquote(val))
-        if isinstance(evaluated, Dict):
+        if isinstance(evaluated, dict):
             return evaluated
 
     return None
@@ -117,14 +116,14 @@ def filtered_observations_from_request(request: HttpRequest) -> QuerySet[Observa
 
 def filters_from_request(
     request: HttpRequest,
-) -> Tuple[
-    List[int],
-    List[int],
-    Optional[datetime.date],
-    Optional[datetime.date],
-    List[int],
-    Optional[str],
-    List[int],
+) -> tuple[
+    list[int],
+    list[int],
+    datetime.date | None,
+    datetime.date | None,
+    list[int],
+    str | None,
+    list[int],
 ]:
     species_ids = extract_int_array_request(request, "speciesIds[]")
     datasets_ids = extract_int_array_request(request, "datasetsIds[]")

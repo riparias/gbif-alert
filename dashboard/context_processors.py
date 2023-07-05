@@ -1,5 +1,3 @@
-from typing import Optional
-
 from django.conf import settings as django_settings
 from django.http import HttpRequest
 
@@ -10,7 +8,7 @@ from page_fragments.models import NEWS_PAGE_IDENTIFIER
 
 def latest_data_import_processor(_: HttpRequest):
     try:
-        data_import: Optional[DataImport] = DataImport.objects.latest("id")
+        data_import: DataImport | None = DataImport.objects.latest("id")
     except DataImport.DoesNotExist:
         data_import = None
     return {

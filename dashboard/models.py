@@ -1,11 +1,9 @@
-from __future__ import annotations
-
 import datetime
 import hashlib
 import logging
 import os
 import smtplib
-from typing import Optional, Any, Dict, List
+from typing import Any, Self
 
 import html2text
 from django.conf import settings
@@ -215,15 +213,15 @@ class DataImport(models.Model):
 class ObservationManager(models.Manager["Observation"]):
     def filtered_from_my_params(
         self,
-        species_ids: List[int],
-        datasets_ids: List[int],
-        start_date: Optional[datetime.date],
-        end_date: Optional[datetime.date],
-        areas_ids: List[int],
-        status_for_user: Optional[str],
-        initial_data_import_ids: List[int],
-        user: Optional[User],  # mandatory if status_for_user is set
-    ) -> QuerySet[Observation]:
+        species_ids: list[int],
+        datasets_ids: list[int],
+        start_date: datetime.date | None,
+        end_date: datetime.date | None,
+        areas_ids: list[int],
+        status_for_user: str | None,
+        initial_data_import_ids: list[int],
+        user: User | None,  # mandatory if status_for_user is set
+    ) -> QuerySet["Observation"]:
         # !! IMPORTANT !! Make sure the observation filtering here is equivalent to what's done in
         # views.maps.JINJASQL_FRAGMENT_FILTER_OBSERVATIONS. Otherwise, observations returned on the map and on other
         # components (table, ...) will be inconsistent.
@@ -327,7 +325,7 @@ class Observation(models.Model):
             except ObservationView.DoesNotExist:
                 ObservationView.objects.create(observation=self, user=user)
 
-    def first_seen_at(self, user: WebsiteUser) -> Optional[datetime.datetime]:
+    def first_seen_at(self, user: WebsiteUser) -> datetime.datetime | None:
         """Return the time a user as first seen this observation
 
         Returns none if the user is not logged in, or if they have not seen the observation yet
@@ -393,7 +391,7 @@ class Observation(models.Model):
                 observation_view.save()
 
     @property
-    def replaced_observation(self) -> Optional[Observation]:
+    def replaced_observation(self) -> Self | None:
         """Return the observation (from a previous import) that will be replaced by this one
 
         return None if this observation is new to the system
@@ -415,16 +413,16 @@ class Observation(models.Model):
         else:  # Multiple observations found, this is abnormal
             raise Observation.MultipleObjectsReturned
 
-    def get_identical_observations(self) -> QuerySet[Observation]:
+    def get_identical_observations(self) -> QuerySet[Self]:
         """Return 'identical' observations (same stable_id), excluding myself"""
-        return Observation.objects.exclude(pk=self.pk).filter(
+        return Observation.objects.exclude(pk=self.pk).filter(  # type: ignore
             stable_id=Observation.build_stable_id(
                 self.occurrence_id, self.source_dataset.gbif_dataset_key
             )
         )
 
     @property
-    def sorted_comments_set(self) -> QuerySet[ObservationComment]:
+    def sorted_comments_set(self) -> QuerySet["ObservationComment"]:
         return self.observationcomment_set.order_by("-created_at")
 
     @staticmethod
@@ -437,15 +435,15 @@ class Observation(models.Model):
         return hashlib.sha1(s.encode("utf-8")).hexdigest()
 
     @property
-    def lat(self) -> Optional[float]:
+    def lat(self) -> float | None:
         return self.lonlat_4326_tuple[1]
 
     @property
-    def lon(self) -> Optional[float]:
+    def lon(self) -> float | None:
         return self.lonlat_4326_tuple[0]
 
     @property
-    def lonlat_4326_tuple(self) -> tuple[Optional[float], Optional[float]]:
+    def lonlat_4326_tuple(self) -> tuple[float | None, float | None]:
         """Coordinates as a (lon, lat) tuple, in EPSG:4326
 
         (None, None) in case the observation has no location
@@ -511,13 +509,13 @@ class ObservationComment(models.Model):
 
 
 class MyAreaManager(models.Manager["Area"]):
-    def owned_by(self, user: WebsiteUser) -> QuerySet[Area]:
+    def owned_by(self, user: WebsiteUser) -> QuerySet["Area"]:
         return super(MyAreaManager, self).get_queryset().filter(owner=user)
 
-    def public(self) -> QuerySet[Area]:
+    def public(self) -> QuerySet["Area"]:
         return super(MyAreaManager, self).get_queryset().filter(owner=None)
 
-    def available_to(self, user: WebsiteUser) -> QuerySet[Area]:
+    def available_to(self, user: WebsiteUser) -> QuerySet["Area"]:
         if user.is_authenticated:
             return (
                 super(MyAreaManager, self)
@@ -688,7 +686,7 @@ class Alert(models.Model):
         return ", ".join(self.species.order_by("name").values_list("name", flat=True))
 
     @property
-    def as_dashboard_filters(self) -> Dict[str, Any]:
+    def as_dashboard_filters(self) -> dict[str, Any]:
         """The alert represented as a dict
 
         Once converted to JSON, this dict is suitable for Observation filtering in the frontend
@@ -704,7 +702,7 @@ class Alert(models.Model):
         }
 
     @property
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "id": self.pk,
             "name": self.name,

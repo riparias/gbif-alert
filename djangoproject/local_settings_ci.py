@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Any
 
 from .settings import *
 
@@ -32,7 +32,7 @@ RQ_QUEUES = {
 # used to refer to the website in emails! Points to the site root, includes protocol, host, port... No trailing slash.
 SITE_BASE_URL = "http://localhost"
 
-PTEROIS: Dict[str, Any] = {
+PTEROIS: dict[str, Any] = {
     "SITE_NAME": "LIFE RIPARIAS early alert",
     "ENABLED_LANGUAGES": (
         "en",

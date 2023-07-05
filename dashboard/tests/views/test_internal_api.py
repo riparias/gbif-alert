@@ -1,6 +1,6 @@
 import datetime
 import json
-from typing import Dict, Any
+from typing import Any
 from unittest import mock
 from zoneinfo import ZoneInfo
 
@@ -107,7 +107,7 @@ class InternalApiAlertTests(TestCase):
             },
         )
 
-    def _post_to_alert_endpoint(self, post_data: Dict[str, Any]):
+    def _post_to_alert_endpoint(self, post_data: dict[str, Any]):
         return self.client.post(
             reverse("dashboard:internal-api:alert"),
             json.dumps(post_data),

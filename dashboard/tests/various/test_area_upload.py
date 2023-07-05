@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 from django.contrib.gis.gdal import OGRGeometry, SpatialReference
 from django.test import TestCase
@@ -11,7 +10,7 @@ SAMPLE_DATA_PATH = THIS_SCRIPT_PATH / "sample_data"
 
 
 class AreaUploadTests(TestCase):
-    def assertCorrectPolygon(self, wkt: Optional[str]) -> None:
+    def assertCorrectPolygon(self, wkt: str | None) -> None:
         self.assertIsNotNone(wkt)
         geom = OGRGeometry(wkt, SpatialReference(3857))
         geom.transform(
