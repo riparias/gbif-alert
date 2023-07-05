@@ -47,11 +47,13 @@
                                 </a>
                             </li>
 
-                            <li>
-                                <a class="dropdown-item" href="{% url 'dashboard:pages:my-custom-areas' %}">
-                                    <i class="bi bi-map"></i> {% translate "My custom areas" %}
-                                </a>
-                            </li>
+                            {% if not pterois_settings.HIDE_MY_CUSTOM_AREAS_PAGE %}
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'dashboard:pages:my-custom-areas' %}">
+                                        <i class="bi bi-map"></i> {% translate "My custom areas" %}
+                                    </a>
+                                </li>
+                            {% endif %}
 
                             <li>
                                 <hr class="dropdown-divider">

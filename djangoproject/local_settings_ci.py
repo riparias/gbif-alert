@@ -50,6 +50,7 @@ PTEROIS: Dict[str, Any] = {
         "initialLat": 50.50,
         "initialLon": 4.47,
     },
+    "HIDE_MY_CUSTOM_AREAS_PAGE": False,
 }
 
 SELENIUM_CHROMEDRIVER_VERSION = "114.0.5735.90"
