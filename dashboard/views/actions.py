@@ -1,5 +1,4 @@
 """Actions are simple views that issue a redirect"""
-from typing import Union
 
 from django.contrib import messages
 from django.contrib.auth import logout
@@ -56,7 +55,7 @@ def delete_own_account(request: AuthenticatedHttpRequest):
 @login_required
 def area_delete(
     request: AuthenticatedHttpRequest, id: int
-) -> Union[HttpResponseRedirect, HttpResponseForbidden]:
+) -> HttpResponseRedirect | HttpResponseForbidden:
     """Delete an area"""
     if request.method == "POST":
         area = get_object_or_404(Area, pk=id)

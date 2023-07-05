@@ -5,7 +5,7 @@ import hashlib
 import logging
 import os
 import smtplib
-from typing import Optional, Union, Any, Dict, List
+from typing import Optional, Any, Dict, List
 
 import html2text
 from django.conf import settings
@@ -97,7 +97,7 @@ def empty_user_comments(sender, instance, **kwargs):
     instance.empty_all_comments()
 
 
-WebsiteUser = Union[User, AnonymousUser]
+WebsiteUser = User | AnonymousUser
 
 
 class Species(models.Model):  # type: ignore
