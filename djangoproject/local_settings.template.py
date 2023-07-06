@@ -14,7 +14,7 @@ DEBUG = True
 DATABASES = {
     "default": {
         "ENGINE": "django.contrib.gis.db.backends.postgis",
-        "NAME": "riparias-early-alert-webapp",
+        "NAME": "pterois",
     }
 }
 
