@@ -1,4 +1,4 @@
-name: Automatic deployment - dev
+name: Automatic deployment - demo server
 on:
   push:
     branches: [ devel ]

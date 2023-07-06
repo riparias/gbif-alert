@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "riparias-early-alert-webapp"
+name = "pterois"
 version = "0.1.0"
 description = "LIFE RIPARIAS early alert web application"
 authors = ["Nicolas Noé <nicolas@niconoe.eu>"]
