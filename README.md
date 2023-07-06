@@ -1,29 +1,22 @@
-# LIFE RIPARIAS early alert web application
+# Pterois
 
 <!-- badges: start -->
 [![Django CI](https://github.com/riparias/early-alert-webapp/actions/workflows/django_tests.yml/badge.svg)](https://github.com/riparias/early-alert-webapp/actions/workflows/django_tests.yml)
-[![Funding](https://img.shields.io/static/v1?label=powered+by&message=LIFE+RIPARIAS&labelColor=323232&color=00a58d)](https://www.riparias.be/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Deployment on dev server](https://github.com/riparias/early-alert-webapp/actions/workflows/deploy_dev_server.yml/badge.svg)](https://github.com/riparias/early-alert-webapp/actions/workflows/deploy_dev_server.yml)
 <!-- badges: end -->
 
-This repository contains the source code of the early alert web application for [LIFE RIPARIAS](https://www.riparias.be/) (Action A.1.2).
+Pterois is a [GBIF](https://www.gbif.org)-based early alert system for invasive species.
 
-Development version visible on [dev-alert.riparias.be](http://dev-alert.riparias.be/).
+In practice:
+
+- It is a reusable and open-source (MIT licence) Django-based website
+- That can be configured to monitor a list of species in a given area of interest
+- ... and be deployed on a server at a given URL => we'd call that a *Pterois instance*
+- This install will automatically download GBIF data for the species in the area of interest at a given frequency (typically daily)
+- Finally, users / visitors of the instance can see the latest GBIF data for the species in the area of interest, and be notified of new occurrences via email
 
 Developer documentation is available in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Next steps
+## Pterois instances
 
-See [open issues](https://github.com/riparias/early-alert-webapp/issues) and [milestones](https://github.com/riparias/early-alert-webapp/milestones).
-
-TODO:
-
-  - Add automated tests (selemium-based?)
-
-New selector:
-- adjust alertform to use
-- test extensively
-
-
-!! http://localhost:8001/alert/34: plei nde resultats dans la table alors que ca devrait etre 0...
+- [LIFE RIPARIAS Early Alert](https://alert.riparias.be) (Targets riparian invasive species in Belgium)
