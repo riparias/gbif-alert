@@ -1,7 +1,7 @@
 # Pterois
 
 <!-- badges: start -->
-[![Django CI](https://github.com/riparias/early-alert-webapp/actions/workflows/django_tests.yml/badge.svg)](https://github.com/riparias/early-alert-webapp/actions/workflows/django_tests.yml)
+[![Django CI](https://github.com/riparias/pterois/actions/workflows/django_tests.yml/badge.svg)](https://github.com/riparias/early-alert-webapp/actions/workflows/django_tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 <!-- badges: end -->
 
@@ -17,6 +17,10 @@ In practice:
 
 Developer documentation is available in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Pterois instances
+## How to install a Pterois instance
+
+See [INSTALL.md](INSTALL.md).
+
+## Pterois instances in the wild
 
 - [LIFE RIPARIAS Early Alert](https://alert.riparias.be) (Targets riparian invasive species in Belgium)

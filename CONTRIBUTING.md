@@ -169,3 +169,9 @@ This tool can also be used to manually activate maintenance mode during complex 
 
 TODO i18n:
 - call compilemessages at deploy time (dev, prod, ci), might need more dependencies for this. Dev/prod: already installed the gettext package and added the compilemessages command to scripts. CI: added gettext package to the workflow
+
+## How to release a new version
+
+- Update CHANGELOG.md
+- Create a new tag (e.g. `v1.2.3`) and push it to GitHub
+- Create a new release on GitHub (with the same tag name)
