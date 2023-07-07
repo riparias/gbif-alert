@@ -24,3 +24,4 @@ See [INSTALL.md](INSTALL.md).
 ## Pterois instances in the wild
 
 - [LIFE RIPARIAS Early Alert](https://alert.riparias.be) (Targets riparian invasive species in Belgium)
+- [Pterois demo instance](https://pterois-demo.niconoe.eu/) (Always in sync with the `devel` branch of this repository)

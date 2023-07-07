@@ -34,29 +34,30 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "email-smtp.eu-west-1.amazonaws.com"
 EMAIL_HOST_USER = "yyy"
 EMAIL_HOST_PASSWORD = "xxx"
-EMAIL_SUBJECT_PREFIX = "[dev-alert.riparias.be] "
+EMAIL_SUBJECT_PREFIX = "[pterois-instance-url] "
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = (
-    "LIFE RIPARIAS early alert <info@dev-alert.localhost>"  # Used for normal messages
+    "Pterois instance name <info@pterois.xyz>"  # Used for normal messages
 )
-SERVER_EMAIL = "LIFE RIPARIAS early alert <info@dev-alert.riparias.be>"  # Used to contact admins for errors, ...
+SERVER_EMAIL = "Pterois instance name <info@pterois.xyz>"  # Used to contact admins for errors, ...
 
 # used to refer to the website in emails! Points to the site root, includes protocol, host, port... No trailing slash.
-SITE_BASE_URL = "http://dev-alert.riparias.be"
+SITE_BASE_URL = "http://pterois.xyz"
 
 ADMINS = [
-    ("Nicolas", "nicolas.noe@inbo.be"),
+    ("your name", "your@email.xyz"),
 ]
 
 PTEROIS: dict[str, Any] = {
-    "SITE_NAME": "LIFE RIPARIAS early alert",
+    "SITE_NAME": "Pterois test instance",
     "ENABLED_LANGUAGES": (
         "en",
         "fr",
     ),  # Languages available in the interface. Subset of the languages in `LANGUAGES`.
     "GBIF_DOWNLOAD_CONFIG": {
-        "USERNAME": "riparias-dev",
-        "PASSWORD": "riparias-dev",
+        # A GBIF.org account is required to download data from GBIF.org, please create one then enter your credentials here.
+        "USERNAME": "pterois-gbif-username",
+        "PASSWORD": "pterois-gbif-password",
         "COUNTRY_CODE": "BE",  # Only download observations from this country
         "MINIMUM_YEAR": 2000,  # Observations must be from this year or later
     },
