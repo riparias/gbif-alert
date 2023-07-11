@@ -187,13 +187,6 @@ msgstr ""
 msgid "GBIF predicate"
 msgstr ""
 
-#: dashboard/templates/dashboard/_footer.html:7
-#, python-format
-msgid ""
-"Created by the <a href=\"%(oscibio_url)s\">Open science lab for "
-"biodiversity</a> for <a href=\"%(riparias_url)s\">LIFE RIPARIAS</a>."
-msgstr ""
-
 #: dashboard/templates/dashboard/_footer.html:10
 msgid "Latest data import:"
 msgstr ""

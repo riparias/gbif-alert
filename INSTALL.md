@@ -12,3 +12,13 @@ Here is detailed installation guide:
 $ pyenv local 3.11
 - Install the necessary Python packages:
 $ poetry install
+
+To add/ describe:
+
+- configure local_settings.py
+- create initial superuser
+- create a few species before running the first import
+- install the cronjob for the import
+- test e-mail sending
+- install the cronjob for the email notifications
+- configure required page fragments in the admin

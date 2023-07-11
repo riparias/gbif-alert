@@ -195,15 +195,6 @@ msgstr ""
 msgid "GBIF predicate"
 msgstr "Prédicat GBIF"
 
-#: dashboard/templates/dashboard/_footer.html:7
-#, python-format
-msgid ""
-"Created by the <a href=\"%(oscibio_url)s\">Open science lab for "
-"biodiversity</a> for <a href=\"%(riparias_url)s\">LIFE RIPARIAS</a>."
-msgstr ""
-"Créé par <a href=\"%(oscibio_url)s\">Open science lab for biodiversity</a> "
-"pour le projet <a href=\"%(riparias_url)s\">LIFE RIPARIAS</a>."
-
 #: dashboard/templates/dashboard/_footer.html:10
 msgid "Latest data import:"
 msgstr "Dernier import de données :"
