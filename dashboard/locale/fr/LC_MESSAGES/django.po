@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-13 11:44+0200\n"
+"POT-Creation-Date: 2023-07-11 15:16+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,63 +18,69 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: dashboard/forms.py:54
-msgid ""
-"You already have another alert with this name. Please choose a different "
-"name."
-msgstr ""
-"Vous avez déjà une autre alerte avec ce nom. Veuillez choisir un nom "
-"différent."
+#: dashboard/forms.py:12
+#, fuzzy
+#| msgid "Last name"
+msgid "Area name"
+msgstr "Nom de famille"
 
-#: dashboard/forms.py:78
+#: dashboard/forms.py:14
+msgid "A short name to identify this area"
+msgstr ""
+
+#: dashboard/forms.py:17
+msgid "Data file"
+msgstr ""
+
+#: dashboard/forms.py:37
 msgid "First name"
 msgstr "Prénom"
 
-#: dashboard/forms.py:78 dashboard/forms.py:81
+#: dashboard/forms.py:37 dashboard/forms.py:40
 msgid "Optional."
 msgstr "Facultatif."
 
-#: dashboard/forms.py:81
+#: dashboard/forms.py:40
 msgid "Last name"
 msgstr "Nom de famille"
 
-#: dashboard/forms.py:84
+#: dashboard/forms.py:43
 msgid "Email"
 msgstr "Email"
 
-#: dashboard/forms.py:86
+#: dashboard/forms.py:45
 msgid "Required. Enter a valid email address."
 msgstr "Requis. Entrez une adresse email valide."
 
-#: dashboard/forms.py:90
+#: dashboard/forms.py:49
 msgid "Language"
 msgstr "Langue"
 
-#: dashboard/models.py:611
+#: dashboard/models.py:617
 msgid "No emails"
 msgstr "Pas d'emails"
 
-#: dashboard/models.py:612
+#: dashboard/models.py:618
 msgid "Daily"
 msgstr "Journalier"
 
-#: dashboard/models.py:613
+#: dashboard/models.py:619
 msgid "Weekly"
 msgstr "Hebdomadaire"
 
-#: dashboard/models.py:614
+#: dashboard/models.py:620
 msgid "Monthly"
 msgstr "Mensuel"
 
-#: dashboard/models.py:625
+#: dashboard/models.py:631
 msgid "name"
 msgstr "nom"
 
-#: dashboard/models.py:629
+#: dashboard/models.py:635
 msgid "species"
 msgstr "espèces"
 
-#: dashboard/models.py:632
+#: dashboard/models.py:638
 msgid ""
 "To select multiple items, press and hold the Ctrl or Command key and click "
 "the items."
@@ -82,11 +88,11 @@ msgstr ""
 "Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:638
+#: dashboard/models.py:644
 msgid "datasets"
 msgstr "jeux de données"
 
-#: dashboard/models.py:641
+#: dashboard/models.py:647
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
@@ -95,11 +101,11 @@ msgstr ""
 "Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:648
+#: dashboard/models.py:654
 msgid "areas"
 msgstr "zones"
 
-#: dashboard/models.py:650
+#: dashboard/models.py:656
 msgid ""
 "Optional (no selection = notify me for all data in the system). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
@@ -108,11 +114,11 @@ msgstr ""
 "système). Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou "
 "'pomme / command' enfoncée "
 
-#: dashboard/models.py:659
+#: dashboard/models.py:665
 msgid "email notifications frequency"
 msgstr "fréquence des notifications par email"
 
-#: dashboard/models.py:772
+#: dashboard/models.py:778
 msgid "unseen observation(s) for your alert"
 msgstr "observation(s) non vue(s) pour votre alerte"
 
@@ -164,10 +170,6 @@ msgstr "Modifier cette alerte"
 msgid "Show all my alerts"
 msgstr "Montrer toutes mes alertes"
 
-#: dashboard/templates/dashboard/_alert_form.html:9
-msgid "Cancel"
-msgstr "Annuler"
-
 #: dashboard/templates/dashboard/_data_import.html:6
 msgid "Data import: #"
 msgstr "Import de données #"
@@ -195,13 +197,16 @@ msgstr ""
 msgid "GBIF predicate"
 msgstr "Prédicat GBIF"
 
-#: dashboard/templates/dashboard/_footer.html:10
+#: dashboard/templates/dashboard/_footer.html:11
 msgid "Latest data import:"
 msgstr "Dernier import de données :"
 
-#: dashboard/templates/dashboard/_footer.html:11
-msgid "Source code version:"
-msgstr "Version du code source :"
+#: dashboard/templates/dashboard/_footer.html:12
+msgid ""
+"This site is powered by <a href=\"https://github.com/riparias/"
+"pterois\">Pterois</a> version"
+msgstr "Ce site est propulsé par <a href=\"https://github.com/riparias/"
+"pterois\">Pterois</a> version"
 
 #: dashboard/templates/dashboard/_navbar.html:12
 msgid "Explore all observations"
@@ -238,22 +243,28 @@ msgstr "A propos des données"
 msgid "My profile"
 msgstr "Mon profil"
 
-#: dashboard/templates/dashboard/_navbar.html:54
+#: dashboard/templates/dashboard/_navbar.html:53
+#: dashboard/templates/dashboard/user_areas.html:7
+#: dashboard/templates/dashboard/user_areas.html:19
+msgid "My custom areas"
+msgstr ""
+
+#: dashboard/templates/dashboard/_navbar.html:62
 msgid "Admin panel"
 msgstr "Panneau d'administration"
 
-#: dashboard/templates/dashboard/_navbar.html:56
+#: dashboard/templates/dashboard/_navbar.html:64
 msgid "Sign out"
 msgstr "Se déconnecter"
 
-#: dashboard/templates/dashboard/_navbar.html:60
+#: dashboard/templates/dashboard/_navbar.html:68
 #: dashboard/templates/dashboard/signin.html:6
 #: dashboard/templates/dashboard/signin.html:14
 #: dashboard/templates/dashboard/signin.html:39
 msgid "Sign in"
 msgstr "Se connecter"
 
-#: dashboard/templates/dashboard/_navbar.html:61
+#: dashboard/templates/dashboard/_navbar.html:69
 #: dashboard/templates/dashboard/user_signup.html:7
 msgid "Sign up"
 msgstr "S'inscrire"
@@ -404,6 +415,15 @@ msgstr "Mot de passe oublié ?"
 msgid "You currently don't have any configured alerts."
 msgstr "Vous n'avez actuellement aucune alerte configurée."
 
+#: dashboard/templates/dashboard/user_areas.html:21
+msgid "Existing areas"
+msgstr ""
+
+#: dashboard/templates/dashboard/user_areas.html:24
+msgid "Upload a new area"
+msgstr ""
+
+#: dashboard/templates/dashboard/user_areas.html:31
 #: dashboard/templates/dashboard/user_profile.html:19
 msgid "Save"
 msgstr "Enregistrer"
@@ -416,13 +436,36 @@ msgstr "Votre alerte a été supprimée."
 msgid "Your account has been deleted."
 msgstr "Votre compte utilisateur a été supprimé."
 
-#: dashboard/views/internal_api.py:246
+#: dashboard/views/actions.py:65
+#, fuzzy
+#| msgid "Your alert has been deleted."
+msgid "The area has been deleted."
+msgstr "Votre alerte a été supprimée."
+
+#: dashboard/views/actions.py:70
+msgid "The area could not be deleted because it has alerts associated with it."
+msgstr ""
+
+#: dashboard/views/internal_api.py:244
 msgid "At least one species must be selected"
 msgstr "Au moins une espèce doit être sélectionnée"
 
-#: dashboard/views/pages.py:163
+#: dashboard/views/pages.py:151
 msgid "Your profile was successfully updated."
 msgstr "Votre profil a été mis à jour avec succès."
+
+#~ msgid ""
+#~ "You already have another alert with this name. Please choose a different "
+#~ "name."
+#~ msgstr ""
+#~ "Vous avez déjà une autre alerte avec ce nom. Veuillez choisir un nom "
+#~ "différent."
+
+#~ msgid "Cancel"
+#~ msgstr "Annuler"
+
+#~ msgid "Source code version:"
+#~ msgstr "Version du code source :"
 
 #~ msgid "Create"
 #~ msgstr "Créer"
