@@ -13,7 +13,7 @@ In practice:
 - It is a reusable and open-source (MIT licence) Django-based website
 - That can be configured to monitor a list of species in a given area of interest
 - ... and be deployed on a server at a given URL => we'd call that a *Pterois instance*
-- This install will automatically download GBIF data for the species in the area of interest at a given frequency (typically daily)
+- This instance will automatically download GBIF data for the species in the area of interest at a given frequency (typically daily)
 - Finally, users / visitors of the instance can see the latest GBIF data for the species in the area of interest, and be notified of new occurrences via email
 
 Developer documentation is available in [CONTRIBUTING.md](CONTRIBUTING.md).
