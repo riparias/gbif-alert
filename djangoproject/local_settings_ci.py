@@ -34,6 +34,8 @@ SITE_BASE_URL = "http://localhost"
 
 PTEROIS: dict[str, Any] = {
     "SITE_NAME": "LIFE RIPARIAS early alert",
+    "NAVBAR_BACKGROUND_COLOR": "#00a58d",
+    "NAVBAR_LIGHT_TEXT": True,
     "ENABLED_LANGUAGES": (
         "en",
         "fr",

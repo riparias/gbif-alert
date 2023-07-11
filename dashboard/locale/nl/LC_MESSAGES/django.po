@@ -195,10 +195,6 @@ msgstr ""
 msgid "Source code version:"
 msgstr ""
 
-#: dashboard/templates/dashboard/_footer.html:12
-msgid "Privacy policy"
-msgstr ""
-
 #: dashboard/templates/dashboard/_navbar.html:12
 msgid "Explore all observations"
 msgstr ""

@@ -9,8 +9,7 @@
             </div>
             <div class="col-lg">
                 {% translate "Latest data import:" %} <a href="{% url 'dashboard:pages:about-data' %}">#{{ latest_data_import.pk }}</a>- {{ latest_data_import.start }}<br/>
-                {% translate "Source code version:" %} <a href="https://github.com/riparias/early-alert-webapp/tree/{{ git_version_number }}">{{ git_version_number }}</a><br/>
-                <a href="https://www.riparias.be/367">{% translate "Privacy policy" %}</a>
+                {% translate "Source code version:" %} <a href="https://github.com/riparias/early-alert-webapp/tree/{{ git_version_number }}">{{ git_version_number }}</a>
             </div>
         </div>
     </div>

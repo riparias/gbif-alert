@@ -50,6 +50,8 @@ ADMINS = [
 
 PTEROIS: dict[str, Any] = {
     "SITE_NAME": "Pterois test instance",
+    "NAVBAR_BACKGROUND_COLOR": "red",
+    "NAVBAR_LIGHT_TEXT": True,
     "ENABLED_LANGUAGES": (
         "en",
         "fr",

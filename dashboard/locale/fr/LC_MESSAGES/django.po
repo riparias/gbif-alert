@@ -203,10 +203,6 @@ msgstr "Dernier import de données :"
 msgid "Source code version:"
 msgstr "Version du code source :"
 
-#: dashboard/templates/dashboard/_footer.html:12
-msgid "Privacy policy"
-msgstr "Politique de confidentialité"
-
 #: dashboard/templates/dashboard/_navbar.html:12
 msgid "Explore all observations"
 msgstr "Voir toutes les observations"
