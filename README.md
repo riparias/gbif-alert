@@ -3,6 +3,7 @@
 <!-- badges: start -->
 [![Django CI](https://github.com/riparias/pterois/actions/workflows/django_tests.yml/badge.svg)](https://github.com/riparias/early-alert-webapp/actions/workflows/django_tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Automatic deployment - demo server](https://github.com/riparias/pterois/actions/workflows/deploy_demo.yml/badge.svg?branch=devel)](https://github.com/riparias/pterois/actions/workflows/deploy_demo.yml)
 <!-- badges: end -->
 
 Pterois is a [GBIF](https://www.gbif.org)-based early alert system for invasive species.
