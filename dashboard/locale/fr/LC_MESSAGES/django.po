@@ -19,18 +19,16 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: dashboard/forms.py:12
-#, fuzzy
-#| msgid "Last name"
 msgid "Area name"
-msgstr "Nom de famille"
+msgstr "Nom de la zone"
 
 #: dashboard/forms.py:14
 msgid "A short name to identify this area"
-msgstr ""
+msgstr "Un nom (court) pour identifier cette zone"
 
 #: dashboard/forms.py:17
 msgid "Data file"
-msgstr ""
+msgstr "Fichier de données"
 
 #: dashboard/forms.py:37
 msgid "First name"
@@ -437,14 +435,12 @@ msgid "Your account has been deleted."
 msgstr "Votre compte utilisateur a été supprimé."
 
 #: dashboard/views/actions.py:65
-#, fuzzy
-#| msgid "Your alert has been deleted."
 msgid "The area has been deleted."
-msgstr "Votre alerte a été supprimée."
+msgstr "La zone a été supprimée."
 
 #: dashboard/views/actions.py:70
 msgid "The area could not be deleted because it has alerts associated with it."
-msgstr ""
+msgstr "Cette zone ne peut pas être supprimée car elle est associée à des alertes."
 
 #: dashboard/views/internal_api.py:244
 msgid "At least one species must be selected"
@@ -453,27 +449,3 @@ msgstr "Au moins une espèce doit être sélectionnée"
 #: dashboard/views/pages.py:151
 msgid "Your profile was successfully updated."
 msgstr "Votre profil a été mis à jour avec succès."
-
-#~ msgid ""
-#~ "You already have another alert with this name. Please choose a different "
-#~ "name."
-#~ msgstr ""
-#~ "Vous avez déjà une autre alerte avec ce nom. Veuillez choisir un nom "
-#~ "différent."
-
-#~ msgid "Cancel"
-#~ msgstr "Annuler"
-
-#~ msgid "Source code version:"
-#~ msgstr "Version du code source :"
-
-#~ msgid "Create"
-#~ msgstr "Créer"
-
-#~ msgid ""
-#~ "Optional (no selection = notify me for all species). To select multiple "
-#~ "items, press and hold the Ctrl or Command key and click the items."
-#~ msgstr ""
-#~ "Facultatif (aucune sélection = me notifier pour toutes les espèces). Pour "
-#~ "sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
-#~ "command' enfoncée "
