@@ -34,7 +34,7 @@ def index_page(request: HttpRequest) -> HttpResponse:
     try:
         filters_from_url = extract_dict_request(request, "filters")
     except ValueError:
-        #  Common case of malformed input by bots, see https://github.com/riparias/early-alert-webapp/issues/106
+        #  Common case of malformed input by bots, see https://github.com/riparias/pterois/issues/106
         raise BadRequest("Invalid filter parameters.")
 
     if filters_from_url is not None:
