@@ -7,6 +7,7 @@ def readable_string(input_string: str) -> str:
 
 
 def human_readable_git_version_number() -> str:
+    """Return the git tag name (if available) or the git commit hash (if not)"""
     return subprocess.check_output(
-        ["git", "describe", "--always"], encoding="UTF-8"
+        ["git", "describe", "--always", "--tags"], encoding="UTF-8"
     ).strip()
