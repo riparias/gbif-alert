@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "pterois"
-version = "0.1.0"
-description = "LIFE RIPARIAS early alert web application"
+version = "1.0.0"
+description = "A GBIF-based early alert system for invasive species"
 authors = ["Nicolas Noé <nicolas@niconoe.eu>"]
 
 [tool.poetry.dependencies]

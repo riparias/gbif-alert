@@ -175,4 +175,3 @@ TODO i18n:
 - Update CHANGELOG.md
 - Update version number in pyproject.toml
 - Create a new tag (e.g. `v1.2.3`) and push it to GitHub
-- Create a new release on GitHub (with the same tag name)
