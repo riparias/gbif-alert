@@ -272,7 +272,7 @@ class AlertWebPagesTests(TestCase):
             kwargs={"alert_id": self.alert.id},
         )
         response = self.client.get(page_url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 404)
 
     def test_anonymous_cant_access_new_alert_page(self):
         """Anonymous users cannot access the create alert page"""

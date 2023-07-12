@@ -103,12 +103,9 @@ def observation_details_page(request: HttpRequest, stable_id: str) -> HttpRespon
 def alert_details_page(
     request: AuthenticatedHttpRequest, alert_id: int
 ) -> HttpResponse:
-    alert = get_object_or_404(Alert, id=alert_id)
+    alert = get_object_or_404(Alert, id=alert_id, user=request.user)
 
-    if alert.user == request.user:
-        return render(request, "dashboard/alert_details.html", {"alert": alert})
-    else:
-        return HttpResponseForbidden()
+    return render(request, "dashboard/alert_details.html", {"alert": alert})
 
 
 @login_required
