@@ -176,5 +176,7 @@ $ git tag v1.2.3
 $ git push origin --tags
 ```
 - Create a new Docker image and push it to Docker Hub (so end-users can reference it from docker-compose.yml):
+- (If changed anything to the Nginx configuration, also build and publish a new version of the pterois-nginx image)
+```
 
 

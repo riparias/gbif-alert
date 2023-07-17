@@ -3,7 +3,7 @@ version: '3'
 
 services:
   nginx:
-    build: ./nginx
+    image: pterois-nginx:1.0
     ports:
       - 1337:80
     depends_on:
@@ -26,6 +26,10 @@ services:
       - db
     volumes:
       - static_volume:/app/staticfiles
+      - type: bind
+        source: ./local_settings_docker.py
+        target: /app/djangoproject/local_settings_docker.py
+        read_only: true
 
 volumes:
   postgres_data:
