@@ -22,3 +22,16 @@ To add/ describe:
 - test e-mail sending
 - install the cronjob for the email notifications
 - configure required page fragments in the admin
+
+
+
+# Run through Docker Compose
+
+The easiest way to run Pterois is through Docker Compose. The following
+instructions assume that you have Docker and Docker Compose installed on your
+system.
+
+1. Obtain the Pterois source code (download a release or clone the repository)
+2. $ run docker-compose up (keep this terminal open, and open a second one for subsequent commands)
+3. Create a first superuser (administrator):
+$ docker-compose exec pterois poetry run python manage.py createsuperuser

@@ -175,3 +175,6 @@ This tool can also be used to manually activate maintenance mode during complex 
 $ git tag v1.2.3
 $ git push origin --tags
 ```
+- Create a new Docker image and push it to Docker Hub (so end-users can reference it from docker-compose.yml):
+
+

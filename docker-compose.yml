@@ -1,0 +1,32 @@
+version: '3'
+# TODO: add/configure Redis
+
+services:
+  nginx:
+    build: ./nginx
+    ports:
+      - 1337:80
+    depends_on:
+      - pterois
+    volumes:
+      - static_volume:/app/staticfiles
+  db:
+    image: postgis/postgis:15-3.3
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_PASSWORD=pteroisdb
+      - POSTGRES_USER=pteroisdb
+      - POSTGRES_DB=pteroisdb
+  pterois:
+    image : pterois:1.0
+    expose:
+      - 8000
+    depends_on:
+      - db
+    volumes:
+      - static_volume:/app/staticfiles
+
+volumes:
+  postgres_data:
+  static_volume:
