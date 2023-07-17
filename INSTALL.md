@@ -31,7 +31,9 @@ The easiest way to run Pterois is through Docker Compose. The following
 instructions assume that you have Docker and Docker Compose installed on your
 system.
 
-1. Obtain the Pterois source code (download a release or clone the repository)
+1. Copy the file `docker-compose.yml` to your local directory
+2. Copy the file `djangoproject/local_settings_docker.template.py` to your local directory and rename it to `local_settings_docker.py`
+3. Tweak this file as necessary (see comments in the file)
 2. $ run docker-compose up (keep this terminal open, and open a second one for subsequent commands)
 3. Create a first superuser (administrator):
 $ docker-compose exec pterois poetry run python manage.py createsuperuser

@@ -1,6 +1,6 @@
 from typing import Any
 
-from .settings import *
+from .local_settings_docker_base import *
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "<something secret here>"
@@ -8,29 +8,6 @@ SECRET_KEY = "<something secret here>"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True  # TODO: change this
 
-# Database
-# https://docs.djangoproject.com/en/3.2/ref/settings/#databases
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.contrib.gis.db.backends.postgis",
-        "NAME": "pteroisdb",
-        "USER": "pteroisdb",
-        "PASSWORD": "pteroisdb",
-        "HOST": "db",
-    }
-}
-
-# Redis configuration for django-rq
-RQ_QUEUES = {
-    "default": {
-        "HOST": "localhost",
-        "PORT": 6379,
-        "DB": 0,
-        #        "PASSWORD": "some-password",
-        "DEFAULT_TIMEOUT": 360,
-    },
-}
 
 # Email-sending configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -75,32 +52,3 @@ PTEROIS: dict[str, Any] = {
     },
     "HIDE_MY_CUSTOM_AREAS_PAGE": False,
 }
-
-# LOGGING = {
-#     "version": 1,
-#     "filters": {
-#         "require_debug_true": {
-#             "()": "django.utils.log.RequireDebugTrue",
-#         }
-#     },
-#     "handlers": {
-#         "console": {
-#             "level": "DEBUG",
-#             "filters": ["require_debug_true"],
-#             "class": "logging.StreamHandler",
-#         }
-#     },
-#     "loggers": {
-#         "django.db.backends": {
-#             "level": "DEBUG",
-#             "handlers": ["console"],
-#         }
-#     },
-# }
-
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-SELENIUM_HEADLESS_MODE = False
-ALLOWED_HOSTS = ["0.0.0.0", "localhost"]
-
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
