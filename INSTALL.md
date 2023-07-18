@@ -37,3 +37,6 @@ system.
 2. $ run docker-compose up (keep this terminal open, and open a second one for subsequent commands)
 3. Create a first superuser (administrator):
 $ docker-compose exec pterois poetry run python manage.py createsuperuser
+4. Create a few species before running the first import (see below)
+5. Run the first import:
+6. $ docker-compose exec pterois poetry run python manage.py import_observations

@@ -39,8 +39,8 @@ PTEROIS: dict[str, Any] = {
     ),  # Languages available in the interface. Subset of the languages in `LANGUAGES`.
     # A Gbif.org account is necessary to automatically download observations via the `import_observations` command
     "GBIF_DOWNLOAD_CONFIG": {
-        "USERNAME": "niconoe2",
-        "PASSWORD": "ITAots!12",
+        "USERNAME": "aaaa",
+        "PASSWORD": "bbbb",
         "COUNTRY_CODE": "BE",  # Only download observations from this country
         "MINIMUM_YEAR": 2000,  # Observations must be from this year or later
     },

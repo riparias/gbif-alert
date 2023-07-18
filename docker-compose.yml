@@ -1,5 +1,4 @@
 version: '3'
-# TODO: add/configure Redis
 
 services:
   nginx:
@@ -18,12 +17,39 @@ services:
       - POSTGRES_PASSWORD=pteroisdb
       - POSTGRES_USER=pteroisdb
       - POSTGRES_DB=pteroisdb
+    healthcheck:
+      test: ['CMD-SHELL', 'psql -h localhost -U $${POSTGRES_USER} -c select 1 -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7.0.12
+    expose:
+      - 6379
   pterois:
     image : pterois:1.0
     expose:
       - 8000
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+    volumes:
+      - static_volume:/app/staticfiles
+      - type: bind
+        source: ./local_settings_docker.py
+        target: /app/djangoproject/local_settings_docker.py
+        read_only: true
+  rqworker:
+    image: pterois:1.0
+    entrypoint: poetry run python manage.py rqworker default
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - static_volume:/app/staticfiles
       - type: bind

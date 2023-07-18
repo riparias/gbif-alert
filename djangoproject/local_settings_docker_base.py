@@ -16,10 +16,9 @@ DATABASES = {
 # Redis configuration for django-rq
 RQ_QUEUES = {
     "default": {
-        "HOST": "localhost",
+        "HOST": "redis",
         "PORT": 6379,
         "DB": 0,
-        #        "PASSWORD": "some-password",
         "DEFAULT_TIMEOUT": 360,
     },
 }
@@ -28,3 +27,6 @@ ALLOWED_HOSTS = ["0.0.0.0", "localhost"]
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+CSRF_TRUSTED_ORIGINS = ["http://localhost:1337"]
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
