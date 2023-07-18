@@ -26,7 +26,7 @@ RQ_QUEUES = {
 ALLOWED_HOSTS = ["0.0.0.0", "localhost"]
 
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 CSRF_TRUSTED_ORIGINS = ["http://localhost:1337"]
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

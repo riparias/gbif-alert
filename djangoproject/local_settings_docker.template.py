@@ -1,6 +1,6 @@
 from typing import Any
 
-from .local_settings_docker_base import *
+from .local_settings_docker_base import * # type: ignore
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "<something secret here>"
