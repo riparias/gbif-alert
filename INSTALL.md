@@ -24,6 +24,11 @@ To add/ describe:
 - configure required page fragments in the admin
 
 
+TODO next Docker:
+
+- Polish documentation
+- Add more steps (create species, run first import, etc.)
+- Push images to dockerhub
 
 # Run through Docker Compose
 
