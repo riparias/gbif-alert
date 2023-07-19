@@ -17,11 +17,11 @@ from .models import (
     Alert,
 )
 
-admin.site.site_header = f'{settings.PTEROIS["SITE_NAME"]} administration'
+admin.site.site_header = f'{settings.GBIF_ALERT["SITE_NAME"]} administration'
 
 
 @admin.register(User)
-class PteroisUserAdmin(DjangoUserAdmin):
+class GbifAlertUserAdmin(DjangoUserAdmin):
     fieldsets = DjangoUserAdmin.fieldsets + (  # type: ignore
         (
             "Custom fields",

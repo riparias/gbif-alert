@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-11 15:16+0200\n"
+"POT-Creation-Date: 2023-07-19 14:29+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -195,8 +195,8 @@ msgstr ""
 
 #: dashboard/templates/dashboard/_footer.html:12
 msgid ""
-"This site is powered by <a href=\"https://github.com/riparias/"
-"pterois\">Pterois</a> version"
+"This site is powered by <a href=\"https://github.com/riparias/gbif-"
+"alert\">GBIF Alert</a> version"
 msgstr ""
 
 #: dashboard/templates/dashboard/_navbar.html:12
@@ -422,6 +422,6 @@ msgstr ""
 msgid "At least one species must be selected"
 msgstr ""
 
-#: dashboard/views/pages.py:151
+#: dashboard/views/pages.py:148
 msgid "Your profile was successfully updated."
 msgstr ""

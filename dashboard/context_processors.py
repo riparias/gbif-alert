@@ -17,13 +17,13 @@ def latest_data_import_processor(_: HttpRequest):
     }
 
 
-def pterois_various(_: HttpRequest):
+def gbif_alert_various(_: HttpRequest):
     return {
-        "pterois_news_page_fragment_id": NEWS_PAGE_IDENTIFIER,
+        "gbif_alert_news_page_fragment_id": NEWS_PAGE_IDENTIFIER,
     }
 
 
-def pterois_settings(_: HttpRequest):
+def gbif_alert_settings(_: HttpRequest):
     return {
-        "pterois_settings": django_settings.PTEROIS,
+        "gbif_alert_settings": django_settings.GBIF_ALERT,
     }

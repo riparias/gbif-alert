@@ -2,20 +2,20 @@
 
 <div class="card my-2">
     <div class="card-body">
-        <h4 class="card-title pterois-alert-title" id="alert-{{ alert.pk }}-title">{{ alert.name }}</h4>
+        <h4 class="card-title gbif-alert-alert-title" id="alert-{{ alert.pk }}-title">{{ alert.name }}</h4>
         <p class="card-text">
         <ul class="list-group list-group-flush">
             {% translate "all" as all_translated %}
-            <li class="list-group-item" id="pterois-alert-species-list">
+            <li class="list-group-item" id="gbif-alert-alert-species-list">
                 <b>{% translate "Species:" %}</b> {{ alert.species_list|default:all_translated }}
             </li>
             <li class="list-group-item">
                 <b>{% translate "Areas:" %}</b> {{ alert.areas_list|default:all_translated }}
             </li>
-            <li class="list-group-item" id="pterois-alert-datasets-list">
+            <li class="list-group-item" id="gbif-alert-alert-datasets-list">
                 <b>{% translate "Datasets:" %}</b> {{ alert.datasets_list|default:all_translated }}
             </li>
-            <li class="list-group-item" id="pterois-alert-frequency">
+            <li class="list-group-item" id="gbif-alert-alert-frequency">
                 <b>{% translate "Email notifications frequency:" %}</b>
                 {{ alert.get_email_notifications_frequency_display }}
 
@@ -43,11 +43,11 @@
 
             <div class="float-end">
                 <a href="{% url 'dashboard:pages:alert-edit' alert_id=alert.id %}"
-                   class="btn btn-sm btn-warning mx-2 pterois-edit-alert-button">
+                   class="btn btn-sm btn-warning mx-2 gbif-alert-edit-alert-button">
                     <i class="bi bi-pencil-fill"></i> {% translate "Edit this alert" %}
                 </a>
 
-                <delete-alert-button button-id="pterois-delete-alert-button-{{ alert.pk }}"
+                <delete-alert-button button-id="gbif-alert-delete-alert-button-{{ alert.pk }}"
                                      form-action="{% url "dashboard:actions:delete-alert" %}">
                     {% csrf_token %}
                     <input type="hidden" name="alert_id" value="{{ alert.pk }}"/>

@@ -7,7 +7,7 @@
             occ.hasOwnProperty('seenByCurrentUser') && // Anonymous users don't have the property, so if we don't do this all would appear us unseen
             occ.seenByCurrentUser === false
           "
-          class="badge rounded-pill bg-danger pterois-unseen-badge">{{ $t("message.unseen")}}</span
+          class="badge rounded-pill bg-danger gbif-alert-unseen-badge">{{ $t("message.unseen")}}</span
         >
       </td>
       <td>

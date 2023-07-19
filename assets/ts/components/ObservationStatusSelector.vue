@@ -4,7 +4,7 @@
     <div
       class="btn-group btn-group-sm"
       role="group"
-      id="pterois-obs-status-selector"
+      id="gbif-alert-obs-status-selector"
     >
       <ObservationStatusSelectorEntry
         :entry-label="$t('message.all')"

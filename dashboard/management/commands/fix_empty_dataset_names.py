@@ -1,4 +1,4 @@
-# This script is necessary because of the following GBIF bug: https://github.com/pterois/early-alert-webapp/issues/41
+# This script is necessary because of the following GBIF bug: https://github.com/gbif-alert/early-alert-webapp/issues/41
 # A temporary workaround has been implemented in the import_observation command, but a script is necessary to fix
 # preexisting entries in the datasets table.
 #

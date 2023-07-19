@@ -1,4 +1,4 @@
-Pterois is a Django-based website, with the following dependencies:
+GBIF Alert is a Django-based website, with the following dependencies:
 
 - Python 3.11+
 - PostgreSQL with PostGIS 3.1+
@@ -32,7 +32,7 @@ TODO next Docker:
 
 # Run through Docker Compose
 
-The easiest way to run Pterois is through Docker Compose. The following
+The easiest way to run GBIF Alert is through Docker Compose. The following
 instructions assume that you have Docker and Docker Compose installed on your
 system.
 
@@ -41,7 +41,7 @@ system.
 3. Tweak this file as necessary (see comments in the file)
 2. $ run docker-compose up (keep this terminal open, and open a second one for subsequent commands)
 3. Create a first superuser (administrator):
-$ docker-compose exec pterois poetry run python manage.py createsuperuser
+$ docker-compose exec gbif-alert poetry run python manage.py createsuperuser
 4. Create a few species before running the first import (see below)
 5. Run the first import:
-6. $ docker-compose exec pterois poetry run python manage.py import_observations
+6. $ docker-compose exec gbif-alert poetry run python manage.py import_observations

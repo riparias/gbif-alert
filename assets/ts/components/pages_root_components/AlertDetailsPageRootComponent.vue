@@ -37,7 +37,7 @@ import {dateTimeToFilterParam} from "../../helpers";
 import ObservationStatusSelector from "../ObservationStatusSelector.vue";
 import BootstrapAlert from "../BootstrapAlert.vue";
 
-declare const pteroisConfig: FrontEndConfig;
+declare const gbifAlertConfig: FrontEndConfig;
 declare const alertId: number;
 
 interface AlertDetailsPageRootComponentData {
@@ -57,7 +57,7 @@ export default defineComponent({
   },
   data: function (): AlertDetailsPageRootComponentData {
     return {
-      frontendConfig: pteroisConfig,
+      frontendConfig: gbifAlertConfig,
       alertId: alertId,
       filters: {
         speciesIds: [],

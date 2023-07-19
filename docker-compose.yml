@@ -2,11 +2,11 @@ version: '3'
 
 services:
   nginx:
-    image: pterois-nginx:1.0
+    image: gbif-alert-nginx:1.0
     ports:
       - 1337:80
     depends_on:
-      - pterois
+      - gbif-alert
     volumes:
       - static_volume:/app/staticfiles
   db:
@@ -14,9 +14,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_PASSWORD=pteroisdb
-      - POSTGRES_USER=pteroisdb
-      - POSTGRES_DB=pteroisdb
+      - POSTGRES_PASSWORD=gbif-alert-db
+      - POSTGRES_USER=gbif-alert-db
+      - POSTGRES_DB=gbif-alert-db
     healthcheck:
       test: ['CMD-SHELL', 'psql -h localhost -U $${POSTGRES_USER} -c select 1 -d $${POSTGRES_DB}']
       interval: 5s
@@ -26,8 +26,8 @@ services:
     image: redis:7.0.12
     expose:
       - 6379
-  pterois:
-    image : pterois:1.0
+  gbif-alert:
+    image : gbif-alert:1.0
     expose:
       - 8000
     depends_on:
@@ -43,7 +43,7 @@ services:
         target: /app/djangoproject/local_settings_docker.py
         read_only: true
   rqworker:
-    image: pterois:1.0
+    image: gbif-alert:1.0
     entrypoint: poetry run python manage.py rqworker default
     depends_on:
       db:

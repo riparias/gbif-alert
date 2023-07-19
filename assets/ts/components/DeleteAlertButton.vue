@@ -1,13 +1,13 @@
 <template>
   <button-with-confirmation
-      class="btn btn-danger btn-sm pterois-delete-alert-button"
+      class="btn btn-danger btn-sm gbif-alert-delete-alert-button"
       :button-id="buttonId"
       :confirmation-message-body="$t('message.alertDeletionConfirmationMessage')"
       @user-confirmed="userConfirmedDeletion()">
       <i class="bi bi-trash"></i> {{ $t("message.deleteThisAlert")}}
   </button-with-confirmation>
 
-  <form method="post" ref="form" class="d-inline float-end pterois-alert-delete-form" :action="formAction">
+  <form method="post" ref="form" class="d-inline float-end gbif-alert-alert-delete-form" :action="formAction">
     <slot></slot>
   </form>
 </template>

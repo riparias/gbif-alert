@@ -13,7 +13,7 @@
             <div class="col">
                 <h1>{% translate "Sign in" %}</h1>
                 {% if form.errors %}
-                    <div id="pterois-invalid-credentials-message" class="alert alert-danger">Your username and password didn't match. Please try again.</div>
+                    <div id="gbif-alert-invalid-credentials-message" class="alert alert-danger">Your username and password didn't match. Please try again.</div>
                 {% endif %}
 
                 {% if next %}
@@ -36,7 +36,7 @@
                             <input type="password" class="form-control" name="password" autocomplete="current-password" required id="id_password">
                         </div>
 
-                    <button id="pterois-signin-button" type="submit" class="btn btn-primary btn-sm" value="signin">{% translate "Sign in" %}</button>
+                    <button id="gbif-alert-signin-button" type="submit" class="btn btn-primary btn-sm" value="signin">{% translate "Sign in" %}</button>
                     - <a href="{% url 'password_reset' %}">{% translate "Lost password?" %}</a>
                     <input type="hidden" name="next" value="{{ next }}">
                 </form>

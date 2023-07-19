@@ -2,7 +2,7 @@
   <div id="table-outer">
     <table
         class="table table-striped table-sm table-hover small"
-        id="pterois-observations-table"
+        id="gbif-alert-observations-table"
     >
       <thead class="thead-dark">
       <tr>

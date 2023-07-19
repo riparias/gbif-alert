@@ -32,7 +32,7 @@ RQ_QUEUES = {
 # used to refer to the website in emails! Points to the site root, includes protocol, host, port... No trailing slash.
 SITE_BASE_URL = "http://localhost"
 
-PTEROIS: dict[str, Any] = {
+GBIF_ALERT: dict[str, Any] = {
     "SITE_NAME": "LIFE RIPARIAS early alert",
     "NAVBAR_BACKGROUND_COLOR": "#00a58d",
     "NAVBAR_LIGHT_TEXT": True,

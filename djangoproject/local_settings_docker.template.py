@@ -28,7 +28,7 @@ ADMINS = [
     ("Nicolas", "nicolas@niconoe.eu"),
 ]
 
-PTEROIS: dict[str, Any] = {
+GBIF_ALERT: dict[str, Any] = {
     "SITE_NAME": "LIFE RIPARIAS early alert - local",
     "NAVBAR_BACKGROUND_COLOR": "crimson",
     "NAVBAR_LIGHT_TEXT": True,

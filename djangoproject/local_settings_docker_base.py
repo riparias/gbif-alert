@@ -6,9 +6,9 @@ from .settings import *
 DATABASES = {
     "default": {
         "ENGINE": "django.contrib.gis.db.backends.postgis",
-        "NAME": "pteroisdb",
-        "USER": "pteroisdb",
-        "PASSWORD": "pteroisdb",
+        "NAME": "gbif-alert-db",
+        "USER": "gbif-alert-db",
+        "PASSWORD": "gbif-alert-db",
         "HOST": "db",
     }
 }

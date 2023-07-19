@@ -169,14 +169,14 @@ This tool can also be used to manually activate maintenance mode during complex 
 ## How to release a new version
 
 - Update CHANGELOG.md
-- Update version number in pyproject.toml
+- Update version number in pyproject.toml and package.json
 - Create a new tag (e.g. `v1.2.3`) and push it to GitHub:
 ```
 $ git tag v1.2.3
 $ git push origin --tags
 ```
 - Create a new Docker image and push it to Docker Hub (so end-users can reference it from docker-compose.yml):
-- (If changed anything to the Nginx configuration, also build and publish a new version of the pterois-nginx image)
+- (If changed anything to the Nginx configuration, also build and publish a new version of the gbif-alert-nginx image)
 ```
 
 

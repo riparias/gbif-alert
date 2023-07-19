@@ -391,7 +391,7 @@ class ImportObservationsTest(TransactionTestCase):
                 self.assertEqual(len(request_history), 0)
 
     @override_settings(
-        PTEROIS={
+        GBIF_ALERT={
             "GBIF_DOWNLOAD_CONFIG": {
                 "COUNTRY_CODE": "BE",  # Only download observations from this country
                 "MINIMUM_YEAR": 2010,  # Observations must be from this year or later
@@ -435,7 +435,7 @@ class ImportObservationsTest(TransactionTestCase):
                 )
 
     @override_settings(
-        PTEROIS={
+        GBIF_ALERT={
             "GBIF_DOWNLOAD_CONFIG": {
                 "COUNTRY_CODE": "BE",  # Only download observations from this country
                 "MINIMUM_YEAR": 2010,  # Observations must be from this year or later

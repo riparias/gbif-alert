@@ -1,5 +1,5 @@
 <template>
-  <div id="pterois-alert-successfully-saved" v-if="successfullySaved">
+  <div id="gbif-alert-alert-successfully-saved" v-if="successfullySaved">
     <p>{{ $t('message.alertSuccessfullySaved') }}</p>
   </div>
 
@@ -9,7 +9,7 @@
     </BootstrapAlert>
 
     <ul class="list-unstyled">
-      <li class="pterois-form-error" v-for="error in globalErrors">{{ error }}</li>
+      <li class="gbif-alert-form-error" v-for="error in globalErrors">{{ error }}</li>
     </ul>
 
     <div class="mb-3">
@@ -17,18 +17,18 @@
       <div class="row">
         <div class="col offset-md-1">
           <ul class="list-unstyled">
-            <li class="pterois-form-error" v-for="error in nameErrors">{{ error }}</li>
+            <li class="gbif-alert-form-error" v-for="error in nameErrors">{{ error }}</li>
           </ul>
           <input type="text" v-model="alertData.name" class="form-control" id="alertName">
         </div>
       </div>
     </div>
 
-    <div id="pterois-alert-species-selection" class="mb-3">
+    <div id="gbif-alert-alert-species-selection" class="mb-3">
       <h3><label class="form-label">{{ $t("message.speciesToInclude") }}*</label></h3>
       <div class="col offset-md-1">
         <ul class="list-unstyled">
-          <li class="pterois-form-error" v-for="error in speciesErrors">{{ error }}</li>
+          <li class="gbif-alert-form-error" v-for="error in speciesErrors">{{ error }}</li>
         </ul>
         <BootstrapAlert :dismissible="false" alert-type="info">
           <i class="bi bi-info-circle-fill"></i> {{ $t("message.atLeastOneSpeciesMustBeSelected") }}
@@ -41,7 +41,7 @@
       </div>
     </div>
 
-    <div id="pterois-alert-areas-selection" class="mb-3">
+    <div id="gbif-alert-alert-areas-selection" class="mb-3">
       <h3><label class="form-label">{{ $t("message.areasToInclude") }}</label></h3>
       <div class="col offset-md-1">
         <BootstrapAlert :dismissible="false" alert-type="info">
@@ -55,7 +55,7 @@
       </div>
     </div>
 
-    <div id="pterois-alert-datasets-selection" class="mb-3">
+    <div id="gbif-alert-alert-datasets-selection" class="mb-3">
       <h3><label class="form-label">{{ $t("message.datasetsToInclude") }}</label></h3>
       <div class="col offset-md-1">
         <BootstrapAlert :dismissible="false" alert-type="info">
@@ -71,10 +71,10 @@
     </div>
 
 
-    <div id="pterois-alert-frequency-selection" class="mb-3">
+    <div id="gbif-alert-alert-frequency-selection" class="mb-3">
       <h3><label class="form-label">{{ $t("message.alertNotificationsFrequency") }}</label></h3>
       <div class="col offset-md-1">
-        <select id="pterois-alert-frequency-select" v-model="alertData.emailNotificationsFrequency" class="form-select">
+        <select id="gbif-alert-alert-frequency-select" v-model="alertData.emailNotificationsFrequency" class="form-select">
           <option v-for="frequency in availableNotificationFrequencies" :value="frequency.id">{{
               frequency.label
             }}
@@ -90,7 +90,7 @@
        :href="alertDetailsPageUrl">{{ $t('message.viewAlertObservations') }}</a>
     <input v-else class="btn btn-primary btn-sm" type="submit"
            :value="newAlert ? $t('message.createAlert') : $t('message.save')"
-           id="pterois-alert-save-btn" @click="submit()">
+           id="gbif-alert-alert-save-btn" @click="submit()">
     <a :href="props.alertsListPageUrl" class="btn btn-secondary btn-sm mx-2">{{ $t('message.backToAlertsList') }}</a>
   </div>
 
@@ -129,7 +129,7 @@ interface FrequencyInformation {
   label: string;
 }
 
-declare const pteroisConfig: FrontEndConfig;
+declare const gbifAlertConfig: FrontEndConfig;
 const {t} = useI18n();
 
 const props = withDefaults(defineProps<Props>(), {});
@@ -165,7 +165,7 @@ const globalErrors = ref<string[]>([]);
 const hasErrors = computed(() => [...nameErrors.value, ...speciesErrors.value, ...globalErrors.value].length > 0);
 
 const alertDetailsPageUrl = computed(() => {
-  return pteroisConfig.apiEndpoints.alertPageUrlTemplate.replace('{id}', alertIdFromServer.value!.toString());
+  return gbifAlertConfig.apiEndpoints.alertPageUrlTemplate.replace('{id}', alertIdFromServer.value!.toString());
 });
 
 const getAlertNameSuggestion = function () {
@@ -270,7 +270,7 @@ const scrollToError = function () {
 
 <style>
 /* Unfortunately we cannot scope the style due to https://github.com/vuejs/vue-loader/issues/1915 */
-.pterois-form-error {
+.gbif-alert-form-error {
   color: red;
 }
 </style>

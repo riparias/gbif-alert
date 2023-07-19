@@ -81,8 +81,8 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "dashboard.context_processors.latest_data_import_processor",
-                "dashboard.context_processors.pterois_settings",
-                "dashboard.context_processors.pterois_various",
+                "dashboard.context_processors.gbif_alert_settings",
+                "dashboard.context_processors.gbif_alert_various",
             ],
         },
     },
@@ -171,7 +171,7 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_METHODS = [
     "GET"
-]  # Probably needed, but just to be on the safe side. See https://github.com/riparias/pterois/issues/100
+]  # Probably needed, but just to be on the safe side. See https://github.com/riparias/gbif-alert/issues/100
 
 PAGE_FRAGMENTS_FALLBACK_LANGUAGE = "en"
 

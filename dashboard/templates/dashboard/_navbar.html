@@ -1,8 +1,8 @@
 {% load i18n %}
 
-<nav id="pterois-main-navbar" class="navbar navbar-expand-lg mb-4 shadow {% if pterois_settings.NAVBAR_LIGHT_TEXT %}navbar-dark{% endif %}" class="navbar-dark"style="background-color:{{ pterois_settings.NAVBAR_BACKGROUND_COLOR }};">
+<nav id="gbif-alert-main-navbar" class="navbar navbar-expand-lg mb-4 shadow {% if gbif_alert_settings.NAVBAR_LIGHT_TEXT %}navbar-dark{% endif %}" class="navbar-dark"style="background-color:{{ gbif_alert_settings.NAVBAR_BACKGROUND_COLOR }};">
     <div class="container-fluid">
-        <a class="navbar-brand me-4" href="{% url 'dashboard:pages:index' %}"> {{ pterois_settings.SITE_NAME }} <i class="bi bi-megaphone"></i> </a>
+        <a class="navbar-brand me-4" href="{% url 'dashboard:pages:index' %}"> {{ gbif_alert_settings.SITE_NAME }} <i class="bi bi-megaphone"></i> </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
                 aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -47,7 +47,7 @@
                                 </a>
                             </li>
 
-                            {% if not pterois_settings.HIDE_MY_CUSTOM_AREAS_PAGE %}
+                            {% if not gbif_alert_settings.HIDE_MY_CUSTOM_AREAS_PAGE %}
                                 <li>
                                     <a class="dropdown-item" href="{% url 'dashboard:pages:my-custom-areas' %}">
                                         <i class="bi bi-map"></i> {% translate "My custom areas" %}

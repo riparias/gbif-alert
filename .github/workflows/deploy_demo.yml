@@ -13,6 +13,6 @@ jobs:
           username: ${{ secrets.DEV_SERVER_USERNAME }}
           key: ${{ secrets.DEV_SERVER_KEY }}
           script: |
-            cd pterois-demo
+            cd gbif-alert-demo
             nvm use v20.3.1
             ./deploy_devel.sh

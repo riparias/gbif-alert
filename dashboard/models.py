@@ -263,7 +263,7 @@ class Observation(models.Model):
     # field.
 
     # The GBIF-assigned identifier. We show it to the user (links to GBIF.org, ...) but don't rely on it as a stable
-    # identifier anymore. See: https://github.com/riparias/pterois/issues/35#issuecomment-944073702 and
+    # identifier anymore. See: https://github.com/riparias/gbif-alert/issues/35#issuecomment-944073702 and
     # https://github.com/gbif/pipelines/issues/604,
     gbif_id = models.CharField(max_length=100)
 
@@ -784,7 +784,7 @@ class Alert(models.Model):
             {
                 "alert": self,
                 "site_base_url": settings.SITE_BASE_URL,
-                "site_name": settings.PTEROIS["SITE_NAME"],
+                "site_name": settings.GBIF_ALERT["SITE_NAME"],
             },
         )
 

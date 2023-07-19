@@ -141,7 +141,7 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
             row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
         )
         dataset_name = get_string_data(row, field_name=qn("datasetName"))
-        # Ugly hack necessary to circumvent a GBIF bug. See https://github.com/riparias/pterois/issues/41
+        # Ugly hack necessary to circumvent a GBIF bug. See https://github.com/riparias/gbif-alert/issues/41
         if dataset_name == "":
             dataset_name = get_dataset_name_from_gbif_api(gbif_dataset_key)
 
@@ -267,14 +267,14 @@ class Command(BaseCommand):
             source_data_path = tmp_file.name
             # This might takes several minutes...
             gbif_predicate = build_gbif_predicate(
-                country_code=settings.PTEROIS["GBIF_DOWNLOAD_CONFIG"]["COUNTRY_CODE"],
-                minimum_year=settings.PTEROIS["GBIF_DOWNLOAD_CONFIG"]["MINIMUM_YEAR"],
+                country_code=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["COUNTRY_CODE"],
+                minimum_year=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["MINIMUM_YEAR"],
                 species_list=Species.objects.all(),
             )
             download_gbif_occurrences(
                 gbif_predicate,
-                username=settings.PTEROIS["GBIF_DOWNLOAD_CONFIG"]["USERNAME"],
-                password=settings.PTEROIS["GBIF_DOWNLOAD_CONFIG"]["PASSWORD"],
+                username=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["USERNAME"],
+                password=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PASSWORD"],
                 output_path=source_data_path,
             )
             self.stdout.write("Observations downloaded")

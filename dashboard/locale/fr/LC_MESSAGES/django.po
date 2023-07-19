@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-11 15:16+0200\n"
+"POT-Creation-Date: 2023-07-19 14:29+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -201,10 +201,11 @@ msgstr "Dernier import de données :"
 
 #: dashboard/templates/dashboard/_footer.html:12
 msgid ""
-"This site is powered by <a href=\"https://github.com/riparias/"
-"pterois\">Pterois</a> version"
-msgstr "Ce site est propulsé par <a href=\"https://github.com/riparias/"
-"pterois\">Pterois</a> version"
+"This site is powered by <a href=\"https://github.com/riparias/gbif-"
+"alert\">GBIF Alert</a> version"
+msgstr ""
+"Ce site est propulsé par <a href=\"https://github.com/riparias/"
+"gbif-alert\">GBIF Alert</a> version"
 
 #: dashboard/templates/dashboard/_navbar.html:12
 msgid "Explore all observations"
@@ -440,12 +441,13 @@ msgstr "La zone a été supprimée."
 
 #: dashboard/views/actions.py:70
 msgid "The area could not be deleted because it has alerts associated with it."
-msgstr "Cette zone ne peut pas être supprimée car elle est associée à des alertes."
+msgstr ""
+"Cette zone ne peut pas être supprimée car elle est associée à des alertes."
 
 #: dashboard/views/internal_api.py:244
 msgid "At least one species must be selected"
 msgstr "Au moins une espèce doit être sélectionnée"
 
-#: dashboard/views/pages.py:151
+#: dashboard/views/pages.py:148
 msgid "Your profile was successfully updated."
 msgstr "Votre profil a été mis à jour avec succès."

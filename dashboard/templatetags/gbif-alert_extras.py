@@ -107,7 +107,7 @@ def js_config_object(context):
                 "dashboard:pages:alert-details", kwargs={"alert_id": 1}
             ).replace("1", "{id}"),
         },
-        "mainMapConfig": settings.PTEROIS["MAIN_MAP_CONFIG"],
+        "mainMapConfig": settings.GBIF_ALERT["MAIN_MAP_CONFIG"],
     }
     if context.request.user.is_authenticated:
         conf["userId"] = context.request.user.pk

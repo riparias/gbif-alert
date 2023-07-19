@@ -31,7 +31,7 @@
       :transform="`translate(${svgStyle.margin.left}, ${svgStyle.margin.top})`"
     >
       <rect
-        class="pterois-bar"
+        class="gbif-alert-bar"
         v-for="(barDataEntry, index) in truncatedBarData"
         :class="{
           selected:
@@ -248,7 +248,7 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.pterois-bar {
+.gbif-alert-bar {
   fill: #00a58d;
   opacity: 0.3;
 }

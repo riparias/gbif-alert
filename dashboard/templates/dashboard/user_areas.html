@@ -1,5 +1,5 @@
 {% extends 'dashboard/base.html' %}
-{% load pterois_extras %}
+{% load gbif-alert_extras %}
 {% load crispy_forms_filters %}
 {% load i18n %}
 
@@ -10,7 +10,7 @@
 
 {% block after_messages %}
     <script type="text/javascript">
-        window.pteroisConfig = pteroisConfig;
+        window.gbifAlertConfig = gbifAlertConfig;
     </script>
 
     <div class="container">
@@ -29,7 +29,7 @@
                     {% csrf_token %}
                     {{ new_custom_area_form|crispy }}
                     <input class="btn btn-primary btn-sm" type="submit" value="{% translate "Save" %}"
-                           id="pterois-area-save-btn">
+                           id="gbif-alert-area-save-btn">
                 </form>
             </div>
         </div>

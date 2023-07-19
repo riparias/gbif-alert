@@ -1,6 +1,6 @@
 {% load static %}
 {% load i18n %}
-{% load pterois_extras %}
+{% load gbif-alert_extras %}
 
 <!doctype html>
 <html lang="en">
@@ -21,18 +21,18 @@
     {# A global configuration object is passed from Python via a custom template tag. This hack allows easy configuration of the frontend from Django #}
     {% get_current_language as LANGUAGE_CODE %}
     <script type="text/javascript">
-        const pteroisConfig = {% js_config_object %};
+        const gbifAlertConfig = {% js_config_object %};
         window.CSRF_TOKEN = "{{ csrf_token }}";
         window.LANGUAGE_CODE = "{{ LANGUAGE_CODE }}";
     </script>
 
     <title>
-        {% block page_title %}{{ pterois_settings.SITE_NAME }}{% endblock %}
+        {% block page_title %}{{ gbif_alert_settings.SITE_NAME }}{% endblock %}
     </title>
 </head>
 <body>
 <div style="margin-bottom: 100px;">
-    {% if pterois_settings.SHOW_DEV_VERSION_WARNING %}
+    {% if gbif_alert_settings.SHOW_DEV_VERSION_WARNING %}
         {% include 'dashboard/_dev_version_warning.html' %}
     {% endif %}
     {% include "dashboard/_navbar.html" %}

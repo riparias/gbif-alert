@@ -17,9 +17,9 @@ import {FrontEndConfig} from "../../interfaces";
 import {ref} from "vue";
 import DeleteAreaButton from "../DeleteAreaButton.vue";
 
-declare const pteroisConfig: FrontEndConfig;
+declare const gbifAlertConfig: FrontEndConfig;
 
-const frontendConfig = ref(pteroisConfig);
+const frontendConfig = ref(gbifAlertConfig);
 
 const props = defineProps<{
   areaIds: number[]

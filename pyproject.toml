@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "pterois"
+name = "gbif-alert"
 version = "1.0.0"
 description = "A GBIF-based early alert system for invasive species"
 authors = ["Nicolas Noé <nicolas@niconoe.eu>"]
