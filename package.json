@@ -1,6 +1,6 @@
 {
-  "name": "riparias-early-alert-webapp",
-  "version": "1.0.0",
+  "name": "gbif-alert",
+  "version": "1.1.0",
   "description": "[![Django CI](https://github.com/riparias/early-alert-webapp/actions/workflows/django_tests.yml/badge.svg)](https://github.com/riparias/early-warning-webapp/actions/workflows/django_tests.yml)",
   "main": "index.js",
   "scripts": {
@@ -10,15 +10,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/riparias/early-alert-webapp.git"
+    "url": "git+https://github.com/riparias/gbif-alert.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/riparias/early-alert-webapp/issues"
+    "url": "https://github.com/riparias/gbif-alert/issues"
   },
-  "homepage": "https://github.com/riparias/early-alert-webapp#readme",
+  "homepage": "https://github.com/riparias/gbif-alert#readme",
   "devDependencies": {
     "@babel/core": "^7.22.5",
     "@types/bootstrap": "^5.2.6",

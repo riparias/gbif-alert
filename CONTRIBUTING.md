@@ -170,7 +170,8 @@ This tool can also be used to manually activate maintenance mode during complex 
 
 - Update CHANGELOG.md
 - Update version number in pyproject.toml and package.json
-- Create a new tag (e.g. `v1.2.3`) and push it to GitHub:
+- Merge to main, push to GitHub
+- Create a new tag (e.g. `v1.2.3`) and push it:
 ```
 $ git tag v1.2.3
 $ git push origin --tags
