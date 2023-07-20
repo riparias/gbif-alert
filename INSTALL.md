@@ -1,9 +1,27 @@
-GBIF Alert is a Django-based website, with the following dependencies:
+Installing a GBIF Alert instance allows you to target a specific community of users, and to customize 
+the website content to their needs.
+
+Things that can be customized:
+- Which subset of GBIF occurrences to monitor (e.g. only occurrences of a curated list of invasive species in Belgium). Those are the occurrences that will be imported in the database. 
+Your end-users will be able to filter those occurrences further to match their specific needs.
+- The available languages in the interface (currently English and French, Dutch will be added soon)
+- Website texts (e.g. the introduction on the home page, the "about this site" page, etc.)
+
+Technically speaking, GBIF Alert is a Django-based website, with the following dependencies:
 
 - Python 3.11+
 - PostgreSQL with PostGIS 3.1+
 - Redis
 - Access to an SMTP server (for sending notification emails)
+
+While a manual installation is possible, we recommend using Docker Compose to install and run GBIF Alert. It will make your life much easier!
+
+# Run GBIF Alert through Docker Compose
+
+
+
+
+
 
 Here is detailed installation guide:
 

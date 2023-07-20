@@ -8,21 +8,22 @@
 
 GBIF Alert is a [GBIF](https://www.gbif.org)-based early alert system for invasive species.
 
-In practice:
+It is a reusable website engine powered by [Django](https://www.djangoproject.com/) available under the [MIT license](LICENSE).
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
 
-- It is a reusable and open-source (MIT licence) Django-based website
-- That can be configured to monitor a list of species in a given area of interest
-- ... and be deployed on a server at a given URL => we'd call that a *GBIF Alert instance*
-- This instance will automatically download GBIF data for the species in the area of interest at a given frequency (typically daily)
-- Finally, users / visitors of the instance can see the latest GBIF data for the species in the area of interest, and be notified of new occurrences via email
+## Getting started
 
-Developer documentation is available in [CONTRIBUTING.md](CONTRIBUTING.md).
+GBIF Alert allows you to monitor a list of species, and be notified of new occurrences on GBIF via email.
 
-## How to install a GBIF Alert instance
+Multiple websites using GBIF alert (called *instances*) exists, in order to target different communities:
 
-See [INSTALL.md](INSTALL.md).
+- **You are an end-user that just want to be informed of new occurrence in the GBIF network?** Join [an existing instance](#user-content-gbif-alert-instances-in-the-wild) that covers your area and species of interest, register and start configuring your alerts! Here is a demonstration video: TODO 
+that covers your area and species of interest, register and start configuring your alerts! Here is a demonstration video: TODO 
+
+- **You have more technical knowledge and want to install your own instance of GBIF Alert?** No problem: GBIF Alert is fully configurable, and we provide facilities to make it easy to install and deploy. 
+See [INSTALL.md](INSTALL.md) for more information.
 
 ## GBIF Alert instances in the wild
 
-- [LIFE RIPARIAS Early Alert](https://alert.riparias.be) (Targets riparian invasive species in Belgium)
+- LIFE RIPARIAS Early Alert: [production](https://alert.riparias.be) / [development](https://dev-alert.riparias.be) (Targets riparian invasive species in Belgium)
 - [GBIF Alert demo instance](https://gbif-alert-demo.thebinaryforest.net/) (Always in sync with the `devel` branch of this repository)

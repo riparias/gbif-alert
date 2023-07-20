@@ -97,7 +97,6 @@ export interface MapConfig {
 
 // Keep in sync with templatetags.gbif-alert_extras.js_config_object
 export interface FrontEndConfig {
-  ripariasAreaGeojsonUrl: string;
   apiEndpoints: EndpointsUrls;
   authenticatedUser: boolean;
   userId?: number; // Only set if authenticatedUser is true
