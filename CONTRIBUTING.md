@@ -169,15 +169,18 @@ This tool can also be used to manually activate maintenance mode during complex 
 ## How to release a new version
 
 - Update CHANGELOG.md
-- Update version number in pyproject.toml and package.json
-- Merge to main, push to GitHub
-- Create a new tag (e.g. `v1.2.3`) and push it:
+- Update version number in `pyproject.toml`, `package.json` and docker-compose.yml (! 3 services: gbif-alert, rqworker and nginx)
+- Commit, merge to main, push to GitHub
+- Create a new tag (e.g. `v1.1.0`) and push it:
 ```
-$ git tag v1.2.3
+$ git tag v1.1.0
 $ git push origin --tags
 ```
 - Create a new Docker image and push it to Docker Hub (so end-users can reference it from docker-compose.yml):
-- (If changed anything to the Nginx configuration, also build and publish a new version of the gbif-alert-nginx image)
+- (We also build a new version of the nginx image - even if unchanged - so the version number of the two images stay in sync)
 ```
-
-
+$ docker build . -t niconoe/gbif-alert:1.1.0
+$ docker build ./nginx -t niconoe/gbif-alert-nginx:1.1.0
+$ docker push niconoe/gbif-alert:1.1.0
+$ docker push niconoe/gbif-alert-nginx:1.1.0
+```

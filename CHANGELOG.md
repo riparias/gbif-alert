@@ -1,3 +1,7 @@
+# v1.1.1  (2021-07-24)
+
+- Minor changes to the Docker Compose setup
+
 # v1.1.0  (2021-07-20)
 
 - The project was renamed from `pterois` to `gbif-alert`
