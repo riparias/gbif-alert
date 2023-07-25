@@ -17,7 +17,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
-from webdriver_manager.core.os_manager import ChromeType  # type: ignore
+from webdriver_manager.core.utils import ChromeType  # type: ignore
 
 from dashboard.models import (
     Species,
@@ -53,7 +53,16 @@ def _get_webdriver() -> WebDriver:
 
 
 @override_settings(
-    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage",
+    GBIF_ALERT={
+        "MAIN_MAP_CONFIG": {
+        "initialZoom": 8,
+        "initialLat": 50.50,
+        "initialLon": 4.47,
+        },
+        "SITE_NAME": "LIFE RIPARIAS early alert",
+    },
+    DEBUG=True,
 )
 class SeleniumTestsCommon(StaticLiveServerTestCase):
     """Common test data and Selenium-related plumbing"""
@@ -510,6 +519,11 @@ class SeleniumTests(SeleniumTestsCommon):
         )
         self.assertEqual(len(unseen_badges), 2)
 
+    # @override_settings(
+    #     GBIF_ALERT={
+    #         "SITE_NAME": "LIFE RIPARIAS early alert",
+    #     }
+    # )
     def test_title_in_index_page(self):
         self.selenium.get(self.live_server_url)
         self.assertIn("LIFE RIPARIAS early alert", self.selenium.page_source)
