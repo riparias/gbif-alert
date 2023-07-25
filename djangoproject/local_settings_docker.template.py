@@ -29,7 +29,7 @@ ADMINS = [
 ]
 
 GBIF_ALERT: dict[str, Any] = {
-    "SITE_NAME": "LIFE RIPARIAS early alert - local",
+    "SITE_NAME": "GBIF alert - local",
     "NAVBAR_BACKGROUND_COLOR": "crimson",
     "NAVBAR_LIGHT_TEXT": True,
     "ENABLED_LANGUAGES": (

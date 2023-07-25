@@ -18,8 +18,27 @@ While a manual installation is possible, we recommend using Docker Compose to in
 
 # Run GBIF Alert through Docker Compose
 
+## Prerequisites:
+- Make sure Docker is installed on your system: https://docs.docker.com/get-docker/
+- Identify the latest release of GBIF Alert on GitHub at https://github.com/riparias/gbif-alert/tags (currently v1.1.1)
 
+## Installation steps:
 
+### Base installation
+- Create a new directory on your system (`gbif-alert` for example)
+- Get the docker-compose.yml file from the latest release of GBIF Alert on GitHub (https://github.com/riparias/gbif-alert/blob/v1.1.1/docker-compose.yml) 
+and save it to the directory you just created (note that the URL contains the version number we've identified earlier).
+- Get the local_settings_docker.template.py file from the latest release of GBIF Alert on GitHub (https://github.com/riparias/gbif-alert/blob/v1.1.1/djangoproject/local_settings_docker.template.py)
+and also save it to the `gbif-alert` directory. Rename it to `local_settings_docker.py`.
+- Open a terminal, navigate to the `gbif-alert` directory and run the following command: `docker-compose up`
+This will take a while, and you'll see logs from multiple Docker containers. Once it stabilizes, keep this terminal open, and open a second one for subsequent commands.
+Congratulations, you can now access your instance at http://localhost:1337
+
+### Next steps
+- Create a first superuser (administrator): in the second terminal, run the following command: `docker-compose exec gbif-alert poetry run python manage.py createsuperuser` and answer the questions.
+After this, you can now sign in to the GBIF alert sign, and also access the Admin interface (at http://localhost:1337/admin, or via the link in the user menu, at the right of the top navigation bar).
+- Create a few species in the Admin interface.
+- You can now run the first data import from GBIF. In the second terminal, run the following command: `docker-compose exec gbif-alert poetry run python manage.py import_observations`
 
 
 

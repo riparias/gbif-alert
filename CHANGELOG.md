@@ -1,3 +1,7 @@
+# v1.1.2  (2021-07-25)
+
+- Minor changes to the Docker Compose setup
+
 # v1.1.1  (2021-07-24)
 
 - Minor changes to the Docker Compose setup
