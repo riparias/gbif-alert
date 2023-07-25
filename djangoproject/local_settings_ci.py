@@ -32,6 +32,33 @@ RQ_QUEUES = {
 # used to refer to the website in emails! Points to the site root, includes protocol, host, port... No trailing slash.
 SITE_BASE_URL = "http://localhost"
 
+def build_gbif_download_predicate(species_list: "QuerySet[Species]"):
+    """
+    Build a GBIF.org download predicate for Belgian observations, after 2000.
+
+    Species list is taken from the GBIF Alert database.
+    """
+
+    return {
+        "predicate": {
+            "type": "and",
+            "predicates": [
+                {"type": "equals", "key": "COUNTRY", "value": "BE"},
+                {
+                    "type": "in",
+                    "key": "TAXON_KEY",
+                    "values": [f"{s.gbif_taxon_key}" for s in species_list],
+                },
+                {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"},
+                {
+                    "type": "greaterThanOrEquals",
+                    "key": "YEAR",
+                    "value": 2000,
+                },
+            ],
+        }
+    }
+
 GBIF_ALERT: dict[str, Any] = {
     "SITE_NAME": "LIFE RIPARIAS early alert",
     "NAVBAR_BACKGROUND_COLOR": "#00a58d",
@@ -43,8 +70,7 @@ GBIF_ALERT: dict[str, Any] = {
     "GBIF_DOWNLOAD_CONFIG": {
         "USERNAME": "riparias-dev",
         "PASSWORD": "riparias-dev",
-        "COUNTRY_CODE": "BE",  # Only download observations from this country
-        "MINIMUM_YEAR": 2000,  # Observations must be from this year or later
+        "PREDICATE_BUILDER": build_gbif_download_predicate,
     },
     "SHOW_DEV_VERSION_WARNING": False,
     "MAIN_MAP_CONFIG": {

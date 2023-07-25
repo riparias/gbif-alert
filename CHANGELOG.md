@@ -1,3 +1,9 @@
+Current:
+
+- The GBIF download is now fully configurable, so instances are not limited to a single country
+and can use any search predicate (see https://www.gbif.org/developer/occurrence#predicates)
+
+
 # v1.1.2  (2021-07-25)
 
 - Minor changes to the Docker Compose setup

@@ -7,7 +7,6 @@ from django.contrib.gis.geos import Point
 from django.core.mail import mail_admins
 from django.core.management.base import BaseCommand, CommandParser, CommandError
 from django.db import transaction
-from django.db.models import QuerySet
 from django.utils import timezone
 from dwca.darwincore.utils import qualname as qn  # type: ignore
 from dwca.read import DwCAReader  # type: ignore
@@ -17,31 +16,6 @@ from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
 from dashboard.models import Species, Observation, DataImport, Dataset
 from .helpers import get_dataset_name_from_gbif_api
-
-
-def build_gbif_predicate(
-    country_code: str, minimum_year: int, species_list: QuerySet[Species]
-) -> dict:
-    """Build a GBIF predicate (for occurrence download) targeting a specific country and a list of species"""
-    return {
-        "predicate": {
-            "type": "and",
-            "predicates": [
-                {"type": "equals", "key": "COUNTRY", "value": country_code},
-                {
-                    "type": "in",
-                    "key": "TAXON_KEY",
-                    "values": [f"{s.gbif_taxon_key}" for s in species_list],
-                },
-                {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"},
-                {
-                    "type": "greaterThanOrEquals",
-                    "key": "YEAR",
-                    "value": str(minimum_year),
-                },
-            ],
-        }
-    }
 
 
 def species_for_row(row: CoreRow) -> Species:
@@ -266,11 +240,8 @@ class Command(BaseCommand):
             tmp_file = tempfile.NamedTemporaryFile()
             source_data_path = tmp_file.name
             # This might takes several minutes...
-            gbif_predicate = build_gbif_predicate(
-                country_code=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["COUNTRY_CODE"],
-                minimum_year=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["MINIMUM_YEAR"],
-                species_list=Species.objects.all(),
-            )
+            gbif_predicate = settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"](Species.objects.all())
+
             download_gbif_occurrences(
                 gbif_predicate,
                 username=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["USERNAME"],

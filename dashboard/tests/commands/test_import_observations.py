@@ -23,6 +23,34 @@ THIS_SCRIPT_PATH = Path(__file__).parent
 SAMPLE_DATA_PATH = THIS_SCRIPT_PATH / "sample_data"
 
 
+def predicate_builder_belgium(species_list: "QuerySet[Species]"):
+    """
+    Build a GBIF.org download predicate for Belgian observations, after 2000.
+
+    Species list is taken from the GBIF Alert database.
+    """
+
+    return {
+        "predicate": {
+            "type": "and",
+            "predicates": [
+                {"type": "equals", "key": "COUNTRY", "value": "BE"},
+                {
+                    "type": "in",
+                    "key": "TAXON_KEY",
+                    "values": [f"{s.gbif_taxon_key}" for s in species_list],
+                },
+                {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"},
+                {
+                    "type": "greaterThanOrEquals",
+                    "key": "YEAR",
+                    "value": 2010,
+                },
+            ],
+        }
+    }
+
+
 @override_settings(
     STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
 )
@@ -393,8 +421,7 @@ class ImportObservationsTest(TransactionTestCase):
     @override_settings(
         GBIF_ALERT={
             "GBIF_DOWNLOAD_CONFIG": {
-                "COUNTRY_CODE": "BE",  # Only download observations from this country
-                "MINIMUM_YEAR": 2010,  # Observations must be from this year or later
+                "PREDICATE_BUILDER": predicate_builder_belgium,
                 "USERNAME": "riparias-dev",
                 "PASSWORD": "riparias-dev",
             },
@@ -424,7 +451,7 @@ class ImportObservationsTest(TransactionTestCase):
                 )
                 self.assertEqual(
                     request_history[0].text,
-                    '{"predicate": {"type": "and", "predicates": [{"type": "equals", "key": "COUNTRY", "value": "BE"}, {"type": "in", "key": "TAXON_KEY", "values": ["1224034", "7972617"]}, {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"}, {"type": "greaterThanOrEquals", "key": "YEAR", "value": "2010"}]}}',
+                    '{"predicate": {"type": "and", "predicates": [{"type": "equals", "key": "COUNTRY", "value": "BE"}, {"type": "in", "key": "TAXON_KEY", "values": ["1224034", "7972617"]}, {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"}, {"type": "greaterThanOrEquals", "key": "YEAR", "value": 2010}]}}',
                 )
 
                 # 2. A request to download the DwCA file was subsequently emitted
@@ -437,8 +464,7 @@ class ImportObservationsTest(TransactionTestCase):
     @override_settings(
         GBIF_ALERT={
             "GBIF_DOWNLOAD_CONFIG": {
-                "COUNTRY_CODE": "BE",  # Only download observations from this country
-                "MINIMUM_YEAR": 2010,  # Observations must be from this year or later
+                "PREDICATE_BUILDER": predicate_builder_belgium,
                 "USERNAME": "riparias-dev",
                 "PASSWORD": "riparias-dev",
             },
@@ -479,7 +505,7 @@ class ImportObservationsTest(TransactionTestCase):
                                 {
                                     "key": "YEAR",
                                     "type": "greaterThanOrEquals",
-                                    "value": "2010",
+                                    "value": 2010,
                                 },
                             ],
                         }

@@ -11,4 +11,3 @@ poetry run python manage.py migrate
 # Start server
 echo "Starting server"
 poetry run gunicorn -b 0.0.0.0:8000 djangoproject.wsgi
-#poetry run python manage.py runserver 0.0.0.0:8000

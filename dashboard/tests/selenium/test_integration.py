@@ -17,7 +17,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
-from webdriver_manager.core.utils import ChromeType  # type: ignore
+from webdriver_manager.core.os_manager import ChromeType  # type: ignore
 
 from dashboard.models import (
     Species,
