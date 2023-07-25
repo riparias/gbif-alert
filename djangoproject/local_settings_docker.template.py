@@ -28,7 +28,7 @@ ADMINS = [
     ("Nicolas", "nicolas@niconoe.eu"),
 ]
 
-def build_gbif_download_predicate(species_list: "QuerySet[Species]"):
+def build_gbif_download_predicate(species_list: "QuerySet[Species]"):  # type: ignore
     """
     Build a GBIF.org download predicate for Belgian observations, after 2000.
 

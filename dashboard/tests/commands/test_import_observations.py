@@ -5,6 +5,7 @@ from unittest import mock
 import requests_mock
 from django.contrib.gis.geos import Point
 from django.core.management import call_command
+from django.db.models import QuerySet
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 from maintenance_mode.core import set_maintenance_mode  # type: ignore
@@ -23,7 +24,7 @@ THIS_SCRIPT_PATH = Path(__file__).parent
 SAMPLE_DATA_PATH = THIS_SCRIPT_PATH / "sample_data"
 
 
-def predicate_builder_belgium(species_list: "QuerySet[Species]"):
+def predicate_builder_belgium(species_list: QuerySet[Species]):
     """
     Build a GBIF.org download predicate for Belgian observations, after 2000.
 
