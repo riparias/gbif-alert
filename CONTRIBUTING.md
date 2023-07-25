@@ -170,6 +170,7 @@ This tool can also be used to manually activate maintenance mode during complex 
 
 - Update CHANGELOG.md
 - Update version number in `pyproject.toml`, `package.json` and docker-compose.yml (! 3 services: gbif-alert, rqworker and nginx)
+- ! The version number currently also appears in INSTALL.md
 - Commit, merge to main, push to GitHub
 - Create a new tag (e.g. `v1.1.0`) and push it:
 ```
