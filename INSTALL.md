@@ -9,8 +9,9 @@ Deploying a GBIF Alert instance allows you to target a specific community of use
 
 You can customize:
 
-- The subset of [GBIF occurrences](https://www.gbif.org/occurrence/) to monitor, e.g. only [occurrences](https://www.gbif.org/occurrence/search?country=NZ&taxon_key=2367196&taxon_key=2350580&taxon_key=2362635&taxon_key=2340989&taxon_key=8215487&year=2010,2023) of the 5 invasive alien fishes in New Zealand observed from 2010 up to present. Those are the **only** occurrences that GBIF Alert will periodically donwload from GBIF and will import in the database.
-Your end-users will be able to filter those occurrences further to match their specific needs.
+- The subset of [GBIF occurrences](https://www.gbif.org/occurrence/) to monitor, e.g.
+only [occurrences](https://www.gbif.org/occurrence/search?country=NZ&taxon_key=2367196&taxon_key=2350580&taxon_key=2362635&taxon_key=2340989&taxon_key=8215487) of the 5 invasive alien fishes in New Zealand. Those are the **only** occurrences that GBIF Alert will periodically donwload from GBIF and will import in the database.
+- Your end-users will be able to filter those occurrences further to match their specific needs.
 - The available languages in the interface: currently English and French are supported, other languages will be added soon.
 - Website texts, e.g. the introduction on the home page, the footnote message and the "about this site" page.
 
