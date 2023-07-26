@@ -9,7 +9,7 @@ Deploying a GBIF Alert instance allows you to target a specific community of use
 
 You can customize:
 
-- The subset of [GBIF occurrences](https://www.gbif.org/occurrence/) to monitor, e.g. only occurrences of ladybirds in New Zealand observed after 2010. Those are the **only** occurrences that GBIF Alert will periodically donwload from GBIF and will import in the database.
+- The subset of [GBIF occurrences](https://www.gbif.org/occurrence/) to monitor, e.g. only [occurrences](https://www.gbif.org/occurrence/search?country=NZ&taxon_key=2367196&taxon_key=2350580&taxon_key=2362635&taxon_key=2340989&taxon_key=8215487&year=2010,2023) of the 5 invasive alien fishes in New Zealand observed from 2010 up to present. Those are the **only** occurrences that GBIF Alert will periodically donwload from GBIF and will import in the database.
 Your end-users will be able to filter those occurrences further to match their specific needs.
 - The available languages in the interface: currently English and French are supported, other languages will be added soon.
 - Website texts, e.g. the introduction on the home page, the footnote message and the "about this site" page.
@@ -38,7 +38,7 @@ While a manual installation is possible, we recommend using [Docker Compose](htt
 ### Installation steps
 
 
-- Create a new directory on your system, e.g. `gbif-alert` or `ladybirds-watch-nz` following the example above.
+- Create a new directory on your system, e.g. `gbif-alert` or `invasive-fishes-nz` following the example above.
 - Go to the `docker-compose.yml` file from the latest release of GBIF Alert on GitHub: at the [`moment docker-compose.yml` v1.1.2]( https://github.com/riparias/gbif-alert/blob/v1.1.2/docker-compose.yml). Note that the URL contains the version number.
 - Save the file in the directory you have just created.
 - Go to the `local_settings_docker.template.py` file from the latest release of GBIF Alert on GitHub: at the moment [`local_settings_docker.template.py` v1.1.2](https://github.com/riparias/gbif-alert/blob/v1.1.2/djangoproject/local_settings_docker.template.py).
