@@ -25,7 +25,7 @@ Technically speaking, GBIF Alert is a [Django](https://www.djangoproject.com/)-b
 - [Redis](https://redis.io/)
 - Access to an [SMTP server](https://nl.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol) (for sending notification emails)
 
-While a manual installation is possible, we recommend using [Docker Compose](https://docs.docker.com/get-started/08_using_compose/) to install and run GBIF Alert. It will make your life much easier! So, read further, please!
+While a manual installation is possible, we recommend using [Docker Compose](https://docs.docker.com/get-started/08_using_compose/) to install and run GBIF Alert. It will make your life much easier!
 
 
 ## Run GBIF Alert through Docker Compose
