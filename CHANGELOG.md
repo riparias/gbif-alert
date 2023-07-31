@@ -1,3 +1,7 @@
+# Current version
+
+- Fixed a display issue with the user menu in the navbar (https://github.com/riparias/gbif-alert/issues/252)
+
 # v1.2.0  (2023-07-31)
 
 - The GBIF download is now fully configurable, so instances are not limited to a single country

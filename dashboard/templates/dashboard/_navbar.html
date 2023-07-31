@@ -36,7 +36,7 @@
                             <i class="bi bi-person-square"></i> {{ user.username }}
                         </a>
 
-                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="{% url 'dashboard:pages:profile' %}"><i class="bi bi-person-square"></i> {% translate "My profile" %}</a></li>
                             <li>
                                 <a class="dropdown-item" href="{% url 'dashboard:pages:my-alerts' %}">
