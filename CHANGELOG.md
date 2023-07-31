@@ -1,19 +1,19 @@
-Current:
+# v1.2.0  (2023-07-31)
 
 - The GBIF download is now fully configurable, so instances are not limited to a single country
 and can use any search predicate (see https://www.gbif.org/developer/occurrence#predicates)
 - Improved installation instructions, including the template for the `local_settings_docker.py` file
 - Added python-dotenv to the requirements so settings secrets can be configured via .env files
 
-# v1.1.2  (2021-07-25)
+# v1.1.2  (2023-07-25)
 
 - Minor changes to the Docker Compose setup
 
-# v1.1.1  (2021-07-24)
+# v1.1.1  (2023-07-24)
 
 - Minor changes to the Docker Compose setup
 
-# v1.1.0  (2021-07-20)
+# v1.1.0  (2023-07-20)
 
 - The project was renamed from `pterois` to `gbif-alert`
 - Infrastructure: we now provide a Docker / Docker Compose setup for easier deployment
