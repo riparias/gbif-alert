@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "gbif-alert"
-version = "1.1.2"
-description = "A GBIF-based early alert system for invasive species"
+version = "1.2.0"
+description = "A GBIF-based early alert system"
 authors = ["Nicolas Noé <nicolas@niconoe.eu>"]
 
 [tool.poetry.dependencies]
