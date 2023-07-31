@@ -3,6 +3,7 @@ Current:
 - The GBIF download is now fully configurable, so instances are not limited to a single country
 and can use any search predicate (see https://www.gbif.org/developer/occurrence#predicates)
 - Improved installation instructions, including the template for the `local_settings_docker.py` file
+- Added python-dotenv to the requirements so settings secrets can be configured via .env files
 
 # v1.1.2  (2021-07-25)
 

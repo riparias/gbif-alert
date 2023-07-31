@@ -2,8 +2,13 @@ from typing import Any
 
 from .settings import *
 
+from dotenv import load_dotenv
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)  # loads the configs from .env
+# From now on, you can use os.getenv("SOME_KEY_FROM_ENV_FILE") to get access to a secret key
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "<something secret here>"
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -75,25 +80,31 @@ def build_gbif_download_predicate(species_list: "QuerySet[Species]"):  # type: i
         }
     }
 
+
 GBIF_ALERT: dict[str, Any] = {
-    "SITE_NAME": "GBIF Alert test instance",
+    "SITE_NAME": "GBIF Alert test instance",  # Name of the website, appears in various places (page titles, emails, ...)
     "NAVBAR_BACKGROUND_COLOR": "red",
-    "NAVBAR_LIGHT_TEXT": True,
-    "ENABLED_LANGUAGES": (
+    "NAVBAR_LIGHT_TEXT": True,  # Whether the text in the navbar should be light or dark
+    "ENABLED_LANGUAGES": (  # Languages available in the interface. Subset of the languages in `LANGUAGES`.
         "en",
         "fr",
-    ),  # Languages available in the interface. Subset of the languages in `LANGUAGES`.
+    ),
+    # A valid Gbif.org account is necessary to automatically download observations via the `import_observations` command
+    # We recommend creating a dedicated account for this purpose, not your personal one.
     "GBIF_DOWNLOAD_CONFIG": {
-        # A GBIF.org account is required to download data from GBIF.org, please create one then enter your credentials here.
-        "USERNAME": "gbif-alert-gbif-username",
-        "PASSWORD": "gbif-alert-gbif-password",
+        "USERNAME": os.getenv("GBIF_USERNAME"),
+        "PASSWORD": os.getenv("GBIF_PASSWORD"),
         "PREDICATE_BUILDER": build_gbif_download_predicate,
     },
+    # Deprecated: this settings will disappear soon (https://github.com/riparias/gbif-alert/issues/250), keep it to False
     "SHOW_DEV_VERSION_WARNING": False,
+    # initial location of the map on the index page
     "MAIN_MAP_CONFIG": {
         "initialZoom": 8,
         "initialLat": 50.50,
         "initialLon": 4.47,
     },
+    # The "my custom areas" page is a page where users can create their own areas of interest.
+    # It is currently in progress (lacks documentation, UI is poor, missing translations, ...), so we offer the a feature flag to hide it.
     "HIDE_MY_CUSTOM_AREAS_PAGE": False,
 }

@@ -23,6 +23,7 @@ html2text = "^2020.1.16"
 Jinja2 = "3.0.3" # just needed for JinjaSQL, but it currently has a tendency to download an incompatible version (3.1.1). I hope we'll be able to remove that fake dependency once JinjaSQL gets updated (https://github.com/sripathikrishnan/jinjasql/issues/50)
 django-taggit = "4.0.0"
 django-modeltranslation = "^0.18.9"
+python-dotenv = "^1.0.0"
 [tool.poetry.group.dev.dependencies]
 selenium = "^4.8.2"
 mypy = "^1.1.1"

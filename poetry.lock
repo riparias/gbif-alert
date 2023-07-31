@@ -1261,7 +1261,7 @@ testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xm
 name = "python-dotenv"
 version = "1.0.0"
 description = "Read key-value pairs from a .env file and set them as environment variables"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -1851,4 +1851,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "5ee68b689afc7d13ba0e583d7f03f29ab8a6d0c1fa4a389419bd38269c992194"
+content-hash = "a9f67f95228b113a004e9751588b9510a60c24299867dbb5c0daef56471010da"
