@@ -1,9 +1,11 @@
+import os
 from typing import Any
 
 from .settings import *
 
 from dotenv import load_dotenv
-dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+
+dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path)  # loads the configs from .env
 # From now on, you can use os.getenv("SOME_KEY_FROM_ENV_FILE") to get access to a secret key
 
@@ -19,26 +21,29 @@ DEBUG = True
 DATABASES = {
     "default": {
         "ENGINE": "django.contrib.gis.db.backends.postgis",
-        "NAME": "gbif-alert",
+        "NAME": os.getenv("DB_NAME"),
+        "USER": os.getenv("DB_USER"),
+        "PASSWORD": os.getenv("DB_PASSWORD"),
+        "HOST": os.getenv("DB_HOST"),
     }
 }
 
 # Redis configuration for django-rq
 RQ_QUEUES = {
     "default": {
-        "HOST": "localhost",
-        "PORT": 6379,
+        "HOST": os.getenv("REDIS_HOST"),
+        "PORT": os.getenv("REDIS_PORT"),
         "DB": 0,
-        "PASSWORD": "some-password",
+        "PASSWORD": os.getenv("REDIS_PASSWORD"),
         "DEFAULT_TIMEOUT": 360,
     },
 }
 
 # Email-sending configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "email-smtp.eu-west-1.amazonaws.com"
-EMAIL_HOST_USER = "yyy"
-EMAIL_HOST_PASSWORD = "xxx"
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_SUBJECT_PREFIX = "[gbif-alert-instance-url] "
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = (
@@ -54,6 +59,9 @@ ADMINS = [
 ]
 
 
+# You must provide a function to build a GBIF download predicate, similar to the example below.
+# The "TAXON_KEY in" section should stay intact, so the species are selected based on what's in the
+# local database.
 def build_gbif_download_predicate(species_list: "QuerySet[Species]"):  # type: ignore
     """
     Build a GBIF.org download predicate for Belgian observations, after 2000.
