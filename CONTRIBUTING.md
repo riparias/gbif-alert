@@ -54,8 +54,8 @@ We try to frequently update dependencies. Process is:
 
 ## Database diagram
 
-Only the tables from the `dashboard` app (+linked tables) are included. Last update: 20 jan 2022.
-![tables diagram](./dashboard_app_table_diagram.png)
+Last update: 01 aug 2023.
+![tables diagram](./table-diagram.png)
 
 ## Frontend-backend integration
 
@@ -73,9 +73,9 @@ Please configure your favorite editor/IDE to format on save.
 ## Observation import mechanism
 
 The observation data shown in the webapp can be automatically updated by running the `import_observations` management 
-command. This one will trigger a GBIF Download for our search of interest (target country + species in the database) and 
+command. This one will trigger a GBIF Download for our search of interest (based on the predicate builder function from the config file) and 
 load the corresponding observations into the database. At the end of the process, observations from previous data 
-imports are deleted to avoid duplicates.
+imports are deleted, to avoid duplicates.
 
 The data import history is recorded with the DataImport model, and shown to the user on the "about" page.
 
@@ -86,11 +86,12 @@ and `DatasetKey`) to allow recognizing a given observation is implemented (`stab
 
 The application allows storing Areas (multipolygons) in the database for observation filtering and to display as map 
 overlays. Each area can be either user-specific, either public. For now, there are 
-two ways to load a new area in the system:
+3 ways to load a new area in the system:
 
-- An administrator can use the Admin section to hand-drawn the area over an OSM background
-- The custom `load_area` management command can be used to directly import complex polygons from a file 
+- Administrators can use the Admin section to hand-drawn the area over an OSM background
+- Administrators with a shell access The custom `load_area` management command can be used to directly import complex polygons from a file 
   source (shapefile, GeoJSON, ...)
+- Users can upload their own areas via the web interface (development in progress
   
 ### How to use the `load_area` command to import a new public Area
 
@@ -135,7 +136,7 @@ def my_view(request):
 ## Use of Redis
 
 Redis is currently used with [django-rq](https://github.com/rq/django-rq) to manage queues for long-running tasks 
-(as of 2022-03: mark all observations as seen).
+(as of 2023-08: mark all observations as seen).
 
 In addition to install a Redis instance on your development machine, you'll need to configure Django-rq to find it
 (see local_settings.template.py) and run a worker for the default queue with ``$ python manage.py rqworker default``
