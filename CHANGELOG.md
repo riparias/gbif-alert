@@ -1,4 +1,4 @@
-# Current version
+# v1.2.1 (2023-08-21)
 
 - Fixed a display issue with the user menu in the navbar (https://github.com/riparias/gbif-alert/issues/252)
 
