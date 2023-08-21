@@ -449,7 +449,7 @@ class Observation(models.Model):
         (None, None) in case the observation has no location
         """
         if self.location:
-            coords = self.location.transform(4326, clone=True).coords
+            coords = self.location.transform(4326, clone=True).coords  # type: ignore
             return coords[0], coords[1]
         return None, None
 

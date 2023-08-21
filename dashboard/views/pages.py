@@ -210,7 +210,7 @@ def user_areas_page(request: AuthenticatedHttpRequest) -> HttpResponse:
 
             if form.is_valid() and mp is not None:
                 Area.objects.create(
-                    mpoly=mp, owner=request.user, name=form.cleaned_data["name"]
+                    mpoly=mp, owner=request.user, name=form.cleaned_data["name"]  # type: ignore
                 )
     else:
         form = NewCustomAreaForm()

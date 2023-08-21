@@ -169,6 +169,7 @@ This tool can also be used to manually activate maintenance mode during complex 
 
 ## How to release a new version
 
+- Make sure all tests pass and mypy doesn't report any error
 - Update CHANGELOG.md
 - Update version number in `pyproject.toml`, `package.json` and docker-compose.yml (! 3 services: gbif-alert, rqworker and nginx)
 - ! The version number currently also appears in INSTALL.md
