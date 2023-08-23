@@ -183,7 +183,7 @@ export default defineComponent({
     availableDataimportsAsDataRows: function (): DataRow[] {
       return this.availableDataImports
           .map((d) => {
-            return {id: d.id, columnData: [d.id, d.name, d.startTimestamp]};
+            return {id: d.id, columnData: [d.id, d.name, (new Date(d.startTimestamp)).toLocaleString()]};
           });
     },
   },
