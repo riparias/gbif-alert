@@ -1,3 +1,4 @@
+{% load page_fragments %}
 {% load static %}
 {% load i18n %}
 {% load gbif-alert_extras %}
@@ -32,9 +33,7 @@
 </head>
 <body>
 <div style="margin-bottom: 100px;">
-    {% if gbif_alert_settings.SHOW_DEV_VERSION_WARNING %}
-        {% include 'dashboard/_dev_version_warning.html' %}
-    {% endif %}
+    {% get_page_fragment 'over_navbar' %}
     {% include "dashboard/_navbar.html" %}
     {% include "dashboard/_messages.html" %}
 

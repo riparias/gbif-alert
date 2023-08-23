@@ -104,8 +104,6 @@ GBIF_ALERT: dict[str, Any] = {
         "PASSWORD": os.getenv("GBIF_PASSWORD"),
         "PREDICATE_BUILDER": build_gbif_download_predicate,
     },
-    # Deprecated: this settings will disappear soon (https://github.com/riparias/gbif-alert/issues/250), keep it to False
-    "SHOW_DEV_VERSION_WARNING": False,
     # initial location of the map on the index page
     "MAIN_MAP_CONFIG": {
         "initialZoom": 8,

@@ -32,6 +32,7 @@ RQ_QUEUES = {
 # used to refer to the website in emails! Points to the site root, includes protocol, host, port... No trailing slash.
 SITE_BASE_URL = "http://localhost"
 
+
 def build_gbif_download_predicate(species_list: "QuerySet[Species]"):  # type: ignore
     """
     Build a GBIF.org download predicate for Belgian observations, after 2000.
@@ -59,6 +60,7 @@ def build_gbif_download_predicate(species_list: "QuerySet[Species]"):  # type: i
         }
     }
 
+
 GBIF_ALERT: dict[str, Any] = {
     "SITE_NAME": "LIFE RIPARIAS early alert",
     "NAVBAR_BACKGROUND_COLOR": "#00a58d",
@@ -72,7 +74,6 @@ GBIF_ALERT: dict[str, Any] = {
         "PASSWORD": "riparias-dev",
         "PREDICATE_BUILDER": build_gbif_download_predicate,
     },
-    "SHOW_DEV_VERSION_WARNING": False,
     "MAIN_MAP_CONFIG": {
         "initialZoom": 8,
         "initialLat": 50.50,
