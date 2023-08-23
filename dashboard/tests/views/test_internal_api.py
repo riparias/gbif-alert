@@ -428,7 +428,7 @@ class InternalApiTests(TestCase):
             [
                 {
                     "id": di_id,
-                    "str": f"Data import #{di_id} (Feb. 11, 2022, 4:10 p.m.)",
+                    "name": f"Data import #{di_id}",
                     "startTimestamp": "2022-02-11T15:10:00Z",
                 }
             ],
