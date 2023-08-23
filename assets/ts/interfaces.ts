@@ -65,7 +65,7 @@ export interface AreaInformation {
 
 export interface DataImportInformation {
   id: number;
-  str: string;
+  name: string;
   startTimestamp: string; // Format: "2022-01-21T11:31:35.490Z"
 }
 

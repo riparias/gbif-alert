@@ -86,22 +86,26 @@ import {ColumnMetadata, DataRow} from "../interfaces";
 import {computed, ref} from "vue";
 import {legibleColor, wordToColor} from "../helpers";
 
-const textFilter = ref<string>('');
-const tagsFilter = ref<string[]>([]);
-const sortBy = ref<number>(0);  // index of the field (in the DataRow columnData array) to sort by
-const sortDirection = ref<'asc' | 'desc'>('asc');
-
 interface Props {
   columnsConfig: ColumnMetadata[]
   availableEntries: DataRow[]
   modelValue: number[]
+  initialSortBy?: number
+  initialSortDirection?: 'asc' | 'desc'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   columnsConfig: () => [],
   availableEntries: () => [],
-  modelValue: () => []
+  modelValue: () => [],
+  initialSortBy: 0,
+  initialSortDirection: 'asc'
 });
+
+const textFilter = ref<string>('');
+const tagsFilter = ref<string[]>([]);
+const sortBy = ref(props.initialSortBy);  // index of the field (in the DataRow columnData array) to sort by
+const sortDirection = ref(props.initialSortDirection);
 
 const selectedEntriesIds = computed({
   get() {
