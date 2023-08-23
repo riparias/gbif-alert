@@ -17,8 +17,7 @@ GBIF Alert allows you to monitor a list of species, and be notified of new occur
 
 Multiple websites using GBIF alert (called *instances*) exists, in order to target different communities:
 
-- **You are an end-user that just want to be informed of new occurrence in the GBIF network?** Join [an existing instance](#user-content-gbif-alert-instances-in-the-wild) that covers your area and species of interest, register and start configuring your alerts! Here is a demonstration video: TODO 
-that covers your area and species of interest, register and start configuring your alerts! Here is a demonstration video: TODO 
+- **You are an end-user that just want to be informed of new occurrence in the GBIF network?** Join [an existing instance](#user-content-gbif-alert-instances-in-the-wild) that covers your area and species of interest, register and start configuring your alerts! Here is a demonstration video: https://www.youtube.com/watch?v=bixaTGRIZ4A
 
 - **You have more technical knowledge and want to install your own instance of GBIF Alert?** No problem: GBIF Alert is fully configurable, and we provide facilities to make it easy to install and deploy. 
 See [INSTALL.md](INSTALL.md) for more information.
