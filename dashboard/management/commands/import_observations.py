@@ -1,6 +1,7 @@
 import argparse
 import datetime
 import tempfile
+from functools import cache
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
@@ -16,6 +17,15 @@ from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
 from dashboard.models import Species, Observation, DataImport, Dataset
 from .helpers import get_dataset_name_from_gbif_api
+
+
+@cache
+def species_from_gbif_taxon_key(gbif_taxon_key: int) -> Species:
+    """Return the Species object corresponding to the given GBIF taxon key
+
+    :raise Species.DoesNotExist if the species cannot be found
+    """
+    return Species.objects.get(gbif_taxon_key=gbif_taxon_key)
 
 
 def species_for_row(row: CoreRow) -> Species:
@@ -36,12 +46,12 @@ def species_for_row(row: CoreRow) -> Species:
     )
 
     try:
-        return Species.objects.get(gbif_taxon_key=taxon_key)
+        return species_from_gbif_taxon_key(gbif_taxon_key=taxon_key)
     except Species.DoesNotExist:
         try:
-            return Species.objects.get(gbif_taxon_key=accepted_taxon_key)
+            return species_from_gbif_taxon_key(gbif_taxon_key=accepted_taxon_key)
         except Species.DoesNotExist:
-            return Species.objects.get(gbif_taxon_key=species_key)
+            return species_from_gbif_taxon_key(gbif_taxon_key=species_key)
 
 
 def extract_gbif_download_id_from_dwca(dwca: DwCAReader) -> str:
@@ -69,12 +79,14 @@ def get_int_data(row: CoreRow, field_name: str) -> int:
     return int(get_string_data(row, field_name))
 
 
-def import_single_observation(row: CoreRow, current_data_import: DataImport) -> bool:
-    """Import a single observation into the database
+def build_single_observation(row: CoreRow, current_data_import: DataImport) -> bool:
+    """Build single observation object, to be used later in a bulk_create operation.
+
+    migrate_linked_entities() shouldbe called later, after the observation gas been saved.
 
     :raise: Species.DoesNotExist if the species referenced in the row cannot be found in the database
 
-    :return True if successful, False if observation was skipped (=unusable OR is an absence)
+    :return the observation if all is good, False if observation was skipped (=unusable OR is an absence)
     """
     # For-filtering data extraction
     year_str = get_string_data(row, field_name=qn("year"))
@@ -159,9 +171,9 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
         new_observation.set_or_migrate_initial_data_import(
             current_data_import=current_data_import
         )
-        new_observation.save()
-        new_observation.migrate_linked_entities()
-        return True
+        # new_observation.save()
+        # new_observation.migrate_linked_entities()
+        return new_observation
 
     return False  # Observation was skipped
 
@@ -199,15 +211,31 @@ class Command(BaseCommand):
     ) -> int:
         """:return the number of skipped observations"""
         skipped_observations_counter = 0
+
+        observations_to_insert = []
         for core_row in dwca:
             try:
-                r = import_single_observation(core_row, data_import)
+                obs = build_single_observation(core_row, data_import)
 
-                if r is False:
+                if obs is False:
                     skipped_observations_counter = skipped_observations_counter + 1
+                else:
+                    observations_to_insert.append(obs)
                 self.stdout.write(".", ending="")
             except Species.DoesNotExist:
                 raise CommandError(f"species not found in db for row: {core_row}")
+
+        # All processed, now insert all observations in one go
+
+        # Bulk create doesn't call save() on the objects, so we need to call set_stable_id() on each object
+        self.stdout.write("Setting stable identifiers prior to insertion")
+        for obs in observations_to_insert:
+            obs.set_stable_id()
+        self.stdout.write("Bulk insertion")
+        all_observations = Observation.objects.bulk_create(observations_to_insert)
+        self.stdout.write("Migrating linked entities")
+        for obs in all_observations:
+            obs.migrate_linked_entities()
 
         return skipped_observations_counter
 
@@ -239,8 +267,10 @@ class Command(BaseCommand):
             )
             tmp_file = tempfile.NamedTemporaryFile()
             source_data_path = tmp_file.name
-            # This might takes several minutes...
-            gbif_predicate = settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"](Species.objects.all())
+            # This might take several minutes...
+            gbif_predicate = settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"][
+                "PREDICATE_BUILDER"
+            ](Species.objects.all())
 
             download_gbif_occurrences(
                 gbif_predicate,

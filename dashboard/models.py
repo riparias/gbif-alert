@@ -17,8 +17,7 @@ from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import localize
-from django.utils.timezone import localtime
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from taggit.managers import TaggableManager
 
@@ -348,10 +347,15 @@ class Observation(models.Model):
 
         return False
 
-    def save(self, *args, **kwargs) -> None:
+    def set_stable_id(self) -> None:
         self.stable_id = Observation.build_stable_id(
             self.occurrence_id, self.source_dataset.gbif_dataset_key
         )
+
+    def save(self, *args, **kwargs) -> None:
+        # Beware: the import_observation command uses bulk_create() to create observations, so this save() method is
+        # not called. Make sure to keep the logic in sync with import_observation.py
+        self.set_stable_id()
         super().save(*args, **kwargs)
 
     def get_absolute_url(self) -> str:
@@ -385,7 +389,7 @@ class Observation(models.Model):
                 observation_view.observation = self
                 observation_view.save()
 
-    @property
+    @cached_property
     def replaced_observation(self) -> Self | None:
         """Return the observation (from a previous import) that will be replaced by this one
 
