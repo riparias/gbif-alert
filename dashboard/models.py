@@ -17,8 +17,6 @@ from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import localize
-from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 from taggit.managers import TaggableManager
 
