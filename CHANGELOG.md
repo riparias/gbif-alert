@@ -3,6 +3,7 @@
 - Users can now easily change their password
 - Improved "initial data import" filter/selector, according to the suggestions in https://github.com/riparias/gbif-alert/issues/251
 - Internal improvement to improve the tool re-usability (https://github.com/riparias/gbif-alert/issues/250)
+- Update dependencies
 
 # v1.2.1 (2023-08-21)
 
