@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-19 14:29+0200\n"
+"POT-Creation-Date: 2023-08-29 10:19+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -54,31 +54,31 @@ msgstr "Requis. Entrez une adresse email valide."
 msgid "Language"
 msgstr "Langue"
 
-#: dashboard/models.py:617
+#: dashboard/models.py:610
 msgid "No emails"
 msgstr "Pas d'emails"
 
-#: dashboard/models.py:618
+#: dashboard/models.py:611
 msgid "Daily"
 msgstr "Journalier"
 
-#: dashboard/models.py:619
+#: dashboard/models.py:612
 msgid "Weekly"
 msgstr "Hebdomadaire"
 
-#: dashboard/models.py:620
+#: dashboard/models.py:613
 msgid "Monthly"
 msgstr "Mensuel"
 
-#: dashboard/models.py:631
+#: dashboard/models.py:624
 msgid "name"
 msgstr "nom"
 
-#: dashboard/models.py:635
+#: dashboard/models.py:628
 msgid "species"
 msgstr "espèces"
 
-#: dashboard/models.py:638
+#: dashboard/models.py:631
 msgid ""
 "To select multiple items, press and hold the Ctrl or Command key and click "
 "the items."
@@ -86,11 +86,11 @@ msgstr ""
 "Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:644
+#: dashboard/models.py:637
 msgid "datasets"
 msgstr "jeux de données"
 
-#: dashboard/models.py:647
+#: dashboard/models.py:640
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
@@ -99,11 +99,11 @@ msgstr ""
 "Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:654
+#: dashboard/models.py:647
 msgid "areas"
 msgstr "zones"
 
-#: dashboard/models.py:656
+#: dashboard/models.py:649
 msgid ""
 "Optional (no selection = notify me for all data in the system). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
@@ -112,11 +112,11 @@ msgstr ""
 "système). Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou "
 "'pomme / command' enfoncée "
 
-#: dashboard/models.py:665
+#: dashboard/models.py:658
 msgid "email notifications frequency"
 msgstr "fréquence des notifications par email"
 
-#: dashboard/models.py:778
+#: dashboard/models.py:771
 msgid "unseen observation(s) for your alert"
 msgstr "observation(s) non vue(s) pour votre alerte"
 
@@ -132,39 +132,39 @@ msgstr "tout"
 msgid "Species:"
 msgstr "Espèces :"
 
-#: dashboard/templates/dashboard/_alert.html:13
+#: dashboard/templates/dashboard/_alert.html:16
 msgid "Areas:"
 msgstr "Zones :"
 
-#: dashboard/templates/dashboard/_alert.html:16
+#: dashboard/templates/dashboard/_alert.html:19
 msgid "Datasets:"
 msgstr "Jeux de données :"
 
-#: dashboard/templates/dashboard/_alert.html:19
+#: dashboard/templates/dashboard/_alert.html:22
 msgid "Email notifications frequency:"
 msgstr "Fréquence des notifications par email :"
 
-#: dashboard/templates/dashboard/_alert.html:23
+#: dashboard/templates/dashboard/_alert.html:26
 msgid "Last email sent:"
 msgstr "Dernier email envoyé :"
 
-#: dashboard/templates/dashboard/_alert.html:24
+#: dashboard/templates/dashboard/_alert.html:27
 msgid "never"
 msgstr "jamais"
 
-#: dashboard/templates/dashboard/_alert.html:34
+#: dashboard/templates/dashboard/_alert.html:37
 msgid "Matching observations"
 msgstr "Observations correspondantes"
 
-#: dashboard/templates/dashboard/_alert.html:38
+#: dashboard/templates/dashboard/_alert.html:41
 msgid "unseen"
 msgstr "non vues"
 
-#: dashboard/templates/dashboard/_alert.html:47
+#: dashboard/templates/dashboard/_alert.html:50
 msgid "Edit this alert"
 msgstr "Modifier cette alerte"
 
-#: dashboard/templates/dashboard/_alert.html:62
+#: dashboard/templates/dashboard/_alert.html:65
 msgid "Show all my alerts"
 msgstr "Montrer toutes mes alertes"
 
@@ -204,8 +204,8 @@ msgid ""
 "This site is powered by <a href=\"https://github.com/riparias/gbif-"
 "alert\">GBIF Alert</a> version"
 msgstr ""
-"Ce site est propulsé par <a href=\"https://github.com/riparias/"
-"gbif-alert\">GBIF Alert</a> version"
+"Ce site est propulsé par <a href=\"https://github.com/riparias/gbif-"
+"alert\">GBIF Alert</a> version"
 
 #: dashboard/templates/dashboard/_navbar.html:12
 msgid "Explore all observations"
@@ -218,7 +218,7 @@ msgid "What's new"
 msgstr "Nouveautés"
 
 #: dashboard/templates/dashboard/_navbar.html:19
-#: dashboard/templates/dashboard/_navbar.html:43
+#: dashboard/templates/dashboard/_navbar.html:44
 #: dashboard/templates/dashboard/user_alerts.html:5
 #: dashboard/templates/dashboard/user_alerts.html:13
 msgid "My alerts"
@@ -242,28 +242,34 @@ msgstr "A propos des données"
 msgid "My profile"
 msgstr "Mon profil"
 
-#: dashboard/templates/dashboard/_navbar.html:53
+#: dashboard/templates/dashboard/_navbar.html:41
+#: dashboard/templates/dashboard/password_change.html:6
+#: dashboard/templates/dashboard/password_change.html:14
+msgid "Change my password"
+msgstr "Modifier mon mot de passe"
+
+#: dashboard/templates/dashboard/_navbar.html:54
 #: dashboard/templates/dashboard/user_areas.html:7
 #: dashboard/templates/dashboard/user_areas.html:19
 msgid "My custom areas"
 msgstr ""
 
-#: dashboard/templates/dashboard/_navbar.html:62
+#: dashboard/templates/dashboard/_navbar.html:63
 msgid "Admin panel"
 msgstr "Panneau d'administration"
 
-#: dashboard/templates/dashboard/_navbar.html:64
+#: dashboard/templates/dashboard/_navbar.html:65
 msgid "Sign out"
 msgstr "Se déconnecter"
 
-#: dashboard/templates/dashboard/_navbar.html:68
+#: dashboard/templates/dashboard/_navbar.html:69
 #: dashboard/templates/dashboard/signin.html:6
 #: dashboard/templates/dashboard/signin.html:14
 #: dashboard/templates/dashboard/signin.html:39
 msgid "Sign in"
 msgstr "Se connecter"
 
-#: dashboard/templates/dashboard/_navbar.html:69
+#: dashboard/templates/dashboard/_navbar.html:70
 #: dashboard/templates/dashboard/user_signup.html:7
 msgid "Sign up"
 msgstr "S'inscrire"
@@ -318,6 +324,22 @@ msgstr "Accueil"
 #: dashboard/templates/dashboard/observation_details.html:46
 msgid "Species"
 msgstr "Espèce"
+
+#: dashboard/templates/dashboard/password_change.html:19
+msgid "Change password"
+msgstr "Modifier le mot de passe !"
+
+#: dashboard/templates/dashboard/password_change_done.html:5
+msgid "Password changed"
+msgstr "Mot de passe modifié"
+
+#: dashboard/templates/dashboard/password_change_done.html:13
+msgid "Your password was successfully changed."
+msgstr "Votre mot de passe a été mis à jour avec succès."
+
+#: dashboard/templates/dashboard/password_change_done.html:14
+msgid "Go to index page"
+msgstr "Aller a la page d'accueil"
 
 #: dashboard/templates/dashboard/password_reset.html:7
 #: dashboard/templates/dashboard/password_reset.html:15
@@ -385,6 +407,10 @@ msgid ""
 msgstr ""
 "Nous vous avons envoyé des instructions pour définir votre mot de passe. "
 "Vous devriez recevoir l'email sous peu !"
+
+#: dashboard/templates/dashboard/signin.html:16
+msgid "Your username and password didn't match. Please try again."
+msgstr ""
 
 #: dashboard/templates/dashboard/signin.html:21
 msgid ""

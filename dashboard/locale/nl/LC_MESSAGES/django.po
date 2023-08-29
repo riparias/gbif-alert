@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-19 14:29+0200\n"
+"POT-Creation-Date: 2023-08-29 10:19+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -54,63 +54,63 @@ msgstr ""
 msgid "Language"
 msgstr ""
 
-#: dashboard/models.py:617
+#: dashboard/models.py:610
 msgid "No emails"
 msgstr ""
 
-#: dashboard/models.py:618
+#: dashboard/models.py:611
 msgid "Daily"
 msgstr ""
 
-#: dashboard/models.py:619
+#: dashboard/models.py:612
 msgid "Weekly"
 msgstr ""
 
-#: dashboard/models.py:620
+#: dashboard/models.py:613
 msgid "Monthly"
 msgstr ""
 
-#: dashboard/models.py:631
+#: dashboard/models.py:624
 msgid "name"
 msgstr ""
 
-#: dashboard/models.py:635
+#: dashboard/models.py:628
 #, fuzzy
 #| msgid "Species"
 msgid "species"
 msgstr "Soort"
 
-#: dashboard/models.py:638
+#: dashboard/models.py:631
 msgid ""
 "To select multiple items, press and hold the Ctrl or Command key and click "
 "the items."
 msgstr ""
 
-#: dashboard/models.py:644
+#: dashboard/models.py:637
 msgid "datasets"
 msgstr ""
 
-#: dashboard/models.py:647
+#: dashboard/models.py:640
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
 msgstr ""
 
-#: dashboard/models.py:654
+#: dashboard/models.py:647
 msgid "areas"
 msgstr ""
 
-#: dashboard/models.py:656
+#: dashboard/models.py:649
 msgid ""
 "Optional (no selection = notify me for all data in the system). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
 msgstr ""
 
-#: dashboard/models.py:665
+#: dashboard/models.py:658
 msgid "email notifications frequency"
 msgstr ""
 
-#: dashboard/models.py:778
+#: dashboard/models.py:771
 msgid "unseen observation(s) for your alert"
 msgstr ""
 
@@ -128,39 +128,39 @@ msgstr ""
 msgid "Species:"
 msgstr "Soort"
 
-#: dashboard/templates/dashboard/_alert.html:13
+#: dashboard/templates/dashboard/_alert.html:16
 msgid "Areas:"
 msgstr ""
 
-#: dashboard/templates/dashboard/_alert.html:16
+#: dashboard/templates/dashboard/_alert.html:19
 msgid "Datasets:"
 msgstr ""
 
-#: dashboard/templates/dashboard/_alert.html:19
+#: dashboard/templates/dashboard/_alert.html:22
 msgid "Email notifications frequency:"
 msgstr ""
 
-#: dashboard/templates/dashboard/_alert.html:23
+#: dashboard/templates/dashboard/_alert.html:26
 msgid "Last email sent:"
 msgstr ""
 
-#: dashboard/templates/dashboard/_alert.html:24
+#: dashboard/templates/dashboard/_alert.html:27
 msgid "never"
 msgstr ""
 
-#: dashboard/templates/dashboard/_alert.html:34
+#: dashboard/templates/dashboard/_alert.html:37
 msgid "Matching observations"
 msgstr ""
 
-#: dashboard/templates/dashboard/_alert.html:38
+#: dashboard/templates/dashboard/_alert.html:41
 msgid "unseen"
 msgstr ""
 
-#: dashboard/templates/dashboard/_alert.html:47
+#: dashboard/templates/dashboard/_alert.html:50
 msgid "Edit this alert"
 msgstr ""
 
-#: dashboard/templates/dashboard/_alert.html:62
+#: dashboard/templates/dashboard/_alert.html:65
 msgid "Show all my alerts"
 msgstr ""
 
@@ -210,7 +210,7 @@ msgid "What's new"
 msgstr ""
 
 #: dashboard/templates/dashboard/_navbar.html:19
-#: dashboard/templates/dashboard/_navbar.html:43
+#: dashboard/templates/dashboard/_navbar.html:44
 #: dashboard/templates/dashboard/user_alerts.html:5
 #: dashboard/templates/dashboard/user_alerts.html:13
 msgid "My alerts"
@@ -234,28 +234,34 @@ msgstr ""
 msgid "My profile"
 msgstr ""
 
-#: dashboard/templates/dashboard/_navbar.html:53
+#: dashboard/templates/dashboard/_navbar.html:41
+#: dashboard/templates/dashboard/password_change.html:6
+#: dashboard/templates/dashboard/password_change.html:14
+msgid "Change my password"
+msgstr ""
+
+#: dashboard/templates/dashboard/_navbar.html:54
 #: dashboard/templates/dashboard/user_areas.html:7
 #: dashboard/templates/dashboard/user_areas.html:19
 msgid "My custom areas"
 msgstr ""
 
-#: dashboard/templates/dashboard/_navbar.html:62
+#: dashboard/templates/dashboard/_navbar.html:63
 msgid "Admin panel"
 msgstr ""
 
-#: dashboard/templates/dashboard/_navbar.html:64
+#: dashboard/templates/dashboard/_navbar.html:65
 msgid "Sign out"
 msgstr ""
 
-#: dashboard/templates/dashboard/_navbar.html:68
+#: dashboard/templates/dashboard/_navbar.html:69
 #: dashboard/templates/dashboard/signin.html:6
 #: dashboard/templates/dashboard/signin.html:14
 #: dashboard/templates/dashboard/signin.html:39
 msgid "Sign in"
 msgstr ""
 
-#: dashboard/templates/dashboard/_navbar.html:69
+#: dashboard/templates/dashboard/_navbar.html:70
 #: dashboard/templates/dashboard/user_signup.html:7
 msgid "Sign up"
 msgstr ""
@@ -305,6 +311,22 @@ msgstr ""
 #: dashboard/templates/dashboard/observation_details.html:46
 msgid "Species"
 msgstr "Soort"
+
+#: dashboard/templates/dashboard/password_change.html:19
+msgid "Change password"
+msgstr ""
+
+#: dashboard/templates/dashboard/password_change_done.html:5
+msgid "Password changed"
+msgstr ""
+
+#: dashboard/templates/dashboard/password_change_done.html:13
+msgid "Your password was successfully changed."
+msgstr ""
+
+#: dashboard/templates/dashboard/password_change_done.html:14
+msgid "Go to index page"
+msgstr ""
 
 #: dashboard/templates/dashboard/password_reset.html:7
 #: dashboard/templates/dashboard/password_reset.html:15
@@ -361,6 +383,10 @@ msgstr ""
 msgid ""
 "We've emailed you instructions for setting your password. You should receive "
 "the email shortly!"
+msgstr ""
+
+#: dashboard/templates/dashboard/signin.html:16
+msgid "Your username and password didn't match. Please try again."
 msgstr ""
 
 #: dashboard/templates/dashboard/signin.html:21
