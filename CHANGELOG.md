@@ -1,6 +1,6 @@
 # Current (unreleased)
 
-- Users can now easily change their password (TODO: implement translation + write tests)
+- Users can now easily change their password
 - Improved "initial data import" filter/selector, according to the suggestions in https://github.com/riparias/gbif-alert/issues/251
 - Internal improvement to improve the tool re-usability (https://github.com/riparias/gbif-alert/issues/250)
 
