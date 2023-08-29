@@ -372,14 +372,14 @@ bcrypt = ["bcrypt"]
 
 [[package]]
 name = "django-cors-headers"
-version = "3.14.0"
+version = "4.2.0"
 description = "django-cors-headers is a Django application for handling the server headers required for Cross-Origin Resource Sharing (CORS)."
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "django_cors_headers-3.14.0-py3-none-any.whl", hash = "sha256:684180013cc7277bdd8702b80a3c5a4b3fcae4abb2bf134dceb9f5dfe300228e"},
-    {file = "django_cors_headers-3.14.0.tar.gz", hash = "sha256:5fbd58a6fb4119d975754b2bc090f35ec160a8373f276612c675b00e8a138739"},
+    {file = "django_cors_headers-4.2.0-py3-none-any.whl", hash = "sha256:9ada212b0e2efd4a5e339360ffc869cb21ac5605e810afe69f7308e577ea5bde"},
+    {file = "django_cors_headers-4.2.0.tar.gz", hash = "sha256:f9749c6410fe738278bc2b6ef17f05195bc7b251693c035752d8257026af024f"},
 ]
 
 [package.dependencies]
@@ -402,20 +402,20 @@ django = ">=3.2"
 
 [[package]]
 name = "django-import-export"
-version = "2.9.0"
+version = "3.2.0"
 description = "Django application and library for importing and exporting data with included admin integration."
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "django-import-export-2.9.0.tar.gz", hash = "sha256:02ce3a8e191992fa7aa1d660877ac6764fa9e32a5ba6394293f2fc761a5bdd19"},
-    {file = "django_import_export-2.9.0-py3-none-any.whl", hash = "sha256:126d32a4410c42b6e1bf060355bf45968f6fe427c3b7ed04c96873bd45d7549a"},
+    {file = "django-import-export-3.2.0.tar.gz", hash = "sha256:38fd7b9439b9e3aa1a4747421c1087a5bc194e915a28d795fb8429a5f8028f2d"},
+    {file = "django_import_export-3.2.0-py3-none-any.whl", hash = "sha256:1d3f2cb2ee3cca0386ed60651fa1623be989f130d9fbdf98a67f7dc3a94b8a37"},
 ]
 
 [package.dependencies]
 diff-match-patch = "*"
 Django = ">=3.2"
-tablib = {version = ">=3.0.0", extras = ["html", "ods", "xls", "xlsx", "yaml"]}
+tablib = {version = ">=3.4.0", extras = ["html", "ods", "xls", "xlsx", "yaml"]}
 
 [[package]]
 name = "django-maintenance-mode"
@@ -434,14 +434,14 @@ python-fsutil = ">=0.7.0"
 
 [[package]]
 name = "django-markdownx"
-version = "4.0.0b1"
+version = "4.0.2"
 description = "A comprehensive Markdown editor built for Django."
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "django-markdownx-4.0.0b1.tar.gz", hash = "sha256:4f0ee12c38a9aeab9f8da0588ca169ec32c4dad84fc90dc4e9f56481b5de3473"},
-    {file = "django_markdownx-4.0.0b1-py2.py3-none-any.whl", hash = "sha256:e862ddc3e0aa8a2d6bb297fcf115a35b36b874ea5f07463577f1b34aa5073c3e"},
+    {file = "django-markdownx-4.0.2.tar.gz", hash = "sha256:ab32677eeeda9b346dd68ed679b29faef5f2aca540dcc8f0ae917ccd3c5f3338"},
+    {file = "django_markdownx-4.0.2-py2.py3-none-any.whl", hash = "sha256:2fed9b6bbac798a6c24ba30e17ad775fab44f94774c820abd87aabc751f50a7e"},
 ]
 
 [package.dependencies]
@@ -1818,4 +1818,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "fa5d115aa5fc79fccaf84bee78fcc401971101200e88251880206160e02ae70e"
+content-hash = "ae8e6f9a57b65df1bf5e73913d3b90284a7d60ab9ec0cd5e32ebf193a6dfb7d4"
