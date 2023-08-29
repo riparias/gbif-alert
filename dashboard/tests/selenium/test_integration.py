@@ -17,7 +17,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
-from webdriver_manager.core.utils import ChromeType  # type: ignore
+from webdriver_manager.core.os_manager import ChromeType  # type: ignore
+
 
 from dashboard.models import (
     Species,
@@ -39,7 +40,7 @@ def _get_webdriver() -> WebDriver:
 
     # Workaround for https://github.com/SergeyPirogov/webdriver_manager/issues/500
     if hasattr(settings, "SELENIUM_CHROMEDRIVER_VERSION"):
-        chromedriver_args = {"version": settings.SELENIUM_CHROMEDRIVER_VERSION}  # type: ignore
+        chromedriver_args = {"driver_version": settings.SELENIUM_CHROMEDRIVER_VERSION}  # type: ignore
     else:
         chromedriver_args = {"chrome_type": ChromeType.CHROMIUM}
 
@@ -56,9 +57,9 @@ def _get_webdriver() -> WebDriver:
     STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage",
     GBIF_ALERT={
         "MAIN_MAP_CONFIG": {
-        "initialZoom": 8,
-        "initialLat": 50.50,
-        "initialLon": 4.47,
+            "initialZoom": 8,
+            "initialLat": 50.50,
+            "initialLon": 4.47,
         },
         "SITE_NAME": "LIFE RIPARIAS early alert",
     },
@@ -341,7 +342,9 @@ class SeleniumAlertTests(SeleniumTestsCommon):
         # We get a success message
         wait = WebDriverWait(self.selenium, 3)
         wait.until(
-            EC.presence_of_element_located((By.ID, "gbif-alert-alert-successfully-saved"))
+            EC.presence_of_element_located(
+                (By.ID, "gbif-alert-alert-successfully-saved")
+            )
         )
 
         # We now have a button to see the details of the alert, let's click it
@@ -353,7 +356,9 @@ class SeleniumAlertTests(SeleniumTestsCommon):
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Alert details"))
 
-        alert_title = self.selenium.find_element(By.CLASS_NAME, "gbif-alert-alert-title")
+        alert_title = self.selenium.find_element(
+            By.CLASS_NAME, "gbif-alert-alert-title"
+        )
         self.assertEqual(alert_title.text, "Edited alert name")
 
         species_list_text = self.selenium.find_element(
@@ -993,7 +998,9 @@ class SeleniumTests(SeleniumTestsCommon):
         last_name_field.send_keys("Palmer")
         email_field.clear()
         email_field.send_keys("palmer@gmail.com")
-        save_button = self.selenium.find_element(By.ID, "gbif-alert-profile-save-button")
+        save_button = self.selenium.find_element(
+            By.ID, "gbif-alert-profile-save-button"
+        )
         save_button.click()
 
         # Check for the success message
