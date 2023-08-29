@@ -305,18 +305,18 @@ files = [
 
 [[package]]
 name = "crispy-bootstrap5"
-version = "0.6"
+version = "0.7"
 description = "Bootstrap5 template pack for django-crispy-forms"
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 files = [
-    {file = "crispy-bootstrap5-0.6.tar.gz", hash = "sha256:e8c50daaf266d6127c7414f5669d5f2467b640d08b045ed9dd57e351d30609ae"},
-    {file = "crispy_bootstrap5-0.6-py3-none-any.whl", hash = "sha256:ca5d2afc2a5d1cf12b8d057886a81002cdf7793afcbe0ce006c2294069c1f387"},
+    {file = "crispy-bootstrap5-0.7.tar.gz", hash = "sha256:0745a67199619149b7feca87dab7a45664876ed50fb582b38fd2aeb3f8a8d869"},
+    {file = "crispy_bootstrap5-0.7-py3-none-any.whl", hash = "sha256:f3ff1ef5cb379fe80b1b02e245008f276444098a4bdb8d855bed84c623798a85"},
 ]
 
 [package.dependencies]
-django = ">=2.2"
+django = ">=3.2"
 django-crispy-forms = ">=1.13.0"
 
 [package.extras]
@@ -387,15 +387,18 @@ Django = ">=3.2"
 
 [[package]]
 name = "django-crispy-forms"
-version = "1.14.0"
+version = "2.0"
 description = "Best way to have Django DRY forms"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "django-crispy-forms-1.14.0.tar.gz", hash = "sha256:35887b8851a931374dd697207a8f56c57a9c5cb9dbf0b9fa54314da5666cea5b"},
-    {file = "django_crispy_forms-1.14.0-py3-none-any.whl", hash = "sha256:bc4d2037f6de602d39c0bc452ac3029d1f5d65e88458872cc4dbc01c3a400604"},
+    {file = "django-crispy-forms-2.0.tar.gz", hash = "sha256:90193b068bf948d9c68449bc8260afed1a8e2afe11ee0bac8c4ebfaeb175b322"},
+    {file = "django_crispy_forms-2.0-py3-none-any.whl", hash = "sha256:d1d4e585929058a9ab3b797666ea5b69320b9ba7937f9d146d32173246a6fd13"},
 ]
+
+[package.dependencies]
+django = ">=3.2"
 
 [[package]]
 name = "django-import-export"
@@ -1815,4 +1818,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "7a56b9353d0f407e14ff56f4f1d72a4fd24f8748e9e2871e7fa09eace505ab12"
+content-hash = "fa5d115aa5fc79fccaf84bee78fcc401971101200e88251880206160e02ae70e"
