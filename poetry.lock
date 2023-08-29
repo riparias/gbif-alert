@@ -351,14 +351,14 @@ dev = ["attribution (==1.6.2)", "black (==23.3.0)", "flit (==3.8.0)", "mypy (==1
 
 [[package]]
 name = "django"
-version = "4.2.2"
+version = "4.2.4"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
 category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "Django-4.2.2-py3-none-any.whl", hash = "sha256:672b3fa81e1f853bb58be1b51754108ab4ffa12a77c06db86aa8df9ed0c46fe5"},
-    {file = "Django-4.2.2.tar.gz", hash = "sha256:2a6b6fbff5b59dd07bef10bcb019bee2ea97a30b2a656d51346596724324badf"},
+    {file = "Django-4.2.4-py3-none-any.whl", hash = "sha256:860ae6a138a238fc4f22c99b52f3ead982bb4b1aad8c0122bcd8c8a3a02e409d"},
+    {file = "Django-4.2.4.tar.gz", hash = "sha256:7e4225ec065e0f354ccf7349a22d209de09cc1c074832be9eb84c51c1799c432"},
 ]
 
 [package.dependencies]
@@ -1818,4 +1818,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "ae8e6f9a57b65df1bf5e73913d3b90284a7d60ab9ec0cd5e32ebf193a6dfb7d4"
+content-hash = "3903e0c74bf20f05b93534633515047e566657e47e8b8f8ef2e361e9943382f7"
