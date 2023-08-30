@@ -109,32 +109,48 @@ def filtered_observations_data_page_json(request: HttpRequest) -> JsonResponse:
     response example:
 
     {
-        "results": [
-            {
-                "id": 1,
-                "lat": "50.489",
-                "lon": "5.0951",
-                "speciesName": "Elodea nuttallii",
-                "date": "2021-09-12",
-            },
-            {
-                "id": 2,
-                "lat": "50.647",
-                "lon": "4.3597",
-                "speciesName": "Heracleum mantegazzianum",
-                "date": "2021-09-12",
-            },
-            {
-                "id": 3,
-                "lat": "50.647",
-                "lon": "4.3597",
-                "speciesName": "Heracleum mantegazzianum",
-                "date": "2021-09-13",
-            },
-        ],
-        "firstPage": 1,
-        "lastPage": 1,
-        "totalResultsCount": 3,
+      "results": [
+        {
+          "id": 1130128,
+          "stableId": "58b86259157a6c9bd98f6fc8025bc51a796fdf7d",
+          "gbifId": "4399020308",
+          "lat": 50.62886099999997,
+          "lon": 4.453551,
+          "scientificName": "Vespa Velutina",
+          "vernacularName": "",
+          "datasetName": "DEMNA-DNE : Early warning system on Introduced Species in Wallonia",
+          "date": "2023-08-21",
+          "seenByCurrentUser": false
+        },
+        {
+          "id": 1130129,
+          "stableId": "c3356897d006583b8f22a3c5c655a54a348079d7",
+          "gbifId": "4399020310",
+          "lat": 50.61108599999998,
+          "lon": 5.579655,
+          "scientificName": "Vespa Velutina",
+          "vernacularName": "",
+          "datasetName": "DEMNA-DNE : Early warning system on Introduced Species in Wallonia",
+          "date": "2023-08-21",
+          "seenByCurrentUser": false
+        },
+        {
+          "id": 1130144,
+          "stableId": "873fb841920d13d9d55f1714bdccb7fa518c28e7",
+          "gbifId": "4399020302",
+          "lat": 50.667837999999996,
+          "lon": 5.471714,
+          "scientificName": "Vespa Velutina",
+          "vernacularName": "",
+          "datasetName": "DEMNA-DNE : Early warning system on Introduced Species in Wallonia",
+          "date": "2023-08-21",
+          "seenByCurrentUser": false
+        }
+      ],
+      "pageNumber": 1,
+      "firstPage": 1,
+      "lastPage": 44436,
+      "totalResultsCount": 133306
     }
 
     Notes:

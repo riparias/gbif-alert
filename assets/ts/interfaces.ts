@@ -111,7 +111,8 @@ export interface JsonObservation {
   lat: number;
   lon: number;
   date: string;
-  speciesName: string;
+  scientificName: string;
+  displayNameHtml: string;
   datasetName: string;
   seenByCurrentUser?: boolean;
 }

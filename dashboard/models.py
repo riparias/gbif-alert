@@ -459,7 +459,9 @@ class Observation(models.Model):
             "gbifId": self.gbif_id,
             "lat": lat,
             "lon": lon,
-            "speciesName": self.species.name,
+            "scientificName": self.species.name,
+            "vernacularName": self.species.vernacular_name,
+            "displayNameHtml": self.species.display_name_html(),
             "datasetName": self.source_dataset.name,
             "date": str(self.date),
         }
