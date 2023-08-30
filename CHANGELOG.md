@@ -1,3 +1,7 @@
+Current (unreleased)
+
+- Warning message instead of histogram when all values are 0, to avoid confusing display behaviour: https://github.com/riparias/gbif-alert/issues/92
+
 # v1.3.0 (2023-08-30)
 
 - Users can now easily change their password
