@@ -7,7 +7,10 @@
         <ul class="list-group list-group-flush">
             {% translate "all" as all_translated %}
             <li class="list-group-item" id="gbif-alert-alert-species-list">
-                <b>{% translate "Species:" %}</b> {{ alert.species_list|default:all_translated }}
+                <b>{% translate "Species:" %} </b>
+                {% for species in alert.species.all %}
+                    {{ species.display_name_html|safe }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
             </li>
             <li class="list-group-item">
                 <b>{% translate "Areas:" %}</b> {{ alert.areas_list|default:all_translated }}

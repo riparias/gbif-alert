@@ -1,3 +1,11 @@
+# v1.3.0 (2023-08-30)
+
+- Users can now easily change their password
+- The vernacular name is now shown in the observations table
+- Improved "initial data import" filter/selector, according to the suggestions in https://github.com/riparias/gbif-alert/issues/251
+- Internal improvement to improve the tool re-usability (https://github.com/riparias/gbif-alert/issues/250)
+- Update dependencies
+
 # v1.2.1 (2023-08-21)
 
 - Fixed a display issue with the user menu in the navbar (https://github.com/riparias/gbif-alert/issues/252)

@@ -15,7 +15,7 @@
       </td>
       <td>{{ occ.lat }}, {{ occ.lon }}</td>
       <td>{{ occ.date }}</td>
-      <td class="fst-italic">{{ occ.speciesName }}</td>
+      <td v-html="occ.displayNameHtml"></td>
       <td>{{ occ.datasetName }}</td>
     </tr>
   </tbody>
@@ -31,8 +31,8 @@ interface ObservationForDisplay {
   lat: string;
   lon: string;
   date: string;
-  speciesName: string;
   datasetName: string;
+  displayNameHtml: string;
   url: string;
   seenByCurrentUser?: boolean;
 }
@@ -47,7 +47,7 @@ export default defineComponent({
           lat: occ.lat ? occ.lat.toFixed(3) : "",
           lon: occ.lon ? occ.lon.toFixed(3) : "",
           date: occ.date,
-          speciesName: occ.speciesName,
+          displayNameHtml: occ.displayNameHtml,
           datasetName: this.truncateString(occ.datasetName, 30),
           url: this.observationPageUrlTemplate!.replace(
             "{stable_id}",

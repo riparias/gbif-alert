@@ -15,7 +15,14 @@
                          :modal-title="modalTitle"
                          @clicked-close="modalActive = false">
 
-    <Selector :available-entries="entries" v-model="selectedEntriesIds" :columns-config="selectorConfig"></Selector>
+    <Selector
+        :available-entries="entries"
+        v-model="selectedEntriesIds"
+        :columns-config="selectorColumnsConfig"
+        :initial-sort-by="selectorInitialSortBy"
+        :initial-sort-direction="selectorInitialSortDirection"
+    >
+    </Selector>
   </Filter-Selector-Modal>
 
 </template>
@@ -48,8 +55,18 @@ export default defineComponent({
       required: false,
       default: 0,
     },
-    selectorConfig: {
+    selectorColumnsConfig: {
       type: Array as () => ColumnMetadata[],
+    },
+    selectorInitialSortBy: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    selectorInitialSortDirection: {
+      type: String,
+      required: false,
+      default: "asc",
     },
     initiallySelectedEntriesIds: {
       type: Array as PropType<Array<number>>,

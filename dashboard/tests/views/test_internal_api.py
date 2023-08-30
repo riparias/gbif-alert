@@ -428,7 +428,7 @@ class InternalApiTests(TestCase):
             [
                 {
                     "id": di_id,
-                    "str": f"Data import #{di_id} (Feb. 11, 2022, 4:10 p.m.)",
+                    "name": f"Data import #{di_id}",
                     "startTimestamp": "2022-02-11T15:10:00Z",
                 }
             ],
@@ -618,7 +618,7 @@ class InternalApiTests(TestCase):
         self.assertEqual(json_data["lastPage"], 1)
         found = False
         for r in json_data["results"]:
-            if r["speciesName"] == "Procambarus fallax":
+            if r["scientificName"] == "Procambarus fallax":
                 found = True
         self.assertTrue(found)
 
@@ -649,7 +649,9 @@ class InternalApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         # Check that it's sorted by species name (alphabetical order)
-        obs_species_names = [result["speciesName"] for result in json_data["results"]]
+        obs_species_names = [
+            result["scientificName"] for result in json_data["results"]
+        ]
         self.assertEqual(obs_species_names, sorted(obs_species_names))
 
     def test_observations_json_ordering_species_name_desc(self):
@@ -660,7 +662,9 @@ class InternalApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
         # Check that it's sorted by species name (alphabetical order)
-        obs_species_names = [result["speciesName"] for result in json_data["results"]]
+        obs_species_names = [
+            result["scientificName"] for result in json_data["results"]
+        ]
         self.assertEqual(obs_species_names[::-1], sorted(obs_species_names))
 
     def test_observations_json_pagination_base(self):
@@ -924,7 +928,7 @@ class InternalApiTests(TestCase):
         self.assertEqual(json_data["totalResultsCount"], 2)
         for result in json_data["results"]:
             self.assertIn(
-                result["speciesName"],
+                result["scientificName"],
                 [self.first_species.name, species_tetraodon.name],
             )
 

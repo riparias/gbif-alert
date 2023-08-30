@@ -38,6 +38,7 @@
 
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="{% url 'dashboard:pages:profile' %}"><i class="bi bi-person-square"></i> {% translate "My profile" %}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'password_change' %}"><i class="bi bi-gear"></i> {% translate "Change my password" %}</a></li>
                             <li>
                                 <a class="dropdown-item" href="{% url 'dashboard:pages:my-alerts' %}">
                                     <i class="bi bi-exclamation-square"></i> {% translate "My alerts" %}

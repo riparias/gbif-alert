@@ -13,7 +13,7 @@
             <div class="col">
                 <h1>{% translate "Sign in" %}</h1>
                 {% if form.errors %}
-                    <div id="gbif-alert-invalid-credentials-message" class="alert alert-danger">Your username and password didn't match. Please try again.</div>
+                    <div id="gbif-alert-invalid-credentials-message" class="alert alert-danger">{%  translate "Your username and password didn't match. Please try again." %}</div>
                 {% endif %}
 
                 {% if next %}

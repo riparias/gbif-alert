@@ -27,6 +27,7 @@ ADMINS = [
     ("Nicolas", "nicolas@niconoe.eu"),
 ]
 
+
 def build_gbif_download_predicate(species_list: "QuerySet[Species]"):  # type: ignore
     """
     Build a GBIF.org download predicate for Belgian observations, after 2000.
@@ -54,6 +55,7 @@ def build_gbif_download_predicate(species_list: "QuerySet[Species]"):  # type: i
         }
     }
 
+
 GBIF_ALERT: dict[str, Any] = {
     "SITE_NAME": "GBIF alert - local",  # Name of the website, appears in various places (page titles, emails, ...)
     "NAVBAR_BACKGROUND_COLOR": "crimson",
@@ -68,10 +70,8 @@ GBIF_ALERT: dict[str, Any] = {
     "GBIF_DOWNLOAD_CONFIG": {
         "USERNAME": "aaaa",
         "PASSWORD": "bbbb",
-        "PREDICATE_BUILDER": build_gbif_download_predicate
+        "PREDICATE_BUILDER": build_gbif_download_predicate,
     },
-    # Deprecated: this settings will disappear soon (https://github.com/riparias/gbif-alert/issues/250), keep it to False
-    "SHOW_DEV_VERSION_WARNING": False,
     # initial location of the map on the index page
     "MAIN_MAP_CONFIG": {
         "initialZoom": 8,

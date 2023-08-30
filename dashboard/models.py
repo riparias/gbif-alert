@@ -17,8 +17,6 @@ from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import localize
-from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 from taggit.managers import TaggableManager
 
@@ -196,16 +194,11 @@ class DataImport(models.Model):
         ).count()
         self.save()
 
-    def __str__(self) -> str:
-        return (
-            f"Data import #{self.pk} ({localize(localtime(self.start), use_l10n=True)})"
-        )
-
     @property
     def as_dict(self) -> dict[str, Any]:
         return {  # To be consumed on the frontend: we use JS naming conventions
             "id": self.pk,
-            "str": self.__str__(),
+            "name": f"Data import #{self.pk}",
             "startTimestamp": self.start,
         }
 
@@ -466,7 +459,9 @@ class Observation(models.Model):
             "gbifId": self.gbif_id,
             "lat": lat,
             "lon": lon,
-            "speciesName": self.species.name,
+            "scientificName": self.species.name,
+            "vernacularName": self.species.vernacular_name,
+            "displayNameHtml": self.species.display_name_html(),
             "datasetName": self.source_dataset.name,
             "date": str(self.date),
         }

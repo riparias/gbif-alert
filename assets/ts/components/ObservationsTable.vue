@@ -191,7 +191,7 @@ export default defineComponent({
         {sortId: "gbif_id", label: this.$t("message.gbifId")},
         {sortId: null, label: this.$t("message.coordinates")},
         {sortId: "-date", label: this.$t("message.date")},
-        {sortId: "species__name", label: this.$t("message.scientificName")},
+        {sortId: "species__name", label: this.$t("message.species")},
         {sortId: "source_dataset__name", label: this.$t("message.dataset")},
       ],
     };

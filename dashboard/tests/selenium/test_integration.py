@@ -17,7 +17,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
-from webdriver_manager.core.utils import ChromeType  # type: ignore
+from webdriver_manager.core.os_manager import ChromeType  # type: ignore
+
 
 from dashboard.models import (
     Species,
@@ -39,7 +40,7 @@ def _get_webdriver() -> WebDriver:
 
     # Workaround for https://github.com/SergeyPirogov/webdriver_manager/issues/500
     if hasattr(settings, "SELENIUM_CHROMEDRIVER_VERSION"):
-        chromedriver_args = {"version": settings.SELENIUM_CHROMEDRIVER_VERSION}  # type: ignore
+        chromedriver_args = {"driver_version": settings.SELENIUM_CHROMEDRIVER_VERSION}  # type: ignore
     else:
         chromedriver_args = {"chrome_type": ChromeType.CHROMIUM}
 
@@ -56,9 +57,9 @@ def _get_webdriver() -> WebDriver:
     STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage",
     GBIF_ALERT={
         "MAIN_MAP_CONFIG": {
-        "initialZoom": 8,
-        "initialLat": 50.50,
-        "initialLon": 4.47,
+            "initialZoom": 8,
+            "initialLat": 50.50,
+            "initialLon": 4.47,
         },
         "SITE_NAME": "LIFE RIPARIAS early alert",
     },
@@ -341,7 +342,9 @@ class SeleniumAlertTests(SeleniumTestsCommon):
         # We get a success message
         wait = WebDriverWait(self.selenium, 3)
         wait.until(
-            EC.presence_of_element_located((By.ID, "gbif-alert-alert-successfully-saved"))
+            EC.presence_of_element_located(
+                (By.ID, "gbif-alert-alert-successfully-saved")
+            )
         )
 
         # We now have a button to see the details of the alert, let's click it
@@ -353,7 +356,9 @@ class SeleniumAlertTests(SeleniumTestsCommon):
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Alert details"))
 
-        alert_title = self.selenium.find_element(By.CLASS_NAME, "gbif-alert-alert-title")
+        alert_title = self.selenium.find_element(
+            By.CLASS_NAME, "gbif-alert-alert-title"
+        )
         self.assertEqual(alert_title.text, "Edited alert name")
 
         species_list_text = self.selenium.find_element(
@@ -993,7 +998,9 @@ class SeleniumTests(SeleniumTestsCommon):
         last_name_field.send_keys("Palmer")
         email_field.clear()
         email_field.send_keys("palmer@gmail.com")
-        save_button = self.selenium.find_element(By.ID, "gbif-alert-profile-save-button")
+        save_button = self.selenium.find_element(
+            By.ID, "gbif-alert-profile-save-button"
+        )
         save_button.click()
 
         # Check for the success message
@@ -1034,6 +1041,131 @@ class SeleniumTests(SeleniumTestsCommon):
         # In this test we check that feature works as expected
         # TODO: implement
         pass
+
+    def test_change_password_scenario(self):
+        """A logged user wants to change his password"""
+        self.selenium.get(self.live_server_url)
+        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
+        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
+
+        # We can follow it to the sign-in page
+        signin_link.click()
+        wait = WebDriverWait(self.selenium, 3)
+        wait.until(EC.title_contains("Sign in"))
+
+        # And successfully sign in
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("testuser")
+        password_field.send_keys("12345")
+        signin_button = self.selenium.find_element(By.ID, "gbif-alert-signin-button")
+        signin_button.click()
+        wait = WebDriverWait(self.selenium, 3)
+
+        # Now, we should be redirected to the home page, and see the username in the navbar
+        wait.until(EC.title_contains("Home"))
+        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
+        menu = navbar.find_element(By.LINK_TEXT, "testuser")
+        menu.click()
+
+        # We can navigate to the "change my password" page
+        my_profile = navbar.find_element(By.LINK_TEXT, "Change my password")
+        my_profile.click()
+        wait = WebDriverWait(self.selenium, 3)
+        wait.until(EC.title_contains("Change my password"))
+
+        old_password_field = self.selenium.find_element(By.ID, "id_old_password")
+        new_password1_field = self.selenium.find_element(By.ID, "id_new_password1")
+        new_password2_field = self.selenium.find_element(By.ID, "id_new_password2")
+        submit_button = self.selenium.find_element(
+            By.ID, "gbif-alert-change-password-submit-button"
+        )
+
+        # Failure case #1: wrong old password
+        old_password_field.send_keys("wrongpassword")
+        new_password1_field.send_keys("newpassword007")
+        new_password2_field.send_keys("newpassword007")
+        submit_button.click()
+
+        # We stay on this same page, and see the error message
+        wait = WebDriverWait(self.selenium, 3)
+        wait.until(EC.title_contains("Change my password"))
+        self.assertIn(
+            "Your old password was entered incorrectly. Please enter it again.",
+            self.selenium.page_source,
+        )
+
+        # Failure case #2: new passwords don't match
+        old_password_field = self.selenium.find_element(By.ID, "id_old_password")
+        new_password1_field = self.selenium.find_element(By.ID, "id_new_password1")
+        new_password2_field = self.selenium.find_element(By.ID, "id_new_password2")
+        submit_button = self.selenium.find_element(
+            By.ID, "gbif-alert-change-password-submit-button"
+        )
+        old_password_field.send_keys("12345")
+        new_password1_field.send_keys("newpassword007")
+        new_password2_field.send_keys("newpassword008")
+        submit_button.click()
+        # We stay on this same page, and see the error message
+        wait = WebDriverWait(self.selenium, 3)
+        wait.until(EC.title_contains("Change my password"))
+        self.assertIn(
+            "The two password fields didn’t match.", self.selenium.page_source
+        )
+
+        # Success case
+        old_password_field = self.selenium.find_element(By.ID, "id_old_password")
+        new_password1_field = self.selenium.find_element(By.ID, "id_new_password1")
+        new_password2_field = self.selenium.find_element(By.ID, "id_new_password2")
+        submit_button = self.selenium.find_element(
+            By.ID, "gbif-alert-change-password-submit-button"
+        )
+        old_password_field.send_keys("12345")
+        new_password1_field.send_keys("newpassword007")
+        new_password2_field.send_keys("newpassword007")
+        submit_button.click()
+        # We are redirected to another page, and see the success message
+
+        wait = WebDriverWait(self.selenium, 3)
+        wait.until(EC.title_contains("Password changed"))
+        self.assertIn(
+            "Your password was successfully changed.", self.selenium.page_source
+        )
+
+        # There's a link to go to the index page
+        back_link = self.selenium.find_element(By.LINK_TEXT, "Go to index page")
+        back_link.click()
+        wait = WebDriverWait(self.selenium, 3)
+        wait.until(EC.title_contains("Home"))
+
+        # We can now sign out
+        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
+        menu = navbar.find_element(By.LINK_TEXT, "testuser")
+        menu.click()
+        signout_link = navbar.find_element(By.LINK_TEXT, "Sign out")
+        signout_link.click()
+
+        # We can sign in again, with the new password
+        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
+        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
+        signin_link.click()
+        wait = WebDriverWait(self.selenium, 3)
+        wait.until(EC.title_contains("Sign in"))
+
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("testuser")
+        password_field.send_keys("newpassword007")
+        signin_button = self.selenium.find_element(By.ID, "gbif-alert-signin-button")
+        signin_button.click()
+        wait = WebDriverWait(self.selenium, 3)
+
+        # Now, we should be redirected to the home page, and see the username in the navbar
+        wait.until(EC.title_contains("Home"))
 
     def test_delete_account_scenario(self):
         """A user wants to delete his account, and need to confirm the action"""

@@ -26,7 +26,7 @@
               :no-selection-button-label="$t('message.allSpecies')"
               :modal-title="$t('message.speciesToInclude')"
               :entries="availableSpeciesAsDataRows"
-              :selector-config="[
+              :selector-columns-config="[
                   {label: $t('message.scientificName'), dataIndex: 0, formatter: scientificNameFormatter },
                   {label: $t('message.vernacularName'), dataIndex: 1},
                   {label: $t('message.gbifTaxonKey'), dataIndex: 2, formatter: gbifTaxonKeyFormatter }
@@ -43,7 +43,7 @@
               :no-selection-button-label="$t('message.allDatasets')"
               :modal-title="$t('message.datasetsToInclude')"
               :entries="availableDatasetsAsDataRows"
-              :selector-config="[
+              :selector-columns-config="[
                   {label: $t('message.name'), dataIndex: 0},
                   {label: $t('message.gbifDatasetKey'), dataIndex: 1, formatter: gbifDatasetKeyFormatter }
               ]"
@@ -59,7 +59,7 @@
               :no-selection-button-label="$t('message.everywhere')"
               :modal-title="$t('message.restrictToSpecificAreas')"
               :entries="availableAreasAsDataRows"
-              :selector-config="[
+              :selector-columns-config="[
                   {label: $t('message.name'), dataIndex: 0},
                   {label: $t('message.areaType'), dataIndex: 1}
               ]"
@@ -84,7 +84,9 @@
               :no-selection-button-label="$t('message.importedAnytime')"
               :modal-title="$t('message.firstImportedDuringDataImports')"
               :entries="availableDataimportsAsDataRows"
-              :selector-config="[{label: $t('message.name'), dataIndex: 0}]"
+              :selector-columns-config="[{label: $t('message.id'), dataIndex: 0}, {label: $t('message.name'), dataIndex: 1}, {label: $t('message.datetimeStart'), dataIndex: 2}]"
+              :selector-initial-sort-by="0"
+              :selector-initial-sort-direction="'desc'"
               :label-index="0"
               :initially-selected-entries-ids="filters.initialDataImportIds"
               @entries-changed="changeSelectedInitialDataImport"
@@ -181,7 +183,7 @@ export default defineComponent({
     availableDataimportsAsDataRows: function (): DataRow[] {
       return this.availableDataImports
           .map((d) => {
-            return {id: d.id, columnData: [d.str]};
+            return {id: d.id, columnData: [d.id, d.name, (new Date(d.startTimestamp)).toLocaleString()]};
           });
     },
   },
