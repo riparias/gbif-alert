@@ -1,4 +1,4 @@
-# Current (unreleased)
+# v1.3.0 (2023-08-30)
 
 - Users can now easily change their password
 - The vernacular name is now shown in the observations table
