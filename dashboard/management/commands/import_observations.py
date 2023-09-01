@@ -240,7 +240,9 @@ class Command(BaseCommand):
             tmp_file = tempfile.NamedTemporaryFile()
             source_data_path = tmp_file.name
             # This might takes several minutes...
-            gbif_predicate = settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"](Species.objects.all())
+            gbif_predicate = settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"][
+                "PREDICATE_BUILDER"
+            ](Species.objects.all())
 
             download_gbif_occurrences(
                 gbif_predicate,
@@ -283,7 +285,21 @@ class Command(BaseCommand):
             # 4. Remove previous observations
             Observation.objects.exclude(data_import=current_data_import).delete()
 
-            # 4. Finalize the DataImport object
+            # 5. Remove unused Dataset entries (and edit related alerts)
+            for dataset in Dataset.objects.all():
+                if dataset.observation_set.count() == 0:
+                    self.stdout.write(f"Deleting (no longer used) dataset {dataset}")
+                    alerts_referencing_dataset = dataset.alert_set.all()
+                    if alerts_referencing_dataset.count() > 0:
+                        for alert in alerts_referencing_dataset:
+                            self.stdout.write(
+                                f"We'll first need to un-reference this dataset from alert #{alert}"
+                            )
+                            alert.datasets.remove(dataset)
+
+                    dataset.delete()
+
+            # 6. Finalize the DataImport object
             self.stdout.write("Updating the DataImport object")
             current_data_import.complete()
             self.stdout.write("Done.")

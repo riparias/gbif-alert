@@ -18,6 +18,7 @@ from dashboard.models import (
     ObservationComment,
     User,
     ObservationView,
+    Alert,
 )
 
 THIS_SCRIPT_PATH = Path(__file__).parent
@@ -57,6 +58,14 @@ def predicate_builder_belgium(species_list: QuerySet[Species]):
 )
 class ImportObservationsTest(TransactionTestCase):
     def setUp(self) -> None:
+        user = User.objects.create_user(
+            username="testuser",
+            password="12345",
+            first_name="John",
+            last_name="Frusciante",
+            email="frusciante@gmail.com",
+        )
+
         Species.objects.all().delete()  # There are initially a few species in the database (loaded in data migration)
         self.lixus = Species.objects.create(
             name="Lixus bardanae", gbif_taxon_key=1224034
@@ -68,6 +77,20 @@ class ImportObservationsTest(TransactionTestCase):
         inaturalist = Dataset.objects.create(
             name="iNaturalist", gbif_dataset_key="50c9509d-22c7-4a22-a47d-8c48425ef4a7"
         )
+
+        self.dataset_without_observations = Dataset.objects.create(
+            name="Dataset without observations",
+            gbif_dataset_key="50c9509d-22c7-4a22-a47d-8c48425ef4a8",
+        )
+
+        self.alert_referencing_unused_dataset = Alert.objects.create(
+            name="Alert referencing unused dataset",
+            user=user,
+        )
+        self.alert_referencing_unused_dataset.datasets.add(
+            self.dataset_without_observations, inaturalist
+        )
+        self.alert_referencing_unused_dataset.species.add(self.lixus)
 
         # This observation will be replaced during the import process
         # because there's a row with the same occurrence_id and dataset_key in the DwC-A
@@ -95,28 +118,20 @@ class ImportObservationsTest(TransactionTestCase):
             location=Point(5.09513, 50.48941, srid=4326),
         )
 
-        comment_author = User.objects.create_user(
-            username="testuser",
-            password="12345",
-            first_name="John",
-            last_name="Frusciante",
-            email="frusciante@gmail.com",
-        )
-
         ObservationComment.objects.create(
-            author=comment_author,
+            author=user,
             observation=observation_to_be_replaced,
             text="This is a comment to migrate",
         )
 
         self.observation_view_to_migrate = ObservationView.objects.create(
-            user=comment_author, observation=observation_to_be_replaced
+            user=user, observation=observation_to_be_replaced
         )
 
         # We also create this one, so we can check it gets deleted in the new import process, and that it doesn't prevent
         # the related observation to be deleted
         self.observation_view_to_delete = ObservationView.objects.create(
-            user=comment_author, observation=observation_not_replaced
+            user=user, observation=observation_not_replaced
         )
 
     def test_initial_data_import_value_replaced(self):
@@ -512,3 +527,21 @@ class ImportObservationsTest(TransactionTestCase):
                         }
                     },
                 )
+
+    def test_dataset_cleanup_mechanism(self):
+        """At the end of the import process, datasets that have no longer any associated observations are deleted
+
+        Alerts referencing those empty datasets are updated appropriately
+        """
+        with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
+            call_command("import_observations", source_dwca=gbif_download_file)
+
+        self.alert_referencing_unused_dataset.refresh_from_db()
+
+        with self.assertRaises(Dataset.DoesNotExist):
+            self.dataset_without_observations.refresh_from_db()
+
+        self.assertEqual(self.alert_referencing_unused_dataset.datasets.count(), 1)
+        self.assertEqual(
+            self.alert_referencing_unused_dataset.datasets.first().name, "iNaturalist"
+        )
