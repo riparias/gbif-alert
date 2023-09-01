@@ -115,7 +115,7 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
         )
         dataset_name = get_string_data(row, field_name=qn("datasetName"))
 
-        dataset, _ = Dataset.objects.get_or_create(
+        dataset, _ = Dataset.objects.update_or_create(
             gbif_dataset_key=gbif_dataset_key,
             defaults={"name": dataset_name},
         )

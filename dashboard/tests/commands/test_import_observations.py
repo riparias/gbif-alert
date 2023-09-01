@@ -238,7 +238,11 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertAlmostEqual(lon, 3.315567)  # type: ignore
         self.assertAlmostEqual(lat, 51.354473)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
-        self.assertEqual(occ.source_dataset.name, "iNaturalist")
+        # The dataset name has been updated (compared to test data) because it was updated from the name in the
+        # DwC-A (https://github.com/riparias/gbif-alert/issues/257)
+        self.assertEqual(
+            occ.source_dataset.name, "iNaturalist research-grade observations"
+        )
 
         occ = observations[1]
         self.assertEqual(str(occ.date), "2020-04-19")
@@ -253,7 +257,9 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertAlmostEqual(lon, 3.254023)  # type: ignore
         self.assertAlmostEqual(lat, 50.664364)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
-        self.assertEqual(occ.source_dataset.name, "iNaturalist")
+        self.assertEqual(
+            occ.source_dataset.name, "iNaturalist research-grade observations"
+        )
         self.assertEqual(
             occ.references, "https://www.inaturalist.org/observations/42577016"
         )
@@ -274,7 +280,9 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertAlmostEqual(lon, 3.52526)  # type: ignore
         self.assertAlmostEqual(lat, 51.150846)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
-        self.assertEqual(occ.source_dataset.name, "iNaturalist")
+        self.assertEqual(
+            occ.source_dataset.name, "iNaturalist research-grade observations"
+        )
 
         occ = observations[3]
 
@@ -290,7 +298,9 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertAlmostEqual(lon, 4.360086)  # type: ignore
         self.assertAlmostEqual(lat, 50.646894)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
-        self.assertEqual(occ.source_dataset.name, "iNaturalist")
+        self.assertEqual(
+            occ.source_dataset.name, "iNaturalist research-grade observations"
+        )
         self.assertEqual(occ.recorded_by, "Nicolas Noé")
         self.assertEqual(occ.basis_of_record, "HUMAN_OBSERVATION")
         self.assertEqual(occ.locality, "Lillois")
@@ -312,7 +322,9 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertAlmostEqual(lon, 2.59858)  # type: ignore
         self.assertAlmostEqual(lat, 51.097573)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
-        self.assertEqual(occ.source_dataset.name, "iNaturalist")
+        self.assertEqual(
+            occ.source_dataset.name, "iNaturalist research-grade observations"
+        )
 
         occ = observations[5]
 
@@ -328,7 +340,9 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertAlmostEqual(lon, 4.454613)  # type: ignore
         self.assertAlmostEqual(lat, 51.26503)  # type: ignore
         self.assertEqual(occ.data_import_id, DataImport.objects.latest("id").id)
-        self.assertEqual(occ.source_dataset.name, "iNaturalist")
+        self.assertEqual(
+            occ.source_dataset.name, "iNaturalist research-grade observations"
+        )
 
         occ = observations[6]
 
@@ -543,5 +557,6 @@ class ImportObservationsTest(TransactionTestCase):
 
         self.assertEqual(self.alert_referencing_unused_dataset.datasets.count(), 1)
         self.assertEqual(
-            self.alert_referencing_unused_dataset.datasets.first().name, "iNaturalist"
+            self.alert_referencing_unused_dataset.datasets.first().gbif_dataset_key,
+            "50c9509d-22c7-4a22-a47d-8c48425ef4a7",
         )
