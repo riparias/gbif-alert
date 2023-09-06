@@ -15,6 +15,7 @@ from django.http import (
     HttpResponseNotFound,
 )
 from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import translation
 from django.utils.translation import gettext as _
 
 from dashboard.forms import (
@@ -151,6 +152,7 @@ def user_profile_page(request: AuthenticatedHttpRequest) -> HttpResponse:
             response.set_cookie(
                 settings.LANGUAGE_COOKIE_NAME, form.cleaned_data["language"]
             )
+            translation.deactivate()  # see https://stackoverflow.com/questions/2336785/set-language-within-a-django-view#comment12481631_2336889
             messages.success(request, _("Your profile was successfully updated."))
             return response
     else:
