@@ -148,10 +148,10 @@ def user_profile_page(request: AuthenticatedHttpRequest) -> HttpResponse:
         if form.is_valid():
             form.save()
             response = redirect("dashboard:pages:index")
+            new_language = form.cleaned_data["language"]
             # Let's also update the language cookie
-            response.set_cookie(
-                settings.LANGUAGE_COOKIE_NAME, form.cleaned_data["language"]
-            )
+            translation.activate(new_language)
+            response.set_cookie(settings.LANGUAGE_COOKIE_NAME, new_language)
             translation.deactivate()  # see https://stackoverflow.com/questions/2336785/set-language-within-a-django-view#comment12481631_2336889
             messages.success(request, _("Your profile was successfully updated."))
             return response
