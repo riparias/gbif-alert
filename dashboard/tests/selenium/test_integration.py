@@ -88,6 +88,7 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
             first_name="John",
             last_name="Frusciante",
             email="frusciante@gmail.com",
+            language="en",
         )
         User.objects.create_superuser(username="adminuser", password="67890")
 
@@ -990,6 +991,8 @@ class SeleniumTests(SeleniumTestsCommon):
         self.assertEqual(last_name_field.get_attribute("value"), "Frusciante")
         email_field = self.selenium.find_element(By.ID, "id_email")
         self.assertEqual(email_field.get_attribute("value"), "frusciante@gmail.com")
+        language_field = self.selenium.find_element(By.ID, "id_language")
+        self.assertEqual(language_field.get_attribute("value"), "en")
 
         # Let's update the values
         first_name_field.clear()
@@ -998,6 +1001,7 @@ class SeleniumTests(SeleniumTestsCommon):
         last_name_field.send_keys("Palmer")
         email_field.clear()
         email_field.send_keys("palmer@gmail.com")
+        Select(language_field).select_by_visible_text("French")
         save_button = self.selenium.find_element(
             By.ID, "gbif-alert-profile-save-button"
         )
@@ -1005,7 +1009,7 @@ class SeleniumTests(SeleniumTestsCommon):
 
         # Check for the success message
         wait = WebDriverWait(self.selenium, 5)
-        wait.until(EC.title_contains("Home"))
+        wait.until(EC.title_contains("Accueil"))  # Notice the language change
         self.assertIn(
             "Your profile was successfully updated.", self.selenium.page_source
         )
@@ -1014,10 +1018,10 @@ class SeleniumTests(SeleniumTestsCommon):
         navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
         menu = navbar.find_element(By.LINK_TEXT, "testuser")
         menu.click()
-        my_profile = navbar.find_element(By.LINK_TEXT, "My profile")
+        my_profile = navbar.find_element(By.LINK_TEXT, "Mon profil")
         my_profile.click()
         wait = WebDriverWait(self.selenium, 5)
-        wait.until(EC.title_contains("My profile"))
+        wait.until(EC.title_contains("Mon profil"))
 
         username_field = self.selenium.find_element(By.ID, "id_username")
         self.assertEqual(username_field.get_attribute("value"), "testuser")
@@ -1027,6 +1031,10 @@ class SeleniumTests(SeleniumTestsCommon):
         self.assertEqual(last_name_field.get_attribute("value"), "Palmer")
         email_field = self.selenium.find_element(By.ID, "id_email")
         self.assertEqual(email_field.get_attribute("value"), "palmer@gmail.com")
+        language_field = self.selenium.find_element(By.ID, "id_language")
+        self.assertEqual(language_field.get_attribute("value"), "fr")
+
+        self.selenium.delete_all_cookies()  # To avoid the language change to affect other tests
 
     def test_no_profile_page_if_not_logged(self):
         """We try to access the profile page directly from the URL, without being signed in"""

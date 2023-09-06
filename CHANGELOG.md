@@ -4,6 +4,7 @@
 - Fix a minor, recently introduced display issue: https://github.com/riparias/gbif-alert/issues/255
 - Unused datasets are automatically cleaned up at import time: https://github.com/riparias/gbif-alert/issues/222
 - Better synchronization of the Dataset name with GBIF: https://github.com/riparias/gbif-alert/issues/183
+- More user-friendly language settings (https://github.com/riparias/gbif-alert/issues/257)
 
 # v1.3.0 (2023-08-30)
 

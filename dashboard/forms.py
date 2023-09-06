@@ -46,7 +46,9 @@ class CommonUsersFields(forms.ModelForm):
     )
 
     language = forms.ChoiceField(
-        label=_("Language"), choices=_enabled_languages_as_tuple()
+        label=_("Language"),
+        choices=_enabled_languages_as_tuple(),
+        help_text=_("This language will be used for emails."),
     )
 
     class Meta:

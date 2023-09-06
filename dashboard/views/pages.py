@@ -1,6 +1,7 @@
 """Views that return HTML pages"""
 import tempfile
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -145,8 +146,13 @@ def user_profile_page(request: AuthenticatedHttpRequest) -> HttpResponse:
         form = EditProfileForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
+            response = redirect("dashboard:pages:index")
+            # Let's also update the language cookie
+            response.set_cookie(
+                settings.LANGUAGE_COOKIE_NAME, form.cleaned_data["language"]
+            )
             messages.success(request, _("Your profile was successfully updated."))
-            return redirect("dashboard:pages:index")
+            return response
     else:
         form = EditProfileForm(instance=request.user)
     return render(request, "dashboard/user_profile.html", {"form": form})
