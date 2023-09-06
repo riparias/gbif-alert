@@ -90,7 +90,9 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
             email="frusciante@gmail.com",
             language="en",
         )
-        User.objects.create_superuser(username="adminuser", password="67890")
+        User.objects.create_superuser(
+            username="adminuser", password="67890", language="en"
+        )
 
         self.first_species = Species.objects.create(
             name="Procambarus fallax", gbif_taxon_key=8879526
