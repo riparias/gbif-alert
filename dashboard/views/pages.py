@@ -1,7 +1,6 @@
 """Views that return HTML pages"""
 import tempfile
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -15,7 +14,6 @@ from django.http import (
     HttpResponseNotFound,
 )
 from django.shortcuts import render, get_object_or_404, redirect
-from django.utils import translation
 from django.utils.translation import gettext as _
 
 from dashboard.forms import (
@@ -147,14 +145,8 @@ def user_profile_page(request: AuthenticatedHttpRequest) -> HttpResponse:
         form = EditProfileForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
-            response = redirect("dashboard:pages:index")
-            new_language = form.cleaned_data["language"]
-            # Let's also update the language cookie
-            translation.activate(new_language)
-            response.set_cookie(settings.LANGUAGE_COOKIE_NAME, new_language)
-            translation.deactivate()  # see https://stackoverflow.com/questions/2336785/set-language-within-a-django-view#comment12481631_2336889
             messages.success(request, _("Your profile was successfully updated."))
-            return response
+            return redirect("dashboard:pages:index")
     else:
         form = EditProfileForm(instance=request.user)
     return render(request, "dashboard/user_profile.html", {"form": form})
