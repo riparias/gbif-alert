@@ -17,6 +17,8 @@ from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import localize
+from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 from taggit.managers import TaggableManager
 
@@ -193,6 +195,11 @@ class DataImport(models.Model):
             data_import=self
         ).count()
         self.save()
+
+    def __str__(self) -> str:
+        return (
+            f"Data import #{self.pk} ({localize(localtime(self.start), use_l10n=True)})"
+        )
 
     @property
     def as_dict(self) -> dict[str, Any]:

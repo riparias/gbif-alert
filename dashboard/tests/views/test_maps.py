@@ -42,7 +42,7 @@ class MapsTestDataMixin(object):
             gbif_id=1,
             occurrence_id="1",
             species=cls.first_species,
-            date=datetime.date.today(),
+            date=datetime.date(2020, 1, 1),
             data_import=cls.di,
             initial_data_import=cls.di,
             source_dataset=cls.first_dataset,
@@ -525,6 +525,90 @@ class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, Test
         self.assertEqual(
             decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "2"
         )
+
+    def test_tiles_start_date_filter(self):
+        """Use the startDate parameter to filter out observations that are too old"""
+        # Case 1: A large view over Wallonia
+        base_url = reverse(
+            self.server_url_name,
+            kwargs={"zoom": 2, "x": 2, "y": 1},
+        )
+
+        url_with_params = f"{base_url}?startDate=2022-01-01"
+
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        # only one point is present because of the date filtering
+        self.assertEqual(len(decoded_tile["default"]["features"]), 1)
+        # It's the one in Lillois
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "2"
+        )
+
+        # Case 2: Zoom to Andenne, there should be no observation because of the filtering
+        base_url = reverse(
+            self.server_url_name,
+            kwargs={"zoom": 10, "x": 526, "y": 345},
+        )
+        url_with_params = f"{base_url}?startDate=2022-01-01"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(decoded_tile, {})
+
+        # Case 3: Zoom to Lillois, the obs should be seen again
+        base_url = reverse(
+            self.server_url_name,
+            kwargs={"zoom": 17, "x": 67123, "y": 44083},
+        )
+        url_with_params = f"{base_url}?startDate=2022-01-01"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(len(decoded_tile["default"]["features"]), 1)
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "2"
+        )
+
+    def test_tiles_end_date_filter(self):
+        """Use the endDate parameter to filter out observations that are too recent"""
+        # Case 1: A large view over Wallonia
+        base_url = reverse(
+            self.server_url_name,
+            kwargs={"zoom": 2, "x": 2, "y": 1},
+        )
+
+        url_with_params = f"{base_url}?endDate=2022-02-02"
+
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        # only one point is present because of the date filtering
+        self.assertEqual(len(decoded_tile["default"]["features"]), 1)
+        # It's the one in Andenne
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "1"
+        )
+
+        # Case 2: Zoom to Andenne, there should be one observation
+        base_url = reverse(
+            self.server_url_name,
+            kwargs={"zoom": 10, "x": 526, "y": 345},
+        )
+        url_with_params = f"{base_url}?endDate=2022-02-02"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(len(decoded_tile["default"]["features"]), 1)
+        self.assertEqual(
+            decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "1"
+        )
+
+        # Case 3: Zoom to Lillois, there should be no obs
+        base_url = reverse(
+            self.server_url_name,
+            kwargs={"zoom": 17, "x": 67123, "y": 44083},
+        )
+        url_with_params = f"{base_url}?endDate=2022-02-02"
+        response = self.client.get(url_with_params)
+        decoded_tile = mapbox_vector_tile.decode(response.content)
+        self.assertEqual(decoded_tile, {})
 
     def test_tiles_combined_filters(self):
         # Test a combination of filters per status (seen/unseen) and species

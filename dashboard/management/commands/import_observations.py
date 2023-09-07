@@ -14,8 +14,8 @@ from dwca.rows import CoreRow  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
 from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
+from dashboard.management.commands.helpers import get_dataset_name_from_gbif_api
 from dashboard.models import Species, Observation, DataImport, Dataset
-from .helpers import get_dataset_name_from_gbif_api
 
 
 def species_for_row(row: CoreRow) -> Species:
@@ -119,7 +119,7 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
         if dataset_name == "":
             dataset_name = get_dataset_name_from_gbif_api(gbif_dataset_key)
 
-        dataset, _ = Dataset.objects.get_or_create(
+        dataset, _ = Dataset.objects.update_or_create(
             gbif_dataset_key=gbif_dataset_key,
             defaults={"name": dataset_name},
         )
@@ -240,7 +240,9 @@ class Command(BaseCommand):
             tmp_file = tempfile.NamedTemporaryFile()
             source_data_path = tmp_file.name
             # This might takes several minutes...
-            gbif_predicate = settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"](Species.objects.all())
+            gbif_predicate = settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"][
+                "PREDICATE_BUILDER"
+            ](Species.objects.all())
 
             download_gbif_occurrences(
                 gbif_predicate,
@@ -283,7 +285,21 @@ class Command(BaseCommand):
             # 4. Remove previous observations
             Observation.objects.exclude(data_import=current_data_import).delete()
 
-            # 4. Finalize the DataImport object
+            # 5. Remove unused Dataset entries (and edit related alerts)
+            for dataset in Dataset.objects.all():
+                if dataset.observation_set.count() == 0:
+                    self.stdout.write(f"Deleting (no longer used) dataset {dataset}")
+                    alerts_referencing_dataset = dataset.alert_set.all()
+                    if alerts_referencing_dataset.count() > 0:
+                        for alert in alerts_referencing_dataset:
+                            self.stdout.write(
+                                f"We'll first need to un-reference this dataset from alert #{alert}"
+                            )
+                            alert.datasets.remove(dataset)
+
+                    dataset.delete()
+
+            # 6. Finalize the DataImport object
             self.stdout.write("Updating the DataImport object")
             current_data_import.complete()
             self.stdout.write("Done.")
