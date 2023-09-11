@@ -324,6 +324,7 @@ class ObservationTests(TestCase):
         # we can get the old one from the new one
         self.assertEqual(new_one.replaced_observation, self.obs)
         # That's not possible from the other side
+        del self.obs.replaced_observation
         with self.assertRaises(Observation.OtherIdenticalObservationIsNewer):
             self.obs.replaced_observation
 
@@ -342,6 +343,7 @@ class ObservationTests(TestCase):
         )
 
         # The three of them now report the inconsistency
+        del new_one.replaced_observation
         with self.assertRaises(Observation.MultipleObjectsReturned):
             new_one.replaced_observation
 

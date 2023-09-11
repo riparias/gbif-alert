@@ -404,6 +404,11 @@ class Observation(models.Model):
         raises:
         - Observation.MultipleObjectsReturned if multiple old observations match
         - Observation.OtherIdenticalObservationIsNewer if another one has the same stable identifier, but is more recent
+
+
+        BEWARE: this method is cached to improve import performances, if you want to call it multiple time on the same
+        observation, you may want ti invalidate it first (with del observation.replaced_observation).
+        See https://stackoverflow.com/questions/23489548/how-do-i-invalidate-cached-property-in-django
         """
 
         identical_observations = self.get_identical_observations()
