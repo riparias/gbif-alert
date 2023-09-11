@@ -69,7 +69,9 @@ def get_int_data(row: CoreRow, field_name: str) -> int:
     return int(get_string_data(row, field_name))
 
 
-def import_single_observation(row: CoreRow, current_data_import: DataImport) -> bool:
+def import_single_observation(
+    row: CoreRow, current_data_import: DataImport, datasets
+) -> bool:
     """Import a single observation into the database
 
     :raise: Species.DoesNotExist if the species referenced in the row cannot be found in the database
@@ -114,15 +116,12 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
         gbif_dataset_key = get_string_data(
             row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
         )
-        dataset_name = get_string_data(row, field_name=qn("datasetName"))
-        # Ugly hack necessary to circumvent a GBIF bug. See https://github.com/riparias/gbif-alert/issues/41
-        if dataset_name == "":
-            dataset_name = get_dataset_name_from_gbif_api(gbif_dataset_key)
-
-        dataset, _ = Dataset.objects.update_or_create(
-            gbif_dataset_key=gbif_dataset_key,
-            defaults={"name": dataset_name},
-        )
+        # dataset_name = get_string_data(row, field_name=qn("datasetName"))
+        # # Ugly hack necessary to circumvent a GBIF bug. See https://github.com/riparias/gbif-alert/issues/41
+        # if dataset_name == "":
+        #     dataset_name = get_dataset_name_from_gbif_api(gbif_dataset_key)
+        #
+        # dataset, _ = Dataset.objects.get(gbif_dataset_key=gbif_dataset_key)
 
         try:
             individual_count: int | None = get_int_data(
@@ -147,7 +146,7 @@ def import_single_observation(row: CoreRow, current_data_import: DataImport) -> 
             location=point,
             date=date,
             data_import=current_data_import,
-            source_dataset=dataset,
+            source_dataset=datasets[gbif_dataset_key],
             individual_count=individual_count,
             locality=get_string_data(row, field_name=qn("locality")),
             municipality=get_string_data(row, field_name=qn("municipality")),
@@ -195,13 +194,15 @@ class Command(BaseCommand):
         self.transaction_was_successful = False
 
     def _import_all_observations_from_dwca(
-        self, dwca: DwCAReader, data_import: DataImport
+        self, dwca: DwCAReader, data_import: DataImport, hash_table_for_row_import: dict
     ) -> int:
         """:return the number of skipped observations"""
         skipped_observations_counter = 0
         for core_row in dwca:
             try:
-                r = import_single_observation(core_row, data_import)
+                r = import_single_observation(
+                    core_row, data_import, datasets=hash_table_for_row_import
+                )
 
                 if r is False:
                     skipped_observations_counter = skipped_observations_counter + 1
@@ -269,13 +270,48 @@ class Command(BaseCommand):
                 f"Created a new DataImport object: #{current_data_import.pk}"
             )
 
+            # 3. Pre-import all the datasets (better here than in a loop that goes over each observation)
+            self.stdout.write("Pre-importing all datasets")
+            # 3.1 Get all the dataset keys / names from the DwCA
+            datasets_referenced_in_dwca = dict()
+            with DwCAReader(source_data_path) as dwca:
+                for core_row in dwca:
+                    gbif_dataset_key = get_string_data(
+                        core_row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
+                    )
+                    dataset_name = get_string_data(
+                        core_row, field_name=qn("datasetName")
+                    )
+                    datasets_referenced_in_dwca[gbif_dataset_key] = dataset_name
+
+            # 3.2 Fix the empty names (see GBIF bug)
+            for dataset_key, dataset_name in datasets_referenced_in_dwca.items():
+                if dataset_name == "":
+                    datasets_referenced_in_dwca[
+                        dataset_key
+                    ] = get_dataset_name_from_gbif_api(dataset_key)
+
+            # 3.3 Create/update the Dataset objects
+            hash_table_for_row_import = (
+                dict()
+            )  # We also create a hash table, so the huge loop below does not need lookups
+            for dataset_key, dataset_name in datasets_referenced_in_dwca.items():
+                dataset, _ = Dataset.objects.update_or_create(
+                    gbif_dataset_key=dataset_key,
+                    defaults={"name": dataset_name},
+                )
+                hash_table_for_row_import[dataset_key] = dataset
+
             # 3. Import data from DwCA (observations + GBIF download ID)
             with DwCAReader(source_data_path) as dwca:
                 current_data_import.set_gbif_download_id(
                     extract_gbif_download_id_from_dwca(dwca)
                 )
+                self.stdout.write("Importing all rows")
                 current_data_import.skipped_observations_counter = (
-                    self._import_all_observations_from_dwca(dwca, current_data_import)
+                    self._import_all_observations_from_dwca(
+                        dwca, current_data_import, hash_table_for_row_import
+                    )
                 )
 
             self.stdout.write(
