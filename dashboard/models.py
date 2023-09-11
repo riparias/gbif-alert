@@ -353,10 +353,15 @@ class Observation(models.Model):
 
         return False
 
-    def save(self, *args, **kwargs) -> None:
+    def set_stable_id(self) -> None:
         self.stable_id = Observation.build_stable_id(
             self.occurrence_id, self.source_dataset.gbif_dataset_key
         )
+
+    def save(self, *args, **kwargs) -> None:
+        # Beware: the import_observation command uses bulk_create() to create observations, so this save() method is
+        # not called. Make sure to keep the logic in sync with import_observation.py
+        self.set_stable_id()
         super().save(*args, **kwargs)
 
     def get_absolute_url(self) -> str:

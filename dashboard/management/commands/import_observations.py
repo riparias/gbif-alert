@@ -70,7 +70,7 @@ def get_int_data(row: CoreRow, field_name: str) -> int:
     return int(get_string_data(row, field_name))
 
 
-def import_single_observation(
+def build_single_observation(
     row: CoreRow,
     current_data_import: DataImport,
     hash_datasets: dict[str, Dataset],
@@ -156,9 +156,9 @@ def import_single_observation(
         new_observation.set_or_migrate_initial_data_import(
             current_data_import=current_data_import
         )
-        new_observation.save()
-        new_observation.migrate_linked_entities()
-        return True
+        # new_observation.save()
+        # new_observation.migrate_linked_entities()
+        return new_observation
 
     return False  # Observation was skipped
 
@@ -200,20 +200,35 @@ class Command(BaseCommand):
     ) -> int:
         """:return the number of skipped observations"""
         skipped_observations_counter = 0
+        observations_to_insert = []
         for core_row in dwca:
             try:
-                r = import_single_observation(
+                obs = build_single_observation(
                     core_row,
                     data_import,
                     hash_datasets=hash_table_datasets,
                     hash_species=hash_table_species,
                 )
 
-                if r is False:
+                if obs is False:
                     skipped_observations_counter = skipped_observations_counter + 1
+                else:
+                    observations_to_insert.append(obs)
                 self.stdout.write(".", ending="")
             except Species.DoesNotExist:
                 raise CommandError(f"species not found in db for row: {core_row}")
+
+        # All processed, now insert all observations in one go
+
+        # Bulk create doesn't call save() on the objects, so we need to call set_stable_id() on each object
+        self.stdout.write("Setting stable identifiers prior to insertion")
+        for obs in observations_to_insert:
+            obs.set_stable_id()
+        self.stdout.write("Bulk insertion")
+        all_observations = Observation.objects.bulk_create(observations_to_insert)
+        self.stdout.write("Migrating linked entities")
+        for obs in all_observations:
+            obs.migrate_linked_entities()
 
         return skipped_observations_counter
 
