@@ -1,6 +1,7 @@
 import argparse
 import datetime
 import tempfile
+from functools import cache
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
@@ -18,10 +19,10 @@ from dashboard.management.commands.helpers import get_dataset_name_from_gbif_api
 from dashboard.models import Species, Observation, DataImport, Dataset
 
 
-def species_for_row(row: CoreRow) -> Species:
+def species_for_row(row: CoreRow, hash_species) -> Species:
     """Based first on taxonKey, with fallback to acceptedTaxonKey then speciesKey
 
-    Raise Species.DoesNotExist if the corresponding species cannot be found
+    Returns None if the corresponding species cannot be found
     """
     taxon_key = int(
         get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/taxonKey")
@@ -36,12 +37,12 @@ def species_for_row(row: CoreRow) -> Species:
     )
 
     try:
-        return Species.objects.get(gbif_taxon_key=taxon_key)
-    except Species.DoesNotExist:
+        return hash_species[taxon_key]
+    except KeyError:
         try:
-            return Species.objects.get(gbif_taxon_key=accepted_taxon_key)
-        except Species.DoesNotExist:
-            return Species.objects.get(gbif_taxon_key=species_key)
+            return hash_species[accepted_taxon_key]
+        except KeyError:
+            return hash_species[species_key]
 
 
 def extract_gbif_download_id_from_dwca(dwca: DwCAReader) -> str:
@@ -70,7 +71,10 @@ def get_int_data(row: CoreRow, field_name: str) -> int:
 
 
 def import_single_observation(
-    row: CoreRow, current_data_import: DataImport, datasets
+    row: CoreRow,
+    current_data_import: DataImport,
+    hash_datasets: dict[str, Dataset],
+    hash_species: dict[str, Species],
 ) -> bool:
     """Import a single observation into the database
 
@@ -116,12 +120,6 @@ def import_single_observation(
         gbif_dataset_key = get_string_data(
             row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
         )
-        # dataset_name = get_string_data(row, field_name=qn("datasetName"))
-        # # Ugly hack necessary to circumvent a GBIF bug. See https://github.com/riparias/gbif-alert/issues/41
-        # if dataset_name == "":
-        #     dataset_name = get_dataset_name_from_gbif_api(gbif_dataset_key)
-        #
-        # dataset, _ = Dataset.objects.get(gbif_dataset_key=gbif_dataset_key)
 
         try:
             individual_count: int | None = get_int_data(
@@ -142,11 +140,11 @@ def import_single_observation(
                 get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/gbifID")
             ),
             occurrence_id=occurrence_id_str,
-            species=species_for_row(row),
+            species=species_for_row(row, hash_species),
             location=point,
             date=date,
             data_import=current_data_import,
-            source_dataset=datasets[gbif_dataset_key],
+            source_dataset=hash_datasets[gbif_dataset_key],
             individual_count=individual_count,
             locality=get_string_data(row, field_name=qn("locality")),
             municipality=get_string_data(row, field_name=qn("municipality")),
@@ -194,14 +192,21 @@ class Command(BaseCommand):
         self.transaction_was_successful = False
 
     def _import_all_observations_from_dwca(
-        self, dwca: DwCAReader, data_import: DataImport, hash_table_for_row_import: dict
+        self,
+        dwca: DwCAReader,
+        data_import: DataImport,
+        hash_table_datasets: dict,
+        hash_table_species: dict,
     ) -> int:
         """:return the number of skipped observations"""
         skipped_observations_counter = 0
         for core_row in dwca:
             try:
                 r = import_single_observation(
-                    core_row, data_import, datasets=hash_table_for_row_import
+                    core_row,
+                    data_import,
+                    hash_datasets=hash_table_datasets,
+                    hash_species=hash_table_species,
                 )
 
                 if r is False:
@@ -292,7 +297,7 @@ class Command(BaseCommand):
                     ] = get_dataset_name_from_gbif_api(dataset_key)
 
             # 3.3 Create/update the Dataset objects
-            hash_table_for_row_import = (
+            hash_table_datasets = (
                 dict()
             )  # We also create a hash table, so the huge loop below does not need lookups
             for dataset_key, dataset_name in datasets_referenced_in_dwca.items():
@@ -300,9 +305,14 @@ class Command(BaseCommand):
                     gbif_dataset_key=dataset_key,
                     defaults={"name": dataset_name},
                 )
-                hash_table_for_row_import[dataset_key] = dataset
+                hash_table_datasets[dataset_key] = dataset
 
-            # 3. Import data from DwCA (observations + GBIF download ID)
+            # 4. We also create a hash table of species, to avoid lookups in the huge loop below
+            hash_table_species = dict()
+            for species in Species.objects.all():
+                hash_table_species[species.gbif_taxon_key] = species
+
+            # 5. Import data from DwCA (observations + GBIF download ID)
             with DwCAReader(source_data_path) as dwca:
                 current_data_import.set_gbif_download_id(
                     extract_gbif_download_id_from_dwca(dwca)
@@ -310,7 +320,10 @@ class Command(BaseCommand):
                 self.stdout.write("Importing all rows")
                 current_data_import.skipped_observations_counter = (
                     self._import_all_observations_from_dwca(
-                        dwca, current_data_import, hash_table_for_row_import
+                        dwca,
+                        current_data_import,
+                        hash_table_datasets,
+                        hash_table_species,
                     )
                 )
 
@@ -318,10 +331,10 @@ class Command(BaseCommand):
                 "All observations imported, now deleting observations linked to previous data imports..."
             )
 
-            # 4. Remove previous observations
+            # 6. Remove previous observations
             Observation.objects.exclude(data_import=current_data_import).delete()
 
-            # 5. Remove unused Dataset entries (and edit related alerts)
+            # 7. Remove unused Dataset entries (and edit related alerts)
             for dataset in Dataset.objects.all():
                 if dataset.observation_set.count() == 0:
                     self.stdout.write(f"Deleting (no longer used) dataset {dataset}")
