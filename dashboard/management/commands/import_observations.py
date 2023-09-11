@@ -1,7 +1,7 @@
 import argparse
 import datetime
 import tempfile
-from functools import cache
+import time
 from typing import Literal
 
 from django.conf import settings
@@ -220,12 +220,15 @@ class Command(BaseCommand):
         # All processed, now insert all observations in one go
 
         # Bulk create doesn't call save() on the objects, so we need to call set_stable_id() on each object
-        self.stdout.write("Setting stable identifiers prior to insertion")
+        self.stdout.write("")
+        self.stdout.write(
+            f"{time.ctime()}: Setting stable identifiers prior to insertion"
+        )
         for obs in observations_to_insert:
             obs.set_stable_id()
-        self.stdout.write("Bulk insertion")
+        self.stdout.write(f"{time.ctime()}: Bulk insertion")
         all_observations = Observation.objects.bulk_create(observations_to_insert)
-        self.stdout.write("Migrating linked entities")
+        self.stdout.write(f"{time.ctime()}: Migrating linked entities")
         for obs in all_observations:
             obs.migrate_linked_entities()
 
@@ -242,20 +245,20 @@ class Command(BaseCommand):
         self.transaction_was_successful = True
 
     def handle(self, *args, **options) -> None:
-        self.stdout.write("(Re)importing all observations")
+        self.stdout.write(f"{time.ctime()}: (Re)importing all observations")
 
         # 1. Data preparation / download
         gbif_predicate = None
         if options["source_dwca"]:
-            self.stdout.write("Using a user-provided DWCA file")
+            self.stdout.write(f"{time.ctime()}: Using a user-provided DWCA file")
             source_data_path = options["source_dwca"].name
         else:
             self.stdout.write(
-                "No DWCA file provided, we'll generate and get a new GBIF download"
+                f"{time.ctime()}: No DWCA file provided, we'll generate and get a new GBIF download"
             )
 
             self.stdout.write(
-                "Triggering a GBIF download and waiting for it - this can be long..."
+                f"{time.ctime()}: Triggering a GBIF download and waiting for it - this can be long..."
             )
             tmp_file = tempfile.NamedTemporaryFile()
             source_data_path = tmp_file.name
@@ -270,10 +273,10 @@ class Command(BaseCommand):
                 password=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PASSWORD"],
                 output_path=source_data_path,
             )
-            self.stdout.write("Observations downloaded")
+            self.stdout.write(f"{time.ctime()}: Observations downloaded")
 
         self.stdout.write(
-            "We now have a (locally accessible) source dwca, real import is starting. We'll use a transaction and put "
+            f"{time.ctime()}: We now have a (locally accessible) source dwca, real import is starting. We'll use a transaction and put "
             "the website in maintenance mode"
         )
 
@@ -286,11 +289,11 @@ class Command(BaseCommand):
                 start=timezone.now(), gbif_predicate=gbif_predicate
             )
             self.stdout.write(
-                f"Created a new DataImport object: #{current_data_import.pk}"
+                f"{time.ctime()}: Created a new DataImport object: #{current_data_import.pk}"
             )
 
             # 3. Pre-import all the datasets (better here than in a loop that goes over each observation)
-            self.stdout.write("Pre-importing all datasets")
+            self.stdout.write(f"{time.ctime()}: Pre-importing all datasets")
             # 3.1 Get all the dataset keys / names from the DwCA
             datasets_referenced_in_dwca = dict()
             with DwCAReader(source_data_path) as dwca:
@@ -331,7 +334,7 @@ class Command(BaseCommand):
                 current_data_import.set_gbif_download_id(
                     extract_gbif_download_id_from_dwca(dwca)
                 )
-                self.stdout.write("Importing all rows")
+                self.stdout.write(f"{time.ctime()}: Importing all rows")
                 current_data_import.skipped_observations_counter = (
                     self._import_all_observations_from_dwca(
                         dwca,
@@ -342,7 +345,7 @@ class Command(BaseCommand):
                 )
 
             self.stdout.write(
-                "All observations imported, now deleting observations linked to previous data imports..."
+                f"{time.ctime()}: All observations imported, now deleting observations linked to previous data imports..."
             )
 
             # 6. Remove previous observations
@@ -351,26 +354,28 @@ class Command(BaseCommand):
             # 7. Remove unused Dataset entries (and edit related alerts)
             for dataset in Dataset.objects.all():
                 if dataset.observation_set.count() == 0:
-                    self.stdout.write(f"Deleting (no longer used) dataset {dataset}")
+                    self.stdout.write(
+                        f"{time.ctime()}: Deleting (no longer used) dataset {dataset}"
+                    )
                     alerts_referencing_dataset = dataset.alert_set.all()
                     if alerts_referencing_dataset.count() > 0:
                         for alert in alerts_referencing_dataset:
                             self.stdout.write(
-                                f"We'll first need to un-reference this dataset from alert #{alert}"
+                                f"{time.ctime()}: We'll first need to un-reference this dataset from alert #{alert}"
                             )
                             alert.datasets.remove(dataset)
 
                     dataset.delete()
 
             # 6. Finalize the DataImport object
-            self.stdout.write("Updating the DataImport object")
+            self.stdout.write(f"{time.ctime()}: Updating the DataImport object")
             current_data_import.complete()
             self.stdout.write("Done.")
 
-        self.stdout.write("Leaving maintenance mode.")
+        self.stdout.write(f"{time.ctime()}: Leaving maintenance mode.")
         set_maintenance_mode(False)
 
-        self.stdout.write("Sending email report")
+        self.stdout.write(f"{time.ctime()}: Sending email report")
         if self.transaction_was_successful:
             send_successful_import_email()
         else:
