@@ -2,6 +2,7 @@ import argparse
 import datetime
 import tempfile
 from functools import cache
+from typing import Literal
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
@@ -75,7 +76,7 @@ def build_single_observation(
     current_data_import: DataImport,
     hash_datasets: dict[str, Dataset],
     hash_species: dict[str, Species],
-) -> bool:
+) -> Observation | Literal[False]:
     """Import a single observation into the database
 
     :raise: Species.DoesNotExist if the species referenced in the row cannot be found in the database
@@ -156,8 +157,6 @@ def build_single_observation(
         new_observation.set_or_migrate_initial_data_import(
             current_data_import=current_data_import
         )
-        # new_observation.save()
-        # new_observation.migrate_linked_entities()
         return new_observation
 
     return False  # Observation was skipped
