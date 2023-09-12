@@ -1,8 +1,8 @@
 <template>
-  <div v-show="truncatedBarDataIsEmpty" class="alert alert-warning">
-    {{ $t("message.noRecentDataToShowInHistogram") }}
+  <div v-show="barDataIsEmpty" class="alert alert-warning">
+    {{ $t("message.noDataToShowInHistogram") }}
   </div>
-  <div v-show="!truncatedBarDataIsEmpty">
+  <div v-show="!barDataIsEmpty">
     <div class="form-check my-2">
       <input
           type="checkbox"
@@ -36,10 +36,10 @@
       >
         <rect
             class="gbif-alert-bar"
-            v-for="(barDataEntry, index) in truncatedBarData"
+            v-for="(barDataEntry, index) in barData"
             :class="{
           selected:
-            dateRangeFilteringEnabled === false ||
+            !dateRangeFilteringEnabled  ||
             (index >= selectedRangeStartIndex &&
               index <= selectedRangeEndIndex),
         }"
@@ -106,7 +106,7 @@ export default defineComponent({
 
       dateRangeFilteringEnabled: false,
 
-      numberOfMonths: 60,
+      //numberOfMonths: 60,
     };
   },
   directives: {
@@ -133,7 +133,7 @@ export default defineComponent({
         const moduloVal = Math.floor(numberOfElems / numberOfTicks);
 
         const d3Axis = axisBottom<number>(scaleFunction).tickValues(
-            scaleFunction.domain().filter(function (d: string, i: number) {
+            scaleFunction.domain().filter(function (_: string, i: number) {
               return !(i % moduloVal);
             })
         );
@@ -156,10 +156,10 @@ export default defineComponent({
     },
     monthStrToDateTime(m: string): DateTime {
       // The first day of the month is returned
-      const splitted = m.split("-");
+      const split = m.split("-");
       return DateTime.fromObject({
-        year: parseInt(splitted[0]),
-        month: parseInt(splitted[1]),
+        year: parseInt(split[0]),
+        month: parseInt(split[1]),
         day: 1,
       });
     },
@@ -167,8 +167,8 @@ export default defineComponent({
       return d.year + "-" + d.month;
     },
     rangeUpdated(indexes: number[]) {
-      this.selectedRangeStart = this.truncatedBarData[indexes[0]].yearMonth;
-      this.selectedRangeEnd = this.truncatedBarData[indexes[1]].yearMonth;
+      this.selectedRangeStart = this.barData[indexes[0]].yearMonth;
+      this.selectedRangeEnd = this.barData[indexes[1]].yearMonth;
       this.emitSelectedRange();
     },
   },
@@ -178,34 +178,37 @@ export default defineComponent({
     },
   },
   computed: {
+    numberOfMonths(): number {
+      return this.barData.length;
+    },
     selectedRangeStartIndex(): number {
-      return this.truncatedBarData.findIndex((e: PreparedHistogramDataEntry) => {
+      return this.barData.findIndex((e: PreparedHistogramDataEntry) => {
         return e.yearMonth === this.selectedRangeStart;
       });
     },
     selectedRangeEndIndex(): number {
-      return this.truncatedBarData.findIndex((e: PreparedHistogramDataEntry) => {
+      return this.barData.findIndex((e: PreparedHistogramDataEntry) => {
         return e.yearMonth === this.selectedRangeEnd;
       });
     },
     dataMax(): number {
       const maxVal = max(
-          this.truncatedBarData,
+          this.barData,
           (d: PreparedHistogramDataEntry) => {
             return d.count;
           }
       );
       return maxVal ? maxVal : 0;
     },
-    truncatedBarDataIsEmpty(): boolean {
+    barDataIsEmpty(): boolean {
       const hasZeroCount = (e: PreparedHistogramDataEntry) => e.count === 0;
-      return this.truncatedBarData.every(hasZeroCount);
+      return this.barData.every(hasZeroCount);
     },
-    truncatedBarData(): PreparedHistogramDataEntry[] {
+    /*truncatedBarData(): PreparedHistogramDataEntry[] {
       return this.barData.filter((e: PreparedHistogramDataEntry) =>
           this.xScaleDomain.includes(e.yearMonth)
       );
-    },
+    },*/
     endDate(): DateTime {
       return DateTime.now();
     },
