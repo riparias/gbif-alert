@@ -1,4 +1,4 @@
-# Current
+# v1.3.2 (2023-09-12)
 
 - Improve import performances
 
