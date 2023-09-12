@@ -1,3 +1,7 @@
+# v1.3.2 (2023-09-12)
+
+- Improve import performances
+
 # v1.3.1 (2023-09-07)
 
 - Warning message instead of histogram when all values are 0, to avoid confusing display behaviour: https://github.com/riparias/gbif-alert/issues/92
