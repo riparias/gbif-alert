@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "markdownx",
     "django_rq",
     "taggit",
+    "gisserver",
     # Beware, there's also "modeltranslation", but it had to be placed before the admin app
     # Local/custom
     "dashboard",

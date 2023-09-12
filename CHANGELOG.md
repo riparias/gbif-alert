@@ -1,3 +1,7 @@
+# Current
+
+- Experimental: a WFS server (returning all observations) is now available at `/api/wfs/observations`
+
 # v1.3.2 (2023-09-12)
 
 - Improve import performances

@@ -48,6 +48,9 @@ public_api_urls = [
         views.species_per_polygon_json,
         name="species-per-polygon-json",
     ),
+    path(
+        "wfs/observations", views.ObservationsWFSView.as_view(), name="wfs-observations"
+    ),
 ]
 
 internal_api_urls = [
