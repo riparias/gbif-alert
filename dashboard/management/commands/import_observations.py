@@ -19,11 +19,13 @@ from maintenance_mode.core import set_maintenance_mode  # type: ignore
 from dashboard.management.commands.helpers import get_dataset_name_from_gbif_api
 from dashboard.models import Species, Observation, DataImport, Dataset
 
+BULK_CREATE_CHUNK_SIZE = 10000
+
 
 def species_for_row(row: CoreRow, hash_species) -> Species:
     """Based first on taxonKey, with fallback to acceptedTaxonKey then speciesKey
 
-    Returns None if the corresponding species cannot be found
+    Raises keyerror if the corresponding species cannot be found
     """
     taxon_key = int(
         get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/taxonKey")
@@ -71,12 +73,16 @@ def get_int_data(row: CoreRow, field_name: str) -> int:
     return int(get_string_data(row, field_name))
 
 
+class SkippedObservationException(Exception):
+    pass
+
+
 def build_single_observation(
     row: CoreRow,
     current_data_import: DataImport,
     hash_datasets: dict[str, Dataset],
     hash_species: dict[str, Species],
-) -> Observation | Literal[False]:
+) -> Observation:
     """Import a single observation into the database
 
     :raise: Species.DoesNotExist if the species referenced in the row cannot be found in the database
@@ -157,9 +163,12 @@ def build_single_observation(
         new_observation.set_or_migrate_initial_data_import(
             current_data_import=current_data_import
         )
+
+        # We'll use bulk_create() later, so we need to call set_stable_id() on each object
+        new_observation.set_stable_id()
         return new_observation
 
-    return False  # Observation was skipped
+    raise SkippedObservationException()
 
 
 def send_successful_import_email():
@@ -199,8 +208,9 @@ class Command(BaseCommand):
     ) -> int:
         """:return the number of skipped observations"""
         skipped_observations_counter = 0
+
         observations_to_insert = []
-        for core_row in dwca:
+        for index, core_row in enumerate(dwca):
             try:
                 obs = build_single_observation(
                     core_row,
@@ -208,31 +218,30 @@ class Command(BaseCommand):
                     hash_datasets=hash_table_datasets,
                     hash_species=hash_table_species,
                 )
-
-                if obs is False:
-                    skipped_observations_counter = skipped_observations_counter + 1
-                else:
-                    observations_to_insert.append(obs)
+                observations_to_insert.append(obs)
                 self.stdout.write(".", ending="")
-            except Species.DoesNotExist:
+            except KeyError:
                 raise CommandError(f"species not found in db for row: {core_row}")
+            except SkippedObservationException:
+                skipped_observations_counter = skipped_observations_counter + 1
+                self.stdout.write("x", ending="")
 
-        # All processed, now insert all observations in one go
+            if index % BULK_CREATE_CHUNK_SIZE == 0:
+                self.stdout.write(f"{time.ctime()}: Bulk size reached...")
+                self.batch_insert_observations(observations_to_insert)
+                observations_to_insert = []
 
-        # Bulk create doesn't call save() on the objects, so we need to call set_stable_id() on each object
-        self.stdout.write("")
-        self.stdout.write(
-            f"{time.ctime()}: Setting stable identifiers prior to insertion"
-        )
-        for obs in observations_to_insert:
-            obs.set_stable_id()
-        self.stdout.write(f"{time.ctime()}: Bulk insertion")
-        all_observations = Observation.objects.bulk_create(observations_to_insert)
-        self.stdout.write(f"{time.ctime()}: Migrating linked entities")
-        for obs in all_observations:
-            obs.migrate_linked_entities()
+        # Insert the last chunk
+        self.batch_insert_observations(observations_to_insert)
 
         return skipped_observations_counter
+
+    def batch_insert_observations(self, observations_to_insert: list[Observation]):
+        self.stdout.write(f"{time.ctime()}: Bulk creation")
+        inserted_observations = Observation.objects.bulk_create(observations_to_insert)
+        self.stdout.write(f"{time.ctime()}: Migrating linked entities")
+        for obs in inserted_observations:
+            obs.migrate_linked_entities()
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
