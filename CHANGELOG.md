@@ -1,7 +1,8 @@
-# Current
+# v1.4.0 (2023-09-13)
 
 - Experimental: a WFS server (returning all observations) is now available at `/api/wfs/observations`
 - The histogram / bar chart now shows the full temporal range of data (instead of the last 5 years)
+- Improved import script again to avoid crashes due to high memory usage
 
 # v1.3.2 (2023-09-12)
 
