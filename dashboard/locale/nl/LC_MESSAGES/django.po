@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-29 10:19+0200\n"
+"POT-Creation-Date: 2023-09-14 12:33+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -54,63 +54,67 @@ msgstr ""
 msgid "Language"
 msgstr ""
 
-#: dashboard/models.py:610
+#: dashboard/forms.py:51
+msgid "This language will be used for emails."
+msgstr ""
+
+#: dashboard/models.py:630
 msgid "No emails"
 msgstr ""
 
-#: dashboard/models.py:611
+#: dashboard/models.py:631
 msgid "Daily"
 msgstr ""
 
-#: dashboard/models.py:612
+#: dashboard/models.py:632
 msgid "Weekly"
 msgstr ""
 
-#: dashboard/models.py:613
+#: dashboard/models.py:633
 msgid "Monthly"
 msgstr ""
 
-#: dashboard/models.py:624
+#: dashboard/models.py:644
 msgid "name"
 msgstr ""
 
-#: dashboard/models.py:628
+#: dashboard/models.py:648
 #, fuzzy
 #| msgid "Species"
 msgid "species"
 msgstr "Soort"
 
-#: dashboard/models.py:631
+#: dashboard/models.py:651
 msgid ""
 "To select multiple items, press and hold the Ctrl or Command key and click "
 "the items."
 msgstr ""
 
-#: dashboard/models.py:637
+#: dashboard/models.py:657
 msgid "datasets"
 msgstr ""
 
-#: dashboard/models.py:640
+#: dashboard/models.py:660
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
 msgstr ""
 
-#: dashboard/models.py:647
+#: dashboard/models.py:667
 msgid "areas"
 msgstr ""
 
-#: dashboard/models.py:649
+#: dashboard/models.py:669
 msgid ""
 "Optional (no selection = notify me for all data in the system). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
 msgstr ""
 
-#: dashboard/models.py:658
+#: dashboard/models.py:678
 msgid "email notifications frequency"
 msgstr ""
 
-#: dashboard/models.py:771
+#: dashboard/models.py:791
 msgid "unseen observation(s) for your alert"
 msgstr ""
 
@@ -416,17 +420,26 @@ msgid "You currently don't have any configured alerts."
 msgstr ""
 
 #: dashboard/templates/dashboard/user_areas.html:21
-msgid "Existing areas"
-msgstr ""
-
-#: dashboard/templates/dashboard/user_areas.html:24
 msgid "Upload a new area"
 msgstr ""
 
-#: dashboard/templates/dashboard/user_areas.html:31
+#: dashboard/templates/dashboard/user_areas.html:28
 #: dashboard/templates/dashboard/user_profile.html:19
 msgid "Save"
 msgstr ""
+
+#: dashboard/templates/dashboard/user_areas.html:33
+#, python-format
+msgid ""
+"\n"
+"                    %(counter)s existing area\n"
+"                    "
+msgid_plural ""
+"\n"
+"                    %(counter)s existing areas\n"
+"                    "
+msgstr[0] ""
+msgstr[1] ""
 
 #: dashboard/views/actions.py:36
 msgid "Your alert has been deleted."
@@ -444,7 +457,7 @@ msgstr ""
 msgid "The area could not be deleted because it has alerts associated with it."
 msgstr ""
 
-#: dashboard/views/internal_api.py:244
+#: dashboard/views/internal_api.py:260
 msgid "At least one species must be selected"
 msgstr ""
 

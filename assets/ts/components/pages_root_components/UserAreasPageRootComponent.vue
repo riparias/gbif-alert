@@ -1,12 +1,18 @@
 <template>
   <p v-if="props.areaIds.length === 0">{{ $t("message.noAreasYet") }}</p>
   <div v-for="areaId in props.areaIds" :key="areaId">
-    <SingleAreaMap :areasUrlTemplate="frontendConfig.apiEndpoints.areasUrlTemplate" :areaId="areaId"></SingleAreaMap>
-    <delete-area-button
+    <div class="card my-2">
+      <div class="card-body">
+        <SingleAreaMap :areasUrlTemplate="frontendConfig.apiEndpoints.areasUrlTemplate" :areaId="areaId"></SingleAreaMap>
+          <div class="float-end">
+            <delete-area-button
             :area-id="areaId"
             :form-action="frontendConfig.apiEndpoints.areaDeleteUrlTemplate.replace('{id}', areaId.toString())"
             :csrf-token="window.CSRF_TOKEN">
-    </delete-area-button>
+          </delete-area-button>
+          </div>
+      </div>
+    </div>
   </div>
 
 </template>

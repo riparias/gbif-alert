@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-29 10:19+0200\n"
+"POT-Creation-Date: 2023-09-14 12:33+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -54,31 +54,35 @@ msgstr "Requis. Entrez une adresse email valide."
 msgid "Language"
 msgstr "Langue"
 
-#: dashboard/models.py:610
+#: dashboard/forms.py:51
+msgid "This language will be used for emails."
+msgstr ""
+
+#: dashboard/models.py:630
 msgid "No emails"
 msgstr "Pas d'emails"
 
-#: dashboard/models.py:611
+#: dashboard/models.py:631
 msgid "Daily"
 msgstr "Journalier"
 
-#: dashboard/models.py:612
+#: dashboard/models.py:632
 msgid "Weekly"
 msgstr "Hebdomadaire"
 
-#: dashboard/models.py:613
+#: dashboard/models.py:633
 msgid "Monthly"
 msgstr "Mensuel"
 
-#: dashboard/models.py:624
+#: dashboard/models.py:644
 msgid "name"
 msgstr "nom"
 
-#: dashboard/models.py:628
+#: dashboard/models.py:648
 msgid "species"
 msgstr "espèces"
 
-#: dashboard/models.py:631
+#: dashboard/models.py:651
 msgid ""
 "To select multiple items, press and hold the Ctrl or Command key and click "
 "the items."
@@ -86,11 +90,11 @@ msgstr ""
 "Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:637
+#: dashboard/models.py:657
 msgid "datasets"
 msgstr "jeux de données"
 
-#: dashboard/models.py:640
+#: dashboard/models.py:660
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
@@ -99,11 +103,11 @@ msgstr ""
 "Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:647
+#: dashboard/models.py:667
 msgid "areas"
 msgstr "zones"
 
-#: dashboard/models.py:649
+#: dashboard/models.py:669
 msgid ""
 "Optional (no selection = notify me for all data in the system). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
@@ -112,11 +116,11 @@ msgstr ""
 "système). Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou "
 "'pomme / command' enfoncée "
 
-#: dashboard/models.py:658
+#: dashboard/models.py:678
 msgid "email notifications frequency"
 msgstr "fréquence des notifications par email"
 
-#: dashboard/models.py:771
+#: dashboard/models.py:791
 msgid "unseen observation(s) for your alert"
 msgstr "observation(s) non vue(s) pour votre alerte"
 
@@ -252,7 +256,7 @@ msgstr "Modifier mon mot de passe"
 #: dashboard/templates/dashboard/user_areas.html:7
 #: dashboard/templates/dashboard/user_areas.html:19
 msgid "My custom areas"
-msgstr ""
+msgstr "Mes zones spécifiques"
 
 #: dashboard/templates/dashboard/_navbar.html:63
 msgid "Admin panel"
@@ -441,17 +445,26 @@ msgid "You currently don't have any configured alerts."
 msgstr "Vous n'avez actuellement aucune alerte configurée."
 
 #: dashboard/templates/dashboard/user_areas.html:21
-msgid "Existing areas"
-msgstr ""
-
-#: dashboard/templates/dashboard/user_areas.html:24
 msgid "Upload a new area"
-msgstr ""
+msgstr "Uploadez une nouvelle zone"
 
-#: dashboard/templates/dashboard/user_areas.html:31
+#: dashboard/templates/dashboard/user_areas.html:28
 #: dashboard/templates/dashboard/user_profile.html:19
 msgid "Save"
 msgstr "Enregistrer"
+
+#: dashboard/templates/dashboard/user_areas.html:33
+#, python-format
+msgid ""
+"\n"
+"                    %(counter)s existing area\n"
+"                    "
+msgid_plural ""
+"\n"
+"                    %(counter)s existing areas\n"
+"                    "
+msgstr[0] "\n%(counter)s zone existante"
+msgstr[1] "\n%(counter)s zones existantes"
 
 #: dashboard/views/actions.py:36
 msgid "Your alert has been deleted."
@@ -470,10 +483,13 @@ msgid "The area could not be deleted because it has alerts associated with it."
 msgstr ""
 "Cette zone ne peut pas être supprimée car elle est associée à des alertes."
 
-#: dashboard/views/internal_api.py:244
+#: dashboard/views/internal_api.py:260
 msgid "At least one species must be selected"
 msgstr "Au moins une espèce doit être sélectionnée"
 
 #: dashboard/views/pages.py:148
 msgid "Your profile was successfully updated."
 msgstr "Votre profil a été mis à jour avec succès."
+
+#~ msgid "Existing areas"
+#~ msgstr "Zones existantes"

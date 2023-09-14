@@ -18,19 +18,25 @@
             <div id="vue-app" class="col">
                 <h1>{% translate "My custom areas" %}</h1>
 
-                <h2>{% translate "Existing areas" %}</h2>
-                <User-areas-page-root-component :area-ids="{{ user_areas_ids|safe }}"></User-areas-page-root-component>
-
                 <h2>{% translate "Upload a new area" %}</h2>
                 {% load crispy_forms_tags %}
                 {% load i18n %}
 
-                <form method="post" enctype="multipart/form-data">
+                <form method="post" enctype="multipart/form-data" class="mx-5 mb-3">
                     {% csrf_token %}
                     {{ new_custom_area_form|crispy }}
                     <input class="btn btn-primary btn-sm" type="submit" value="{% translate "Save" %}"
                            id="gbif-alert-area-save-btn">
                 </form>
+
+                <h2>
+                    {% blocktranslate count counter=user.area_set.count %}
+                    {{ counter }} existing area
+                    {% plural %}
+                    {{ counter }} existing areas
+                    {% endblocktranslate %}
+                </h2>
+                <User-areas-page-root-component :area-ids="{{ user_areas_ids|safe }}"></User-areas-page-root-component>
             </div>
         </div>
     </div>

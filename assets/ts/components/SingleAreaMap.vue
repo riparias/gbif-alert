@@ -1,5 +1,5 @@
 <template>
-    <h2>{{areaName}}</h2>
+    <h4 class="card-title">{{areaName}}</h4>
     <div ref="mapRoot" :style="{ width: props.mapWidth, height: props.mapHeight }"></div>
 </template>
 
