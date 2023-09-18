@@ -44,14 +44,14 @@ properly configured.
 ### Prerequisites
 
 - Make sure [Docker](https://docs.docker.com/get-docker/) is installed on your system
-- Identify the latest release of GBIF Alert on GitHub at https://github.com/riparias/gbif-alert/tags (currently [v1.4.0](https://github.com/riparias/gbif-alert/releases/tag/v1.4.0))
+- Identify the latest release of GBIF Alert on GitHub at https://github.com/riparias/gbif-alert/tags (currently [v1.4.1](https://github.com/riparias/gbif-alert/releases/tag/v1.4.1))
 
 ### Installation steps
 
 - Create a new directory on your system, e.g. `invasive-fishes-nz` following the example above.
-- Go to the `docker-compose.yml` file from the latest release of GBIF Alert on GitHub: at the moment https://github.com/riparias/gbif-alert/blob/v1.4.0/docker-compose.yml (note that the URL contains the version number).
+- Go to the `docker-compose.yml` file from the latest release of GBIF Alert on GitHub: at the moment https://github.com/riparias/gbif-alert/blob/v1.4.1/docker-compose.yml (note that the URL contains the version number).
 - Save the file in the directory you have just created.
-- Go to the `local_settings_docker.template.py` file from the latest release of GBIF Alert on GitHub: at the moment https://github.com/riparias/gbif-alert/blob/v1.4.0/djangoproject/local_settings_docker.template.py.
+- Go to the `local_settings_docker.template.py` file from the latest release of GBIF Alert on GitHub: at the moment https://github.com/riparias/gbif-alert/blob/v1.4.1/djangoproject/local_settings_docker.template.py.
 - Save the file in the directory you have just created. 
 - Rename this file to `local_settings_docker.py`.
 - Open a terminal, navigate to the `invasive-fishes-nz` directory and run the following command: `docker-compose up`. 
