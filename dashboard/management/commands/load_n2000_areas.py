@@ -24,7 +24,7 @@ class Command(BaseCommand):
         self.stdout.write("Opening source file")
         ds = DataSource(SOURCE_DATA_GPKG_PATH)
         layer = ds[0]
-        self.stdout.write(f"Found {layer.num_feat} features")
+        self.stdout.write(f"Found {layer.num_feat} features")  # type: ignore
         for feature in layer:
             area_name = f"{feature['SITECODE']} - {feature['SITENAME']}"
             tags = ["Natura2000"]
