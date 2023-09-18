@@ -28,7 +28,17 @@ class Command(BaseCommand):
         for feature in layer:
             area_name = f"{feature['SITECODE']} - {feature['SITENAME']}"
             tags = ["Natura2000"]
-            tags.append(f"sitetype {feature['SITETYPE']}")
+
+            # tags.append(f"sitetype {feature['SITETYPE']}")
+            site_type = feature["SITETYPE"].value
+            if site_type == "B":
+                tags.append("habitat directive")
+            elif site_type == "A":
+                tags.append("bird directive")
+            elif site_type == "C":
+                tags.append("habitat directive")
+                tags.append("bird directive")
+
             if feature["Brussels"].value == 1:
                 tags.append("Brussels")
             if feature["Wallonia"].value == 1:
