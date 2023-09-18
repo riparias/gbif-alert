@@ -1,3 +1,7 @@
+# v1.4.1 (2023-09-18)   
+
+- New data import script (specific to the LIFE RIPARIAS instance)
+
 # v1.4.0 (2023-09-13)
 
 - Experimental: a WFS server (returning all observations) is now available at `/api/wfs/observations`
