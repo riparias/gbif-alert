@@ -319,7 +319,7 @@ export default defineComponent({
             url: this.apiEndpoints.observationDetailsUrlTemplate.replace(
                 "{stable_id}",
                 properties["stable_id"]
-            ),
+            ).replace("{origin}", window.location.pathname),
           };
         });
 

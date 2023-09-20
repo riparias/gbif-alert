@@ -1,3 +1,7 @@
+# Current (unreleased)
+
+- Fixed an old display/linking bug (https://github.com/riparias/gbif-alert/issues/244)
+
 # v1.4.1 (2023-09-18)   
 
 - New data import script (specific to the LIFE RIPARIAS instance)
