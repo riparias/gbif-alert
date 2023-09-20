@@ -187,3 +187,19 @@ $ docker build ./nginx -t niconoe/gbif-alert-nginx:1.1.0
 $ docker push niconoe/gbif-alert:1.1.0
 $ docker push niconoe/gbif-alert-nginx:1.1.0
 ```
+
+## How to link to a GBIF alert instance with specific filters
+
+The URL format is: `<GBIF_ALERT_INSTANCE>/?filters=<filters>`
+
+The following filters can be specified:
+- 
+- speciesIds: list of species IDs (integer)
+- datasetsIds: list of dataset IDs (integer)
+- areaIds: list of area IDs (integer)
+- initialDataImportIds: list of data import IDs (integer)
+
+Examples:
+
+- https://alert.riparias.be/?filters={'speciesIds':[2,14,15]}
+- https://alert.riparias.be/?filters={'speciesIds':[2,14,15],'areaIds':[1]}
