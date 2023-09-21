@@ -42,9 +42,9 @@
 
                 <h2>
                     {% blocktranslate count counter=user.area_set.count %}
-                    {{ counter }} existing area
+                    {{ counter }} user-specific area
                     {% plural %}
-                    {{ counter }} existing areas
+                    {{ counter }} user-specific areas
                     {% endblocktranslate %}
                 </h2>
                 <User-areas-page-root-component :area-ids="{{ user_areas_ids|safe }}"></User-areas-page-root-component>
