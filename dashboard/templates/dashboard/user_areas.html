@@ -19,8 +19,19 @@
                 <h1>{% translate "My custom areas" %}</h1>
 
                 <h2>{% translate "Upload a new area" %}</h2>
-                {% load crispy_forms_tags %}
-                {% load i18n %}
+
+                <div class="alert alert-info" role="alert">
+
+                    {% blocktranslate %}
+                    <p><i class="bi bi-info-square"></i> The following contraints apply to the uploaded file:</p>
+                    <ul>
+                        <li>it must be a <b><a href="https://en.wikipedia.org/wiki/GeoPackage">GeoPackage</a></b> (many external tools exist to convert other file formats to GeoPackages)</li>
+                        <li>it must contain a <b>single layer</b></li>
+                        <li>the layer must contain a <b>single feature</b>, of type <b>polygon</b> or <b>multipolygon</b></li>
+                        <li>the GeoPackage must have a spatial reference system set</li>
+                    </ul>
+                    {% endblocktranslate %}
+                </div>
 
                 <form method="post" enctype="multipart/form-data" class="mx-5 mb-3">
                     {% csrf_token %}

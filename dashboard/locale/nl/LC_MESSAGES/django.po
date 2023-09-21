@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-14 12:33+0200\n"
+"POT-Creation-Date: 2023-09-21 11:01+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -423,12 +423,30 @@ msgstr ""
 msgid "Upload a new area"
 msgstr ""
 
-#: dashboard/templates/dashboard/user_areas.html:28
+#: dashboard/templates/dashboard/user_areas.html:25
+msgid ""
+"\n"
+"                    <p><i class=\"bi bi-info-square\"></i> The following "
+"contraints apply to the uploaded file:</p>\n"
+"                    <ul>\n"
+"                        <li>it must be a <b><a href=\"https://en.wikipedia."
+"org/wiki/GeoPackage\">GeoPackage</a></b> (many external tools exist to "
+"convert other file formats to GeoPackages)</li>\n"
+"                        <li>it must contain a <b>single layer</b></li>\n"
+"                        <li>the layer must contain a <b>single feature</b>, "
+"of type <b>polygon</b> or <b>multipolygon</b></li>\n"
+"                        <li>the GeoPackage must have a spatial reference "
+"system set</li>\n"
+"                    </ul>\n"
+"                    "
+msgstr ""
+
+#: dashboard/templates/dashboard/user_areas.html:39
 #: dashboard/templates/dashboard/user_profile.html:19
 msgid "Save"
 msgstr ""
 
-#: dashboard/templates/dashboard/user_areas.html:33
+#: dashboard/templates/dashboard/user_areas.html:44
 #, python-format
 msgid ""
 "\n"
