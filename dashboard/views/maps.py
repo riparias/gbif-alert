@@ -6,13 +6,14 @@ from django.db import connection
 from django.http import HttpResponse, JsonResponse, HttpRequest
 from jinjasql import JinjaSql
 
-from dashboard.models import Observation, Area, ObservationView
+from dashboard.models import Observation, Area, ObservationView, Species
 from dashboard.utils import readable_string
 from dashboard.views.helpers import filters_from_request, extract_int_request
 
 AREAS_TABLE_NAME = Area.objects.model._meta.db_table
 OBSERVATIONS_TABLE_NAME = Observation.objects.model._meta.db_table
 OBSERVATIONVIEWS_TABLE_NAME = ObservationView.objects.model._meta.db_table
+SPECIES_TABLE_NAME = Species.objects.model._meta.db_table
 
 OBSERVATIONS_FIELD_NAME_POINT = "location"
 
@@ -57,6 +58,8 @@ ZOOM_TO_HEX_SIZE = {
 JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
     """
     SELECT * FROM $observations_table_name as obs
+    LEFT JOIN $species_table_name as species
+    ON obs.species_id = species.id
     {% if status == 'seen' %}
         INNER JOIN $observationview_table_name
         ON obs.id = $observationview_table_name.observation_id
@@ -101,6 +104,7 @@ JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
 """
 ).substitute(
     areas_table_name=AREAS_TABLE_NAME,
+    species_table_name=SPECIES_TABLE_NAME,
     observations_table_name=OBSERVATIONS_TABLE_NAME,
     observationview_table_name=OBSERVATIONVIEWS_TABLE_NAME,
     date_format=DB_DATE_EXCHANGE_FORMAT_POSTGRES,
@@ -139,7 +143,7 @@ def mvt_tiles_observations(
         Template(
             """
             WITH mvtgeom AS (
-                SELECT ST_AsMVTGeom(observations.location, ST_TileEnvelope({{ zoom }}, {{ x }}, {{ y }})), observations.gbif_id, observations.stable_id
+                SELECT ST_AsMVTGeom(observations.location, ST_TileEnvelope({{ zoom }}, {{ x }}, {{ y }})), observations.gbif_id, observations.stable_id, observations.name AS scientific_name
                 FROM ($jinjasql_filtered_observations) AS observations
             )
             SELECT st_asmvt(mvtgeom.*) FROM mvtgeom;

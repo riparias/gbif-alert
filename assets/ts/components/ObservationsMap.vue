@@ -316,15 +316,16 @@ export default defineComponent({
           const properties = f.getProperties();
           return {
             gbifId: properties["gbif_id"],
+            scientificName: properties["scientific_name"],
             url: this.apiEndpoints.observationDetailsUrlTemplate.replace(
                 "{stable_id}",
                 properties["stable_id"]
-            ),
+            ).replace("{origin}", window.location.pathname),
           };
         });
 
         const clickedFeaturesHtmlList = clickedFeaturesData.map((f) => {
-          return `<li><a href="${f.url}" target="_blank">${f.gbifId}</a></li>`;
+          return `<li><a href="${f.url}" target="_blank">${f.gbifId}</a> <i>${f.scientificName}</i></li>`;
         });
 
         // Hide previously opened
