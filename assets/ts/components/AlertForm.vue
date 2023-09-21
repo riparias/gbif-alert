@@ -49,8 +49,7 @@
         </BootstrapAlert>
         <Selector :available-entries="availableAreasAsDataRows"
                   :columns-config="[
-                    {label: $t('message.name'), dataIndex: 0},
-                    {label: $t('message.areaType'), dataIndex: 1}
+                    {label: $t('message.name'), dataIndex: 0}
                   ]" v-model="alertData.areaIds"></Selector>
       </div>
     </div>

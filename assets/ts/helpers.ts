@@ -60,9 +60,11 @@ export function prepareAreasData(areasData: AreaInformation[], translationFuncti
     // Input: areas data, as returned from the server
     // Output: datarows suitable for the <selector> component
     return areasData.map((a: AreaInformation) => {
+
+        a.isUserSpecific ? a.tags.push(translationFunction('message.userSpecific')) : a.tags.push(translationFunction('message.shared'));
         return {
             id: a.id,
-            columnData: [a.name, (a.isUserSpecific ? translationFunction('message.userSpecific') : translationFunction('message.shared'))],
+            columnData: [a.name],
             tags: a.tags,
         };
     });

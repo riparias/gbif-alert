@@ -60,8 +60,7 @@
               :modal-title="$t('message.restrictToSpecificAreas')"
               :entries="availableAreasAsDataRows"
               :selector-columns-config="[
-                  {label: $t('message.name'), dataIndex: 0},
-                  {label: $t('message.areaType'), dataIndex: 1}
+                  {label: $t('message.name'), dataIndex: 0}
               ]"
               :label-index="0"
               :initially-selected-entries-ids="filters.areaIds"

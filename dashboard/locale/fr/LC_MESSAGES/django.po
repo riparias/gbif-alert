@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-21 15:07+0200\n"
+"POT-Creation-Date: 2023-09-21 15:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -253,9 +253,8 @@ msgid "Change my password"
 msgstr "Modifier mon mot de passe"
 
 #: dashboard/templates/dashboard/_navbar.html:54
-#: dashboard/templates/dashboard/user_areas.html:7
 #: dashboard/templates/dashboard/user_areas.html:19
-msgid "My custom areas"
+msgid "My user-specific areas"
 msgstr "Mes zones spécifiques"
 
 #: dashboard/templates/dashboard/_navbar.html:63
@@ -444,6 +443,10 @@ msgstr "Mot de passe oublié ?"
 msgid "You currently don't have any configured alerts."
 msgstr "Vous n'avez actuellement aucune alerte configurée."
 
+#: dashboard/templates/dashboard/user_areas.html:7
+msgid "My areas"
+msgstr "Mes zones"
+
 #: dashboard/templates/dashboard/user_areas.html:21
 msgid "Upload a new area"
 msgstr "Uploadez une nouvelle zone"
@@ -486,6 +489,7 @@ msgid "Save"
 msgstr "Enregistrer"
 
 #: dashboard/templates/dashboard/user_areas.html:44
+#, python-format
 msgid ""
 "\n"
 "                    %(counter)s user-specific area\n"
@@ -526,5 +530,3 @@ msgstr "Au moins une espèce doit être sélectionnée"
 msgid "Your profile was successfully updated."
 msgstr "Votre profil a été mis à jour avec succès."
 
-#~ msgid "Existing areas"
-#~ msgstr "Zones existantes"

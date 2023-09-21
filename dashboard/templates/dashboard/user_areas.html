@@ -4,7 +4,7 @@
 {% load i18n %}
 
 {% block page_title %}
-    {% translate "My custom areas" as page_title %}
+    {% translate "My areas" as page_title %}
     {% include "dashboard/_page_title.html" with page_name=page_title %}
 {% endblock %}
 
@@ -16,7 +16,7 @@
     <div class="container">
         <div class="row">
             <div id="vue-app" class="col">
-                <h1>{% translate "My custom areas" %}</h1>
+                <h1>{% translate "My user-specific areas" %}</h1>
 
                 <h2>{% translate "Upload a new area" %}</h2>
 
