@@ -524,11 +524,37 @@ class SeleniumTests(SeleniumTestsCommon):
         )
         self.assertEqual(len(unseen_badges), 2)
 
-    # @override_settings(
-    #     GBIF_ALERT={
-    #         "SITE_NAME": "LIFE RIPARIAS early alert",
-    #     }
-    # )
+        # Let's test the mark as unseen button
+        # Re-select seen
+        observation_status_selector.find_element(By.ID, "label-btnRadioSeen").click()
+        time.sleep(1)
+        # Go to the observation page
+        result_rows[0].find_element(By.TAG_NAME, "a").click()
+        time.sleep(1)
+        # Click the "mark as unseen" button
+        WebDriverWait(self.selenium, 20).until(
+            EC.element_to_be_clickable(
+                (By.XPATH, "//button[text()='Mark this observation as unseen']")
+            )
+        ).click()
+
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Home"))
+
+        # The unseen counter should be at 3 and the seen at 0 (invisible)
+        observation_status_selector = self.selenium.find_element(
+            By.ID, "gbif-alert-obs-status-selector"
+        )
+        seen_button = observation_status_selector.find_element(
+            By.ID, "label-btnRadioSeen"
+        )
+
+        unseen_button = observation_status_selector.find_element(
+            By.ID, "label-btnRadioUnseen"
+        )
+        unseen_tab_counter_badge = unseen_button.find_element(By.TAG_NAME, "span")
+        self.assertEqual(unseen_tab_counter_badge.text, "3")
+
     def test_title_in_index_page(self):
         self.selenium.get(self.live_server_url)
         self.assertIn("LIFE RIPARIAS early alert", self.selenium.page_source)
