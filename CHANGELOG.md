@@ -5,6 +5,7 @@
 - Vernacular name of species is now shown on the occurrence details page (https://github.com/riparias/gbif-alert/issues/262)
 - Scientific name of species is now shown on the map popup (https://github.com/riparias/gbif-alert/issues/263)
 - Improved test coverage for more robustness
+- New data import script (specific to the LIFE RIPARIAS instance)
 
 # v1.4.1 (2023-09-18)   
 
