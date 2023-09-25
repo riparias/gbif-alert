@@ -75,7 +75,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Found {layer.num_feat} features")  # type: ignore
             for feature in layer:
                 area_name = feature[layer_config["name_field"]]  # type: ignore
-                tags = layer_config["tags"]
+                tags = layer_config["tags"].copy()
                 tags.append(feature[layer_config["dynamic_tag_field"]].value)  # type: ignore
 
                 self.stdout.write(f"Creating area {area_name}, with tags {tags}")
