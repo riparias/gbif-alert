@@ -86,7 +86,13 @@ class DatasetAdmin(admin.ModelAdmin):
 
 @admin.register(Area)
 class AreaAdmin(admin.OSMGeoAdmin):
-    list_display = ("name", "owner")
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("tags")
+
+    def tag_list(self, obj):
+        return ", ".join(o.name for o in obj.tags.all())
+
+    list_display = ("name", "owner", "tag_list")
 
 
 # Beware: the following action is mostly for debugging purposes and will send an email if the usual criteria are not
