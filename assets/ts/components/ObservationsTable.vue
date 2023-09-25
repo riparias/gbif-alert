@@ -12,6 +12,8 @@
             scope="col"
         >
           <span @click="changeSort(col.sortId)">{{ col.label }}</span>
+          <i v-if="sortBy === col.sortId"
+             :class="sortDirection === 'asc' ? 'bi bi-caret-up-fill' : 'bi bi-caret-down-fill'"></i>
         </th>
       </tr>
       </thead>
@@ -77,6 +79,7 @@ declare interface ObservationsTableData {
   lastPage: number;
   totalObservationsCount: number | null;
   sortBy: string;
+  sortDirection: string;
   observations: [];
   cols: ColDefinition[];
 }
@@ -108,6 +111,7 @@ export default defineComponent({
         this.loadObservations(
             this.filters,
             this.sortBy,
+            this.sortDirection,
             this.pageSize,
             this.currentPage
         );
@@ -117,6 +121,7 @@ export default defineComponent({
       this.loadObservations(
           this.filters,
           this.sortBy,
+          this.sortDirection,
           this.pageSize,
           this.currentPage
       );
@@ -125,6 +130,16 @@ export default defineComponent({
       this.loadObservations(
           this.filters,
           this.sortBy,
+          this.sortDirection,
+          this.pageSize,
+          this.currentPage
+      );
+    },
+    sortDirection: function () {
+      this.loadObservations(
+          this.filters,
+          this.sortBy,
+          this.sortDirection,
           this.pageSize,
           this.currentPage
       );
@@ -133,17 +148,30 @@ export default defineComponent({
   methods: {
     changeSort: function (newSort: string | null) {
       if (newSort != null) {
-        this.sortBy = newSort;
+        if (newSort === this.sortBy) {
+          // Same column, change direction
+          this.sortDirection =
+              this.sortDirection === "asc" ? "desc" : "asc";
+        } else {
+          // New column, sort ascending
+          this.sortBy = newSort;
+          this.sortDirection = "asc";
+        }
       }
     },
     loadObservations: function (
         filters: DashboardFilters,
         orderBy: string,
+        orderDirection: string,
         pageSize: number,
         pageNumber: number
     ) {
       let params = {...filters} as any;
-      params.order = orderBy;
+      if (orderDirection === 'asc') {
+        params.order = orderBy;
+      } else {
+        params.order = '-' + orderBy;
+      }
       params.limit = pageSize;
       params.page_number = pageNumber;
 
@@ -177,7 +205,8 @@ export default defineComponent({
       firstPage: 1,
       lastPage: 1,
       totalObservationsCount: null,
-      sortBy: "-date",
+      sortBy: "date",
+      sortDirection: "desc",
       observations: [],
 
       cols: [
@@ -190,7 +219,7 @@ export default defineComponent({
         {sortId: null, label: ""},
         {sortId: "gbif_id", label: this.$t("message.gbifId")},
         {sortId: null, label: this.$t("message.coordinates")},
-        {sortId: "-date", label: this.$t("message.date")},
+        {sortId: "date", label: this.$t("message.date")},
         {sortId: "species__name", label: this.$t("message.species")},
         {sortId: "source_dataset__name", label: this.$t("message.dataset")},
       ],
