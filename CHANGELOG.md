@@ -1,4 +1,4 @@
-# Current (unreleased)
+# v1.5.0 (2023-09-26) 
 
 - Users can now upload their owns areas of interest!
 - Fixed an old display/linking bug (https://github.com/riparias/gbif-alert/issues/244)
