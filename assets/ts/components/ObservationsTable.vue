@@ -14,6 +14,7 @@
           <span @click="changeSort(col.sortId)">{{ col.label }}</span>
           <i v-if="sortBy === col.sortId"
              :class="sortDirection === 'asc' ? 'bi bi-caret-up-fill' : 'bi bi-caret-down-fill'"></i>
+          <i v-else-if="col.sortId != null" class="bi bi-caret-up"></i>
         </th>
       </tr>
       </thead>
