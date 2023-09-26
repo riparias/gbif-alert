@@ -8,7 +8,8 @@ See task description at: https://github.com/riparias/early-alert-webapp/issues/8
 import os
 
 from django.contrib.gis.gdal import DataSource, SpatialReference, CoordTransform
-from django.contrib.gis.gdal.geometries import MultiPolygon
+from django.contrib.gis.gdal.feature import Feature
+from django.contrib.gis.gdal.geometries import MultiPolygon, OGRGeometry
 from django.core.management import BaseCommand
 
 from dashboard.models import Area, DATA_SRID
@@ -18,7 +19,7 @@ SOURCE_DATA_STRID = SpatialReference("EPSG:4326")
 
 ct = CoordTransform(SOURCE_DATA_STRID, SpatialReference(f"EPSG:{DATA_SRID}"))
 
-DVW_SOURCE_DATA = {
+DVW_SOURCE_DATA: dict[str, dict] = {
     "Districts": {
         "path": f"{THIS_FILE_DIR}/../../../source_data/public_areas/dvw/Districts/Districts.shp",
         "name_field": "DSTRCT",
@@ -46,7 +47,7 @@ DVW_SOURCE_DATA = {
 }
 
 
-def get_multipolygon_from_feature(feature: "Feature") -> MultiPolygon:
+def get_multipolygon_from_feature(feature: Feature) -> OGRGeometry:
     """Return a WKT representation of the feature's geometry.
 
     If the feature is a MultiPolygon, the MultiPolygon is returned.
