@@ -48,13 +48,11 @@
                                 </a>
                             </li>
 
-                            {% if not gbif_alert_settings.HIDE_MY_CUSTOM_AREAS_PAGE %}
-                                <li>
-                                    <a class="dropdown-item" href="{% url 'dashboard:pages:my-custom-areas' %}">
-                                        <i class="bi bi-map"></i> {% translate "My user-specific areas" %}
-                                    </a>
-                                </li>
-                            {% endif %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'dashboard:pages:my-custom-areas' %}">
+                                    <i class="bi bi-map"></i> {% translate "My user-specific areas" %}
+                                </a>
+                            </li>
 
                             <li>
                                 <hr class="dropdown-divider">

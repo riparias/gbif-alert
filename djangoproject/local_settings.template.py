@@ -110,7 +110,4 @@ GBIF_ALERT: dict[str, Any] = {
         "initialLat": 50.50,
         "initialLon": 4.47,
     },
-    # The "my custom areas" page is a page where users can create their own areas of interest.
-    # It is currently in progress (lacks documentation, UI is poor, missing translations, ...), so we offer the a feature flag to hide it.
-    "HIDE_MY_CUSTOM_AREAS_PAGE": False,
 }

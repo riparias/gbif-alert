@@ -1,6 +1,7 @@
 # Current (unreleased)
 
-- More automated tests to improve robustness
+- More automated tests to improve robustness (https://github.com/riparias/gbif-alert/issues/93)
+- Remove deprecated settings (https://github.com/riparias/gbif-alert/issues/265)
 
 # v1.5.0 (2023-09-26) 
 
