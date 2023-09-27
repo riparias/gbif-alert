@@ -1,10 +1,12 @@
 import datetime
+import re
 import time
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Point
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.core import mail
 from django.test import override_settings
 from django.utils import timezone
 from selenium import webdriver
@@ -1062,11 +1064,131 @@ class SeleniumTests(SeleniumTestsCommon):
             EC.url_contains("/accounts/signin/?next=/profile")
         )  # We are redirected to the login page
 
+    def test_lost_password_scenario_wrong_address(self):
+        # In test_signin_signout_scenario(), we make sure there is a link on login page to get a password back
+        # In this test we check that the feature works as expected
+        # Case 1: password not linked to any account
+        self.selenium.get(self.live_server_url)
+        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
+        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
+
+        # We can follow it to the sign-in page
+        signin_link.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Sign in"))
+
+        lost_password_link = self.selenium.find_element(By.LINK_TEXT, "Lost password?")
+        lost_password_link.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Forgot your password?"))
+        email_address_field = self.selenium.find_element(By.ID, "id_email")
+        email_address_field.clear()
+        email_address_field.send_keys("wrong@address.com")
+
+        send_me_instructions_button = self.selenium.find_element(
+            By.ID, "gbif-alert-send-me-instructions-button"
+        )
+        send_me_instructions_button.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(
+            EC.title_contains("Instructions sent")
+        )  # We make it look it was successful, for security reasons
+        # ... But no mail was sent
+        self.assertEqual(len(mail.outbox), 0)
+
     def test_lost_password_scenario(self):
-        # In test_signin_signout_scenario, we make sure there is a link on login page to get a password back
-        # In this test we check that feature works as expected
-        # TODO: implement
-        pass
+        # In test_signin_signout_scenario(), we make sure there is a link on login page to get a password back
+        # In this test we check that the feature works as expected
+        # Case 2: successful password reset
+        self.selenium.get(self.live_server_url)
+        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
+        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
+
+        # We can follow it to the sign-in page
+        signin_link.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Sign in"))
+
+        lost_password_link = self.selenium.find_element(By.LINK_TEXT, "Lost password?")
+        lost_password_link.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Forgot your password?"))
+        email_address_field = self.selenium.find_element(By.ID, "id_email")
+        email_address_field.clear()
+        email_address_field.send_keys("frusciante@gmail.com")
+
+        send_me_instructions_button = self.selenium.find_element(
+            By.ID, "gbif-alert-send-me-instructions-button"
+        )
+        send_me_instructions_button.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Instructions sent"))
+        # A mail was sent
+        self.assertEqual(len(mail.outbox), 1)
+        the_mail = mail.outbox[0]
+        self.assertIn("Password reset on", the_mail.subject)
+        self.assertListEqual(the_mail.to, ["frusciante@gmail.com"])
+        pattern = r"http://[^\n]+"
+        match = re.search(pattern, the_mail.body)
+        reset_url = match.group(0)
+
+        # Let's follow the link
+        self.selenium.get(reset_url)
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Reset your password"))
+        password1_field = self.selenium.find_element(By.ID, "id_new_password1")
+        password2_field = self.selenium.find_element(By.ID, "id_new_password2")
+        password1_field.clear()
+        password1_field.send_keys("newpassword007")
+        password2_field.clear()
+        password2_field.send_keys("newpassword007")
+        button = self.selenium.find_element(
+            By.CSS_SELECTOR, "[value='Change my password']"
+        )
+        button.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Password reset complete"))
+
+        # Let's try the sign in
+        signin_link = self.selenium.find_element(By.LINK_TEXT, "sign in")
+        signin_link.click()
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Sign in"))
+
+        # First with the old password: this should fail
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("testuser")
+        password_field.send_keys("12345")
+        signin_button = self.selenium.find_element(By.ID, "gbif-alert-signin-button")
+        signin_button.click()
+        # We're still on the same page, with an error message
+        wait = WebDriverWait(self.selenium, 5)
+        wait.until(EC.title_contains("Sign in"))
+        error_message = self.selenium.find_element(
+            By.ID, "gbif-alert-invalid-credentials-message"
+        )
+        self.assertEqual(
+            error_message.text,
+            "Your username and password didn't match. Please try again.",
+        )
+
+        # Now we retry with the new password, this should work!
+        username_field = self.selenium.find_element(By.ID, "id_username")
+        password_field = self.selenium.find_element(By.ID, "id_password")
+        username_field.clear()
+        password_field.clear()
+        username_field.send_keys("testuser")
+        password_field.send_keys("newpassword007")
+        signin_button = self.selenium.find_element(By.ID, "gbif-alert-signin-button")
+        signin_button.click()
+        wait = WebDriverWait(self.selenium, 5)
+        # Now, we should be redirected to the home page, and see the username in the navbar
+        wait.until(EC.title_contains("Home"))
+        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
+        navbar.find_element(By.LINK_TEXT, "testuser")
 
     def test_change_password_scenario(self):
         """A logged user wants to change his password"""
