@@ -1,3 +1,7 @@
+# Current (unreleased)
+
+- More automated tests to improve robustness
+
 # v1.5.0 (2023-09-26) 
 
 - Users can now upload their owns areas of interest!

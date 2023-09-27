@@ -233,7 +233,9 @@ class ImportObservationsTest(TransactionTestCase):
             "https://www.inaturalist.org/observations/42671325",
         )
         self.assertEqual(occ.stable_id, "4aa3b8d81c4a62c89b73a4416af7d51968c29104")
-        self.assertEqual(occ.species_id, self.polydrusus.pk)
+        self.assertEqual(
+            occ.species_id, self.polydrusus.pk
+        )  # This also test the fallback to the acceptedTaxonKey (https://github.com/riparias/gbif-alert/issues/93)
         lon, lat = occ.lonlat_4326_tuple
         self.assertAlmostEqual(lon, 3.315567)  # type: ignore
         self.assertAlmostEqual(lat, 51.354473)  # type: ignore
@@ -252,7 +254,9 @@ class ImportObservationsTest(TransactionTestCase):
             "https://www.inaturalist.org/observations/42577016",
         )
         self.assertEqual(occ.stable_id, "6a6fc5bd50d1ead0f33f32c843b185bbfbd7c166")
-        self.assertEqual(occ.species_id, self.polydrusus.pk)
+        self.assertEqual(
+            occ.species_id, self.polydrusus.pk
+        )  # This also test the fallback to the speciesKey (https://github.com/riparias/gbif-alert/issues/93)
         lon, lat = occ.lonlat_4326_tuple
         self.assertAlmostEqual(lon, 3.254023)  # type: ignore
         self.assertAlmostEqual(lat, 50.664364)  # type: ignore
