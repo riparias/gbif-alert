@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-21 15:24+0200\n"
+"POT-Creation-Date: 2023-09-28 10:13+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -252,27 +252,27 @@ msgstr "Mon profil"
 msgid "Change my password"
 msgstr "Modifier mon mot de passe"
 
-#: dashboard/templates/dashboard/_navbar.html:54
+#: dashboard/templates/dashboard/_navbar.html:53
 #: dashboard/templates/dashboard/user_areas.html:19
 msgid "My user-specific areas"
 msgstr "Mes zones spécifiques"
 
-#: dashboard/templates/dashboard/_navbar.html:63
+#: dashboard/templates/dashboard/_navbar.html:61
 msgid "Admin panel"
 msgstr "Panneau d'administration"
 
-#: dashboard/templates/dashboard/_navbar.html:65
+#: dashboard/templates/dashboard/_navbar.html:63
 msgid "Sign out"
 msgstr "Se déconnecter"
 
-#: dashboard/templates/dashboard/_navbar.html:69
+#: dashboard/templates/dashboard/_navbar.html:67
 #: dashboard/templates/dashboard/signin.html:6
 #: dashboard/templates/dashboard/signin.html:14
 #: dashboard/templates/dashboard/signin.html:39
 msgid "Sign in"
 msgstr "Se connecter"
 
-#: dashboard/templates/dashboard/_navbar.html:70
+#: dashboard/templates/dashboard/_navbar.html:68
 #: dashboard/templates/dashboard/user_signup.html:7
 msgid "Sign up"
 msgstr "S'inscrire"
@@ -529,4 +529,3 @@ msgstr "Au moins une espèce doit être sélectionnée"
 #: dashboard/views/pages.py:148
 msgid "Your profile was successfully updated."
 msgstr "Votre profil a été mis à jour avec succès."
-

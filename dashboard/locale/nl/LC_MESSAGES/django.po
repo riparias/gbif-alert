@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-21 15:24+0200\n"
+"POT-Creation-Date: 2023-09-28 10:13+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -20,111 +20,111 @@ msgstr ""
 
 #: dashboard/forms.py:12
 msgid "Area name"
-msgstr ""
+msgstr "Naam gebied"
 
 #: dashboard/forms.py:14
 msgid "A short name to identify this area"
-msgstr ""
+msgstr "Korte naam om dit gebied te identificeren"
 
 #: dashboard/forms.py:17
 msgid "Data file"
-msgstr ""
+msgstr "Data bestand"
 
 #: dashboard/forms.py:37
 msgid "First name"
-msgstr ""
+msgstr "Voornaam"
 
 #: dashboard/forms.py:37 dashboard/forms.py:40
 msgid "Optional."
-msgstr ""
+msgstr "Optioneel"
 
 #: dashboard/forms.py:40
 msgid "Last name"
-msgstr ""
+msgstr "Familienaam"
 
 #: dashboard/forms.py:43
 msgid "Email"
-msgstr ""
+msgstr "Email"
 
 #: dashboard/forms.py:45
 msgid "Required. Enter a valid email address."
-msgstr ""
+msgstr "Verplicht. Voer een geldig e-mailadres in."
 
 #: dashboard/forms.py:49
 msgid "Language"
-msgstr ""
+msgstr "Taal"
 
 #: dashboard/forms.py:51
 msgid "This language will be used for emails."
-msgstr ""
+msgstr "Deze taal zal gebruikt worden voor emails."
 
 #: dashboard/models.py:630
 msgid "No emails"
-msgstr ""
+msgstr "Geen emails"
 
 #: dashboard/models.py:631
 msgid "Daily"
-msgstr ""
+msgstr "Dagelijks"
 
 #: dashboard/models.py:632
 msgid "Weekly"
-msgstr ""
+msgstr "Wekelijks"
 
 #: dashboard/models.py:633
 msgid "Monthly"
-msgstr ""
+msgstr "Maandelijks"
 
 #: dashboard/models.py:644
 msgid "name"
-msgstr ""
+msgstr "naam"
 
 #: dashboard/models.py:648
-#, fuzzy
 #| msgid "Species"
 msgid "species"
-msgstr "Soort"
+msgstr "soort"
 
 #: dashboard/models.py:651
 msgid ""
 "To select multiple items, press and hold the Ctrl or Command key and click "
 "the items."
-msgstr ""
+msgstr "Om meerdere items te selecteren, druk op de Ctrl of Command toets en klik "
+"de items."
 
 #: dashboard/models.py:657
 msgid "datasets"
-msgstr ""
+msgstr "datasets"
 
 #: dashboard/models.py:660
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
-msgstr ""
+msgstr "Optioneel (geen selectie = notificaties voor alle datasets). Om meerdere items te selecteren, druk op de Ctrl of Command toets en klik de items."
 
 #: dashboard/models.py:667
 msgid "areas"
-msgstr ""
+msgstr "gebieden"
 
 #: dashboard/models.py:669
 msgid ""
 "Optional (no selection = notify me for all data in the system). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
-msgstr ""
+msgstr "Optioneel (geen selectie = notificaties voor alle data in het systeem). Om meerdere items te selecteren, druk op de Ctrl of Command toets en klik de items."
 
 #: dashboard/models.py:678
 msgid "email notifications frequency"
-msgstr ""
+msgstr "frequentie email notificaties"
 
 #: dashboard/models.py:791
 msgid "unseen observation(s) for your alert"
-msgstr ""
+msgstr "niet bekeken waarneming(en) voor je waarschuwing"
 
 #: dashboard/templates/503.html:7
 msgid "In maintenance"
-msgstr ""
+msgstr "In beheer"
 
 #: dashboard/templates/dashboard/_alert.html:8
 msgid "all"
-msgstr ""
+msgstr "alles"
 
 #: dashboard/templates/dashboard/_alert.html:10
 #, fuzzy
@@ -134,182 +134,183 @@ msgstr "Soort"
 
 #: dashboard/templates/dashboard/_alert.html:16
 msgid "Areas:"
-msgstr ""
+msgstr "Gebieden"
 
 #: dashboard/templates/dashboard/_alert.html:19
 msgid "Datasets:"
-msgstr ""
+msgstr "Datasets:"
 
 #: dashboard/templates/dashboard/_alert.html:22
 msgid "Email notifications frequency:"
-msgstr ""
+msgstr "Frequentie email notificaties:"
 
 #: dashboard/templates/dashboard/_alert.html:26
 msgid "Last email sent:"
-msgstr ""
+msgstr "Laatste email:"
 
 #: dashboard/templates/dashboard/_alert.html:27
 msgid "never"
-msgstr ""
+msgstr "nooit"
 
 #: dashboard/templates/dashboard/_alert.html:37
 msgid "Matching observations"
-msgstr ""
+msgstr "Overeenkomende waarnemingen"
 
 #: dashboard/templates/dashboard/_alert.html:41
 msgid "unseen"
-msgstr ""
+msgstr "niet bekeken"
 
 #: dashboard/templates/dashboard/_alert.html:50
 msgid "Edit this alert"
-msgstr ""
+msgstr "Wijzig deze waarschuwing"
 
 #: dashboard/templates/dashboard/_alert.html:65
 msgid "Show all my alerts"
-msgstr ""
+msgstr "Toon al mijn waarschuwingen"
 
 #: dashboard/templates/dashboard/_data_import.html:6
 msgid "Data import: #"
-msgstr ""
+msgstr "Gegevens import: #"
 
 #: dashboard/templates/dashboard/_data_import.html:9
 msgid "Date/time"
-msgstr ""
+msgstr "Datum/tijd"
 
 #: dashboard/templates/dashboard/_data_import.html:14
 msgid "Imported observations"
-msgstr ""
+msgstr "Geïmporteerde waarnemingen"
 
 #: dashboard/templates/dashboard/_data_import.html:19
 msgid "New observations in this import"
-msgstr ""
+msgstr "Nieuwe waarnemingen in deze import"
 
 #: dashboard/templates/dashboard/_data_import.html:25
 #, python-format
 msgid "Skipped observations in <a href=\"%(gbif_url)s\">GBIF download</a>"
-msgstr ""
+msgstr "Overgeslagen waarnemingen in <a href=\"%(gbif_url)s\">GBIF download</a>"
 
 #: dashboard/templates/dashboard/_data_import.html:31
 msgid "GBIF predicate"
-msgstr ""
+msgstr "GBIF predicate"
 
 #: dashboard/templates/dashboard/_footer.html:11
 msgid "Latest data import:"
-msgstr ""
+msgstr "Laatste gegevens import:"
 
 #: dashboard/templates/dashboard/_footer.html:12
 msgid ""
 "This site is powered by <a href=\"https://github.com/riparias/gbif-"
 "alert\">GBIF Alert</a> version"
-msgstr ""
+msgstr "Deze site wordt aangedreven door <a href=\"https://github.com/riparias/gbif-"
+"alert\">GBIF Alert</a> versie"
 
 #: dashboard/templates/dashboard/_navbar.html:12
 msgid "Explore all observations"
-msgstr ""
+msgstr "Verken alle waarnemingen"
 
 #: dashboard/templates/dashboard/_navbar.html:15
 #: dashboard/templates/dashboard/news.html:7
 #: dashboard/templates/dashboard/news.html:15
 msgid "What's new"
-msgstr ""
+msgstr "Nieuw op deze site"
 
 #: dashboard/templates/dashboard/_navbar.html:19
 #: dashboard/templates/dashboard/_navbar.html:44
 #: dashboard/templates/dashboard/user_alerts.html:5
 #: dashboard/templates/dashboard/user_alerts.html:13
 msgid "My alerts"
-msgstr ""
+msgstr "Mijn waarschuwingen"
 
 #: dashboard/templates/dashboard/_navbar.html:23
 #: dashboard/templates/dashboard/about_site.html:7
 #: dashboard/templates/dashboard/about_site.html:15
 msgid "About this site"
-msgstr ""
+msgstr "Over deze site"
 
 #: dashboard/templates/dashboard/_navbar.html:26
 #: dashboard/templates/dashboard/about_data.html:7
 #: dashboard/templates/dashboard/about_data.html:15
 msgid "About the data"
-msgstr ""
+msgstr "Over de data"
 
 #: dashboard/templates/dashboard/_navbar.html:40
 #: dashboard/templates/dashboard/user_profile.html:7
 #: dashboard/templates/dashboard/user_profile.html:15
 msgid "My profile"
-msgstr ""
+msgstr "Mijn profiel"
 
 #: dashboard/templates/dashboard/_navbar.html:41
 #: dashboard/templates/dashboard/password_change.html:6
 #: dashboard/templates/dashboard/password_change.html:14
 msgid "Change my password"
-msgstr ""
+msgstr "Wijzig mijn paswoord"
 
-#: dashboard/templates/dashboard/_navbar.html:54
+#: dashboard/templates/dashboard/_navbar.html:53
 #: dashboard/templates/dashboard/user_areas.html:19
 msgid "My user-specific areas"
-msgstr ""
+msgstr "Mijn gebieden"
+
+#: dashboard/templates/dashboard/_navbar.html:61
+msgid "Admin panel"
+msgstr "Admin"
 
 #: dashboard/templates/dashboard/_navbar.html:63
-msgid "Admin panel"
-msgstr ""
-
-#: dashboard/templates/dashboard/_navbar.html:65
 msgid "Sign out"
-msgstr ""
+msgstr "Uitloggen"
 
-#: dashboard/templates/dashboard/_navbar.html:69
+#: dashboard/templates/dashboard/_navbar.html:67
 #: dashboard/templates/dashboard/signin.html:6
 #: dashboard/templates/dashboard/signin.html:14
 #: dashboard/templates/dashboard/signin.html:39
 msgid "Sign in"
-msgstr ""
+msgstr "Log in"
 
-#: dashboard/templates/dashboard/_navbar.html:70
+#: dashboard/templates/dashboard/_navbar.html:68
 #: dashboard/templates/dashboard/user_signup.html:7
 msgid "Sign up"
-msgstr ""
+msgstr "Registreer"
 
 #: dashboard/templates/dashboard/about_data.html:16
 msgid "Data imports"
-msgstr ""
+msgstr "Gegevens import"
 
 #: dashboard/templates/dashboard/about_data.html:18
 msgid ""
 "The data (observations) shown in this application is frequently and "
 "automatically refreshed from <a href=\"https://www.gbif.org\">GBIF</a>."
-msgstr ""
+msgstr "De data (waarnemingen) in deze applicatie worden frequent en automatisch vernieuwd vanuit <a href=\"https://www.gbif.org\">GBIF</a>."
 
 #: dashboard/templates/dashboard/about_data.html:22
 msgid ""
 "The following data import was performed to populate the data currently "
 "visible in the application:"
-msgstr ""
+msgstr "De huidig beschikbare data in de applicatie zijn gebaseerd op deze gegevensimport:"
 
 #: dashboard/templates/dashboard/about_data.html:28
 msgid "Show all data imports"
-msgstr ""
+msgstr "Toon alle gegevens imports"
 
 #: dashboard/templates/dashboard/alert_create.html:6
 msgid "New alert"
-msgstr ""
+msgstr "Nieuwe waarschuwing"
 
 #: dashboard/templates/dashboard/alert_create.html:14
 #: dashboard/templates/dashboard/user_alerts.html:17
 msgid "Create a new alert"
-msgstr ""
+msgstr "Maak een nieuwe waarschuwing"
 
 #: dashboard/templates/dashboard/alert_details.html:7
 msgid "Alert details"
-msgstr ""
+msgstr "Details waarschuwing"
 
 #: dashboard/templates/dashboard/alert_edit.html:6
 #: dashboard/templates/dashboard/alert_edit.html:14
 msgid "Edit alert"
-msgstr ""
+msgstr "Wijzig waarschuwing"
 
 #: dashboard/templates/dashboard/index.html:9
 msgid "Home"
-msgstr ""
+msgstr "Home"
 
 #: dashboard/templates/dashboard/observation_details.html:46
 msgid "Species"
@@ -317,39 +318,39 @@ msgstr "Soort"
 
 #: dashboard/templates/dashboard/password_change.html:19
 msgid "Change password"
-msgstr ""
+msgstr "Wijzig paswoord"
 
 #: dashboard/templates/dashboard/password_change_done.html:5
 msgid "Password changed"
-msgstr ""
+msgstr "Paswoord gewijzigd"
 
 #: dashboard/templates/dashboard/password_change_done.html:13
 msgid "Your password was successfully changed."
-msgstr ""
+msgstr "Uw paswoord is succesvol gewijzigd."
 
 #: dashboard/templates/dashboard/password_change_done.html:14
 msgid "Go to index page"
-msgstr ""
+msgstr "Ga naar de index pagina"
 
 #: dashboard/templates/dashboard/password_reset.html:7
 #: dashboard/templates/dashboard/password_reset.html:15
 msgid "Forgot your password?"
-msgstr ""
+msgstr "Paswoord vergeten?"
 
 #: dashboard/templates/dashboard/password_reset.html:16
 msgid ""
 "Enter your email address below, and we'll email instructions for setting a "
 "new one."
-msgstr ""
+msgstr "Vul hieronder uw e-mailadres in, en we sturen u instructies om een nieuw paswoord in te stellen."
 
 #: dashboard/templates/dashboard/password_reset.html:21
 msgid "Send me instructions!"
-msgstr ""
+msgstr "Zend me instructies!"
 
 #: dashboard/templates/dashboard/password_reset_complete.html:5
 #: dashboard/templates/dashboard/password_reset_complete.html:13
 msgid "Password reset complete"
-msgstr ""
+msgstr "Paswoord reset voltooid"
 
 #: dashboard/templates/dashboard/password_reset_complete.html:17
 #, python-format
@@ -359,72 +360,74 @@ msgid ""
 "href=\"%(signin_url)s\">sign in</a>.\n"
 "                    "
 msgstr ""
+"\n"
+"                        Uw nieuw paswoord is ingesteld. U kunt nu <a href=\"%(signin_url)s\">inloggen</a>."
 
 #: dashboard/templates/dashboard/password_reset_confirm.html:7
 msgid "Reset your password"
-msgstr ""
+msgstr "Reset uw paswoord"
 
 #: dashboard/templates/dashboard/password_reset_confirm.html:16
 msgid "Set a new password!"
-msgstr ""
+msgstr "Nieuw paswoord instellen!"
 
 #: dashboard/templates/dashboard/password_reset_confirm.html:24
 msgid ""
 "The password reset link was invalid, possibly because it has already been "
 "used. Please request a new password reset."
-msgstr ""
+msgstr "De reset paswoord link is ongeldig, mogelijk omdat deze al gebruikt is. Vraag een nieuwe reset aan."
 
 #: dashboard/templates/dashboard/password_reset_done.html:6
 msgid "Instructions sent"
-msgstr ""
+msgstr "Instructies verzonden"
 
 #: dashboard/templates/dashboard/password_reset_done.html:14
 msgid "Check your inbox."
-msgstr ""
+msgstr "Controleer uw inbox."
 
 #: dashboard/templates/dashboard/password_reset_done.html:16
 msgid ""
 "We've emailed you instructions for setting your password. You should receive "
 "the email shortly!"
-msgstr ""
+msgstr "We hebben u instructies gemaild om uw paswoord in te stellen. U zou de email binnenkort moeten ontvangen!"
 
 #: dashboard/templates/dashboard/signin.html:16
 msgid "Your username and password didn't match. Please try again."
-msgstr ""
+msgstr "Uw gebruikersnaam en paswoord komen niet overeen. Probeer opnieuw."
 
 #: dashboard/templates/dashboard/signin.html:21
 msgid ""
 "Your account doesn't have access to this page. To proceed, please sign in "
 "with an account that has access."
-msgstr ""
+msgstr "Uw account heeft geen toegang tot deze pagina. Log in met een account dat wel toegang heeft."
 
 #: dashboard/templates/dashboard/signin.html:23
 msgid "Please sign in to see this page."
-msgstr ""
+msgstr "Log in om deze pagina te zien."
 
 #: dashboard/templates/dashboard/signin.html:30
 msgid "Username:"
-msgstr ""
+msgstr "Gebuikersnaam:"
 
 #: dashboard/templates/dashboard/signin.html:35
 msgid "Password:"
-msgstr ""
+msgstr "Paswoord:"
 
 #: dashboard/templates/dashboard/signin.html:40
 msgid "Lost password?"
-msgstr ""
+msgstr "Paswoord vergeten?"
 
 #: dashboard/templates/dashboard/user_alerts.html:26
 msgid "You currently don't have any configured alerts."
-msgstr ""
+msgstr "U heeft momenteel geen geconfigureerde waarschuwingen."
 
 #: dashboard/templates/dashboard/user_areas.html:7
 msgid "My areas"
-msgstr ""
+msgstr "Mijn gebieden"
 
 #: dashboard/templates/dashboard/user_areas.html:21
 msgid "Upload a new area"
-msgstr ""
+msgstr "Upload een nieuw gebied"
 
 #: dashboard/templates/dashboard/user_areas.html:25
 msgid ""
@@ -443,11 +446,25 @@ msgid ""
 "                    </ul>\n"
 "                    "
 msgstr ""
+"\n"
+"                    <p><i class=\"bi bi-info-square\"></i> De volgende "
+"beoerkingen gelden voor het bestand:</p>\n"
+"                    <ul>\n"
+"                        <li>het moet een <b><a href=\"https://en.wikipedia."
+"org/wiki/GeoPackage\">GeoPackage</a></b> (er bestaan veel externe tools om "
+"andere bestandsformaten om te zetten naar GeoPackages)</li>\n"
+"                        <li>het moet een <b>single layer</b> bevatten </li>\n"
+"                        <li>het moet een <b>single feature</b> bevatten"
+"van het type <b>polygon</b> of <b>multipolygon</b></li>\n"
+"                        <li>het GeoPackage moet een geldig coördinaten"
+"referentiesysteem bevatten</li>\n"
+"                    </ul>\n"
+"                    "
 
 #: dashboard/templates/dashboard/user_areas.html:39
 #: dashboard/templates/dashboard/user_profile.html:19
 msgid "Save"
-msgstr ""
+msgstr "Sla op"
 
 #: dashboard/templates/dashboard/user_areas.html:44
 #, python-format
@@ -460,28 +477,34 @@ msgid_plural ""
 "                    %(counter)s user-specific areas\n"
 "                    "
 msgstr[0] ""
+"\n"
+"                    %(counter)s gebruikergedefinieerd gebied\n"
+"                    "
 msgstr[1] ""
+"\n"
+"                    %(counter)s gebruikergedefinieerde gebieden\n"
+"                    "
 
 #: dashboard/views/actions.py:36
 msgid "Your alert has been deleted."
-msgstr ""
+msgstr "Uw waarschuwing is verwijderd."
 
 #: dashboard/views/actions.py:49
 msgid "Your account has been deleted."
-msgstr ""
+msgstr "Uw account is verwijderd."
 
 #: dashboard/views/actions.py:65
 msgid "The area has been deleted."
-msgstr ""
+msgstr "Het gebied is verwijderd."
 
 #: dashboard/views/actions.py:70
 msgid "The area could not be deleted because it has alerts associated with it."
-msgstr ""
+msgstr "Het gebied kan niet verwijderd worden omdat er waarschuwingen aan gekoppeld zijn."
 
 #: dashboard/views/internal_api.py:260
 msgid "At least one species must be selected"
-msgstr ""
+msgstr "Ten minste één soort moet geselecteerd zijn"
 
 #: dashboard/views/pages.py:148
 msgid "Your profile was successfully updated."
-msgstr ""
+msgstr "Uw profiel is succesvol gewijzigd."

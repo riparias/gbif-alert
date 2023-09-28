@@ -2,6 +2,7 @@
 
 - More automated tests to improve robustness (https://github.com/riparias/gbif-alert/issues/93, https://github.com/riparias/gbif-alert/issues/131)
 - Remove deprecated settings (https://github.com/riparias/gbif-alert/issues/265)
+- The application is now available in Dutch
 
 # v1.5.0 (2023-09-26) 
 

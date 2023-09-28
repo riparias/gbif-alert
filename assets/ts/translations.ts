@@ -205,7 +205,7 @@ export const messages = {
             initialDataImport: 'Initiële gegevensimport',
             mapView: 'Kaart',
             markAllObservationsAsSeen: 'Markeer alle waarnemingen als gezien',
-            matchingObservations: 'Geen overeenkomende waarnemingen | Eén overeenkomende waarneming | {aantal} overeenkomende waarnemingen',
+            matchingObservations: 'Geen overeenkomende waarnemingen | Eén overeenkomende waarneming | {count} overeenkomende waarnemingen',
             name: 'Naam',
             noAreaSelection: 'Als je hier geen selectie maakt, worden alle waarnemingen meegenomen, ongeacht hun locatie.',
             noAreasYet: 'Je hebt momenteel geen aangepast gebied, je kunt er hieronder een maken.',
