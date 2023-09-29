@@ -1,6 +1,7 @@
-"""Custom script to import the Flemish river basins areas for the LIFE RIPARIAS project.
+"""Custom script to import the DVW areas for the LIFE RIPARIAS project.
 
-This script should be refactored (merged) with load_dvw_areas.py, the logic is the same.
+The usual load_area.py script cannot be used because the specifities of the data make it unsuitable for the usual
+LayerMapping helper.
 
 See task description at: https://github.com/riparias/early-alert-webapp/issues/8
 """
@@ -13,44 +14,26 @@ from dashboard.management.commands.helpers import get_multipolygon_from_feature
 from dashboard.models import Area, DATA_SRID
 
 THIS_FILE_DIR = os.path.dirname(__file__)
-SOURCE_DATA_STRID = SpatialReference("EPSG:4326")
+SOURCE_DATA_STRID = SpatialReference("EPSG:31370")
 
 ct = CoordTransform(SOURCE_DATA_STRID, SpatialReference(f"EPSG:{DATA_SRID}"))
 
-DVW_SOURCE_DATA: dict[str, dict] = {
-    "Districts": {
-        "path": f"{THIS_FILE_DIR}/../../../source_data/public_areas/dvw/Districts/Districts.shp",
-        "name_field": "DSTRCT",
-        "tags": ["DVW", "district"],
-        "dynamic_tag_field": "AFD",
-    },
-    "Core sectors": {
-        "path": f"{THIS_FILE_DIR}/../../../source_data/public_areas/dvw/Sector_core/Sector_core.shp",
-        "name_field": "SCTR",
-        "tags": ["DVW", "sector", "core"],
-        "dynamic_tag_field": "AFD",
-    },
-    "Extended sectors": {
-        "path": f"{THIS_FILE_DIR}/../../../source_data/public_areas/dvw/Sector_extended/Sector_extended.shp",
-        "name_field": "SCTR",
-        "tags": ["DVW", "sector", "extended"],
-        "dynamic_tag_field": "AFD",
-    },
-    "Sector parcels": {
-        "path": f"{THIS_FILE_DIR}/../../../source_data/public_areas/dvw/Sector_parcels/Sector_parcels.shp",
-        "name_field": "SCTR",
-        "tags": ["DVW", "parcel"],
-        "dynamic_tag_field": "AFD",
+SOURCE_DATA: dict[str, dict] = {
+    "Wsbekken": {
+        "path": f"{THIS_FILE_DIR}/../../../source_data/public_areas/flemish_river_basins/Wsbekken.shp",
+        "name_field": "BEKNAAM",
+        "tags": ["Flanders", "river basin"],
+        "dynamic_tag_field": "STRMGEB",
     },
 }
 
 
 class Command(BaseCommand):
-    help = "Import DWV areas in the database."
+    help = "Import Flemish river areas in the database."
 
     def handle(self, *args, **options) -> None:
-        self.stdout.write("Importing DVW areas")
-        for layer_name, layer_config in DVW_SOURCE_DATA.items():
+        self.stdout.write("Importing Flemish river areas")
+        for layer_name, layer_config in SOURCE_DATA.items():
             self.stdout.write(f"Importing layer {layer_name}")
 
             ds = DataSource(layer_config["path"])
