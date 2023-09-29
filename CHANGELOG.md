@@ -1,14 +1,14 @@
-# Current (unreleased)
+# v1.6.0 (2023-09-29)
 
+- Major: The application is now available in Dutch
 - More automated tests to improve robustness (https://github.com/riparias/gbif-alert/issues/93, https://github.com/riparias/gbif-alert/issues/131)
 - Remove deprecated settings (https://github.com/riparias/gbif-alert/issues/265)
-- The application is now available in Dutch
 - Fix an old and annoying bug for administrators: https://github.com/riparias/gbif-alert/issues/146
 - New data import script (specific to the LIFE RIPARIAS instance)
 
 # v1.5.0 (2023-09-26) 
 
-- Users can now upload their owns areas of interest!
+- Major: Users can now upload their owns areas of interest!
 - Fixed an old display/linking bug (https://github.com/riparias/gbif-alert/issues/244)
 - Vernacular name of species is now shown on the occurrence details page (https://github.com/riparias/gbif-alert/issues/262)
 - Scientific name of species is now shown on the map popup (https://github.com/riparias/gbif-alert/issues/263)
