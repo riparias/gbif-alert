@@ -12,13 +12,15 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import os
 from pathlib import Path
 
+import fsutil
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+THIS_DIR = os.path.dirname(__file__)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
@@ -178,6 +180,28 @@ PAGE_FRAGMENTS_FALLBACK_LANGUAGE = "en"
 
 RQ_SHOW_ADMIN_LINK = True
 
+# We have to explicitly set the various maintenance mode default settings because of https://github.com/fabiocaccamo/django-maintenance-mode/issues/59
+MAINTENANCE_MODE = None
+MAINTENANCE_MODE_STATE_BACKEND = "maintenance_mode.backends.LocalFileBackend"
+MAINTENANCE_MODE_STATE_FILE_NAME = "maintenance_mode_state.txt"
+MAINTENANCE_MODE_STATE_FILE_PATH = fsutil.join_path(
+    THIS_DIR, MAINTENANCE_MODE_STATE_FILE_NAME
+)
+MAINTENANCE_MODE_IGNORE_ADMIN_SITE = False
+MAINTENANCE_MODE_IGNORE_ANONYMOUS_USER = False
+MAINTENANCE_MODE_IGNORE_AUTHENTICATED_USER = False
+MAINTENANCE_MODE_IGNORE_STAFF = False
+MAINTENANCE_MODE_IGNORE_SUPERUSER = False
+MAINTENANCE_MODE_IGNORE_IP_ADDRESSES = ()
+MAINTENANCE_MODE_GET_CLIENT_IP_ADDRESS = None
+MAINTENANCE_MODE_IGNORE_URLS = ()
+MAINTENANCE_MODE_IGNORE_TESTS = False
+MAINTENANCE_MODE_REDIRECT_URL = None
+MAINTENANCE_MODE_TEMPLATE = "503.html"
+MAINTENANCE_MODE_GET_TEMPLATE_CONTEXT = None
+MAINTENANCE_MODE_STATUS_CODE = 503
+MAINTENANCE_MODE_RETRY_AFTER = 3600
+
 # Logging: unfortunately for us, I am not able to override the default logging config as suggested in Django's documentation (changes are ignored)
 # This is similar to https://stackoverflow.com/questions/62334688/django-logger-not-logging-but-all-other-loggers-work
 # I therefore copy-pasted the default config from Django's source code and modified it to my needs.
@@ -195,10 +219,9 @@ LOGGING = {
         "require_debug_true": {
             "()": "django.utils.log.RequireDebugTrue",
         },
-        # Temporarily disabled because: https://github.com/fabiocaccamo/django-maintenance-mode/issues/59
-        # "require_not_maintenance_mode_503": {
-        #    "()": "maintenance_mode.logging.RequireNotMaintenanceMode503",
-        # },
+        "require_not_maintenance_mode_503": {
+            "()": "maintenance_mode.logging.RequireNotMaintenanceMode503",
+        },
     },
     "formatters": {
         "django.server": {
@@ -220,9 +243,7 @@ LOGGING = {
         },
         "mail_admins": {
             "level": "ERROR",
-            # Temporarily disabled because: https://github.com/fabiocaccamo/django-maintenance-mode/issues/59
-            # "filters": ["require_debug_false", "require_not_maintenance_mode_503"],
-            "filters": ["require_debug_false"],
+            "filters": ["require_debug_false", "require_not_maintenance_mode_503"],
             "class": "django.utils.log.AdminEmailHandler",
             "include_html": True,
         },
