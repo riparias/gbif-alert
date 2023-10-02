@@ -1,3 +1,7 @@
+# v1.6.1 (2023-10-02)
+
+- Fix typo in Dutch translation
+
 # v1.6.0 (2023-09-29)
 
 - Major: The application is now available in Dutch
