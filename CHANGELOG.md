@@ -1,3 +1,7 @@
+# Current (unreleased)
+
+- Robustness: removed the field size limitation for the dataset name (was 255 chars)
+
 # v1.6.1 (2023-10-02)
 
 - Fix typo in Dutch translation

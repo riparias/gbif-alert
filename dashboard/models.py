@@ -133,7 +133,7 @@ class Species(models.Model):  # type: ignore
 
 
 class Dataset(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.TextField()
     gbif_dataset_key = models.CharField(max_length=255, unique=True)
 
     __original_gbif_dataset_key = None
