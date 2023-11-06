@@ -2,7 +2,7 @@
 from django.contrib.gis.geos import GEOSGeometry
 from django.db.models import Count
 from django.http import JsonResponse, HttpRequest
-from gisserver.features import FeatureType  # type: ignore
+from gisserver.features import FeatureType, field  # type: ignore
 from gisserver.views import WFSView  # type: ignore
 
 from dashboard.models import Species, DATA_SRID, Observation
@@ -57,6 +57,33 @@ class ObservationsWFSView(WFSView):
     feature_types = [
         FeatureType(
             Observation.objects.all(),
-            fields="__all__",
+            fields=[
+                "id",
+                "gbif_id",
+                "occurrence_id",
+                "stable_id",
+                field(
+                    "species",
+                    fields=[
+                        "id",
+                        "name",
+                        "vernacular_name_nl",
+                        "vernacular_name_en",
+                        "vernacular_name_fr",
+                    ],
+                ),
+                "location",
+                field("observation_date", model_attribute="date"),
+                "individual_count",
+                "locality",
+                "municipality",
+                "basis_of_record",
+                "recorded_by",
+                "coordinate_uncertainty_in_meters",
+                "references",
+                "data_import_id",
+                "initial_data_import_id",
+                "source_dataset_id",
+            ],
         ),
     ]
