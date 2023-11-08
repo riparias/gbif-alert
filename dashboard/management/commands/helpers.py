@@ -20,7 +20,9 @@ def get_multipolygon_from_feature(feature: Feature) -> OGRGeometry:
     If the feature is a MultiPolygon, the MultiPolygon is returned.
     If the feature is a Polygon, a MultiPolygon with a single Polygon is returned.
     """
-    if feature.geom_type.name == "MultiPolygon":
+    if (feature.geom_type.name == "MultiPolygon") or (
+        feature.geom_type.name == "Unknown" and feature.geom.geom_name == "MULTIPOLYGON"
+    ):
         return feature.geom
     elif feature.geom_type.name == "Polygon":
         m = MultiPolygon("MULTIPOLYGON EMPTY")
@@ -28,3 +30,9 @@ def get_multipolygon_from_feature(feature: Feature) -> OGRGeometry:
         return m
     else:
         raise ValueError(f"Unexpected geometry type: {feature.geom_type.name}")
+
+
+def remove_z_dimension(geom: OGRGeometry) -> OGRGeometry:
+    copy = geom.clone()
+    copy.coord_dim = 2
+    return copy
