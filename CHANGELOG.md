@@ -1,9 +1,9 @@
-# Current (unreleased)
+# v1.7.0 (2023-11-08)
 
 - Improvements to the WFS server (https://github.com/riparias/gbif-alert/issues/268)
 - Robustness: removed the field size limitation for the dataset name (was 255 chars)
 - Updated backend dependencies
-- New data import script (specific to the LIFE RIPARIAS instance)
+- New data import scripts (specific to the LIFE RIPARIAS instance)
 
 # v1.6.1 (2023-10-02)
 
