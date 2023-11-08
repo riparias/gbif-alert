@@ -58,9 +58,8 @@ class ObservationsWFSView(WFSView):
         FeatureType(
             Observation.objects.all(),
             fields=[
-                "id",
                 "gbif_id",
-                "occurrence_id",
+                field("data_provider_occurrence_id", model_attribute="occurrence_id"),
                 "stable_id",
                 field(
                     "species",
@@ -72,6 +71,14 @@ class ObservationsWFSView(WFSView):
                         "vernacular_name_fr",
                     ],
                 ),
+                field(
+                    "dataset",
+                    fields=[
+                        "name",
+                        "gbif_dataset_key",
+                    ],
+                    model_attribute="source_dataset",
+                ),
                 "location",
                 field("observation_date", model_attribute="date"),
                 "individual_count",
@@ -81,9 +88,6 @@ class ObservationsWFSView(WFSView):
                 "recorded_by",
                 "coordinate_uncertainty_in_meters",
                 "references",
-                "data_import_id",
-                "initial_data_import_id",
-                "source_dataset_id",
             ],
         ),
     ]
