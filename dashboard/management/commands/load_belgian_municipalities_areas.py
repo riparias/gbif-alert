@@ -37,7 +37,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Importing layer {layer_name}")
 
             ds = DataSource(layer_config["path"])
-            for layer in ds:
+            for layer in ds:  # type: ignore
                 if layer.name == "municipality":
                     self.stdout.write(f"Found {layer.num_feat} features")  # type: ignore
                     for feature in layer:
