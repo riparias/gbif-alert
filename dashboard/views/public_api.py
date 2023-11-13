@@ -3,6 +3,7 @@ from django.contrib.gis.geos import GEOSGeometry
 from django.db.models import Count
 from django.http import JsonResponse, HttpRequest
 from gisserver.features import FeatureType, field  # type: ignore
+from gisserver.geometries import CRS
 from gisserver.views import WFSView  # type: ignore
 
 from dashboard.models import Species, DATA_SRID, Observation
@@ -89,5 +90,6 @@ class ObservationsWFSView(WFSView):
                 "coordinate_uncertainty_in_meters",
                 "references",
             ],
+            other_crs=[CRS.from_srid(31370)],
         ),
     ]
