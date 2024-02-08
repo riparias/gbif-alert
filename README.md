@@ -8,6 +8,8 @@
 
 GBIF Alert is a [GBIF](https://www.gbif.org)-based early alert system for invasive species.
 
+🎉 **GBIF Alert has been awarded the first prize of the [GBIF Ebbe Nielsen Challenge 2023](https://www.gbif.org/fr/news/EQgUzZ4YA75BSeLs1naI9/)!** 🎉 
+
 It is a reusable website engine powered by [Django](https://www.djangoproject.com/) available under the [MIT license](LICENSE).
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
 
