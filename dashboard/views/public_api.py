@@ -3,7 +3,7 @@ from django.contrib.gis.geos import GEOSGeometry
 from django.db.models import Count
 from django.http import JsonResponse, HttpRequest
 from gisserver.features import FeatureType, field  # type: ignore
-from gisserver.types import XsdElement, XsdTypes
+from gisserver.types import XsdElement, XsdTypes  # type: ignore
 from gisserver.views import WFSView  # type: ignore
 
 from dashboard.models import Species, DATA_SRID, Observation
