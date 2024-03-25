@@ -1,5 +1,6 @@
 # Current (unreleased)
 
+- Improvements to the WFS server, following user feedback (https://github.com/riparias/gbif-alert/issues/268)
 - Fixed bug with map background (https://github.com/riparias/gbif-alert/issues/276)
 - Technical: got rid of webdriver-manager, now using the manager provided by selenium itself
 - Technical: updated all backend dependencies

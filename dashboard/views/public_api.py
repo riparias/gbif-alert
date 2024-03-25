@@ -78,43 +78,35 @@ class CustomXsdElementScientificName(XSDElementForceStringType):
         return instance.species.name
 
 
+class CustomXsdElementVernacularNameNL(XSDElementForceStringType):
+    def get_value(self, instance):
+        return instance.species.vernacular_name_nl
+
+
+class CustomXsdElementVernacularNameEN(XSDElementForceStringType):
+    def get_value(self, instance):
+        return instance.species.vernacular_name_en
+
+
+class CustomXsdElementVernacularNameFR(XSDElementForceStringType):
+    def get_value(self, instance):
+        return instance.species.vernacular_name_fr
+
+
+class CustomXsdElementDatasetName(XSDElementForceStringType):
+    def get_value(self, instance):
+        return instance.source_dataset.name
+
+
+class CustomXsdElementDataSetGBIFKey(XSDElementForceStringType):
+    def get_value(self, instance):
+        return instance.source_dataset.gbif_dataset_key
+
+
 class ObservationsWFSView(WFSView):
     feature_types = [
         FeatureType(
-            Observation.objects.filter(coordinate_uncertainty_in_meters__lt=5),
-            # fields=[
-            #     "gbif_id",
-            #     "stable_id",
-            #     # field("species-scientific-name", model_attribute="species.name"),
-            #     # field("species_id", model_attribute="species.id"),
-            #     field(
-            #         # "species.vernacular_name_nl",
-            #         "species-vernacular-name-nl",
-            #         model_attribute="observation.species.vernacular_name_nl",
-            #     ),
-            #     # field(
-            #     #     "species-vernacular-name-en",
-            #     #     model_attribute="species.vernacular_name_en",
-            #     # ),
-            #     # field(
-            #     #     "species-vernacular-name-fr",
-            #     #     model_attribute="species.vernacular_name_fr",
-            #     # ),
-            #     # field("dataset-name", model_attribute="source_dataset.name"),
-            #     # field(
-            #     #     "dataset-gbif-key",
-            #     #     model_attribute="source_dataset.gbif_dataset_key",
-            #     # ),
-            #     "location",
-            #     field("observation_date", model_attribute="date"),
-            #     "individual_count",
-            #     "locality",
-            #     "municipality",
-            #     "basis_of_record",
-            #     "recorded_by",
-            #     "coordinate_uncertainty_in_meters",
-            #     "references",
-            # ],
+            Observation.objects.filter(),
             fields=[
                 "location",
                 "gbif_id",
@@ -129,6 +121,39 @@ class ObservationsWFSView(WFSView):
                     model_attribute="species",
                     xsd_class=CustomXsdElementScientificName,
                 ),
+                field(
+                    "species_vernacular_name_nl",
+                    model_attribute="species",
+                    xsd_class=CustomXsdElementVernacularNameNL,
+                ),
+                field(
+                    "species_vernacular_name_en",
+                    model_attribute="species",
+                    xsd_class=CustomXsdElementVernacularNameEN,
+                ),
+                field(
+                    "species_vernacular_name_fr",
+                    model_attribute="species",
+                    xsd_class=CustomXsdElementVernacularNameFR,
+                ),
+                field(
+                    "dataset_name",
+                    model_attribute="source_dataset",
+                    xsd_class=CustomXsdElementDatasetName,
+                ),
+                field(
+                    "dataset_gbif_key",
+                    model_attribute="source_dataset",
+                    xsd_class=CustomXsdElementDataSetGBIFKey,
+                ),
+                field("observation_date", model_attribute="date"),
+                "individual_count",
+                "locality",
+                "municipality",
+                "basis_of_record",
+                "recorded_by",
+                "coordinate_uncertainty_in_meters",
+                "references",
             ],
         ),
     ]
