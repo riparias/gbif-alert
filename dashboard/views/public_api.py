@@ -111,6 +111,7 @@ class ObservationsWFSView(WFSView):
                 "location",
                 "gbif_id",
                 "stable_id",
+                "species_id",
                 field(
                     "species_gbif_key",
                     model_attribute="species",

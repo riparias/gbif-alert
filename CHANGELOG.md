@@ -1,3 +1,7 @@
+# v1.7.2 (2024-03-25)
+
+- WFS server: the (internal) species_id field is now available
+
 # v1.7.1 (2024-03-25)
 
 - Improvements to the WFS server, following user feedback (https://github.com/riparias/gbif-alert/issues/268)
