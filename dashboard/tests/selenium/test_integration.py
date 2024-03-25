@@ -18,8 +18,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
-from webdriver_manager.core.os_manager import ChromeType  # type: ignore
+
+# from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
+# from webdriver_manager.core.os_manager import ChromeType  # type: ignore
 
 
 from dashboard.models import (
@@ -40,14 +41,8 @@ def _get_webdriver() -> WebDriver:
         options.add_argument("--headless")
     options.add_argument("--window-size=2560,1440")
 
-    # Workaround for https://github.com/SergeyPirogov/webdriver_manager/issues/500
-    if hasattr(settings, "SELENIUM_CHROMEDRIVER_VERSION"):
-        chromedriver_args = {"driver_version": settings.SELENIUM_CHROMEDRIVER_VERSION}  # type: ignore
-    else:
-        chromedriver_args = {"chrome_type": ChromeType.CHROMIUM}
-
     selenium = webdriver.Chrome(
-        service=ChromiumService(ChromeDriverManager(**chromedriver_args).install()),  # type: ignore
+        # service=ChromiumService(ChromeDriverManager(**chromedriver_args).install()),  # type: ignore
         options=options,
     )
 

@@ -1,3 +1,7 @@
+# Current (unreleased)
+
+- Technical: got rid of webdriver-manager, now using the manager provided by selenium itself
+
 # v1.7.0 (2023-11-08)
 
 - Improvements to the WFS server (https://github.com/riparias/gbif-alert/issues/268)

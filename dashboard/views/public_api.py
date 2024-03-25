@@ -60,18 +60,21 @@ class ObservationsWFSView(WFSView):
             Observation.objects.all(),
             fields=[
                 "gbif_id",
-                field("data_provider_occurrence_id", model_attribute="occurrence_id"),
+                # field("data_provider_occurrence_id", model_attribute="occurrence_id"),
                 "stable_id",
-                field(
-                    "species",
-                    fields=[
-                        "id",
-                        "name",
-                        "vernacular_name_nl",
-                        "vernacular_name_en",
-                        "vernacular_name_fr",
-                    ],
-                ),
+                # field("species-id", model_attribute="species_id"),
+                # ".species.name",
+                field("species-name", model_attribute="species.name"),
+                # field(
+                #     "species",
+                #     fields=[
+                #         "id",
+                #         "name",
+                #         "vernacular_name_nl",
+                #         "vernacular_name_en",
+                #         "vernacular_name_fr",
+                #     ],
+                # ),
                 field(
                     "dataset",
                     fields=[

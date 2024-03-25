@@ -80,5 +80,3 @@ GBIF_ALERT: dict[str, Any] = {
         "initialLon": 4.47,
     },
 }
-
-# SELENIUM_CHROMEDRIVER_VERSION = "116.0.5845.96"
