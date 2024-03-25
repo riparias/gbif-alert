@@ -1,6 +1,9 @@
 # Current (unreleased)
 
+- Fixed bug with map background (https://github.com/riparias/gbif-alert/issues/276)
 - Technical: got rid of webdriver-manager, now using the manager provided by selenium itself
+- Technical: updated all backend dependencies
+- Technical: updated the frontend dependencies
 
 # v1.7.0 (2023-11-08)
 
