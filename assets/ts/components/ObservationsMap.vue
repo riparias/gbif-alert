@@ -10,7 +10,7 @@ import {fromLonLat} from "ol/proj";
 import TileLayer from "ol/layer/Tile";
 import {VectorTile as VectorTileLayer} from "ol/layer";
 import OSM from "ol/source/OSM";
-import Stamen from "ol/source/Stamen";
+import StadiaMaps from 'ol/source/StadiaMaps.js';
 import VectorTileSource from "ol/source/VectorTile";
 import {ScaleSequential, scaleSequentialLog} from "d3-scale";
 import {interpolateReds} from "d3-scale-chromatic";
@@ -38,7 +38,7 @@ interface ObservationMapData {
   HexMinOccCount: Number;
   HexMaxOccCount: Number;
   availableBaseLayers: BaseLayerEntry[];
-  areasOverlayCollection: Collection<VectorLayer<VectorSource<Geometry>>>;
+  areasOverlayCollection: Collection<VectorLayer<VectorSource<Feature<Geometry>>>>;
   popover: Popover | null;
 }
 
@@ -137,7 +137,7 @@ export default defineComponent({
     },
   },
   computed: {
-    selectedBaseLayer: function (): TileLayer<Stamen> | TileLayer<OSM> {
+    selectedBaseLayer: function (): TileLayer<StadiaMaps> | TileLayer<OSM> {
       return this.selectedBaseLayerEntry.layer;
     },
     selectedBaseLayerEntry: function (): BaseLayerEntry {
