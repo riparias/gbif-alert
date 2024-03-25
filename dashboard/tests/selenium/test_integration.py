@@ -12,15 +12,11 @@ from django.utils import timezone
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import Keys
-from selenium.webdriver.chrome.service import Service as ChromiumService
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
-
-# from webdriver_manager.chrome import ChromeDriverManager  # type: ignore
-# from webdriver_manager.core.os_manager import ChromeType  # type: ignore
 
 
 from dashboard.models import (
