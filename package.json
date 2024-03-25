@@ -1,6 +1,6 @@
 {
   "name": "gbif-alert",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "[![Django CI](https://github.com/riparias/early-alert-webapp/actions/workflows/django_tests.yml/badge.svg)](https://github.com/riparias/early-warning-webapp/actions/workflows/django_tests.yml)",
   "main": "index.js",
   "scripts": {
