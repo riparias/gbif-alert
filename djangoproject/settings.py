@@ -197,10 +197,12 @@ MAINTENANCE_MODE_GET_CLIENT_IP_ADDRESS = None
 MAINTENANCE_MODE_IGNORE_URLS = ()
 MAINTENANCE_MODE_IGNORE_TESTS = False
 MAINTENANCE_MODE_REDIRECT_URL = None
-MAINTENANCE_MODE_TEMPLATE = "503.html"
-MAINTENANCE_MODE_GET_TEMPLATE_CONTEXT = None
+MAINTENANCE_MODE_TEMPLATE = "dashboard/503.html"
+MAINTENANCE_MODE_GET_CONTEXT = None
 MAINTENANCE_MODE_STATUS_CODE = 503
 MAINTENANCE_MODE_RETRY_AFTER = 3600
+MAINTENANCE_MODE_LOGOUT_AUTHENTICATED_USER = False
+MAINTENANCE_MODE_RESPONSE_TYPE = "html"
 
 # Logging: unfortunately for us, I am not able to override the default logging config as suggested in Django's documentation (changes are ignored)
 # This is similar to https://stackoverflow.com/questions/62334688/django-logger-not-logging-but-all-other-loggers-work

@@ -1,3 +1,7 @@
+# v1.7.3 (2024-03-26)
+
+- Fixed two bugs related to the maintenance mode: https://github.com/riparias/gbif-alert/issues/277 and https://github.com/riparias/gbif-alert/issues/278
+
 # v1.7.2 (2024-03-25)
 
 - WFS server: the (internal) species_id field is now available
