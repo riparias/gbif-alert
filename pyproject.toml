@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gbif-alert"
-version = "1.7.2"
+version = "1.7.3"
 description = "A GBIF-based early alert system"
 authors = ["Nicolas Noé <nicolas@niconoe.eu>"]
 
