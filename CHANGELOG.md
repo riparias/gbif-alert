@@ -1,3 +1,8 @@
+# Current (unreleased)
+
+- Technical: updated all backend dependencies
+- Technical: updated the frontend dependencies
+
 # v1.7.3 (2024-03-26)
 
 - Fixed two bugs related to the maintenance mode: https://github.com/riparias/gbif-alert/issues/277 and https://github.com/riparias/gbif-alert/issues/278

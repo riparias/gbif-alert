@@ -50,7 +50,7 @@ We try to frequently update dependencies. Process is:
 - Backend: `$ poetry update`
 - Frontend: `$ npm-check -u`
 - Run unit tests (+ a few manual checks?)
-- Commit changes (should include `package.json`, `package-lock.json` and `poetry lock` 
+- Commit changes (should include `package.json`, `package-lock.json` and `poetry lock`)
 
 ## Database diagram
 
