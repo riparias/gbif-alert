@@ -2,6 +2,7 @@
 
 - Technical: updated all backend dependencies
 - Technical: updated the frontend dependencies
+- API: added a new "short" mode for the observations (table) API endpoint
 
 # v1.7.3 (2024-03-26)
 

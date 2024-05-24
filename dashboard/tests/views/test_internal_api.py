@@ -323,7 +323,7 @@ class InternalApiTests(TestCase):
             gbif_dataset_key="aaa7b334-ce0d-4e88-aaae-2e0c138d049f",
         )
 
-        Observation.objects.create(
+        cls.obs1 = Observation.objects.create(
             gbif_id=1,
             occurrence_id="1",
             species=cls.first_species,
@@ -333,7 +333,7 @@ class InternalApiTests(TestCase):
             source_dataset=cls.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
-        second_obs = Observation.objects.create(
+        cls.obs2 = second_obs = Observation.objects.create(
             gbif_id=2,
             occurrence_id="2",
             species=cls.second_species,
@@ -343,7 +343,7 @@ class InternalApiTests(TestCase):
             source_dataset=cls.second_dataset,
             location=Point(4.35978, 50.64728, srid=4326),  # Lillois
         )
-        Observation.objects.create(
+        cls.obs3 = Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
             species=cls.second_species,
@@ -621,6 +621,51 @@ class InternalApiTests(TestCase):
             if r["scientificName"] == "Procambarus fallax":
                 found = True
         self.assertTrue(found)
+
+    def test_observation_json_short_results(self):
+        """Test the short results mode"""
+        base_url = reverse("dashboard:internal-api:filtered-observations-data-page")
+        response = self.client.get(f"{base_url}?limit=10&page_number=1&mode=short")
+        self.assertEqual(response.status_code, 200)
+        json_data = response.json()
+        expected = [
+            {
+                "id": self.obs1.pk,
+                "lat": 50.48940999999999,
+                "lon": 5.095129999999999,
+                "scientificName": "Procambarus fallax",
+                "speciesId": self.first_species.pk,
+                "date": "2021-09-13",
+            },
+            {
+                "id": self.obs2.pk,
+                "lat": 50.647279999999995,
+                "lon": 4.35978,
+                "scientificName": "Orconectes virilis",
+                "speciesId": self.second_species.pk,
+                "date": "2021-09-13",
+            },
+            {
+                "id": self.obs3.pk,
+                "lat": 50.647279999999995,
+                "lon": 4.35978,
+                "scientificName": "Orconectes virilis",
+                "speciesId": self.second_species.pk,
+                "date": "2021-10-08",
+            },
+        ]
+        self.assertEqual(json_data["results"], expected)
+
+    def test_observations_json_default_mode_normal(self):
+        """Explicitly asking the normal mode brings the same result as not specifying a mode"""
+        base_url = reverse("dashboard:internal-api:filtered-observations-data-page")
+        response_normal = self.client.get(f"{base_url}?limit=10&page_number=1")
+        response_no_mode = self.client.get(
+            f"{base_url}?limit=10&page_number=1&mode=normal"
+        )
+        self.assertEqual(response_normal.status_code, 200)
+        self.assertEqual(response_no_mode.status_code, 200)
+        self.assertEqual(response_normal.json(), response_no_mode.json())
 
     def test_observations_json_ordering_pk(self):
         base_url = reverse("dashboard:internal-api:filtered-observations-data-page")

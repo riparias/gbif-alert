@@ -493,6 +493,19 @@ class Observation(models.Model):
 
         return d
 
+    def as_short_dict(self) -> dict[str, Any]:
+        """Returns a short representation of the model as a dict"""
+        lon, lat = self.lonlat_4326_tuple
+
+        return {
+            "id": self.pk,
+            "lat": lat,
+            "lon": lon,
+            "scientificName": self.species.name,
+            "speciesId": self.species.pk,
+            "date": str(self.date),
+        }
+
 
 class ObservationComment(models.Model):
     """ " A comment on an observation, left by an authenticated visitor"""

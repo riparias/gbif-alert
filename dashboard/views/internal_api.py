@@ -103,10 +103,11 @@ def filtered_observations_data_page_json(request: HttpRequest) -> JsonResponse:
     parameters:
     - filters: same format than other endpoints: getting observations, map tiles, ...
     - order: optional, observations order (passed to QuerySet.order_by)
+    - mode: "normal" | "short". Defaults to normal. If short, only the most important fields are returned
     - limit: number of observations per page
     - page_number: requested page number
 
-    response example:
+    response example (normal mode):
 
     {
       "results": [
@@ -160,6 +161,7 @@ def filtered_observations_data_page_json(request: HttpRequest) -> JsonResponse:
 
     order = request.GET.get("order")
     limit = extract_int_request(request, "limit")
+    mode = request.GET.get("mode", "normal")
     if limit is None:
         limit = 50
     page_number = extract_int_request(request, "page_number")
@@ -172,9 +174,14 @@ def filtered_observations_data_page_json(request: HttpRequest) -> JsonResponse:
 
     page = paginator.get_page(page_number)
 
+    if mode == "normal":
+        results = [obs.as_dict(for_user=request.user) for obs in page.object_list]
+    elif mode == "short":
+        results = [obs.as_short_dict() for obs in page.object_list]
+
     return JsonResponse(
         {
-            "results": [obs.as_dict(for_user=request.user) for obs in page.object_list],
+            "results": results,
             "pageNumber": page.number,  # Number of the current page
             "firstPage": page.paginator.page_range.start,
             # page_range is a python range, (last element not included!)
