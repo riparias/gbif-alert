@@ -1,4 +1,4 @@
-# Current (unreleased)
+# v1.7.4 (2024-05-24)
 
 - Technical: updated all backend dependencies
 - Technical: updated the frontend dependencies
