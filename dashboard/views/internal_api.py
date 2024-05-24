@@ -16,7 +16,6 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.core.paginator import Paginator
 from django.core.serializers import serialize
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
@@ -85,110 +84,6 @@ def datasets_list_json(_) -> JsonResponse:
     Order: undetermined
     """
     return model_to_json_list(Dataset)
-
-
-def filtered_observations_counter_json(request: HttpRequest) -> JsonResponse:
-    """Count the observations according to the filters received
-
-    parameters:
-    - filters: same format than other endpoints: getting observations, map tiles, ...
-    """
-    qs = filtered_observations_from_request(request)
-    return JsonResponse({"count": qs.count()})
-
-
-def filtered_observations_data_page_json(request: HttpRequest) -> JsonResponse:
-    """Main endpoint to get paginated observations (data tables, ...)
-
-    parameters:
-    - filters: same format than other endpoints: getting observations, map tiles, ...
-    - order: optional, observations order (passed to QuerySet.order_by)
-    - mode: "normal" | "short". Defaults to normal. If short, only the most important fields are returned
-    - limit: number of observations per page
-    - page_number: requested page number
-
-    response example (normal mode):
-
-    {
-      "results": [
-        {
-          "id": 1130128,
-          "stableId": "58b86259157a6c9bd98f6fc8025bc51a796fdf7d",
-          "gbifId": "4399020308",
-          "lat": 50.62886099999997,
-          "lon": 4.453551,
-          "scientificName": "Vespa Velutina",
-          "vernacularName": "",
-          "datasetName": "DEMNA-DNE : Early warning system on Introduced Species in Wallonia",
-          "date": "2023-08-21",
-          "seenByCurrentUser": false
-        },
-        {
-          "id": 1130129,
-          "stableId": "c3356897d006583b8f22a3c5c655a54a348079d7",
-          "gbifId": "4399020310",
-          "lat": 50.61108599999998,
-          "lon": 5.579655,
-          "scientificName": "Vespa Velutina",
-          "vernacularName": "",
-          "datasetName": "DEMNA-DNE : Early warning system on Introduced Species in Wallonia",
-          "date": "2023-08-21",
-          "seenByCurrentUser": false
-        },
-        {
-          "id": 1130144,
-          "stableId": "873fb841920d13d9d55f1714bdccb7fa518c28e7",
-          "gbifId": "4399020302",
-          "lat": 50.667837999999996,
-          "lon": 5.471714,
-          "scientificName": "Vespa Velutina",
-          "vernacularName": "",
-          "datasetName": "DEMNA-DNE : Early warning system on Introduced Species in Wallonia",
-          "date": "2023-08-21",
-          "seenByCurrentUser": false
-        }
-      ],
-      "pageNumber": 1,
-      "firstPage": 1,
-      "lastPage": 44436,
-      "totalResultsCount": 133306
-    }
-
-    Notes:
-        - If the page number is negative or greater than the number of pages, it returns the last page.
-        - If no results are returned because of the filtering: totalResultsCount == 0 and results == []
-    """
-
-    order = request.GET.get("order")
-    limit = extract_int_request(request, "limit")
-    mode = request.GET.get("mode", "normal")
-    if limit is None:
-        limit = 50
-    page_number = extract_int_request(request, "page_number")
-
-    observations = filtered_observations_from_request(request)
-    if order is not None:
-        observations = observations.order_by(order)
-
-    paginator = Paginator(observations, limit)
-
-    page = paginator.get_page(page_number)
-
-    if mode == "normal":
-        results = [obs.as_dict(for_user=request.user) for obs in page.object_list]
-    elif mode == "short":
-        results = [obs.as_short_dict() for obs in page.object_list]
-
-    return JsonResponse(
-        {
-            "results": results,
-            "pageNumber": page.number,  # Number of the current page
-            "firstPage": page.paginator.page_range.start,
-            # page_range is a python range, (last element not included!)
-            "lastPage": page.paginator.page_range.stop - 1,
-            "totalResultsCount": page.paginator.count,
-        }
-    )
 
 
 def filtered_observations_monthly_histogram_json(request: HttpRequest):

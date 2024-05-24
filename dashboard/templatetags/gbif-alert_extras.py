@@ -70,10 +70,10 @@ def js_config_object(context):
                 "dashboard:internal-api:dataimports-list-json"
             ),
             "observationsCounterUrl": reverse(
-                "dashboard:internal-api:filtered-observations-counter"
+                "dashboard:public-api:filtered-observations-counter"
             ),
             "observationsJsonUrl": reverse(
-                "dashboard:internal-api:filtered-observations-data-page"
+                "dashboard:public-api:filtered-observations-data-page"
             ),
             "markObservationsAsSeenUrl": reverse(
                 "dashboard:internal-api:filtered-observations-mark-as-seen"

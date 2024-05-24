@@ -51,6 +51,16 @@ public_api_urls = [
     path(
         "wfs/observations", views.ObservationsWFSView.as_view(), name="wfs-observations"
     ),
+    path(
+        "filtered-observations/counter",
+        views.filtered_observations_counter_json,
+        name="filtered-observations-counter",
+    ),
+    path(
+        "filtered-observations/data_page",
+        views.filtered_observations_data_page_json,
+        name="filtered-observations-data-page",
+    ),
 ]
 
 internal_api_urls = [
@@ -70,16 +80,6 @@ internal_api_urls = [
     path("suggest-alert-name", views.suggest_alert_name, name="suggest-alert-name"),
     path("data-imports", views.dataimports_list_json, name="dataimports-list-json"),
     path("datasets", views.datasets_list_json, name="datasets-list-json"),
-    path(
-        "filtered-observations/counter",
-        views.filtered_observations_counter_json,
-        name="filtered-observations-counter",
-    ),
-    path(
-        "filtered-observations/data_page",
-        views.filtered_observations_data_page_json,
-        name="filtered-observations-data-page",
-    ),
     path(
         "filtered-observations/mark_as_seen",
         views.filtered_observations_mark_as_seen,
