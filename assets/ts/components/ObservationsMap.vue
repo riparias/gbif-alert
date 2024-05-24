@@ -24,7 +24,6 @@ import VectorSource from "ol/source/Vector";
 import {filtersToQuerystring, legibleColor} from "../helpers";
 import LayerGroup from "ol/layer/Group";
 import VectorLayer from "ol/layer/Vector";
-import {Geometry} from "ol/geom";
 import BaseLayer from "ol/layer/Base";
 import {baseLayers} from "../map_config";
 import {Popover} from "bootstrap";
@@ -32,13 +31,13 @@ import {StyleFunction} from "ol/style/Style";
 
 interface ObservationMapData {
   map: Map | null;
-  aggregatedDataLayer: VectorTileLayer | null;
-  simpleDataLayer: VectorTileLayer | null;
+  aggregatedDataLayer: VectorTileLayer<Feature> | null;
+  simpleDataLayer: VectorTileLayer<Feature> | null;
   popup: Overlay;
   HexMinOccCount: Number;
   HexMaxOccCount: Number;
   availableBaseLayers: BaseLayerEntry[];
-  areasOverlayCollection: Collection<VectorLayer<VectorSource<Feature<Geometry>>>>;
+  areasOverlayCollection: Collection<VectorLayer<Feature>>;
   popover: Popover | null;
 }
 
@@ -232,23 +231,23 @@ export default defineComponent({
     replaceSimpleDataLayer: function (): void {
       if (this.map) {
         if (this.simpleDataLayer) {
-          this.map.removeLayer(this.simpleDataLayer as VectorTileLayer);
+          this.map.removeLayer(this.simpleDataLayer as VectorTileLayer<Feature>);
         }
         this.simpleDataLayer = this.createSimpleDataLayer();
-        this.map.addLayer(this.simpleDataLayer as VectorTileLayer);
+        this.map.addLayer(this.simpleDataLayer as VectorTileLayer<Feature>);
       }
     },
     replaceAggregatedDataLayer: function (): void {
       if (this.map) {
         if (this.aggregatedDataLayer) {
-          this.map.removeLayer(this.aggregatedDataLayer as VectorTileLayer);
+          this.map.removeLayer(this.aggregatedDataLayer as VectorTileLayer<Feature>);
         }
         this.loadOccMinMax(this.initialPosition.initialZoom, this.filters);
         this.aggregatedDataLayer = this.createAggregatedDataLayer();
-        this.map.addLayer(this.aggregatedDataLayer as VectorTileLayer);
+        this.map.addLayer(this.aggregatedDataLayer as VectorTileLayer<Feature>);
       }
     },
-    createSimpleDataLayer: function (): VectorTileLayer {
+    createSimpleDataLayer: function (): VectorTileLayer<Feature> {
       return new VectorTileLayer({
         source: new VectorTileSource({
           format: new MVT(),
@@ -267,7 +266,7 @@ export default defineComponent({
         minZoom: this.layerSwitchZoomLevel,
       });
     },
-    createAggregatedDataLayer: function (): VectorTileLayer {
+    createAggregatedDataLayer: function (): VectorTileLayer<Feature> {
       return new VectorTileLayer({
         source: new VectorTileSource({
           format: new MVT(),
