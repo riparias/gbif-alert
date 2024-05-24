@@ -63,7 +63,7 @@ We use a hybrid approach such as described in https://www.saaspegasus.com/guides
 
 - npm is used to manage JS dependencies (**npm install** should be run once)
 - **During development**, run `npm run webpack-dev` so Webpack constantly watches our source frontend (in `./assets`) and create bundles (in `./static`)
-- **When deploying**, use `npm run webpack prod` instead (smaller bundle size + one single copy - rather than watching files)
+- **When deploying**, use `npm run webpack-prod` instead (smaller bundle size + one single copy - rather than watching files)
 
 ## Code formatting
 

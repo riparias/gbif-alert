@@ -106,7 +106,7 @@ class CustomXsdElementDataSetGBIFKey(XSDElementForceStringType):
 class ObservationsWFSView(WFSView):
     feature_types = [
         FeatureType(
-            Observation.objects.filter(),
+            Observation.objects.all(),
             fields=[
                 "location",
                 "gbif_id",
