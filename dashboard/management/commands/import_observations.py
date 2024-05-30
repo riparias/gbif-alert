@@ -1,8 +1,8 @@
 import argparse
 import datetime
+import os
 import tempfile
 import time
-from typing import Literal
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
@@ -269,9 +269,10 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"{time.ctime()}: Triggering a GBIF download and waiting for it - this can be long..."
             )
-            tmp_file = tempfile.NamedTemporaryFile()
+            tmp_file = tempfile.NamedTemporaryFile(delete=False)
             source_data_path = tmp_file.name
-            # This might takes several minutes...
+            tmp_file.close()
+            # This might take several minutes...
             gbif_predicate = settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"][
                 "PREDICATE_BUILDER"
             ](Species.objects.all())
@@ -379,6 +380,8 @@ class Command(BaseCommand):
             # 6. Finalize the DataImport object
             self.stdout.write(f"{time.ctime()}: Updating the DataImport object")
             current_data_import.complete()
+            if options["source_dwca"] is None:
+                os.unlink(source_data_path)
             self.stdout.write("Done.")
 
         self.stdout.write(f"{time.ctime()}: Leaving maintenance mode.")
