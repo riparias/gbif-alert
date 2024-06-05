@@ -97,21 +97,19 @@ class ObservationTests(TestCase):
             self.second_obs.as_dict(for_user=self.comment_author)["seenByCurrentUser"]
         )
 
-    def test_first_seen_at_case_1(self):
-        """Observation.first_seen_at() works as expected when the observation has been seen"""
-        now = timezone.now()
-        timestamp = self.obs.first_seen_at(user=self.comment_author)
+    def test_already_seen_by_case_1(self):
+        """Observation.already_seen_by() works as expected when the observation has been seen"""
 
-        self.assertLess(now - timestamp, datetime.timedelta(minutes=1))
+        self.assertTrue(self.obs.already_seen_by(user=self.comment_author))
 
-    def test_first_seen_at_case_2(self):
-        """Observation.first_seen_at() returns None if an observation has not been seen"""
-        self.assertIsNone(self.second_obs.first_seen_at(user=self.comment_author))
+    def test_already_seen_by_case_2(self):
+        """Observation.already_seen_by returns False if an observation has not been seen"""
+        self.assertFalse(self.second_obs.already_seen_by(user=self.comment_author))
 
-    def test_first_seen_at_case_3(self):
-        """Observation.first_seen_at() returns None for anonymous users"""
-        self.assertIsNone(self.obs.first_seen_at(user=AnonymousUser()))
-        self.assertIsNone(self.second_obs.first_seen_at(user=AnonymousUser()))
+    def test_already_seen_by_case_3(self):
+        """Observation.already_seen_by() returns None for anonymous users"""
+        self.assertIsNone(self.obs.already_seen_by(user=AnonymousUser()))
+        self.assertIsNone(self.second_obs.already_seen_by(user=AnonymousUser()))
 
     def test_mark_as_seen_by_case_1(self):
         """Standard case: we mark a previously unseen observation by a regular user"""

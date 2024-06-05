@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-28 10:13+0200\n"
+"POT-Creation-Date: 2024-06-05 13:44+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -58,31 +58,31 @@ msgstr "Langue"
 msgid "This language will be used for emails."
 msgstr ""
 
-#: dashboard/models.py:630
+#: dashboard/models.py:643
 msgid "No emails"
 msgstr "Pas d'emails"
 
-#: dashboard/models.py:631
+#: dashboard/models.py:644
 msgid "Daily"
 msgstr "Journalier"
 
-#: dashboard/models.py:632
+#: dashboard/models.py:645
 msgid "Weekly"
 msgstr "Hebdomadaire"
 
-#: dashboard/models.py:633
+#: dashboard/models.py:646
 msgid "Monthly"
 msgstr "Mensuel"
 
-#: dashboard/models.py:644
+#: dashboard/models.py:657
 msgid "name"
 msgstr "nom"
 
-#: dashboard/models.py:648
+#: dashboard/models.py:661
 msgid "species"
 msgstr "espèces"
 
-#: dashboard/models.py:651
+#: dashboard/models.py:664
 msgid ""
 "To select multiple items, press and hold the Ctrl or Command key and click "
 "the items."
@@ -90,11 +90,11 @@ msgstr ""
 "Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:657
+#: dashboard/models.py:670
 msgid "datasets"
 msgstr "jeux de données"
 
-#: dashboard/models.py:660
+#: dashboard/models.py:673
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
@@ -103,11 +103,11 @@ msgstr ""
 "Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:667
+#: dashboard/models.py:680
 msgid "areas"
 msgstr "zones"
 
-#: dashboard/models.py:669
+#: dashboard/models.py:682
 msgid ""
 "Optional (no selection = notify me for all data in the system). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
@@ -116,15 +116,15 @@ msgstr ""
 "système). Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou "
 "'pomme / command' enfoncée "
 
-#: dashboard/models.py:678
+#: dashboard/models.py:691
 msgid "email notifications frequency"
 msgstr "fréquence des notifications par email"
 
-#: dashboard/models.py:791
+#: dashboard/models.py:804
 msgid "unseen observation(s) for your alert"
 msgstr "observation(s) non vue(s) pour votre alerte"
 
-#: dashboard/templates/503.html:7
+#: dashboard/templates/dashboard/503.html:7
 msgid "In maintenance"
 msgstr "Maintenance en cours"
 
@@ -324,7 +324,15 @@ msgstr "Modifier une alerte"
 msgid "Home"
 msgstr "Accueil"
 
-#: dashboard/templates/dashboard/observation_details.html:46
+#: dashboard/templates/dashboard/observation_details.html:23
+msgid "You have already seen this observation in the past"
+msgstr "Vous avez déjà vu cette observation dans le passé"
+
+#: dashboard/templates/dashboard/observation_details.html:29
+msgid "Mark this observation as unseen"
+msgstr "Marquer cette observation comme non vue"
+
+#: dashboard/templates/dashboard/observation_details.html:45
 msgid "Species"
 msgstr "Espèce"
 
@@ -522,7 +530,7 @@ msgid "The area could not be deleted because it has alerts associated with it."
 msgstr ""
 "Cette zone ne peut pas être supprimée car elle est associée à des alertes."
 
-#: dashboard/views/internal_api.py:260
+#: dashboard/views/internal_api.py:162
 msgid "At least one species must be selected"
 msgstr "Au moins une espèce doit être sélectionnée"
 

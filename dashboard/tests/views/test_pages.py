@@ -696,11 +696,8 @@ class WebPagesTests(TestCase):
         self.assertNotContains(response, "You have first seen this observation on")
         self.assertNotContains(response, "Mark this observation as unseen")
 
-    def test_observation_details_observation_view_authenticated_case_1(self):
-        """Visiting the observation_details page while logged in: there's a first seen timestamp, and a button to mark as unseen
-
-        In this case, this is the first time we see the observation, so the timestamp is very recent
-        """
+    def test_observation_details_observation_view_authenticated(self):
+        """Visiting the observation_details page while logged in: there's a button to mark as unseen"""
         self.client.login(username="frusciante", password="12345")
         obs_stable_id = self.first_obs.stable_id
 
@@ -710,28 +707,4 @@ class WebPagesTests(TestCase):
         )
 
         response = self.client.get(page_url)
-        self.assertContains(response, "You have first seen this observation on")
         self.assertContains(response, "Mark this observation as unseen")
-        timestamp = response.context["first_seen_by_user_timestamp"]
-        self.assertLess(timezone.now() - timestamp, datetime.timedelta(minutes=1))
-
-    def test_observation_details_observation_view_authenticated_case_2(self):
-        """Visiting the observation_details page while logged in: there's a first seen timestamp, and a button to mark as unseen
-
-        In this case, the user show a previously seen observation: timestamp is older
-        """
-        self.client.login(username="frusciante", password="12345")
-        obs_stable_id = self.second_obs.stable_id
-
-        page_url = reverse(
-            "dashboard:pages:observation-details",
-            kwargs={"stable_id": obs_stable_id},
-        )
-
-        response = self.client.get(page_url)
-        self.assertContains(response, "You have first seen this observation on")
-        self.assertContains(response, "Mark this observation as unseen")
-        timestamp = response.context["first_seen_by_user_timestamp"]
-        self.assertEqual(timestamp.year, 2018)
-        self.assertEqual(timestamp.month, 4)
-        self.assertEqual(timestamp.day, 4)

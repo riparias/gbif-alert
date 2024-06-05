@@ -326,19 +326,12 @@ class Observation(models.Model):
             except ObservationView.DoesNotExist:
                 ObservationView.objects.create(observation=self, user=user)
 
-    def first_seen_at(self, user: WebsiteUser) -> datetime.datetime | None:
-        """Return the time a user as first seen this observation
-
-        Returns none if the user is not logged in, or if they have not seen the observation yet
-        """
-
-        # We want to check if user is not anonymous, but apparently is_authenticated is the preferred method
+    def already_seen_by(self, user: WebsiteUser) -> bool | None:
+        """Return True if the observation has already been seen by the user"""
         if user.is_authenticated:
-            try:
-                return self.observationview_set.get(user=user).timestamp
-            except ObservationView.DoesNotExist:
-                return None
-        return None
+            return self.observationview_set.filter(user=user).exists()
+        else:
+            return None
 
     def mark_as_unseen_by(self, user: WebsiteUser) -> bool:
         """Mark the observation as "unseen" for a given user.

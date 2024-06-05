@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-28 10:13+0200\n"
+"POT-Creation-Date: 2024-06-05 13:44+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -58,67 +58,72 @@ msgstr "Taal"
 msgid "This language will be used for emails."
 msgstr "Deze taal zal gebruikt worden voor emails."
 
-#: dashboard/models.py:630
+#: dashboard/models.py:643
 msgid "No emails"
 msgstr "Geen emails"
 
-#: dashboard/models.py:631
+#: dashboard/models.py:644
 msgid "Daily"
 msgstr "Dagelijks"
 
-#: dashboard/models.py:632
+#: dashboard/models.py:645
 msgid "Weekly"
 msgstr "Wekelijks"
 
-#: dashboard/models.py:633
+#: dashboard/models.py:646
 msgid "Monthly"
 msgstr "Maandelijks"
 
-#: dashboard/models.py:644
+#: dashboard/models.py:657
 msgid "name"
 msgstr "naam"
 
-#: dashboard/models.py:648
-#| msgid "Species"
+#: dashboard/models.py:661
 msgid "species"
 msgstr "soort"
 
-#: dashboard/models.py:651
+#: dashboard/models.py:664
 msgid ""
 "To select multiple items, press and hold the Ctrl or Command key and click "
 "the items."
-msgstr "Om meerdere items te selecteren, druk op de Ctrl of Command toets en klik "
-"de items."
+msgstr ""
+"Om meerdere items te selecteren, druk op de Ctrl of Command toets en klik de "
+"items."
 
-#: dashboard/models.py:657
+#: dashboard/models.py:670
 msgid "datasets"
 msgstr "datasets"
 
-#: dashboard/models.py:660
+#: dashboard/models.py:673
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
-msgstr "Optioneel (geen selectie = notificaties voor alle datasets). Om meerdere items te selecteren, druk op de Ctrl of Command toets en klik de items."
+msgstr ""
+"Optioneel (geen selectie = notificaties voor alle datasets). Om meerdere "
+"items te selecteren, druk op de Ctrl of Command toets en klik de items."
 
-#: dashboard/models.py:667
+#: dashboard/models.py:680
 msgid "areas"
 msgstr "gebieden"
 
-#: dashboard/models.py:669
+#: dashboard/models.py:682
 msgid ""
 "Optional (no selection = notify me for all data in the system). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
-msgstr "Optioneel (geen selectie = notificaties voor alle data in het systeem). Om meerdere items te selecteren, druk op de Ctrl of Command toets en klik de items."
+msgstr ""
+"Optioneel (geen selectie = notificaties voor alle data in het systeem). Om "
+"meerdere items te selecteren, druk op de Ctrl of Command toets en klik de "
+"items."
 
-#: dashboard/models.py:678
+#: dashboard/models.py:691
 msgid "email notifications frequency"
 msgstr "frequentie email notificaties"
 
-#: dashboard/models.py:791
+#: dashboard/models.py:804
 msgid "unseen observation(s) for your alert"
 msgstr "niet bekeken waarneming(en) voor je waarschuwing"
 
-#: dashboard/templates/503.html:7
+#: dashboard/templates/dashboard/503.html:7
 msgid "In maintenance"
 msgstr "In beheer"
 
@@ -187,7 +192,8 @@ msgstr "Nieuwe waarnemingen in deze import"
 #: dashboard/templates/dashboard/_data_import.html:25
 #, python-format
 msgid "Skipped observations in <a href=\"%(gbif_url)s\">GBIF download</a>"
-msgstr "Overgeslagen waarnemingen in <a href=\"%(gbif_url)s\">GBIF download</a>"
+msgstr ""
+"Overgeslagen waarnemingen in <a href=\"%(gbif_url)s\">GBIF download</a>"
 
 #: dashboard/templates/dashboard/_data_import.html:31
 msgid "GBIF predicate"
@@ -201,7 +207,8 @@ msgstr "Laatste gegevens import:"
 msgid ""
 "This site is powered by <a href=\"https://github.com/riparias/gbif-"
 "alert\">GBIF Alert</a> version"
-msgstr "Deze site wordt aangedreven door <a href=\"https://github.com/riparias/gbif-"
+msgstr ""
+"Deze site wordt aangedreven door <a href=\"https://github.com/riparias/gbif-"
 "alert\">GBIF Alert</a> versie"
 
 #: dashboard/templates/dashboard/_navbar.html:12
@@ -278,13 +285,17 @@ msgstr "Gegevens import"
 msgid ""
 "The data (observations) shown in this application is frequently and "
 "automatically refreshed from <a href=\"https://www.gbif.org\">GBIF</a>."
-msgstr "De data (waarnemingen) in deze applicatie worden frequent en automatisch vernieuwd vanuit <a href=\"https://www.gbif.org\">GBIF</a>."
+msgstr ""
+"De data (waarnemingen) in deze applicatie worden frequent en automatisch "
+"vernieuwd vanuit <a href=\"https://www.gbif.org\">GBIF</a>."
 
 #: dashboard/templates/dashboard/about_data.html:22
 msgid ""
 "The following data import was performed to populate the data currently "
 "visible in the application:"
-msgstr "De huidig beschikbare data in de applicatie zijn gebaseerd op deze gegevensimport:"
+msgstr ""
+"De huidig beschikbare data in de applicatie zijn gebaseerd op deze "
+"gegevensimport:"
 
 #: dashboard/templates/dashboard/about_data.html:28
 msgid "Show all data imports"
@@ -312,7 +323,17 @@ msgstr "Wijzig waarschuwing"
 msgid "Home"
 msgstr "Home"
 
-#: dashboard/templates/dashboard/observation_details.html:46
+#: dashboard/templates/dashboard/observation_details.html:23
+msgid "You have already seen this observation in the past"
+msgstr ""
+
+#: dashboard/templates/dashboard/observation_details.html:29
+#, fuzzy
+#| msgid "Matching observations"
+msgid "Mark this observation as unseen"
+msgstr "Overeenkomende waarnemingen"
+
+#: dashboard/templates/dashboard/observation_details.html:45
 msgid "Species"
 msgstr "Soort"
 
@@ -341,7 +362,9 @@ msgstr "Paswoord vergeten?"
 msgid ""
 "Enter your email address below, and we'll email instructions for setting a "
 "new one."
-msgstr "Vul hieronder uw e-mailadres in, en we sturen u instructies om een nieuw paswoord in te stellen."
+msgstr ""
+"Vul hieronder uw e-mailadres in, en we sturen u instructies om een nieuw "
+"paswoord in te stellen."
 
 #: dashboard/templates/dashboard/password_reset.html:21
 msgid "Send me instructions!"
@@ -361,7 +384,8 @@ msgid ""
 "                    "
 msgstr ""
 "\n"
-"                        Uw nieuw paswoord is ingesteld. U kunt nu <a href=\"%(signin_url)s\">inloggen</a>."
+"                        Uw nieuw paswoord is ingesteld. U kunt nu <a "
+"href=\"%(signin_url)s\">inloggen</a>."
 
 #: dashboard/templates/dashboard/password_reset_confirm.html:7
 msgid "Reset your password"
@@ -375,7 +399,9 @@ msgstr "Nieuw paswoord instellen!"
 msgid ""
 "The password reset link was invalid, possibly because it has already been "
 "used. Please request a new password reset."
-msgstr "De reset paswoord link is ongeldig, mogelijk omdat deze al gebruikt is. Vraag een nieuwe reset aan."
+msgstr ""
+"De reset paswoord link is ongeldig, mogelijk omdat deze al gebruikt is. "
+"Vraag een nieuwe reset aan."
 
 #: dashboard/templates/dashboard/password_reset_done.html:6
 msgid "Instructions sent"
@@ -389,7 +415,9 @@ msgstr "Controleer uw inbox."
 msgid ""
 "We've emailed you instructions for setting your password. You should receive "
 "the email shortly!"
-msgstr "We hebben u instructies gemaild om uw paswoord in te stellen. U zou de email binnenkort moeten ontvangen!"
+msgstr ""
+"We hebben u instructies gemaild om uw paswoord in te stellen. U zou de email "
+"binnenkort moeten ontvangen!"
 
 #: dashboard/templates/dashboard/signin.html:16
 msgid "Your username and password didn't match. Please try again."
@@ -399,7 +427,9 @@ msgstr "Uw gebruikersnaam en paswoord komen niet overeen. Probeer opnieuw."
 msgid ""
 "Your account doesn't have access to this page. To proceed, please sign in "
 "with an account that has access."
-msgstr "Uw account heeft geen toegang tot deze pagina. Log in met een account dat wel toegang heeft."
+msgstr ""
+"Uw account heeft geen toegang tot deze pagina. Log in met een account dat "
+"wel toegang heeft."
 
 #: dashboard/templates/dashboard/signin.html:23
 msgid "Please sign in to see this page."
@@ -454,10 +484,10 @@ msgstr ""
 "org/wiki/GeoPackage\">GeoPackage</a></b> (er bestaan veel externe tools om "
 "andere bestandsformaten om te zetten naar GeoPackages)</li>\n"
 "                        <li>het moet een <b>single layer</b> bevatten </li>\n"
-"                        <li>het moet een <b>single feature</b> bevatten"
-"van het type <b>polygon</b> of <b>multipolygon</b></li>\n"
-"                        <li>het GeoPackage moet een geldig coördinaten"
-"referentiesysteem bevatten</li>\n"
+"                        <li>het moet een <b>single feature</b> bevattenvan "
+"het type <b>polygon</b> of <b>multipolygon</b></li>\n"
+"                        <li>het GeoPackage moet een geldig "
+"coördinatenreferentiesysteem bevatten</li>\n"
 "                    </ul>\n"
 "                    "
 
@@ -499,9 +529,11 @@ msgstr "Het gebied is verwijderd."
 
 #: dashboard/views/actions.py:70
 msgid "The area could not be deleted because it has alerts associated with it."
-msgstr "Het gebied kan niet verwijderd worden omdat er waarschuwingen aan gekoppeld zijn."
+msgstr ""
+"Het gebied kan niet verwijderd worden omdat er waarschuwingen aan gekoppeld "
+"zijn."
 
-#: dashboard/views/internal_api.py:260
+#: dashboard/views/internal_api.py:162
 msgid "At least one species must be selected"
 msgstr "Ten minste één soort moet geselecteerd zijn"
 
