@@ -617,6 +617,24 @@ class ObservationView(models.Model):
         ]
 
 
+class ObservationUnseen(models.Model):
+    """
+    To replace the ObservationView model, but with reversed logic: we store unseen
+    observations instead of seen ones
+
+    Hopefully this will solve some scaling issues will have, since we have options to
+    keep the number of unseen observations relatively low
+    """
+
+    observation = models.ForeignKey(Observation, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = [
+            ("observation", "user"),
+        ]
+
+
 class Alert(models.Model):
     """The per-user configured alerts
 
