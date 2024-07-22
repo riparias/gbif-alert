@@ -18,4 +18,8 @@ class Migration(migrations.Migration):
         ("dashboard", "0018_observationunseen"),
     ]
 
-    operations = [migrations.RunPython(migrate_obs_views_new_mechanism)]
+    operations = [
+        migrations.RunPython(
+            migrate_obs_views_new_mechanism, reverse_code=migrations.RunPython.noop
+        )
+    ]
