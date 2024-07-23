@@ -249,6 +249,10 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
                         {% if area_ids %}
                         ,(SELECT mpoly FROM $areas_table_name WHERE $areas_table_name.id IN {{ area_ids | inclause }}) AS areas
                         {% endif %}
+                        {% if status == 'seen' %}
+                            INNER JOIN $observationview_table_name
+                            ON obs.id = $observationview_table_name.observation_id
+                        {% endif %}
                     WHERE (
                         $where_clause
                     )      
@@ -260,6 +264,7 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
             ).substitute(
                 hex_size_meters=settings.ZOOM_TO_HEX_SIZE[zoom],
                 areas_table_name=AREAS_TABLE_NAME,
+                observationview_table_name=OBSERVATIONVIEWS_TABLE_NAME,
                 where_clause=WHERE_CLAUSE,
             )
         )
