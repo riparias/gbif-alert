@@ -5,4 +5,4 @@ from dashboard.models import Species
 
 @register(Species)
 class SpeciesTranslationOptions(TranslationOptions):
-    fields = ("vernacular_name",)
+    fields = ("vernacular_name",)  # type: ignore

@@ -277,15 +277,15 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
         }
 
         if status_for_user and request.user.is_authenticated:
-            sql_params["status"] = status_for_user
-            sql_params["user_id"] = request.user.pk
+            sql_params["status"] = status_for_user  # type: ignore
+            sql_params["user_id"] = request.user.pk  # type: ignore
 
         if start_date:
-            sql_params["start_date"] = start_date.strftime(
+            sql_params["start_date"] = start_date.strftime(  # type: ignore
                 DB_DATE_EXCHANGE_FORMAT_PYTHON
             )
         if end_date:
-            sql_params["end_date"] = end_date.strftime(DB_DATE_EXCHANGE_FORMAT_PYTHON)
+            sql_params["end_date"] = end_date.strftime(DB_DATE_EXCHANGE_FORMAT_PYTHON)  # type: ignore
 
         j = JinjaSql()
         query, bind_params = j.prepare_query(sql_template, sql_params)
