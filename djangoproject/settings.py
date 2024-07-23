@@ -271,3 +271,30 @@ MARKDOWNX_MARKDOWN_EXTENSIONS = ["markdown.extensions.toc"]
 TAGGIT_CASE_INSENSITIVE = True
 
 SELENIUM_HEADLESS_MODE = True
+
+# Hexagon size (in meters) according to the zoom level. Adjust ZOOM_TO_HEX_SIZE_MULTIPLIER to simultaneously configure
+# all zoom levels
+
+ZOOM_TO_HEX_SIZE_MULTIPLIER = 2
+ZOOM_TO_HEX_SIZE_BASELINE = {
+    0: 640000,
+    1: 320000,
+    2: 160000,
+    3: 80000,
+    4: 40000,
+    5: 20000,
+    6: 10000,
+    7: 5000,
+    8: 2500,
+    9: 1250,
+    10: 675,
+    11: 335,
+    12: 160,
+    13: 80,
+    14: 80,
+    # At higher zoom levels, the map shows the individual points
+}
+ZOOM_TO_HEX_SIZE = {
+    key: value * ZOOM_TO_HEX_SIZE_MULTIPLIER
+    for key, value in ZOOM_TO_HEX_SIZE_BASELINE.items()
+}
