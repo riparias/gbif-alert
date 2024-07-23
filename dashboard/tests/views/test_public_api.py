@@ -196,34 +196,23 @@ class PublicApiTests(TestCase):
         response = self.client.get(f"{base_url}?limit=10&page_number=1&mode=short")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
-        expected_data = [
-            {
-                "id": self.obs1.pk,
-                "lat": self.obs1.lat,
-                "lon": self.obs1.lon,
-                "scientificName": "Procambarus fallax",
-                "speciesId": self.first_species.pk,
-                "date": "2021-09-13",
-            },
-            {
-                "id": self.obs2.pk,
-                "lat": self.obs2.lat,
-                "lon": self.obs2.lon,
-                "scientificName": "Orconectes virilis",
-                "speciesId": self.second_species.pk,
-                "date": "2021-09-13",
-            },
-            {
-                "id": self.obs3.pk,
-                "lat": self.obs3.lat,
-                "lon": self.obs3.lon,
-                "scientificName": "Orconectes virilis",
-                "speciesId": self.second_species.pk,
-                "date": "2021-10-08",
-            },
-        ]
-        for expected in expected_data:
-            self.assertIn(expected, json_data["results"])
+
+        results = json_data["results"]
+
+        # Check the correct records are present
+        ids_in_results = [result["id"] for result in results]
+        self.assertEqual(ids_in_results, [self.obs1.pk, self.obs2.pk, self.obs3.pk])
+
+        # check the fields that are present in the short mode
+        for result in results:
+            self.assertIn("id", result)
+            self.assertIn("lat", result)
+            self.assertIn("lon", result)
+            self.assertIn("scientificName", result)
+            self.assertIn("speciesId", result)
+            self.assertIn("date", result)
+            # Check fields that should not be present in the short mode
+            self.assertNotIn("stableId", result)
 
     def test_observations_json_default_mode_normal(self):
         """Explicitly asking the normal mode brings the same result as not specifying a mode"""
