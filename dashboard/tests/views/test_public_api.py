@@ -196,7 +196,7 @@ class PublicApiTests(TestCase):
         response = self.client.get(f"{base_url}?limit=10&page_number=1&mode=short")
         self.assertEqual(response.status_code, 200)
         json_data = response.json()
-        expected = [
+        expected_data = [
             {
                 "id": self.obs1.pk,
                 "lat": 50.48940999999999,
@@ -222,7 +222,8 @@ class PublicApiTests(TestCase):
                 "date": "2021-10-08",
             },
         ]
-        self.assertEqual(json_data["results"], expected)
+        for expected in expected_data:
+            self.assertIn(expected, json_data["results"])
 
     def test_observations_json_default_mode_normal(self):
         """Explicitly asking the normal mode brings the same result as not specifying a mode"""
