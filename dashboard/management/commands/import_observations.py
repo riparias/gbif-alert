@@ -19,7 +19,9 @@ from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
 from dashboard.management.commands.helpers import get_dataset_name_from_gbif_api
 from dashboard.models import Species, Observation, DataImport, Dataset
-from dashboard.views.helpers import create_or_refresh_all_materialized_views
+from dashboard.views.helpers import (
+    create_or_refresh_materialized_views,
+)
 
 BULK_CREATE_CHUNK_SIZE = 10000
 
@@ -377,8 +379,10 @@ class Command(BaseCommand):
                 "We'll now create or refresh the materialized views. This can take a while."
             )
 
-            # 7. Create or refresh the materialized views (for the map)
-            create_or_refresh_all_materialized_views()
+            # 7. Create or refresh the materialized view (for the map)
+            create_or_refresh_materialized_views(
+                zoom_levels=[settings.ZOOM_LEVEL_FOR_MIN_MAX_QUERY]
+            )
 
             # 8. Remove unused Dataset entries (and edit related alerts)
             for dataset in Dataset.objects.all():

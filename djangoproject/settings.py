@@ -298,3 +298,13 @@ ZOOM_TO_HEX_SIZE = {
     key: value * ZOOM_TO_HEX_SIZE_MULTIPLIER
     for key, value in ZOOM_TO_HEX_SIZE_BASELINE.items()
 }
+
+# The zoom level at which the minimum and maximum values are queried
+# That's the only zoom level where this calculation is done
+# By consequence, we generate a materialized view for this zoom level, so
+# the endpoint has good performances. We initially generated those views at each zoom
+# level, but it's lengthy (during import), eats disk space and is unnecessary.
+# The test suite also make sure the endpoint works at different zoom levels, so it
+# will need to generate more materialized views (so the endpoint works), but it's only
+# when running tests and with a tiny amount of data.
+ZOOM_LEVEL_FOR_MIN_MAX_QUERY = 8

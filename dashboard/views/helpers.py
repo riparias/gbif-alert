@@ -164,16 +164,18 @@ def model_to_json_list(Model) -> JsonResponse:
 
 def create_or_refresh_all_materialized_views():
     for hex_size in set(settings.ZOOM_TO_HEX_SIZE.values()):  # set to remove duplicates
-        create_or_refresh_materialized_view(hex_size)
+        create_or_refresh_single_materialized_view(hex_size)
 
 
 def create_or_refresh_materialized_views(zoom_levels: list[int]):
     """Create or refresh a bunch of materialized views for a list of zoom levels"""
     for zoom_level in zoom_levels:
-        create_or_refresh_materialized_view(settings.ZOOM_TO_HEX_SIZE[zoom_level])
+        create_or_refresh_single_materialized_view(
+            settings.ZOOM_TO_HEX_SIZE[zoom_level]
+        )
 
 
-def create_or_refresh_materialized_view(hex_size_meters: int):
+def create_or_refresh_single_materialized_view(hex_size_meters: int):
     """Create or refresh a single materialized view for a specific hex size in meters"""
     logger.info(
         f"Creating or refreshing materialized view for hex size {hex_size_meters}"

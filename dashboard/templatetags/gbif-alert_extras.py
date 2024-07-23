@@ -108,6 +108,7 @@ def js_config_object(context):
             ).replace("1", "{id}"),
         },
         "mainMapConfig": settings.GBIF_ALERT["MAIN_MAP_CONFIG"],
+        "zoomLevelMinMaxQuery": settings.ZOOM_LEVEL_FOR_MIN_MAX_QUERY,
     }
     if context.request.user.is_authenticated:
         conf["userId"] = context.request.user.pk

@@ -44,6 +44,7 @@
       :base-layer-name="mapBaseLayer"
       :data-layer-opacity="dataLayerOpacity"
       :areas-to-show="filters.areaIds"
+      :zoom-level-min-max-query="frontendConfig.zoomLevelMinMaxQuery"
     ></Observations-Map>
   </div>
 </template>
