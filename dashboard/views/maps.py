@@ -60,6 +60,9 @@ WHERE_CLAUSE = readable_string(
                 SELECT ov1.id FROM $observationview_table_name ov1 WHERE ov1.user_id = {{ user_id }}
             )
         {% endif %}
+        {% if limit_to_tile %}
+            AND ST_Within(obs.location,  ST_TileEnvelope({{ zoom }}, {{ x }}, {{ y }}))
+        {% endif %}
 """
     ).substitute(
         observationview_table_name=OBSERVATIONVIEWS_TABLE_NAME,
@@ -140,6 +143,7 @@ def mvt_tiles_observations(
 
     sql_params = {
         # Map technicalities
+        "limit_to_tile": False,
         "zoom": zoom,
         "x": x,
         "y": y,
