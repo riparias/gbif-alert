@@ -7,6 +7,7 @@ from typing import Any, Self
 
 import html2text
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser, AnonymousUser
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models.aggregates import Union as AggregateUnion
@@ -249,11 +250,11 @@ class ObservationManager(models.Manager["Observation"]):
             qs = qs.filter(initial_data_import_id__in=initial_data_import_ids)
 
         if status_for_user and user:
-            ov = ObservationView.objects.filter(user=user)
+            ous = ObservationUnseen.objects.filter(user=user)
             if status_for_user == "seen":
-                qs = qs.filter(observationview__in=ov)
+                qs = qs.exclude(observationunseen__in=ous)
             elif status_for_user == "unseen":
-                qs = qs.exclude(observationview__in=ov)
+                qs = qs.filter(observationunseen__in=ous)
 
         return qs
 
@@ -322,14 +323,14 @@ class Observation(models.Model):
 
         if user.is_authenticated:
             try:
-                self.observationview_set.get(user=user)
-            except ObservationView.DoesNotExist:
-                ObservationView.objects.create(observation=self, user=user)
+                self.observationunseen_set.filter(user=user).delete()
+            except ObservationUnseen.DoesNotExist:
+                pass
 
     def already_seen_by(self, user: WebsiteUser) -> bool | None:
         """Return True if the observation has already been seen by the user"""
         if user.is_authenticated:
-            return self.observationview_set.filter(user=user).exists()
+            return not self.observationunseen_set.filter(user=user).exists()
         else:
             return None
 
@@ -339,11 +340,11 @@ class Observation(models.Model):
         :return: True is successful (most probable causes of failure: user has not seen this observation yet / user is
         anonymous)"""
         if user.is_authenticated:
-            try:
-                self.observationview_set.get(user=user).delete()
+            _, created = ObservationUnseen.objects.get_or_create(
+                observation=self, user=user
+            )
+            if created:
                 return True
-            except ObservationView.DoesNotExist:
-                return False
 
         return False
 
@@ -373,10 +374,18 @@ class Observation(models.Model):
         else:
             self.initial_data_import = replaced_observation.initial_data_import
 
-    def migrate_linked_entities(self) -> None:
+    def mark_as_unseen_for_all_users(self) -> None:
+        """Mark the observation as unseen for all users"""
+        # TODO: test this
+        for user in get_user_model().objects.all():
+            self.mark_as_unseen_by(user)
+
+    def migrate_linked_entities(self) -> bool:
         """Migrate existing entities (comments, ...) linked to a previous observation that share the stable ID
 
-        Does nothing if there's no replaced observation
+        Does nothing if there's no replaced observation.
+
+        Returns True if it migrated an existing observation, False otherwise
         """
         replaced_observation = self.replaced_observation
         if replaced_observation is not None:
@@ -384,10 +393,14 @@ class Observation(models.Model):
             for comment in replaced_observation.observationcomment_set.all():
                 comment.observation = self
                 comment.save()
-            # 2. Migrating user views
-            for observation_view in replaced_observation.observationview_set.all():
-                observation_view.observation = self
-                observation_view.save()
+            # 2. Migrating seen/unseen status
+            for observation_unseen in replaced_observation.observationunseen_set.all():
+                observation_unseen.observation = self
+                observation_unseen.save()
+
+            return True
+        else:
+            return False
 
     @cached_property
     def replaced_observation(self) -> Self | None:
@@ -479,10 +492,10 @@ class Observation(models.Model):
 
         if for_user.is_authenticated:
             try:
-                self.observationview_set.get(user=for_user)
-                d["seenByCurrentUser"] = True
-            except ObservationView.DoesNotExist:
+                self.observationunseen_set.get(user=for_user)
                 d["seenByCurrentUser"] = False
+            except ObservationUnseen.DoesNotExist:
+                d["seenByCurrentUser"] = True
 
         return d
 
@@ -601,6 +614,11 @@ class Area(models.Model):
 
 class ObservationView(models.Model):
     """
+    !! This model is deprecated, we now use ObservationUnseen instead !!
+    (ObservationUnseen is a reversed logic: we store unseen observations instead of seen ones)
+    This one shouldn't be used in the codebase anymore, however we do keep it for the
+    sake of older data migrations !!
+
     This models keeps a history of when a user has first seen details about an observation
 
     - If no entry for the user/observation pair: the user has never seen details about this observation

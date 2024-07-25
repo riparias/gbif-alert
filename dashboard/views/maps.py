@@ -6,14 +6,14 @@ from django.db import connection
 from django.http import HttpResponse, JsonResponse, HttpRequest
 from jinjasql import JinjaSql
 
-from dashboard.models import Observation, Area, ObservationView, Species
+from dashboard.models import Observation, Area, Species, ObservationUnseen
 from dashboard.utils import readable_string
 from dashboard.views.helpers import filters_from_request, extract_int_request
 from django.conf import settings
 
 AREAS_TABLE_NAME = Area.objects.model._meta.db_table
 OBSERVATIONS_TABLE_NAME = Observation.objects.model._meta.db_table
-OBSERVATIONVIEWS_TABLE_NAME = ObservationView.objects.model._meta.db_table
+OBSERVATIONUNSEEN_TABLE_NAME = ObservationUnseen.objects.model._meta.db_table
 SPECIES_TABLE_NAME = Species.objects.model._meta.db_table
 
 OBSERVATIONS_FIELD_NAME_POINT = "location"
@@ -48,16 +48,16 @@ WHERE_CLAUSE = readable_string(
         {% if initial_data_import_ids %}
             AND obs.initial_data_import_id IN {{ initial_data_import_ids | inclause }}
         {% endif %}
-        {% if status == 'unseen' %}
+        {% if status == 'seen' %}
             AND NOT (EXISTS(
-            SELECT (1) FROM $observationview_table_name ov WHERE (
-                ov.id IN (SELECT ov1.id FROM $observationview_table_name ov1 WHERE ov1.user_id = {{ user_id }}) 
+            SELECT (1) FROM $observationunseen_table_name ov WHERE (
+                ov.id IN (SELECT ov1.id FROM $observationunseen_table_name ov1 WHERE ov1.user_id = {{ user_id }}) 
                 AND ov.observation_id = obs.id
             ) LIMIT 1))
         {% endif %}
-        {% if status == 'seen' %}
-            AND $observationview_table_name.id IN (
-                SELECT ov1.id FROM $observationview_table_name ov1 WHERE ov1.user_id = {{ user_id }}
+        {% if status == 'unseen' %}
+            AND $observationunseen_table_name.id IN (
+                SELECT ov1.id FROM $observationunseen_table_name ov1 WHERE ov1.user_id = {{ user_id }}
             )
         {% endif %}
         {% if limit_to_tile %}
@@ -65,7 +65,7 @@ WHERE_CLAUSE = readable_string(
         {% endif %}
 """
     ).substitute(
-        observationview_table_name=OBSERVATIONVIEWS_TABLE_NAME,
+        observationunseen_table_name=OBSERVATIONUNSEEN_TABLE_NAME,
         date_format=DB_DATE_EXCHANGE_FORMAT_POSTGRES,
     )
 )
@@ -75,9 +75,9 @@ JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
     SELECT * FROM $observations_table_name as obs
     LEFT JOIN $species_table_name as species
     ON obs.species_id = species.id
-    {% if status == 'seen' %}
-        INNER JOIN $observationview_table_name
-        ON obs.id = $observationview_table_name.observation_id
+    {% if status == 'unseen' %}
+        INNER JOIN $observationunseen_table_name
+        ON obs.id = $observationunseen_table_name.observation_id
     {% endif %}
     
     {% if area_ids %}
@@ -88,7 +88,7 @@ JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
     )
 """
 ).substitute(
-    observationview_table_name=OBSERVATIONVIEWS_TABLE_NAME,
+    observationunseen_table_name=OBSERVATIONUNSEEN_TABLE_NAME,
     areas_table_name=AREAS_TABLE_NAME,
     species_table_name=SPECIES_TABLE_NAME,
     observations_table_name=OBSERVATIONS_TABLE_NAME,
@@ -253,9 +253,9 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
                         {% if area_ids %}
                         ,(SELECT mpoly FROM $areas_table_name WHERE $areas_table_name.id IN {{ area_ids | inclause }}) AS areas
                         {% endif %}
-                        {% if status == 'seen' %}
-                            INNER JOIN $observationview_table_name
-                            ON obs.id = $observationview_table_name.observation_id
+                        {% if status == 'unseen' %}
+                            INNER JOIN $observationunseen_table_name
+                            ON obs.id = $observationunseen_table_name.observation_id
                         {% endif %}
                     WHERE (
                         $where_clause
@@ -268,7 +268,7 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
             ).substitute(
                 hex_size_meters=settings.ZOOM_TO_HEX_SIZE[zoom],
                 areas_table_name=AREAS_TABLE_NAME,
-                observationview_table_name=OBSERVATIONVIEWS_TABLE_NAME,
+                observationunseen_table_name=OBSERVATIONUNSEEN_TABLE_NAME,
                 where_clause=WHERE_CLAUSE,
             )
         )

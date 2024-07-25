@@ -17,8 +17,8 @@ from dashboard.models import (
     Dataset,
     ObservationComment,
     User,
-    ObservationView,
     Alert,
+    ObservationUnseen,
 )
 
 THIS_SCRIPT_PATH = Path(__file__).parent
@@ -58,7 +58,7 @@ def predicate_builder_belgium(species_list: QuerySet[Species]):
 )
 class ImportObservationsTest(TransactionTestCase):
     def setUp(self) -> None:
-        user = User.objects.create_user(
+        self.user = User.objects.create_user(
             username="testuser",
             password="12345",
             first_name="John",
@@ -85,7 +85,7 @@ class ImportObservationsTest(TransactionTestCase):
 
         self.alert_referencing_unused_dataset = Alert.objects.create(
             name="Alert referencing unused dataset",
-            user=user,
+            user=self.user,
         )
         self.alert_referencing_unused_dataset.datasets.add(
             self.dataset_without_observations, inaturalist
@@ -95,9 +95,20 @@ class ImportObservationsTest(TransactionTestCase):
         # This observation will be replaced during the import process
         # because there's a row with the same occurrence_id and dataset_key in the DwC-A
         self.initial_di = DataImport.objects.create(start=timezone.now())
-        observation_to_be_replaced = Observation.objects.create(
+        self.observation_unseen_to_be_replaced = Observation.objects.create(
             gbif_id=1,
             occurrence_id="https://www.inaturalist.org/observations/33366292",
+            source_dataset=inaturalist,
+            species=self.polydrusus,
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            data_import=self.initial_di,
+            initial_data_import=self.initial_di,
+            location=Point(5.09513, 50.48941, srid=4326),
+        )
+
+        self.observation_seen_to_be_replaced = Observation.objects.create(
+            gbif_id=3,
+            occurrence_id="https://www.inaturalist.org/observations/42577016",
             source_dataset=inaturalist,
             species=self.polydrusus,
             date=datetime.date.today() - datetime.timedelta(days=1),
@@ -119,19 +130,19 @@ class ImportObservationsTest(TransactionTestCase):
         )
 
         ObservationComment.objects.create(
-            author=user,
-            observation=observation_to_be_replaced,
+            author=self.user,
+            observation=self.observation_unseen_to_be_replaced,
             text="This is a comment to migrate",
         )
 
-        self.observation_view_to_migrate = ObservationView.objects.create(
-            user=user, observation=observation_to_be_replaced
+        self.observation_unseen_to_migrate = ObservationUnseen.objects.create(
+            user=self.user, observation=self.observation_unseen_to_be_replaced
         )
 
         # We also create this one, so we can check it gets deleted in the new import process, and that it doesn't prevent
         # the related observation to be deleted
-        self.observation_view_to_delete = ObservationView.objects.create(
-            user=user, observation=observation_not_replaced
+        self.observation_unseen_to_delete = ObservationUnseen.objects.create(
+            user=self.user, observation=observation_not_replaced
         )
 
     def test_initial_data_import_value_replaced(self):
@@ -380,25 +391,25 @@ class ImportObservationsTest(TransactionTestCase):
         self.assertNotEqual(comment.observation_id, previous_observation_id)
         self.assertEqual(comment.observation.stable_id, previous_stable_id)
 
-    def test_observation_views_migrated(self) -> None:
-        ov = self.observation_view_to_migrate
-        previous_observation_id = ov.observation_id
-        previous_stable_id = ov.observation.stable_id
+    def test_observation_unseen_migrated(self) -> None:
+        ou = self.observation_unseen_to_migrate
+        previous_observation_id = ou.observation_id
+        previous_stable_id = ou.observation.stable_id
 
         with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
             call_command("import_observations", source_dwca=gbif_download_file)
 
-        ov.refresh_from_db()
-        self.assertNotEqual(ov.observation_id, previous_observation_id)
-        self.assertEqual(ov.observation.stable_id, previous_stable_id)
+        ou.refresh_from_db()
+        self.assertNotEqual(ou.observation_id, previous_observation_id)
+        self.assertEqual(ou.observation.stable_id, previous_stable_id)
 
-    def test_unmigrated_ov_gets_deleted(self) -> None:
-        ov_id = self.observation_view_to_delete.id
+    def test_unmigrated_ou_gets_deleted(self) -> None:
+        ou_id = self.observation_unseen_to_delete.id
 
         with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
             call_command("import_observations", source_dwca=gbif_download_file)
-        with self.assertRaises(ObservationView.DoesNotExist):
-            ObservationView.objects.get(id=ov_id)
+        with self.assertRaises(ObservationUnseen.DoesNotExist):
+            ObservationUnseen.objects.get(id=ou_id)
 
     def test_old_observations_deleted(self) -> None:
         """The old observations (replaced and not replaced) are deleted from the database after a new import"""
@@ -451,6 +462,40 @@ class ImportObservationsTest(TransactionTestCase):
                 )
                 request_history = m.request_history
                 self.assertEqual(len(request_history), 0)
+
+    def test_seen_status(self) -> None:
+        """The seen/unseen status is correctly set after import"""
+        with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
+            call_command("import_observations", source_dwca=gbif_download_file)
+
+        observations_after = Observation.objects.all()
+
+        # An existing seen observation has been replaced, it should be marked as seen
+        case1 = observations_after.get(
+            occurrence_id=self.observation_seen_to_be_replaced.occurrence_id
+        )
+        # Unseen not found => seen
+        with self.assertRaises(ObservationUnseen.DoesNotExist):
+            ObservationUnseen.objects.get(observation=case1, user=self.user)
+
+        # An existing unseen observation has been replaced, it should be marked as unseen
+        case2 = observations_after.get(
+            occurrence_id=self.observation_unseen_to_be_replaced.occurrence_id
+        )
+
+        # Unseen found => unseen
+        ObservationUnseen.objects.get(observation=case2, user=self.user)
+
+        # Several new observations have been added, they should be marked as unseen
+        newly_added_observations = observations_after.exclude(
+            occurrence_id__in=[
+                self.observation_unseen_to_be_replaced.occurrence_id,
+                self.observation_seen_to_be_replaced.occurrence_id,
+            ]
+        )
+        # We find a new ObservationUnseen for each new observation
+        for obs in newly_added_observations:
+            ObservationUnseen.objects.get(observation=obs, user=self.user)
 
     @override_settings(
         GBIF_ALERT={

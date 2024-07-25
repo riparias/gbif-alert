@@ -16,7 +16,6 @@ from dashboard.models import (
     DataImport,
     Dataset,
     ObservationComment,
-    ObservationView,
     Alert,
     Area,
 )
@@ -362,9 +361,9 @@ class WebPagesTests(TestCase):
                 emptied_because_author_deleted_account=True,
             )
 
-            ObservationView.objects.create(
-                observation=cls.second_obs, user=comment_author
-            )
+            # ObservationView.objects.create(
+            #     observation=cls.second_obs, user=comment_author
+            # )
 
     def test_observation_details_not_found(self):
         response = self.client.get(

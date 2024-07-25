@@ -14,7 +14,7 @@ from dashboard.models import (
     Observation,
     DataImport,
     ObservationComment,
-    ObservationView,
+    ObservationUnseen,
     User,
 )
 
@@ -164,7 +164,7 @@ class ActionTests(TestCase):
             text="This is a first comment",
         )
 
-        cls.observation_view = ObservationView.objects.create(
+        cls.observation_unseen_obj = ObservationUnseen.objects.create(
             observation=cls.observation, user=cls.user
         )
 
@@ -190,8 +190,8 @@ class ActionTests(TestCase):
             self.user.refresh_from_db()
         with self.assertRaises(Alert.DoesNotExist):
             self.alert.refresh_from_db()
-        with self.assertRaises(ObservationView.DoesNotExist):
-            self.observation_view.refresh_from_db()
+        with self.assertRaises(ObservationUnseen.DoesNotExist):
+            self.observation_unseen_obj.refresh_from_db()
 
         self.user_comment.refresh_from_db()
         self.assertEqual(self.user_comment.author, None)

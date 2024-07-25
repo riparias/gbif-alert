@@ -13,8 +13,8 @@ from dashboard.models import (
     Species,
     Dataset,
     Alert,
-    ObservationView,
     ObservationComment,
+    ObservationUnseen,
 )
 from page_fragments.models import PageFragment
 
@@ -53,7 +53,10 @@ class UserTests(TestCase):
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
 
-        # No ObservationView created in setupTestData(): at the beginning of test_* methods, the observation is unseen
+        # The observation is unseen
+        cls.obs_unseen = ObservationUnseen.objects.create(
+            observation=cls.observation, user=cls.jason
+        )
 
         # The user has a comment on the observation, it should be emptied upon deletion
         cls.jasons_comment = ObservationComment.objects.create(
@@ -78,7 +81,8 @@ class UserTests(TestCase):
         Alert.objects.create(
             user=self.jason, email_notifications_frequency=Alert.DAILY_EMAILS
         )
-        ObservationView.objects.create(observation=self.observation, user=self.jason)
+
+        self.obs_unseen.delete()
 
         self.assertFalse(self.jason.has_alerts_with_unseen_observations)
 

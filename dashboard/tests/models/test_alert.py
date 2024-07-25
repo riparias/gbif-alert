@@ -11,7 +11,7 @@ from dashboard.models import (
     Species,
     DataImport,
     Dataset,
-    ObservationView,
+    ObservationUnseen,
 )
 
 SEPTEMBER_13_2021 = datetime.datetime.strptime("2021-09-13", "%Y-%m-%d").date()
@@ -49,7 +49,10 @@ class AlertTests(TestCase):
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
 
-        # No ObservationView created in setupTestData(): at the beginning of test_* methods, the observation is unseen
+        # At the beginning of test_* methods, the observation is unseen
+        cls.obs_unseen = ObservationUnseen.objects.create(
+            observation=cls.observation, user=cls.user
+        )
 
     def test_unseen_observations_count_one(self):
         """There's one unseen observation (same data as test_has_unseen_observations_true())"""
@@ -63,7 +66,7 @@ class AlertTests(TestCase):
         alert = Alert.objects.create(
             user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
         )
-        ObservationView.objects.create(observation=self.observation, user=self.user)
+        self.obs_unseen.delete()
         self.assertEqual(alert.unseen_observations_count, 0)
 
     def test_unseen_observations_count_zero_case_2(self):
@@ -89,7 +92,7 @@ class AlertTests(TestCase):
         alert = Alert.objects.create(
             user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
         )
-        ObservationView.objects.create(observation=self.observation, user=self.user)
+        self.obs_unseen.delete()
         self.assertFalse(alert.has_unseen_observations)
 
     def test_has_unseen_observations_false_case_2(self):
@@ -120,13 +123,13 @@ class AlertTests(TestCase):
         self.assertFalse(alert.email_should_be_sent_now())
 
     def test_email_should_be_sent_now_nothing_unseen(self):
-        """When nothing is unseen, it's not a god time for notifications"""
+        """When nothing is unseen, it's not a good time for notifications"""
 
         alert = Alert.objects.create(
             user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
         )
 
-        ObservationView.objects.create(observation=self.observation, user=self.user)
+        self.obs_unseen.delete()
 
         # Situation:
         # - No unseen observation

@@ -16,8 +16,8 @@ from dashboard.models import (
     DataImport,
     Dataset,
     Area,
-    ObservationView,
     Alert,
+    ObservationUnseen,
 )
 
 SEPTEMBER_13_2021 = datetime.datetime.strptime("2021-09-13", "%Y-%m-%d").date()
@@ -333,7 +333,7 @@ class InternalApiTests(TestCase):
             source_dataset=cls.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
-        cls.obs2 = second_obs = Observation.objects.create(
+        cls.obs2 = Observation.objects.create(
             gbif_id=2,
             occurrence_id="2",
             species=cls.second_species,
@@ -412,7 +412,12 @@ class InternalApiTests(TestCase):
             mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
         )
 
-        ObservationView.objects.create(observation=second_obs, user=cls.another_user)
+        # Initial situation: only obs2 has been seen by "another user"
+        ObservationUnseen.objects.create(observation=cls.obs1, user=cls.area_owner)
+        ObservationUnseen.objects.create(observation=cls.obs1, user=cls.another_user)
+        ObservationUnseen.objects.create(observation=cls.obs2, user=cls.area_owner)
+        ObservationUnseen.objects.create(observation=cls.obs3, user=cls.area_owner)
+        ObservationUnseen.objects.create(observation=cls.obs3, user=cls.another_user)
 
     def test_dataimports_list_json(self):
         """Simple tests for the API that serves the list of dataimport objects"""

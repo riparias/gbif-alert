@@ -12,7 +12,7 @@ from dashboard.models import (
     DataImport,
     Dataset,
     ObservationComment,
-    ObservationView,
+    ObservationUnseen,
 )
 
 SAMPLE_DATASET_KEY = "940821c0-3269-11df-855a-b8a03c50a862"
@@ -67,10 +67,6 @@ class ObservationTests(TestCase):
             text="This is a second comment",
         )
 
-        self.observation_view = ObservationView.objects.create(
-            observation=self.obs, user=self.comment_author
-        )
-
         self.second_obs = Observation.objects.create(
             gbif_id=2,
             occurrence_id=123456,
@@ -80,6 +76,10 @@ class ObservationTests(TestCase):
             initial_data_import=di,
             source_dataset=self.dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
+        )
+
+        self.obs2_unseen_obj = ObservationUnseen.objects.create(
+            observation=self.second_obs, user=self.comment_author
         )
 
     def test_as_dict_observation_seen_anonymous(self):
@@ -113,65 +113,72 @@ class ObservationTests(TestCase):
 
     def test_mark_as_seen_by_case_1(self):
         """Standard case: we mark a previously unseen observation by a regular user"""
-        # Before we start, we have no entry
+        # Before we start, we have an entry to confirm the observation is unseen
         self.assertEqual(
-            ObservationView.objects.filter(observation=self.second_obs).count(), 0
+            ObservationUnseen.objects.filter(
+                observation=self.second_obs, user=self.comment_author
+            ).count(),
+            1,
         )
         r = self.second_obs.mark_as_seen_by(user=self.comment_author)
         self.assertIsNone(r)  # Method always return None
-        # After, we have one entry
-        ov = ObservationView.objects.get(observation=self.second_obs)
-
-        # Basic checks on observationView objects
-        self.assertEqual(ov.user.username, "testuser")
-        self.assertEqual(ov.observation.id, self.second_obs.id)
-        self.assertLess(timezone.now() - ov.timestamp, datetime.timedelta(minutes=1))
+        # After, we have don't have the unseen entry anymore
+        self.assertEqual(
+            ObservationUnseen.objects.filter(
+                observation=self.second_obs, user=self.comment_author
+            ).count(),
+            0,
+        )
 
     def test_mark_as_seen_by_case_2(self):
         """The user is anonymous: nothing happens"""
         self.assertEqual(
-            ObservationView.objects.filter(observation=self.second_obs).count(), 0
+            ObservationUnseen.objects.filter(observation=self.second_obs).count(), 1
         )
         r = self.second_obs.mark_as_seen_by(user=AnonymousUser())
         self.assertIsNone(r)  # Method always return None
         # Nothing has changed:
         self.assertEqual(
-            ObservationView.objects.filter(observation=self.second_obs).count(), 0
+            ObservationUnseen.objects.filter(observation=self.second_obs).count(), 1
         )
 
     def test_mark_as_seen_by_case_3(self):
         """The user has already seen this observation: nothing happens"""
-        ovs_before = ObservationView.objects.filter(observation=self.obs).values()
+        ovs_before = ObservationUnseen.objects.filter(observation=self.obs).values()
         r = self.second_obs.mark_as_seen_by(user=self.comment_author)
         self.assertIsNone(r)  # Method always return None
 
-        ovs_after = ObservationView.objects.filter(observation=self.obs).values()
+        ovs_after = ObservationUnseen.objects.filter(observation=self.obs).values()
         self.assertQuerysetEqual(ovs_after, ovs_before)
 
     def test_mark_as_unseen_by_case_1(self):
         """Normal case: the user has indeed previously seen the occurrence"""
         # Before, we can find it
-        ObservationView.objects.get(observation=self.obs, user=self.comment_author)
+        with self.assertRaises(ObservationUnseen.DoesNotExist):
+            ObservationUnseen.objects.get(
+                observation=self.obs, user=self.comment_author
+            )
+
         r = self.obs.mark_as_unseen_by(user=self.comment_author)
         self.assertTrue(r)
-        with self.assertRaises(ObservationView.DoesNotExist):
-            ObservationView.objects.get(observation=self.obs, user=self.comment_author)
+        # After, we can find it
+        ObservationUnseen.objects.get(observation=self.obs, user=self.comment_author)
 
     def test_mark_as_unseen_by_case_2(self):
         """Anonymous user: nothing happens and the method return False"""
-        all_ovs_before = ObservationView.objects.all().values()
+        all_ous_before = ObservationUnseen.objects.all().values()
         r = self.obs.mark_as_unseen_by(user=AnonymousUser())
         self.assertFalse(r)
-        all_ovs_after = ObservationView.objects.all().values()
-        self.assertQuerysetEqual(all_ovs_after, all_ovs_before)
+        all_ous_after = ObservationUnseen.objects.all().values()
+        self.assertQuerysetEqual(all_ous_after, all_ous_before)
 
     def test_mark_as_unseen_by_case_3(self):
         """User has not seen the observation before: method returns False, nothing happens to the db"""
-        all_ovs_before = ObservationView.objects.all().values()
+        all_ous_before = ObservationUnseen.objects.all().values()
         r = self.second_obs.mark_as_unseen_by(user=self.comment_author)
         self.assertFalse(r)
-        all_ovs_after = ObservationView.objects.all().values()
-        self.assertQuerysetEqual(all_ovs_after, all_ovs_before)
+        all_ous_after = ObservationUnseen.objects.all().values()
+        self.assertQuerysetEqual(all_ous_after, all_ous_before)
 
     def test_replace_observation(self):
         """High-level test: after creating a new observation with the same stable_id, make sure we can migrate the
@@ -192,16 +199,12 @@ class ObservationTests(TestCase):
 
         old_observation = self.obs
 
-        view_timestamp_before = self.observation_view.timestamp
-
         # Migrate entities
         new_observation.migrate_linked_entities()
 
         # Make sure the counts are correct
         self.assertEqual(new_observation.observationcomment_set.count(), 2)
         self.assertEqual(old_observation.observationcomment_set.count(), 0)
-        self.assertEqual(new_observation.observationview_set.count(), 1)
-        self.assertEqual(old_observation.observationview_set.count(), 0)
 
         # Make also sure the comments fields were not accidentally altered
         self.first_comment.refresh_from_db()
@@ -214,14 +217,37 @@ class ObservationTests(TestCase):
         self.assertEqual(self.second_comment.text, "This is a second comment")
         self.assertEqual(self.second_comment.observation_id, new_observation.pk)
 
-        # Make sure the observation_view other fields (timestamp, user, ...) were not accidentally altered
-        self.observation_view.refresh_from_db()
-        self.assertEqual(self.observation_view.observation, new_observation)
-        self.assertEqual(self.observation_view.user, self.comment_author)
-        self.assertEqual(self.observation_view.timestamp, view_timestamp_before)
+        # The replaced observation was seen, so the new one should be seen too
+        with self.assertRaises(ObservationUnseen.DoesNotExist):
+            ObservationUnseen.objects.get(
+                observation=new_observation, user=self.comment_author
+            )
 
         # The old observation can be safely deleted
         old_observation.delete()
+
+    def test_replace_observation_unseen(self):
+        """Similar to test_replace_observation, but the replaced observation was not seen
+
+        (there was an entry in observationunseen. we make sure this entry now properly points to the new observation)
+        """
+
+        new_di = DataImport.objects.create(start=timezone.now())
+        replacement_second_obs = Observation.objects.create(
+            gbif_id=2,
+            occurrence_id=123456,
+            species=Species.objects.all()[0],
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            data_import=new_di,
+            initial_data_import=new_di,
+            source_dataset=self.dataset,
+            location=Point(5.09513, 50.48941, srid=4326),  # Andenne
+        )
+
+        replacement_second_obs.migrate_linked_entities()
+        self.obs2_unseen_obj.refresh_from_db()
+
+        self.assertEqual(self.obs2_unseen_obj.observation, replacement_second_obs)
 
     def test_get_identical_observations_unsaved(self):
         """Regression test: the get_identical_observations() method also works with 'not yet saved' observations"""

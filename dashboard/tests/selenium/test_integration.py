@@ -24,8 +24,8 @@ from dashboard.models import (
     DataImport,
     Dataset,
     Observation,
-    ObservationView,
     Alert,
+    ObservationUnseen,
 )
 from dashboard.views.helpers import create_or_refresh_all_materialized_views
 
@@ -83,7 +83,9 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
             last_name="Frusciante",
             email="frusciante@gmail.com",
         )
-        User.objects.create_superuser(username="adminuser", password="67890")
+        adminuser = User.objects.create_superuser(
+            username="adminuser", password="67890"
+        )
 
         self.first_species = Species.objects.create(
             name="Procambarus fallax", gbif_taxon_key=8879526
@@ -112,7 +114,7 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
             source_dataset=self.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),
         )
-        Observation.objects.create(
+        obs_2 = Observation.objects.create(
             gbif_id=2,
             occurrence_id="2",
             species=self.second_species,
@@ -122,7 +124,7 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
             source_dataset=self.second_dataset,
             location=Point(4.35978, 50.64728, srid=4326),
         )
-        Observation.objects.create(
+        obs_3 = Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
             species=self.second_species,
@@ -134,7 +136,11 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
         )
 
         # Obs 1 (and only obs_1) has been seen by the user
-        ObservationView.objects.create(observation=obs_1, user=normal_user)
+        ObservationUnseen.objects.create(observation=obs_1, user=adminuser)
+        ObservationUnseen.objects.create(observation=obs_2, user=normal_user)
+        ObservationUnseen.objects.create(observation=obs_2, user=adminuser)
+        ObservationUnseen.objects.create(observation=obs_3, user=normal_user)
+        ObservationUnseen.objects.create(observation=obs_3, user=adminuser)
 
         alert = Alert.objects.create(
             name="Test alert",
