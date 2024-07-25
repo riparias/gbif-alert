@@ -15,6 +15,10 @@ from dashboard.models import (
     Area,
     ObservationView,
 )
+from dashboard.views.helpers import (
+    create_or_refresh_all_materialized_views,
+    create_or_refresh_materialized_views,
+)
 
 
 class MapsTestDataMixin(object):
@@ -105,6 +109,8 @@ class MapsTestDataMixin(object):
 
         ObservationView.objects.create(observation=second_obs, user=cls.user)
 
+        create_or_refresh_all_materialized_views()
+
 
 @override_settings(
     STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
@@ -135,6 +141,8 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
+        create_or_refresh_materialized_views(zoom_levels=[8, 1, 13])
+
         # Now, at zoom level 8 we should have a hexagon with count=1 and another one with count=2
         response = self.client.get(
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
@@ -154,7 +162,7 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
         # At zoom level 17, there's no hexagons that cover more than 1 observation
         response = self.client.get(
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
-            data={"zoom": 17},
+            data={"zoom": 13},
         )
         self.assertEqual(response.json()["min"], 1)
         self.assertEqual(response.json()["max"], 1)
@@ -171,6 +179,8 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             source_dataset=self.first_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
+
+        create_or_refresh_materialized_views(zoom_levels=[8])
 
         response = self.client.get(
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
@@ -203,6 +213,8 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             location=Point(5.095610, 50.48800, srid=4326),
         )
 
+        create_or_refresh_materialized_views(zoom_levels=[8])
+
         response = self.client.get(
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
             data={"zoom": 8, "speciesIds[]": self.second_species.pk},
@@ -223,6 +235,8 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             source_dataset=self.second_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
+
+        create_or_refresh_materialized_views(zoom_levels=[8])
 
         response = self.client.get(
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
@@ -254,6 +268,8 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             source_dataset=self.first_dataset,
             location=Point(5.095610, 50.48800, srid=4326),
         )
+
+        create_or_refresh_materialized_views(zoom_levels=[8])
 
         response = self.client.get(
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
@@ -313,6 +329,8 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
 
+        create_or_refresh_materialized_views(zoom_levels=[8])
+
         # At a zoom level that only shows Lillois or Andenne, it's 1-1
         response = self.client.get(
             reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
@@ -336,6 +354,8 @@ class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
             source_dataset=self.second_dataset,
             location=Point(4.36229, 50.64628, srid=4326),  # Lillois, bakkerij
         )
+
+        create_or_refresh_materialized_views(zoom_levels=[8])
 
         # We restrict ourselves to Andenne: only one observation
         response = self.client.get(
@@ -400,8 +420,8 @@ class MVTServerCommonTestsMixin(object):
         )
 
     def test_zoom_levels(self):
-        """Zoom levels 0-21 are supported"""
-        for zoom_level in range(0, 21):
+        """Zoom levels 0-14 are supported"""
+        for zoom_level in range(0, 14):
             response = self.client.get(self._build_valid_tile_url(zoom=zoom_level))
             self.assertEqual(response.status_code, 200)
             mapbox_vector_tile.decode(response.content)
@@ -756,7 +776,7 @@ class MVTServerAggregatedObsTests(
         # Case 4: A zoomed time on Lillois, should be empty because of the filtering
         base_url = reverse(
             self.server_url_name,
-            kwargs={"zoom": 17, "x": 67123, "y": 44083},
+            kwargs={"zoom": 14, "x": 8390, "y": 5510},
         )
         url_with_params = f"{base_url}?areaIds[]={self.public_area_andenne.pk}"
         response = self.client.get(url_with_params)
@@ -854,7 +874,7 @@ class MVTServerAggregatedObsTests(
         # Case 2.2: there's nothing when zoomed on Lillois
         base_url = reverse(
             self.server_url_name,
-            kwargs={"zoom": 17, "x": 67123, "y": 44083},
+            kwargs={"zoom": 14, "x": 8390, "y": 5510},
         )
         url_with_params = f"{base_url}?status=unseen"
         response = self.client.get(url_with_params)
@@ -916,7 +936,7 @@ class MVTServerAggregatedObsTests(
         # Case 4: A zoomed time on Lillois, should be empty because of the filtering
         base_url = reverse(
             self.server_url_name,
-            kwargs={"zoom": 17, "x": 67123, "y": 44083},
+            kwargs={"zoom": 14, "x": 8390, "y": 5510},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}"
         response = self.client.get(url_with_params)
@@ -994,7 +1014,7 @@ class MVTServerAggregatedObsTests(
         # Case 4: A zoomed time on Lillois, should be empty because of the filtering
         base_url = reverse(
             self.server_url_name,
-            kwargs={"zoom": 17, "x": 67123, "y": 44083},
+            kwargs={"zoom": 14, "x": 8390, "y": 5510},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}"
         response = self.client.get(url_with_params)
@@ -1088,7 +1108,7 @@ class MVTServerAggregatedObsTests(
         # Case 4: A zoomed time on Lillois, we expect the three tetraodon observations
         base_url = reverse(
             self.server_url_name,
-            kwargs={"zoom": 17, "x": 67123, "y": 44083},
+            kwargs={"zoom": 14, "x": 8390, "y": 5510},
         )
         url_with_params = f"{base_url}?speciesIds[]={self.first_species.pk}&speciesIds[]={species_tetraodon.pk}"
         response = self.client.get(url_with_params)
@@ -1195,7 +1215,7 @@ class MVTServerAggregatedObsTests(
         response = self.client.get(
             reverse(
                 self.server_url_name,
-                kwargs={"zoom": 17, "x": 67123, "y": 44083},
+                kwargs={"zoom": 14, "x": 8390, "y": 5510},
             )
         )
         decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -1206,11 +1226,11 @@ class MVTServerAggregatedObsTests(
             decoded_tile["default"]["features"][0]["properties"]["count"], 1
         )
 
-        # The next one is empty
+        # The next tile is empty
         response = self.client.get(
             reverse(
                 self.server_url_name,
-                kwargs={"zoom": 17, "x": 67124, "y": 44083},
+                kwargs={"zoom": 14, "x": 8391, "y": 5510},
             )
         )
         decoded_tile = mapbox_vector_tile.decode(response.content)

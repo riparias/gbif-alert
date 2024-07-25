@@ -1,6 +1,7 @@
-# Current (unreleased)
+# v1.7.5 (2024-07-25)
 
-- Fix a compatibility issue with Windows platform (data import script). Thanks @sronveaux!
+- Fix a compatibility issue with Windows platform (data import script). Thanks, @sronveaux!
+- Major improvements under the hood to map performances (Thanks for the suggestion, @sronveaux and @silenius!)
 
 # v1.7.4 (2024-05-24)
 

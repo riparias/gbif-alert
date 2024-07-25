@@ -2,7 +2,7 @@ version: '3'
 
 services:
   nginx:
-    image: niconoe/gbif-alert-nginx:1.7.4
+    image: niconoe/gbif-alert-nginx:1.7.5
     ports:
       - "1337:80"
     depends_on:
@@ -28,7 +28,7 @@ services:
     expose:
       - 6379
   gbif-alert:
-    image : niconoe/gbif-alert:1.7.4
+    image : niconoe/gbif-alert:1.7.5
     expose:
       - 8000
     depends_on:
@@ -44,7 +44,7 @@ services:
         target: /app/djangoproject/local_settings_docker.py
         read_only: true
   rqworker:
-    image: niconoe/gbif-alert:1.7.4
+    image: niconoe/gbif-alert:1.7.5
     entrypoint: poetry run python manage.py rqworker default
     depends_on:
       db:

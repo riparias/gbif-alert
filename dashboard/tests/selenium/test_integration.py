@@ -27,6 +27,7 @@ from dashboard.models import (
     ObservationView,
     Alert,
 )
+from dashboard.views.helpers import create_or_refresh_all_materialized_views
 
 
 def _get_webdriver() -> WebDriver:
@@ -142,6 +143,7 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
         )
 
         alert.species.add(self.first_species)
+        create_or_refresh_all_materialized_views()
 
 
 class SeleniumAlertTests(SeleniumTestsCommon):

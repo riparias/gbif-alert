@@ -101,6 +101,7 @@ export interface FrontEndConfig {
   authenticatedUser: boolean;
   userId?: number; // Only set if authenticatedUser is true
   mainMapConfig: MapConfig;
+  zoomLevelMinMaxQuery: number;
 }
 
 // Keep in sync with Models.Observation.as_dict()

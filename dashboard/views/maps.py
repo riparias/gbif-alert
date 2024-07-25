@@ -9,6 +9,7 @@ from jinjasql import JinjaSql
 from dashboard.models import Observation, Area, ObservationView, Species
 from dashboard.utils import readable_string
 from dashboard.views.helpers import filters_from_request, extract_int_request
+from django.conf import settings
 
 AREAS_TABLE_NAME = Area.objects.model._meta.db_table
 OBSERVATIONS_TABLE_NAME = Observation.objects.model._meta.db_table
@@ -21,54 +22,13 @@ OBSERVATIONS_FIELD_NAME_POINT = "location"
 DB_DATE_EXCHANGE_FORMAT_PYTHON = "%Y-%m-%d"  # To be passed to strftime()
 DB_DATE_EXCHANGE_FORMAT_POSTGRES = "YYYY-MM-DD"  # To be used in SQL queries
 
-# Hexagon size (in meters) according to the zoom level. Adjust ZOOM_TO_HEX_SIZE_MULTIPLIER to simultaneously configure
-# all zoom levels
-ZOOM_TO_HEX_SIZE_MULTIPLIER = 2
-ZOOM_TO_HEX_SIZE_BASELINE = {
-    0: 640000,
-    1: 320000,
-    2: 160000,
-    3: 80000,
-    4: 40000,
-    5: 20000,
-    6: 10000,
-    7: 5000,
-    8: 2500,
-    9: 1250,
-    10: 675,
-    11: 335,
-    12: 160,
-    13: 80,
-    14: 40,
-    15: 20,
-    16: 10,
-    17: 5,
-    18: 5,
-    19: 5,
-    20: 5,
-}
-ZOOM_TO_HEX_SIZE = {
-    key: value * ZOOM_TO_HEX_SIZE_MULTIPLIER
-    for key, value in ZOOM_TO_HEX_SIZE_BASELINE.items()
-}
 
 # !! IMPORTANT !! Make sure the observation filtering here is equivalent to what's done in
 # other places (views.helpers.filtered_observations_from_request). Otherwise, observations returned on the map and on
 # other components (table, ...) will be inconsistent.
-JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
-    """
-    SELECT * FROM $observations_table_name as obs
-    LEFT JOIN $species_table_name as species
-    ON obs.species_id = species.id
-    {% if status == 'seen' %}
-        INNER JOIN $observationview_table_name
-        ON obs.id = $observationview_table_name.observation_id
-    {% endif %}
-    
-    {% if area_ids %}
-    , (SELECT mpoly FROM $areas_table_name WHERE $areas_table_name.id IN {{ area_ids | inclause }}) AS areas
-    {% endif %}
-    WHERE (
+WHERE_CLAUSE = readable_string(
+    Template(
+        """ 
         1 = 1
         {% if species_ids %}
             AND obs.species_id IN {{ species_ids | inclause }}
@@ -100,33 +60,51 @@ JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
                 SELECT ov1.id FROM $observationview_table_name ov1 WHERE ov1.user_id = {{ user_id }}
             )
         {% endif %}
+        {% if limit_to_tile %}
+            AND ST_Within(obs.location,  ST_TileEnvelope({{ zoom }}, {{ x }}, {{ y }}))
+        {% endif %}
+"""
+    ).substitute(
+        observationview_table_name=OBSERVATIONVIEWS_TABLE_NAME,
+        date_format=DB_DATE_EXCHANGE_FORMAT_POSTGRES,
+    )
+)
+
+JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = Template(
+    """
+    SELECT * FROM $observations_table_name as obs
+    LEFT JOIN $species_table_name as species
+    ON obs.species_id = species.id
+    {% if status == 'seen' %}
+        INNER JOIN $observationview_table_name
+        ON obs.id = $observationview_table_name.observation_id
+    {% endif %}
+    
+    {% if area_ids %}
+    , (SELECT mpoly FROM $areas_table_name WHERE $areas_table_name.id IN {{ area_ids | inclause }}) AS areas
+    {% endif %}
+    WHERE (
+        $where_clause
     )
 """
 ).substitute(
+    observationview_table_name=OBSERVATIONVIEWS_TABLE_NAME,
     areas_table_name=AREAS_TABLE_NAME,
     species_table_name=SPECIES_TABLE_NAME,
     observations_table_name=OBSERVATIONS_TABLE_NAME,
-    observationview_table_name=OBSERVATIONVIEWS_TABLE_NAME,
-    date_format=DB_DATE_EXCHANGE_FORMAT_POSTGRES,
+    where_clause=WHERE_CLAUSE,
 )
 
 JINJASQL_FRAGMENT_AGGREGATED_GRID = Template(
     """
     SELECT COUNT(*), hexes.geom
-                    FROM
-                        ST_HexagonGrid(
-                            {{ hex_size_meters }},
-                            {% if grid_extent_viewport %}
-                                ST_TileEnvelope({{ zoom }}, {{ x }}, {{ y }})
-                            {% else %}
-                                ST_SetSRID(ST_EstimatedExtent('$observations_table_name', '$observations_field_name_point'), 3857)
-                            {% endif %} 
-                        ) AS hexes
-                    INNER JOIN ($jinjasql_fragment_filter_observations)
-                    AS dashboard_filtered_occ
+    FROM
+        ST_HexagonGrid({{ hex_size_meters }}, ST_TileEnvelope({{ zoom }}, {{ x }}, {{ y }})) AS hexes
+        INNER JOIN ($jinjasql_fragment_filter_observations)
+    AS dashboard_filtered_occ
 
-                    ON ST_Intersects(dashboard_filtered_occ.$observations_field_name_point, hexes.geom)
-                    GROUP BY hexes.geom
+    ON ST_Intersects(dashboard_filtered_occ.$observations_field_name_point, hexes.geom)
+    GROUP BY hexes.geom
 """
 ).substitute(
     observations_table_name=OBSERVATIONS_TABLE_NAME,
@@ -165,6 +143,7 @@ def mvt_tiles_observations(
 
     sql_params = {
         # Map technicalities
+        "limit_to_tile": False,
         "zoom": zoom,
         "x": x,
         "y": y,
@@ -219,8 +198,7 @@ def mvt_tiles_observations_hexagon_grid_aggregated(
 
     sql_params = {
         # Map technicalities
-        "hex_size_meters": ZOOM_TO_HEX_SIZE[zoom],
-        "grid_extent_viewport": True,
+        "hex_size_meters": settings.ZOOM_TO_HEX_SIZE[zoom],
         "zoom": zoom,
         "x": x,
         "y": y,
@@ -267,17 +245,35 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
         sql_template = readable_string(
             Template(
                 """
-        WITH grid AS ($jinjasql_fragment_aggregated_grid)
-        SELECT MIN(count), MAX(count) FROM grid;
-        """
+                WITH grid AS (
+                    SELECT COUNT(*)
+                    FROM (SELECT * FROM hexa_$hex_size_meters) AS obs
+                        LEFT JOIN dashboard_species as species ON obs.species_id = species.id
+                        
+                        {% if area_ids %}
+                        ,(SELECT mpoly FROM $areas_table_name WHERE $areas_table_name.id IN {{ area_ids | inclause }}) AS areas
+                        {% endif %}
+                        {% if status == 'seen' %}
+                            INNER JOIN $observationview_table_name
+                            ON obs.id = $observationview_table_name.observation_id
+                        {% endif %}
+                    WHERE (
+                        $where_clause
+                    )      
+                GROUP BY obs.geom
+                )
+                
+                SELECT MIN(count), MAX(count) FROM grid;
+                """
             ).substitute(
-                jinjasql_fragment_aggregated_grid=JINJASQL_FRAGMENT_AGGREGATED_GRID
+                hex_size_meters=settings.ZOOM_TO_HEX_SIZE[zoom],
+                areas_table_name=AREAS_TABLE_NAME,
+                observationview_table_name=OBSERVATIONVIEWS_TABLE_NAME,
+                where_clause=WHERE_CLAUSE,
             )
         )
 
         sql_params = {
-            "hex_size_meters": ZOOM_TO_HEX_SIZE[zoom],
-            "grid_extent_viewport": False,
             "species_ids": species_ids,
             "datasets_ids": datasets_ids,
             "area_ids": area_ids,
@@ -285,15 +281,15 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
         }
 
         if status_for_user and request.user.is_authenticated:
-            sql_params["status"] = status_for_user
-            sql_params["user_id"] = request.user.pk
+            sql_params["status"] = status_for_user  # type: ignore
+            sql_params["user_id"] = request.user.pk  # type: ignore
 
         if start_date:
-            sql_params["start_date"] = start_date.strftime(
+            sql_params["start_date"] = start_date.strftime(  # type: ignore
                 DB_DATE_EXCHANGE_FORMAT_PYTHON
             )
         if end_date:
-            sql_params["end_date"] = end_date.strftime(DB_DATE_EXCHANGE_FORMAT_PYTHON)
+            sql_params["end_date"] = end_date.strftime(DB_DATE_EXCHANGE_FORMAT_PYTHON)  # type: ignore
 
         j = JinjaSql()
         query, bind_params = j.prepare_query(sql_template, sql_params)

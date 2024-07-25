@@ -63,13 +63,17 @@ export default defineComponent({
     baseLayerName: String,
     dataLayerOpacity: Number,
     areasToShow: {
-      type: Array as PropType<Array<number>>, // Array of area ids
+      type: Array as PropType<Array<Number>>, // Array of area ids
       default: [],
     },
     layerSwitchZoomLevel: {
       // At which zoom level do we switch from the aggregated hexagons to the "individual observation" layer
       type: Number,
       default: 13,
+    },
+    zoomLevelMinMaxQuery: {
+      type: Number,
+      required: true,
     },
   },
   data: function () {
@@ -242,7 +246,7 @@ export default defineComponent({
         if (this.aggregatedDataLayer) {
           this.map.removeLayer(this.aggregatedDataLayer as VectorTileLayer<Feature>);
         }
-        this.loadOccMinMax(this.initialPosition.initialZoom, this.filters);
+        this.loadOccMinMax(this.zoomLevelMinMaxQuery, this.filters);
         this.aggregatedDataLayer = this.createAggregatedDataLayer();
         this.map.addLayer(this.aggregatedDataLayer as VectorTileLayer<Feature>);
       }

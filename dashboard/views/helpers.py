@@ -2,12 +2,20 @@
 
 import ast
 import datetime
+import logging
+from string import Template
 from urllib.parse import unquote
 
+from django.db import connection
 from django.db.models import QuerySet
 from django.http import HttpRequest, JsonResponse, QueryDict
+from jinjasql import JinjaSql
 
 from dashboard.models import Observation, User
+from dashboard.utils import readable_string
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 # This class is only defined to make Mypy happy
@@ -152,3 +160,44 @@ def model_to_json_list(Model) -> JsonResponse:
     Model instances should have an as_dict property
     """
     return JsonResponse([entry.as_dict for entry in Model.objects.all()], safe=False)
+
+
+def create_or_refresh_all_materialized_views():
+    for hex_size in set(settings.ZOOM_TO_HEX_SIZE.values()):  # set to remove duplicates
+        create_or_refresh_single_materialized_view(hex_size)
+
+
+def create_or_refresh_materialized_views(zoom_levels: list[int]):
+    """Create or refresh a bunch of materialized views for a list of zoom levels"""
+    for zoom_level in zoom_levels:
+        create_or_refresh_single_materialized_view(
+            settings.ZOOM_TO_HEX_SIZE[zoom_level]
+        )
+
+
+def create_or_refresh_single_materialized_view(hex_size_meters: int):
+    """Create or refresh a single materialized view for a specific hex size in meters"""
+    logger.info(
+        f"Creating or refreshing materialized view for hex size {hex_size_meters}"
+    )
+
+    sql_template = readable_string(
+        Template(
+            """
+        CREATE MATERIALIZED VIEW IF NOT EXISTS hexa_$hex_size_meters AS (
+         SELECT *
+         FROM dashboard_observation AS obs
+         JOIN ST_HexagonGrid($hex_size_meters,
+        ST_SetSRID(ST_EstimatedExtent('dashboard_observation', 'location'),
+        3857)) AS hexes ON ST_Intersects(obs.location, hexes.geom)
+        ) WITH NO DATA;
+        
+        REFRESH MATERIALIZED VIEW hexa_$hex_size_meters;
+        """
+        ).substitute(hex_size_meters=hex_size_meters)
+    )
+
+    j = JinjaSql()
+    query, bind_params = j.prepare_query(sql_template, {})
+    with connection.cursor() as cursor:
+        cursor.execute(query, bind_params)
