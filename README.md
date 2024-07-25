@@ -1,16 +1,3 @@
-TODO:
-- to continue:
-  - new table in DB for the not seen, and populated. so we can now:
-    - adjust all the seen/not seen code to make sure it uses the new model
-    - add the user preference to choose which observations should be marked as seen automatically (delay)
-    - add code to mark as seen all the observations that are older than the delay (run each day after the data import?)
-    - test if data migration performance is enough for prod purposes !!
-    - (at the end): drop the old observationView table
-    - (clone the existing site/db to test everything before real deployment)?
-- confirm with Damiano that all observations are considered as seen whe a user create an account
-- New NL translations?
-
-
 # GBIF Alert
 
 <!-- badges: start -->
