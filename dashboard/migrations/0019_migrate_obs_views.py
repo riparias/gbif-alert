@@ -2,12 +2,37 @@
 
 from django.db import migrations
 
+import logging
+
+
+def get_console_logger():
+    logger = logging.getLogger(__name__)
+    handler = logging.StreamHandler()
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+    logger.info("starting logger")
+    return logger
+
+
+def delete_all_obs_unseen(apps, schema_editor):
+    logger = get_console_logger()
+
+    logger.info("deleting all 'observation unseen' objects")
+    ObservationUnseen = apps.get_model("dashboard", "ObservationUnseen")
+    ObservationUnseen.objects.all().delete()
+
 
 def migrate_obs_views_new_mechanism(apps, schema_editor):
     Observation = apps.get_model("dashboard", "Observation")
     User = apps.get_model("dashboard", "User")
 
-    for obs in Observation.objects.all().prefetch_related():
+    logger = get_console_logger()
+
+    for i, obs in enumerate(Observation.objects.all().prefetch_related()):
+        if i % 10000 == 0:
+            logger.info(".")
+
         for user in User.objects.all():
             if not obs.observationview_set.filter(user=user).exists():
                 obs.observationunseen_set.create(user=user)
@@ -20,6 +45,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(
-            migrate_obs_views_new_mechanism, reverse_code=migrations.RunPython.noop
+            migrate_obs_views_new_mechanism, reverse_code=delete_all_obs_unseen
         )
     ]
