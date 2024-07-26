@@ -104,7 +104,7 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
             gbif_dataset_key="aaa7b334-ce0d-4e88-aaae-2e0c138d049f",
         )
 
-        obs_1 = Observation.objects.create(
+        self.obs_1 = Observation.objects.create(
             gbif_id=1,
             occurrence_id="1",
             species=self.first_species,
@@ -114,7 +114,7 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
             source_dataset=self.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),
         )
-        obs_2 = Observation.objects.create(
+        self.obs_2 = Observation.objects.create(
             gbif_id=2,
             occurrence_id="2",
             species=self.second_species,
@@ -124,7 +124,7 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
             source_dataset=self.second_dataset,
             location=Point(4.35978, 50.64728, srid=4326),
         )
-        obs_3 = Observation.objects.create(
+        self.obs_3 = Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
             species=self.second_species,
@@ -136,11 +136,11 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
         )
 
         # Obs 1 (and only obs_1) has been seen by the user
-        ObservationUnseen.objects.create(observation=obs_1, user=adminuser)
-        ObservationUnseen.objects.create(observation=obs_2, user=normal_user)
-        ObservationUnseen.objects.create(observation=obs_2, user=adminuser)
-        ObservationUnseen.objects.create(observation=obs_3, user=normal_user)
-        ObservationUnseen.objects.create(observation=obs_3, user=adminuser)
+        ObservationUnseen.objects.create(observation=self.obs_1, user=adminuser)
+        ObservationUnseen.objects.create(observation=self.obs_2, user=normal_user)
+        ObservationUnseen.objects.create(observation=self.obs_2, user=adminuser)
+        ObservationUnseen.objects.create(observation=self.obs_3, user=normal_user)
+        ObservationUnseen.objects.create(observation=self.obs_3, user=adminuser)
 
         alert = Alert.objects.create(
             name="Test alert",
@@ -931,6 +931,11 @@ class SeleniumTests(SeleniumTestsCommon):
         wait.until(EC.title_contains("Home"))
         navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
         navbar.find_element(By.LINK_TEXT, "peterpan")
+
+        # All the existing observations are considered as seen by this new user
+        existing_observations = Observation.objects.all()
+        for obs in existing_observations:
+            self.assertTrue(obs.already_seen_by(latest_created_user))
 
     def test_signup_too_common_password(self):
         User = get_user_model()
