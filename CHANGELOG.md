@@ -1,4 +1,4 @@
-# Current (unreleased)
+# v1.7.6 (2024-07-26)
 
 - Another map performance improvement (missing index)
 
