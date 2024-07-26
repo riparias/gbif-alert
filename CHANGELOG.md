@@ -1,3 +1,7 @@
+# v1.7.6 (2024-07-26)
+
+- Another map performance improvement (missing index)
+
 # v1.7.5 (2024-07-25)
 
 - Fix a compatibility issue with Windows platform (data import script). Thanks, @sronveaux!

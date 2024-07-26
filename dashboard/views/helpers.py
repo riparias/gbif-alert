@@ -193,8 +193,13 @@ def create_or_refresh_single_materialized_view(hex_size_meters: int):
         ) WITH NO DATA;
         
         REFRESH MATERIALIZED VIEW hexa_$hex_size_meters;
+        
+        CREATE INDEX IF NOT EXISTS hexa_$hex_size_meters_idx ON hexa_$hex_size_meters USING gist (location);
         """
-        ).substitute(hex_size_meters=hex_size_meters)
+        ).substitute(
+            hex_size_meters=hex_size_meters,
+            hex_size_meters_idx=f"{hex_size_meters}_idx",
+        )
     )
 
     j = JinjaSql()
