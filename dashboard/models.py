@@ -53,6 +53,10 @@ class User(AbstractUser):
         max_length=10, choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE
     )
 
+    # Observation older (observation date) than notification_delay_days will be
+    # considered already seen.
+    notification_delay_days = models.IntegerField(default=365)
+
     def get_language(self) -> str:
         # Use this method instead of self.language to get the language code (some got en-us as a default value, that will cause issues)
         if self.language == "en-us":
@@ -374,11 +378,21 @@ class Observation(models.Model):
         else:
             self.initial_data_import = replaced_observation.initial_data_import
 
-    def mark_as_unseen_for_all_users(self) -> None:
+    def considered_seen_delay_by(self, user: WebsiteUser) -> bool:
+        # TODO: test this logic !!
+        today = timezone.now().date()
+
+        return self.date < (
+            today - datetime.timedelta(days=user.notification_delay_days)
+        )
+
+    def mark_as_unseen_for_all_users_if_recent(self) -> None:
         """Mark the observation as unseen for all users"""
-        # TODO: test this
+
+        # TODO: test this logic !!
         for user in get_user_model().objects.all():
-            self.mark_as_unseen_by(user)
+            if not self.considered_seen_delay_by(user):
+                self.mark_as_unseen_by(user)
 
     def migrate_linked_entities(self) -> bool:
         """Migrate existing entities (comments, ...) linked to a previous observation that share the stable ID
@@ -386,6 +400,9 @@ class Observation(models.Model):
         Does nothing if there's no replaced observation.
 
         Returns True if it migrated an existing observation, False otherwise
+
+        Note: in case an Unseen object isn't relevant anymore (because the observation
+        is too old), it will be deleted rather than migrated
         """
         replaced_observation = self.replaced_observation
         if replaced_observation is not None:
@@ -395,8 +412,12 @@ class Observation(models.Model):
                 comment.save()
             # 2. Migrating seen/unseen status
             for observation_unseen in replaced_observation.observationunseen_set.all():
-                observation_unseen.observation = self
-                observation_unseen.save()
+                # TODO: extensively test this
+                if self.considered_seen_delay_by(observation_unseen.user):
+                    observation_unseen.delete()
+                else:
+                    observation_unseen.observation = self
+                    observation_unseen.save()
 
             return True
         else:
