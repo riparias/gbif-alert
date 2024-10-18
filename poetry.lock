@@ -1493,13 +1493,13 @@ cli = ["click (>=5.0)"]
 
 [[package]]
 name = "python-dwca-reader"
-version = "0.16.3"
+version = "0.16.4"
 description = "A simple Python package to read Darwin Core Archive (DwC-A) files."
 optional = false
 python-versions = "*"
 files = [
-    {file = "python-dwca-reader-0.16.3.tar.gz", hash = "sha256:b8448708c923c25bdd3d6548b94f7372a56c571e1d940b11886943e667e0cf6f"},
-    {file = "python_dwca_reader-0.16.3-py3-none-any.whl", hash = "sha256:7f26cebdc756f739c65489afd68d4d0f328d6ea4db7670d991f0212fe81189f6"},
+    {file = "python-dwca-reader-0.16.4.tar.gz", hash = "sha256:cfd26278346e9828716af1525a34ab0d2b6cd847bc261fd475611b23ae5ccc5e"},
+    {file = "python_dwca_reader-0.16.4-py3-none-any.whl", hash = "sha256:7007258866f7b0e335f2c6d59c46607533c0ad46ef85febc6a3bfe4c5b864e7f"},
 ]
 
 [[package]]
@@ -2003,4 +2003,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "6581f069be96cf1d1dd08f78c5af5376c23baf434ce1f244379dd131aafad732"
+content-hash = "6ee7e04a06ebe1bdcea073eddc480eda4bb1e577d43a2156c47b67ed9c142431"
