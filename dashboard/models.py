@@ -57,6 +57,15 @@ class User(AbstractUser):
     # considered already seen.
     notification_delay_days = models.IntegerField(default=365)
 
+    def obs_match_alerts(self, obs: "Observation") -> bool:
+        """Return True if the observation matches at least one of the user's alerts
+        # TODO: test this
+        """
+        for alert in self.alert_set.all():
+            if obs in alert.observations():
+                return True
+        return False
+
     def get_language(self) -> str:
         # Use this method instead of self.language to get the language code (some got en-us as a default value, that will cause issues)
         if self.language == "en-us":
@@ -378,20 +387,23 @@ class Observation(models.Model):
         else:
             self.initial_data_import = replaced_observation.initial_data_import
 
-    def considered_seen_delay_by(self, user: WebsiteUser) -> bool:
+    @staticmethod
+    def date_older_than_user_delay(user: WebsiteUser, the_date) -> bool:
         # TODO: test this logic !!
         today = timezone.now().date()
 
-        return self.date < (
+        return the_date < (
             today - datetime.timedelta(days=user.notification_delay_days)
         )
 
-    def mark_as_unseen_for_all_users_if_recent(self) -> None:
+    def mark_as_unseen_for_all_users_if_needed(self) -> None:
         """Mark the observation as unseen for all users"""
 
         # TODO: test this logic !!
         for user in get_user_model().objects.all():
-            if not self.considered_seen_delay_by(user):
+            if not self.date_older_than_user_delay(
+                user, the_date=self.date
+            ) and user.obs_match_alerts(self):
                 self.mark_as_unseen_by(user)
 
     def migrate_linked_entities(self) -> bool:
@@ -402,7 +414,7 @@ class Observation(models.Model):
         Returns True if it migrated an existing observation, False otherwise
 
         Note: in case an Unseen object isn't relevant anymore (because the observation
-        is too old), it will be deleted rather than migrated
+        is too old, or it does not belong to an alert), it will be deleted rather than migrated
         """
         replaced_observation = self.replaced_observation
         if replaced_observation is not None:
@@ -413,7 +425,9 @@ class Observation(models.Model):
             # 2. Migrating seen/unseen status
             for observation_unseen in replaced_observation.observationunseen_set.all():
                 # TODO: extensively test this
-                if self.considered_seen_delay_by(observation_unseen.user):
+                if not observation_unseen.relevant_for_user(
+                    date_new_observation=self.date
+                ):
                     observation_unseen.delete()
                 else:
                     observation_unseen.observation = self
@@ -668,6 +682,20 @@ class ObservationUnseen(models.Model):
     observation = models.ForeignKey(Observation, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
+    def relevant_for_user(self, date_new_observation) -> bool:
+        """Return True if the observation is still relevant for the user"""
+        # TODO: test this
+        # return self.observation.considered_seen_delay_by(
+        #     self.user
+        # ) or not self.user.obs_match_alerts(self.observation)
+
+        if self.observation.date_older_than_user_delay(
+            self.user, the_date=date_new_observation
+        ):
+            return False
+        else:
+            return self.user.obs_match_alerts(self.observation)
+
     class Meta:
         unique_together = [
             ("observation", "user"),
@@ -788,7 +816,23 @@ class Alert(models.Model):
             "emailNotificationsFrequency": self.email_notifications_frequency,
         }
 
+    def observations(self) -> QuerySet[Observation]:
+        """Return all observations matching this alert"""
+        # TODO: test this
+        # TODO: check if used
+        return Observation.objects.filtered_from_my_params(
+            species_ids=[s.pk for s in self.species.all()],
+            datasets_ids=[d.pk for d in self.datasets.all()],
+            areas_ids=[a.pk for a in self.areas.all()],
+            start_date=None,
+            end_date=None,
+            initial_data_import_ids=[],
+            status_for_user=None,
+            user=self.user,
+        )
+
     def unseen_observations(self) -> QuerySet[Observation]:
+        """Return all unseen observations matching this alert"""
         return Observation.objects.filtered_from_my_params(
             species_ids=[s.pk for s in self.species.all()],
             datasets_ids=[d.pk for d in self.datasets.all()],

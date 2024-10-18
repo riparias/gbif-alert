@@ -13,6 +13,7 @@ from dashboard.models import (
     Dataset,
     ObservationComment,
     ObservationUnseen,
+    Alert,
 )
 
 SAMPLE_DATASET_KEY = "940821c0-3269-11df-855a-b8a03c50a862"
@@ -54,6 +55,12 @@ class ObservationTests(TestCase):
             last_name="Frusciante",
             email="frusciante@gmail.com",
         )
+
+        # comment_author has also an alert that match second_obs
+        alert = Alert.objects.create(
+            user=self.comment_author,
+        )
+        alert.datasets.add(self.dataset)
 
         self.first_comment = ObservationComment.objects.create(
             author=self.comment_author,
@@ -229,7 +236,9 @@ class ObservationTests(TestCase):
     def test_replace_observation_unseen(self):
         """Similar to test_replace_observation, but the replaced observation was not seen
 
-        (there was an entry in observationunseen. we make sure this entry now properly points to the new observation)
+        (there was an entry in observationunseen. we make sure this entry now properly
+        points to the new observation)(it is not automatically marked as seen because
+        the user has a matching alert, and the observation is recent)
         """
 
         new_di = DataImport.objects.create(start=timezone.now())

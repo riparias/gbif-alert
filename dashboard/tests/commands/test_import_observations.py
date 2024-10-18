@@ -92,6 +92,14 @@ class ImportObservationsTest(TransactionTestCase):
         )
         self.alert_referencing_unused_dataset.species.add(self.lixus)
 
+        # We need this one to make sure the observation is automatically marked as as seen
+        # in test_observation_unseen_migrated()
+        self_alert_referencing_obs_unseen_to_be_replaced = Alert.objects.create(
+            name="Alert referencing observation unseen to be replaced",
+            user=self.user,
+        )
+        self_alert_referencing_obs_unseen_to_be_replaced.species.add(self.polydrusus)
+
         # This observation will be replaced during the import process
         # because there's a row with the same occurrence_id and dataset_key in the DwC-A
         self.initial_di = DataImport.objects.create(start=timezone.now())
@@ -139,8 +147,8 @@ class ImportObservationsTest(TransactionTestCase):
             user=self.user, observation=self.observation_unseen_to_be_replaced
         )
 
-        # We also create this one, so we can check it gets deleted in the new import process, and that it doesn't prevent
-        # the related observation to be deleted
+        # We also create this one, so we can check it gets deleted in the new import
+        # process, and that it doesn't prevent the related observation to be deleted
         self.observation_unseen_to_delete = ObservationUnseen.objects.create(
             user=self.user, observation=observation_not_replaced
         )
@@ -237,7 +245,7 @@ class ImportObservationsTest(TransactionTestCase):
         observations = Observation.objects.all().order_by("id")
         # We assume observations are loaded in the DwC-A rows order
         occ = observations[0]  #
-        self.assertEqual(str(occ.date), "2020-04-20")
+        self.assertEqual(str(occ.date), "2024-10-10")
         self.assertEqual(occ.gbif_id, "3044795455")
         self.assertEqual(
             occ.occurrence_id,
@@ -396,6 +404,11 @@ class ImportObservationsTest(TransactionTestCase):
         previous_observation_id = ou.observation_id
         previous_stable_id = ou.observation.stable_id
 
+        # We have to increase the user delay to make sure the observation is not marked as seen
+        # because it's considered old
+        self.user.notification_delay_days = 365 * 20
+        self.user.save()
+
         with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
             call_command("import_observations", source_dwca=gbif_download_file)
 
@@ -463,39 +476,85 @@ class ImportObservationsTest(TransactionTestCase):
                 request_history = m.request_history
                 self.assertEqual(len(request_history), 0)
 
-    def test_seen_status(self) -> None:
-        """The seen/unseen status is correctly set after import"""
+    def test_seen_status_unseen_to_seen_age(self) -> None:
+        """An old unseen observation is marked as seen after import (because it's older than the user delay)"""
+        # user delay is the default (365 days)
+        with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
+            call_command("import_observations", source_dwca=gbif_download_file)
+
+        observations_after = Observation.objects.all()
+        obs = observations_after.get(
+            occurrence_id=self.observation_unseen_to_be_replaced.occurrence_id
+        )
+
+        with self.assertRaises(ObservationUnseen.DoesNotExist):
+            ObservationUnseen.objects.get(observation=obs, user=self.user)
+
+    def test_seen_status_unseen_to_unseen(self) -> None:
+        """Same situation than test_seen_status_unseen_to_seen_age() but we force the
+        user delay to be very long, so the unseen status is kept"""
+        self.user.notification_delay_days = 365 * 20
+        self.user.save()
+
+        with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
+            call_command("import_observations", source_dwca=gbif_download_file)
+
+        observations_after = Observation.objects.all()
+        obs = observations_after.get(
+            occurrence_id=self.observation_unseen_to_be_replaced.occurrence_id
+        )
+
+        ObservationUnseen.objects.get(observation=obs, user=self.user)
+
+    def test_seen_status_seen_to_seen(self) -> None:
+        """An observation that was already seen remains seen after import"""
         with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
             call_command("import_observations", source_dwca=gbif_download_file)
 
         observations_after = Observation.objects.all()
 
-        # An existing seen observation has been replaced, it should be marked as seen
+        # Case 1: An existing seen observation has been replaced, it should be marked as seen
         case1 = observations_after.get(
             occurrence_id=self.observation_seen_to_be_replaced.occurrence_id
         )
-        # Unseen not found => seen
+        # Case 1 result: unseen not found => seen
         with self.assertRaises(ObservationUnseen.DoesNotExist):
             ObservationUnseen.objects.get(observation=case1, user=self.user)
 
-        # An existing unseen observation has been replaced, it should be marked as unseen
-        case2 = observations_after.get(
-            occurrence_id=self.observation_unseen_to_be_replaced.occurrence_id
+    def test_seen_status_new_to_seen_because_no_alert(self) -> None:
+        """New observation in the system. It's more recent than the user delay, but is
+        not part of any alert, so it's marked as seen"""
+
+        # Make sure we don't have any lingering alert
+        Alert.objects.filter(user=self.user).delete()
+
+        with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
+            call_command("import_observations", source_dwca=gbif_download_file)
+
+        observations_after = Observation.objects.all()
+        last_di = DataImport.objects.latest("id")
+
+        # Those are the observations that are totally new in the system
+        fresh_observations = observations_after.filter(initial_data_import=last_di)
+
+        recent_observation_not_in_alerts = fresh_observations.get(
+            stable_id="4aa3b8d81c4a62c89b73a4416af7d51968c29104"
         )
 
-        # Unseen found => unseen
-        ObservationUnseen.objects.get(observation=case2, user=self.user)
+        with self.assertRaises(ObservationUnseen.DoesNotExist):
+            ObservationUnseen.objects.get(
+                observation=recent_observation_not_in_alerts, user=self.user
+            )
 
-        # Several new observations have been added, they should be marked as unseen
-        newly_added_observations = observations_after.exclude(
-            occurrence_id__in=[
-                self.observation_unseen_to_be_replaced.occurrence_id,
-                self.observation_seen_to_be_replaced.occurrence_id,
-            ]
-        )
-        # We find a new ObservationUnseen for each new observation
-        for obs in newly_added_observations:
-            ObservationUnseen.objects.get(observation=obs, user=self.user)
+    def test_seen_status_new_to_seen_because_old(self) -> None:
+        """New observation in the system. It's older than the user delay, so it's
+        marked as seen (even if it's part of an alert)"""
+        # TODO: implement
+
+    def test_seen_status_new_to_unseen(self) -> None:
+        """New observation in the system. It's more recent than the user delay, and is
+        part of an alert, so it's marked as unseen"""
+        # TODO: implement
 
     @override_settings(
         GBIF_ALERT={
