@@ -1,4 +1,4 @@
-# Current (unreleased)
+# v1.7.7 (2024-11-07)
 
 - Fixed a bg with the maps API (see https://github.com/riparias/gbif-alert/issues/283)
 
