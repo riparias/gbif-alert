@@ -118,6 +118,21 @@ class MapsTestDataMixin(object):
 class MinMaxPerHexagonTests(MapsTestDataMixin, TestCase):
     """Tests covering the min_max_in_hexagon endpoint"""
 
+    def test_min_max_status_area_combinations(self):
+        """Regression test for https://github.com/riparias/gbif-alert/issues/283"""
+        self.client.login(username="frusciante", password="12345")
+
+        response = self.client.get(
+            reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+            data={
+                "zoom": 8,
+                "status": "seen",
+                "areaIds[]": self.public_area_andenne.pk,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+
     def test_min_max_per_hexagon(self):
         # At zoom level 8, with the initial data: we should have two polygons, both at 1. So min=1 and max=1
         response = self.client.get(
