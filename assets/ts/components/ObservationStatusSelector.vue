@@ -25,7 +25,7 @@
       ></ObservationStatusSelectorEntry>
     </div>
 
-    <p class="m-0" v-if="counts.unseen > 0">
+    <p class="m-0" v-if="counts.unseen > 0 && !skipMarkAction">
       <a @click="confirmationModalOpen = true" href="#"
         >{{ $t("message.markAllObservationsAsSeen")}}</a
       >
@@ -64,6 +64,11 @@ export default defineComponent({
     endpointsUrls: {
       type: Object as () => EndpointsUrls,
       required: true,
+    },
+    // The skipMarkAction prop is used to skip the markAllObservationsAsSeen link/action
+    skipMarkAction: {
+      type: Boolean,
+      default: false,
     },
   },
   data: function () {

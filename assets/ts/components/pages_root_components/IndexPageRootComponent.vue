@@ -1,18 +1,6 @@
 <template>
   <div class="row">
     <div class="col-sm my-2">
-      <bootstrap-alert
-          v-if="showInProgressMessage"
-          @clickClose="showInProgressMessage = false"
-          alert-type="success"
-          class="my-2"
-      >
-        <i class="bi bi-info-circle"></i>
-        The observations are marked as seen in the background. This might take a
-        couple of minutes if there are a lot of observations. Don't hesitate to
-        refresh the page.
-      </bootstrap-alert>
-
       <div class="row">
         <div class="col-2 d-flex align-items-center">
           <b>{{ $t("message.filters") }}</b>
@@ -94,9 +82,9 @@
           <ObservationStatusSelector
               v-if="frontendConfig.authenticatedUser"
               v-model="filters.status"
+              :skip-mark-action="true"
               :endpoints-urls="frontendConfig.apiEndpoints"
               :filters="filters"
-              @markAsSeenQueued="showInProgressMessage = true"
           ></ObservationStatusSelector>
         </div>
       </div>
@@ -142,7 +130,6 @@ interface IndexPageRootComponentData {
   availableDataImports: DataImportInformation[];
   filters: DashboardFilters;
   debouncedUpdateDateFilters: null | DebouncedFunc<(range: DateRange) => void>;
-  showInProgressMessage: boolean;
 }
 
 export default defineComponent({
@@ -166,7 +153,6 @@ export default defineComponent({
       filters: initialFilters,
 
       debouncedUpdateDateFilters: null,
-      showInProgressMessage: false,
     };
   },
   computed: {
