@@ -251,7 +251,11 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
                         LEFT JOIN dashboard_species as species ON obs.species_id = species.id
                         
                         {% if area_ids %}
-                        ,(SELECT mpoly FROM $areas_table_name WHERE $areas_table_name.id IN {{ area_ids | inclause }}) AS areas
+                        LEFT JOIN (
+                            SELECT mpoly
+                            FROM $areas_table_name
+                            WHERE $areas_table_name.id IN {{ area_ids | inclause }}
+                        ) AS areas ON ST_Within(obs.location, areas.mpoly)
                         {% endif %}
                         {% if status == 'unseen' %}
                             INNER JOIN $observationunseen_table_name
