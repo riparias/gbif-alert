@@ -37,6 +37,11 @@ class UserTests(TestCase):
 
         di = DataImport.objects.create(start=timezone.now())
 
+        cls.source_dataset = Dataset.objects.create(
+            name="Test dataset",
+            gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e",
+        )
+
         cls.observation = Observation.objects.create(
             gbif_id=1,
             occurrence_id="1",
@@ -46,10 +51,7 @@ class UserTests(TestCase):
             date=SEPTEMBER_13_2021,
             data_import=di,
             initial_data_import=di,
-            source_dataset=Dataset.objects.create(
-                name="Test dataset",
-                gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e",
-            ),
+            source_dataset=cls.source_dataset,
             location=Point(5.09513, 50.48941, srid=4326),  # Andenne
         )
 
@@ -64,6 +66,39 @@ class UserTests(TestCase):
             author=cls.jason,
             text="I love this observation!",
         )
+
+    def test_obs_match_alerts_no_alert(self):
+        """The user has no alerts, so this should be false"""
+        self.assertFalse(self.jason.obs_match_alerts(self.observation))
+
+    def test_obs_match_alert_true(self):
+        """The user has an alert that matches the observation"""
+        alert = Alert.objects.create(
+            user=self.jason, email_notifications_frequency=Alert.DAILY_EMAILS
+        )
+        alert.species.add(self.observation.species)
+
+        self.assertTrue(self.jason.obs_match_alerts(self.observation))
+
+    def test_obs_match_alert_multiple(self):
+        """The user has multiple alerts which match the observation"""
+        # One alert for the species
+        alert = Alert.objects.create(
+            user=self.jason,
+            email_notifications_frequency=Alert.DAILY_EMAILS,
+            name="Test alert #1",
+        )
+        alert.species.add(self.observation.species)
+
+        # Another alert for the dataset
+        another_alert = Alert.objects.create(
+            user=self.jason,
+            email_notifications_frequency=Alert.DAILY_EMAILS,
+            name="Test alert #2",
+        )
+        another_alert.datasets.add(self.source_dataset)
+
+        self.assertTrue(self.jason.obs_match_alerts(self.observation))
 
     def test_has_alerts_with_unseen_observations_false_no_alerts(self):
         """The user has no alerts, so this should be false"""

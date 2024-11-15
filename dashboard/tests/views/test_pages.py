@@ -337,7 +337,7 @@ class WebPagesTests(TestCase):
         )
 
         User = get_user_model()
-        comment_author = User.objects.create_user(
+        cls.comment_author = User.objects.create_user(
             username="frusciante",
             password="12345",
             first_name="John",
@@ -350,7 +350,7 @@ class WebPagesTests(TestCase):
         with mock.patch("django.utils.timezone.now", mock.Mock(return_value=mocked)):
             ObservationComment.objects.create(
                 observation=cls.second_obs,
-                author=comment_author,
+                author=cls.comment_author,
                 text="This is my comment",
             )
 
@@ -695,8 +695,28 @@ class WebPagesTests(TestCase):
         self.assertNotContains(response, "You have first seen this observation on")
         self.assertNotContains(response, "Mark this observation as unseen")
 
-    def test_observation_details_observation_view_authenticated(self):
-        """Visiting the observation_details page while logged in: there's a button to mark as unseen"""
+    def test_observation_details_observation_view_authenticated_not_in_alerts(self):
+        """Visiting the observation_details page while logged in: there's no button to mark as unseen because the user has no matchin alert for the observation"""
+        self.client.login(username="frusciante", password="12345")
+        obs_stable_id = self.first_obs.stable_id
+
+        page_url = reverse(
+            "dashboard:pages:observation-details",
+            kwargs={"stable_id": obs_stable_id},
+        )
+
+        response = self.client.get(page_url)
+        self.assertNotContains(response, "Mark this observation as unseen")
+
+    def test_observation_details_observation_view_authenticated_in_alerts(self):
+        """Same as before, but this time the user has an alert that matches the observation, so the link is displayed"""
+        alert = Alert.objects.create(
+            name="Test alert",
+            user=self.comment_author,
+            email_notifications_frequency="N",
+        )
+        alert.species.add(self.first_obs.species)
+
         self.client.login(username="frusciante", password="12345")
         obs_stable_id = self.first_obs.stable_id
 

@@ -58,9 +58,7 @@ class User(AbstractUser):
     notification_delay_days = models.IntegerField(default=365)
 
     def obs_match_alerts(self, obs: "Observation") -> bool:
-        """Return True if the observation matches at least one of the user's alerts
-        # TODO: test this
-        """
+        """Return True if the observation matches at least one of the user's alerts"""
         for alert in self.alert_set.all():
             if obs in alert.observations():
                 return True
@@ -350,9 +348,12 @@ class Observation(models.Model):
     def mark_as_unseen_by(self, user: WebsiteUser) -> bool:
         """Mark the observation as "unseen" for a given user.
 
-        :return: True is successful (most probable causes of failure: user has not seen this observation yet / user is
-        anonymous)"""
-        if user.is_authenticated:
+        :return: True is successful. Most common causes of failure:
+            - the observation doesn't match one of the user's alerts
+            - user has not seen this observation yet
+            - user is anonymous
+        """
+        if user.is_authenticated and user.obs_match_alerts(self):
             _, created = ObservationUnseen.objects.get_or_create(
                 observation=self, user=user
             )

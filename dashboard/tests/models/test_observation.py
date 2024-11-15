@@ -57,10 +57,10 @@ class ObservationTests(TestCase):
         )
 
         # comment_author has also an alert that match second_obs
-        alert = Alert.objects.create(
+        self.alert = Alert.objects.create(
             user=self.comment_author,
         )
-        alert.datasets.add(self.dataset)
+        self.alert.datasets.add(self.dataset)
 
         self.first_comment = ObservationComment.objects.create(
             author=self.comment_author,
@@ -158,20 +158,23 @@ class ObservationTests(TestCase):
         ovs_after = ObservationUnseen.objects.filter(observation=self.obs).values()
         self.assertQuerysetEqual(ovs_after, ovs_before)
 
-    def test_mark_as_unseen_by_case_1(self):
-        """Normal case: the user has indeed previously seen the occurrence"""
-        # Before, we can find it
+    def test_mark_as_unseen_by_happy_path(self):
+        """Normal case: the user has previously seen the occurrence and it matches one
+        of its users alerts"""
+
+        # Situation before check
         with self.assertRaises(ObservationUnseen.DoesNotExist):
             ObservationUnseen.objects.get(
                 observation=self.obs, user=self.comment_author
             )
+        self.assertTrue(self.comment_author.obs_match_alerts(self.obs))
 
         r = self.obs.mark_as_unseen_by(user=self.comment_author)
         self.assertTrue(r)
         # After, we can find it
         ObservationUnseen.objects.get(observation=self.obs, user=self.comment_author)
 
-    def test_mark_as_unseen_by_case_2(self):
+    def test_mark_as_unseen_by_failure_1(self):
         """Anonymous user: nothing happens and the method return False"""
         all_ous_before = ObservationUnseen.objects.all().values()
         r = self.obs.mark_as_unseen_by(user=AnonymousUser())
@@ -179,13 +182,33 @@ class ObservationTests(TestCase):
         all_ous_after = ObservationUnseen.objects.all().values()
         self.assertQuerysetEqual(all_ous_after, all_ous_before)
 
-    def test_mark_as_unseen_by_case_3(self):
+    def test_mark_as_unseen_by_failure_2(self):
         """User has not seen the observation before: method returns False, nothing happens to the db"""
         all_ous_before = ObservationUnseen.objects.all().values()
         r = self.second_obs.mark_as_unseen_by(user=self.comment_author)
         self.assertFalse(r)
         all_ous_after = ObservationUnseen.objects.all().values()
         self.assertQuerysetEqual(all_ous_after, all_ous_before)
+
+    def test_mark_as_unseen_by_failure_3(self):
+        """The user has seen the observation, but it doesn't match any of its alerts"""
+        # We do the same thing that the happy path test, but we remove the alert first
+        # Situation before check
+        with self.assertRaises(ObservationUnseen.DoesNotExist):
+            ObservationUnseen.objects.get(
+                observation=self.obs, user=self.comment_author
+            )
+        self.assertTrue(self.comment_author.obs_match_alerts(self.obs))
+
+        self.alert.delete()
+
+        r = self.obs.mark_as_unseen_by(user=self.comment_author)
+        self.assertFalse(r)
+        # There's still no unseen entry
+        with self.assertRaises(ObservationUnseen.DoesNotExist):
+            ObservationUnseen.objects.get(
+                observation=self.obs, user=self.comment_author
+            )
 
     def test_replace_observation(self):
         """High-level test: after creating a new observation with the same stable_id, make sure we can migrate the

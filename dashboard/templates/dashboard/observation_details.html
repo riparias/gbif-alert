@@ -19,7 +19,7 @@
         </div>
         <div class="row mb-3">
             <div class="col">
-                {% if user.is_authenticated and already_seen_by_user %}{# TODO: check: isn't it always the case for a logged in user (he's seeing it now, so it's "already seen") #}
+                {% if can_be_marked_unseen %}
                     <form class="d-inline-block" method="post"
                           action="{% url 'dashboard:actions:mark-observation-as-unseen' %}">
                         {% csrf_token %}
