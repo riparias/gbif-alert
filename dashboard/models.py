@@ -390,7 +390,6 @@ class Observation(models.Model):
 
     @staticmethod
     def date_older_than_user_delay(user: WebsiteUser, the_date) -> bool:
-        # TODO: test this logic !!
         today = timezone.now().date()
 
         return the_date < (

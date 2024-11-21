@@ -54,6 +54,7 @@ class ObservationTests(TestCase):
             first_name="John",
             last_name="Frusciante",
             email="frusciante@gmail.com",
+            notification_delay_days=365,  # 1 year, the default value
         )
 
         # comment_author has also an alert that match second_obs
@@ -209,6 +210,21 @@ class ObservationTests(TestCase):
             ObservationUnseen.objects.get(
                 observation=self.obs, user=self.comment_author
             )
+
+    def test_date_older_than_user_delay(self):
+        """The method works as expected"""
+        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+
+        self.assertFalse(
+            self.obs.date_older_than_user_delay(self.comment_author, the_date=yesterday)
+        )
+
+        two_years_ago = datetime.date.today() - datetime.timedelta(days=365 * 2)
+        self.assertTrue(
+            self.obs.date_older_than_user_delay(
+                self.comment_author, the_date=two_years_ago
+            )
+        )
 
     def test_replace_observation(self):
         """High-level test: after creating a new observation with the same stable_id, make sure we can migrate the
