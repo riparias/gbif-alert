@@ -67,6 +67,16 @@ class EditProfileForm(CommonUsersFields, UserChangeForm):
     # No password change on the profile form
     password = None  # type: ignore
 
+    notification_delay_days = forms.IntegerField(
+        label=_("Notification delay"),
+        help_text=_(
+            "Observations older than this number of days will be automatically considered as 'seen'"
+        ),
+    )
+
+    class Meta(CommonUsersFields.Meta):
+        fields = CommonUsersFields.Meta.fields + ("notification_delay_days",)
+
     def __init__(self, *args, **kwargs):
         super(UserChangeForm, self).__init__(*args, **kwargs)
         self.fields["username"].disabled = True  # Username is readonly
