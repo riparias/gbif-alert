@@ -132,8 +132,6 @@ msgid "all"
 msgstr "alles"
 
 #: dashboard/templates/dashboard/_alert.html:10
-#, fuzzy
-#| msgid "Species"
 msgid "Species:"
 msgstr "Soort"
 
@@ -325,13 +323,11 @@ msgstr "Home"
 
 #: dashboard/templates/dashboard/observation_details.html:23
 msgid "You have already seen this observation in the past"
-msgstr ""
+msgstr "Deze observatie heb je al eerder gezien"
 
 #: dashboard/templates/dashboard/observation_details.html:29
-#, fuzzy
-#| msgid "Matching observations"
 msgid "Mark this observation as unseen"
-msgstr "Overeenkomende waarnemingen"
+msgstr "Markeer deze observatie als niet bekeken"
 
 #: dashboard/templates/dashboard/observation_details.html:45
 msgid "Species"
