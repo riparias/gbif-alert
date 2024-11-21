@@ -250,7 +250,8 @@ class Command(BaseCommand):
         for obs in inserted_observations:
             replaced = obs.migrate_linked_entities()
             if not replaced:
-                # That's a new observation in the system, it should be marked as unseen for every user
+                # That's a new observation in the system, it should be marked as unseen
+                # for every user (if older than delay + matching an alert)
                 obs.mark_as_unseen_for_all_users_if_needed()
 
     def add_arguments(self, parser: CommandParser) -> None:

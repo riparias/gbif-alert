@@ -397,7 +397,14 @@ class Observation(models.Model):
         )
 
     def mark_as_unseen_for_all_users_if_needed(self) -> None:
-        """Mark the observation as unseen for all users"""
+        """Mark the observation as unseen for all users if:
+        - it's more recent than the user's notification delay
+        - it matches at least one alert of the user
+
+        !! It doesn't look into the status (to check if the user has already seen
+        it), so it is only suitable for new observations, not replaced ones !!
+
+        """
 
         # TODO: test this logic !!
         for user in get_user_model().objects.all():
