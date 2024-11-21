@@ -16,7 +16,6 @@ from dashboard.models import (
     DataImport,
     Dataset,
     ObservationComment,
-    ObservationView,
     Alert,
     Area,
 )
@@ -338,7 +337,7 @@ class WebPagesTests(TestCase):
         )
 
         User = get_user_model()
-        comment_author = User.objects.create_user(
+        cls.comment_author = User.objects.create_user(
             username="frusciante",
             password="12345",
             first_name="John",
@@ -351,7 +350,7 @@ class WebPagesTests(TestCase):
         with mock.patch("django.utils.timezone.now", mock.Mock(return_value=mocked)):
             ObservationComment.objects.create(
                 observation=cls.second_obs,
-                author=comment_author,
+                author=cls.comment_author,
                 text="This is my comment",
             )
 
@@ -362,9 +361,9 @@ class WebPagesTests(TestCase):
                 emptied_because_author_deleted_account=True,
             )
 
-            ObservationView.objects.create(
-                observation=cls.second_obs, user=comment_author
-            )
+            # ObservationView.objects.create(
+            #     observation=cls.second_obs, user=comment_author
+            # )
 
     def test_observation_details_not_found(self):
         response = self.client.get(
@@ -696,11 +695,8 @@ class WebPagesTests(TestCase):
         self.assertNotContains(response, "You have first seen this observation on")
         self.assertNotContains(response, "Mark this observation as unseen")
 
-    def test_observation_details_observation_view_authenticated_case_1(self):
-        """Visiting the observation_details page while logged in: there's a first seen timestamp, and a button to mark as unseen
-
-        In this case, this is the first time we see the observation, so the timestamp is very recent
-        """
+    def test_observation_details_observation_view_authenticated_not_in_alerts(self):
+        """Visiting the observation_details page while logged in: there's no button to mark as unseen because the user has no matchin alert for the observation"""
         self.client.login(username="frusciante", password="12345")
         obs_stable_id = self.first_obs.stable_id
 
@@ -710,18 +706,19 @@ class WebPagesTests(TestCase):
         )
 
         response = self.client.get(page_url)
-        self.assertContains(response, "You have first seen this observation on")
-        self.assertContains(response, "Mark this observation as unseen")
-        timestamp = response.context["first_seen_by_user_timestamp"]
-        self.assertLess(timezone.now() - timestamp, datetime.timedelta(minutes=1))
+        self.assertNotContains(response, "Mark this observation as unseen")
 
-    def test_observation_details_observation_view_authenticated_case_2(self):
-        """Visiting the observation_details page while logged in: there's a first seen timestamp, and a button to mark as unseen
+    def test_observation_details_observation_view_authenticated_in_alerts(self):
+        """Same as before, but this time the user has an alert that matches the observation, so the link is displayed"""
+        alert = Alert.objects.create(
+            name="Test alert",
+            user=self.comment_author,
+            email_notifications_frequency="N",
+        )
+        alert.species.add(self.first_obs.species)
 
-        In this case, the user show a previously seen observation: timestamp is older
-        """
         self.client.login(username="frusciante", password="12345")
-        obs_stable_id = self.second_obs.stable_id
+        obs_stable_id = self.first_obs.stable_id
 
         page_url = reverse(
             "dashboard:pages:observation-details",
@@ -729,9 +726,4 @@ class WebPagesTests(TestCase):
         )
 
         response = self.client.get(page_url)
-        self.assertContains(response, "You have first seen this observation on")
         self.assertContains(response, "Mark this observation as unseen")
-        timestamp = response.context["first_seen_by_user_timestamp"]
-        self.assertEqual(timestamp.year, 2018)
-        self.assertEqual(timestamp.month, 4)
-        self.assertEqual(timestamp.day, 4)

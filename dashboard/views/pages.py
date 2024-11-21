@@ -67,25 +67,30 @@ def news_page(request: HttpRequest) -> HttpResponse:
 
 def observation_details_page(request: HttpRequest, stable_id: str) -> HttpResponse:
     observation = get_object_or_404(Observation, stable_id=stable_id)
-    observation.mark_as_seen_by(request.user)
-    first_seen = observation.first_seen_at(request.user)
+
+    user = request.user
+
+    observation.mark_as_seen_by(user)
     origin_url = extract_str_request(request, "origin")
 
     if request.method == "POST":
-        if (
-            not request.user.is_authenticated
-        ):  # Only authenticated users can post comments
+        if not user.is_authenticated:  # Only authenticated users can post comments
             return HttpResponseForbidden()
 
         form = NewObservationCommentForm(request.POST)
         if form.is_valid():
             comment = form.save(commit=False)
-            comment.author = request.user
+            comment.author = user
             comment.observation = observation
             comment.save()
             form = NewObservationCommentForm()  # Show a new empty one to the user
     else:
         form = NewObservationCommentForm()
+
+    can_be_marked_unseen = False
+    if user.is_authenticated:
+        if observation.already_seen_by(user):
+            can_be_marked_unseen = user.obs_match_alerts(observation)
 
     return render(
         request,
@@ -93,7 +98,7 @@ def observation_details_page(request: HttpRequest, stable_id: str) -> HttpRespon
         {
             "observation": observation,
             "new_comment_form": form,
-            "first_seen_by_user_timestamp": first_seen,
+            "can_be_marked_unseen": can_be_marked_unseen,
             "origin_url": origin_url,
         },
     )

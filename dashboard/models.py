@@ -7,6 +7,7 @@ from typing import Any, Self
 
 import html2text
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser, AnonymousUser
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models.aggregates import Union as AggregateUnion
@@ -51,6 +52,17 @@ class User(AbstractUser):
     language = models.CharField(
         max_length=10, choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE
     )
+
+    # Observation older (observation date) than notification_delay_days will be
+    # considered already seen.
+    notification_delay_days = models.IntegerField(default=365)
+
+    def obs_match_alerts(self, obs: "Observation") -> bool:
+        """Return True if the observation matches at least one of the user's alerts"""
+        for alert in self.alert_set.all():
+            if obs in alert.observations():
+                return True
+        return False
 
     def get_language(self) -> str:
         # Use this method instead of self.language to get the language code (some got en-us as a default value, that will cause issues)
@@ -249,11 +261,11 @@ class ObservationManager(models.Manager["Observation"]):
             qs = qs.filter(initial_data_import_id__in=initial_data_import_ids)
 
         if status_for_user and user:
-            ov = ObservationView.objects.filter(user=user)
+            ous = ObservationUnseen.objects.filter(user=user)
             if status_for_user == "seen":
-                qs = qs.filter(observationview__in=ov)
+                qs = qs.exclude(observationunseen__in=ous)
             elif status_for_user == "unseen":
-                qs = qs.exclude(observationview__in=ov)
+                qs = qs.filter(observationunseen__in=ous)
 
         return qs
 
@@ -322,35 +334,31 @@ class Observation(models.Model):
 
         if user.is_authenticated:
             try:
-                self.observationview_set.get(user=user)
-            except ObservationView.DoesNotExist:
-                ObservationView.objects.create(observation=self, user=user)
+                self.observationunseen_set.filter(user=user).delete()
+            except ObservationUnseen.DoesNotExist:
+                pass
 
-    def first_seen_at(self, user: WebsiteUser) -> datetime.datetime | None:
-        """Return the time a user as first seen this observation
-
-        Returns none if the user is not logged in, or if they have not seen the observation yet
-        """
-
-        # We want to check if user is not anonymous, but apparently is_authenticated is the preferred method
+    def already_seen_by(self, user: WebsiteUser) -> bool | None:
+        """Return True if the observation has already been seen by the user"""
         if user.is_authenticated:
-            try:
-                return self.observationview_set.get(user=user).timestamp
-            except ObservationView.DoesNotExist:
-                return None
-        return None
+            return not self.observationunseen_set.filter(user=user).exists()
+        else:
+            return None
 
     def mark_as_unseen_by(self, user: WebsiteUser) -> bool:
         """Mark the observation as "unseen" for a given user.
 
-        :return: True is successful (most probable causes of failure: user has not seen this observation yet / user is
-        anonymous)"""
-        if user.is_authenticated:
-            try:
-                self.observationview_set.get(user=user).delete()
+        :return: True is successful. Most common causes of failure:
+            - the observation doesn't match one of the user's alerts
+            - user has not seen this observation yet
+            - user is anonymous
+        """
+        if user.is_authenticated and user.obs_match_alerts(self):
+            _, created = ObservationUnseen.objects.get_or_create(
+                observation=self, user=user
+            )
+            if created:
                 return True
-            except ObservationView.DoesNotExist:
-                return False
 
         return False
 
@@ -380,10 +388,40 @@ class Observation(models.Model):
         else:
             self.initial_data_import = replaced_observation.initial_data_import
 
-    def migrate_linked_entities(self) -> None:
+    @staticmethod
+    def date_older_than_user_delay(user: User, the_date) -> bool:
+        today = timezone.now().date()
+
+        return the_date < (
+            today - datetime.timedelta(days=user.notification_delay_days)
+        )
+
+    def mark_as_unseen_for_all_users_if_needed(self) -> None:
+        """Mark the observation as unseen for all users if:
+        - it's more recent than the user's notification delay
+        - it matches at least one alert of the user
+
+        !! It doesn't look into the status (to check if the user has already seen
+        it), so it is only suitable for new observations, not replaced ones !!
+
+        """
+
+        # TODO: test this logic !!
+        for user in get_user_model().objects.all():
+            if not self.date_older_than_user_delay(
+                user, the_date=self.date
+            ) and user.obs_match_alerts(self):
+                self.mark_as_unseen_by(user)
+
+    def migrate_linked_entities(self) -> bool:
         """Migrate existing entities (comments, ...) linked to a previous observation that share the stable ID
 
-        Does nothing if there's no replaced observation
+        Does nothing if there's no replaced observation.
+
+        Returns True if it migrated an existing observation, False otherwise
+
+        Note: in case an Unseen object isn't relevant anymore (because the observation
+        is too old, or it does not belong to an alert), it will be deleted rather than migrated
         """
         replaced_observation = self.replaced_observation
         if replaced_observation is not None:
@@ -391,10 +429,20 @@ class Observation(models.Model):
             for comment in replaced_observation.observationcomment_set.all():
                 comment.observation = self
                 comment.save()
-            # 2. Migrating user views
-            for observation_view in replaced_observation.observationview_set.all():
-                observation_view.observation = self
-                observation_view.save()
+            # 2. Migrating seen/unseen status
+            for observation_unseen in replaced_observation.observationunseen_set.all():
+                # TODO: extensively test this
+                if not observation_unseen.relevant_for_user(
+                    date_new_observation=self.date
+                ):
+                    observation_unseen.delete()
+                else:
+                    observation_unseen.observation = self
+                    observation_unseen.save()
+
+            return True
+        else:
+            return False
 
     @cached_property
     def replaced_observation(self) -> Self | None:
@@ -486,10 +534,10 @@ class Observation(models.Model):
 
         if for_user.is_authenticated:
             try:
-                self.observationview_set.get(user=for_user)
-                d["seenByCurrentUser"] = True
-            except ObservationView.DoesNotExist:
+                self.observationunseen_set.get(user=for_user)
                 d["seenByCurrentUser"] = False
+            except ObservationUnseen.DoesNotExist:
+                d["seenByCurrentUser"] = True
 
         return d
 
@@ -608,6 +656,11 @@ class Area(models.Model):
 
 class ObservationView(models.Model):
     """
+    !! This model is deprecated, we now use ObservationUnseen instead !!
+    (ObservationUnseen is a reversed logic: we store unseen observations instead of seen ones)
+    This one shouldn't be used in the codebase anymore, however we do keep it for the
+    sake of older data migrations !!
+
     This models keeps a history of when a user has first seen details about an observation
 
     - If no entry for the user/observation pair: the user has never seen details about this observation
@@ -617,6 +670,34 @@ class ObservationView(models.Model):
     observation = models.ForeignKey(Observation, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [
+            ("observation", "user"),
+        ]
+
+
+class ObservationUnseen(models.Model):
+    """
+    To replace the ObservationView model, but with reversed logic: we store unseen
+    observations instead of seen ones
+
+    Hopefully this will solve some scaling issues will have, since we have options to
+    keep the number of unseen observations relatively low
+    """
+
+    observation = models.ForeignKey(Observation, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    def relevant_for_user(self, date_new_observation) -> bool:
+        """Return True if this "unseen object" is still relevant for the user"""
+        # TODO: test this
+        if self.observation.date_older_than_user_delay(
+            self.user, the_date=date_new_observation
+        ):
+            return False
+        else:
+            return self.user.obs_match_alerts(self.observation)
 
     class Meta:
         unique_together = [
@@ -738,7 +819,22 @@ class Alert(models.Model):
             "emailNotificationsFrequency": self.email_notifications_frequency,
         }
 
+    def observations(self) -> QuerySet[Observation]:
+        """Return all observations matching this alert"""
+        # TODO: test this
+        return Observation.objects.filtered_from_my_params(
+            species_ids=[s.pk for s in self.species.all()],
+            datasets_ids=[d.pk for d in self.datasets.all()],
+            areas_ids=[a.pk for a in self.areas.all()],
+            start_date=None,
+            end_date=None,
+            initial_data_import_ids=[],
+            status_for_user=None,
+            user=self.user,
+        )
+
     def unseen_observations(self) -> QuerySet[Observation]:
+        """Return all unseen observations matching this alert"""
         return Observation.objects.filtered_from_my_params(
             species_ids=[s.pk for s in self.species.all()],
             datasets_ids=[d.pk for d in self.datasets.all()],

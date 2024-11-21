@@ -13,7 +13,7 @@ from dashboard.models import (
     DataImport,
     Dataset,
     Area,
-    ObservationView,
+    ObservationUnseen,
 )
 from dashboard.views.helpers import (
     create_or_refresh_all_materialized_views,
@@ -42,7 +42,7 @@ class MapsTestDataMixin(object):
             gbif_dataset_key="aaa7b334-ce0d-4e88-aaae-2e0c138d049f",
         )
 
-        Observation.objects.create(
+        obs = Observation.objects.create(
             gbif_id=1,
             occurrence_id="1",
             species=cls.first_species,
@@ -107,7 +107,7 @@ class MapsTestDataMixin(object):
             email="frusciante@gmail.com",
         )
 
-        ObservationView.objects.create(observation=second_obs, user=cls.user)
+        ObservationUnseen.objects.create(observation=obs, user=cls.user)
 
         create_or_refresh_all_materialized_views()
 

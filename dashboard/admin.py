@@ -13,8 +13,8 @@ from .models import (
     Dataset,
     ObservationComment,
     Area,
-    ObservationView,
     Alert,
+    ObservationUnseen,
 )
 
 admin.site.site_header = f'{settings.GBIF_ALERT["SITE_NAME"]} administration'
@@ -36,9 +36,9 @@ class ObservationCommentCommentInline(admin.TabularInline):
     model = ObservationComment
 
 
-class ObservationViewInline(admin.TabularInline):
-    model = ObservationView
-    readonly_fields = ["user", "timestamp"]
+class ObservationUnseenInline(admin.TabularInline):
+    model = ObservationUnseen
+    readonly_fields = ["user"]
 
     # Make that inline read-only
     def has_change_permission(self, request, obj=None):
@@ -56,7 +56,7 @@ class ObservationAdmin(admin.OSMGeoAdmin):
     list_display = ("stable_id", "date", "species", "source_dataset")
     list_filter = ["data_import", "species"]
     search_fields = ["stable_id"]
-    inlines = [ObservationCommentCommentInline, ObservationViewInline]
+    inlines = [ObservationCommentCommentInline, ObservationUnseenInline]
 
 
 class SpeciesResource(resources.ModelResource):

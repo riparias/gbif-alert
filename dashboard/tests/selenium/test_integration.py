@@ -24,8 +24,8 @@ from dashboard.models import (
     DataImport,
     Dataset,
     Observation,
-    ObservationView,
     Alert,
+    ObservationUnseen,
 )
 from dashboard.views.helpers import create_or_refresh_all_materialized_views
 
@@ -83,7 +83,9 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
             last_name="Frusciante",
             email="frusciante@gmail.com",
         )
-        User.objects.create_superuser(username="adminuser", password="67890")
+        adminuser = User.objects.create_superuser(
+            username="adminuser", password="67890"
+        )
 
         self.first_species = Species.objects.create(
             name="Procambarus fallax", gbif_taxon_key=8879526
@@ -102,7 +104,7 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
             gbif_dataset_key="aaa7b334-ce0d-4e88-aaae-2e0c138d049f",
         )
 
-        obs_1 = Observation.objects.create(
+        self.obs_1 = Observation.objects.create(
             gbif_id=1,
             occurrence_id="1",
             species=self.first_species,
@@ -112,7 +114,7 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
             source_dataset=self.first_dataset,
             location=Point(5.09513, 50.48941, srid=4326),
         )
-        Observation.objects.create(
+        self.obs_2 = Observation.objects.create(
             gbif_id=2,
             occurrence_id="2",
             species=self.second_species,
@@ -122,7 +124,7 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
             source_dataset=self.second_dataset,
             location=Point(4.35978, 50.64728, srid=4326),
         )
-        Observation.objects.create(
+        self.obs_3 = Observation.objects.create(
             gbif_id=3,
             occurrence_id="3",
             species=self.second_species,
@@ -134,7 +136,11 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
         )
 
         # Obs 1 (and only obs_1) has been seen by the user
-        ObservationView.objects.create(observation=obs_1, user=normal_user)
+        ObservationUnseen.objects.create(observation=self.obs_1, user=adminuser)
+        ObservationUnseen.objects.create(observation=self.obs_2, user=normal_user)
+        ObservationUnseen.objects.create(observation=self.obs_2, user=adminuser)
+        ObservationUnseen.objects.create(observation=self.obs_3, user=normal_user)
+        ObservationUnseen.objects.create(observation=self.obs_3, user=adminuser)
 
         alert = Alert.objects.create(
             name="Test alert",
@@ -926,6 +932,11 @@ class SeleniumTests(SeleniumTestsCommon):
         navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
         navbar.find_element(By.LINK_TEXT, "peterpan")
 
+        # All the existing observations are considered as seen by this new user
+        existing_observations = Observation.objects.all()
+        for obs in existing_observations:
+            self.assertTrue(obs.already_seen_by(latest_created_user))
+
     def test_signup_too_common_password(self):
         User = get_user_model()
         number_users_before = User.objects.count()
@@ -1011,6 +1022,11 @@ class SeleniumTests(SeleniumTestsCommon):
         self.assertEqual(last_name_field.get_attribute("value"), "Frusciante")
         email_field = self.selenium.find_element(By.ID, "id_email")
         self.assertEqual(email_field.get_attribute("value"), "frusciante@gmail.com")
+        motification_delay_days_field = self.selenium.find_element(
+            By.ID, "id_notification_delay_days"
+        )
+        # Users have one year of delay by default
+        self.assertEqual(motification_delay_days_field.get_attribute("value"), "365")
 
         # Let's update the values
         first_name_field.clear()
@@ -1019,6 +1035,8 @@ class SeleniumTests(SeleniumTestsCommon):
         last_name_field.send_keys("Palmer")
         email_field.clear()
         email_field.send_keys("palmer@gmail.com")
+        motification_delay_days_field.clear()
+        motification_delay_days_field.send_keys("30")
         save_button = self.selenium.find_element(
             By.ID, "gbif-alert-profile-save-button"
         )
@@ -1048,6 +1066,11 @@ class SeleniumTests(SeleniumTestsCommon):
         self.assertEqual(last_name_field.get_attribute("value"), "Palmer")
         email_field = self.selenium.find_element(By.ID, "id_email")
         self.assertEqual(email_field.get_attribute("value"), "palmer@gmail.com")
+        motification_delay_days_field = self.selenium.find_element(
+            By.ID, "id_notification_delay_days"
+        )
+        # Users have one year of delay by default
+        self.assertEqual(motification_delay_days_field.get_attribute("value"), "30")
 
     def test_no_profile_page_if_not_logged(self):
         """We try to access the profile page directly from the URL, without being signed in"""

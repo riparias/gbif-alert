@@ -19,15 +19,13 @@
         </div>
         <div class="row mb-3">
             <div class="col">
-                {% if user.is_authenticated and first_seen_by_user_timestamp %}
-                    <small class="text-muted">You have first seen this observation on <span
-                            id="observation-view-timestamp">{{ first_seen_by_user_timestamp }}</span></small>
+                {% if can_be_marked_unseen %}
                     <form class="d-inline-block" method="post"
                           action="{% url 'dashboard:actions:mark-observation-as-unseen' %}">
                         {% csrf_token %}
                         <input type="hidden" id="observationId" name="observationId" value="{{ observation.pk }}">
                         <input type="hidden" id="originUrl" name="originUrl" value="{{ origin_url }}">
-                        <button type="submit" class="btn btn-warning btn-sm">Mark this observation as unseen</button>
+                        <button type="submit" class="btn btn-warning btn-sm">{% translate "Mark this observation as unseen" %}</button>
                     </form>
                 {% endif %}
 

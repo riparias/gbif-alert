@@ -248,7 +248,11 @@ class Command(BaseCommand):
         inserted_observations = Observation.objects.bulk_create(observations_to_insert)
         self.log_with_time("Migrating linked entities")
         for obs in inserted_observations:
-            obs.migrate_linked_entities()
+            replaced = obs.migrate_linked_entities()
+            if not replaced:
+                # That's a new observation in the system, it should be marked as unseen
+                # for every user (if older than delay + matching an alert)
+                obs.mark_as_unseen_for_all_users_if_needed()
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(

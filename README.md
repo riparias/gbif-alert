@@ -29,3 +29,20 @@ See [INSTALL.md](INSTALL.md) for more information.
 - LIFE RIPARIAS Early Alert: [production](https://alert.riparias.be) / [development](https://dev-alert.riparias.be) (Targets riparian invasive species in Belgium)
 - [GBIF Alert demo instance](https://gbif-alert-demo.thebinaryforest.net/) (Always in sync with the `devel` branch of this repository)
 - The Belgian Biodiversity Platform uses GBIF alert under the hood as an API for the ManaIAS project. 
+
+
+# TODO before confidently update:
+- think!! seen/unseen: what happens if the observation is migrated (with its seen/unseen status), but the actual criteria have changed because species has changed, for example.
+- is there a check that they are automatically marked as seen if old and/or not part of any alert?
+- check TODO in code (missing tests, etc)
+- reread all code from branch
+- test the mark as read with redis queue
+- take a dump from prod DB, rerun and test all locally
+- check if the user can configure its "automatically seen" delay
+
+# TODO for data migration:
+- migrate
+- run python manage.py prepare_new_seen_unseen
+
+
+
