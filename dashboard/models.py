@@ -690,12 +690,8 @@ class ObservationUnseen(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def relevant_for_user(self, date_new_observation) -> bool:
-        """Return True if the observation is still relevant for the user"""
+        """Return True if this "unseen object" is still relevant for the user"""
         # TODO: test this
-        # return self.observation.considered_seen_delay_by(
-        #     self.user
-        # ) or not self.user.obs_match_alerts(self.observation)
-
         if self.observation.date_older_than_user_delay(
             self.user, the_date=date_new_observation
         ):
@@ -826,7 +822,6 @@ class Alert(models.Model):
     def observations(self) -> QuerySet[Observation]:
         """Return all observations matching this alert"""
         # TODO: test this
-        # TODO: check if used
         return Observation.objects.filtered_from_my_params(
             species_ids=[s.pk for s in self.species.all()],
             datasets_ids=[d.pk for d in self.datasets.all()],

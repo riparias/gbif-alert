@@ -1,6 +1,7 @@
 import datetime
 from pathlib import Path
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import requests_mock
 from django.contrib.gis.geos import Point
@@ -64,6 +65,7 @@ class ImportObservationsTest(TransactionTestCase):
             first_name="John",
             last_name="Frusciante",
             email="frusciante@gmail.com",
+            notification_delay_days=365,
         )
 
         Species.objects.all().delete()  # There are initially a few species in the database (loaded in data migration)
@@ -549,12 +551,58 @@ class ImportObservationsTest(TransactionTestCase):
     def test_seen_status_new_to_seen_because_old(self) -> None:
         """New observation in the system. It's older than the user delay, so it's
         marked as seen (even if it's part of an alert)"""
-        # TODO: implement
+
+        # We create an alert that matches the observation (all lixus bardanae observations)
+        alert = Alert.objects.create(
+            user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
+        )
+        alert.species.add(self.lixus)
+
+        with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
+            call_command("import_observations", source_dwca=gbif_download_file)
+
+        observations_after = Observation.objects.all()
+        last_di = DataImport.objects.latest("id")
+
+        # Those are the observations that are totally new in the system
+        fresh_observations = observations_after.filter(initial_data_import=last_di)
+
+        old_lixus_bardanae = fresh_observations.get(occurrence_id="Ugent:UGMD:16879")
+
+        # It is considered seen because it's older than the user delay
+        with self.assertRaises(ObservationUnseen.DoesNotExist):
+            ObservationUnseen.objects.get(
+                observation=old_lixus_bardanae, user=self.user
+            )
 
     def test_seen_status_new_to_unseen(self) -> None:
         """New observation in the system. It's more recent than the user delay, and is
         part of an alert, so it's marked as unseen"""
-        # TODO: implement
+
+        # Test code: identical to test_seen_status_new_to_seen_because_old() but we
+        # pretend we're running the import in 1950
+        alert = Alert.objects.create(
+            user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
+        )
+        alert.species.add(self.lixus)
+
+        mocked = datetime.datetime(1950, 7, 1, tzinfo=ZoneInfo("UTC"))
+        with mock.patch("django.utils.timezone.now", mock.Mock(return_value=mocked)):
+            with open(
+                SAMPLE_DATA_PATH / "gbif_download.zip", "rb"
+            ) as gbif_download_file:
+                call_command("import_observations", source_dwca=gbif_download_file)
+
+        observations_after = Observation.objects.all()
+        last_di = DataImport.objects.latest("id")
+
+        # Those are the observations that are totally new in the system
+        fresh_observations = observations_after.filter(initial_data_import=last_di)
+
+        old_lixus_bardanae = fresh_observations.get(occurrence_id="Ugent:UGMD:16879")
+
+        # It is considered not seen because it's only a few days old
+        ObservationUnseen.objects.get(observation=old_lixus_bardanae, user=self.user)
 
     @override_settings(
         GBIF_ALERT={
