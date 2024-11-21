@@ -389,7 +389,7 @@ class Observation(models.Model):
             self.initial_data_import = replaced_observation.initial_data_import
 
     @staticmethod
-    def date_older_than_user_delay(user: WebsiteUser, the_date) -> bool:
+    def date_older_than_user_delay(user: User, the_date) -> bool:
         today = timezone.now().date()
 
         return the_date < (
