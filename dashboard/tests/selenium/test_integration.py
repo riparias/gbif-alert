@@ -1022,6 +1022,11 @@ class SeleniumTests(SeleniumTestsCommon):
         self.assertEqual(last_name_field.get_attribute("value"), "Frusciante")
         email_field = self.selenium.find_element(By.ID, "id_email")
         self.assertEqual(email_field.get_attribute("value"), "frusciante@gmail.com")
+        motification_delay_days_field = self.selenium.find_element(
+            By.ID, "id_notification_delay_days"
+        )
+        # Users have one year of delay by default
+        self.assertEqual(motification_delay_days_field.get_attribute("value"), "365")
 
         # Let's update the values
         first_name_field.clear()
@@ -1030,6 +1035,8 @@ class SeleniumTests(SeleniumTestsCommon):
         last_name_field.send_keys("Palmer")
         email_field.clear()
         email_field.send_keys("palmer@gmail.com")
+        motification_delay_days_field.clear()
+        motification_delay_days_field.send_keys("30")
         save_button = self.selenium.find_element(
             By.ID, "gbif-alert-profile-save-button"
         )
@@ -1059,6 +1066,11 @@ class SeleniumTests(SeleniumTestsCommon):
         self.assertEqual(last_name_field.get_attribute("value"), "Palmer")
         email_field = self.selenium.find_element(By.ID, "id_email")
         self.assertEqual(email_field.get_attribute("value"), "palmer@gmail.com")
+        motification_delay_days_field = self.selenium.find_element(
+            By.ID, "id_notification_delay_days"
+        )
+        # Users have one year of delay by default
+        self.assertEqual(motification_delay_days_field.get_attribute("value"), "30")
 
     def test_no_profile_page_if_not_logged(self):
         """We try to access the profile page directly from the URL, without being signed in"""
