@@ -320,9 +320,10 @@ class Command(BaseCommand):
             )
 
             # 3. Pre-import all the datasets (better here than in a loop that goes over each observation)
-            self.log_with_time("Pre-importing all datasets")
+            self.log_with_time("3. Pre-importing all datasets")
             # 3.1 Get all the dataset keys / names from the DwCA
             datasets_referenced_in_dwca = dict()
+            self.log_with_time("3.1 Reading the DwCA to get the dataset keys")
             with DwCAReader(source_data_path) as dwca:
                 for core_row in dwca:
                     gbif_dataset_key = get_string_data(
@@ -334,6 +335,7 @@ class Command(BaseCommand):
                     datasets_referenced_in_dwca[gbif_dataset_key] = dataset_name
 
             # 3.2 Fix the empty names (see GBIF bug)
+            self.log_with_time("3.2 Fixing empty dataset names")
             for dataset_key, dataset_name in datasets_referenced_in_dwca.items():
                 if dataset_name == "":
                     datasets_referenced_in_dwca[
@@ -341,6 +343,7 @@ class Command(BaseCommand):
                     ] = get_dataset_name_from_gbif_api(dataset_key)
 
             # 3.3 Create/update the Dataset objects
+            self.log_with_time("3.3 Creating/updating the Dataset objects")
             hash_table_datasets = (
                 dict()
             )  # We also create a hash table, so the huge loop below does not need lookups
@@ -352,6 +355,7 @@ class Command(BaseCommand):
                 hash_table_datasets[dataset_key] = dataset
 
             # 4. We also create a hash table of species, to avoid lookups in the huge loop below
+            self.log_with_time("4. Creating a hash table of species")
             hash_table_species = dict()
             for species in Species.objects.all():
                 hash_table_species[species.gbif_taxon_key] = species
