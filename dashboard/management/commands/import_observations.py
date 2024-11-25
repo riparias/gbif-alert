@@ -348,6 +348,7 @@ class Command(BaseCommand):
                 dict()
             )  # We also create a hash table, so the huge loop below does not need lookups
             for dataset_key, dataset_name in datasets_referenced_in_dwca.items():
+                self.log_with_time(f"Creating/updating dataset {dataset_key}")
                 dataset, _ = Dataset.objects.update_or_create(
                     gbif_dataset_key=dataset_key,
                     defaults={"name": dataset_name},
