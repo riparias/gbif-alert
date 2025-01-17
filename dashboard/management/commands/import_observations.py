@@ -18,7 +18,14 @@ from gbif_blocking_occurrences_download import download_occurrences as download_
 from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
 from dashboard.management.commands.helpers import get_dataset_name_from_gbif_api
-from dashboard.models import Species, Observation, DataImport, Dataset
+from dashboard.models import (
+    Species,
+    Observation,
+    DataImport,
+    Dataset,
+    create_unseen_observations,
+    migrate_unseen_observations,
+)
 from dashboard.views.helpers import (
     create_or_refresh_materialized_views,
 )
@@ -233,26 +240,30 @@ class Command(BaseCommand):
                 skipped_observations_counter = skipped_observations_counter + 1
                 self.stdout.write("x", ending="")
 
-            if index % BULK_CREATE_CHUNK_SIZE == 0:
+            if index > 0 and index % BULK_CREATE_CHUNK_SIZE == 0:
                 self.log_with_time("Bulk size reached...")
                 self.batch_insert_observations(observations_to_insert)
                 observations_to_insert = []
 
         # Insert the last chunk
-        self.batch_insert_observations(observations_to_insert)
+        if observations_to_insert:
+            self.batch_insert_observations(observations_to_insert)
 
         return skipped_observations_counter
 
     def batch_insert_observations(self, observations_to_insert: list[Observation]):
         self.log_with_time("Bulk creation")
         inserted_observations = Observation.objects.bulk_create(observations_to_insert)
-        self.log_with_time("Migrating linked entities")
+        self.log_with_time("Migrating comments")
+        new_obs_ids = []
         for obs in inserted_observations:
+            self.stdout.write("/", ending="")
             replaced = obs.migrate_linked_entities()
             if not replaced:
-                # That's a new observation in the system, it should be marked as unseen
-                # for every user (if older than delay + matching an alert)
-                obs.mark_as_unseen_for_all_users_if_needed()
+                new_obs_ids.append(obs.id)
+
+        self.log_with_time("Creating unseen observations for new observations")
+        create_unseen_observations(Observation.objects.filter(id__in=new_obs_ids))
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
@@ -335,12 +346,13 @@ class Command(BaseCommand):
                     datasets_referenced_in_dwca[gbif_dataset_key] = dataset_name
 
             # 3.2 Fix the empty names (see GBIF bug)
-            self.log_with_time("3.2 Fixing empty dataset names")
-            for dataset_key, dataset_name in datasets_referenced_in_dwca.items():
-                if dataset_name == "":
-                    datasets_referenced_in_dwca[
-                        dataset_key
-                    ] = get_dataset_name_from_gbif_api(dataset_key)
+            # self.log_with_time("3.2 Fixing empty dataset names")
+            # TODO: uncomment this after GBIF outage
+            # for dataset_key, dataset_name in datasets_referenced_in_dwca.items():
+            #     if dataset_name == "":
+            #         datasets_referenced_in_dwca[
+            #             dataset_key
+            #         ] = get_dataset_name_from_gbif_api(dataset_key)
 
             # 3.3 Create/update the Dataset objects
             self.log_with_time("3.3 Creating/updating the Dataset objects")
@@ -376,10 +388,15 @@ class Command(BaseCommand):
                     )
                 )
 
-            self.log_with_time(
-                "All observations imported, now deleting observations linked to previous data imports..."
-            )
+            self.log_with_time("All observations imported")
 
+            # Migrate the unseen objects, or delete them if they are not relevant anymore
+            self.log_with_time("Migrating unseen observations")
+            migrate_unseen_observations()
+
+            self.log_with_time(
+                "now deleting observations linked to previous data imports..."
+            )
             # 6. Remove previous observations
             Observation.objects.exclude(data_import=current_data_import).delete()
             self.log_with_time("Previous observations deleted")

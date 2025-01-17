@@ -223,6 +223,50 @@ class DataImport(models.Model):
         }
 
 
+def create_unseen_observations(observation_queryset: QuerySet["Observation"]) -> None:
+    """
+    Create ObservationUnseen entries for all users that have alerts matching the
+    provided observations and that are not older than the user's notification delay
+
+    !!! Only applicable to new observations !!!
+    """
+    # Get the current date
+    today = timezone.now().date()
+
+    # Iterate over all users
+    for user in User.objects.all():
+        # Calculate the threshold date based on the user's notification delay
+        threshold_date = today - datetime.timedelta(days=user.notification_delay_days)
+
+        # Filter the provided observation queryset to get recent observations
+        recent_observations = observation_queryset.filter(date__gt=threshold_date)
+
+        # If no observation are more recent than the user threshold, we can take a shortcut
+        if not recent_observations:
+            continue
+
+        user_alerts = user.alert_set.all()
+
+        observation_ids_in_alerts = set()
+        for alert in user_alerts:
+            for observation in alert.observations():
+                observation_ids_in_alerts.add(observation.id)
+
+        # Iterate over all recent observations
+        for observation in recent_observations:
+            # Check if the observation is included in at least one of the user's alerts
+            if observation.id in observation_ids_in_alerts:
+                # Create a new entry in ObservationUnseen
+                ObservationUnseen.objects.create(observation=observation, user=user)
+            #     print(
+            #         f"Created ObservationUnseen for observation {observation.id} and user {user.id}"
+            #     )
+            # else:
+            #     print(
+            #         f"Skipping observation {observation.id} for user {user.id} (not in any alert)"
+            #     )
+
+
 class ObservationManager(models.Manager["Observation"]):
     def filtered_from_my_params(
         self,
@@ -268,6 +312,73 @@ class ObservationManager(models.Manager["Observation"]):
                 qs = qs.filter(observationunseen__in=ous)
 
         return qs
+
+
+# def migrate_unseen_observations() -> None:
+#     # TODO: this one is bugged and sometimes delete freshly created unseen observations
+#     """Migrate unseen observations to new observations or delete them if they are no longer relevant."""
+#     unseen_observations = ObservationUnseen.objects.select_related(
+#         "observation", "user"
+#     ).all()
+#     to_delete = []
+#     to_update = []
+#
+#     for unseen in unseen_observations:
+#         new_observation = (
+#             Observation.objects.filter(
+#                 stable_id=unseen.observation.stable_id,
+#                 data_import__gt=unseen.observation.data_import,
+#             )
+#             .order_by("data_import")
+#             .first()
+#         )
+#
+#         if new_observation:
+#             if unseen.relevant_for_user(date_new_observation=new_observation.date):
+#                 unseen.observation = new_observation
+#                 to_update.append(unseen)
+#             else:
+#                 to_delete.append(unseen.pk)
+#         else:
+#             to_delete.append(unseen.pk)
+#
+#     if to_delete:
+#         ObservationUnseen.objects.filter(pk__in=to_delete).delete()
+#     if to_update:
+#         ObservationUnseen.objects.bulk_update(to_update, ["observation"])
+
+
+def migrate_unseen_observations() -> None:
+    """Migrate unseen observations to new observations or delete them if they are no longer relevant."""
+    unseen_observations = ObservationUnseen.objects.select_related(
+        "observation", "user"
+    ).all()
+    to_delete = []
+    to_update = []
+
+    for unseen in unseen_observations:
+        new_observation = (
+            Observation.objects.filter(
+                stable_id=unseen.observation.stable_id,
+                data_import__gt=unseen.observation.data_import,
+            )
+            .order_by("data_import")
+            .first()
+        )
+
+        if new_observation:
+            if unseen.relevant_for_user(date_new_observation=new_observation.date):
+                unseen.observation = new_observation
+                to_update.append(unseen)
+        else:
+            # Only mark for deletion if the observation is not relevant anymore
+            if not unseen.relevant_for_user(date_new_observation=timezone.now().date()):
+                to_delete.append(unseen.pk)
+
+    if to_delete:
+        ObservationUnseen.objects.filter(pk__in=to_delete).delete()
+    if to_update:
+        ObservationUnseen.objects.bulk_update(to_update, ["observation"])
 
 
 class Observation(models.Model):
@@ -396,23 +507,55 @@ class Observation(models.Model):
             today - datetime.timedelta(days=user.notification_delay_days)
         )
 
-    def mark_as_unseen_for_all_users_if_needed(self) -> None:
-        """Mark the observation as unseen for all users if:
-        - it's more recent than the user's notification delay
-        - it matches at least one alert of the user
+    # def mark_as_unseen_for_all_users_if_needed(self) -> None:
+    #     """Mark the observation as unseen for all users if:
+    #     - it's more recent than the user's notification delay
+    #     - it matches at least one alert of the user
+    #
+    #     !! It doesn't look into the status (to check if the user has already seen
+    #     it), so it is only suitable for new observations, not replaced ones !!
+    #
+    #     """
+    #
+    #     # TODO: test this logic !!
+    #     for user in get_user_model().objects.all():
+    #         if not self.date_older_than_user_delay(
+    #             user, the_date=self.date
+    #         ) and user.obs_match_alerts(self):
+    #             self.mark_as_unseen_by(user)
 
-        !! It doesn't look into the status (to check if the user has already seen
-        it), so it is only suitable for new observations, not replaced ones !!
-
-        """
-
-        # TODO: test this logic !!
-        for user in get_user_model().objects.all():
-            if not self.date_older_than_user_delay(
-                user, the_date=self.date
-            ) and user.obs_match_alerts(self):
-                self.mark_as_unseen_by(user)
-
+    # def migrate_linked_entities(self) -> bool:
+    #     """Migrate existing entities (comments, ...) linked to a previous observation that share the stable ID
+    #
+    #     Does nothing if there's no replaced observation.
+    #
+    #     Returns True if it migrated an existing observation, False otherwise
+    #
+    #     Note: in case an Unseen object isn't relevant anymore (because the observation
+    #     is too old, or it does not belong to an alert), it will be deleted rather than migrated
+    #     """
+    #     replaced_observation = self.replaced_observation
+    #     if replaced_observation is not None:
+    #         # 1. Migrating comments
+    #         for comment in replaced_observation.observationcomment_set.all():
+    #             comment.observation = self
+    #             comment.save()
+    #         # 2. Migrating seen/unseen status
+    #         for observation_unseen in replaced_observation.observationunseen_set.all():
+    #             # TODO: extensively test this
+    #             if not observation_unseen.relevant_for_user(
+    #                 date_new_observation=self.date
+    #             ):
+    #                 observation_unseen.delete()
+    #             else:
+    #                 observation_unseen.observation = self
+    #                 observation_unseen.save()
+    #
+    #         return True
+    #     else:
+    #         return False
+    # TODO: rename this to migrate_linked_Comments since the scope changed
+    # TODO: make sure all calling code also calls migrate_unseen_observations
     def migrate_linked_entities(self) -> bool:
         """Migrate existing entities (comments, ...) linked to a previous observation that share the stable ID
 
@@ -426,19 +569,18 @@ class Observation(models.Model):
         replaced_observation = self.replaced_observation
         if replaced_observation is not None:
             # 1. Migrating comments
-            for comment in replaced_observation.observationcomment_set.all():
-                comment.observation = self
-                comment.save()
+            replaced_observation.observationcomment_set.update(observation=self)
+
             # 2. Migrating seen/unseen status
-            for observation_unseen in replaced_observation.observationunseen_set.all():
-                # TODO: extensively test this
-                if not observation_unseen.relevant_for_user(
-                    date_new_observation=self.date
-                ):
-                    observation_unseen.delete()
-                else:
-                    observation_unseen.observation = self
-                    observation_unseen.save()
+            # for observation_unseen in replaced_observation.observationunseen_set.all():
+            #     # TODO: extensively test this
+            #     if not observation_unseen.relevant_for_user(
+            #         date_new_observation=self.date
+            #     ):
+            #         observation_unseen.delete()
+            #     else:
+            #         observation_unseen.observation = self
+            #         observation_unseen.save()
 
             return True
         else:

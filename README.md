@@ -46,3 +46,12 @@ See [INSTALL.md](INSTALL.md) for more information.
 
 
 
+# TODO next
+- talk damiano
+- check I still receive mails from dev-alert
+- install django debug toolbar to monitor queries on alert list page (for example)
+- check if nightly nownload still work and if data appear consistent after
+- test rq pprocesses (m![img.png](img.png)rk as seen in batch)
+
+
+Import speed: c'est le "migrating comments" qui prends trop de temps, probablement à cause des unseen migrations

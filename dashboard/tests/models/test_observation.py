@@ -14,6 +14,7 @@ from dashboard.models import (
     ObservationComment,
     ObservationUnseen,
     Alert,
+    migrate_unseen_observations,
 )
 
 SAMPLE_DATASET_KEY = "940821c0-3269-11df-855a-b8a03c50a862"
@@ -230,7 +231,7 @@ class ObservationTests(TestCase):
         """High-level test: after creating a new observation with the same stable_id, make sure we can migrate the
         linked entities then and then delete the initial observation"""
 
-        # 2. Create a new one
+        # 2. Create a new observation that replaces one from the fixtures
         new_di = DataImport.objects.create(start=timezone.now())
         new_observation = Observation.objects.create(
             gbif_id=1,
@@ -247,8 +248,9 @@ class ObservationTests(TestCase):
 
         # Migrate entities
         new_observation.migrate_linked_entities()
+        migrate_unseen_observations()
 
-        # Make sure the counts are correct
+        # Make sure the counts for comments are correct
         self.assertEqual(new_observation.observationcomment_set.count(), 2)
         self.assertEqual(old_observation.observationcomment_set.count(), 0)
 
@@ -293,6 +295,7 @@ class ObservationTests(TestCase):
         )
 
         replacement_second_obs.migrate_linked_entities()
+        migrate_unseen_observations()
         self.obs2_unseen_obj.refresh_from_db()
 
         self.assertEqual(self.obs2_unseen_obj.observation, replacement_second_obs)
