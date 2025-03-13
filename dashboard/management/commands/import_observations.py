@@ -53,7 +53,19 @@ def species_for_row(row: CoreRow, hash_species) -> Species:
 
 
 def extract_gbif_download_id_from_dwca(dwca: DwCAReader) -> str:
-    return dwca.metadata.find("dataset").find("alternateIdentifier").text
+    e = dwca.metadata.find("dataset").find("alternateIdentifier")
+    # As of 2025-03-13, GBIF has changed the field name...
+    # This new adjustement is untested
+    if e is not None:
+        return e.text
+    else:
+        return (
+            dwca.metadata.find("additionalMetadata")
+            .find("metadata")
+            .find("gbif")
+            .find("citation")
+            .get("identifier")
+        )
 
 
 def get_string_data(row: CoreRow, field_name: str) -> str:

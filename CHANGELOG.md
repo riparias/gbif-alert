@@ -1,3 +1,7 @@
+# 1.7.8 (2025-03-13)
+
+- Adjusted the import process for a recent GBIF API metadata change
+
 # v1.7.7 (2024-11-07)
 
 - Fixed a bg with the maps API (see https://github.com/riparias/gbif-alert/issues/283)
