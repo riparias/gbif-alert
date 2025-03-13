@@ -34,6 +34,7 @@ def _get_webdriver() -> WebDriver:
     # Selenium setup
     options = webdriver.ChromeOptions()
     options.add_argument("--no-sandbox")
+    options.browser_version = "113"  # Temporary workaround, new version throws tons of exceptions and I don't have the capacity to investigate right now
     if settings.SELENIUM_HEADLESS_MODE:
         options.add_argument("--headless")
     options.add_argument("--window-size=2560,1440")
