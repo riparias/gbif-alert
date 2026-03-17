@@ -57,7 +57,7 @@
 <ul>
     <li><b>Waarschuwing naam:</b> {{ alert.name }}</li>
     <li><b>Soort:</b> {{ alert.species_list|default:"alle soorten" }}</li>
-    <li><b>Gebied:</b> {{ alert.areas_list|default:"alle gebieden" }}</li>
+    <li><b>Gebied:</b> {{ alert.area_description|default:"alle gebieden" }}</li>
     <li><b>Datasets: </b> {{ alert.datasets_list|default:"alle datasets" }}</li>
     <li><b>Type waarneming: </b> {{ alert.basis_of_record_list|default:"alle" }}</li>
     <li>

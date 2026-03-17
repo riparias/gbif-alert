@@ -56,7 +56,7 @@
 <ul>
     <li><b>Nom de l'alerte:</b> {{ alert.name }}</li>
     <li><b>Espèces:</b> {{ alert.species_list|default:"all" }}</li>
-    <li><b>Zones:</b> {{ alert.areas_list|default:"all" }}</li>
+    <li><b>Zones:</b> {{ alert.area_description|default:"all" }}</li>
     <li><b>Jeu de données: </b> {{ alert.datasets_list|default:"all" }}</li>
     <li><b>Type d'observation : </b> {{ alert.basis_of_record_list|default:"all" }}</li>
     <li>

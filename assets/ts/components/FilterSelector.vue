@@ -109,8 +109,21 @@ export default defineComponent({
     },
   },
   watch: {
-    selectedEntriesIds(newVal) {
+    selectedEntriesIds(newVal: number[]) {
+      // "All explicitly selected" is semantically identical to "no filter".
+      // Normalise to [] to avoid huge IN clauses in SQL and enormous URLs.
+      if (newVal.length > 0 && newVal.length === this.entries.length) {
+        this.selectedEntriesIds = [];
+        return;
+      }
       this.$emit("entries-changed", newVal);
+    },
+    entries(newEntries: DataRow[]) {
+      // entries loads async (API response arrives after mount). Once they
+      // arrive, check whether the current selection covers all of them.
+      if (this.selectedEntriesIds.length > 0 && this.selectedEntriesIds.length === newEntries.length) {
+        this.selectedEntriesIds = [];
+      }
     },
   },
   emits: ["entries-changed"],

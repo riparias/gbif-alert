@@ -104,6 +104,8 @@ def filtered_observations_from_request(request: HttpRequest) -> QuerySet[Observa
         status_for_user,
         initial_data_import_ids,
         verified_filter,
+        area_filter_mode,
+        approaching_distance_km,
     ) = filters_from_request(request)
 
     user = None
@@ -121,6 +123,8 @@ def filtered_observations_from_request(request: HttpRequest) -> QuerySet[Observa
         initial_data_import_ids=initial_data_import_ids,
         user=user,
         verified_filter=verified_filter,
+        area_filter_mode=area_filter_mode,
+        approaching_distance_km=approaching_distance_km,
     )
 
 
@@ -136,6 +140,8 @@ def filters_from_request(
     str | None,
     list[int],
     str | None,
+    str,
+    float | None,
 ]:
     species_ids = extract_int_array_request(request, "speciesIds[]")
     datasets_ids = extract_int_array_request(request, "datasetsIds[]")
@@ -148,6 +154,17 @@ def filters_from_request(
         request, "initialDataImportIds[]"
     )
     verified_filter = extract_str_request(request, "verifiedFilter")
+    raw_mode = extract_str_request(request, "areaFilterMode") or "inside"
+    area_filter_mode = raw_mode if raw_mode in ("inside", "approaching", "both") else "inside"
+    raw_distance = extract_str_request(request, "approachingDistanceKm")
+    approaching_distance_km: float | None = None
+    if raw_distance:
+        try:
+            dist = float(raw_distance)
+            if 0 < dist <= 50:
+                approaching_distance_km = dist
+        except (ValueError, OverflowError):
+            pass
 
     return (
         species_ids,
@@ -159,6 +176,8 @@ def filters_from_request(
         status_for_user,
         initial_data_import_ids,
         verified_filter,
+        area_filter_mode,
+        approaching_distance_km,
     )
 
 

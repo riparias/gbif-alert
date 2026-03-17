@@ -2,11 +2,12 @@ import datetime
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
-from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import MultiPolygon, Point, Polygon
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from dashboard.models import (
+    Area,
     BasisOfRecord,
     Observation,
     Species,
@@ -15,6 +16,7 @@ from dashboard.models import (
     ObservationComment,
     ObservationUnseen,
     Alert,
+    create_unseen_observations,
 )
 
 SAMPLE_DATASET_KEY = "940821c0-3269-11df-855a-b8a03c50a862"
@@ -366,3 +368,251 @@ class ObservationTests(TestCase):
 
         with self.assertRaises(Observation.MultipleObjectsReturned):
             self.obs.replaced_observation
+
+
+# A small square polygon in Belgium (roughly Lillois suburb area).
+# Approx 7 km wide x 11 km tall.
+_TEST_AREA_POLYGON = MultiPolygon(
+    Polygon(
+        ((4.30, 50.80), (4.40, 50.80), (4.40, 50.90), (4.30, 50.90), (4.30, 50.80)),
+        srid=4326,
+    ),
+    srid=4326,
+)
+
+
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
+class AreaFilterModeTests(TestCase):
+    """Integration tests for filtered_from_my_params() with area_filter_mode.
+
+    Three observations are placed relative to _TEST_AREA_POLYGON:
+    - obs_inside  : (4.35, 50.85) - clearly inside the polygon
+    - obs_near    : (4.18, 50.85) - ~8.4 km west of the western edge, NOT inside
+    - obs_far     : (3.50, 50.85) - ~56 km west, well outside any reasonable buffer
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION_AFM")
+        cls.species = Species.objects.create(
+            name="Testus spatialis", gbif_taxon_key=9999001
+        )
+        cls.dataset = Dataset.objects.create(
+            name="Spatial test dataset",
+            gbif_dataset_key="aaaabbbb-0000-1111-2222-333344445555",
+        )
+        di = DataImport.objects.create(start=timezone.now())
+
+        cls.area = Area.objects.create(name="Test square", mpoly=_TEST_AREA_POLYGON)
+
+        cls.obs_inside = Observation.objects.create(
+            gbif_id=9100,
+            occurrence_id="afm_inside",
+            species=cls.species,
+            date=datetime.date.today(),
+            data_import=di,
+            initial_data_import=di,
+            source_dataset=cls.dataset,
+            location=Point(4.35, 50.85, srid=4326),
+            basis_of_record=cls.basis_of_record,
+        )
+        cls.obs_near = Observation.objects.create(
+            gbif_id=9101,
+            occurrence_id="afm_near",
+            species=cls.species,
+            date=datetime.date.today(),
+            data_import=di,
+            initial_data_import=di,
+            source_dataset=cls.dataset,
+            location=Point(4.18, 50.85, srid=4326),  # ~8.4 km west of western edge
+            basis_of_record=cls.basis_of_record,
+        )
+        cls.obs_far = Observation.objects.create(
+            gbif_id=9102,
+            occurrence_id="afm_far",
+            species=cls.species,
+            date=datetime.date.today(),
+            data_import=di,
+            initial_data_import=di,
+            source_dataset=cls.dataset,
+            location=Point(3.50, 50.85, srid=4326),  # ~56 km west
+            basis_of_record=cls.basis_of_record,
+        )
+
+    def _filter(self, mode, distance_km=None):
+        return set(
+            Observation.objects.filtered_from_my_params(
+                species_ids=[self.species.pk],
+                datasets_ids=[],
+                basis_of_record_ids=[],
+                start_date=None,
+                end_date=None,
+                areas_ids=[self.area.pk],
+                status_for_user=None,
+                initial_data_import_ids=[],
+                user=None,
+                area_filter_mode=mode,
+                approaching_distance_km=distance_km,
+            ).values_list("pk", flat=True)
+        )
+
+    def test_inside_mode_returns_only_observation_inside_polygon(self):
+        result = self._filter("inside")
+        self.assertIn(self.obs_inside.pk, result)
+        self.assertNotIn(self.obs_near.pk, result)
+        self.assertNotIn(self.obs_far.pk, result)
+
+    def test_approaching_mode_excludes_inside_includes_nearby(self):
+        """10 km buffer: obs_near (~8.4 km) is included; obs_inside is excluded."""
+        result = self._filter("approaching", distance_km=10.0)
+        self.assertNotIn(self.obs_inside.pk, result)
+        self.assertIn(self.obs_near.pk, result)
+        self.assertNotIn(self.obs_far.pk, result)
+
+    def test_both_mode_includes_inside_and_nearby(self):
+        result = self._filter("both", distance_km=10.0)
+        self.assertIn(self.obs_inside.pk, result)
+        self.assertIn(self.obs_near.pk, result)
+        self.assertNotIn(self.obs_far.pk, result)
+
+    def test_approaching_mode_small_buffer_excludes_everything(self):
+        """1 km buffer: obs_near at ~8.4 km is too far away."""
+        result = self._filter("approaching", distance_km=1.0)
+        self.assertNotIn(self.obs_inside.pk, result)
+        self.assertNotIn(self.obs_near.pk, result)
+        self.assertNotIn(self.obs_far.pk, result)
+
+    def test_inside_mode_is_default_when_no_distance_given(self):
+        """When mode is 'approaching' but no distance_km, falls back to inside."""
+        result = self._filter("approaching", distance_km=None)
+        self.assertIn(self.obs_inside.pk, result)
+        self.assertNotIn(self.obs_near.pk, result)
+
+
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
+class CreateUnseenObservationsAreaFilterModeTests(TestCase):
+    """Tests for create_unseen_observations() with the new area_filter_mode field."""
+
+    @classmethod
+    def setUpTestData(cls):
+        User = get_user_model()
+        cls.user = User.objects.create_user(
+            username="afm_user",
+            password="pass",
+            email="afm@test.com",
+            notification_delay_days=365,
+        )
+        cls.basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBS_AFM2")
+        cls.species = Species.objects.create(
+            name="Testus unseenus", gbif_taxon_key=9999002
+        )
+        cls.dataset = Dataset.objects.create(
+            name="Unseen test dataset",
+            gbif_dataset_key="bbbbcccc-0000-1111-2222-333344445555",
+        )
+        di = DataImport.objects.create(start=timezone.now())
+
+        cls.area = Area.objects.create(name="Unseen test square", mpoly=_TEST_AREA_POLYGON)
+
+        cls.obs_inside = Observation.objects.create(
+            gbif_id=9200,
+            occurrence_id="cu_inside",
+            species=cls.species,
+            date=datetime.date.today(),
+            data_import=di,
+            initial_data_import=di,
+            source_dataset=cls.dataset,
+            location=Point(4.35, 50.85, srid=4326),
+            basis_of_record=cls.basis_of_record,
+        )
+        cls.obs_near = Observation.objects.create(
+            gbif_id=9201,
+            occurrence_id="cu_near",
+            species=cls.species,
+            date=datetime.date.today(),
+            data_import=di,
+            initial_data_import=di,
+            source_dataset=cls.dataset,
+            location=Point(4.18, 50.85, srid=4326),
+            basis_of_record=cls.basis_of_record,
+        )
+        cls.obs_far = Observation.objects.create(
+            gbif_id=9202,
+            occurrence_id="cu_far",
+            species=cls.species,
+            date=datetime.date.today(),
+            data_import=di,
+            initial_data_import=di,
+            source_dataset=cls.dataset,
+            location=Point(3.50, 50.85, srid=4326),
+            basis_of_record=cls.basis_of_record,
+        )
+
+    def _run_create_unseen(self):
+        all_obs = Observation.objects.filter(
+            pk__in=[self.obs_inside.pk, self.obs_near.pk, self.obs_far.pk]
+        )
+        create_unseen_observations(all_obs)
+
+    def _unseen_pks(self):
+        return set(
+            ObservationUnseen.objects.filter(user=self.user).values_list(
+                "observation_id", flat=True
+            )
+        )
+
+    _alert_counter = 0
+
+    def _make_alert(self, mode, distance_km=None):
+        CreateUnseenObservationsAreaFilterModeTests._alert_counter += 1
+        alert = Alert.objects.create(
+            user=self.user,
+            name=f"alert_{self._alert_counter}",
+            area_filter_mode=mode,
+            approaching_distance_km=distance_km,
+        )
+        alert.species.add(self.species)
+        alert.areas.add(self.area)
+        return alert
+
+    def setUp(self):
+        ObservationUnseen.objects.all().delete()
+        Alert.objects.filter(user=self.user).delete()
+
+    def test_inside_alert_marks_only_inside_observation_as_unseen(self):
+        self._make_alert("inside")
+        self._run_create_unseen()
+        unseen = self._unseen_pks()
+        self.assertIn(self.obs_inside.pk, unseen)
+        self.assertNotIn(self.obs_near.pk, unseen)
+        self.assertNotIn(self.obs_far.pk, unseen)
+
+    def test_approaching_alert_marks_only_near_observation_as_unseen(self):
+        self._make_alert("approaching", distance_km=10.0)
+        self._run_create_unseen()
+        unseen = self._unseen_pks()
+        self.assertNotIn(self.obs_inside.pk, unseen)
+        self.assertIn(self.obs_near.pk, unseen)
+        self.assertNotIn(self.obs_far.pk, unseen)
+
+    def test_both_alert_marks_inside_and_near_as_unseen(self):
+        self._make_alert("both", distance_km=10.0)
+        self._run_create_unseen()
+        unseen = self._unseen_pks()
+        self.assertIn(self.obs_inside.pk, unseen)
+        self.assertIn(self.obs_near.pk, unseen)
+        self.assertNotIn(self.obs_far.pk, unseen)
+
+    def test_two_alerts_different_modes_both_handled(self):
+        """User with one inside alert and one approaching alert: both obs get marked."""
+        self._make_alert("inside")
+        self._make_alert("approaching", distance_km=10.0)
+        self._run_create_unseen()
+        unseen = self._unseen_pks()
+        self.assertIn(self.obs_inside.pk, unseen)
+        self.assertIn(self.obs_near.pk, unseen)
+        self.assertNotIn(self.obs_far.pk, unseen)

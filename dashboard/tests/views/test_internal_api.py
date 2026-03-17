@@ -107,6 +107,8 @@ class InternalApiAlertTests(TestCase):
                 "name": "Test alert",
                 "speciesIds": [self.first_species.pk],
                 "verifiedFilter": "all",
+                "areaFilterMode": "inside",
+                "approachingDistanceKm": None,
             },
         )
 

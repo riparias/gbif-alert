@@ -156,6 +156,8 @@ def _create_or_update_alert(
     basis_of_record_ids: list[int],
     email_notifications_frequency: str,
     verified_filter: str,
+    area_filter_mode: str,
+    approaching_distance_km: float | None,
     user: User,
     alert_id: int | None = None,
 ) -> JsonResponse:
@@ -168,11 +170,18 @@ def _create_or_update_alert(
     alert.name = alert_name
     alert.email_notifications_frequency = email_notifications_frequency
     alert.verified_filter = verified_filter
+    alert.area_filter_mode = area_filter_mode
+    alert.approaching_distance_km = approaching_distance_km
 
     errors = {}
 
-    if len(species_ids) == 0:  # This is not catch by the model validation
+    if len(species_ids) == 0:  # This is not caught by the model validation
         errors["species"] = [_("At least one species must be selected")]
+
+    if area_filter_mode != Alert.AREA_FILTER_INSIDE and len(area_ids) == 0:
+        errors["area_filter_mode"] = [
+            _("At least one area must be selected for the chosen area filter mode.")
+        ]
 
     try:
         alert.full_clean()
@@ -209,6 +218,7 @@ def alert(
         except KeyError:
             alert_id = None
 
+        raw_distance = alert_data.get("approachingDistanceKm")
         return _create_or_update_alert(
             alert_name=alert_data["name"],
             species_ids=alert_data["speciesIds"],
@@ -217,6 +227,8 @@ def alert(
             basis_of_record_ids=alert_data.get("basisOfRecordIds", []),
             email_notifications_frequency=alert_data["emailNotificationsFrequency"],
             verified_filter=alert_data.get("verifiedFilter", "all"),
+            area_filter_mode=alert_data.get("areaFilterMode", Alert.AREA_FILTER_INSIDE),
+            approaching_distance_km=float(raw_distance) if raw_distance is not None else None,
             user=request.user,
             alert_id=alert_id,
         )

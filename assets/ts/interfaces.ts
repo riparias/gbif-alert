@@ -41,6 +41,8 @@ export interface DashboardFilters {
   status: "seen" | "unseen" | undefined;
   initialDataImportIds: number[];
   verifiedFilter: "all" | "verified" | "unverified";
+  areaFilterMode: "inside" | "approaching" | "both";
+  approachingDistanceKm: number | null;
 }
 
 // Data comes directly from the backend, keep in sync with Species.as_dict()

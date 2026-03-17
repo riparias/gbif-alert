@@ -54,6 +54,32 @@
       </div>
     </div>
 
+    <div id="gbif-alert-alert-area-filter-mode" class="mb-3" v-if="alertData.areaIds.length > 0">
+      <h3><label class="form-label">{{ $t("message.areaFilterMode") }}</label></h3>
+      <div class="col offset-md-1">
+        <ul class="list-unstyled">
+          <li class="gbif-alert-form-error" v-for="error in areaFilterModeErrors">{{ error }}</li>
+        </ul>
+        <select v-model="alertData.areaFilterMode" class="form-select">
+          <option value="inside">{{ $t('message.areaFilterModeInside') }}</option>
+          <option value="approaching">{{ $t('message.areaFilterModeApproaching') }}</option>
+          <option value="both">{{ $t('message.areaFilterModeBoth') }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="gbif-alert-alert-approaching-distance" class="mb-3"
+         v-if="alertData.areaIds.length > 0 && (alertData.areaFilterMode === 'approaching' || alertData.areaFilterMode === 'both')">
+      <h3><label for="approachingDistance" class="form-label">{{ $t("message.approachingDistanceKm") }}</label></h3>
+      <div class="col offset-md-1">
+        <ul class="list-unstyled">
+          <li class="gbif-alert-form-error" v-for="error in approachingDistanceKmErrors">{{ error }}</li>
+        </ul>
+        <input type="number" v-model.number="alertData.approachingDistanceKm" class="form-control"
+               id="approachingDistance" min="0.1" max="50" step="0.1">
+      </div>
+    </div>
+
     <div id="gbif-alert-alert-datasets-selection" class="mb-3">
       <h3><label class="form-label">{{ $t("message.datasetsToInclude") }}</label></h3>
       <div class="col offset-md-1">
@@ -177,7 +203,9 @@ const alertData = ref({
   basisOfRecordIds: [],
   areaIds: [],
   emailNotificationsFrequency: 'W',
-  verifiedFilter: 'all'
+  verifiedFilter: 'all',
+  areaFilterMode: 'inside' as 'inside' | 'approaching' | 'both',
+  approachingDistanceKm: null as number | null,
 });
 
 
@@ -189,8 +217,16 @@ const successfullySaved = ref<boolean>(false);
 // Backend-reported errors
 const nameErrors = ref<string[]>([]);
 const speciesErrors = ref<string[]>([]);
+const areaFilterModeErrors = ref<string[]>([]);
+const approachingDistanceKmErrors = ref<string[]>([]);
 const globalErrors = ref<string[]>([]);
-const hasErrors = computed(() => [...nameErrors.value, ...speciesErrors.value, ...globalErrors.value].length > 0);
+const hasErrors = computed(() => [
+  ...nameErrors.value,
+  ...speciesErrors.value,
+  ...areaFilterModeErrors.value,
+  ...approachingDistanceKmErrors.value,
+  ...globalErrors.value,
+].length > 0);
 
 const alertDetailsPageUrl = computed(() => {
   return gbifAlertConfig.apiEndpoints.alertPageUrlTemplate.replace('{id}', alertIdFromServer.value!.toString());
@@ -298,6 +334,8 @@ const submit = function () {
     if (!successfullySaved.value) {
       nameErrors.value = response.data.errors.name || [];
       speciesErrors.value = response.data.errors.species || [];
+      areaFilterModeErrors.value = response.data.errors.area_filter_mode || [];
+      approachingDistanceKmErrors.value = response.data.errors.approaching_distance_km || [];
       globalErrors.value = response.data.errors['__all__'] || [];
       scrollToError();
     }

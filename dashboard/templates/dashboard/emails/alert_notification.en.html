@@ -58,7 +58,7 @@ observations and details.</p>
 <ul>
     <li><b>Alert name:</b> {{ alert.name }}</li>
     <li><b>Species:</b> {{ alert.species_list|default:"all" }}</li>
-    <li><b>Areas:</b> {{ alert.areas_list|default:"all" }}</li>
+    <li><b>Areas:</b> {{ alert.area_description|default:"all" }}</li>
     <li><b>Datasets: </b> {{ alert.datasets_list|default:"all" }}</li>
     <li><b>Basis of record: </b> {{ alert.basis_of_record_list|default:"all" }}</li>
     <li>

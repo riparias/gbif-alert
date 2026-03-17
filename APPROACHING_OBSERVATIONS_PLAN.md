@@ -1,7 +1,7 @@
 # Plan: Approaching Observations Feature
 
-**Status**: Planning - not yet implemented
-**Last updated**: 2026-03-12 (all open questions resolved)
+**Status**: Implemented (backend + frontend + performance index + EXPLAIN ANALYZE done)
+**Last updated**: 2026-03-13
 
 ---
 
@@ -277,7 +277,7 @@ approachingDistanceKm?: number;
 - Add a numeric input for distance (km), shown only when mode is `approaching` or `both`.
 - Disable/hide both controls when no areas are selected; reset to defaults on area deselection.
 - Client-side validation: distance required and > 0 when mode is not `inside`.
-- Consider a reasonable max value in the UI (e.g., 500 km) matching the server-side cap.
+- Consider a reasonable max value in the UI (e.g., 50 km) matching the server-side cap.
 
 ### Main observation search / filter panel
 
@@ -306,8 +306,9 @@ New strings needed in English, French, and Dutch for:
 
 ## Resolved Questions
 
-1. **Max buffer distance**: Cap at **500 km**. Enforce server-side in `Alert.clean()` and in the
-   internal API validation. Mirror the limit in the frontend input (max attribute).
+1. **Max buffer distance**: Cap at **50 km**. Enforce server-side in `Alert.clean()` and in the
+   internal API validation. Mirror the limit in the frontend input (max attribute). EXPLAIN ANALYZE
+   showed that a 50 km buffer around Belgium already takes ~37 s; larger buffers are impractical.
 
 2. **Map visual distinction**: **Not needed.** No second tile layer, no different pin colour.
    Observations simply appear or don't based on the active filter.
@@ -321,8 +322,92 @@ New strings needed in English, French, and Dutch for:
    plain list of names. Requires a small helper method on `Alert` that formats the area description
    string based on `area_filter_mode` and `approaching_distance_km`.
 
-4. **EXPLAIN ANALYZE**: Still required before merging. Run on staging/production-sized data and
-   document result here.
+4. **EXPLAIN ANALYZE**: Done on staging database `riparias-prod-20260204` (~1 M observations,
+   Belgian extent). Results and required index documented below.
+
+---
+
+## Performance Analysis (EXPLAIN ANALYZE on staging, 2026-03-13)
+
+Dataset: ~1 M observations, database `riparias-prod-20260204`.
+Area used: Belgium (area id=4, large polygon covering the whole country).
+
+### inside mode (existing behaviour)
+
+Query time: ~580 ms.
+Plan: `Index Scan using dashboard_observation_location_84c383da_id` on the existing
+GiST index (`location`, SRID 3857). No changes needed.
+
+### approaching mode BEFORE adding the geography index
+
+Query time: ~21 000 ms (21 seconds).
+Plan: `Parallel Seq Scan` on all ~1 M rows. Root cause: `ST_Transform(location, 4326)::geography`
+wraps the indexed column, so PostgreSQL cannot use the SRID 3857 GiST index.
+
+### Required index
+
+A functional geography GiST index is required:
+
+```sql
+CREATE INDEX CONCURRENTLY dashboard_observation_location_geog_idx
+ON dashboard_observation
+USING GIST (Geography(ST_Transform(location, 4326)));
+```
+
+(`Geography()` is the function form of `::geography`; the cast syntax is not valid inside
+`CREATE INDEX`.)
+
+This index is ~76 MB and is added by migration `0029_observation_location_geography_index.py`.
+
+### approaching mode AFTER adding the geography index (3 km buffer, warm cache)
+
+Query time: ~1 800 ms.
+Plan: `Index Scan using dashboard_observation_location_geog_idx`.
+Index condition: `(st_transform(location, 4326))::geography && _st_expand(...)`.
+~56 832 candidates from bounding-box pre-filter; ~41 371 filtered by exact distance check.
+11x improvement over the seq scan.
+
+### approaching mode with large buffer (50 km)
+
+Query time: ~37 000 ms.
+Root cause: ~549 000 candidates (68 % of the dataset) pass the bounding-box pre-filter,
+so the exact `ST_DWithin` check dominates. This is a fundamental geometry problem - a
+50 km buffer around Belgium covers almost the whole dataset.
+
+Implication: the hard cap has been reduced to 50 km. Even 50 km is slow on large areas
+(country-scale) for interactive use. Smaller buffers (under ~20 km) are recommended.
+Larger buffers up to 50 km are acceptable for background alert emails where latency is
+not user-visible.
+
+### Map tile query (zoom 8, x=132, y=85, 10 km approaching) - BEFORE tile pre-filter
+
+Query time: ~10 000 ms.
+Plan: Geography index returns 50 734 matching observations (for the whole dataset).
+These are cross-joined with 437 hexagons via `ST_Intersects` - 22 million checks.
+Root cause: the tile boundary filter was enforced by the hex grid INNER JOIN *after*
+the full geography scan, not *before* it.
+
+### Map tile query (zoom 8, x=132, y=85, 10 km approaching) - AFTER tile pre-filter fix
+
+Query time: ~166 ms (60x improvement).
+Fix: pass `limit_to_tile=True` in `mvt_tiles_observations_hexagon_grid_aggregated`
+when `area_filter_mode` is `approaching` or `both`. This adds
+`AND ST_Within(obs.location, ST_TileEnvelope(z, x, y))` to the WHERE clause.
+Plan: `BitmapAnd` of geography index (115 k) AND SRID 3857 tile index (18 k).
+Combined to 0 rows for this tile (correct - no approaching observations here in
+staging data). The cross-join with 437 hexes is trivially fast.
+
+The fix is in `dashboard/views/maps.py`, `mvt_tiles_observations_hexagon_grid_aggregated`.
+
+### Summary
+
+| Query type | inside | approaching 3 km (no index) | approaching 3 km (with index) | approaching 50 km |
+|---|---|---|---|---|
+| Time | 580 ms | 21 000 ms | 1 800 ms | 37 000 ms |
+| Plan | Index scan (SRID 3857) | Seq scan | Index scan (geography) | Index scan (geography, many hits) |
+
+The geography index is **required** for approaching/both modes to be usable in practice.
+Without it, every approaching query is a full table scan.
 
 ---
 
@@ -332,7 +417,7 @@ New strings needed in English, French, and Dutch for:
 
 - Mode `approaching` or `both` without `approaching_distance_km` set -> ValidationError
 - Mode `approaching` or `both` with `approaching_distance_km <= 0` -> ValidationError
-- Mode `approaching` or `both` with `approaching_distance_km > 500` -> ValidationError
+- Mode `approaching` or `both` with `approaching_distance_km > 50` -> ValidationError
 - Mode `inside` with `approaching_distance_km` set -> ValidationError
 - Mode `approaching` or `both` with no areas selected -> ValidationError
 - All valid combinations pass without error
@@ -399,7 +484,7 @@ The spike already validated the approach. No need for exhaustive coordinate arit
 | 6 | Frontend: TypeScript interfaces + alert form controls | Medium |
 | 7 | Frontend: main search filter panel | Low (reuses alert form work) |
 | 8 | Tests: integration tests verifying all three query paths return identical result sets | High priority |
-| 9 | Performance: EXPLAIN ANALYZE on staging/production data | Before merging |
+| 9 - DONE | Performance: EXPLAIN ANALYZE on staging/production data; geography index added in migration 0029 | Done 2026-03-13 |
 
 Phases 2 and 3 must be implemented and tested together to avoid the map/table inconsistency
 described in the warning at models.py:376.
@@ -411,7 +496,8 @@ described in the warning at models.py:376.
 | File | Change |
 |---|---|
 | `dashboard/models.py` | Alert model fields, `filtered_from_my_params()`, `Alert.observations()`, `create_unseen_observations()` |
-| `dashboard/migrations/XXXX_alert_area_filter.py` | New migration (auto-generated) |
+| `dashboard/migrations/0028_alert_area_filter.py` | Alert model fields migration (auto-generated) |
+| `dashboard/migrations/0029_observation_location_geography_index.py` | Geography GiST index on observation.location |
 | `dashboard/views/maps.py` | JinjaSQL spatial fragment |
 | `dashboard/views/helpers.py` | `filters_from_request()`, JinjaSQL params dict |
 | `dashboard/views/internal_api.py` | Alert CRUD |

@@ -13,7 +13,7 @@
                 {% endfor %}
             </li>
             <li class="list-group-item">
-                <b>{% translate "Areas:" %}</b> {{ alert.areas_list|default:all_translated }}
+                <b>{% translate "Areas:" %}</b> {{ alert.area_description|default:all_translated }}
             </li>
             <li class="list-group-item" id="gbif-alert-alert-datasets-list">
                 <b>{% translate "Datasets:" %}</b> {{ alert.datasets_list|default:all_translated }}

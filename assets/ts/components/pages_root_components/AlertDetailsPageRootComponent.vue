@@ -69,6 +69,8 @@ export default defineComponent({
         endDate: null,
         status: "unseen",
         verifiedFilter: "all",
+        areaFilterMode: "inside",
+        approachingDistanceKm: null,
       },
       debouncedUpdateDateFilters: null,
       showInProgressMessage: false,

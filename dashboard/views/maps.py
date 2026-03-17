@@ -37,7 +37,22 @@ WHERE_CLAUSE = readable_string(
             AND obs.date <= TO_DATE({{{{ end_date }}}}, 'YYYY-MM-DD')
         {{% endif %}}
         {{% if area_ids %}}
-            AND ST_Within(obs.location, areas.mpoly)
+            {{% if area_filter_mode == 'approaching' and approaching_distance_km %}}
+                AND ST_DWithin(
+                    ST_Transform(obs.location, 4326)::geography,
+                    ST_Transform(areas.mpoly, 4326)::geography,
+                    {{{{ approaching_distance_km * 1000 }}}}
+                )
+                AND NOT ST_Within(obs.location, areas.mpoly)
+            {{% elif area_filter_mode == 'both' and approaching_distance_km %}}
+                AND ST_DWithin(
+                    ST_Transform(obs.location, 4326)::geography,
+                    ST_Transform(areas.mpoly, 4326)::geography,
+                    {{{{ approaching_distance_km * 1000 }}}}
+                )
+            {{% else %}}
+                AND ST_Within(obs.location, areas.mpoly)
+            {{% endif %}}
         {{% endif %}}
         {{% if initial_data_import_ids %}}
             AND obs.initial_data_import_id IN {{{{ initial_data_import_ids | inclause }}}}
@@ -61,7 +76,7 @@ WHERE_CLAUSE = readable_string(
             )
         {{% endif %}}
         {{% if limit_to_tile %}}
-            AND ST_Within(obs.location,  ST_TileEnvelope({{{{ zoom }}}}, {{{{ x }}}}, {{{{ y }}}}))
+            AND ST_Within(obs.location, ST_Expand(ST_TileEnvelope({{{{ zoom }}}}, {{{{ x }}}}, {{{{ y }}}}), {{{{ tile_buffer_meters }}}}))
         {{% endif %}}
 """
 )
@@ -76,7 +91,7 @@ JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = f"""
     {{% endif %}}
 
     {{% if area_ids %}}
-    , (SELECT mpoly FROM {_TBL_AREAS} WHERE {_TBL_AREAS}.id IN {{{{ area_ids | inclause }}}}) AS areas
+    , (SELECT ST_Union(mpoly) AS mpoly FROM {_TBL_AREAS} WHERE {_TBL_AREAS}.id IN {{{{ area_ids | inclause }}}}) AS areas
     {{% endif %}}
     WHERE (
         {WHERE_CLAUSE}
@@ -111,6 +126,8 @@ def _build_filter_params(request: HttpRequest) -> dict:
         status_for_user,
         initial_data_import_ids,
         verified_filter,
+        area_filter_mode,
+        approaching_distance_km,
     ) = filters_from_request(request)
 
     params: dict = {
@@ -120,6 +137,8 @@ def _build_filter_params(request: HttpRequest) -> dict:
         "area_ids": area_ids,
         "initial_data_import_ids": initial_data_import_ids,
         "verified_filter": verified_filter,
+        "area_filter_mode": area_filter_mode,
+        "approaching_distance_km": approaching_distance_km,
     }
 
     if status_for_user and request.user.is_authenticated:
@@ -174,12 +193,28 @@ def mvt_tiles_observations_hexagon_grid_aggregated(
     """
     )
 
+    filter_params = _build_filter_params(request)
     sql_params = {
-        **_build_filter_params(request),
+        **filter_params,
         "hex_size_meters": settings.ZOOM_TO_HEX_SIZE[zoom],
         "zoom": zoom,
         "x": x,
         "y": y,
+        # For approaching/both modes the geography index returns candidates from the whole
+        # dataset, which are then cross-joined with the hex grid (O(candidates * hexes)).
+        # Adding an explicit tile envelope filter to WHERE lets PostgreSQL use a BitmapAnd
+        # of the geography index AND the SRID 3857 tile index, reducing the cross-join to
+        # only observations that are actually inside this tile.
+        #
+        # The envelope is expanded by one hex radius (= hex edge length) so that
+        # observations inside edge hexagons that straddle tile boundaries are not
+        # truncated. Without the expansion, each tile would only count the half of an
+        # edge hexagon's observations that fall within its strict envelope.
+        "limit_to_tile": (
+            bool(filter_params.get("area_ids"))
+            and filter_params.get("area_filter_mode") in ("approaching", "both")
+        ),
+        "tile_buffer_meters": settings.ZOOM_TO_HEX_SIZE[zoom],
     }
 
     return HttpResponse(
@@ -205,16 +240,12 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
                 FROM (SELECT * FROM hexa_{hex_size}) AS obs
                     LEFT JOIN dashboard_species as species ON obs.species_id = species.id
 
-                    {{% if area_ids %}}
-                    LEFT JOIN (
-                        SELECT mpoly
-                        FROM {_TBL_AREAS}
-                        WHERE {_TBL_AREAS}.id IN {{{{ area_ids | inclause }}}}
-                    ) AS areas ON ST_Within(obs.location, areas.mpoly)
-                    {{% endif %}}
                     {{% if status == 'unseen' %}}
                         INNER JOIN {_TBL_UNSEEN}
                         ON obs.id = {_TBL_UNSEEN}.observation_id
+                    {{% endif %}}
+                    {{% if area_ids %}}
+                    , (SELECT ST_Union(mpoly) AS mpoly FROM {_TBL_AREAS} WHERE {_TBL_AREAS}.id IN {{{{ area_ids | inclause }}}}) AS areas
                     {{% endif %}}
                 WHERE (
                     {WHERE_CLAUSE}

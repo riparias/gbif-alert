@@ -12,6 +12,7 @@ from django.contrib.auth.models import AbstractUser, AnonymousUser
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models.aggregates import Union as AggregateUnion
 from django.core.mail import send_mail
+from django.core.exceptions import ValidationError
 from django.db.models import QuerySet, Q
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
@@ -277,17 +278,21 @@ def create_unseen_observations(observation_queryset: QuerySet["Observation"]) ->
         if not user_alerts:
             continue
 
-        # Collect species/dataset/basis_of_record/area IDs from all alerts
-        all_species_ids = set()
-        all_dataset_ids = set()
-        all_basis_of_record_ids = set()
-        all_area_ids = set()
+        # Collect species/dataset/basis_of_record IDs from all alerts (merged).
+        # Spatial filtering is handled per-group below because different alerts may
+        # use different area_filter_mode / approaching_distance_km values.
+        all_species_ids: set[int] = set()
+        all_dataset_ids: set[int] = set()
+        all_basis_of_record_ids: set[int] = set()
         has_alert_without_dataset_filter = False
         has_alert_without_basis_of_record_filter = False
-        has_alert_without_area_filter = False
         has_alert_without_verified_filter = False
         wants_verified = False
         wants_unverified = False
+
+        # Group alerts by (area_filter_mode, approaching_distance_km) so each group
+        # can apply its own spatial predicate in one query.
+        alerts_by_spatial: dict[tuple, list] = {}
 
         for alert in user_alerts:
             species_ids = {s.pk for s in alert.species.all()}  # Prefetched
@@ -305,11 +310,6 @@ def create_unseen_observations(observation_queryset: QuerySet["Observation"]) ->
                 has_alert_without_basis_of_record_filter = True
             all_basis_of_record_ids.update(basis_of_record_ids)
 
-            area_ids = {a.pk for a in alert.areas.all()}  # Prefetched
-            if not area_ids:
-                has_alert_without_area_filter = True
-            all_area_ids.update(area_ids)
-
             if alert.verified_filter == Alert.VERIFIED_FILTER_ALL:
                 has_alert_without_verified_filter = True
             elif alert.verified_filter == Alert.VERIFIED_FILTER_VERIFIED_ONLY:
@@ -317,42 +317,81 @@ def create_unseen_observations(observation_queryset: QuerySet["Observation"]) ->
             elif alert.verified_filter == Alert.VERIFIED_FILTER_UNVERIFIED_ONLY:
                 wants_unverified = True
 
-        # Build a single query for observations matching ANY of the user's alerts
-        # This is a simplified/conservative approach: we check if observation matches
-        # species from any alert. For datasets/areas, if any alert has no filter,
-        # we don't filter on that dimension.
-        matching_obs_qs = recent_observations.filter(species_id__in=all_species_ids)
+            key = (alert.area_filter_mode, alert.approaching_distance_km)
+            alerts_by_spatial.setdefault(key, []).append(alert)
+
+        # Build base queryset with non-spatial filters applied once.
+        base_obs_qs = recent_observations.filter(species_id__in=all_species_ids)
 
         if all_dataset_ids and not has_alert_without_dataset_filter:
-            matching_obs_qs = matching_obs_qs.filter(
+            base_obs_qs = base_obs_qs.filter(
                 source_dataset_id__in=all_dataset_ids
             )
 
         if all_basis_of_record_ids and not has_alert_without_basis_of_record_filter:
-            matching_obs_qs = matching_obs_qs.filter(
+            base_obs_qs = base_obs_qs.filter(
                 basis_of_record_id__in=all_basis_of_record_ids
             )
 
-        if all_area_ids and not has_alert_without_area_filter:
-            from django.contrib.gis.db.models.aggregates import Union as AggregateUnion
-
-            combined_areas = Area.objects.filter(pk__in=all_area_ids).aggregate(
-                area=AggregateUnion("mpoly")
-            )["area"]
-            if combined_areas:
-                matching_obs_qs = matching_obs_qs.filter(
-                    location__within=combined_areas
-                )
-
         if not has_alert_without_verified_filter:
             if wants_verified and not wants_unverified:
-                matching_obs_qs = matching_obs_qs.filter(verified=True)
+                base_obs_qs = base_obs_qs.filter(verified=True)
             elif wants_unverified and not wants_verified:
-                matching_obs_qs = matching_obs_qs.filter(verified=False)
+                base_obs_qs = base_obs_qs.filter(verified=False)
 
-        # Collect unseen entries for bulk creation
-        for obs in matching_obs_qs:
-            unseen_to_create.append(ObservationUnseen(observation=obs, user=user))
+        # For each spatial group, apply that group's area filter and collect results.
+        # Process AREA_FILTER_INSIDE groups first so they have priority on conflicts.
+        def _spatial_sort_key(item: tuple) -> int:
+            (mode, _dist), _alerts = item
+            return 0 if mode == Alert.AREA_FILTER_INSIDE else 1
+
+        for (mode, distance_km), alerts_group in sorted(
+            alerts_by_spatial.items(), key=_spatial_sort_key
+        ):
+            group_area_ids: set[int] = set()
+            has_group_without_area_filter = False
+            for alert in alerts_group:
+                a_ids = {a.pk for a in alert.areas.all()}  # Prefetched
+                if not a_ids:
+                    has_group_without_area_filter = True
+                group_area_ids.update(a_ids)
+
+            group_obs_qs = base_obs_qs
+            if group_area_ids and not has_group_without_area_filter:
+                combined_areas = Area.objects.filter(pk__in=group_area_ids).aggregate(
+                    area=AggregateUnion("mpoly")
+                )["area"]
+                if combined_areas:
+                    if mode == Alert.AREA_FILTER_INSIDE or not distance_km:
+                        group_obs_qs = group_obs_qs.filter(
+                            location__within=combined_areas
+                        )
+                    else:
+                        buffer_m = distance_km * 1000
+                        ewkb = combined_areas.ewkb
+                        dwithin_sql = (
+                            "ST_DWithin("
+                            "ST_Transform(dashboard_observation.location, 4326)::geography, "
+                            "ST_Transform(ST_GeomFromEWKB(%s), 4326)::geography, "
+                            "%s"
+                            ")"
+                        )
+                        if mode == Alert.AREA_FILTER_APPROACHING:
+                            group_obs_qs = group_obs_qs.extra(
+                                where=[
+                                    dwithin_sql,
+                                    "NOT ST_Within(dashboard_observation.location, ST_GeomFromEWKB(%s))",
+                                ],
+                                params=[ewkb, buffer_m, ewkb],
+                            )
+                        else:  # AREA_FILTER_BOTH
+                            group_obs_qs = group_obs_qs.extra(
+                                where=[dwithin_sql], params=[ewkb, buffer_m]
+                            )
+
+            # Collect unseen entries for bulk creation
+            for obs in group_obs_qs:
+                unseen_to_create.append(ObservationUnseen(observation=obs, user=user))
 
     # Bulk create all unseen observations at once (ignore conflicts for idempotency)
     if unseen_to_create:
@@ -372,6 +411,8 @@ class ObservationManager(models.Manager["Observation"]):
         initial_data_import_ids: list[int],
         user: User | None,  # mandatory if status_for_user is set
         verified_filter: str | None = None,
+        area_filter_mode: str = "inside",
+        approaching_distance_km: float | None = None,
     ) -> QuerySet["Observation"]:
         # !! IMPORTANT !! Make sure the observation filtering here is equivalent to what's done in
         # views.maps.JINJASQL_FRAGMENT_FILTER_OBSERVATIONS. Otherwise, observations returned on the map and on other
@@ -397,7 +438,28 @@ class ObservationManager(models.Manager["Observation"]):
             combined_areas = Area.objects.filter(pk__in=areas_ids).aggregate(
                 area=AggregateUnion("mpoly")
             )["area"]
-            qs = qs.filter(location__within=combined_areas)
+            if area_filter_mode == "inside" or not approaching_distance_km:
+                qs = qs.filter(location__within=combined_areas)
+            else:
+                buffer_m = approaching_distance_km * 1000
+                ewkb = combined_areas.ewkb
+                dwithin_sql = (
+                    "ST_DWithin("
+                    "ST_Transform(dashboard_observation.location, 4326)::geography, "
+                    "ST_Transform(ST_GeomFromEWKB(%s), 4326)::geography, "
+                    "%s"
+                    ")"
+                )
+                if area_filter_mode == "approaching":
+                    qs = qs.extra(
+                        where=[
+                            dwithin_sql,
+                            "NOT ST_Within(dashboard_observation.location, ST_GeomFromEWKB(%s))",
+                        ],
+                        params=[ewkb, buffer_m, ewkb],
+                    )
+                else:  # "both"
+                    qs = qs.extra(where=[dwithin_sql], params=[ewkb, buffer_m])
         if initial_data_import_ids:
             qs = qs.filter(initial_data_import_id__in=initial_data_import_ids)
 
@@ -951,6 +1013,16 @@ class Alert(models.Model):
         (VERIFIED_FILTER_UNVERIFIED_ONLY, "Unverified only"),
     ]
 
+    AREA_FILTER_INSIDE = "inside"
+    AREA_FILTER_APPROACHING = "approaching"
+    AREA_FILTER_BOTH = "both"
+
+    AREA_FILTER_MODE_CHOICES = [
+        (AREA_FILTER_INSIDE, "Inside the area"),
+        (AREA_FILTER_APPROACHING, "Close to the area (not inside)"),
+        (AREA_FILTER_BOTH, "Inside or close to the area"),
+    ]
+
     EMAIL_NOTIFICATION_CHOICES = [
         (NO_EMAILS, _("No emails")),
         (DAILY_EMAILS, _("Daily")),
@@ -1005,6 +1077,18 @@ class Alert(models.Model):
         ),
     )
 
+    area_filter_mode = models.CharField(
+        max_length=20,
+        choices=AREA_FILTER_MODE_CHOICES,
+        default=AREA_FILTER_INSIDE,
+    )
+
+    approaching_distance_km = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Required when area_filter_mode is 'approaching' or 'both'. Distance in km (max 50).",
+    )
+
     email_notifications_frequency = models.CharField(
         max_length=3,
         choices=EMAIL_NOTIFICATION_CHOICES,
@@ -1023,12 +1107,54 @@ class Alert(models.Model):
     class Meta:
         unique_together = [("user", "name")]
 
+    def clean(self) -> None:
+        if self.area_filter_mode in (self.AREA_FILTER_APPROACHING, self.AREA_FILTER_BOTH):
+            if self.approaching_distance_km is None:
+                raise ValidationError(
+                    {"approaching_distance_km": "This field is required when the area filter mode is not 'inside'."}
+                )
+            if self.approaching_distance_km <= 0:
+                raise ValidationError(
+                    {"approaching_distance_km": "The distance must be greater than 0."}
+                )
+            if self.approaching_distance_km > 50:
+                raise ValidationError(
+                    {"approaching_distance_km": "The distance must be 50 km or less."}
+                )
+        elif self.area_filter_mode == self.AREA_FILTER_INSIDE:
+            if self.approaching_distance_km is not None:
+                raise ValidationError(
+                    {"approaching_distance_km": "This field must be empty when the area filter mode is 'inside'."}
+                )
+
     def get_absolute_url(self) -> str:
         return reverse("dashboard:pages:alert-details", kwargs={"alert_id": self.id})
 
     @property
     def areas_list(self) -> str:
         return ", ".join(self.areas.order_by("name").values_list("name", flat=True))
+
+    @property
+    def area_description(self) -> str:
+        """Human-readable description of the area filter for use in emails and the alert detail page.
+
+        Returns an empty string when no areas are configured (caller should fall back to "all").
+        """
+        area_names = list(self.areas.order_by("name").values_list("name", flat=True))
+        if not area_names:
+            return ""
+        quoted_names = [f"'{n}'" for n in area_names]
+        if len(quoted_names) == 1:
+            quoted = quoted_names[0]
+        else:
+            quoted = ", ".join(quoted_names[:-1]) + " or " + quoted_names[-1]
+        if self.area_filter_mode == self.AREA_FILTER_INSIDE:
+            return f"inside {quoted}"
+        dist = f"{self.approaching_distance_km:g}"
+        if self.area_filter_mode == self.AREA_FILTER_APPROACHING:
+            return f"within {dist} km of {quoted}"
+        # AREA_FILTER_BOTH
+        return f"inside or within {dist} km of {quoted}"
 
     @property
     def datasets_list(self) -> str:
@@ -1064,6 +1190,8 @@ class Alert(models.Model):
             "endDate": None,
             "status": "unseen",
             "verifiedFilter": self.verified_filter,
+            "areaFilterMode": self.area_filter_mode,
+            "approachingDistanceKm": self.approaching_distance_km,
         }
 
     @property
@@ -1077,6 +1205,8 @@ class Alert(models.Model):
             "areaIds": [a.pk for a in self.areas.all()],
             "emailNotificationsFrequency": self.email_notifications_frequency,
             "verifiedFilter": self.verified_filter,
+            "areaFilterMode": self.area_filter_mode,
+            "approachingDistanceKm": self.approaching_distance_km,
         }
 
     def observations(self) -> QuerySet[Observation]:
@@ -1093,6 +1223,8 @@ class Alert(models.Model):
             status_for_user=None,
             user=self.user,
             verified_filter=self.verified_filter,
+            area_filter_mode=self.area_filter_mode,
+            approaching_distance_km=self.approaching_distance_km,
         )
 
     def unseen_observations(self) -> QuerySet[Observation]:
@@ -1108,6 +1240,8 @@ class Alert(models.Model):
             status_for_user="unseen",
             user=self.user,
             verified_filter=self.verified_filter,
+            area_filter_mode=self.area_filter_mode,
+            approaching_distance_km=self.approaching_distance_km,
         )
 
     def unseen_observations_sample(self, sample_size=10) -> QuerySet[Observation]:

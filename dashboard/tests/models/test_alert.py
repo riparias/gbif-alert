@@ -1,10 +1,12 @@
 import datetime
 
-from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import MultiPolygon, Point, Polygon
+from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from dashboard.models import (
+    Area,
     User,
     Alert,
     BasisOfRecord,
@@ -229,3 +231,141 @@ class AlertTests(TestCase):
             last_email_sent_on=timezone.now() - datetime.timedelta(days=32),
         )
         self.assertTrue(alert.email_should_be_sent_now())
+
+
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
+class AlertCleanValidationTests(TestCase):
+    """Unit tests for Alert.clean() validation of area_filter_mode / approaching_distance_km."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
+            username="clean_test_user",
+            password="pass",
+            email="clean@test.com",
+        )
+
+    def _make_alert(self, mode, distance_km):
+        return Alert(
+            user=self.user,
+            area_filter_mode=mode,
+            approaching_distance_km=distance_km,
+        )
+
+    def test_inside_with_no_distance_is_valid(self):
+        alert = self._make_alert(Alert.AREA_FILTER_INSIDE, None)
+        alert.clean()  # no exception
+
+    def test_inside_with_distance_raises(self):
+        alert = self._make_alert(Alert.AREA_FILTER_INSIDE, 10.0)
+        with self.assertRaises(ValidationError) as ctx:
+            alert.clean()
+        self.assertIn("approaching_distance_km", ctx.exception.message_dict)
+
+    def test_approaching_with_no_distance_raises(self):
+        alert = self._make_alert(Alert.AREA_FILTER_APPROACHING, None)
+        with self.assertRaises(ValidationError) as ctx:
+            alert.clean()
+        self.assertIn("approaching_distance_km", ctx.exception.message_dict)
+
+    def test_approaching_with_zero_distance_raises(self):
+        alert = self._make_alert(Alert.AREA_FILTER_APPROACHING, 0.0)
+        with self.assertRaises(ValidationError) as ctx:
+            alert.clean()
+        self.assertIn("approaching_distance_km", ctx.exception.message_dict)
+
+    def test_approaching_with_negative_distance_raises(self):
+        alert = self._make_alert(Alert.AREA_FILTER_APPROACHING, -5.0)
+        with self.assertRaises(ValidationError) as ctx:
+            alert.clean()
+        self.assertIn("approaching_distance_km", ctx.exception.message_dict)
+
+    def test_approaching_with_distance_exceeding_max_raises(self):
+        alert = self._make_alert(Alert.AREA_FILTER_APPROACHING, 51.0)
+        with self.assertRaises(ValidationError) as ctx:
+            alert.clean()
+        self.assertIn("approaching_distance_km", ctx.exception.message_dict)
+
+    def test_approaching_with_valid_distance_is_valid(self):
+        alert = self._make_alert(Alert.AREA_FILTER_APPROACHING, 10.0)
+        alert.clean()  # no exception
+
+    def test_both_with_valid_distance_is_valid(self):
+        alert = self._make_alert(Alert.AREA_FILTER_BOTH, 50.0)
+        alert.clean()  # no exception
+
+    def test_both_with_no_distance_raises(self):
+        alert = self._make_alert(Alert.AREA_FILTER_BOTH, None)
+        with self.assertRaises(ValidationError) as ctx:
+            alert.clean()
+        self.assertIn("approaching_distance_km", ctx.exception.message_dict)
+
+    def test_approaching_with_max_distance_is_valid(self):
+        alert = self._make_alert(Alert.AREA_FILTER_APPROACHING, 50.0)
+        alert.clean()  # no exception
+
+
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
+class AlertAreaDescriptionTests(TestCase):
+    """Unit tests for Alert.area_description property."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
+            username="desc_test_user",
+            password="pass",
+            email="desc@test.com",
+        )
+        cls.area_a = Area.objects.create(
+            name="Foret de Soignes",
+            mpoly=MultiPolygon(
+                Polygon(((4.3, 50.6), (4.4, 50.6), (4.4, 50.7), (4.3, 50.7), (4.3, 50.6))),
+                srid=4326,
+            ),
+        )
+        cls.area_b = Area.objects.create(
+            name="Zonienwoud",
+            mpoly=MultiPolygon(
+                Polygon(((4.4, 50.6), (4.5, 50.6), (4.5, 50.7), (4.4, 50.7), (4.4, 50.6))),
+                srid=4326,
+            ),
+        )
+
+    _counter = 0
+
+    def _make_alert(self, mode, distance_km, areas):
+        AlertAreaDescriptionTests._counter += 1
+        alert = Alert.objects.create(
+            user=self.user,
+            name=f"desc_alert_{self._counter}",
+            area_filter_mode=mode,
+            approaching_distance_km=distance_km,
+        )
+        for area in areas:
+            alert.areas.add(area)
+        return alert
+
+    def test_inside_single_area(self):
+        alert = self._make_alert(Alert.AREA_FILTER_INSIDE, None, [self.area_a])
+        self.assertEqual(alert.area_description, "inside 'Foret de Soignes'")
+
+    def test_inside_two_areas(self):
+        alert = self._make_alert(Alert.AREA_FILTER_INSIDE, None, [self.area_a, self.area_b])
+        # Areas are ordered by name
+        self.assertEqual(alert.area_description, "inside 'Foret de Soignes' or 'Zonienwoud'")
+
+    def test_approaching_single_area(self):
+        alert = self._make_alert(Alert.AREA_FILTER_APPROACHING, 10.0, [self.area_a])
+        self.assertEqual(alert.area_description, "within 10 km of 'Foret de Soignes'")
+
+    def test_both_single_area(self):
+        alert = self._make_alert(Alert.AREA_FILTER_BOTH, 10.0, [self.area_a])
+        self.assertEqual(alert.area_description, "inside or within 10 km of 'Foret de Soignes'")
+
+    def test_no_areas_returns_empty_string(self):
+        alert = self._make_alert(Alert.AREA_FILTER_INSIDE, None, [])
+        self.assertEqual(alert.area_description, "")

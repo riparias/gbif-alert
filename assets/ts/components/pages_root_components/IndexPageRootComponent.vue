@@ -79,6 +79,24 @@
               </template>
           </Filter-Selector>
 
+          <div class="mx-2 d-flex align-items-center" v-if="(filters.areaIds?.length ?? 0) > 0">
+            <label class="me-1 text-nowrap">{{ $t('message.areaFilterMode') }}:</label>
+            <select v-model="filters.areaFilterMode" class="form-select form-select-sm">
+              <option value="inside">{{ $t('message.areaFilterModeInside') }}</option>
+              <option value="approaching">{{ $t('message.areaFilterModeApproaching') }}</option>
+              <option value="both">{{ $t('message.areaFilterModeBoth') }}</option>
+            </select>
+          </div>
+
+          <div class="mx-2 d-flex align-items-center"
+               v-if="(filters.areaIds?.length ?? 0) > 0 && (filters.areaFilterMode === 'approaching' || filters.areaFilterMode === 'both')">
+            <label class="me-1 text-nowrap">{{ $t('message.approachingDistanceKm') }}:</label>
+            <input type="number" v-model.number="localApproachingDistanceKm"
+                   @input="debouncedUpdateApproachingDistance && debouncedUpdateApproachingDistance(localApproachingDistanceKm)"
+                   class="form-control form-control-sm" style="width: 90px;"
+                   min="0.1" max="50" step="0.1">
+          </div>
+
           <Filter-Selector
               v-if="showInitialDataImportFilter"
               class="mx-2"
@@ -156,7 +174,9 @@ interface IndexPageRootComponentData {
   availableAreas: AreaInformation[];
   availableDataImports: DataImportInformation[];
   filters: DashboardFilters;
+  localApproachingDistanceKm: number | null;
   debouncedUpdateDateFilters: DebouncedFunc<(range: DateRange) => void> | undefined;
+  debouncedUpdateApproachingDistance: DebouncedFunc<(val: number | null) => void> | undefined;
 }
 
 export default defineComponent({
@@ -178,9 +198,24 @@ export default defineComponent({
       availableAreas: [],
       availableDataImports: [],
 
-      filters: initialFilters,
+      filters: {
+        speciesIds: initialFilters.speciesIds ?? [],
+        datasetsIds: initialFilters.datasetsIds ?? [],
+        basisOfRecordIds: initialFilters.basisOfRecordIds ?? [],
+        startDate: initialFilters.startDate ?? null,
+        endDate: initialFilters.endDate ?? null,
+        areaIds: initialFilters.areaIds ?? [],
+        status: initialFilters.status,
+        initialDataImportIds: initialFilters.initialDataImportIds ?? [],
+        verifiedFilter: (initialFilters.verifiedFilter ?? 'all') as 'all' | 'verified' | 'unverified',
+        areaFilterMode: (initialFilters.areaFilterMode ?? 'inside') as 'inside' | 'approaching' | 'both',
+        approachingDistanceKm: initialFilters.approachingDistanceKm ?? null,
+      },
+
+      localApproachingDistanceKm: initialFilters.approachingDistanceKm ?? null,
 
       debouncedUpdateDateFilters: undefined,
+      debouncedUpdateApproachingDistance: undefined,
     };
   },
   computed: {
@@ -212,10 +247,16 @@ export default defineComponent({
       this.filters.startDate = dateTimeToFilterParam(range.start);
       this.filters.endDate = dateTimeToFilterParam(range.end);
     }, 300);
+    this.debouncedUpdateApproachingDistance = debounce((val: number | null) => {
+      this.filters.approachingDistanceKm = val;
+    }, 500);
   },
   beforeUnmount() {
     if (this.debouncedUpdateDateFilters) {
       this.debouncedUpdateDateFilters.cancel();
+    }
+    if (this.debouncedUpdateApproachingDistance) {
+      this.debouncedUpdateApproachingDistance.cancel();
     }
   },
   methods: {
@@ -241,6 +282,15 @@ export default defineComponent({
     },
     changeSelectedAreas: function (areasIds: number[]) {
       this.filters.areaIds = areasIds;
+      // Reset proximity settings when areas are cleared
+      if (areasIds.length === 0) {
+        this.filters.areaFilterMode = 'inside';
+        this.filters.approachingDistanceKm = null;
+        this.localApproachingDistanceKm = null;
+        if (this.debouncedUpdateApproachingDistance) {
+          this.debouncedUpdateApproachingDistance.cancel();
+        }
+      }
     },
     changeSelectedInitialDataImport: function (dataImportsIds: number[]) {
       this.filters.initialDataImportIds = dataImportsIds;
