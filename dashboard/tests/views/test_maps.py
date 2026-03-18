@@ -1024,6 +1024,44 @@ class MVTServerSingleObsTests(MapsTestDataMixin, MVTServerCommonTestsMixin, Test
             decoded_tile["default"]["features"][0]["properties"]["gbif_id"], "3"
         )
 
+    def test_tiles_vernacular_name_in_active_language(self):
+        """Tile properties include the vernacular name for the active language."""
+        tile_url = reverse(
+            self.server_url_name,
+            kwargs={"zoom": 2, "x": 2, "y": 1},
+        )
+
+        self.first_species.vernacular_name_en = "Marbled crayfish"
+        self.first_species.vernacular_name_nl = "Marmerkreeft"
+        self.first_species.vernacular_name_fr = "Ecrevisse marbre"
+        self.first_species.save()
+
+        # The language selector sets a django_language cookie; simulate that here.
+        # (The browser's Accept-Language header is always en-US regardless of the UI language.)
+        for lang_code, expected_name in [
+            ("en", "Marbled crayfish"),
+            ("nl", "Marmerkreeft"),
+            ("fr", "Ecrevisse marbre"),
+        ]:
+            self.client.cookies["django_language"] = lang_code
+            response = self.client.get(tile_url)
+            decoded_tile = mapbox_vector_tile.decode(response.content)
+            features_by_gbif_id = {
+                f["properties"]["gbif_id"]: f
+                for f in decoded_tile["default"]["features"]
+            }
+            self.assertEqual(
+                features_by_gbif_id["1"]["properties"]["vernacular_name"],
+                expected_name,
+                msg=f"Wrong vernacular name for language '{lang_code}'",
+            )
+
+        # A species with no vernacular name should have no vernacular_name property in the tile
+        self.assertNotIn(
+            "vernacular_name",
+            features_by_gbif_id["2"]["properties"],
+        )
+
 
 @override_settings(
     STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"

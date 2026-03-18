@@ -166,7 +166,7 @@ def _build_filter_params(request: HttpRequest) -> dict:
     return params
 
 
-_SUPPORTED_LANG_CODES = {"en", "nl", "de"}
+_SUPPORTED_LANG_CODES = {code[:2] for code, _name in settings.LANGUAGES}
 
 
 def mvt_tiles_observations(
