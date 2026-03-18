@@ -15,6 +15,7 @@ from django.contrib.gis.db.models.aggregates import Union as AggregateUnion
 from dashboard.utils import readable_string
 from dashboard.views.helpers import filters_from_request, extract_int_request
 from django.conf import settings
+from django.utils.translation import get_language
 
 _TBL_AREAS = Area.objects.model._meta.db_table
 _TBL_OBS = Observation.objects.model._meta.db_table
@@ -165,14 +166,21 @@ def _build_filter_params(request: HttpRequest) -> dict:
     return params
 
 
+_SUPPORTED_LANG_CODES = {"en", "nl", "de"}
+
+
 def mvt_tiles_observations(
     request: HttpRequest, zoom: int, x: int, y: int
 ) -> HttpResponse:
     """Tile server, showing non-aggregated observations. Filters are honoured."""
+    lang = get_language() or "en"
+    lang_code = lang[:2] if lang[:2] in _SUPPORTED_LANG_CODES else "en"
+    vernacular_col = f"vernacular_name_{lang_code}"
+
     sql_template = readable_string(
         f"""
             WITH mvtgeom AS (
-                SELECT ST_AsMVTGeom(observations.location, ST_TileEnvelope({{{{ zoom }}}}, {{{{ x }}}}, {{{{ y }}}})), observations.gbif_id, observations.stable_id, observations.name AS scientific_name
+                SELECT ST_AsMVTGeom(observations.location, ST_TileEnvelope({{{{ zoom }}}}, {{{{ x }}}}, {{{{ y }}}})), observations.gbif_id, observations.stable_id, observations.name AS scientific_name, observations.{vernacular_col} AS vernacular_name
                 FROM ({JINJASQL_FRAGMENT_FILTER_OBSERVATIONS}) AS observations
             )
             SELECT st_asmvt(mvtgeom.*) FROM mvtgeom;

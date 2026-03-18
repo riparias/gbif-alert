@@ -320,6 +320,7 @@ export default defineComponent({
           return {
             gbifId: properties["gbif_id"],
             scientificName: properties["scientific_name"],
+            vernacularName: properties["vernacular_name"] || "",
             url: this.apiEndpoints.observationDetailsUrlTemplate.replace(
                 "{stable_id}",
                 properties["stable_id"]
@@ -328,7 +329,10 @@ export default defineComponent({
         });
 
         const clickedFeaturesHtmlList = clickedFeaturesData.map((f) => {
-          return `<li><a href="${f.url}" target="_blank">${f.gbifId}</a> <i>${f.scientificName}</i></li>`;
+          const nameHtml = f.vernacularName
+              ? `${f.vernacularName} (<i>${f.scientificName}</i>)`
+              : `<i>${f.scientificName}</i>`;
+          return `<li><a href="${f.url}" target="_blank">${f.gbifId}</a> ${nameHtml}</li>`;
         });
 
         // Hide previously opened
