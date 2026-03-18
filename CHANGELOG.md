@@ -1,6 +1,6 @@
 # Current (unreleased)
 
-- New filter options for areas: inside/approaching/both
+- (experimental) New filter options for areas: inside/approaching/both
 
 # 1.9.0 (2026-03-06)
 
