@@ -4,7 +4,14 @@ from django.db import connection
 from django.http import HttpResponse, JsonResponse, HttpRequest
 from jinjasql import JinjaSql
 
-from dashboard.models import Observation, Area, Species, ObservationUnseen
+from dashboard.models import (
+    Observation,
+    Area,
+    Species,
+    ObservationUnseen,
+    compute_area_filter_geometry,
+)
+from django.contrib.gis.db.models.aggregates import Union as AggregateUnion
 from dashboard.utils import readable_string
 from dashboard.views.helpers import filters_from_request, extract_int_request
 from django.conf import settings
@@ -36,23 +43,10 @@ WHERE_CLAUSE = readable_string(
         {{% if end_date %}}
             AND obs.date <= TO_DATE({{{{ end_date }}}}, 'YYYY-MM-DD')
         {{% endif %}}
-        {{% if area_ids %}}
-            {{% if area_filter_mode == 'approaching' and approaching_distance_km %}}
-                AND ST_DWithin(
-                    ST_Transform(obs.location, 4326)::geography,
-                    ST_Transform(areas.mpoly, 4326)::geography,
-                    {{{{ approaching_distance_km * 1000 }}}}
-                )
-                AND NOT ST_Within(obs.location, areas.mpoly)
-            {{% elif area_filter_mode == 'both' and approaching_distance_km %}}
-                AND ST_DWithin(
-                    ST_Transform(obs.location, 4326)::geography,
-                    ST_Transform(areas.mpoly, 4326)::geography,
-                    {{{{ approaching_distance_km * 1000 }}}}
-                )
-            {{% else %}}
-                AND ST_Within(obs.location, areas.mpoly)
-            {{% endif %}}
+        {{% if precomputed_area_ewkb %}}
+            AND ST_Within(obs.location, ST_GeomFromEWKB({{{{ precomputed_area_ewkb }}}}))
+        {{% elif area_ids %}}
+            AND ST_Within(obs.location, areas.mpoly)
         {{% endif %}}
         {{% if initial_data_import_ids %}}
             AND obs.initial_data_import_id IN {{{{ initial_data_import_ids | inclause }}}}
@@ -90,7 +84,7 @@ JINJASQL_FRAGMENT_FILTER_OBSERVATIONS = f"""
         ON obs.id = {_TBL_UNSEEN}.observation_id
     {{% endif %}}
 
-    {{% if area_ids %}}
+    {{% if area_ids and not precomputed_area_ewkb %}}
     , (SELECT ST_Union(mpoly) AS mpoly FROM {_TBL_AREAS} WHERE {_TBL_AREAS}.id IN {{{{ area_ids | inclause }}}}) AS areas
     {{% endif %}}
     WHERE (
@@ -130,6 +124,23 @@ def _build_filter_params(request: HttpRequest) -> dict:
         approaching_distance_km,
     ) = filters_from_request(request)
 
+    # Pre-compute the buffer geometry for approaching/both modes so that
+    # the tile queries use ST_Within against a pre-built SRID 3857 polygon
+    # instead of computing ST_DWithin(geography) per row.
+    precomputed_area_ewkb = None
+    if (
+        area_ids
+        and area_filter_mode in ("approaching", "both")
+        and approaching_distance_km
+    ):
+        combined_areas = Area.objects.filter(pk__in=area_ids).aggregate(
+            area=AggregateUnion("mpoly")
+        )["area"]
+        if combined_areas:
+            precomputed_area_ewkb = compute_area_filter_geometry(
+                combined_areas, area_filter_mode, approaching_distance_km
+            )
+
     params: dict = {
         "species_ids": species_ids,
         "datasets_ids": datasets_ids,
@@ -139,6 +150,7 @@ def _build_filter_params(request: HttpRequest) -> dict:
         "verified_filter": verified_filter,
         "area_filter_mode": area_filter_mode,
         "approaching_distance_km": approaching_distance_km,
+        "precomputed_area_ewkb": precomputed_area_ewkb,
     }
 
     if status_for_user and request.user.is_authenticated:
@@ -244,7 +256,7 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
                         INNER JOIN {_TBL_UNSEEN}
                         ON obs.id = {_TBL_UNSEEN}.observation_id
                     {{% endif %}}
-                    {{% if area_ids %}}
+                    {{% if area_ids and not precomputed_area_ewkb %}}
                     , (SELECT ST_Union(mpoly) AS mpoly FROM {_TBL_AREAS} WHERE {_TBL_AREAS}.id IN {{{{ area_ids | inclause }}}}) AS areas
                     {{% endif %}}
                 WHERE (

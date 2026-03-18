@@ -10,6 +10,7 @@ import html2text
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, AnonymousUser
 from django.contrib.gis.db import models
+from django.db import connection
 from django.contrib.gis.db.models.aggregates import Union as AggregateUnion
 from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
@@ -241,6 +242,53 @@ class DataImport(models.Model):
         }
 
 
+def compute_area_filter_geometry(
+    combined_areas, area_filter_mode: str, approaching_distance_km: float
+) -> bytes:
+    """Pre-compute the target geometry for spatial filtering.
+
+    For 'approaching'/'both' modes, executes one raw SQL query to buffer
+    the area in geography space and convert back to SRID 3857.
+    Returns the result as EWKB bytes suitable for ST_GeomFromEWKB().
+
+    Parameters
+    ----------
+    combined_areas : GEOSGeometry
+        The union of all selected areas (SRID 3857).
+    area_filter_mode : str
+        One of 'approaching' or 'both'. Do not call for 'inside' mode -
+        use combined_areas.ewkb directly instead.
+    approaching_distance_km : float
+        Buffer distance in kilometres.
+    """
+    buffer_m = approaching_distance_km * 1000
+    ewkb_param = combined_areas.ewkb
+
+    if area_filter_mode == "approaching":
+        sql = (
+            "SELECT ST_AsEWKB(ST_Difference("
+            "  ST_Transform("
+            "    ST_Buffer(ST_Transform(ST_GeomFromEWKB(%s), 4326)::geography, %s)::geometry,"
+            "    3857"
+            "  ),"
+            "  ST_GeomFromEWKB(%s)"
+            "))"
+        )
+        params = [ewkb_param, buffer_m, ewkb_param]
+    else:  # "both"
+        sql = (
+            "SELECT ST_AsEWKB(ST_Transform("
+            "  ST_Buffer(ST_Transform(ST_GeomFromEWKB(%s), 4326)::geography, %s)::geometry,"
+            "  3857"
+            "))"
+        )
+        params = [ewkb_param, buffer_m]
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, params)
+        return bytes(cursor.fetchone()[0])
+
+
 def create_unseen_observations(observation_queryset: QuerySet["Observation"]) -> None:
     """
     Create ObservationUnseen entries for all users that have alerts matching the
@@ -367,27 +415,15 @@ def create_unseen_observations(observation_queryset: QuerySet["Observation"]) ->
                             location__within=combined_areas
                         )
                     else:
-                        buffer_m = distance_km * 1000
-                        ewkb = combined_areas.ewkb
-                        dwithin_sql = (
-                            "ST_DWithin("
-                            "ST_Transform(dashboard_observation.location, 4326)::geography, "
-                            "ST_Transform(ST_GeomFromEWKB(%s), 4326)::geography, "
-                            "%s"
-                            ")"
+                        target_ewkb = compute_area_filter_geometry(
+                            combined_areas, mode, distance_km
                         )
-                        if mode == Alert.AREA_FILTER_APPROACHING:
-                            group_obs_qs = group_obs_qs.extra(
-                                where=[
-                                    dwithin_sql,
-                                    "NOT ST_Within(dashboard_observation.location, ST_GeomFromEWKB(%s))",
-                                ],
-                                params=[ewkb, buffer_m, ewkb],
-                            )
-                        else:  # AREA_FILTER_BOTH
-                            group_obs_qs = group_obs_qs.extra(
-                                where=[dwithin_sql], params=[ewkb, buffer_m]
-                            )
+                        group_obs_qs = group_obs_qs.extra(
+                            where=[
+                                "ST_Within(dashboard_observation.location, ST_GeomFromEWKB(%s))"
+                            ],
+                            params=[target_ewkb],
+                        )
 
             # Collect unseen entries for bulk creation
             for obs in group_obs_qs:
@@ -441,25 +477,15 @@ class ObservationManager(models.Manager["Observation"]):
             if area_filter_mode == "inside" or not approaching_distance_km:
                 qs = qs.filter(location__within=combined_areas)
             else:
-                buffer_m = approaching_distance_km * 1000
-                ewkb = combined_areas.ewkb
-                dwithin_sql = (
-                    "ST_DWithin("
-                    "ST_Transform(dashboard_observation.location, 4326)::geography, "
-                    "ST_Transform(ST_GeomFromEWKB(%s), 4326)::geography, "
-                    "%s"
-                    ")"
+                target_ewkb = compute_area_filter_geometry(
+                    combined_areas, area_filter_mode, approaching_distance_km
                 )
-                if area_filter_mode == "approaching":
-                    qs = qs.extra(
-                        where=[
-                            dwithin_sql,
-                            "NOT ST_Within(dashboard_observation.location, ST_GeomFromEWKB(%s))",
-                        ],
-                        params=[ewkb, buffer_m, ewkb],
-                    )
-                else:  # "both"
-                    qs = qs.extra(where=[dwithin_sql], params=[ewkb, buffer_m])
+                qs = qs.extra(
+                    where=[
+                        "ST_Within(dashboard_observation.location, ST_GeomFromEWKB(%s))"
+                    ],
+                    params=[target_ewkb],
+                )
         if initial_data_import_ids:
             qs = qs.filter(initial_data_import_id__in=initial_data_import_ids)
 
