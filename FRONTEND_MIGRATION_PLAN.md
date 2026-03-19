@@ -41,9 +41,9 @@ Set up the new toolchain alongside the existing one. No user-visible changes.
 - [x] 0.2 - Install and configure `django-vite` (manifest mode for production,
         dev server proxy for development)
 - [x] 0.3 - Install PrimeVue, Pinia, Vue Router
-- [ ] 0.4 - Create new entry point (`assets/new-frontend/main.ts`) with Vue app,
+- [x] 0.4 - Create new entry point (`assets/new-frontend/main.ts`) with Vue app,
         router, Pinia store, PrimeVue plugin, i18n
-- [ ] 0.5 - Set up the project structure (see below)
+- [x] 0.5 - Set up the project structure (see below)
 - [ ] 0.6 - Verify: Vite dev server runs, production build works, django-vite
         injects assets into a test template, Webpack still works unchanged
 - [ ] 0.7 - Install Django Ninja, create a minimal `/api/v2/` router (empty for now)
