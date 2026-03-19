@@ -26,7 +26,7 @@ module.exports = {
             {
                 test: /\.tsx?$/,
                 loader: 'ts-loader',
-                exclude: [/node_modules/, /vite\.config\.ts/],
+                exclude: [/node_modules/, /vite\.config\.ts/, /assets[\\/]new-frontend/],
                 options: {
                     //Then there are settings for a ts-loader, which helps load the TypeScript with Vue.
                     //We also specified the appendTsSuffixTo: [/\.vue$/], option to ts-loader in our webpack.config.js file,

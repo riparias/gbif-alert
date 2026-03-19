@@ -2,6 +2,7 @@
 {% load static %}
 {% load i18n %}
 {% load gbif-alert_extras %}
+{% load django_vite %}
 
 <!doctype html>
 <html lang="en">
@@ -43,5 +44,10 @@
 {% include "dashboard/_footer.html" %}
 <script src="{% static 'js/early_alert-bundle.js' %}"></script>
 <link rel="stylesheet" href="{% static "css/show_body.css" %}">
+{# New Vite-managed frontend. The #new-frontend div is the Vue app mount point. #}
+{# No routes are defined yet (Phase 2+), so RouterView renders nothing. #}
+{% vite_hmr_client %}
+{% vite_asset 'assets/new-frontend/main.ts' %}
+<div id="new-frontend"></div>
 </body>
 </html>
