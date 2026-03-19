@@ -14,6 +14,9 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Set to True when running `npm run vite-dev` locally (do not enable in CI or production)
+DJANGO_VITE["default"]["dev_mode"] = True  # type: ignore[index]
+
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 

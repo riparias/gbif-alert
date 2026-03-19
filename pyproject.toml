@@ -27,6 +27,7 @@ django-modeltranslation = "^0.18.9"
 python-dotenv = "^1.0.0"
 django-gisserver = "^1.2.7"
 setuptools = "*"
+django-vite = "^3.1.0"
 [tool.poetry.group.dev.dependencies]
 selenium = "^4.11.2"
 mypy = "1.4"

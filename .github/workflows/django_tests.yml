@@ -63,6 +63,8 @@ jobs:
       run: npm install
     - name: Run webpack
       run: npm run webpack-prod
+    - name: Run vite build
+      run: npm run vite-build
     - name: Run Django tests (parallel)
       env:
         DJANGO_SETTINGS_MODULE: djangoproject.local_settings

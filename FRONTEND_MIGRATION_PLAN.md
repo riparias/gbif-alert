@@ -38,7 +38,7 @@ on all pages (old and new) from the start.
 Set up the new toolchain alongside the existing one. No user-visible changes.
 
 - [x] 0.1 - Install Vite, configure `vite.config.ts` for Django integration
-- [ ] 0.2 - Install and configure `django-vite` (manifest mode for production,
+- [x] 0.2 - Install and configure `django-vite` (manifest mode for production,
         dev server proxy for development)
 - [ ] 0.3 - Install PrimeVue, Pinia, Vue Router
 - [ ] 0.4 - Create new entry point (`assets/new-frontend/main.ts`) with Vue app,

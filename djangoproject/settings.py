@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "taggit",
     "gisserver",
     # Beware, there's also "modeltranslation", but it had to be placed before the admin app
+    "django_vite",
     # Local/custom
     "dashboard",
     "page_fragments",
@@ -142,6 +143,14 @@ STATIC_URL = "/static/"
 
 STATICFILES_DIRS: list[str] = [os.path.join(BASE_DIR, "static_global")]
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+DJANGO_VITE = {
+    "default": {
+        "dev_mode": False,  # override to True in local_settings.py when running the Vite dev server
+        "dev_server_port": 5274,
+        "manifest_path": BASE_DIR / "static_global" / "vite" / ".vite" / "manifest.json",
+    }
+}
 
 STORAGES = {
     "default": {
