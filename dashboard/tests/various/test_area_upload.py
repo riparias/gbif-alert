@@ -64,7 +64,7 @@ class AreaUploadTests(TestCase):
         self.assertCorrectPolygon(wkt)
 
     def test_uploaded_file_to_multipolygon_too_many_features(self):
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
             ValueError, "The file must contain a single feature, 2 features found"
         ):
             _file_to_wkt_multipolygon(
@@ -72,13 +72,13 @@ class AreaUploadTests(TestCase):
             )
 
     def test_uploaded_file_to_multipolygon_zero_features(self):
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
             ValueError, "The file must contain a single feature, 0 features found"
         ):
             _file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "empty.gpkg", dest_srid=3857)
 
     def test_uploaded_file_to_multipolygon_no_polygon_or_multipolygon(self):
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
             ValueError,
             "The file must contains a single layer of type Polygon or MultiPolygon, Point found",
         ):
