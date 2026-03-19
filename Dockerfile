@@ -36,6 +36,7 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v$NVM_VERSION/install.
     && node -v \
     && npm -v \
     && npm install \
-    && npm run webpack-prod
+    && npm run webpack-prod \
+    && npm run vite-build
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
