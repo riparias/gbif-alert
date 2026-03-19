@@ -44,10 +44,10 @@ Set up the new toolchain alongside the existing one. No user-visible changes.
 - [x] 0.4 - Create new entry point (`assets/new-frontend/main.ts`) with Vue app,
         router, Pinia store, PrimeVue plugin, i18n
 - [x] 0.5 - Set up the project structure (see below)
-- [ ] 0.6 - Verify: Vite dev server runs, production build works, django-vite
+- [x] 0.6 - Verify: Vite dev server runs, production build works, django-vite
         injects assets into a test template, Webpack still works unchanged
-- [ ] 0.7 - Install Django Ninja, create a minimal `/api/v2/` router (empty for now)
-- [ ] 0.8 - Install Playwright, configure pytest-playwright, write one smoke test
+- [x] 0.7 - Install Django Ninja, create a minimal `/api/v2/` router (empty for now)
+- [x] 0.8 - Install Playwright, configure pytest-playwright, write one smoke test
         (page loads, no JS errors)
 
 **Project structure** (new files, existing files stay where they are):
