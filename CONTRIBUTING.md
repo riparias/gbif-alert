@@ -67,11 +67,20 @@ Last update: 01 aug 2023.
 
 ## Frontend-backend integration
 
-We use a hybrid approach such as described in https://www.saaspegasus.com/guides/modern-javascript-for-django-developers/integrating-javascript-pipeline/:
+The project is in the process of migrating from Webpack to Vite (see `FRONTEND_MIGRATION_PLAN.md`).
+During the migration, both bundlers coexist. Old pages use the Webpack bundle; new pages will use
+the Vite bundle.
+
+### Existing frontend (Webpack)
 
 - npm is used to manage JS dependencies (**npm install** should be run once)
-- **During development**, run `npm run webpack-dev` so Webpack constantly watches our source frontend (in `./assets`) and create bundles (in `./static`)
+- **During development**, run `npm run webpack-dev` so Webpack constantly watches our source frontend (in `./assets/ts`) and creates bundles (in `./static_global/js`)
 - **When deploying**, use `npm run webpack-prod` instead (smaller bundle size + one single copy - rather than watching files)
+
+### New frontend (Vite - in progress)
+
+- **During development**, run `npm run vite-dev` to start the Vite dev server on port 5274 (required for HMR on pages served by the new frontend)
+- **When deploying**, use `npm run vite-build` to produce hashed assets in `./static_global/vite`
 
 ## Code formatting
 
