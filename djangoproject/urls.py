@@ -17,7 +17,10 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import path, include, reverse_lazy
 
+from dashboard.api_v2 import api_v2
+
 urlpatterns = [
+    path("api/v2/", api_v2.urls),
     path("", include("dashboard.urls")),
     # User accounts
     path("i18n/", include("django.conf.urls.i18n")),
