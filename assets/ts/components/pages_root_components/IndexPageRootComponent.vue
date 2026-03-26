@@ -125,7 +125,6 @@
           <ObservationStatusSelector
               v-if="frontendConfig.authenticatedUser"
               v-model="filters.status"
-              :skip-mark-action="true"
               :endpoints-urls="frontendConfig.apiEndpoints"
               :filters="filters"
           ></ObservationStatusSelector>
