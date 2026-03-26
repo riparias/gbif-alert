@@ -75,8 +75,10 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
         # local_settings.py sets dev_mode=True for development; without the
         # Vite dev server running, Vue never mounts and the new navbar is absent.
         from django.conf import settings as _settings
+
         _settings.DJANGO_VITE["default"]["dev_mode"] = False
-        from django_vite.core.asset_loader import DjangoViteAssetLoader
+        from django_vite.core.asset_loader import DjangoViteAssetLoader  # type: ignore
+
         DjangoViteAssetLoader._instance = None
 
         super().setUpClass()
@@ -89,8 +91,10 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
 
         # Restore Vite dev_mode so other test runs are not affected.
         from django.conf import settings as _settings
+
         _settings.DJANGO_VITE["default"]["dev_mode"] = True
         from django_vite.core.asset_loader import DjangoViteAssetLoader
+
         DjangoViteAssetLoader._instance = None
 
     def setUp(self):
@@ -962,7 +966,9 @@ class SeleniumTests(SeleniumTestsCommon):
         delay_unit_select = Select(self.selenium.find_element(By.ID, "id_delay_unit"))
         # Users have one year of delay by default (365 days -> displayed as 1 year)
         self.assertEqual(delay_value_field.get_attribute("value"), "1")
-        self.assertEqual(delay_unit_select.first_selected_option.get_attribute("value"), "years")
+        self.assertEqual(
+            delay_unit_select.first_selected_option.get_attribute("value"), "years"
+        )
 
         # Let's update the values
         first_name_field.clear()
@@ -1003,7 +1009,9 @@ class SeleniumTests(SeleniumTestsCommon):
         delay_unit_select = Select(self.selenium.find_element(By.ID, "id_delay_unit"))
         # 30 days was saved, which rounds back to 1 month
         self.assertEqual(delay_value_field.get_attribute("value"), "1")
-        self.assertEqual(delay_unit_select.first_selected_option.get_attribute("value"), "months")
+        self.assertEqual(
+            delay_unit_select.first_selected_option.get_attribute("value"), "months"
+        )
 
     def test_no_profile_page_if_not_logged(self):
         """We try to access the profile page directly from the URL, without being signed in"""

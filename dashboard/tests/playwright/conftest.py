@@ -33,17 +33,18 @@ def playwright_test_settings() -> None:
 
     # Use non-hashed storage so staticfiles finders can serve files by their
     # original names from STATICFILES_DIRS.
-    settings.STORAGES["staticfiles"]["BACKEND"] = (
-        "django.contrib.staticfiles.storage.StaticFilesStorage"
-    )
+    settings.STORAGES["staticfiles"][
+        "BACKEND"
+    ] = "django.contrib.staticfiles.storage.StaticFilesStorage"
     # Clear the cached storage instance so the new backend takes effect on the
     # next request (StorageHandler lazily instantiates backends on first use).
-    storages._storages.pop("staticfiles", None)
+    storages._storages.pop("staticfiles", None)  # type: ignore
 
     # Use the pre-built Vite bundle instead of the dev server.
     settings.DJANGO_VITE["default"]["dev_mode"] = False
     # DjangoViteAssetLoader is a singleton that reads settings once at first use.
     # Reset it so the next template render picks up dev_mode=False and loads the
     # built manifest instead of pointing scripts at the dev server.
-    from django_vite.core.asset_loader import DjangoViteAssetLoader
+    from django_vite.core.asset_loader import DjangoViteAssetLoader  # type: ignore
+
     DjangoViteAssetLoader._instance = None
