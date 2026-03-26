@@ -77,5 +77,13 @@ jobs:
       run: |
         source .venv/bin/activate
         python manage.py test --tag=sequential
+    - name: Install Playwright browsers
+      run: |
+        source .venv/bin/activate
+        playwright install chromium --with-deps
+    - name: Run Playwright tests
+      run: |
+        source .venv/bin/activate
+        pytest
     - name: Run mypy
       run: poetry run mypy --install-types --non-interactive .
