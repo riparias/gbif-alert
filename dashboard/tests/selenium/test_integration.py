@@ -511,14 +511,15 @@ class SeleniumTests(SeleniumTestsCommon):
 
         # Action 3: make sure "all" is selected
         observation_status_selector.find_element(By.ID, "label-btnRadioAll").click()
+        time.sleep(1)
 
-        # Check 2: make sure there are 3 rows in the table, but only 2 "unseen" badges
+        # Check 2: make sure there are 3 rows in the table, but only 1 "seen" badge
         obs_table = self.selenium.find_element(By.ID, "gbif-alert-observations-table")
         obs_table_body = obs_table.find_element(By.TAG_NAME, "tbody")
         result_rows = obs_table_body.find_elements(By.TAG_NAME, "tr")
         self.assertEqual(
-            len(result_rows), 2
-        )  # 2 unseen result rows, selected by default
+            len(result_rows), 3
+        )  # all 3 observations shown when "all" is selected
         seen_rows = obs_table_body.find_elements(
             By.CLASS_NAME, "gbif-alert-seen-row-marker"
         )
