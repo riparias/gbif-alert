@@ -98,6 +98,7 @@ GBIF_ALERT: dict[str, Any] = {
     # emerald, green, lime, red, orange, amber, yellow, teal, cyan, sky,
     # blue, indigo, violet, purple, fuchsia, pink, rose, slate, gray, zinc,
     # neutral, stone
+    # Optional - defaults to "indigo" if omitted.
     "PRIMEVUE_PRIMARY_PALETTE": "indigo",
     "ENABLED_LANGUAGES": (  # Languages available in the interface. Subset of the languages in `LANGUAGES`.
         "en",

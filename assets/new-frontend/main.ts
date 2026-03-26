@@ -17,10 +17,9 @@ import { routes } from "./router/index";
 // Read the primary palette name from the nav config Django injects into every page
 // (via the nav_config_json template tag). This lets each deployment choose its own
 // branding color via GBIF_ALERT["PRIMEVUE_PRIMARY_PALETTE"] in Django settings.
-const navConfigEl = document.getElementById("gbif-alert-nav-config");
-const primaryPalette: string = navConfigEl
-    ? (JSON.parse(navConfigEl.textContent!).primaryPalette ?? "indigo")
-    : "indigo";
+const primaryPalette: string = JSON.parse(
+    document.getElementById("gbif-alert-nav-config")!.textContent!
+).primaryPalette;
 
 const shades = [
     "50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950",

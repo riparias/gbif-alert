@@ -134,7 +134,7 @@ def nav_config_json(context):
 
     conf = {
         "siteName": settings.GBIF_ALERT["SITE_NAME"],
-        "primaryPalette": settings.GBIF_ALERT["PRIMEVUE_PRIMARY_PALETTE"],
+        "primaryPalette": settings.GBIF_ALERT.get("PRIMEVUE_PRIMARY_PALETTE", "indigo"),
         "currentLanguage": get_language(),
         "enabledLanguages": enabled_languages,
         "user": {
