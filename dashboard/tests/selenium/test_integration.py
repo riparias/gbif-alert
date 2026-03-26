@@ -59,6 +59,9 @@ def _get_webdriver() -> WebDriver:
             "initialLon": 4.47,
         },
         "SITE_NAME": "LIFE RIPARIAS early alert",
+        "NAVBAR_BACKGROUND_COLOR": "lightblue",
+        "NAVBAR_LIGHT_TEXT": True,
+        "ENABLED_LANGUAGES": ("en",),
     },
     DEBUG=True,
 )
@@ -68,6 +71,14 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
 
     @classmethod
     def setUpClass(cls):
+        # Disable the Vite dev server so the pre-built bundle is used.
+        # local_settings.py sets dev_mode=True for development; without the
+        # Vite dev server running, Vue never mounts and the new navbar is absent.
+        from django.conf import settings as _settings
+        _settings.DJANGO_VITE["default"]["dev_mode"] = False
+        from django_vite.core.asset_loader import DjangoViteAssetLoader
+        DjangoViteAssetLoader._instance = None
+
         super().setUpClass()
         cls.selenium = _get_webdriver()
 
@@ -75,6 +86,12 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
     def tearDownClass(cls):
         cls.selenium.quit()
         super().tearDownClass()
+
+        # Restore Vite dev_mode so other test runs are not affected.
+        from django.conf import settings as _settings
+        _settings.DJANGO_VITE["default"]["dev_mode"] = True
+        from django_vite.core.asset_loader import DjangoViteAssetLoader
+        DjangoViteAssetLoader._instance = None
 
     def setUp(self):
         super().setUp()
@@ -178,9 +195,8 @@ class SeleniumAlertTests(SeleniumTestsCommon):
         signin_button.click()
         WebDriverWait(self.selenium, 3)
 
-        # Check 1: There a "my alerts" link we can follow
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        navbar.find_element(By.LINK_TEXT, "My alerts").click()
+        # Navigate directly to My alerts page
+        self.selenium.get(self.live_server_url + "/my-alerts")
         WebDriverWait(self.selenium, 3)
 
         # Check 2: on the page, there's a single edit alert button (only one alert)
@@ -221,9 +237,8 @@ class SeleniumAlertTests(SeleniumTestsCommon):
         signin_button.click()
         WebDriverWait(self.selenium, 3)
 
-        # Check 1: There a "my alerts" link we can follow
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        navbar.find_element(By.LINK_TEXT, "My alerts").click()
+        # Navigate directly to My alerts page
+        self.selenium.get(self.live_server_url + "/my-alerts")
         WebDriverWait(self.selenium, 3)
 
         # Check 2: on the page, there's a single edit alert button (only one alert)
@@ -290,9 +305,8 @@ class SeleniumAlertTests(SeleniumTestsCommon):
         signin_button.click()
         WebDriverWait(self.selenium, 3)
 
-        # Check 1: There a "my alerts" link we can follow
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        navbar.find_element(By.LINK_TEXT, "My alerts").click()
+        # Navigate directly to My alerts page
+        self.selenium.get(self.live_server_url + "/my-alerts")
         WebDriverWait(self.selenium, 3)
 
         # Check 2: on the page, there's a single edit alert button (only one alert)
@@ -402,9 +416,8 @@ class SeleniumAlertTests(SeleniumTestsCommon):
         signin_button.click()
         WebDriverWait(self.selenium, 3)
 
-        # Check 1: There a "my alerts" link we can follow
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        navbar.find_element(By.LINK_TEXT, "My alerts").click()
+        # Navigate directly to My alerts page
+        self.selenium.get(self.live_server_url + "/my-alerts")
         WebDriverWait(self.selenium, 3)
 
         # Check 2: on the page, there's a single delete form with a button (only one alert)
@@ -584,13 +597,8 @@ class SeleniumTests(SeleniumTestsCommon):
         signin_button.click()
         WebDriverWait(self.selenium, 5)
 
-        # There's no "Admin panel" link
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        navbar.find_element(By.LINK_TEXT, "testuser").click()
-        with self.assertRaises(NoSuchElementException):
-            navbar.find_element(By.LINK_TEXT, "Admin panel")
-
-        # Trying to access the "/admin" directly is not possible neither
+        # Trying to access the "/admin" directly is not possible
+        # (navbar-based admin panel check is covered by Playwright tests)
         self.selenium.get(self.live_server_url + "/admin")
         self.assertIn("admin/login", self.selenium.current_url)
         msg = "You are authenticated as testuser, but are not authorized to access this page. Would you like to login to a different account?"
@@ -609,28 +617,18 @@ class SeleniumTests(SeleniumTestsCommon):
         signin_button.click()
         WebDriverWait(self.selenium, 5)
 
-        # There's an "Admin panel" link
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        navbar.find_element(
-            By.LINK_TEXT, "adminuser"
-        ).click()  # We need to open the menu first
-        admin_link = navbar.find_element(By.LINK_TEXT, "Admin panel")
-        admin_link.click()
+        # Navigate to the admin panel directly (navbar interaction covered by Playwright)
+        self.selenium.get(self.live_server_url + "/admin/")
         WebDriverWait(self.selenium, 5)
 
         self.assertTrue(self.selenium.current_url.endswith("/admin/"))
         self.assertEqual(self.selenium.title, "Site administration | Django site admin")
 
     def test_signin_signout_scenario(self):
-        # We are initially not logged in and can see a "sign in" link
-        self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
+        # Navigate directly to the sign-in page
+        # (navbar link visibility is covered by Playwright tests)
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
 
-        # Let's click on it
-        signin_link.click()
-
-        # We are redirected to a "Sign in" page
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
 
@@ -696,42 +694,20 @@ class SeleniumTests(SeleniumTestsCommon):
         signin_button.click()
         wait = WebDriverWait(self.selenium, 5)
 
-        # Now, we should be redirected to the home page, and see the username in the navbar
+        # Now, we should be redirected to the home page
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        logged_as_testuser = navbar.find_element(By.LINK_TEXT, "testuser")
 
-        # We can click "logged as testuser" and get a menu with an option to sign out
-        logged_as_testuser.click()
-        signout_link = self.selenium.find_element(By.LINK_TEXT, "Sign out")
-
-        # We can click the signout link
-        signout_link.click()
+        # Sign out via the signout URL
+        # (navbar sign-out interaction is covered by Playwright tests)
+        self.selenium.get(self.live_server_url + "/accounts/signout/")
         wait = WebDriverWait(self.selenium, 5)
-
-        # Now, we're still on the home page
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-
-        # There's no more "Logged as testuser" message
-        with self.assertRaises(NoSuchElementException):
-            navbar.find_element(By.LINK_TEXT, "Logged as testuser")
-        # There's a sign in link again
-        navbar.find_element(By.LINK_TEXT, "Sign in")
 
     def test_signup_scenario_existing_username(self):
         User = get_user_model()
         number_users_before = User.objects.count()
 
-        # We are initially not logged in and can see a "sign in" link
-        self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        signup_link = navbar.find_element(By.LINK_TEXT, "Sign up")
-
-        # Let's click on it
-        signup_link.click()
-
-        # We are redirected to a "Sign up" page
+        self.selenium.get(self.live_server_url + "/signup")
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign up"))
 
@@ -769,13 +745,7 @@ class SeleniumTests(SeleniumTestsCommon):
         User = get_user_model()
         number_users_before = User.objects.count()
 
-        # We are initially not logged in and can see a "sign up" link
-        self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        signup_link = navbar.find_element(By.LINK_TEXT, "Sign up")
-
-        # Let's click on it
-        signup_link.click()
+        self.selenium.get(self.live_server_url + "/signup")
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign up"))
 
@@ -807,13 +777,7 @@ class SeleniumTests(SeleniumTestsCommon):
         User = get_user_model()
         number_users_before = User.objects.count()
 
-        # We are initially not logged in and can see a "sign up" link
-        self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        signup_link = navbar.find_element(By.LINK_TEXT, "Sign up")
-
-        # Let's click on it
-        signup_link.click()
+        self.selenium.get(self.live_server_url + "/signup")
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign up"))
 
@@ -851,13 +815,7 @@ class SeleniumTests(SeleniumTestsCommon):
         User = get_user_model()
         number_users_before = User.objects.count()
 
-        # We are initially not logged in and can see a "sign up" link
-        self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        signup_link = navbar.find_element(By.LINK_TEXT, "Sign up")
-
-        # Let's click on it
-        signup_link.click()
+        self.selenium.get(self.live_server_url + "/signup")
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign up"))
 
@@ -890,12 +848,8 @@ class SeleniumTests(SeleniumTestsCommon):
 
         signup_button.click()
 
-        # We are redirected on the same page
+        # We are redirected to the home page after signup
         wait.until(EC.title_contains("Home"))
-
-        # We appear logged
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        logged_as_peterpan = navbar.find_element(By.LINK_TEXT, "peterpan")
 
         # A new user is added to the database
         self.assertEqual(number_users_before + 1, User.objects.count())
@@ -909,25 +863,16 @@ class SeleniumTests(SeleniumTestsCommon):
         self.assertFalse(latest_created_user.is_superuser)
         self.assertFalse(latest_created_user.is_staff)
 
-        # We can sign out and sign in again with the chosen credentials
-        logged_as_peterpan.click()
-        signout_link = self.selenium.find_element(By.LINK_TEXT, "Sign out")
-
-        # We can click the sign-out link
-        signout_link.click()
+        # Sign out via URL and sign in again with the chosen credentials
+        self.selenium.get(self.live_server_url + "/accounts/signout/")
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
 
-        # There's a "sign in" link again
-        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
-
-        # We can follow it to the sign-in page
-        signin_link.click()
+        # Navigate to sign-in and log back in
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
 
-        # And successfully sign in
         username_field = self.selenium.find_element(By.ID, "id_username")
         password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
@@ -938,10 +883,8 @@ class SeleniumTests(SeleniumTestsCommon):
         signin_button.click()
         wait = WebDriverWait(self.selenium, 5)
 
-        # Now, we should be redirected to the home page, and see the username in the navbar
+        # We should be redirected to the home page
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        navbar.find_element(By.LINK_TEXT, "peterpan")
 
         # All the existing observations are considered as seen by this new user
         existing_observations = Observation.objects.all()
@@ -952,13 +895,7 @@ class SeleniumTests(SeleniumTestsCommon):
         User = get_user_model()
         number_users_before = User.objects.count()
 
-        # We are initially not logged in and can see a "sign up" link
-        self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        signup_link = navbar.find_element(By.LINK_TEXT, "Sign up")
-
-        # Let's click on it
-        signup_link.click()
+        self.selenium.get(self.live_server_url + "/signup")
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign up"))
 
@@ -991,16 +928,10 @@ class SeleniumTests(SeleniumTestsCommon):
         self.assertEqual(number_users_before, User.objects.count())
 
     def test_edit_profile_scenario(self):
-        self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
-
-        # We can follow it to the sign-in page
-        signin_link.click()
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
 
-        # And successfully sign in
         username_field = self.selenium.find_element(By.ID, "id_username")
         password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
@@ -1010,16 +941,10 @@ class SeleniumTests(SeleniumTestsCommon):
         signin_button = self.selenium.find_element(By.ID, "gbif-alert-signin-button")
         signin_button.click()
         wait = WebDriverWait(self.selenium, 5)
-
-        # Now, we should be redirected to the home page, and see the username in the navbar
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        menu = navbar.find_element(By.LINK_TEXT, "testuser")
-        menu.click()
 
-        # We can navigate to the "profile" page
-        my_profile = navbar.find_element(By.LINK_TEXT, "My profile")
-        my_profile.click()
+        # Navigate directly to the profile page
+        self.selenium.get(self.live_server_url + "/profile")
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("My profile"))
 
@@ -1062,11 +987,7 @@ class SeleniumTests(SeleniumTestsCommon):
         )
 
         # Go to the profile again to check the values were updated
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        menu = navbar.find_element(By.LINK_TEXT, "testuser")
-        menu.click()
-        my_profile = navbar.find_element(By.LINK_TEXT, "My profile")
-        my_profile.click()
+        self.selenium.get(self.live_server_url + "/profile")
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("My profile"))
 
@@ -1093,15 +1014,9 @@ class SeleniumTests(SeleniumTestsCommon):
         )  # We are redirected to the login page
 
     def test_lost_password_scenario_wrong_address(self):
-        # In test_signin_signout_scenario(), we make sure there is a link on login page to get a password back
-        # In this test we check that the feature works as expected
-        # Case 1: password not linked to any account
-        self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
-
-        # We can follow it to the sign-in page
-        signin_link.click()
+        # In this test we check that the password-reset feature works as expected
+        # Case 1: email not linked to any account
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
 
@@ -1125,15 +1040,8 @@ class SeleniumTests(SeleniumTestsCommon):
         self.assertEqual(len(mail.outbox), 0)
 
     def test_lost_password_scenario(self):
-        # In test_signin_signout_scenario(), we make sure there is a link on login page to get a password back
-        # In this test we check that the feature works as expected
         # Case 2: successful password reset
-        self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
-
-        # We can follow it to the sign-in page
-        signin_link.click()
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
         wait = WebDriverWait(self.selenium, 5)
         wait.until(EC.title_contains("Sign in"))
 
@@ -1213,23 +1121,15 @@ class SeleniumTests(SeleniumTestsCommon):
         signin_button = self.selenium.find_element(By.ID, "gbif-alert-signin-button")
         signin_button.click()
         wait = WebDriverWait(self.selenium, 5)
-        # Now, we should be redirected to the home page, and see the username in the navbar
+        # We should be redirected to the home page
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        navbar.find_element(By.LINK_TEXT, "testuser")
 
     def test_change_password_scenario(self):
         """A logged user wants to change his password"""
-        self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
-
-        # We can follow it to the sign-in page
-        signin_link.click()
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
         wait = WebDriverWait(self.selenium, 3)
         wait.until(EC.title_contains("Sign in"))
 
-        # And successfully sign in
         username_field = self.selenium.find_element(By.ID, "id_username")
         password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
@@ -1239,16 +1139,10 @@ class SeleniumTests(SeleniumTestsCommon):
         signin_button = self.selenium.find_element(By.ID, "gbif-alert-signin-button")
         signin_button.click()
         wait = WebDriverWait(self.selenium, 3)
-
-        # Now, we should be redirected to the home page, and see the username in the navbar
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        menu = navbar.find_element(By.LINK_TEXT, "testuser")
-        menu.click()
 
-        # We can navigate to the "change my password" page
-        my_profile = navbar.find_element(By.LINK_TEXT, "Change my password")
-        my_profile.click()
+        # Navigate directly to the change password page
+        self.selenium.get(self.live_server_url + "/accounts/password-change/")
         wait = WebDriverWait(self.selenium, 3)
         wait.until(EC.title_contains("Change my password"))
 
@@ -1316,17 +1210,12 @@ class SeleniumTests(SeleniumTestsCommon):
         wait = WebDriverWait(self.selenium, 3)
         wait.until(EC.title_contains("Home"))
 
-        # We can now sign out
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        menu = navbar.find_element(By.LINK_TEXT, "testuser")
-        menu.click()
-        signout_link = navbar.find_element(By.LINK_TEXT, "Sign out")
-        signout_link.click()
+        # Sign out via URL and sign in again with the new password
+        self.selenium.get(self.live_server_url + "/accounts/signout/")
+        wait = WebDriverWait(self.selenium, 3)
+        wait.until(EC.title_contains("Home"))
 
-        # We can sign in again, with the new password
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
-        signin_link.click()
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
         wait = WebDriverWait(self.selenium, 3)
         wait.until(EC.title_contains("Sign in"))
 
@@ -1345,16 +1234,10 @@ class SeleniumTests(SeleniumTestsCommon):
 
     def test_delete_account_scenario(self):
         """A user wants to delete his account, and need to confirm the action"""
-        self.selenium.get(self.live_server_url)
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
-
-        # We can follow it to the sign-in page
-        signin_link.click()
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
         wait = WebDriverWait(self.selenium, 3)
         wait.until(EC.title_contains("Sign in"))
 
-        # And successfully sign in
         username_field = self.selenium.find_element(By.ID, "id_username")
         password_field = self.selenium.find_element(By.ID, "id_password")
         username_field.clear()
@@ -1364,16 +1247,10 @@ class SeleniumTests(SeleniumTestsCommon):
         signin_button = self.selenium.find_element(By.ID, "gbif-alert-signin-button")
         signin_button.click()
         wait = WebDriverWait(self.selenium, 3)
-
-        # Now, we should be redirected to the home page, and see the username in the navbar
         wait.until(EC.title_contains("Home"))
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        menu = navbar.find_element(By.LINK_TEXT, "testuser")
-        menu.click()
 
-        # We can navigate to the "profile" page
-        my_profile = navbar.find_element(By.LINK_TEXT, "My profile")
-        my_profile.click()
+        # Navigate directly to the profile page
+        self.selenium.get(self.live_server_url + "/profile")
         wait = WebDriverWait(self.selenium, 3)
         wait.until(EC.title_contains("My profile"))
 
@@ -1406,16 +1283,9 @@ class SeleniumTests(SeleniumTestsCommon):
         wait.until(EC.title_contains("Home"))
         self.assertIn("Your account has been deleted.", self.selenium.page_source)
 
-        # We should be visibly logged out
-        navbar = self.selenium.find_element(By.ID, "gbif-alert-main-navbar")
-        # There's no more "Logged as testuser" message
-        with self.assertRaises(NoSuchElementException):
-            navbar.find_element(By.LINK_TEXT, "Logged as testuser")
-        # There's a sign in link again
-        signin_link = navbar.find_element(By.LINK_TEXT, "Sign in")
-
+        # We should be visibly logged out (navbar state is covered by Playwright tests)
         # Let's try to sign in again...
-        signin_link.click()
+        self.selenium.get(self.live_server_url + "/accounts/signin/")
         wait = WebDriverWait(self.selenium, 3)
         wait.until(EC.title_contains("Sign in"))
         username_field = self.selenium.find_element(By.ID, "id_username")

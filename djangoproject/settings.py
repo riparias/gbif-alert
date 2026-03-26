@@ -149,6 +149,11 @@ DJANGO_VITE = {
         "dev_mode": False,  # override to True in local_settings.py when running the Vite dev server
         "dev_server_port": 5274,
         "manifest_path": BASE_DIR / "static_global" / "vite" / ".vite" / "manifest.json",
+        # Vite outputs to static_global/vite/, so assets are served at /static/vite/...
+        # This prefix is used both in dev (to construct the dev server URL matching
+        # vite.config.ts base: "/static/vite/") and in production (prepended before
+        # staticfiles_storage.url() so the URL resolves to /static/vite/assets/...).
+        "static_url_prefix": "vite",
     }
 }
 

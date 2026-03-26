@@ -7,6 +7,7 @@ from django import template
 from django.conf import settings
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.utils.translation import get_language, get_language_info
 
 from dashboard.models import DataImport
 
@@ -113,6 +114,57 @@ def js_config_object(context):
     }
     if context.request.user.is_authenticated:
         conf["userId"] = context.request.user.pk
+
+    return mark_safe(json.dumps(conf))
+
+
+@register.simple_tag(takes_context=True)
+def nav_config_json(context):
+    """Serialize all data the Vue navbar needs into a JSON string.
+
+    Injected into the page as a <script type="application/json"> element so that
+    the Vue app can read it synchronously at mount time without a fetch round-trip.
+    """
+    user = context.request.user
+
+    enabled_languages = [
+        {"code": code, "nameLocal": get_language_info(code)["name_local"]}
+        for code in settings.GBIF_ALERT["ENABLED_LANGUAGES"]
+    ]
+
+    conf = {
+        "siteName": settings.GBIF_ALERT["SITE_NAME"],
+        "navbarBackgroundColor": settings.GBIF_ALERT["NAVBAR_BACKGROUND_COLOR"],
+        "navbarLightText": settings.GBIF_ALERT["NAVBAR_LIGHT_TEXT"],
+        "currentLanguage": get_language(),
+        "enabledLanguages": enabled_languages,
+        "user": {
+            "isAuthenticated": user.is_authenticated,
+            "username": user.username if user.is_authenticated else None,
+            "isSuperuser": user.is_superuser if user.is_authenticated else False,
+            "hasUnseenNews": user.has_unseen_news if user.is_authenticated else False,
+            "hasAlertsWithUnseenObservations": (
+                user.has_alerts_with_unseen_observations
+                if user.is_authenticated
+                else False
+            ),
+        },
+        "urls": {
+            "index": reverse("dashboard:pages:index"),
+            "news": reverse("dashboard:pages:news"),
+            "myAlerts": reverse("dashboard:pages:my-alerts"),
+            "aboutSite": reverse("dashboard:pages:about-site"),
+            "aboutData": reverse("dashboard:pages:about-data"),
+            "profile": reverse("dashboard:pages:profile"),
+            "passwordChange": reverse("password_change"),
+            "myCustomAreas": reverse("dashboard:pages:my-custom-areas"),
+            "signout": reverse("signout"),
+            "signin": reverse("signin"),
+            "signup": reverse("dashboard:pages:signup"),
+            "admin": reverse("admin:index"),
+            "setLanguage": reverse("set_language"),
+        },
+    }
 
     return mark_safe(json.dumps(conf))
 

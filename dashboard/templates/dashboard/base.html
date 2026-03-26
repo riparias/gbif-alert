@@ -33,21 +33,21 @@
     </title>
 </head>
 <body>
-<div style="margin-bottom: 100px;">
-    {% get_page_fragment 'over_navbar' %}
-    {% include "dashboard/_navbar.html" %}
-    {% include "dashboard/_messages.html" %}
+{# Data for the Vue navbar. Read at mount time via JSON.parse(document.getElementById(...).textContent). #}
+<script type="application/json" id="gbif-alert-nav-config">{% nav_config_json %}</script>
+{% get_page_fragment 'over_navbar' %}
+{# Vue app mount point: renders NavBar (Phase 1) and full page content via RouterView (Phase 2+). #}
+<div id="new-frontend"></div>
+{% include "dashboard/_messages.html" %}
 
+<div style="margin-bottom: 100px;">
     {% block after_messages %}{% endblock %}
 </div>
 
 {% include "dashboard/_footer.html" %}
 <script src="{% static 'js/early_alert-bundle.js' %}"></script>
 <link rel="stylesheet" href="{% static "css/show_body.css" %}">
-{# New Vite-managed frontend. The #new-frontend div is the Vue app mount point. #}
-{# No routes are defined yet (Phase 2+), so RouterView renders nothing. #}
 {% vite_hmr_client %}
 {% vite_asset 'assets/new-frontend/main.ts' %}
-<div id="new-frontend"></div>
 </body>
 </html>

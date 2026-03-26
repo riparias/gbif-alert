@@ -85,16 +85,32 @@ assets/
 
 First user-visible change. All pages get the new look simultaneously.
 
-- [ ] 1.1 - Build `NavBar.vue` and `FooterBar.vue` with PrimeVue components
-        (Menubar, etc.), matching current navigation structure
-- [ ] 1.2 - Update `base.html` to load the Vite bundle AND mount the new navbar/footer
-        (alongside the existing Webpack bundle)
-- [ ] 1.3 - Remove old Bootstrap navbar/footer HTML from `base.html`
-- [ ] 1.4 - Verify all existing pages still work with the new layout
-- [ ] 1.5 - Write Playwright tests for navbar navigation
+- [x] 1.1 - Build `NavBar.vue` with PrimeVue Menubar, including language selector and
+        user dropdown. FooterBar deferred: footer stays as Django HTML for now
+        (the `footer_left_col` page fragment contains arbitrary admin HTML that would
+        need `v-html`; not worth the complexity until Phase 2 Bootstrap cleanup).
+- [x] 1.2 - Update `base.html`: inject `nav_config_json` as
+        `<script type="application/json" id="gbif-alert-nav-config">`, move
+        `#new-frontend` to top of body (before page content), remove old
+        `_navbar.html` include.
+- [x] 1.3 - Removed old Bootstrap navbar from `base.html`. Footer kept as Django
+        template (see 1.1 note above).
+- [x] 1.4 - Verify all existing pages still work with the new layout
+- [x] 1.5 - Write Playwright tests for navbar navigation (7 tests in
+        `dashboard/tests/playwright/test_navbar.py`; Django unit tests for `nav_config_json`
+        in `dashboard/tests/views/test_pages.py::NavConfigJsonTests`; Selenium tests
+        updated to work with the new navbar)
 
-**Note**: During this phase, page bodies still use Bootstrap. The visual contrast should be
-mild since your custom CSS is minimal. If needed, add a small bridge stylesheet.
+**Open TODOs tracked in `NavBar.vue`**:
+- Aura design token integration: the configurable `navbarBackgroundColor` /
+  `navbarLightText` settings currently override PrimeVue styles via `:deep()` CSS.
+  In a later phase, wire these into the Aura palette so hover states and sub-menu
+  styles inherit correctly without per-rule overrides.
+- Active page detection: currently uses `window.location.pathname`. Replace with
+  `useRoute().path` once all pages are Vue routes (Phase 3+).
+
+**Note**: Page bodies still use Bootstrap. The visual contrast is mild since custom
+CSS is minimal. Footer stays Bootstrap until Phase 2.
 
 ### Phase 2: Index Page + Observation Details
 

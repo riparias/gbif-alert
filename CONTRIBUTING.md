@@ -14,16 +14,42 @@
 ## Testing / typing
 This project provides the following tools to ensure the application and code stays in a decent state:
 
-- Standard Django tests, including Selenium-based testing for frontend features and high-level tests
+### Django unit tests (`manage.py test`)
 
-  Tests are split into two groups to avoid PostgreSQL deadlocks caused by concurrent `TRUNCATE`
-  operations from `TransactionTestCase`/`StaticLiveServerTestCase` teardowns:
+Most tests (model, view, API) run via Django's test runner:
 
-  - **Parallel** (most tests - `TestCase` subclasses): `$ python manage.py test --parallel --exclude-tag=sequential`
-  - **Sequential** (`TransactionTestCase` and Selenium tests): `$ python manage.py test --tag=sequential`
+Tests are split into two groups to avoid PostgreSQL deadlocks caused by concurrent `TRUNCATE`
+operations from `TransactionTestCase`/`StaticLiveServerTestCase` teardowns:
 
-  Running `$ python manage.py test` without flags also works and is safe, but slower.
-- Typing: can be checked with `$ mypy .`
+- **Parallel** (most tests - `TestCase` subclasses): `$ python manage.py test --parallel --exclude-tag=sequential`
+- **Sequential** (`TransactionTestCase` and Selenium tests): `$ python manage.py test --tag=sequential`
+
+Running `$ python manage.py test` without flags also works and is safe, but slower.
+
+> Note: these tests require `DJANGO_SETTINGS_MODULE=djangoproject.local_settings` (e.g. set in
+> PyCharm's Django run configuration, or exported in your shell).
+
+### Playwright browser tests (`pytest`)
+
+End-to-end browser tests use Playwright and run via pytest:
+
+```
+$ pytest
+```
+
+pytest is configured in `pyproject.toml` (`testpaths = ["dashboard/tests/playwright"]`).
+These tests start a live Django server and drive a headless Chromium browser.
+The Vite dev server does **not** need to be running - the tests use the pre-built bundle in
+`static_global/vite/` (run `npm run vite-build` first if the bundle is stale).
+
+To run a single test file: `$ pytest dashboard/tests/playwright/test_navbar.py`
+
+> **Future direction:** The goal is to migrate all tests to pytest so there is a single test
+> runner. This is tracked as a separate initiative.
+
+### Typing
+
+Can be checked with `$ mypy .`
 
 Those should be run frequently on the developer's machines, but will also be executed by GitHub actions each time the code is pushed to GitHub (see the CI-CD section)
 

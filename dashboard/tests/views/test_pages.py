@@ -1,4 +1,6 @@
 import datetime
+import json
+import re
 from unittest import mock
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
@@ -124,84 +126,6 @@ class AlertWebPagesTests(TestCase):
             name="Second user polygon",
             owner=cls.second_user,
             mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
-        )
-
-    my_alerts_navbar_snippet = '<a class="nav-link fw-bold" aria-current="page" href="/my-alerts"><i class="bi bi-exclamation-square"></i>My alerts</a>'
-
-    def test_navbar_my_alerts_authenticated(self):
-        """Authenticated users have a 'my alerts' link in the navbar"""
-        self.client.login(username="frusciante", password="12345")
-        response = self.client.get("/")
-        self.assertContains(
-            response,
-            self.my_alerts_navbar_snippet,
-            html=True,
-        )
-
-    def test_navbar_my_alerts_anonymous(self):
-        """Anonymous users **don't** have a 'my alerts' link in the navbar"""
-        response = self.client.get("/")
-        self.assertNotContains(
-            response,
-            self.my_alerts_navbar_snippet,
-            html=True,
-        )
-
-    @patch("dashboard.models.User.has_alerts_with_unseen_observations", True)
-    def test_navbar_unseen_observations_in_alerts(self):
-        """If there are unseen observations for some user alerts, a red dot is shown in the navbar"""
-        self.client.login(username="frusciante", password="12345")
-
-        response = self.client.get("/")
-        self.assertContains(
-            response,
-            '<span id="unseen-observations-dot" class="align-baseline red-dot">',
-            html=True,
-        )
-
-    @patch("dashboard.models.User.has_alerts_with_unseen_observations", False)
-    def test_navbar_no_unseen_observations_in_alerts(self):
-        """If there are no unseen observations for some user alerts, a red dot is **not** shown in the navbar"""
-        self.client.login(username="frusciante", password="12345")
-
-        response = self.client.get("/")
-        self.assertNotContains(
-            response,
-            '<span id="unseen-observations-dot" class="align-baseline red-dot">',
-            html=True,
-        )
-
-    @patch("dashboard.models.User.has_unseen_news", True)
-    def test_navbar_unseen_news(self):
-        """If there are unseen news, a red dot is shown in the navbar"""
-        self.client.login(username="frusciante", password="12345")
-
-        response = self.client.get("/")
-        self.assertContains(
-            response,
-            '<span id="unseen-news-dot" class="align-baseline red-dot">',
-            html=True,
-        )
-
-    @patch("dashboard.models.User.has_unseen_news", False)
-    def test_navbar_no_unseen_news(self):
-        """If there are no unseen news, no red dot is shown next to the news link in the navbar"""
-        self.client.login(username="frusciante", password="12345")
-
-        response = self.client.get("/")
-        self.assertNotContains(
-            response,
-            '<span id="unseen-news-dot" class="align-baseline red-dot">',
-            html=True,
-        )
-
-    def test_navbar_news_anonymous(self):
-        """Anonymous users **don't** have a red dot next to the 'news' link in the navbar"""
-        response = self.client.get("/")
-        self.assertNotContains(
-            response,
-            '<span id="unseen-news-dot" class="align-baseline red-dot">',
-            html=True,
         )
 
     def test_news_page_visit_update_last_visit_news_page(self):
@@ -733,3 +657,118 @@ class WebPagesTests(TestCase):
 
         response = self.client.get(page_url)
         self.assertContains(response, "Mark this observation as unseen")
+
+
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
+)
+class NavConfigJsonTests(TestCase):
+    """Tests for the nav_config_json template tag and the JSON it injects into every page.
+
+    The Vue navbar reads this JSON at mount time. These tests verify that the
+    server-side data layer produces the correct structure - the rendering itself
+    is covered by the Playwright tests in dashboard/tests/playwright/test_navbar.py.
+    """
+
+    _NAV_CONFIG_RE = re.compile(
+        r'id="gbif-alert-nav-config"[^>]*>(.*?)</script>', re.DOTALL
+    )
+
+    @classmethod
+    def setUpTestData(cls):
+        User = get_user_model()
+        cls.regular_user = User.objects.create_user(
+            username="testuser", password="testpass123"
+        )
+        cls.superuser = User.objects.create_superuser(
+            username="admin", password="adminpass123", email="admin@example.com"
+        )
+
+    def _get_nav_config(self, response):
+        """Parse and return the nav config JSON embedded in the page."""
+        content = response.content.decode()
+        match = self._NAV_CONFIG_RE.search(content)
+        self.assertIsNotNone(match, "gbif-alert-nav-config script tag not found in response")
+        return json.loads(match.group(1))
+
+    # --- Structural ---
+
+    def test_json_present_on_every_page(self):
+        """The nav config script tag is present on every page that uses base.html."""
+        for url in ["/", reverse("dashboard:pages:news")]:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertContains(response, 'id="gbif-alert-nav-config"')
+
+    def test_required_url_keys(self):
+        """All URL keys the Vue navbar expects are present."""
+        response = self.client.get("/")
+        config = self._get_nav_config(response)
+        expected_keys = {
+            "index", "news", "myAlerts", "aboutSite", "aboutData",
+            "profile", "passwordChange", "myCustomAreas", "signout",
+            "signin", "signup", "admin", "setLanguage",
+        }
+        self.assertEqual(set(config["urls"].keys()), expected_keys)
+
+    # --- Anonymous user ---
+
+    def test_anonymous_user_fields(self):
+        """Anonymous users produce isAuthenticated=false, null username, all flags false."""
+        response = self.client.get("/")
+        user_data = self._get_nav_config(response)["user"]
+        self.assertFalse(user_data["isAuthenticated"])
+        self.assertIsNone(user_data["username"])
+        self.assertFalse(user_data["isSuperuser"])
+        self.assertFalse(user_data["hasUnseenNews"])
+        self.assertFalse(user_data["hasAlertsWithUnseenObservations"])
+
+    # --- Authenticated regular user ---
+
+    def test_authenticated_user_fields(self):
+        """Authenticated users get isAuthenticated=true and their username."""
+        self.client.login(username="testuser", password="testpass123")
+        user_data = self._get_nav_config(self.client.get("/"))["user"]
+        self.assertTrue(user_data["isAuthenticated"])
+        self.assertEqual(user_data["username"], "testuser")
+        self.assertFalse(user_data["isSuperuser"])
+
+    @patch("dashboard.models.User.has_unseen_news", True)
+    def test_has_unseen_news_true(self):
+        """hasUnseenNews is true when the user has unseen news."""
+        self.client.login(username="testuser", password="testpass123")
+        user_data = self._get_nav_config(self.client.get("/"))["user"]
+        self.assertTrue(user_data["hasUnseenNews"])
+
+    @patch("dashboard.models.User.has_unseen_news", False)
+    def test_has_unseen_news_false(self):
+        """hasUnseenNews is false when the user has no unseen news."""
+        self.client.login(username="testuser", password="testpass123")
+        user_data = self._get_nav_config(self.client.get("/"))["user"]
+        self.assertFalse(user_data["hasUnseenNews"])
+
+    @patch("dashboard.models.User.has_alerts_with_unseen_observations", True)
+    def test_has_unseen_observations_true(self):
+        """hasAlertsWithUnseenObservations is true when the user has unseen observations."""
+        self.client.login(username="testuser", password="testpass123")
+        user_data = self._get_nav_config(self.client.get("/"))["user"]
+        self.assertTrue(user_data["hasAlertsWithUnseenObservations"])
+
+    @patch("dashboard.models.User.has_alerts_with_unseen_observations", False)
+    def test_has_unseen_observations_false(self):
+        """hasAlertsWithUnseenObservations is false when the user has no unseen observations."""
+        self.client.login(username="testuser", password="testpass123")
+        user_data = self._get_nav_config(self.client.get("/"))["user"]
+        self.assertFalse(user_data["hasAlertsWithUnseenObservations"])
+
+    # --- Superuser ---
+
+    def test_superuser_flag(self):
+        """isSuperuser is true for superusers, false for regular users."""
+        self.client.login(username="admin", password="adminpass123")
+        user_data = self._get_nav_config(self.client.get("/"))["user"]
+        self.assertTrue(user_data["isSuperuser"])
+
+        self.client.login(username="testuser", password="testpass123")
+        user_data = self._get_nav_config(self.client.get("/"))["user"]
+        self.assertFalse(user_data["isSuperuser"])
