@@ -259,6 +259,14 @@ export default defineComponent({
       this.debouncedUpdateApproachingDistance.cancel();
     }
   },
+  watch: {
+    'filters.areaFilterMode'(newMode: string) {
+      if ((newMode === 'approaching' || newMode === 'both') && this.localApproachingDistanceKm === null) {
+        this.localApproachingDistanceKm = 5;
+        this.filters.approachingDistanceKm = 5;
+      }
+    },
+  },
   methods: {
     // TODO: remove duplication, original in helpers.ts
     scientificNameFormatter: function (_rawValue: string | number, highlightedValue: string): string {
