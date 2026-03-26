@@ -224,7 +224,7 @@ export const messages = {
             area: 'Gebied',
             areaFilterMode: 'Gebiedfiltermode',
             areaFilterModeInside: 'Binnen het gebied',
-            areaFilterModeApproaching: 'Dicht bij het gebied (niet erbinnen)',
+            areaFilterModeApproaching: 'Dicht bij het gebied (buiten)',
             areaFilterModeBoth: 'Binnen of dicht bij het gebied',
             approachingDistanceKm: 'Nabijheidsafstand (km)',
             areasToInclude: 'Op te nemen gebieden',
