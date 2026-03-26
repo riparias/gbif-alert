@@ -14,7 +14,7 @@ Django Ninja) - incrementally, on main, with no long-running branches or paralle
 | UI framework          | PrimeVue (Aura preset)        | Rich components (DataTable, etc.), modern look, less custom code |
 | Component style       | `<script setup lang="ts">`    | Concise, better TypeScript inference                             |
 | State management      | Pinia                          | Shared filter state, survives route changes                      |
-| Routing               | Vue Router (hash or history)   | Client-side nav for core pages, solves filter-loss problem       |
+| Routing               | Vue Router (history mode)      | Client-side nav for core pages, solves filter-loss problem; Django catch-all serves the SPA shell for any unmatched path |
 | API layer             | Django Ninja (incremental)     | Type-safe, auto OpenAPI, lightweight                             |
 | TypeScript types      | openapi-typescript from spec   | End-to-end type safety, no manual interfaces.ts sync             |
 | E2E testing           | Playwright + pytest-playwright | Fast, multi-browser, native Django integration                   |
@@ -24,12 +24,17 @@ Django Ninja) - incrementally, on main, with no long-running branches or paralle
 
 ## Migration Strategy: Page-by-Page on Main
 
-The key principle: **every commit on main is shippable**. No feature flags, no parallel
-URLs, no long-running branches.
+The key principle: **every commit on main is shippable**. No feature flags, no long-running
+branches.
 
 Vite and Webpack coexist during the migration. Old pages load the Webpack bundle. New pages
 load the Vite bundle. The shared navbar/footer (PrimeVue) is in the Vite bundle and mounted
 on all pages (old and new) from the start.
+
+During active page migration work (Phase 2+), a temporary `/new/` Django route serves the
+in-progress Vue page. This is not user-facing (not in the navbar, not linked) - it exists
+solely to give visual feedback during development. It is removed when the real routing swap
+happens. This keeps the existing page untouched and shippable throughout.
 
 ## Phases
 
@@ -101,11 +106,7 @@ First user-visible change. All pages get the new look simultaneously.
         in `dashboard/tests/views/test_pages.py::NavConfigJsonTests`; Selenium tests
         updated to work with the new navbar)
 
-**Open TODOs tracked in `NavBar.vue`**:
-- Aura design token integration: the configurable `navbarBackgroundColor` /
-  `navbarLightText` settings currently override PrimeVue styles via `:deep()` CSS.
-  In a later phase, wire these into the Aura palette so hover states and sub-menu
-  styles inherit correctly without per-rule overrides.
+**Open TODO tracked in `NavBar.vue`**:
 - Active page detection: currently uses `window.location.pathname`. Replace with
   `useRoute().path` once all pages are Vue routes (Phase 3+).
 
@@ -116,32 +117,45 @@ CSS is minimal. Footer stays Bootstrap until Phase 2.
 
 The most complex migration. Proves the full architecture. Solves the filter-loss problem.
 
-- [ ] 2.1 - Create Django Ninja endpoints for data consumed by the index page:
-        filtered observations (paginated), species list, datasets, areas,
-        monthly histogram, observation counter
-- [ ] 2.2 - Generate TypeScript types from OpenAPI spec (`openapi-typescript`)
-- [ ] 2.3 - Create `filters` Pinia store (replaces the reactive filters object in
-        IndexPageRootComponent)
-- [ ] 2.4 - Migrate `IndexPage.vue`:
-  - [ ] 2.4.1 - Page skeleton with PrimeVue layout
-  - [ ] 2.4.2 - Filter components (species, datasets, areas, date range, status)
-          using PrimeVue MultiSelect, Calendar, etc.
-  - [ ] 2.4.3 - Observations DataTable (PrimeVue DataTable replaces custom table)
-  - [ ] 2.4.4 - Observations map (wrap existing OpenLayers component, convert to
-          Composition API)
-  - [ ] 2.4.5 - Monthly histogram (keep D3 or consider PrimeVue Chart)
-  - [ ] 2.4.6 - Filter state synced to URL query string (shareable URLs)
-- [ ] 2.5 - Migrate `ObservationDetailPage.vue` as a Vue Router route:
-  - [ ] 2.5.1 - Observation info display
-  - [ ] 2.5.2 - Single observation map (wrap existing component)
-  - [ ] 2.5.3 - Comments section
-  - [ ] 2.5.4 - Back navigation preserves filters (Pinia + router)
-- [ ] 2.6 - Update Django URL routing: index and observation detail served by a single
-        Django view that renders the Vue SPA shell
-- [ ] 2.7 - Remove old `index.html` and `observation_details.html` templates
-- [ ] 2.8 - Remove `IndexPageRootComponent.vue` and related old components from
+**Strategy**: Build bottom-up behind a temporary `/new/` dev URL (see Migration Strategy
+above). Ninja endpoints are created just-in-time alongside the UI component that consumes
+them - not all upfront. Schemas live in `dashboard/api_v2_schemas.py`. The existing index
+page is untouched until step 2.13.
+
+- [x] 2.1 - Ninja list endpoints for filter dropdowns (species, datasets, areas,
+        basis-of-record, data-imports) + Pydantic schemas in `dashboard/api_v2_schemas.py`
+- [x] 2.2 - Generate TypeScript types from OpenAPI spec (`openapi-typescript`);
+        `npm run generate-types` exports the schema and writes
+        `assets/new-frontend/types/api.ts`; re-run after any API change
+- [ ] 2.3 - `filters` Pinia store (`assets/new-frontend/stores/filters.ts`),
+        mirroring the `DashboardFilters` interface from `assets/ts/interfaces.ts`
+- [ ] 2.4 - Temporary `/new/` Django view + route (dev scaffold, removed in 2.13)
+- [ ] 2.5 - `IndexPage.vue` skeleton at `/new/` (PrimeVue layout shell, no real data)
+- [ ] 2.6 - Ninja paginated observations endpoint (`GET /api/v2/observations/`) +
+        PrimeVue DataTable in `IndexPage.vue`
+- [ ] 2.7 - Filter panel (species/datasets/areas/basis-of-record dropdowns, date range,
+        status, verified filter) using PrimeVue MultiSelect + DatePicker; filters
+        wired to DataTable via Pinia store
+- [ ] 2.8 - Ninja observation counter endpoint (`GET /api/v2/observations/count/`) +
+        counter component
+- [ ] 2.9 - Ninja monthly histogram endpoint (`GET /api/v2/observations/histogram/`) +
+        histogram component (keep D3 or consider PrimeVue Chart)
+- [ ] 2.10 - Filter state synced to URL query string (shareable URLs via vue-router
+        query params)
+- [ ] 2.11 - Wrap existing OpenLayers map component in Composition API; add to
+        `IndexPage.vue` (map tile endpoints are existing `/internal-api/maps/` routes,
+        no new Ninja endpoints needed here)
+- [ ] 2.12 - `ObservationDetailPage.vue` as a Vue Router route:
+  - [ ] 2.12.1 - Ninja single-observation endpoint + observation info display
+  - [ ] 2.12.2 - Single observation map (reuse wrapped OpenLayers component from 2.11)
+  - [ ] 2.12.3 - Comments section
+  - [ ] 2.12.4 - Back navigation preserves filters (Pinia + router)
+- [ ] 2.13 - Django URL routing swap: index and observation detail served by the Vue SPA
+        shell; add catch-all route for Vue Router history mode; remove `/new/` route
+- [ ] 2.14 - Remove old `index.html` and `observation_details.html` templates
+- [ ] 2.15 - Remove `IndexPageRootComponent.vue` and related old components from
         `assets/ts/`
-- [ ] 2.9 - Playwright tests for index page filters, data table, observation detail
+- [ ] 2.16 - Playwright tests for index page filters, data table, observation detail
         navigation (back button preserves filters)
 
 ### Phase 3: Alert CRUD
@@ -199,8 +213,10 @@ The most complex migration. Proves the full architecture. Solves the filter-loss
 
 ## Open Questions (to resolve during implementation)
 
-- Vue Router history mode vs hash mode? History mode needs Django catch-all route config.
-  Recommendation: history mode for cleaner URLs (Django catch-all is straightforward).
+- ~~Vue Router history mode vs hash mode?~~ **Resolved: history mode.** Django catch-all
+  added in step 2.13.
 - PrimeVue theme customization: Aura preset out of the box, or customize colors to match
   project branding?
-- Should the OpenAPI -> TypeScript generation be a build step or a manual/CI step?
+- ~~Should the OpenAPI -> TypeScript generation be a build step or a manual/CI step?~~
+  **Resolved: manual.** Run `npm run generate-types` after API changes and commit
+  `assets/new-frontend/types/api.ts`.

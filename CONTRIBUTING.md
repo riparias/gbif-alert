@@ -108,6 +108,30 @@ the Vite bundle.
 - **During development**, run `npm run vite-dev` to start the Vite dev server on port 5274 (required for HMR on pages served by the new frontend)
 - **When deploying**, use `npm run vite-build` to produce hashed assets in `./static_global/vite`
 
+### API v2 (Django Ninja)
+
+The new API lives at `/api/v2/` and is built with [Django Ninja](https://django-ninja.dev/).
+It is being introduced incrementally as part of the frontend migration (see `FRONTEND_MIGRATION_PLAN.md`).
+
+Django Ninja auto-generates interactive API documentation from the endpoint definitions and
+response schemas. While the dev server is running, these are available at:
+
+- **Interactive docs (Swagger UI):** http://localhost:8000/api/v2/docs
+- **OpenAPI JSON schema:** http://localhost:8000/api/v2/openapi.json
+
+The OpenAPI JSON schema is also used to generate TypeScript types for the new frontend
+via `openapi-typescript`. Run after any API change:
+
+```
+$ npm run generate-types
+```
+
+This exports the schema from Django (no server required) into `openapi-schema.json`
+(gitignored), then generates `assets/new-frontend/types/api.ts` (committed).
+Re-run and commit `api.ts` whenever an endpoint or schema changes.
+
+Endpoints are defined in `dashboard/api_v2.py`; response schemas in `dashboard/api_v2_schemas.py`.
+
 ## Code formatting
 
 We use `black` (for Python code) and `prettier` (for JS/TS/Vue) to automatically and consistently format the source code.
