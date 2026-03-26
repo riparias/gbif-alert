@@ -134,8 +134,7 @@ def nav_config_json(context):
 
     conf = {
         "siteName": settings.GBIF_ALERT["SITE_NAME"],
-        "navbarBackgroundColor": settings.GBIF_ALERT["NAVBAR_BACKGROUND_COLOR"],
-        "navbarLightText": settings.GBIF_ALERT["NAVBAR_LIGHT_TEXT"],
+        "primaryPalette": settings.GBIF_ALERT["PRIMEVUE_PRIMARY_PALETTE"],
         "currentLanguage": get_language(),
         "enabledLanguages": enabled_languages,
         "user": {

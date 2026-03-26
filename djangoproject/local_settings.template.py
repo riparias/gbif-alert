@@ -93,8 +93,12 @@ def build_gbif_download_predicate(species_list: "QuerySet[Species]"):  # type: i
 
 GBIF_ALERT: dict[str, Any] = {
     "SITE_NAME": "GBIF Alert test instance",  # Name of the website, appears in various places (page titles, emails, ...)
-    "NAVBAR_BACKGROUND_COLOR": "red",
-    "NAVBAR_LIGHT_TEXT": True,  # Whether the text in the navbar should be light or dark
+    # Primary color palette for PrimeVue components and the navbar background.
+    # Must be one of PrimeVue Aura's built-in palette names:
+    # emerald, green, lime, red, orange, amber, yellow, teal, cyan, sky,
+    # blue, indigo, violet, purple, fuchsia, pink, rose, slate, gray, zinc,
+    # neutral, stone
+    "PRIMEVUE_PRIMARY_PALETTE": "indigo",
     "ENABLED_LANGUAGES": (  # Languages available in the interface. Subset of the languages in `LANGUAGES`.
         "en",
         "fr",

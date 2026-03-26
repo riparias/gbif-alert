@@ -40,8 +40,7 @@ interface NavUrls {
 
 interface NavConfig {
     siteName: string;
-    navbarBackgroundColor: string;
-    navbarLightText: boolean;
+    primaryPalette: string;
     currentLanguage: string;
     enabledLanguages: Language[];
     user: NavUser;
@@ -62,16 +61,6 @@ const config: NavConfig = configEl
     : ({} as NavConfig);
 
 const { t } = useI18n();
-
-// --- Styling ---
-// TODO: These CSS variable overrides work against PrimeVue's Aura defaults but are
-// not wired into the Aura design token system. When we customise the Aura palette in
-// a later phase, replace these :deep() rules with a proper Aura token override so
-// that hover states, focus rings, and sub-menu styles stay consistent.
-const navStyle = computed(() => ({
-    "--gbif-nav-bg": config.navbarBackgroundColor,
-    "--gbif-nav-text": config.navbarLightText ? "#ffffff" : "#1f2937",
-}));
 
 // --- Active page detection ---
 // During Phase 1-2, Django controls routing, so useRoute() is not available.
@@ -206,7 +195,7 @@ function toggleUserMenu(event: Event) {
 </script>
 
 <template>
-    <div class="gbif-navbar-wrapper" :style="navStyle">
+    <div class="gbif-navbar-wrapper">
         <Menubar :model="navItems">
             <template #start>
                 <a :href="config.urls.index" class="gbif-navbar-brand">
@@ -228,7 +217,7 @@ function toggleUserMenu(event: Event) {
                         { 'gbif-nav-active': isActive((item as NavItem).url ?? '') },
                     ]"
                 >
-                    <i v-if="item.icon" :class="item.icon" />
+                    <i v-if="item.icon" :class="item.icon"  />
                     <span>{{ item.label }}</span>
                     <span v-if="(item as NavItem).showDot" class="gbif-nav-dot" />
                 </a>
@@ -290,36 +279,19 @@ function toggleUserMenu(event: Event) {
 
 <style scoped>
 /*
- * Color overrides for the configurable navbar background.
- *
- * --gbif-nav-bg and --gbif-nav-text are injected via :style on the wrapper div
- * from the navbarBackgroundColor / navbarLightText settings.
- *
- * TODO: When the Aura design token palette is customised in a later phase,
- * replace these :deep() overrides with proper Aura token assignments so that
- * hover states and sub-menu styles inherit correctly without needing to repeat
- * the color values.
+ * Layout overrides for the menubar - colors are handled by the PrimeVue design
+ * token preset built in main.ts from GBIF_ALERT["PRIMEVUE_PRIMARY_PALETTE"].
  */
 :deep(.p-menubar) {
-    background-color: var(--gbif-nav-bg);
     border: none;
     border-radius: 0;
     padding: 0.5rem 1rem;
-}
-
-:deep(.p-menubar-item-link) {
-    color: var(--gbif-nav-text);
-}
-
-:deep(.p-menubar-item:not(.p-disabled) > .p-menubar-item-link:hover),
-:deep(.p-menubar-item.p-focus > .p-menubar-item-link) {
-    background-color: rgba(255, 255, 255, 0.15);
-    color: var(--gbif-nav-text);
+    margin-bottom: 1rem;
 }
 
 .gbif-navbar-brand {
     font-weight: bold;
-    color: var(--gbif-nav-text);
+    color: inherit;
     text-decoration: none;
     margin-right: 1.5rem;
     font-size: 1.1rem;
@@ -329,7 +301,6 @@ function toggleUserMenu(event: Event) {
 }
 
 .gbif-nav-link {
-    color: var(--gbif-nav-text);
     display: flex;
     align-items: center;
     gap: 0.4rem;
@@ -346,18 +317,32 @@ function toggleUserMenu(event: Event) {
     gap: 0.5rem;
 }
 
-/* Red dot indicator for unseen items */
+/* Red dot indicator for unseen items.
+ * The box-shadow ring uses the PrimeVue contrast token (white on primary
+ * backgrounds) so the dot stays visible against any primary palette color. */
 .gbif-nav-dot {
     display: inline-block;
     width: 8px;
     height: 8px;
-    background-color: red;
+    background-color: #ef4444;
     border-radius: 50%;
     flex-shrink: 0;
+    box-shadow: 0 0 0 1.5px var(--p-primary-contrast-color);
 }
 
 .gbif-navbar-user-btn {
-    color: var(--gbif-nav-text) !important;
+    color: inherit !important;
+}
+
+/* Sign-in / sign-up buttons sit on the primary-colored navbar, so override
+ * PrimeVue's default primary-colored button styles to use white instead. */
+:deep(.gbif-navbar-end .p-button) {
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.7);
+}
+:deep(.gbif-navbar-end .p-button:hover) {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #ffffff;
 }
 
 .gbif-lang-select {

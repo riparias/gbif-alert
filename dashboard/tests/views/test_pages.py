@@ -761,6 +761,16 @@ class NavConfigJsonTests(TestCase):
         user_data = self._get_nav_config(self.client.get("/"))["user"]
         self.assertFalse(user_data["hasAlertsWithUnseenObservations"])
 
+    # --- Theme ---
+
+    def test_primary_palette_field(self):
+        """primaryPalette is present in the nav config and is a non-empty string."""
+        response = self.client.get("/")
+        config = self._get_nav_config(response)
+        self.assertIn("primaryPalette", config)
+        self.assertIsInstance(config["primaryPalette"], str)
+        self.assertTrue(config["primaryPalette"])
+
     # --- Superuser ---
 
     def test_superuser_flag(self):
