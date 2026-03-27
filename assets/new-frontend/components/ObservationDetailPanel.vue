@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { ref, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Card from "primevue/card";
 import Button from "primevue/button";
 import Textarea from "primevue/textarea";
-import SingleObservationMap from "../components/SingleObservationMap.vue";
+import SingleObservationMap from "./SingleObservationMap.vue";
 import type { components } from "../types/api";
 
 type ObservationDetail = components["schemas"]["ObservationDetailOut"];
 type Comment = components["schemas"]["CommentOut"];
 
-const { t } = useI18n();
-const route = useRoute();
-const router = useRouter();
+const props = defineProps<{ stableId: string }>();
+const emit = defineEmits<{ close: [] }>();
 
-const stableId = route.params.stableId as string;
+const { t } = useI18n();
 
 const obs = ref<ObservationDetail | null>(null);
 const loading = ref(true);
@@ -34,9 +32,12 @@ const navConfig = JSON.parse(document.getElementById("gbif-alert-nav-config")!.t
 const isAuthenticated: boolean = navConfig.user.isAuthenticated;
 
 async function load() {
+    notFound.value = false;
+    obs.value = null;
+    commentError.value = null;
     loading.value = true;
     try {
-        const resp = await fetch(`/api/v2/observations/${stableId}/`);
+        const resp = await fetch(`/api/v2/observations/${props.stableId}/`);
         if (resp.status === 404) {
             notFound.value = true;
             return;
@@ -52,7 +53,7 @@ async function submitComment() {
     commentSubmitting.value = true;
     commentError.value = null;
     try {
-        const resp = await fetch(`/api/v2/observations/${stableId}/comments/`, {
+        const resp = await fetch(`/api/v2/observations/${props.stableId}/comments/`, {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-CSRFToken": getCsrf() },
             body: JSON.stringify({ text: newCommentText.value.trim() }),
@@ -72,12 +73,12 @@ async function submitComment() {
 async function markUnseen() {
     markingUnseen.value = true;
     try {
-        const resp = await fetch(`/api/v2/observations/${stableId}/mark-unseen/`, {
+        const resp = await fetch(`/api/v2/observations/${props.stableId}/mark-unseen/`, {
             method: "POST",
             headers: { "X-CSRFToken": getCsrf() },
         });
         if (resp.ok) {
-            router.back();
+            emit("close");
         }
     } finally {
         markingUnseen.value = false;
@@ -96,11 +97,12 @@ function gbifDatasetUrl(key: string) {
     return `https://www.gbif.org/dataset/${key}`;
 }
 
+watch(() => props.stableId, load);
 onMounted(load);
 </script>
 
 <template>
-    <div class="obs-detail-page">
+    <div class="obs-detail-panel">
         <!-- Loading / not found -->
         <div v-if="loading" class="detail-loading">{{ t("message.loading") }}</div>
         <div v-else-if="notFound" class="detail-not-found">
@@ -146,9 +148,9 @@ onMounted(load);
                 </Button>
             </div>
 
-            <!-- Two-column body -->
+            <!-- Body -->
             <div class="detail-body">
-                <!-- Left: metadata -->
+                <!-- Metadata -->
                 <Card class="detail-meta-card">
                     <template #content>
                         <dl class="detail-dl">
@@ -166,7 +168,7 @@ onMounted(load);
                             </dd>
 
                             <dt>{{ t("message.individualCount") }}</dt>
-                            <dd>{{ obs.individualCount ?? "&mdash;" }}</dd>
+                            <dd>{{ obs.individualCount ?? "—" }}</dd>
 
                             <dt>{{ t("message.sourceDataset") }}</dt>
                             <dd>
@@ -193,7 +195,7 @@ onMounted(load);
                             <dd>{{ obs.date }}</dd>
 
                             <dt>{{ t("message.recordedBy") }}</dt>
-                            <dd>{{ obs.recordedBy || "&mdash;" }}</dd>
+                            <dd>{{ obs.recordedBy || "—" }}</dd>
 
                             <template v-if="obs.references">
                                 <dt>{{ t("message.references") }}</dt>
@@ -211,17 +213,10 @@ onMounted(load);
                             <dd>{{ obs.initialDataImport }}</dd>
                         </dl>
 
-                        <Button
-                            severity="secondary"
-                            size="small"
-                            @click="router.back()"
-                        >
-                            {{ t("message.goBackToPreviousPage") }}
-                        </Button>
                     </template>
                 </Card>
 
-                <!-- Right: map + location details -->
+                <!-- Map + location details -->
                 <Card class="detail-map-card">
                     <template #content>
                         <SingleObservationMap
@@ -317,7 +312,7 @@ onMounted(load);
 </template>
 
 <style scoped>
-.obs-detail-page {
+.obs-detail-panel {
     padding: 1rem;
     display: flex;
     flex-direction: column;
@@ -376,16 +371,8 @@ onMounted(load);
 
 .detail-body {
     display: flex;
+    flex-direction: column;
     gap: 1rem;
-    align-items: flex-start;
-}
-
-.detail-meta-card {
-    flex: 1 1 50%;
-}
-
-.detail-map-card {
-    flex: 1 1 50%;
 }
 
 .detail-dl {

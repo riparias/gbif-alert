@@ -107,6 +107,12 @@ export function useFilterSync(): void {
     // router.replace() and the cycle stops.
     const syncToUrl = debounce(() => {
         const q = buildQuery(store);
+        // NOTE: The ?obs= param is managed by IndexPage's drawer, not by the filter
+        // store. We carry it through verbatim so that changing a filter does not
+        // close an open drawer. It is intentionally excluded from buildQuery() to
+        // keep the filter/drawer concerns separate.
+        const obsParam = route.query.obs;
+        if (typeof obsParam === "string") q.obs = obsParam;
         if (!queriesEqual(route.query, q)) {
             router.replace({ query: q });
         }

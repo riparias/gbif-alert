@@ -20,12 +20,13 @@ import { interpolateReds } from "d3-scale-chromatic";
 import { hsl } from "d3-color";
 import Select from "primevue/select";
 import Slider from "primevue/slider";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useFiltersStore } from "../stores/filters";
 import "ol/ol.css";
 
 const { t } = useI18n();
 const router = useRouter();
+const route = useRoute();
 const store = useFiltersStore();
 
 // --- Map config injected by Django (via nav_config_json template tag) ---
@@ -231,6 +232,11 @@ const debouncedRefresh = debounce(() => {
     void refreshAreaOverlays(store.areaIds);
 }, 300);
 
+function openObservationFromMap(stableId: string) {
+    popupOverlay!.setPosition(undefined); // close the popup
+    router.replace({ query: { ...route.query, obs: stableId } });
+}
+
 // --- Watchers ---
 
 // Refresh color scale when min/max arrives after an async load
@@ -356,7 +362,7 @@ onUnmounted(() => {
                 <li v-for="obs in popupObservations" :key="obs.gbifId">
                     <a
                         href="#"
-                        @click.prevent="router.push({ name: 'observation-detail', params: { stableId: obs.stableId } })"
+                        @click.prevent="openObservationFromMap(obs.stableId)"
                     ><em>{{ obs.scientificName }}</em><span v-if="obs.vernacularName"> ({{ obs.vernacularName }})</span></a>
                     <span class="popup-gbif-id"> – {{ obs.gbifId }}</span>
                 </li>

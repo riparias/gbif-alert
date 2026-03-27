@@ -62,7 +62,7 @@ class User(AbstractUser):
     def obs_match_alerts(self, obs: "Observation") -> bool:
         """Return True if the observation matches at least one of the user's alerts"""
         for alert in self.alert_set.all():
-            if obs in alert.observations():
+            if alert.observations().filter(pk=obs.pk).exists():
                 return True
         return False
 

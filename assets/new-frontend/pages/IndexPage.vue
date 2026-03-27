@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { debounce } from "lodash";
 import { useI18n } from "vue-i18n";
-import { RouterLink, useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
+import Drawer from "primevue/drawer";
+import ObservationDetailPanel from "../components/ObservationDetailPanel.vue";
 import Card from "primevue/card";
 import Tabs from "primevue/tabs";
 import TabList from "primevue/tablist";
@@ -25,6 +27,25 @@ const { t } = useI18n();
 
 const filtersStore = useFiltersStore();
 const router = useRouter();
+const route = useRoute();
+
+// Drawer is open when ?obs=<stableId> is in the URL.
+// This means deep-links like /new/?obs=abc123 open the drawer on load.
+const drawerStableId = computed(() => {
+    const obs = route.query.obs;
+    return typeof obs === "string" ? obs : null;
+});
+
+function openObservation(stableId: string) {
+    router.replace({ query: { ...route.query, obs: stableId } });
+}
+
+function closeDrawer() {
+    const q = { ...route.query };
+    delete q.obs;
+    router.replace({ query: q });
+}
+
 useFilterSync();
 
 const observations = ref<ObservationOut[]>([]);
@@ -150,20 +171,21 @@ onMounted(() => {
                         class="observations-table"
                         @page="onPage"
                         @sort="onSort"
-                        @row-click="(e) => router.push({ name: 'observation-detail', params: { stableId: e.data.stableId } })"
+                        @row-click="(e) => openObservation(e.data.stableId)"
                     >
                         <Column field="date" :header="t('message.date')" sortable />
                         <Column field="scientificName" :header="t('message.species')" sortable>
                             <template #body="{ data }">
-                                <RouterLink
-                                    :to="{ name: 'observation-detail', params: { stableId: data.stableId } }"
+                                <a
+                                    href="#"
                                     class="species-link"
+                                    @click.prevent="openObservation(data.stableId)"
                                 >
                                     <em>{{ data.scientificName }}</em>
                                     <span v-if="data.vernacularName">
                                         ({{ data.vernacularName }})
                                     </span>
-                                </RouterLink>
+                                </a>
                             </template>
                         </Column>
                         <Column field="datasetName" :header="t('message.dataset')" sortable />
@@ -191,6 +213,19 @@ onMounted(() => {
                 </TabPanel>
             </TabPanels>
         </Tabs>
+
+        <Drawer
+            :visible="drawerStableId !== null"
+            position="right"
+            :style="{ width: 'min(45rem, 95vw)' }"
+            @update:visible="(v) => !v && closeDrawer()"
+        >
+            <ObservationDetailPanel
+                v-if="drawerStableId"
+                :stable-id="drawerStableId"
+                @close="closeDrawer"
+            />
+        </Drawer>
     </div>
 </template>
 

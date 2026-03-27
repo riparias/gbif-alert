@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from dashboard.models import Area, BasisOfRecord, DataImport, Dataset, Observation, ObservationUnseen, Species
+from dashboard.models import Alert, Area, BasisOfRecord, DataImport, Dataset, Observation, ObservationComment, ObservationUnseen, Species
 
 # A minimal polygon - geometry is irrelevant for these tests.
 SIMPLE_POLYGON = MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)), srid=4326))
@@ -554,3 +554,118 @@ class ApiV2ObservationsSortingTests(TestCase):
         """Any orderDir value other than 'asc' must be treated as descending."""
         ids = self._ids(orderBy="date", orderDir="INVALID")
         self.assertLess(ids.index(self.obs_zeta.pk), ids.index(self.obs_alpha.pk))
+
+
+class ApiV2ObservationDetailTests(TestCase):
+    """Tests for GET /api/v2/observations/{stable_id}/.
+
+    Covers: 404, response shape, canBeMarkedUnseen logic, and comments.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        User = get_user_model()
+        cls.user = User.objects.create_user(
+            username="detail_user", password="12345", email="detail_user@example.com"
+        )
+        cls.commenter = User.objects.create_user(
+            username="commenter", password="12345", email="commenter@example.com"
+        )
+
+        cls.species = Species.objects.create(
+            name="Harmonia axyridis",
+            vernacular_name="harlequin ladybird",
+            gbif_taxon_key=1234567,
+        )
+        cls.dataset = Dataset.objects.create(
+            name="Detail dataset",
+            gbif_dataset_key="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        )
+        cls.basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+        cls.di = DataImport.objects.create(
+            start=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
+        )
+        cls.obs = Observation.objects.create(
+            gbif_id="999",
+            occurrence_id="occ:999",
+            species=cls.species,
+            source_dataset=cls.dataset,
+            date=datetime.date(2024, 5, 1),
+            data_import=cls.di,
+            initial_data_import=cls.di,
+            basis_of_record=cls.basis_of_record,
+            location=Point(4.35, 50.85, srid=4326),
+        )
+
+    def _url(self):
+        return f"/api/v2/observations/{self.obs.stable_id}/"
+
+    # --- Basic HTTP / shape ---
+
+    def test_detail_404_for_unknown_stable_id(self):
+        response = self.client.get("/api/v2/observations/nonexistent/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_detail_status_200(self):
+        response = self.client.get(self._url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_detail_camel_case_keys(self):
+        """All expected camelCase keys must be present in the response."""
+        response = self.client.get(self._url())
+        data = response.json()
+        for key in (
+            "id", "stableId", "gbifId", "lat", "lon",
+            "scientificName", "vernacularName", "datasetName", "datasetGbifKey",
+            "date", "basisOfRecord", "seenByCurrentUser", "canBeMarkedUnseen",
+            "comments",
+        ):
+            self.assertIn(key, data, msg=f"Missing key: {key}")
+
+    def test_detail_field_values(self):
+        response = self.client.get(self._url())
+        data = response.json()
+        self.assertEqual(data["stableId"], self.obs.stable_id)
+        self.assertEqual(data["scientificName"], "Harmonia axyridis")
+        self.assertEqual(data["vernacularName"], "harlequin ladybird")
+        self.assertEqual(data["datasetName"], "Detail dataset")
+        self.assertEqual(data["date"], "2024-05-01")
+
+    # --- canBeMarkedUnseen ---
+
+    def test_can_be_marked_unseen_false_for_anonymous(self):
+        response = self.client.get(self._url())
+        self.assertFalse(response.json()["canBeMarkedUnseen"])
+
+    def test_can_be_marked_unseen_false_when_no_matching_alert(self):
+        """Authenticated user with no alerts: cannot mark unseen."""
+        self.client.force_login(self.user)
+        response = self.client.get(self._url())
+        self.assertFalse(response.json()["canBeMarkedUnseen"])
+
+    def test_can_be_marked_unseen_true_when_alert_matches(self):
+        """Authenticated user with a matching alert: can mark unseen."""
+        self.client.force_login(self.user)
+        alert = Alert.objects.create(
+            user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
+        )
+        alert.species.add(self.obs.species)
+        response = self.client.get(self._url())
+        self.assertTrue(response.json()["canBeMarkedUnseen"])
+
+    # --- comments ---
+
+    def test_comments_returned_with_author_username(self):
+        """Comments list must include the author's username."""
+        ObservationComment.objects.create(
+            observation=self.obs, author=self.commenter, text="Nice find!"
+        )
+        response = self.client.get(self._url())
+        comments = response.json()["comments"]
+        self.assertEqual(len(comments), 1)
+        self.assertEqual(comments[0]["authorUsername"], "commenter")
+        self.assertEqual(comments[0]["text"], "Nice find!")
+
+    def test_comments_empty_list_when_none(self):
+        response = self.client.get(self._url())
+        self.assertEqual(response.json()["comments"], [])

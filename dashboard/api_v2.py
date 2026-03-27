@@ -239,7 +239,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
             "text": c.text if not c.emptied_because_author_deleted_account else None,
             "deletedBecauseAuthorDeleted": c.emptied_because_author_deleted_account,
         }
-        for c in obs.sorted_comments_set
+        for c in obs.observationcomment_set.select_related("author").order_by("-created_at")
     ]
 
     return {
