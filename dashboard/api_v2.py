@@ -1,10 +1,12 @@
 import datetime
+from typing import Annotated
 
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.http import HttpRequest
 from ninja import NinjaAPI, Query
 from ninja.errors import HttpError
+from pydantic import Field
 
 from dashboard.api_v2_schemas import (
     AreaOut,
@@ -86,13 +88,34 @@ def data_imports_list(request: HttpRequest):
     ]
 
 
-@api_v2.get("/observations/", response=ObservationsPageOut)
+_SORT_FIELD_MAP = {
+    "date": "date",
+    "scientificName": "species__name",
+    "datasetName": "source_dataset__name",
+}
+
+
+@api_v2.get("/observations/", response=ObservationsPageOut, summary="List observations")
 def observations_list(
     request: HttpRequest,
     filters: Query[FiltersQuery],
     page: int = 1,
     pageSize: int = 20,
+    orderBy: Annotated[
+        str,
+        Field(description="Field to sort by. Accepted: date, scientificName, datasetName. Unknown values fall back to date."),
+    ] = "date",
+    orderDir: Annotated[
+        str,
+        Field(description="Sort direction: asc or desc. Any value other than asc is treated as desc."),
+    ] = "desc",
 ):
+    """Return a paginated, filtered, and sorted page of observations.
+
+    Pagination is controlled by `page` (1-based) and `pageSize` (capped at 100).
+    Sorting is controlled by `orderBy` and `orderDir`. A secondary sort on `-pk`
+    is always appended to guarantee stable pagination when the primary field has ties.
+    """
     pageSize = min(max(pageSize, 1), 100)
     page = max(page, 1)
 
@@ -115,7 +138,9 @@ def observations_list(
 
     total = qs.count()
     offset = (page - 1) * pageSize
-    obs_page = list(qs.order_by("-date", "-pk")[offset : offset + pageSize])
+    sort_field = _SORT_FIELD_MAP.get(orderBy, "date")
+    sort_prefix = "" if orderDir == "asc" else "-"
+    obs_page = list(qs.order_by(f"{sort_prefix}{sort_field}", "-pk")[offset : offset + pageSize])
 
     # Fetch unseen status for the current page in one extra query
     if user is not None and obs_page:

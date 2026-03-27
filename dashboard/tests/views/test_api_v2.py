@@ -428,3 +428,129 @@ class ApiV2HistogramTests(TestCase):
         by_month = {(e["year"], e["month"]): e["count"] for e in response.json()}
         # February only has obs_other_species, so it should be absent or 0
         self.assertNotIn((2024, 2), by_month)
+
+
+class ApiV2ObservationsSortingTests(TestCase):
+    """Tests for the orderBy / orderDir parameters of GET /api/v2/observations/.
+
+    Fixture contains two observations designed so each sort column produces a
+    distinct, deterministic order:
+
+    - obs_alpha: species "Anas platyrhynchos" / dataset "Alpha dataset" / date 2024-01-01
+    - obs_zeta:  species "Zeta vulgaris"      / dataset "Zeta dataset"  / date 2024-06-15
+
+    Expected orders per sort key:
+      date asc:               obs_alpha, obs_zeta
+      date desc (default):    obs_zeta,  obs_alpha
+      scientificName asc:     obs_alpha, obs_zeta
+      scientificName desc:    obs_zeta,  obs_alpha
+      datasetName asc:        obs_alpha, obs_zeta
+      datasetName desc:       obs_zeta,  obs_alpha
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.species_alpha = Species.objects.create(
+            name="Anas platyrhynchos", gbif_taxon_key=2498252
+        )
+        cls.species_zeta = Species.objects.create(
+            name="Zeta vulgaris", gbif_taxon_key=9999999
+        )
+        cls.dataset_alpha = Dataset.objects.create(
+            name="Alpha dataset",
+            gbif_dataset_key="aaaaaaaa-0000-0000-0000-000000000001",
+        )
+        cls.dataset_zeta = Dataset.objects.create(
+            name="Zeta dataset",
+            gbif_dataset_key="zzzzzzzz-0000-0000-0000-000000000002",
+        )
+        cls.basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+        cls.di = DataImport.objects.create(
+            start=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
+        )
+        cls.obs_alpha = Observation.objects.create(
+            gbif_id="sort1",
+            occurrence_id="occ:sort1",
+            species=cls.species_alpha,
+            source_dataset=cls.dataset_alpha,
+            date=datetime.date(2024, 1, 1),
+            data_import=cls.di,
+            initial_data_import=cls.di,
+            basis_of_record=cls.basis,
+        )
+        cls.obs_zeta = Observation.objects.create(
+            gbif_id="sort2",
+            occurrence_id="occ:sort2",
+            species=cls.species_zeta,
+            source_dataset=cls.dataset_zeta,
+            date=datetime.date(2024, 6, 15),
+            data_import=cls.di,
+            initial_data_import=cls.di,
+            basis_of_record=cls.basis,
+        )
+
+    def _ids(self, **params):
+        """Return the ordered list of observation ids from a GET request."""
+        response = self.client.get(reverse("api-v2:observations_list"), params)
+        self.assertEqual(response.status_code, 200)
+        return [item["id"] for item in response.json()["items"]]
+
+    # --- date ---
+
+    def test_default_order_is_date_descending(self):
+        """With no sort params the newest observation must come first."""
+        ids = self._ids()
+        alpha_pos = ids.index(self.obs_alpha.pk)
+        zeta_pos = ids.index(self.obs_zeta.pk)
+        self.assertLess(zeta_pos, alpha_pos)
+
+    def test_order_by_date_descending_explicit(self):
+        """orderBy=date&orderDir=desc puts the newest observation first."""
+        ids = self._ids(orderBy="date", orderDir="desc")
+        self.assertLess(ids.index(self.obs_zeta.pk), ids.index(self.obs_alpha.pk))
+
+    def test_order_by_date_ascending(self):
+        """orderBy=date&orderDir=asc puts the oldest observation first."""
+        ids = self._ids(orderBy="date", orderDir="asc")
+        self.assertLess(ids.index(self.obs_alpha.pk), ids.index(self.obs_zeta.pk))
+
+    # --- scientificName ---
+
+    def test_order_by_scientific_name_ascending(self):
+        """orderBy=scientificName&orderDir=asc puts Anas before Zeta."""
+        ids = self._ids(orderBy="scientificName", orderDir="asc")
+        self.assertLess(ids.index(self.obs_alpha.pk), ids.index(self.obs_zeta.pk))
+
+    def test_order_by_scientific_name_descending(self):
+        """orderBy=scientificName&orderDir=desc puts Zeta before Anas."""
+        ids = self._ids(orderBy="scientificName", orderDir="desc")
+        self.assertLess(ids.index(self.obs_zeta.pk), ids.index(self.obs_alpha.pk))
+
+    # --- datasetName ---
+
+    def test_order_by_dataset_name_ascending(self):
+        """orderBy=datasetName&orderDir=asc puts Alpha dataset before Zeta dataset."""
+        ids = self._ids(orderBy="datasetName", orderDir="asc")
+        self.assertLess(ids.index(self.obs_alpha.pk), ids.index(self.obs_zeta.pk))
+
+    def test_order_by_dataset_name_descending(self):
+        """orderBy=datasetName&orderDir=desc puts Zeta dataset before Alpha dataset."""
+        ids = self._ids(orderBy="datasetName", orderDir="desc")
+        self.assertLess(ids.index(self.obs_zeta.pk), ids.index(self.obs_alpha.pk))
+
+    # --- robustness ---
+
+    def test_unknown_order_by_falls_back_to_date(self):
+        """An unrecognised orderBy value must not crash - falls back to date sort."""
+        response = self.client.get(
+            reverse("api-v2:observations_list"), {"orderBy": "nonExistentField"}
+        )
+        self.assertEqual(response.status_code, 200)
+        # Default date-desc order: obs_zeta (newer) before obs_alpha (older)
+        ids = [item["id"] for item in response.json()["items"]]
+        self.assertLess(ids.index(self.obs_zeta.pk), ids.index(self.obs_alpha.pk))
+
+    def test_unknown_order_dir_treated_as_desc(self):
+        """Any orderDir value other than 'asc' must be treated as descending."""
+        ids = self._ids(orderBy="date", orderDir="INVALID")
+        self.assertLess(ids.index(self.obs_zeta.pk), ids.index(self.obs_alpha.pk))

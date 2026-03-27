@@ -9,7 +9,7 @@ import TabList from "primevue/tablist";
 import Tab from "primevue/tab";
 import TabPanels from "primevue/tabpanels";
 import TabPanel from "primevue/tabpanel";
-import DataTable, { type DataTablePageEvent } from "primevue/datatable";
+import DataTable, { type DataTablePageEvent, type DataTableSortEvent } from "primevue/datatable";
 import Column from "primevue/column";
 import FilterPanel from "../components/FilterPanel.vue";
 import ObservationCounter from "../components/ObservationCounter.vue";
@@ -32,6 +32,8 @@ const totalRecords = ref(0);
 const loading = ref(false);
 const currentPage = ref(1);
 const PAGE_SIZE = 20;
+const sortField = ref("date");
+const sortOrder = ref<1 | -1>(-1); // -1 = descending (PrimeVue convention)
 
 function buildFilterParams(): URLSearchParams {
     const params = new URLSearchParams({
@@ -49,6 +51,8 @@ function buildFilterParams(): URLSearchParams {
     params.set("areaFilterMode", filtersStore.areaFilterMode);
     if (filtersStore.approachingDistanceKm !== null)
         params.set("approachingDistanceKm", String(filtersStore.approachingDistanceKm));
+    params.set("orderBy", sortField.value);
+    params.set("orderDir", sortOrder.value === 1 ? "asc" : "desc");
     return params;
 }
 
@@ -66,6 +70,13 @@ async function loadObservations() {
 
 function onPage(event: DataTablePageEvent) {
     currentPage.value = event.page + 1;
+    loadObservations();
+}
+
+function onSort(event: DataTableSortEvent) {
+    sortField.value = String(event.sortField ?? "date");
+    sortOrder.value = (event.sortOrder ?? -1) as 1 | -1;
+    currentPage.value = 1;
     loadObservations();
 }
 
@@ -133,13 +144,16 @@ onMounted(() => {
                         :rows="PAGE_SIZE"
                         :total-records="totalRecords"
                         :loading="loading"
+                        :sort-field="sortField"
+                        :sort-order="sortOrder"
                         row-hover
                         class="observations-table"
                         @page="onPage"
+                        @sort="onSort"
                         @row-click="(e) => router.push({ name: 'observation-detail', params: { stableId: e.data.stableId } })"
                     >
-                        <Column field="date" :header="t('message.date')" />
-                        <Column :header="t('message.species')">
+                        <Column field="date" :header="t('message.date')" sortable />
+                        <Column field="scientificName" :header="t('message.species')" sortable>
                             <template #body="{ data }">
                                 <RouterLink
                                     :to="{ name: 'observation-detail', params: { stableId: data.stableId } }"
@@ -152,7 +166,7 @@ onMounted(() => {
                                 </RouterLink>
                             </template>
                         </Column>
-                        <Column field="datasetName" :header="t('message.dataset')" />
+                        <Column field="datasetName" :header="t('message.dataset')" sortable />
                         <Column :header="t('message.gbifId')">
                             <template #body="{ data }">
                                 <a
