@@ -2,15 +2,10 @@
 import { ref, watch, onMounted, onUnmounted, markRaw } from "vue";
 import { debounce } from "lodash";
 import { useI18n } from "vue-i18n";
-import { Collection, Map as OLMap, Overlay, View } from "ol";
-import { fromLonLat } from "ol/proj";
-import TileLayer from "ol/layer/Tile";
+import { Collection, Map as OLMap, Overlay } from "ol";
 import VectorTileLayer from "ol/layer/VectorTile";
 import VectorLayer from "ol/layer/Vector";
 import LayerGroup from "ol/layer/Group";
-import StadiaMaps from "ol/source/StadiaMaps";
-import OSM from "ol/source/OSM";
-import XYZ from "ol/source/XYZ";
 import VectorTileSource from "ol/source/VectorTile";
 import VectorSource from "ol/source/Vector";
 import { MVT, GeoJSON } from "ol/format";
@@ -18,11 +13,10 @@ import { Style, Fill, Stroke, Circle as OLCircle, Text } from "ol/style";
 import { scaleSequentialLog } from "d3-scale";
 import { interpolateReds } from "d3-scale-chromatic";
 import { hsl } from "d3-color";
-import Select from "primevue/select";
 import Slider from "primevue/slider";
 import { useRouter, useRoute } from "vue-router";
 import { useFiltersStore } from "../stores/filters";
-import "ol/ol.css";
+import BaseMap from "./BaseMap.vue";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -47,18 +41,11 @@ const mapCfg: MapConfig = JSON.parse(
 
 // --- Controls ---
 
-const BASE_LAYER_OPTIONS = [
-    { id: "osmHot", label: "OSM HOT" },
-    { id: "toner", label: "Stamen Toner" },
-    { id: "esriImagery", label: "ESRI World Imagery" },
-] as const;
-
-const selectedBaseLayerId = ref<string>("osmHot");
 const opacity = ref<number>(0.8);
 
-// --- DOM refs ---
+// --- DOM / component refs ---
 
-const mapEl = ref<HTMLElement | null>(null);
+const baseMapRef = ref<InstanceType<typeof BaseMap> | null>(null);
 const popupEl = ref<HTMLElement | null>(null);
 
 // --- OL objects (kept outside Vue reactivity) ---
@@ -67,7 +54,6 @@ let olMap: OLMap | null = null;
 let aggregatedLayer: VectorTileLayer | null = null;
 let simpleLayer: VectorTileLayer | null = null;
 let popupOverlay: Overlay | null = null;
-// The areasCollection is passed to a LayerGroup; items are added/removed as areaIds change.
 const areasCollection = markRaw(new Collection<VectorLayer<any>>());
 
 // --- Hex color scale state ---
@@ -107,24 +93,6 @@ function buildLegacyParams(): string {
 
 function legibleTextColor(fillColor: string): string {
     return hsl(fillColor).l > 0.5 ? "#000" : "#fff";
-}
-
-function makeBaseLayer(id: string): TileLayer<any> {
-    if (id === "toner") {
-        return new TileLayer({ source: new StadiaMaps({ layer: "stamen_toner" }) });
-    }
-    if (id === "esriImagery") {
-        return new TileLayer({
-            source: new XYZ({
-                url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-                maxZoom: 19,
-            }),
-        });
-    }
-    // Default: OSM HOT
-    return new TileLayer({
-        source: new OSM({ url: "https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png" }),
-    });
 }
 
 // Returns a style function that uses the current hexMin/hexMax to compute fill colors.
@@ -244,14 +212,6 @@ watch([hexMin, hexMax], () => {
     aggregatedLayer?.setStyle(makeAggregatedStyleFn());
 });
 
-// Swap the base tile layer without rebuilding everything else
-watch(selectedBaseLayerId, (newId) => {
-    if (!olMap) return;
-    const layers = olMap.getLayers();
-    layers.removeAt(0);
-    layers.insertAt(0, markRaw(makeBaseLayer(newId)));
-});
-
 // Propagate opacity changes to both data layers
 watch(opacity, (val) => {
     aggregatedLayer?.setOpacity(val);
@@ -264,23 +224,13 @@ watch(store, debouncedRefresh, { deep: true });
 // --- Lifecycle ---
 
 onMounted(() => {
-    const { initialZoom, initialLat, initialLon } = mapCfg.initialPosition;
+    olMap = baseMapRef.value!.getOlMap()!;
 
-    olMap = markRaw(
-        new OLMap({
-            target: mapEl.value!,
-            layers: [
-                markRaw(makeBaseLayer("osmHot")),
-                // Area overlays sit above tiles but below data layers
-                new LayerGroup({
-                    layers: areasCollection as unknown as Collection<any>,
-                    zIndex: 1000,
-                }),
-            ],
-            view: new View({
-                zoom: initialZoom,
-                center: fromLonLat([initialLon, initialLat]),
-            }),
+    // Area overlays sit above tiles but below data layers
+    olMap.addLayer(
+        new LayerGroup({
+            layers: areasCollection as unknown as Collection<any>,
+            zIndex: 1000,
         })
     );
 
@@ -319,27 +269,22 @@ onMounted(() => {
 
 onUnmounted(() => {
     debouncedRefresh.cancel();
-    olMap?.setTarget(undefined);
+    // BaseMap handles olMap.setTarget(undefined) in its own onUnmounted
 });
 </script>
 
 <template>
-    <div class="observations-map">
-        <!-- Controls: base layer selector and opacity slider -->
-        <div class="map-controls">
-            <div class="control-item">
-                <label class="control-label">{{ t("message.baseLayer") }}</label>
-                <Select
-                    v-model="selectedBaseLayerId"
-                    :options="BASE_LAYER_OPTIONS"
-                    option-label="label"
-                    option-value="id"
-                    size="small"
-                    class="base-layer-select"
-                />
-            </div>
-            <div class="control-item">
-                <label class="control-label">{{ t("message.dataLayerOpacity") }}</label>
+    <BaseMap
+        ref="baseMapRef"
+        height="480px"
+        :initial-lon="mapCfg.initialPosition.initialLon"
+        :initial-lat="mapCfg.initialPosition.initialLat"
+        :initial-zoom="mapCfg.initialPosition.initialZoom"
+    >
+        <!-- Opacity slider added to the floating controls panel -->
+        <template #extra-controls>
+            <div class="opacity-row">
+                <span class="opacity-label">{{ t("message.dataLayerOpacity") }}</span>
                 <Slider
                     v-model="opacity"
                     :min="0"
@@ -348,10 +293,7 @@ onUnmounted(() => {
                     class="opacity-slider"
                 />
             </div>
-        </div>
-
-        <!-- Map canvas -->
-        <div ref="mapEl" class="map-viewport" />
+        </template>
 
         <!-- Observation popup (OL Overlay positions this at the click coordinate) -->
         <div ref="popupEl" class="map-popup">
@@ -364,48 +306,30 @@ onUnmounted(() => {
                         href="#"
                         @click.prevent="openObservationFromMap(obs.stableId)"
                     ><em>{{ obs.scientificName }}</em><span v-if="obs.vernacularName"> ({{ obs.vernacularName }})</span></a>
-                    <span class="popup-gbif-id"> – {{ obs.gbifId }}</span>
+                    <span class="popup-gbif-id"> - {{ obs.gbifId }}</span>
                 </li>
             </ul>
         </div>
-    </div>
+    </BaseMap>
 </template>
 
 <style scoped>
-.observations-map {
-    display: flex;
-    flex-direction: column;
-}
-
-.map-controls {
-    display: flex;
-    gap: 1.5rem;
-    align-items: center;
-    padding: 0.4rem 0;
-    flex-wrap: wrap;
-}
-
-.control-item {
+/* Opacity control injected into the BaseMap floating controls panel via slot */
+.opacity-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-.control-label {
-    font-size: 0.875rem;
+.opacity-label {
+    font-size: 0.78rem;
     white-space: nowrap;
-}
-
-.base-layer-select {
-    min-width: 140px;
+    color: var(--p-text-color);
+    flex-shrink: 0;
 }
 
 .opacity-slider {
-    width: 120px;
-}
-
-.map-viewport {
-    height: 480px;
+    width: 80px;
 }
 
 /* OL renders the popup inside .ol-overlays-container, which uses absolute positioning.
