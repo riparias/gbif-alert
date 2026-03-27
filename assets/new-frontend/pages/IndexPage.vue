@@ -132,7 +132,7 @@ onMounted(() => {
         <!-- Filters -->
         <Card>
             <template #content>
-                <FilterPanel />
+                <FilterPanel :observation-count="totalRecords" />
             </template>
         </Card>
 

@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
+import SelectButton from "primevue/selectbutton";
 import DatePicker from "primevue/datepicker";
 import InputNumber from "primevue/inputnumber";
 import SpeciesFilterModal from "./SpeciesFilterModal.vue";
@@ -15,6 +16,10 @@ type SpeciesOut = components["schemas"]["SpeciesOut"];
 type DatasetOut = components["schemas"]["DatasetOut"];
 type AreaOut = components["schemas"]["AreaOut"];
 type BasisOfRecordOut = components["schemas"]["BasisOfRecordOut"];
+
+const props = defineProps<{
+    observationCount?: number | null;
+}>();
 
 const { t } = useI18n();
 const filtersStore = useFiltersStore();
@@ -111,10 +116,11 @@ const selectedVerifiedFilter = computed({
     },
 });
 
+// SelectButton requires non-null values, so we map null <-> "all" at the boundary.
 const selectedStatus = computed({
-    get: () => filtersStore.status,
-    set: (val: "seen" | "unseen" | null) => {
-        filtersStore.status = val;
+    get: () => filtersStore.status ?? "all",
+    set: (val: string) => {
+        filtersStore.status = val === "all" ? null : (val as "seen" | "unseen");
     },
 });
 
@@ -174,11 +180,11 @@ const verifiedFilterOptions = computed(() => [
     { value: "unverified", label: t("message.unverifiedOnly") },
 ]);
 
-const statusOptions = computed(() => [
-    { value: null, label: t("message.all") },
+const statusOptions = [
+    { value: "all", label: t("message.all") },
     { value: "seen", label: t("message.seen") },
     { value: "unseen", label: t("message.unseen") },
-]);
+];
 
 const areaFilterModeOptions = computed(() => [
     { value: "inside", label: t("message.areaFilterModeInside") },
@@ -284,25 +290,34 @@ const areaFilterModeOptions = computed(() => [
         <!-- Verification filter -->
         <div class="filter-group">
             <label>{{ t("message.verificationFilter") }}</label>
-            <Select
+            <SelectButton
                 v-model="selectedVerifiedFilter"
                 :options="verifiedFilterOptions"
                 option-value="value"
                 option-label="label"
-                class="filter-control"
+                :allow-empty="false"
+                class="verified-select-button"
             />
         </div>
 
         <!-- Observation status (authenticated users only) -->
         <div v-if="isAuthenticated" class="filter-group">
             <label>{{ t("message.observationStatus") }}</label>
-            <Select
+            <SelectButton
                 v-model="selectedStatus"
                 :options="statusOptions"
                 option-value="value"
-                option-label="label"
-                class="filter-control"
-            />
+                :allow-empty="false"
+                class="status-select-button"
+            >
+                <template #option="{ option }">
+                    <span>{{ option.label }}</span>
+                    <span
+                        v-if="option.value === selectedStatus && option.value !== 'all' && observationCount != null"
+                        class="status-count-badge"
+                    >{{ observationCount.toLocaleString() }}</span>
+                </template>
+            </SelectButton>
         </div>
     </div>
 </template>
@@ -338,5 +353,73 @@ const areaFilterModeOptions = computed(() => [
     min-width: 150px;
     max-width: 200px;
     justify-content: flex-start;
+}
+
+.status-count-badge {
+    display: inline-block;
+    margin-left: 0.4em;
+    padding: 0 0.45em;
+    border-radius: 999px;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1.6;
+    /* Default (inactive): subtle outline */
+    background: transparent;
+    border: 1px solid currentColor;
+    opacity: 0.7;
+}
+
+/* On an active (coloured) button: solid white pill with dark text */
+:deep(.status-select-button .p-togglebutton-checked .status-count-badge) {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #333 !important;
+    border: none;
+    opacity: 1;
+}
+
+/* Verified filter: All (1st) slate, Verified (2nd) green, Unverified (3rd) red */
+:deep(.verified-select-button .p-togglebutton:nth-child(1).p-togglebutton-checked),
+:deep(.verified-select-button .p-togglebutton:nth-child(1).p-togglebutton-checked *) {
+    background: #475569;
+    border-color: #475569;
+    color: #fff;
+}
+
+:deep(.verified-select-button .p-togglebutton:nth-child(2).p-togglebutton-checked),
+:deep(.verified-select-button .p-togglebutton:nth-child(2).p-togglebutton-checked *) {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #fff;
+}
+
+:deep(.verified-select-button .p-togglebutton:nth-child(3).p-togglebutton-checked),
+:deep(.verified-select-button .p-togglebutton:nth-child(3).p-togglebutton-checked *) {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+}
+
+/* Status filter: All (1st) slate, Seen (2nd) green, Unseen (3rd) amber */
+:deep(.status-select-button .p-togglebutton:nth-child(1).p-togglebutton-checked),
+:deep(.status-select-button .p-togglebutton:nth-child(1).p-togglebutton-checked *) {
+    background: #475569;
+    border-color: #475569;
+    color: #fff;
+}
+
+/* Seen (2nd button) active: green */
+:deep(.status-select-button .p-togglebutton:nth-child(2).p-togglebutton-checked),
+:deep(.status-select-button .p-togglebutton:nth-child(2).p-togglebutton-checked *) {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #fff;
+}
+
+/* Unseen (3rd button) active: amber */
+:deep(.status-select-button .p-togglebutton:nth-child(3).p-togglebutton-checked),
+:deep(.status-select-button .p-togglebutton:nth-child(3).p-togglebutton-checked *) {
+    background: #d97706;
+    border-color: #d97706;
+    color: #fff;
 }
 </style>
