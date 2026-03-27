@@ -5,6 +5,9 @@ import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
 import DatePicker from "primevue/datepicker";
 import InputNumber from "primevue/inputnumber";
+import SpeciesFilterModal from "./SpeciesFilterModal.vue";
+import AreaFilterModal from "./AreaFilterModal.vue";
+import DatasetFilterModal from "./DatasetFilterModal.vue";
 import { useFiltersStore } from "../stores/filters";
 import type { components } from "../types/api";
 
@@ -189,48 +192,27 @@ const areaFilterModeOptions = computed(() => [
         <!-- Species -->
         <div class="filter-group">
             <label>{{ t("message.species") }}</label>
-            <MultiSelect
+            <SpeciesFilterModal
                 v-model="selectedSpeciesIds"
                 :options="speciesOptions"
-                option-value="id"
-                option-label="scientificName"
-                filter
-                :placeholder="t('message.allSpecies')"
-                :selected-items-label="`{0} ${t('message.xSelectedSpecies')}`"
-                :max-selected-labels="0"
-                class="filter-control"
             />
         </div>
 
         <!-- Datasets -->
         <div class="filter-group">
             <label>{{ t("message.dataset") }}</label>
-            <MultiSelect
+            <DatasetFilterModal
                 v-model="selectedDatasetIds"
                 :options="datasetOptions"
-                option-value="id"
-                option-label="name"
-                filter
-                :placeholder="t('message.allDatasets')"
-                :selected-items-label="`{0} ${t('message.xSelectedDatasets')}`"
-                :max-selected-labels="0"
-                class="filter-control"
             />
         </div>
 
         <!-- Areas -->
         <div class="filter-group">
             <label>{{ t("message.area") }}</label>
-            <MultiSelect
+            <AreaFilterModal
                 v-model="selectedAreaIds"
                 :options="areaOptions"
-                option-value="id"
-                option-label="name"
-                filter
-                :placeholder="t('message.everywhere')"
-                :selected-items-label="`{0} ${t('message.xSelectedAreas')}`"
-                :max-selected-labels="0"
-                class="filter-control"
             />
         </div>
 
@@ -349,5 +331,12 @@ const areaFilterModeOptions = computed(() => [
 .filter-control {
     min-width: 150px;
     max-width: 200px;
+}
+
+/* Make the modal trigger buttons look consistent with the Select controls */
+:deep(.filter-modal-trigger) {
+    min-width: 150px;
+    max-width: 200px;
+    justify-content: flex-start;
 }
 </style>
