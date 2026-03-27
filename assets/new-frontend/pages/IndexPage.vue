@@ -139,6 +139,14 @@ onMounted(() => {
         <!-- Counter -->
         <ObservationCounter :count="totalRecords" :loading="loading" />
 
+        <!-- Empty state -->
+        <div v-if="!loading && totalRecords === 0" class="empty-state">
+            <span class="empty-state-icon">&#128269;</span>
+            <p class="empty-state-title">{{ t("message.noMatchingResultsFound") }}</p>
+            <p class="empty-state-hint">{{ t("message.noMatchingResultsFoundHint") }}</p>
+        </div>
+
+        <template v-else>
         <!-- Histogram -->
         <Card>
             <template #content>
@@ -213,6 +221,7 @@ onMounted(() => {
                 </TabPanel>
             </TabPanels>
         </Tabs>
+        </template>
 
         <Drawer
             :visible="drawerStableId !== null"
@@ -266,5 +275,31 @@ onMounted(() => {
 .gbif-link {
     color: var(--p-primary-color);
     font-size: 0.85rem;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1rem;
+    gap: 0.5rem;
+    color: var(--p-text-muted-color);
+}
+
+.empty-state-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+.empty-state-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--p-text-color);
+}
+
+.empty-state-hint {
+    margin: 0;
+    font-size: 0.9rem;
 }
 </style>
