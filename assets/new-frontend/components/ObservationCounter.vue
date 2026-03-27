@@ -8,9 +8,9 @@ const { t } = useI18n();
 
 <template>
     <div class="observation-counter">
-        <span v-if="loading" class="counter-loading">...</span>
+        <span v-if="loading" class="counter-loading"><i class="pi pi-spin pi-spinner" /></span>
         <span v-else class="counter-value">
-            {{ t("message.matchingObservations", count, { count }) }}
+            <i class="pi pi-list" /> {{ t("message.matchingObservations", count, { count }) }}
         </span>
     </div>
 </template>

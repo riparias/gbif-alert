@@ -131,6 +131,7 @@ onMounted(() => {
 
         <!-- Filters -->
         <Card>
+            <template #title><i class="pi pi-filter" /> {{ t("message.filters") }}</template>
             <template #content>
                 <FilterPanel :observation-count="totalRecords" />
             </template>
@@ -157,8 +158,8 @@ onMounted(() => {
         <!-- Map / Table tabs -->
         <Tabs value="map">
             <TabList>
-                <Tab value="map">{{ t("message.mapView") }}</Tab>
-                <Tab value="table">{{ t("message.tableView") }}</Tab>
+                <Tab value="map"><i class="pi pi-map" /> {{ t("message.mapView") }}</Tab>
+                <Tab value="table"><i class="pi pi-table" /> {{ t("message.tableView") }}</Tab>
             </TabList>
             <TabPanels>
                 <TabPanel value="map">

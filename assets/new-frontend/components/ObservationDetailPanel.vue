@@ -104,7 +104,7 @@ onMounted(load);
 <template>
     <div class="obs-detail-panel">
         <!-- Loading / not found -->
-        <div v-if="loading" class="detail-loading">{{ t("message.loading") }}</div>
+        <div v-if="loading" class="detail-loading"><i class="pi pi-spin pi-spinner" /> {{ t("message.loading") }}</div>
         <div v-else-if="notFound" class="detail-not-found">
             {{ t("message.observationNotFound") }}
         </div>
@@ -141,17 +141,18 @@ onMounted(load);
                 <Button
                     severity="warn"
                     size="small"
+                    icon="pi pi-eye-slash"
+                    :label="t('message.markObservationAsUnseen')"
                     :loading="markingUnseen"
                     @click="markUnseen"
-                >
-                    {{ t("message.markObservationAsUnseen") }}
-                </Button>
+                />
             </div>
 
             <!-- Body -->
             <div class="detail-body">
                 <!-- Metadata -->
                 <Card class="detail-meta-card">
+                    <template #title><i class="pi pi-info-circle" /> {{ t("message.details") }}</template>
                     <template #content>
                         <dl class="detail-dl">
                             <dt>{{ t("message.gbifId") }}</dt>
@@ -218,6 +219,7 @@ onMounted(load);
 
                 <!-- Map + location details -->
                 <Card class="detail-map-card">
+                    <template #title><i class="pi pi-map-marker" /> {{ t("message.location") }}</template>
                     <template #content>
                         <SingleObservationMap
                             v-if="obs.lat != null && obs.lon != null"
@@ -257,7 +259,7 @@ onMounted(load);
 
             <!-- Comments -->
             <Card class="comments-card">
-                <template #title>{{ t("message.userComments") }}</template>
+                <template #title><i class="pi pi-comments" /> {{ t("message.userComments") }}</template>
                 <template #content>
                     <div v-if="obs.comments.length === 0" class="no-comments">
                         {{ t("message.noCommentsYet") }}
@@ -295,12 +297,12 @@ onMounted(load);
                         <div v-if="commentError" class="comment-error">{{ commentError }}</div>
                         <Button
                             size="small"
+                            icon="pi pi-send"
+                            :label="t('message.postComment')"
                             :loading="commentSubmitting"
                             :disabled="!newCommentText.trim()"
                             @click="submitComment"
-                        >
-                            {{ t("message.postComment") }}
-                        </Button>
+                        />
                     </template>
                     <p v-else class="sign-in-prompt">
                         {{ t("message.signInToComment") }}
