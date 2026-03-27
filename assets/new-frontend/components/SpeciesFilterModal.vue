@@ -164,6 +164,7 @@ function tagColor(name: string): string {
             data-key="id"
             scrollable
             scroll-height="65vh"
+            :virtual-scroller-options="{ itemSize: 36 }"
             size="small"
             @row-select="onRowSelect"
             @row-unselect="onRowUnselect"
