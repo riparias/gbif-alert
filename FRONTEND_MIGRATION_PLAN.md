@@ -127,29 +127,31 @@ page is untouched until step 2.13.
 - [x] 2.2 - Generate TypeScript types from OpenAPI spec (`openapi-typescript`);
         `npm run generate-types` exports the schema and writes
         `assets/new-frontend/types/api.ts`; re-run after any API change
-- [ ] 2.3 - `filters` Pinia store (`assets/new-frontend/stores/filters.ts`),
+ok- [x] 2.3 - `filters` Pinia store (`assets/new-frontend/stores/filters.ts`),
         mirroring the `DashboardFilters` interface from `assets/ts/interfaces.ts`
-- [ ] 2.4 - Temporary `/new/` Django view + route (dev scaffold, removed in 2.13)
-- [ ] 2.5 - `IndexPage.vue` skeleton at `/new/` (PrimeVue layout shell, no real data)
-- [ ] 2.6 - Ninja paginated observations endpoint (`GET /api/v2/observations/`) +
+- [x] 2.4 - Temporary `/new/` Django view + route (dev scaffold, removed in 2.13)
+- [x] 2.5 - `IndexPage.vue` skeleton at `/new/` (PrimeVue layout shell, no real data)
+- [x] 2.6 - Ninja paginated observations endpoint (`GET /api/v2/observations/`) +
         PrimeVue DataTable in `IndexPage.vue`
-- [ ] 2.7 - Filter panel (species/datasets/areas/basis-of-record dropdowns, date range,
+- [x] 2.7 - Filter panel (species/datasets/areas/basis-of-record dropdowns, date range,
         status, verified filter) using PrimeVue MultiSelect + DatePicker; filters
         wired to DataTable via Pinia store
-- [ ] 2.8 - Ninja observation counter endpoint (`GET /api/v2/observations/count/`) +
-        counter component
-- [ ] 2.9 - Ninja monthly histogram endpoint (`GET /api/v2/observations/histogram/`) +
-        histogram component (keep D3 or consider PrimeVue Chart)
-- [ ] 2.10 - Filter state synced to URL query string (shareable URLs via vue-router
+- [x] 2.8 - Counter component (`ObservationCounter.vue`); reads `count` from the
+        observations list response — no separate endpoint needed since
+        `GET /api/v2/observations/` already returns the total count
+- [x] 2.9 - Ninja monthly histogram endpoint (`GET /api/v2/observations/histogram/`) +
+        `ObservationHistogram.vue` (D3 scales + Vue SVG; backend explicitly ignores
+        date filters so the histogram always shows the full temporal range)
+- [x] 2.10 - Filter state synced to URL query string (shareable URLs via vue-router
         query params)
-- [ ] 2.11 - Wrap existing OpenLayers map component in Composition API; add to
+- [x] 2.11 - Wrap existing OpenLayers map component in Composition API; add to
         `IndexPage.vue` (map tile endpoints are existing `/internal-api/maps/` routes,
         no new Ninja endpoints needed here)
-- [ ] 2.12 - `ObservationDetailPage.vue` as a Vue Router route:
-  - [ ] 2.12.1 - Ninja single-observation endpoint + observation info display
-  - [ ] 2.12.2 - Single observation map (reuse wrapped OpenLayers component from 2.11)
-  - [ ] 2.12.3 - Comments section
-  - [ ] 2.12.4 - Back navigation preserves filters (Pinia + router)
+- [x] 2.12 - `ObservationDetailPage.vue` as a Vue Router route:
+  - [x] 2.12.1 - Ninja single-observation endpoint + observation info display
+  - [x] 2.12.2 - Single observation map (reuse wrapped OpenLayers component from 2.11)
+  - [x] 2.12.3 - Comments section
+  - [x] 2.12.4 - Back navigation preserves filters (Pinia + router)
 - [ ] 2.13 - Django URL routing swap: index and observation detail served by the Vue SPA
         shell; add catch-all route for Vue Router history mode; remove `/new/` route
 - [ ] 2.14 - Remove old `index.html` and `observation_details.html` templates

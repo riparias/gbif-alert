@@ -6,6 +6,9 @@ app_name = "dashboard"
 
 pages_urls = [
     path("", views.index_page, name="index"),
+    # TEMPORARY DEV SCAFFOLD - removed in step 2.13 when real routing swap happens
+    path("new/", views.new_spa_dev, name="new-dev"),
+    path("new/observation/<str:stable_id>", views.new_spa_dev, name="new-observation-dev"),
     path("about-site", views.about_site_page, name="about-site"),
     path("about-data", views.about_data_page, name="about-data"),
     path("whats-new", views.news_page, name="news"),

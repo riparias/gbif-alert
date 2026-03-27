@@ -30,6 +30,15 @@ from dashboard.views.helpers import (
 )
 
 
+# TEMPORARY DEV SCAFFOLD - removed in step 2.13 when real routing swap happens
+def new_spa_dev(request: HttpRequest, **kwargs) -> HttpResponse:
+    """Serve the Vue SPA shell at /new/ for iterative Phase 2 development.
+
+    Not linked in the navbar. Removed once the real page routing is in place.
+    """
+    return render(request, "dashboard/base.html")
+
+
 def index_page(request: HttpRequest) -> HttpResponse:
     try:
         filters_from_url = extract_dict_request(request, "filters")

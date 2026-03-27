@@ -163,6 +163,29 @@ def nav_config_json(context):
             "admin": reverse("admin:index"),
             "setLanguage": reverse("set_language"),
         },
+        # Map configuration: initial viewport and tile/API endpoint URL templates.
+        # Used by ObservationsMap.vue in the new frontend; the old frontend reads
+        # the same data via the js_config_object template tag instead.
+        "map": {
+            "initialPosition": settings.GBIF_ALERT["MAIN_MAP_CONFIG"],
+            "zoomLevelMinMaxQuery": settings.ZOOM_LEVEL_FOR_MIN_MAX_QUERY,
+            "tileServerUrlTemplate": _build_mvt_url_template(
+                "dashboard:internal-api:maps:mvt-tiles"
+            ),
+            "tileServerAggregatedUrlTemplate": _build_mvt_url_template(
+                "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated"
+            ),
+            "areasUrlTemplate": reverse(
+                "dashboard:internal-api:area-geojson", kwargs={"id": 1}
+            ).replace("1", "{id}"),
+            "minMaxOccPerHexagonUrl": reverse(
+                "dashboard:internal-api:maps:mvt-min-max-per-hexagon"
+            ),
+            "observationDetailsUrlTemplate": reverse(
+                "dashboard:pages:observation-details",
+                kwargs={"stable_id": "PLACEHOLDER"},
+            ).replace("PLACEHOLDER", "{stable_id}"),
+        },
     }
 
     return mark_safe(json.dumps(conf))

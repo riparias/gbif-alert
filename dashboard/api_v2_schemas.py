@@ -1,6 +1,7 @@
-from datetime import datetime
+import datetime
 
 from ninja import Schema
+from pydantic import Field
 
 
 class SpeciesOut(Schema):
@@ -32,4 +33,81 @@ class BasisOfRecordOut(Schema):
 class DataImportOut(Schema):
     id: int
     name: str
-    startTimestamp: datetime
+    startTimestamp: datetime.datetime
+
+
+class FiltersQuery(Schema):
+    speciesIds: list[int] = Field(default_factory=list)
+    datasetsIds: list[int] = Field(default_factory=list)
+    basisOfRecordIds: list[int] = Field(default_factory=list)
+    startDate: datetime.date | None = None
+    endDate: datetime.date | None = None
+    areaIds: list[int] = Field(default_factory=list)
+    status: str | None = None
+    initialDataImportIds: list[int] = Field(default_factory=list)
+    verifiedFilter: str = "all"
+    areaFilterMode: str = "inside"
+    approachingDistanceKm: float | None = None
+
+
+class ObservationOut(Schema):
+    id: int
+    stableId: str
+    gbifId: str
+    lat: float | None
+    lon: float | None
+    scientificName: str
+    vernacularName: str
+    datasetName: str
+    date: datetime.date
+    seenByCurrentUser: bool | None = None
+
+
+class ObservationsPageOut(Schema):
+    count: int
+    items: list[ObservationOut]
+
+
+class HistogramEntryOut(Schema):
+    year: int
+    month: int
+    count: int
+
+
+class CommentOut(Schema):
+    id: int
+    authorUsername: str | None
+    createdAt: datetime.datetime
+    text: str | None
+    deletedBecauseAuthorDeleted: bool
+
+
+class CommentIn(Schema):
+    text: str
+
+
+class ObservationDetailOut(Schema):
+    id: int
+    stableId: str
+    gbifId: str
+    lat: float | None
+    lon: float | None
+    scientificName: str
+    vernacularName: str
+    datasetName: str
+    datasetGbifKey: str
+    date: datetime.date
+    individualCount: int | None
+    locality: str
+    municipality: str
+    recordedBy: str
+    references: str
+    identificationVerificationStatus: str
+    verified: bool
+    basisOfRecord: str
+    coordinateUncertaintyInMeters: float | None
+    initialDataImport: str
+    seenByCurrentUser: bool | None
+    canBeMarkedUnseen: bool
+    adminUrl: str | None
+    comments: list[CommentOut]
