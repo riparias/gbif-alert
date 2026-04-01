@@ -17,9 +17,6 @@ type DatasetOut = components["schemas"]["DatasetOut"];
 type AreaOut = components["schemas"]["AreaOut"];
 type BasisOfRecordOut = components["schemas"]["BasisOfRecordOut"];
 
-const props = defineProps<{
-    observationCount?: number | null;
-}>();
 
 const { t } = useI18n();
 const filtersStore = useFiltersStore();
@@ -312,10 +309,6 @@ const areaFilterModeOptions = computed(() => [
             >
                 <template #option="{ option }">
                     <span>{{ option.label }}</span>
-                    <span
-                        v-if="option.value === selectedStatus && option.value !== 'all' && observationCount != null"
-                        class="status-count-badge"
-                    >{{ observationCount.toLocaleString() }}</span>
                 </template>
             </SelectButton>
         </div>

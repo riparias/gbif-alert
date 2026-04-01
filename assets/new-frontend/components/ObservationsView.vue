@@ -166,6 +166,8 @@ onUnmounted(() => reloadOnFilterChange.cancel());
 
 onMounted(async () => {
     await loadObservations();
+    // props.unseenFallback is evaluated once at mount; the fallback is first-load-only
+    // behaviour, not something that re-runs when filters change.
     if (props.unseenFallback && totalRecords.value === 0 && filtersStore.status === "unseen") {
         filtersStore.status = null;
         reloadOnFilterChange.cancel();
