@@ -1,10 +1,7 @@
 import * as bootstrap from "bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
-import AlertDetailsPageRootComponent from "./components/pages_root_components/AlertDetailsPageRootComponent.vue";
-import AlertForm from "./components/AlertForm.vue";
 import SingleObservationMap from "./components/SingleObservationMap.vue";
 import DeleteAccountButton from "./components/DeleteAccountButton.vue";
-import DeleteAlertButton from "./components/DeleteAlertButton.vue";
 import {Component, createApp} from "vue";
 import {createI18n} from "vue-i18n";
 import {messages} from "./translations";
@@ -41,15 +38,6 @@ function createAndMountComponent(component: Component, rootContainer = "#app") {
     app.mount(rootContainer);
 }
 
-(window as any).initAlertDetailsPage = function () {
-    createAndMountComponent(AlertDetailsPageRootComponent);
-    createAndMountComponent({
-        components: {
-            DeleteAlertButton
-        }
-    }, "#app-alert-metadata");
-};
-
 (window as any).initObservationDetailsPage = function () {
     createAndMountComponent({components: {SingleObservationMap}}, "#single-observation-app");
 };
@@ -58,18 +46,6 @@ function createAndMountComponent(component: Component, rootContainer = "#app") {
     createAndMountComponent({components: {DeleteAccountButton}});
 };
 
-(window as any).initUserAlertsPage = function () {
-    createAndMountComponent({components: {DeleteAlertButton}});
-};
-
 (window as any).initUserAreasPage = function () {
     createAndMountComponent({components: {UserAreasPageRootComponent}}, "#vue-app");
-};
-
-(window as any).initCreateAlertPage = function () {
-    createAndMountComponent({components: {AlertForm}});
-};
-
-(window as any).initEditAlertPage = function () {
-    createAndMountComponent({components: {AlertForm}});
 };
