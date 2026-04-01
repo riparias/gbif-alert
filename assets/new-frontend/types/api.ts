@@ -96,7 +96,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Observations List */
+        /**
+         * List observations
+         * @description Return a paginated, filtered, and sorted page of observations.
+         *
+         *     Pagination is controlled by `page` (1-based) and `pageSize` (capped at 100).
+         *     Sorting is controlled by `orderBy` and `orderDir`. A secondary sort on `-pk`
+         *     is always appended to guarantee stable pagination when the primary field has ties.
+         */
         get: operations["dashboard_api_v2_observations_list"];
         put?: never;
         post?: never;
@@ -151,6 +158,29 @@ export interface paths {
         put?: never;
         /** Observation Add Comment */
         post: operations["dashboard_api_v2_observation_add_comment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/page-fragments/{identifier}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Page Fragment
+         * @description Return the rendered HTML for a page fragment in the current request language.
+         *
+         *     Returns {"html": ""} if the fragment does not exist, so callers never need
+         *     to handle 404 - a missing fragment simply shows nothing.
+         */
+        get: operations["dashboard_api_v2_page_fragment"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -284,6 +314,12 @@ export interface components {
              * Format: date
              */
             date: string;
+            /** Municipality */
+            municipality: string;
+            /** Verified */
+            verified: boolean;
+            /** Identificationverificationstatus */
+            identificationVerificationStatus: string;
             /** Seenbycurrentuser */
             seenByCurrentUser?: boolean | null;
         };
@@ -503,6 +539,8 @@ export interface operations {
                 approachingDistanceKm?: number | null;
                 page?: number;
                 pageSize?: number;
+                orderBy?: string;
+                orderDir?: string;
             };
             header?: never;
             path?: never;
@@ -597,6 +635,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommentOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_page_fragment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                identifier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };

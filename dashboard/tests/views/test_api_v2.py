@@ -242,6 +242,16 @@ class ApiV2ObservationsTests(TestCase):
                     "vernacularName", "datasetName", "date"):
             self.assertIn(key, item, msg=f"Missing key: {key}")
 
+    def test_observations_list_new_fields(self):
+        """municipality, verified, and identificationVerificationStatus must be present."""
+        response = self.client.get(reverse("api-v2:observations_list"))
+        item = next(i for i in response.json()["items"] if i["id"] == self.obs.pk)
+        for key in ("municipality", "verified", "identificationVerificationStatus"):
+            self.assertIn(key, item, msg=f"Missing key: {key}")
+        self.assertIsInstance(item["municipality"], str)
+        self.assertIsInstance(item["verified"], bool)
+        self.assertIsInstance(item["identificationVerificationStatus"], str)
+
     def test_observations_list_field_values(self):
         """Field values must match the observation data."""
         response = self.client.get(reverse("api-v2:observations_list"))
@@ -669,3 +679,81 @@ class ApiV2ObservationDetailTests(TestCase):
     def test_comments_empty_list_when_none(self):
         response = self.client.get(self._url())
         self.assertEqual(response.json()["comments"], [])
+
+
+class ApiV2ObservationsMunicipalityVerifiedSortTests(TestCase):
+    """Tests for sorting by municipality and verified in GET /api/v2/observations/.
+
+    Fixture:
+    - obs_gent: municipality="Gent",  verified=True
+    - obs_mons: municipality="Mons",  verified=False
+
+    Expected orders:
+      municipality asc:  obs_gent, obs_mons  (G before M)
+      municipality desc: obs_mons, obs_gent
+      verified asc:      obs_mons (False=0), obs_gent (True=1)
+      verified desc:     obs_gent (True=1),  obs_mons (False=0)
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.species = Species.objects.create(
+            name="Testus sorticus", gbif_taxon_key=9990001
+        )
+        cls.dataset = Dataset.objects.create(
+            name="Sort test dataset",
+            gbif_dataset_key="11111111-0000-0000-0000-000000000099",
+        )
+        cls.basis = BasisOfRecord.objects.create(name="MACHINE_OBSERVATION")
+        cls.di = DataImport.objects.create(
+            start=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
+        )
+        cls.obs_gent = Observation.objects.create(
+            gbif_id="munis1",
+            occurrence_id="occ:munis1",
+            species=cls.species,
+            source_dataset=cls.dataset,
+            date=datetime.date(2024, 1, 1),
+            data_import=cls.di,
+            initial_data_import=cls.di,
+            basis_of_record=cls.basis,
+            municipality="Gent",
+            verified=True,
+        )
+        cls.obs_mons = Observation.objects.create(
+            gbif_id="munis2",
+            occurrence_id="occ:munis2",
+            species=cls.species,
+            source_dataset=cls.dataset,
+            date=datetime.date(2024, 1, 2),
+            data_import=cls.di,
+            initial_data_import=cls.di,
+            basis_of_record=cls.basis,
+            municipality="Mons",
+            verified=False,
+        )
+
+    def _ids(self, **params):
+        response = self.client.get(reverse("api-v2:observations_list"), params)
+        self.assertEqual(response.status_code, 200)
+        return [item["id"] for item in response.json()["items"]]
+
+    def test_order_by_municipality_ascending(self):
+        """orderBy=municipality&orderDir=asc puts Gent before Mons."""
+        ids = self._ids(orderBy="municipality", orderDir="asc")
+        self.assertLess(ids.index(self.obs_gent.pk), ids.index(self.obs_mons.pk))
+
+    def test_order_by_municipality_descending(self):
+        """orderBy=municipality&orderDir=desc puts Mons before Gent."""
+        ids = self._ids(orderBy="municipality", orderDir="desc")
+        self.assertLess(ids.index(self.obs_mons.pk), ids.index(self.obs_gent.pk))
+
+    def test_order_by_verified_ascending(self):
+        """orderBy=verified&orderDir=asc puts False (obs_mons) before True (obs_gent)."""
+        ids = self._ids(orderBy="verified", orderDir="asc")
+        self.assertLess(ids.index(self.obs_mons.pk), ids.index(self.obs_gent.pk))
+
+    def test_order_by_verified_descending(self):
+        """orderBy=verified&orderDir=desc puts True (obs_gent) before False (obs_mons)."""
+        ids = self._ids(orderBy="verified", orderDir="desc")
+        self.assertLess(ids.index(self.obs_gent.pk), ids.index(self.obs_mons.pk))

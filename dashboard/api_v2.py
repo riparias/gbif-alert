@@ -92,6 +92,8 @@ _SORT_FIELD_MAP = {
     "date": "date",
     "scientificName": "species__name",
     "datasetName": "source_dataset__name",
+    "municipality": "municipality",
+    "verified": "verified",
 }
 
 
@@ -163,6 +165,9 @@ def observations_list(
             "vernacularName": obs.species.vernacular_name,
             "datasetName": obs.source_dataset.name,
             "date": obs.date,
+            "municipality": obs.municipality,
+            "verified": obs.verified,
+            "identificationVerificationStatus": obs.identification_verification_status,
             "seenByCurrentUser": (obs.pk not in unseen_ids) if user is not None else None,
         }
         for obs in obs_page

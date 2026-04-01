@@ -60,6 +60,9 @@ class ObservationOut(Schema):
     vernacularName: str
     datasetName: str
     date: datetime.date
+    municipality: str
+    verified: bool
+    identificationVerificationStatus: str
     seenByCurrentUser: bool | None = None
 
 
