@@ -243,14 +243,12 @@ class ApiV2ObservationsTests(TestCase):
             self.assertIn(key, item, msg=f"Missing key: {key}")
 
     def test_observations_list_new_fields(self):
-        """municipality, verified, and identificationVerificationStatus must be present."""
+        """municipality, verified, and identificationVerificationStatus must be present with correct values."""
         response = self.client.get(reverse("api-v2:observations_list"))
         item = next(i for i in response.json()["items"] if i["id"] == self.obs.pk)
-        for key in ("municipality", "verified", "identificationVerificationStatus"):
-            self.assertIn(key, item, msg=f"Missing key: {key}")
-        self.assertIsInstance(item["municipality"], str)
-        self.assertIsInstance(item["verified"], bool)
-        self.assertIsInstance(item["identificationVerificationStatus"], str)
+        self.assertEqual(item["municipality"], "")
+        self.assertIs(item["verified"], False)
+        self.assertEqual(item["identificationVerificationStatus"], "")
 
     def test_observations_list_field_values(self):
         """Field values must match the observation data."""
@@ -704,7 +702,7 @@ class ApiV2ObservationsMunicipalityVerifiedSortTests(TestCase):
             name="Sort test dataset",
             gbif_dataset_key="11111111-0000-0000-0000-000000000099",
         )
-        cls.basis = BasisOfRecord.objects.create(name="MACHINE_OBSERVATION")
+        cls.basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
         cls.di = DataImport.objects.create(
             start=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
         )
@@ -734,6 +732,7 @@ class ApiV2ObservationsMunicipalityVerifiedSortTests(TestCase):
         )
 
     def _ids(self, **params):
+        """Return the ordered list of observation ids from a GET request."""
         response = self.client.get(reverse("api-v2:observations_list"), params)
         self.assertEqual(response.status_code, 200)
         return [item["id"] for item in response.json()["items"]]

@@ -62,7 +62,7 @@ class ObservationOut(Schema):
     date: datetime.date
     municipality: str
     verified: bool
-    identificationVerificationStatus: str
+    identificationVerificationStatus: str  # empty string when not provided by GBIF
     seenByCurrentUser: bool | None = None
 
 
@@ -105,7 +105,7 @@ class ObservationDetailOut(Schema):
     municipality: str
     recordedBy: str
     references: str
-    identificationVerificationStatus: str
+    identificationVerificationStatus: str  # empty string when not provided by GBIF
     verified: bool
     basisOfRecord: str
     coordinateUncertaintyInMeters: float | None

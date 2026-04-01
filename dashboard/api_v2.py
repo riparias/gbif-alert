@@ -105,7 +105,7 @@ def observations_list(
     pageSize: int = 20,
     orderBy: Annotated[
         str,
-        Field(description="Field to sort by. Accepted: date, scientificName, datasetName. Unknown values fall back to date."),
+        Field(description="Field to sort by. Accepted: date, scientificName, datasetName, municipality, verified. Unknown values fall back to date."),
     ] = "date",
     orderDir: Annotated[
         str,
