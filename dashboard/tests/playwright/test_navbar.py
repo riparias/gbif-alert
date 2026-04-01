@@ -173,7 +173,7 @@ def test_regular_user_cannot_access_admin_directly(page: Page, live_server):
     # Django redirects to admin login and shows an "not authorized" message.
     expect(page).to_have_url(live_server.url + "/admin/login/?next=/admin/")
     expect(
-        page.get_by_text("you are not authorized to access this page", exact=False)
+        page.get_by_text("are not authorized to access this page", exact=False)
     ).to_be_visible()
 
 
