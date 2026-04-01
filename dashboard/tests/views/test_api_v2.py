@@ -239,7 +239,8 @@ class ApiV2ObservationsTests(TestCase):
         response = self.client.get(reverse("api-v2:observations_list"))
         item = next(i for i in response.json()["items"] if i["id"] == self.obs.pk)
         for key in ("id", "stableId", "gbifId", "lat", "lon", "scientificName",
-                    "vernacularName", "datasetName", "date"):
+                    "vernacularName", "datasetName", "date",
+                    "municipality", "verified", "identificationVerificationStatus"):
             self.assertIn(key, item, msg=f"Missing key: {key}")
 
     def test_observations_list_new_fields(self):
