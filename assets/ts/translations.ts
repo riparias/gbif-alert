@@ -2,7 +2,7 @@ export const messages = {
     en: {
         message: {
             accountDeletionConfirmationMessage: 'Do you really want to delete your account? This can\'t be undone, and all your data (alerts, observation comments, ...) will be lost!',
-            alertDeletionConfirmationMessage: 'Do you really want to this alert? This can\'t be undone.',
+            alertDeletionConfirmationMessage: 'Do you really want to delete this alert? This can\'t be undone.',
             alertName: 'Alert name',
             alertNotificationsFrequency: 'Alert notifications frequency',
             alertSuccessfullySaved: 'The alert has been successfully saved.',
