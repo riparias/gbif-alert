@@ -171,6 +171,7 @@ watch(filtersStore, reloadOnFilterChange, { deep: true });
 // Auth state - used for the smart status default below.
 const navConfig = JSON.parse(document.getElementById("gbif-alert-nav-config")!.textContent!);
 const isAuthenticated: boolean = navConfig.user.isAuthenticated;
+document.title = `${t("message.home")} - ${navConfig.siteName}`;
 
 // Welcome text: page fragment rendered server-side, language-aware
 const welcomeHtml = ref("");
