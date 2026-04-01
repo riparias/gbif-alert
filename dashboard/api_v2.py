@@ -168,6 +168,7 @@ def observations_list(
             "municipality": obs.municipality,
             "verified": obs.verified,
             "identificationVerificationStatus": obs.identification_verification_status,
+            "basisOfRecord": str(obs.basis_of_record),
             "seenByCurrentUser": (obs.pk not in unseen_ids) if user is not None else None,
         }
         for obs in obs_page

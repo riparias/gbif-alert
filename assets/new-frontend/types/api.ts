@@ -320,6 +320,8 @@ export interface components {
             verified: boolean;
             /** Identificationverificationstatus */
             identificationVerificationStatus: string;
+            /** Basisofrecord */
+            basisOfRecord: string;
             /** Seenbycurrentuser */
             seenByCurrentUser?: boolean | null;
         };

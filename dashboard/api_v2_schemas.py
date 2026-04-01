@@ -63,6 +63,7 @@ class ObservationOut(Schema):
     municipality: str
     verified: bool
     identificationVerificationStatus: str  # empty string when not provided by GBIF
+    basisOfRecord: str
     seenByCurrentUser: bool | None = None
 
 

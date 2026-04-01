@@ -240,7 +240,7 @@ class ApiV2ObservationsTests(TestCase):
         item = next(i for i in response.json()["items"] if i["id"] == self.obs.pk)
         for key in ("id", "stableId", "gbifId", "lat", "lon", "scientificName",
                     "vernacularName", "datasetName", "date",
-                    "municipality", "verified", "identificationVerificationStatus"):
+                    "municipality", "verified", "identificationVerificationStatus", "basisOfRecord"):
             self.assertIn(key, item, msg=f"Missing key: {key}")
 
     def test_observations_list_new_fields(self):
@@ -250,6 +250,7 @@ class ApiV2ObservationsTests(TestCase):
         self.assertEqual(item["municipality"], "")
         self.assertIs(item["verified"], False)
         self.assertEqual(item["identificationVerificationStatus"], "")
+        self.assertEqual(item["basisOfRecord"], "HUMAN_OBSERVATION")
 
     def test_observations_list_field_values(self):
         """Field values must match the observation data."""
