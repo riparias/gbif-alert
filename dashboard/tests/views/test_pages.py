@@ -160,6 +160,12 @@ class AlertWebPagesTests(TestCase):
         response = self.client.get(page_url)
         self.assertEqual(response.status_code, 404)
 
+    def test_anonymous_cant_access_alert_edit(self):
+        """Anonymous user is redirected when accessing alert edit page."""
+        page_url = reverse("dashboard:pages:alert-edit", kwargs={"alert_id": self.alert.id})
+        response = self.client.get(page_url)
+        self.assertEqual(response.status_code, 302)
+
     def test_user_can_access_my_alerts_page(self):
         """Authenticated user gets the SPA shell for the my-alerts page."""
         self.client.login(username="frusciante", password="12345")
