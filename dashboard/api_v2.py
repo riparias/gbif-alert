@@ -427,6 +427,7 @@ def alert_suggest_name(request: HttpRequest):
     return {"name": f"My alert #{n}"}
 
 
+# No auth required - frequency choices are not user-specific.
 @api_v2.get(
     "/alerts/notification-frequencies/",
     response=list[AlertNotificationFrequencyOut],

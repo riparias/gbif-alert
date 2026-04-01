@@ -914,3 +914,26 @@ class ApiV2AlertTests(TestCase):
         self.assertIn("D", ids)
         self.assertIn("W", ids)
         self.assertIn("M", ids)
+
+    def test_alert_create_duplicate_name_returns_422(self):
+        """Creating an alert with a name already owned by this user returns 422."""
+        self.client.login(username="alertuser", password="12345")
+        # "My alert #1" already exists in setUpTestData
+        payload = json.dumps({"name": "My alert #1", "speciesIds": [self.sp1.pk]})
+        response = self.client.post("/api/v2/alerts/", payload, content_type="application/json")
+        self.assertEqual(response.status_code, 422)
+        data = response.json()
+        self.assertIn("errors", data)
+
+    def test_alert_create_approaching_mode_without_area_returns_422(self):
+        """Creating an alert with areaFilterMode='approaching' but no areaIds returns 422."""
+        self.client.login(username="alertuser", password="12345")
+        payload = json.dumps({
+            "name": "Approaching alert",
+            "speciesIds": [self.sp1.pk],
+            "areaFilterMode": "approaching",
+            "areaIds": [],
+        })
+        response = self.client.post("/api/v2/alerts/", payload, content_type="application/json")
+        self.assertEqual(response.status_code, 422)
+        self.assertIn("area_filter_mode", response.json()["errors"])
