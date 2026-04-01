@@ -3,6 +3,8 @@
 Test data is created per-test (no shared state) using @pytest.mark.django_db(transaction=True).
 """
 
+import re
+
 import pytest
 from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
@@ -159,7 +161,6 @@ def test_create_alert_succeeds(page: Page, live_server):
     # Use wait_for_url with a pattern rather than networkidle because the detail
     # page fires background map requests that may produce 500s in the test DB
     # (hexa_5000 table is absent), and networkidle would then time out.
-    import re
     page.wait_for_url(re.compile(r"/alert/\d+$"), timeout=10000)
 
     # Confirm the created alert exists in the DB and the URL matches.
@@ -177,18 +178,16 @@ def test_create_alert_shows_error_when_no_species(page: Page, live_server):
     page.goto(live_server.url + "/new-alert")
     page.wait_for_load_state("networkidle")
 
-    # The hint "At least one species must be selected." is always shown on the form
-    expect(
-        page.get_by_text("At least one species must be selected", exact=False)
-    ).to_be_visible()
+    # The PrimeVue error Message for species must NOT be present before submission
+    # (only the static field-hint paragraph is shown at this point).
+    expect(page.locator("[data-pc-name='message']")).not_to_be_visible()
 
     page.get_by_role("button", name="Create alert").click()
     page.wait_for_load_state("networkidle")
 
-    # After submitting with no species the server returns a validation error
-    expect(
-        page.get_by_text("At least one species must be selected", exact=False)
-    ).to_be_visible()
+    # After submitting with no species the server returns a validation error and
+    # the PrimeVue <Message> component (data-pc-name="message") becomes visible.
+    expect(page.locator("[data-pc-name='message']")).to_be_visible()
 
 
 # ---------------------------------------------------------------------------
