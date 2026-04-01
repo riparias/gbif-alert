@@ -13,6 +13,9 @@ import TabPanels from "primevue/tabpanels";
 import TabPanel from "primevue/tabpanel";
 import DataTable, { type DataTablePageEvent, type DataTableSortEvent } from "primevue/datatable";
 import Column from "primevue/column";
+import Button from "primevue/button";
+import Popover from "primevue/popover";
+import Checkbox from "primevue/checkbox";
 import FilterPanel from "../components/FilterPanel.vue";
 import ObservationCounter from "../components/ObservationCounter.vue";
 import ObservationHistogram from "../components/ObservationHistogram.vue";
@@ -48,7 +51,58 @@ function closeDrawer() {
 
 useFilterSync();
 
+// --- Column configuration ---
+
+const COLUMN_DEFS = [
+    { key: "date",         sortField: "date",           defaultVisible: true  },
+    { key: "species",      sortField: "scientificName", defaultVisible: true  },
+    { key: "dataset",      sortField: "datasetName",    defaultVisible: true  },
+    { key: "municipality", sortField: "municipality",   defaultVisible: true  },
+    { key: "verified",     sortField: "verified",       defaultVisible: true  },
+    { key: "gbifId",       sortField: null,             defaultVisible: false },
+    { key: "seen",         sortField: null,             defaultVisible: true  },
+] as const;
+
+type ColumnKey = (typeof COLUMN_DEFS)[number]["key"];
+
+const LS_KEY = "gbif-alert.tableColumns";
+
+function loadVisibleColumns(): Set<ColumnKey> {
+    try {
+        const stored = localStorage.getItem(LS_KEY);
+        if (stored) {
+            const parsed: unknown = JSON.parse(stored);
+            if (Array.isArray(parsed)) return new Set(parsed as ColumnKey[]);
+        }
+    } catch {
+        // ignore parse errors - fall through to defaults
+    }
+    return new Set(
+        COLUMN_DEFS.filter((c) => c.defaultVisible).map((c) => c.key)
+    );
+}
+
+const visibleColumns = ref<Set<ColumnKey>>(loadVisibleColumns());
+
+function toggleColumn(key: ColumnKey) {
+    const next = new Set(visibleColumns.value);
+    if (next.has(key)) {
+        next.delete(key);
+    } else {
+        next.add(key);
+    }
+    visibleColumns.value = next;
+    localStorage.setItem(LS_KEY, JSON.stringify([...next]));
+}
+
+const columnPopover = ref();
+
 const observations = ref<ObservationOut[]>([]);
+
+const hasSeen = computed(() =>
+    observations.value.some((o) => o.seenByCurrentUser !== null)
+);
+
 const totalRecords = ref(0);
 const loading = ref(false);
 const currentPage = ref(1);
@@ -167,6 +221,36 @@ onMounted(() => {
                 </TabPanel>
 
                 <TabPanel value="table">
+                    <!-- Column picker toolbar -->
+                    <div class="table-toolbar">
+                        <Button
+                            icon="pi pi-sliders-h"
+                            text
+                            size="small"
+                            @click="(e) => columnPopover.toggle(e)"
+                            aria-label="Configure visible columns"
+                        />
+                        <Popover ref="columnPopover">
+                            <div class="column-picker">
+                                <div
+                                    v-for="col in COLUMN_DEFS.filter(
+                                        (c) => c.key !== 'seen' || hasSeen
+                                    )"
+                                    :key="col.key"
+                                    class="column-picker-item"
+                                >
+                                    <Checkbox
+                                        :input-id="`col-${col.key}`"
+                                        :model-value="visibleColumns.has(col.key)"
+                                        :binary="true"
+                                        @update:model-value="toggleColumn(col.key)"
+                                    />
+                                    <label :for="`col-${col.key}`">{{ t(`message.${col.key}`) }}</label>
+                                </div>
+                            </div>
+                        </Popover>
+                    </div>
+
                     <DataTable
                         :value="observations"
                         lazy
@@ -182,8 +266,18 @@ onMounted(() => {
                         @sort="onSort"
                         @row-click="(e) => openObservation(e.data.stableId)"
                     >
-                        <Column field="date" :header="t('message.date')" sortable />
-                        <Column field="scientificName" :header="t('message.species')" sortable>
+                        <Column
+                            v-if="visibleColumns.has('date')"
+                            field="date"
+                            :header="t('message.date')"
+                            sortable
+                        />
+                        <Column
+                            v-if="visibleColumns.has('species')"
+                            field="scientificName"
+                            :header="t('message.species')"
+                            sortable
+                        >
                             <template #body="{ data }">
                                 <a
                                     href="#"
@@ -197,8 +291,42 @@ onMounted(() => {
                                 </a>
                             </template>
                         </Column>
-                        <Column field="datasetName" :header="t('message.dataset')" sortable />
-                        <Column :header="t('message.gbifId')">
+                        <Column
+                            v-if="visibleColumns.has('dataset')"
+                            field="datasetName"
+                            :header="t('message.dataset')"
+                            sortable
+                        />
+                        <Column
+                            v-if="visibleColumns.has('municipality')"
+                            field="municipality"
+                            :header="t('message.municipality')"
+                            sortable
+                        >
+                            <template #body="{ data }">
+                                {{ data.municipality || '-' }}
+                            </template>
+                        </Column>
+                        <Column
+                            v-if="visibleColumns.has('verified')"
+                            field="verified"
+                            :header="t('message.verified')"
+                            sortable
+                        >
+                            <template #body="{ data }">
+                                <span
+                                    class="verified-badge"
+                                    :class="data.verified ? 'badge-success' : 'badge-danger'"
+                                    :title="data.identificationVerificationStatus || undefined"
+                                >
+                                    {{ data.verified ? t('message.verified') : t('message.unverified') }}
+                                </span>
+                            </template>
+                        </Column>
+                        <Column
+                            v-if="visibleColumns.has('gbifId')"
+                            :header="t('message.gbifId')"
+                        >
                             <template #body="{ data }">
                                 <a
                                     :href="`https://www.gbif.org/occurrence/${data.gbifId}`"
@@ -210,7 +338,7 @@ onMounted(() => {
                             </template>
                         </Column>
                         <Column
-                            v-if="observations.some((o) => o.seenByCurrentUser !== null)"
+                            v-if="visibleColumns.has('seen') && hasSeen"
                             :header="t('message.seen')"
                         >
                             <template #body="{ data }">
@@ -302,5 +430,49 @@ onMounted(() => {
 .empty-state-hint {
     margin: 0;
     font-size: 0.9rem;
+}
+
+.table-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.25rem 0;
+}
+
+.column-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 160px;
+}
+
+.column-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.column-picker-item label {
+    cursor: pointer;
+    user-select: none;
+}
+
+.verified-badge {
+    display: inline-block;
+    padding: 0.2em 0.6em;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.badge-success {
+    background: var(--p-green-500, #22c55e);
+    color: #fff;
+}
+
+.badge-danger {
+    background: var(--p-red-500, #ef4444);
+    color: #fff;
 }
 </style>
