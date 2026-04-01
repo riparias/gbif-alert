@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
-from django.urls import path, include, reverse_lazy
+from django.urls import path, include, re_path, reverse_lazy
 
 from dashboard.api_v2 import api_v2
 from dashboard.views.pages import spa_shell
@@ -77,8 +77,10 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("markdownx/", include("markdownx.urls")),
     path("django-rq/", include("django_rq.urls")),
-    # Catch-all for Vue Router history mode: any path not matched above returns the
-    # SPA shell so Vue Router can handle client-side navigation on direct load.
-    # MUST be last.
-    path("<path:path>", spa_shell, name="spa-shell"),
+    # Catch-all for Vue Router history mode: any path not matched by an explicit
+    # Django URL returns the SPA shell so Vue Router can handle direct-load navigation.
+    # The negative lookahead excludes Django-owned prefixes so that paths like /admin
+    # (without trailing slash) still get redirected correctly by APPEND_SLASH middleware
+    # rather than being swallowed by this rule. MUST be last.
+    re_path(r"^(?!admin|api/|accounts/|i18n/|markdownx/|django-rq/).*$", spa_shell, name="spa-shell"),
 ]
