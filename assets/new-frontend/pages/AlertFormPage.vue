@@ -14,6 +14,7 @@ import SpeciesFilterModal from "../components/SpeciesFilterModal.vue";
 import AreaFilterModal from "../components/AreaFilterModal.vue";
 import DatasetFilterModal from "../components/DatasetFilterModal.vue";
 import type { components } from "../types/api";
+import { getCsrf } from "../utils/csrf";
 
 type SpeciesOut = components["schemas"]["SpeciesOut"];
 type DatasetOut = components["schemas"]["DatasetOut"];
@@ -29,10 +30,6 @@ const toast = useToast();
 // Create mode when no alertId param; edit mode when alertId is present.
 const alertId = route.params.alertId ? Number(route.params.alertId) : null;
 const isEditMode = alertId !== null;
-
-function getCsrf(): string {
-    return (document.cookie.match(/csrftoken=([^;]+)/) ?? [])[1] ?? "";
-}
 
 // Available options loaded from API
 const speciesOptions = ref<SpeciesOut[]>([]);
@@ -92,6 +89,7 @@ async function loadOptions() {
 
 async function loadAlertData() {
     const res = await fetch(`/api/v2/alerts/${alertId}/`);
+    if (!res.ok) return;
     const data = await res.json();
     name.value = data.name;
     selectedSpeciesIds.value = data.speciesIds;
@@ -106,6 +104,7 @@ async function loadAlertData() {
 
 async function suggestName() {
     const res = await fetch("/api/v2/alerts/suggest-name/");
+    if (!res.ok) return;
     name.value = (await res.json()).name;
 }
 

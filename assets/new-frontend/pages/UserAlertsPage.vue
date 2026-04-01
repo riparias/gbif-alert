@@ -8,6 +8,7 @@ import Button from "primevue/button";
 import Card from "primevue/card";
 import Badge from "primevue/badge";
 import type { components } from "../types/api";
+import { getCsrf } from "../utils/csrf";
 
 type AlertOut = components["schemas"]["AlertOut"];
 
@@ -19,14 +20,16 @@ const toast = useToast();
 const alerts = ref<AlertOut[]>([]);
 const loading = ref(false);
 
-function getCsrf(): string {
-    return (document.cookie.match(/csrftoken=([^;]+)/) ?? [])[1] ?? "";
+function formatDate(iso: string | null): string {
+    if (!iso) return t("message.never");
+    return new Date(iso).toLocaleDateString();
 }
 
 async function loadAlerts() {
     loading.value = true;
     try {
         const res = await fetch("/api/v2/alerts/");
+        if (!res.ok) return;
         alerts.value = await res.json();
     } finally {
         loading.value = false;
@@ -45,7 +48,7 @@ function confirmDelete(alert: AlertOut) {
                 headers: { "X-CSRFToken": getCsrf() },
             });
             await loadAlerts();
-            toast.add({ severity: "success", summary: t("message.deleteThisAlert"), life: 3000 });
+            toast.add({ severity: "success", summary: t("message.alertSuccessfullyDeleted"), life: 3000 });
         },
     });
 }
@@ -115,7 +118,7 @@ onMounted(loadAlerts);
                     </li>
                     <li>
                         <b>{{ t("message.lastEmailSentOn") }}</b>
-                        {{ alert.lastEmailSentOn || t("message.never") }}
+                        {{ formatDate(alert.lastEmailSentOn) }}
                     </li>
                 </ul>
             </template>

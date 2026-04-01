@@ -79,6 +79,8 @@ assets/
       ...
     composables/          # Shared composition functions
       useApi.ts           # Typed API client (wraps axios or fetch)
+    utils/
+      csrf.ts             # getCsrf() helper (reads csrftoken cookie)
     types/                # Auto-generated from OpenAPI (later)
   ts/                     # <-- existing Webpack-managed frontend (untouched)
     early_alert.ts
@@ -168,15 +170,17 @@ ok- [x] 2.3 - `filters` Pinia store (`assets/new-frontend/stores/filters.ts`),
 
 ### Phase 3: Alert CRUD
 
-- [ ] 3.1 - Django Ninja endpoints for alert operations (create, read, update, delete,
+- [x] 3.1 - Django Ninja endpoints for alert operations (create, read, update, delete,
         load-as-filters, suggest-name, available-intervals)
-- [ ] 3.2 - Migrate `AlertDetailPage.vue` (with delete confirmation via PrimeVue
-        ConfirmDialog)
-- [ ] 3.3 - Migrate `AlertFormPage.vue` (create + edit, PrimeVue form components)
-- [ ] 3.4 - Migrate `UserAlertsPage.vue` (alert list with delete buttons)
-- [ ] 3.5 - Add Vue Router routes, update Django URL routing
-- [ ] 3.6 - Remove old templates and components
-- [ ] 3.7 - Playwright tests
+- [x] 3.2 - Migrate `AlertDetailPage.vue` (with delete confirmation via PrimeVue
+        ConfirmDialog); `ObservationsView.vue` extracted from `IndexPage` and shared
+- [x] 3.3 - Migrate `AlertFormPage.vue` (create + edit); uses `SpeciesFilterModal`,
+        `AreaFilterModal`, `DatasetFilterModal` — same selectors as the index page
+- [x] 3.4 - Migrate `UserAlertsPage.vue` (alert list with delete buttons)
+- [x] 3.5 - Add Vue Router routes, update Django URL routing
+- [x] 3.6 - Remove old templates and components
+        (5 Django templates + 6 Vue 2 components + alert init functions from `early_alert.ts`)
+- [x] 3.7 - Playwright tests (`dashboard/tests/playwright/test_alerts.py`, 12 tests)
 
 ### Phase 4: User Areas
 

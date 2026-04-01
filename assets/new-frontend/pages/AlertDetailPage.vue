@@ -9,6 +9,7 @@ import SelectButton from "primevue/selectbutton";
 import ObservationsView from "../components/ObservationsView.vue";
 import type { components } from "../types/api";
 import { useFiltersStore } from "../stores/filters";
+import { getCsrf } from "../utils/csrf";
 
 type AlertOut = components["schemas"]["AlertOut"];
 
@@ -29,10 +30,6 @@ const statusOptions = [
     { label: t("message.unseen"), value: "unseen" as const },
     { label: t("message.all"), value: null as null },
 ];
-
-function getCsrf(): string {
-    return (document.cookie.match(/csrftoken=([^;]+)/) ?? [])[1] ?? "";
-}
 
 function confirmDelete() {
     confirm.require({

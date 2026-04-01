@@ -6,6 +6,7 @@ import Button from "primevue/button";
 import Textarea from "primevue/textarea";
 import SingleObservationMap from "./SingleObservationMap.vue";
 import type { components } from "../types/api";
+import { getCsrf } from "../utils/csrf";
 
 type ObservationDetail = components["schemas"]["ObservationDetailOut"];
 type Comment = components["schemas"]["CommentOut"];
@@ -83,10 +84,6 @@ async function markUnseen() {
     } finally {
         markingUnseen.value = false;
     }
-}
-
-function getCsrf(): string {
-    return (document.cookie.match(/csrftoken=([^;]+)/) ?? [])[1] ?? "";
 }
 
 function gbifOccurrenceUrl(id: string) {
