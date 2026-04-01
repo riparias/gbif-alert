@@ -1,4 +1,5 @@
 import datetime
+import json
 
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import MultiPolygon, Point, Polygon
@@ -758,3 +759,158 @@ class ApiV2ObservationsMunicipalityVerifiedSortTests(TestCase):
         """orderBy=verified&orderDir=desc puts True (obs_gent) before False (obs_mons)."""
         ids = self._ids(orderBy="verified", orderDir="desc")
         self.assertLess(ids.index(self.obs_gent.pk), ids.index(self.obs_mons.pk))
+
+
+class ApiV2AlertTests(TestCase):
+    """Tests for the /api/v2/alerts/ CRUD endpoints."""
+
+    @classmethod
+    def setUpTestData(cls):
+        User = get_user_model()
+        cls.user = User.objects.create_user(
+            username="alertuser", password="12345", email="alert@example.com"
+        )
+        cls.other_user = User.objects.create_user(
+            username="otheruser", password="12345", email="other@example.com"
+        )
+        cls.sp1 = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+        cls.sp2 = Species.objects.create(name="Orconectes virilis", gbif_taxon_key=2227064)
+        cls.alert = Alert.objects.create(
+            name="My alert #1", user=cls.user, email_notifications_frequency="N"
+        )
+        cls.alert.species.add(cls.sp1)
+
+    # --- /api/v2/alerts/ (list) ---
+
+    def test_alerts_list_requires_auth(self):
+        response = self.client.get("/api/v2/alerts/")
+        self.assertEqual(response.status_code, 401)
+
+    def test_alerts_list_returns_own_alerts(self):
+        self.client.login(username="alertuser", password="12345")
+        response = self.client.get("/api/v2/alerts/")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["name"], "My alert #1")
+        self.assertIn("speciesIds", data[0])
+        self.assertIn("unseenCount", data[0])
+
+    def test_alerts_list_does_not_include_other_users_alerts(self):
+        other_alert = Alert.objects.create(
+            name="Other alert", user=self.other_user, email_notifications_frequency="N"
+        )
+        other_alert.species.add(self.sp1)
+        self.client.login(username="alertuser", password="12345")
+        response = self.client.get("/api/v2/alerts/")
+        self.assertEqual(len(response.json()), 1)
+
+    # --- POST /api/v2/alerts/ (create) ---
+
+    def test_alert_create_success(self):
+        self.client.login(username="alertuser", password="12345")
+        payload = json.dumps({"name": "New alert", "speciesIds": [self.sp1.pk]})
+        response = self.client.post("/api/v2/alerts/", payload, content_type="application/json")
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(Alert.objects.filter(name="New alert", user=self.user).exists())
+
+    def test_alert_create_no_species_returns_422(self):
+        self.client.login(username="alertuser", password="12345")
+        payload = json.dumps({"name": "Bad alert", "speciesIds": []})
+        response = self.client.post("/api/v2/alerts/", payload, content_type="application/json")
+        self.assertEqual(response.status_code, 422)
+        self.assertIn("species", response.json()["errors"])
+
+    def test_alert_create_requires_auth(self):
+        payload = json.dumps({"name": "Unauth alert", "speciesIds": [self.sp1.pk]})
+        response = self.client.post("/api/v2/alerts/", payload, content_type="application/json")
+        self.assertEqual(response.status_code, 401)
+
+    # --- GET /api/v2/alerts/{alert_id}/ (detail) ---
+
+    def test_alert_detail_returns_correct_fields(self):
+        self.client.login(username="alertuser", password="12345")
+        response = self.client.get(f"/api/v2/alerts/{self.alert.pk}/")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["name"], "My alert #1")
+        self.assertEqual(data["speciesIds"], [self.sp1.pk])
+        self.assertIn("speciesList", data)
+        self.assertIn("emailNotificationsFrequencyDisplay", data)
+
+    def test_alert_detail_wrong_user_returns_404(self):
+        self.client.login(username="otheruser", password="12345")
+        response = self.client.get(f"/api/v2/alerts/{self.alert.pk}/")
+        self.assertEqual(response.status_code, 404)
+
+    # --- PUT /api/v2/alerts/{alert_id}/ (update) ---
+
+    def test_alert_update_success(self):
+        self.client.login(username="alertuser", password="12345")
+        payload = json.dumps({"name": "Renamed alert", "speciesIds": [self.sp1.pk, self.sp2.pk]})
+        response = self.client.put(
+            f"/api/v2/alerts/{self.alert.pk}/", payload, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.alert.refresh_from_db()
+        self.assertEqual(self.alert.name, "Renamed alert")
+        self.assertEqual(self.alert.species.count(), 2)
+
+    def test_alert_update_wrong_user_returns_404(self):
+        self.client.login(username="otheruser", password="12345")
+        payload = json.dumps({"name": "Hacked", "speciesIds": [self.sp1.pk]})
+        response = self.client.put(
+            f"/api/v2/alerts/{self.alert.pk}/", payload, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 404)
+
+    # --- DELETE /api/v2/alerts/{alert_id}/ ---
+
+    def test_alert_delete_success(self):
+        to_delete = Alert.objects.create(
+            name="To delete", user=self.user, email_notifications_frequency="N"
+        )
+        to_delete.species.add(self.sp1)
+        self.client.login(username="alertuser", password="12345")
+        response = self.client.delete(f"/api/v2/alerts/{to_delete.pk}/")
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Alert.objects.filter(pk=to_delete.pk).exists())
+
+    def test_alert_delete_wrong_user_returns_404(self):
+        self.client.login(username="otheruser", password="12345")
+        response = self.client.delete(f"/api/v2/alerts/{self.alert.pk}/")
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Alert.objects.filter(pk=self.alert.pk).exists())
+
+    # --- GET /api/v2/alerts/{alert_id}/as-filters/ ---
+
+    def test_alert_as_filters_returns_dashboard_filter_shape(self):
+        self.client.login(username="alertuser", password="12345")
+        response = self.client.get(f"/api/v2/alerts/{self.alert.pk}/as-filters/")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["speciesIds"], [self.sp1.pk])
+        self.assertEqual(data["status"], "unseen")
+        self.assertIn("verifiedFilter", data)
+        self.assertIn("areaFilterMode", data)
+
+    # --- GET /api/v2/alerts/suggest-name/ ---
+
+    def test_suggest_name_returns_first_available(self):
+        # "My alert #1" is taken; next should be "My alert #2"
+        self.client.login(username="alertuser", password="12345")
+        response = self.client.get("/api/v2/alerts/suggest-name/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["name"], "My alert #2")
+
+    # --- GET /api/v2/alerts/notification-frequencies/ ---
+
+    def test_notification_frequencies_list(self):
+        response = self.client.get("/api/v2/alerts/notification-frequencies/")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        ids = [f["id"] for f in data]
+        self.assertIn("N", ids)
+        self.assertIn("D", ids)
+        self.assertIn("W", ids)
+        self.assertIn("M", ids)

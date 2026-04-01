@@ -204,6 +204,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/alerts/suggest-name/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Alert Suggest Name
+         * @description Suggest the next available 'My alert #N' name for the current user.
+         */
+        get: operations["dashboard_api_v2_alert_suggest_name"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/alerts/notification-frequencies/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Alert Notification Frequencies
+         * @description List available email notification frequency choices.
+         */
+        get: operations["dashboard_api_v2_alert_notification_frequencies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/alerts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Alerts List
+         * @description Return all alerts belonging to the authenticated user.
+         */
+        get: operations["dashboard_api_v2_alerts_list"];
+        put?: never;
+        /**
+         * Alert Create
+         * @description Create a new alert for the authenticated user.
+         */
+        post: operations["dashboard_api_v2_alert_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/alerts/{alert_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Alert Detail
+         * @description Return one alert. 404 if it does not belong to the current user.
+         */
+        get: operations["dashboard_api_v2_alert_detail"];
+        /**
+         * Alert Update
+         * @description Update an existing alert. 404 if it does not belong to the current user.
+         */
+        put: operations["dashboard_api_v2_alert_update"];
+        post?: never;
+        /**
+         * Alert Delete
+         * @description Delete an alert. 404 if it does not belong to the current user.
+         */
+        delete: operations["dashboard_api_v2_alert_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/alerts/{alert_id}/as-filters/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Alert As Filters V2
+         * @description Return the alert's filters in DashboardFilters shape for pre-loading the index page.
+         */
+        get: operations["dashboard_api_v2_alert_as_filters_v2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -415,6 +527,89 @@ export interface components {
         CommentIn: {
             /** Text */
             text: string;
+        };
+        /** AlertNotificationFrequencyOut */
+        AlertNotificationFrequencyOut: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+        };
+        /** AlertOut */
+        AlertOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Speciesids */
+            speciesIds: number[];
+            /** Datasetids */
+            datasetIds: number[];
+            /** Basisofrecordids */
+            basisOfRecordIds: number[];
+            /** Areaids */
+            areaIds: number[];
+            /** Emailnotificationsfrequency */
+            emailNotificationsFrequency: string;
+            /** Verifiedfilter */
+            verifiedFilter: string;
+            /** Areafiltermode */
+            areaFilterMode: string;
+            /** Approachingdistancekm */
+            approachingDistanceKm: number | null;
+            /** Unseencount */
+            unseenCount: number;
+            /** Specieslist */
+            speciesList: string;
+            /** Areadescription */
+            areaDescription: string;
+            /** Datasetslist */
+            datasetsList: string;
+            /** Basisofrecordlist */
+            basisOfRecordList: string;
+            /** Verifiedfilterdisplay */
+            verifiedFilterDisplay: string;
+            /** Emailnotificationsfrequencydisplay */
+            emailNotificationsFrequencyDisplay: string;
+            /** Lastemailsenton */
+            lastEmailSentOn: string | null;
+        };
+        /** AlertValidationErrorOut */
+        AlertValidationErrorOut: {
+            /** Errors */
+            errors: {
+                [key: string]: string[];
+            };
+        };
+        /** AlertIn */
+        AlertIn: {
+            /** Name */
+            name: string;
+            /** Speciesids */
+            speciesIds: number[];
+            /** Datasetids */
+            datasetIds?: number[];
+            /** Basisofrecordids */
+            basisOfRecordIds?: number[];
+            /** Areaids */
+            areaIds?: number[];
+            /**
+             * Emailnotificationsfrequency
+             * @default W
+             */
+            emailNotificationsFrequency: string;
+            /**
+             * Verifiedfilter
+             * @default all
+             */
+            verifiedFilter: string;
+            /**
+             * Areafiltermode
+             * @default inside
+             */
+            areaFilterMode: string;
+            /** Approachingdistancekm */
+            approachingDistanceKm?: number | null;
         };
     };
     responses: never;
@@ -689,6 +884,202 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    dashboard_api_v2_alert_suggest_name: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    dashboard_api_v2_alert_notification_frequencies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertNotificationFrequencyOut"][];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_alerts_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"][];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_alert_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertValidationErrorOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_alert_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_alert_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertValidationErrorOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_alert_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    dashboard_api_v2_alert_as_filters_v2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

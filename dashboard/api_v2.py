@@ -1,14 +1,22 @@
 import datetime
 from typing import Annotated
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.http import HttpRequest
+from django.shortcuts import get_object_or_404
+from django.utils.translation import gettext as _
 from ninja import NinjaAPI, Query
 from ninja.errors import HttpError
+from ninja.security import django_auth
 from pydantic import Field
 
 from dashboard.api_v2_schemas import (
+    AlertIn,
+    AlertNotificationFrequencyOut,
+    AlertOut,
+    AlertValidationErrorOut,
     AreaOut,
     BasisOfRecordOut,
     CommentIn,
@@ -22,6 +30,7 @@ from dashboard.api_v2_schemas import (
     SpeciesOut,
 )
 from dashboard.models import (
+    Alert,
     Area,
     BasisOfRecord,
     DataImport,
@@ -335,3 +344,158 @@ def observation_mark_unseen(request: HttpRequest, stable_id: str):
         raise HttpError(403, "Cannot mark this observation as unseen")
 
     return 200, {"ok": True}
+
+
+# --- Alert helpers ---
+
+
+def _alert_to_out(alert: Alert) -> dict:
+    return {
+        "id": alert.pk,
+        "name": alert.name,
+        "speciesIds": [s.pk for s in alert.species.all()],
+        "datasetIds": [d.pk for d in alert.datasets.all()],
+        "basisOfRecordIds": [b.pk for b in alert.basis_of_record_filters.all()],
+        "areaIds": [a.pk for a in alert.areas.all()],
+        "emailNotificationsFrequency": alert.email_notifications_frequency,
+        "verifiedFilter": alert.verified_filter,
+        "areaFilterMode": alert.area_filter_mode,
+        "approachingDistanceKm": alert.approaching_distance_km,
+        "unseenCount": alert.unseen_observations().count(),
+        "speciesList": alert.species_list,
+        "areaDescription": alert.area_description,
+        "datasetsList": alert.datasets_list,
+        "basisOfRecordList": alert.basis_of_record_list,
+        "verifiedFilterDisplay": alert.verified_filter_display,
+        "emailNotificationsFrequencyDisplay": alert.get_email_notifications_frequency_display(),
+        "lastEmailSentOn": alert.last_email_sent_on,
+    }
+
+
+def _save_alert(alert: Alert, payload: AlertIn) -> dict[str, list[str]]:
+    """Apply payload to alert instance, validate, save if valid.
+
+    Returns an errors dict - empty means success.
+    Does NOT save if there are errors.
+    """
+    alert.name = payload.name
+    alert.email_notifications_frequency = payload.emailNotificationsFrequency
+    alert.verified_filter = payload.verifiedFilter
+    alert.area_filter_mode = payload.areaFilterMode
+    alert.approaching_distance_km = payload.approachingDistanceKm
+
+    errors: dict[str, list[str]] = {}
+
+    if not payload.speciesIds:
+        errors["species"] = [str(_("At least one species must be selected"))]
+
+    if payload.areaFilterMode != Alert.AREA_FILTER_INSIDE and not payload.areaIds:
+        errors["area_filter_mode"] = [
+            str(_("At least one area must be selected for the chosen area filter mode."))
+        ]
+
+    try:
+        alert.full_clean()
+    except DjangoValidationError as e:
+        for field, msgs in e.message_dict.items():
+            errors[field] = [str(m) for m in msgs]
+
+    if not errors:
+        alert.save()
+        alert.species.set(payload.speciesIds)
+        alert.areas.set(payload.areaIds)
+        alert.datasets.set(payload.datasetIds)
+        alert.basis_of_record_filters.set(payload.basisOfRecordIds)
+
+    return errors
+
+
+# --- Alert endpoints ---
+# NOTE: suggest-name and notification-frequencies are listed BEFORE {alert_id}
+# routes so they are not captured as alert IDs.
+
+
+@api_v2.get("/alerts/suggest-name/", response=dict, auth=django_auth)
+def alert_suggest_name(request: HttpRequest):
+    """Suggest the next available 'My alert #N' name for the current user."""
+    existing = set(
+        Alert.objects.filter(user=request.user).values_list("name", flat=True)
+    )
+    n = 1
+    while f"My alert #{n}" in existing:
+        n += 1
+    return {"name": f"My alert #{n}"}
+
+
+@api_v2.get(
+    "/alerts/notification-frequencies/",
+    response=list[AlertNotificationFrequencyOut],
+)
+def alert_notification_frequencies(request: HttpRequest):
+    """List available email notification frequency choices."""
+    return [{"id": k, "label": str(v)} for k, v in Alert.EMAIL_NOTIFICATION_CHOICES]
+
+
+@api_v2.get("/alerts/", response=list[AlertOut], auth=django_auth)
+def alerts_list(request: HttpRequest):
+    """Return all alerts belonging to the authenticated user."""
+    alerts = (
+        Alert.objects.filter(user=request.user)
+        .prefetch_related("species", "datasets", "areas", "basis_of_record_filters")
+        .order_by("id")
+    )
+    return [_alert_to_out(a) for a in alerts]
+
+
+@api_v2.post("/alerts/", response={201: AlertOut, 422: AlertValidationErrorOut}, auth=django_auth)
+def alert_create(request: HttpRequest, payload: AlertIn):
+    """Create a new alert for the authenticated user."""
+    alert = Alert(user=request.user)
+    errors = _save_alert(alert, payload)
+    if errors:
+        return 422, {"errors": errors}
+    return 201, _alert_to_out(alert)
+
+
+@api_v2.get("/alerts/{alert_id}/", response=AlertOut, auth=django_auth)
+def alert_detail(request: HttpRequest, alert_id: int):
+    """Return one alert. 404 if it does not belong to the current user."""
+    alert = get_object_or_404(
+        Alert.objects.prefetch_related("species", "datasets", "areas", "basis_of_record_filters"),
+        id=alert_id,
+        user=request.user,
+    )
+    return _alert_to_out(alert)
+
+
+@api_v2.put(
+    "/alerts/{alert_id}/",
+    response={200: AlertOut, 422: AlertValidationErrorOut},
+    auth=django_auth,
+)
+def alert_update(request: HttpRequest, alert_id: int, payload: AlertIn):
+    """Update an existing alert. 404 if it does not belong to the current user."""
+    alert = get_object_or_404(
+        Alert.objects.prefetch_related("species", "datasets", "areas", "basis_of_record_filters"),
+        id=alert_id,
+        user=request.user,
+    )
+    errors = _save_alert(alert, payload)
+    if errors:
+        return 422, {"errors": errors}
+    return 200, _alert_to_out(alert)
+
+
+@api_v2.delete("/alerts/{alert_id}/", response={204: None}, auth=django_auth)
+def alert_delete(request: HttpRequest, alert_id: int):
+    """Delete an alert. 404 if it does not belong to the current user."""
+    alert = get_object_or_404(Alert, id=alert_id, user=request.user)
+    alert.delete()
+    return 204, None
+
+
+@api_v2.get("/alerts/{alert_id}/as-filters/", response=dict, auth=django_auth)
+def alert_as_filters_v2(request: HttpRequest, alert_id: int):
+    """Return the alert's filters in DashboardFilters shape for pre-loading the index page."""
+    alert = get_object_or_404(Alert, id=alert_id, user=request.user)
+    return alert.as_dashboard_filters
