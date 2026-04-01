@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import NavBar from "./components/layout/NavBar.vue";
+import ConfirmDialog from "primevue/confirmdialog";
+import Toast from "primevue/toast";
 </script>
 
 <template>
     <NavBar />
-    <!-- RouterView renders nothing in Phase 1 (no routes defined yet).
-         In Phase 2+ each migrated page registers a route and renders here. -->
+    <ConfirmDialog />
+    <Toast />
     <RouterView />
 </template>

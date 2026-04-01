@@ -7,6 +7,8 @@ import PrimeVue from "primevue/config";
 import Aura from "@primeuix/themes/aura";
 import { definePreset } from "@primeuix/themes";
 import { createI18n } from "vue-i18n";
+import ConfirmationService from "primevue/confirmationservice";
+import ToastService from "primevue/toastservice";
 
 // Temporary cross-reference: translations live in the old frontend until Phase 6
 // removes assets/ts/ entirely.
@@ -73,4 +75,6 @@ app.use(pinia);
 app.use(router);
 app.use(PrimeVue, { theme: { preset: GbifAlertPreset } });
 app.use(i18n);
+app.use(ConfirmationService);
+app.use(ToastService);
 app.mount("#new-frontend");
