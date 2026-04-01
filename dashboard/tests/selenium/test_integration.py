@@ -182,50 +182,6 @@ class SeleniumTestsCommon(StaticLiveServerTestCase):
 
 
 class SeleniumTests(SeleniumTestsCommon):
-    def test_title_in_index_page(self):
-        self.selenium.get(self.live_server_url)
-        self.assertIn("LIFE RIPARIAS early alert", self.selenium.page_source)
-
-    def test_normal_user_has_no_admin_access(self):
-        # Sign in as a normal user
-        self.selenium.get(self.live_server_url + "/accounts/signin/")
-        username_field = self.selenium.find_element(By.ID, "id_username")
-        password_field = self.selenium.find_element(By.ID, "id_password")
-        username_field.clear()
-        password_field.clear()
-        username_field.send_keys("testuser")
-        password_field.send_keys("12345")
-        signin_button = self.selenium.find_element(By.ID, "gbif-alert-signin-button")
-        signin_button.click()
-        WebDriverWait(self.selenium, 5)
-
-        # Trying to access the "/admin" directly is not possible
-        # (navbar-based admin panel check is covered by Playwright tests)
-        self.selenium.get(self.live_server_url + "/admin")
-        self.assertIn("admin/login", self.selenium.current_url)
-        msg = "You are authenticated as testuser, but are not authorized to access this page. Would you like to login to a different account?"
-        self.assertIn(msg, self.selenium.page_source)
-
-    def test_superuser_has_admin_access(self):
-        # sign in as a superuser
-        self.selenium.get(self.live_server_url + "/accounts/signin/")
-        username_field = self.selenium.find_element(By.ID, "id_username")
-        password_field = self.selenium.find_element(By.ID, "id_password")
-        username_field.clear()
-        password_field.clear()
-        username_field.send_keys("adminuser")
-        password_field.send_keys("67890")
-        signin_button = self.selenium.find_element(By.ID, "gbif-alert-signin-button")
-        signin_button.click()
-        WebDriverWait(self.selenium, 5)
-
-        # Navigate to the admin panel directly (navbar interaction covered by Playwright)
-        self.selenium.get(self.live_server_url + "/admin/")
-        WebDriverWait(self.selenium, 5)
-
-        self.assertTrue(self.selenium.current_url.endswith("/admin/"))
-        self.assertEqual(self.selenium.title, "Site administration | Django site admin")
-
     def test_signin_signout_scenario(self):
         # Navigate directly to the sign-in page
         # (navbar link visibility is covered by Playwright tests)

@@ -159,3 +159,34 @@ def test_navbar_no_observations_dot_without_unseen_observations(page: Page, live
     page.goto(live_server.url + "/")
 
     expect(page.locator(".gbif-navbar-end .gbif-nav-dot")).not_to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_regular_user_cannot_access_admin_directly(page: Page, live_server):
+    """A regular user who navigates directly to /admin is denied access."""
+    User = get_user_model()
+    User.objects.create_user(username="testuser", password="testpass123")
+    _login(page, live_server.url, "testuser", "testpass123")
+    page.goto(live_server.url + "/admin/")
+    page.wait_for_load_state("networkidle")
+
+    # Django redirects to admin login and shows an "not authorized" message.
+    expect(page).to_have_url(live_server.url + "/admin/login/?next=/admin/")
+    expect(
+        page.get_by_text("you are not authorized to access this page", exact=False)
+    ).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_superuser_can_access_admin_directly(page: Page, live_server):
+    """A superuser who navigates directly to /admin lands on the admin dashboard."""
+    User = get_user_model()
+    User.objects.create_superuser(
+        username="admin", password="adminpass123", email="admin@example.com"
+    )
+    _login(page, live_server.url, "admin", "adminpass123")
+    page.goto(live_server.url + "/admin/")
+    page.wait_for_load_state("networkidle")
+
+    expect(page).to_have_url(live_server.url + "/admin/")
+    expect(page).to_have_title("Site administration | Django site admin")
