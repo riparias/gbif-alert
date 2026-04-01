@@ -115,3 +115,45 @@ class ObservationDetailOut(Schema):
     canBeMarkedUnseen: bool
     adminUrl: str | None
     comments: list[CommentOut]
+
+
+class AlertNotificationFrequencyOut(Schema):
+    id: str
+    label: str
+
+
+class AlertIn(Schema):
+    name: str
+    speciesIds: list[int]
+    datasetIds: list[int] = Field(default_factory=list)
+    basisOfRecordIds: list[int] = Field(default_factory=list)
+    areaIds: list[int] = Field(default_factory=list)
+    emailNotificationsFrequency: str = "W"
+    verifiedFilter: str = "all"
+    areaFilterMode: str = "inside"
+    approachingDistanceKm: float | None = None
+
+
+class AlertOut(Schema):
+    id: int
+    name: str
+    speciesIds: list[int]
+    datasetIds: list[int]
+    basisOfRecordIds: list[int]
+    areaIds: list[int]
+    emailNotificationsFrequency: str
+    verifiedFilter: str
+    areaFilterMode: str
+    approachingDistanceKm: float | None
+    unseenCount: int
+    speciesList: str
+    areaDescription: str
+    datasetsList: str
+    basisOfRecordList: str
+    verifiedFilterDisplay: str
+    emailNotificationsFrequencyDisplay: str
+    lastEmailSentOn: datetime.datetime | None
+
+
+class AlertValidationErrorOut(Schema):
+    errors: dict[str, list[str]]
