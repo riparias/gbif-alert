@@ -162,8 +162,9 @@ ok- [x] 2.3 - `filters` Pinia store (`assets/new-frontend/stores/filters.ts`),
         `FilterSelectorModal.vue`, `FilterSelectorModalEntries.vue` from `assets/ts/`.
         `Selector.vue`, `RangeSlider.vue` and all components used by
         `AlertDetailsPageRootComponent` kept (still needed by old pages).
-- [ ] 2.16 - Playwright tests for index page filters, data table, observation detail
-        navigation (back button preserves filters)
+- [x] 2.16 - Playwright tests for index page: counter reflects DB, species filter
+        narrows results, table view shows species name, row click opens drawer,
+        filter state preserved when drawer closed (key migration goal).
 
 ### Phase 3: Alert CRUD
 
