@@ -17,6 +17,20 @@ export const useFiltersStore = defineStore("filters", () => {
     const areaFilterMode = ref<"inside" | "approaching" | "both">("inside");
     const approachingDistanceKm = ref<number | null>(null);
 
+    function $reset() {
+        speciesIds.value = [];
+        datasetsIds.value = [];
+        basisOfRecordIds.value = [];
+        areaIds.value = [];
+        initialDataImportIds.value = [];
+        startDate.value = null;
+        endDate.value = null;
+        status.value = "unseen";
+        verifiedFilter.value = "all";
+        areaFilterMode.value = "inside";
+        approachingDistanceKm.value = null;
+    }
+
     return {
         speciesIds,
         datasetsIds,
@@ -29,5 +43,6 @@ export const useFiltersStore = defineStore("filters", () => {
         verifiedFilter,
         areaFilterMode,
         approachingDistanceKm,
+        $reset,
     };
 });
