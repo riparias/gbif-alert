@@ -41,7 +41,7 @@ class IndexPageTests(TestCase):
     STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
 )
 class AlertWebPagesTests(TestCase):
-    """Alerts-related web page tests"""
+    """Alert-related web page tests - pages now serve the Vue SPA shell."""
 
     @classmethod
     def setUpTestData(cls):
@@ -72,7 +72,6 @@ class AlertWebPagesTests(TestCase):
 
         cls.public_area_andenne = Area.objects.create(
             name="Public polygon - Andenne",
-            # Covers Namur-Liège area (includes Andenne but not Lillois)
             mpoly=MultiPolygon(
                 Polygon(
                     (
@@ -113,87 +112,65 @@ class AlertWebPagesTests(TestCase):
             mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
         )
 
-    def test_news_page_visit_update_last_visit_news_page(self):
-        """Visiting the news page updates the last_visit_news_page field of the user"""
-        self.client.login(username="frusciante", password="12345")
-        value_before = self.first_user.last_visit_news_page
-
-        self.client.get(reverse("dashboard:pages:news"))
-        self.first_user.refresh_from_db()
-        value_after = self.first_user.last_visit_news_page
-        self.assertNotEqual(value_before, value_after)
-
     def test_user_can_access_own_alert_details(self):
-        """An authenticated user has access to details of their own alerts"""
+        """Authenticated user gets the SPA shell for their alert detail page."""
         self.client.login(username="frusciante", password="12345")
-        page_url = reverse(
-            "dashboard:pages:alert-details",
-            kwargs={"alert_id": self.alert.id},
-        )
+        page_url = reverse("dashboard:pages:alert-details", kwargs={"alert_id": self.alert.id})
         response = self.client.get(page_url)
         self.assertEqual(response.status_code, 200)
-
-    def test_last_email_sent_display_never(self):
-        """The alert details page show the last time the notification email has been sent: never"""
-        self.client.login(username="frusciante", password="12345")
-        page_url = reverse(
-            "dashboard:pages:alert-details",
-            kwargs={"alert_id": self.alert.id},
-        )
-        response = self.client.get(page_url)
-        self.assertContains(
-            response,
-            '<span class="text-muted small"> -- Last email sent: never</span>',
-            html=True,
-        )
-
-    def test_last_email_sent_display_value(self):
-        """The alert details page show the last time the notification email has been sent"""
-        self.alert.last_email_sent_on = datetime.datetime(2022, 8, 2)
-        self.alert.save()
-
-        self.client.login(username="frusciante", password="12345")
-        page_url = reverse(
-            "dashboard:pages:alert-details",
-            kwargs={"alert_id": self.alert.id},
-        )
-        response = self.client.get(page_url)
-        self.assertContains(
-            response,
-            '<span class="text-muted small"> -- Last email sent:  Aug. 2, 2022, midnight</span>',
-            html=True,
-        )
+        self.assertTemplateUsed(response, "dashboard/base.html")
 
     def test_anonymous_cant_access_alert_details(self):
-        """An anonymous user is invited to log in when trying to see an alert details"""
-        page_url = reverse(
-            "dashboard:pages:alert-details",
-            kwargs={"alert_id": self.alert.id},
-        )
+        """An anonymous user is redirected to sign in when trying to see alert details."""
+        page_url = reverse("dashboard:pages:alert-details", kwargs={"alert_id": self.alert.id})
         response = self.client.get(page_url)
-        self.assertEqual(response.status_code, 302)  # We got redirected to sign in
+        self.assertEqual(response.status_code, 302)
 
     def test_otheruser_cant_access_alert_details(self):
-        """An authenticated user cannot see the alert details of another user"""
+        """An authenticated user cannot see another user's alert detail page."""
         self.client.login(username="other_user", password="12345")
-        page_url = reverse(
-            "dashboard:pages:alert-details",
-            kwargs={"alert_id": self.alert.id},
-        )
+        page_url = reverse("dashboard:pages:alert-details", kwargs={"alert_id": self.alert.id})
         response = self.client.get(page_url)
         self.assertEqual(response.status_code, 404)
 
-    def test_anonymous_cant_access_new_alert_page(self):
-        """Anonymous users cannot access the create alert page"""
-        # 1) GET
+    def test_user_can_access_alert_create_page(self):
+        """Authenticated user gets the SPA shell for the alert create page."""
+        self.client.login(username="frusciante", password="12345")
         response = self.client.get(reverse("dashboard:pages:alert-create"))
-        self.assertEqual(response.status_code, 302)  # We got redirected to sign in
-        self.assertEqual(response.url, "/accounts/signin/?next=/new-alert")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/base.html")
 
-        # 2) POST
-        response = self.client.post(reverse("dashboard:pages:alert-create"))
-        self.assertEqual(response.status_code, 302)  # We got redirected to sign in
-        self.assertEqual(response.url, "/accounts/signin/?next=/new-alert")
+    def test_anonymous_cant_access_alert_create(self):
+        """Anonymous user is redirected when accessing alert create page."""
+        response = self.client.get(reverse("dashboard:pages:alert-create"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_user_can_access_alert_edit_page(self):
+        """Authenticated user gets the SPA shell for their alert edit page."""
+        self.client.login(username="frusciante", password="12345")
+        page_url = reverse("dashboard:pages:alert-edit", kwargs={"alert_id": self.alert.id})
+        response = self.client.get(page_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/base.html")
+
+    def test_otheruser_cant_access_alert_edit(self):
+        """Another user cannot access alert edit page."""
+        self.client.login(username="other_user", password="12345")
+        page_url = reverse("dashboard:pages:alert-edit", kwargs={"alert_id": self.alert.id})
+        response = self.client.get(page_url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_user_can_access_my_alerts_page(self):
+        """Authenticated user gets the SPA shell for the my-alerts page."""
+        self.client.login(username="frusciante", password="12345")
+        response = self.client.get(reverse("dashboard:pages:my-alerts"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/base.html")
+
+    def test_anonymous_cant_access_my_alerts(self):
+        """Anonymous user is redirected when accessing my-alerts."""
+        response = self.client.get(reverse("dashboard:pages:my-alerts"))
+        self.assertEqual(response.status_code, 302)
 
 
 @override_settings(

@@ -10,7 +10,6 @@ from django.http import (
     HttpResponseForbidden,
     HttpRequest,
     HttpResponse,
-    HttpResponseNotFound,
 )
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.translation import gettext as _
@@ -96,25 +95,21 @@ def observation_details_page(request: HttpRequest, stable_id: str) -> HttpRespon
 def alert_details_page(
     request: AuthenticatedHttpRequest, alert_id: int
 ) -> HttpResponse:
-    alert = get_object_or_404(Alert, id=alert_id, user=request.user)
-
-    return render(request, "dashboard/alert_details.html", {"alert": alert})
+    get_object_or_404(Alert, id=alert_id, user=request.user)
+    return spa_shell(request)
 
 
 @login_required
 def alert_create_page(request: AuthenticatedHttpRequest) -> HttpResponse:
-    return render(request, "dashboard/alert_create.html")
+    return spa_shell(request)
 
 
 @login_required
 def alert_edit_page(
     request: AuthenticatedHttpRequest, alert_id: int
-) -> HttpResponse | HttpResponseForbidden | HttpResponseNotFound:
-    alert = get_object_or_404(Alert, id=alert_id)
-    if alert.user == request.user:
-        return render(request, "dashboard/alert_edit.html", {"alert": alert})
-
-    return HttpResponseForbidden()
+) -> HttpResponse:
+    get_object_or_404(Alert, id=alert_id, user=request.user)
+    return spa_shell(request)
 
 
 def user_signup_page(request: HttpRequest) -> HttpResponse:
@@ -147,8 +142,7 @@ def user_profile_page(request: AuthenticatedHttpRequest) -> HttpResponse:
 
 @login_required
 def user_alerts_page(request: AuthenticatedHttpRequest) -> HttpResponse:
-    alerts = Alert.objects.filter(user=request.user).order_by("id")
-    return render(request, "dashboard/user_alerts.html", {"alerts": alerts})
+    return spa_shell(request)
 
 
 # Return a wkt string f type multipolygon in the requested EPSG
