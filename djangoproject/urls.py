@@ -18,6 +18,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, include, reverse_lazy
 
 from dashboard.api_v2 import api_v2
+from dashboard.views.pages import spa_shell
 
 urlpatterns = [
     path("api/v2/", api_v2.urls),
@@ -76,4 +77,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("markdownx/", include("markdownx.urls")),
     path("django-rq/", include("django_rq.urls")),
+    # Catch-all for Vue Router history mode: any path not matched above returns the
+    # SPA shell so Vue Router can handle client-side navigation on direct load.
+    # MUST be last.
+    path("<path:path>", spa_shell, name="spa-shell"),
 ]

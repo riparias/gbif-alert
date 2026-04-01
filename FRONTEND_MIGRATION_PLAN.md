@@ -152,11 +152,14 @@ ok- [x] 2.3 - `filters` Pinia store (`assets/new-frontend/stores/filters.ts`),
   - [x] 2.12.2 - Single observation map (reuse wrapped OpenLayers component from 2.11)
   - [x] 2.12.3 - Comments section
   - [x] 2.12.4 - Back navigation preserves filters (Pinia + router)
-- [ ] 2.13 - Django URL routing swap: index and observation detail served by the Vue SPA
-        shell; add catch-all route for Vue Router history mode; remove `/new/` route
-- [ ] 2.14 - Remove old `index.html` and `observation_details.html` templates
+- [x] 2.13 - Django URL routing swap: `/` now served by the Vue SPA shell; catch-all
+        added to `djangoproject/urls.py` (after auth/admin patterns) for Vue Router
+        history mode; `/new/` dev route removed. `/observation/<id>/` intentionally
+        kept on the old template until Phase 3 (alert detail page still links there).
+- [ ] 2.14 - Remove old `index.html` template. `observation_details.html` kept until
+        Phase 3 (alert detail page still links to `/observation/<id>/`).
 - [ ] 2.15 - Remove `IndexPageRootComponent.vue` and related old components from
-        `assets/ts/`
+        `assets/ts/` (those not depended on by `observation_details.html`).
 - [ ] 2.16 - Playwright tests for index page filters, data table, observation detail
         navigation (back button preserves filters)
 

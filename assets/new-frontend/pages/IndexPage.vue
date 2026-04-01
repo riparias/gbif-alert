@@ -33,7 +33,7 @@ const router = useRouter();
 const route = useRoute();
 
 // Drawer is open when ?obs=<stableId> is in the URL.
-// This means deep-links like /new/?obs=abc123 open the drawer on load.
+// This means deep-links like /?obs=abc123 open the drawer on load.
 const drawerStableId = computed(() => {
     const obs = route.query.obs;
     return typeof obs === "string" ? obs : null;

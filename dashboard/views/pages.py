@@ -6,7 +6,6 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.gis.gdal import DataSource
 from django.contrib.gis.gdal.geometries import MultiPolygon
-from django.core.exceptions import BadRequest
 from django.http import (
     HttpResponseForbidden,
     HttpRequest,
@@ -25,37 +24,17 @@ from dashboard.forms import (
 from dashboard.models import DataImport, Observation, Alert, Area, DATA_SRID
 from dashboard.views.helpers import (
     AuthenticatedHttpRequest,
-    extract_dict_request,
     extract_str_request,
 )
 
 
-# TEMPORARY DEV SCAFFOLD - removed in step 2.13 when real routing swap happens
-def new_spa_dev(request: HttpRequest, **kwargs) -> HttpResponse:
-    """Serve the Vue SPA shell at /new/ for iterative Phase 2 development.
-
-    Not linked in the navbar. Removed once the real page routing is in place.
-    """
+def spa_shell(request: HttpRequest, **kwargs) -> HttpResponse:
+    """Serve the Vue SPA shell for all Vue Router-managed routes."""
     return render(request, "dashboard/base.html")
 
 
 def index_page(request: HttpRequest) -> HttpResponse:
-    try:
-        filters_from_url = extract_dict_request(request, "filters")
-    except ValueError:
-        #  Common case of malformed input by bots, see https://github.com/riparias/gbif-alert/issues/106
-        raise BadRequest("Invalid filter parameters.")
-
-    if filters_from_url is not None:
-        filters_for_template = filters_from_url
-    else:
-        filters_for_template = {"status": "unseen"}
-
-    return render(
-        request,
-        "dashboard/index.html",
-        {"initialFilters": filters_for_template},
-    )
+    return spa_shell(request)
 
 
 def about_site_page(request: HttpRequest) -> HttpResponse:
