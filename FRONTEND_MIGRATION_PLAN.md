@@ -156,10 +156,12 @@ ok- [x] 2.3 - `filters` Pinia store (`assets/new-frontend/stores/filters.ts`),
         added to `djangoproject/urls.py` (after auth/admin patterns) for Vue Router
         history mode; `/new/` dev route removed. `/observation/<id>/` intentionally
         kept on the old template until Phase 3 (alert detail page still links there).
-- [ ] 2.14 - Remove old `index.html` template. `observation_details.html` kept until
+- [x] 2.14 - Remove old `index.html` template. `observation_details.html` kept until
         Phase 3 (alert detail page still links to `/observation/<id>/`).
-- [ ] 2.15 - Remove `IndexPageRootComponent.vue` and related old components from
-        `assets/ts/` (those not depended on by `observation_details.html`).
+- [x] 2.15 - Removed `IndexPageRootComponent.vue`, `FilterSelector.vue`,
+        `FilterSelectorModal.vue`, `FilterSelectorModalEntries.vue` from `assets/ts/`.
+        `Selector.vue`, `RangeSlider.vue` and all components used by
+        `AlertDetailsPageRootComponent` kept (still needed by old pages).
 - [ ] 2.16 - Playwright tests for index page filters, data table, observation detail
         navigation (back button preserves filters)
 
