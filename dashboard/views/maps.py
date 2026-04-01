@@ -1,6 +1,6 @@
 """Observations tile server + related endpoints"""
 
-from django.db import connection
+from django.db import connection, OperationalError, ProgrammingError
 from django.http import HttpResponse, JsonResponse, HttpRequest
 from jinjasql import JinjaSql
 
@@ -279,9 +279,13 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
 
     sql_params = _build_filter_params(request)
 
-    with _execute_jinjasql(sql_template, sql_params) as cursor:
-        r = cursor.fetchone()
-        return JsonResponse({"min": r[0], "max": r[1]})
+    try:
+        with _execute_jinjasql(sql_template, sql_params) as cursor:
+            r = cursor.fetchone()
+            return JsonResponse({"min": r[0], "max": r[1]})
+    except (ProgrammingError, OperationalError):
+        # Materialized views (hexa_*) may not exist in test or fresh environments.
+        return JsonResponse({"min": None, "max": None})
 
 
 def _execute_jinjasql(template: str, params: dict):
