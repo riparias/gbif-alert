@@ -10,6 +10,9 @@ import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
 import InputNumber from "primevue/inputnumber";
 import Message from "primevue/message";
+import SpeciesFilterModal from "../components/SpeciesFilterModal.vue";
+import AreaFilterModal from "../components/AreaFilterModal.vue";
+import DatasetFilterModal from "../components/DatasetFilterModal.vue";
 import type { components } from "../types/api";
 
 type SpeciesOut = components["schemas"]["SpeciesOut"];
@@ -192,14 +195,9 @@ async function save() {
                 <div class="form-field">
                     <label>{{ t("message.speciesToInclude") }} *</label>
                     <p class="field-hint">{{ t("message.atLeastOneSpeciesMustBeSelected") }}</p>
-                    <MultiSelect
+                    <SpeciesFilterModal
                         v-model="selectedSpeciesIds"
                         :options="speciesOptions"
-                        option-label="scientificName"
-                        option-value="id"
-                        filter
-                        :placeholder="t('message.allSpecies')"
-                        class="w-full"
                     />
                     <Message v-if="errors.species" severity="error" :closable="false" size="small">
                         {{ errors.species.join(", ") }}
@@ -209,14 +207,9 @@ async function save() {
                 <div class="form-field">
                     <label>{{ t("message.areasToInclude") }}</label>
                     <p class="field-hint">{{ t("message.noAreaSelection") }}</p>
-                    <MultiSelect
+                    <AreaFilterModal
                         v-model="selectedAreaIds"
                         :options="areaOptions"
-                        option-label="name"
-                        option-value="id"
-                        filter
-                        :placeholder="t('message.everywhere')"
-                        class="w-full"
                     />
                 </div>
 
@@ -266,14 +259,9 @@ async function save() {
                 <div class="form-field">
                     <label>{{ t("message.datasetsToInclude") }}</label>
                     <p class="field-hint">{{ t("message.noDatasetSelection") }}</p>
-                    <MultiSelect
+                    <DatasetFilterModal
                         v-model="selectedDatasetIds"
                         :options="datasetOptions"
-                        option-label="name"
-                        option-value="id"
-                        filter
-                        :placeholder="t('message.allDatasets')"
-                        class="w-full"
                     />
                 </div>
 
