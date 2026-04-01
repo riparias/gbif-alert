@@ -211,6 +211,51 @@ def test_edit_alert_form_pre_fills_existing_data(page: Page, live_server):
     expect(name_input).to_have_value("Existing alert name")
 
 
+@pytest.mark.django_db(transaction=True)
+def test_edit_alert_saves_changes(page: Page, live_server):
+    """Editing an alert's name and saving shows the updated name on the detail page."""
+    User = get_user_model()
+    user = User.objects.create_user(username="u12", password="pass", email="u12@t.com")
+    sp = _make_species("Procambarus fallax", 8879526)
+    alert = _make_alert(user, "Original name", sp)
+
+    _login(page, live_server.url, "u12", "pass")
+    page.goto(live_server.url + f"/edit-alert/{alert.pk}")
+    page.wait_for_load_state("networkidle")
+
+    name_input = page.locator("#alert-name")
+    name_input.click(click_count=3)
+    name_input.fill("Updated alert name")
+
+    page.get_by_role("button", name="Save").click()
+    page.wait_for_url(re.compile(r"/alert/\d+$"), timeout=10000)
+
+    expect(page.get_by_text("Updated alert name").first).to_be_visible()
+
+    alert.refresh_from_db()
+    assert alert.name == "Updated alert name"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_my_alerts_delete_cancel_keeps_alert(page: Page, live_server):
+    """Cancelling the delete confirmation dialog leaves the alert intact."""
+    User = get_user_model()
+    user = User.objects.create_user(username="u13", password="pass", email="u13@t.com")
+    sp = _make_species("Procambarus fallax", 8879526)
+    _make_alert(user, "Alert to keep", sp)
+
+    _login(page, live_server.url, "u13", "pass")
+    page.goto(live_server.url + "/my-alerts")
+    page.wait_for_load_state("networkidle")
+
+    page.get_by_role("button", name="Delete this alert").click()
+    # ConfirmDialog appears - dismiss it
+    page.get_by_role("button", name="Cancel").click()
+
+    # Alert card is still present
+    expect(page.locator(".alert-card").filter(has_text="Alert to keep")).to_be_visible()
+
+
 # ---------------------------------------------------------------------------
 # /alert/:alertId tests
 # ---------------------------------------------------------------------------
