@@ -54,13 +54,14 @@ useFilterSync();
 // --- Column configuration ---
 
 const COLUMN_DEFS = [
-    { key: "date",         sortField: "date",           defaultVisible: true  },
-    { key: "species",      sortField: "scientificName", defaultVisible: true  },
-    { key: "dataset",      sortField: "datasetName",    defaultVisible: true  },
-    { key: "municipality", sortField: "municipality",   defaultVisible: true  },
-    { key: "verified",     sortField: "verified",       defaultVisible: true  },
-    { key: "gbifId",       sortField: null,             defaultVisible: false },
-    { key: "seen",         sortField: null,             defaultVisible: true  },
+    { key: "date",          sortField: "date",           defaultVisible: true  },
+    { key: "species",       sortField: "scientificName", defaultVisible: true  },
+    { key: "dataset",       sortField: "datasetName",    defaultVisible: true  },
+    { key: "municipality",  sortField: "municipality",   defaultVisible: true  },
+    { key: "verified",      sortField: "verified",       defaultVisible: true  },
+    { key: "basisOfRecord", sortField: null,             defaultVisible: true  },
+    { key: "gbifId",        sortField: null,             defaultVisible: false },
+    { key: "seen",          sortField: null,             defaultVisible: true  },
 ] as const;
 
 type ColumnKey = (typeof COLUMN_DEFS)[number]["key"];
@@ -266,6 +267,8 @@ onMounted(() => {
                         :sort-field="sortField"
                         :sort-order="sortOrder"
                         row-hover
+                        resizable-columns
+                        column-resize-mode="fit"
                         class="observations-table"
                         @page="onPage"
                         @sort="onSort"
@@ -301,7 +304,13 @@ onMounted(() => {
                             field="datasetName"
                             :header="t('message.dataset')"
                             sortable
-                        />
+                        >
+                            <template #body="{ data }">
+                                <span class="cell-text" :title="data.datasetName">
+                                    {{ data.datasetName }}
+                                </span>
+                            </template>
+                        </Column>
                         <Column
                             v-if="visibleColumns.has('municipality')"
                             field="municipality"
@@ -309,7 +318,9 @@ onMounted(() => {
                             sortable
                         >
                             <template #body="{ data }">
-                                {{ data.municipality || '-' }}
+                                <span class="cell-text" :title="data.municipality || undefined">
+                                    {{ data.municipality || '-' }}
+                                </span>
                             </template>
                         </Column>
                         <Column
@@ -325,6 +336,16 @@ onMounted(() => {
                                     :title="data.identificationVerificationStatus || undefined"
                                 >
                                     {{ data.verified ? t('message.verified') : t('message.unverified') }}
+                                </span>
+                            </template>
+                        </Column>
+                        <Column
+                            v-if="visibleColumns.has('basisOfRecord')"
+                            :header="t('message.basisOfRecord')"
+                        >
+                            <template #body="{ data }">
+                                <span class="cell-text" :title="data.basisOfRecord">
+                                    {{ data.basisOfRecord }}
                                 </span>
                             </template>
                         </Column>
@@ -460,6 +481,19 @@ onMounted(() => {
 .column-picker-item label {
     cursor: pointer;
     user-select: none;
+}
+
+/* Truncate long cell text with ellipsis; title tooltip shows the full value on hover */
+.cell-text {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Allow cells to clip their content when columns are resized narrow */
+.observations-table :deep(td) {
+    overflow: hidden;
 }
 
 </style>
