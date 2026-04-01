@@ -72,7 +72,12 @@ function loadVisibleColumns(): Set<ColumnKey> {
         const stored = localStorage.getItem(LS_KEY);
         if (stored) {
             const parsed: unknown = JSON.parse(stored);
-            if (Array.isArray(parsed)) return new Set(parsed as ColumnKey[]);
+            if (Array.isArray(parsed)) {
+                const validKeys = new Set(COLUMN_DEFS.map((c) => c.key));
+                return new Set(
+                    (parsed as string[]).filter((k) => validKeys.has(k as ColumnKey)) as ColumnKey[]
+                );
+            }
         }
     } catch {
         // ignore parse errors - fall through to defaults
@@ -457,22 +462,4 @@ onMounted(() => {
     user-select: none;
 }
 
-.verified-badge {
-    display: inline-block;
-    padding: 0.2em 0.6em;
-    border-radius: 999px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.badge-success {
-    background: var(--p-green-500, #22c55e);
-    color: #fff;
-}
-
-.badge-danger {
-    background: var(--p-red-500, #ef4444);
-    color: #fff;
-}
 </style>

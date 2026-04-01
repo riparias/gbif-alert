@@ -348,25 +348,6 @@ onMounted(load);
     font-size: 1.25rem;
 }
 
-.verified-badge {
-    display: inline-block;
-    padding: 0.2em 0.6em;
-    border-radius: 999px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.badge-success {
-    background: var(--p-green-500, #22c55e);
-    color: #fff;
-}
-
-.badge-danger {
-    background: var(--p-red-500, #ef4444);
-    color: #fff;
-}
-
 .mark-unseen-row {
     display: flex;
 }
