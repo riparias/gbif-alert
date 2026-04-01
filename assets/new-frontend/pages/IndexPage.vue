@@ -168,6 +168,10 @@ const reloadOnFilterChange = debounce(() => {
 
 watch(filtersStore, reloadOnFilterChange, { deep: true });
 
+// Auth state - used for the smart status default below.
+const navConfig = JSON.parse(document.getElementById("gbif-alert-nav-config")!.textContent!);
+const isAuthenticated: boolean = navConfig.user.isAuthenticated;
+
 // Welcome text: page fragment rendered server-side, language-aware
 const welcomeHtml = ref("");
 async function loadWelcomeText() {
@@ -178,8 +182,18 @@ async function loadWelcomeText() {
     }
 }
 
-onMounted(() => {
-    loadObservations();
+onMounted(async () => {
+    await loadObservations();
+    // Smart status default: if "unseen" was never explicitly set (no ?status= in the
+    // URL) and there are no unseen observations, silently fall back to "all" so the
+    // user isn't greeted by an empty page.  Only applies to authenticated users
+    // because anonymous users have no seen/unseen state.
+    if (isAuthenticated && !route.query.status && totalRecords.value === 0) {
+        filtersStore.status = null;
+        // Cancel the debounced Pinia watcher so we don't get a redundant second fetch.
+        reloadOnFilterChange.cancel();
+        await loadObservations();
+    }
     loadWelcomeText();
 });
 </script>
