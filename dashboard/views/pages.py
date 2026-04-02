@@ -1,6 +1,4 @@
 """Views that return HTML pages"""
-import tempfile
-
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -16,10 +14,8 @@ from dashboard.forms import (
     SignUpForm,
     EditProfileForm,
     NewObservationCommentForm,
-    NewCustomAreaForm,
 )
-from dashboard.geo_utils import file_to_wkt_multipolygon
-from dashboard.models import DataImport, Observation, Alert, Area
+from dashboard.models import DataImport, Observation, Alert
 from dashboard.views.helpers import (
     AuthenticatedHttpRequest,
     extract_str_request,
@@ -146,28 +142,4 @@ def user_alerts_page(request: AuthenticatedHttpRequest) -> HttpResponse:
 
 @login_required
 def user_areas_page(request: AuthenticatedHttpRequest) -> HttpResponse:
-    if request.method == "POST":
-        form = NewCustomAreaForm(request.POST, request.FILES)
-
-        # UploadedFile may be in memory (if it's small), so it lacks a proper path, need to hack with a temporary file
-        with tempfile.NamedTemporaryFile(
-            suffix=request.FILES["data_file"].name  # type: ignore
-        ) as temp:
-            temp.write(request.FILES["data_file"].read())  # type: ignore
-            mp = file_to_wkt_multipolygon(temp.name)
-
-            if form.is_valid() and mp is not None:
-                Area.objects.create(
-                    mpoly=mp, owner=request.user, name=form.cleaned_data["name"]  # type: ignore
-                )
-    else:
-        form = NewCustomAreaForm()
-
-    return render(
-        request,
-        "dashboard/user_areas.html",
-        {
-            "user_areas_ids": [a.pk for a in Area.objects.filter(owner=request.user)],
-            "new_custom_area_form": form,
-        },
-    )
+    return spa_shell(request)
