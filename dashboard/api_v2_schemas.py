@@ -173,3 +173,55 @@ class AreaCreateError(Schema):
 
 class AreaDeleteError(Schema):
     detail: str
+
+
+class SignInIn(Schema):
+    username: str
+    password: str
+
+
+class SignInOut(Schema):
+    username: str
+
+
+class SignUpIn(Schema):
+    username: str
+    first_name: str = ""
+    last_name: str = ""
+    email: str
+    language: str
+    password1: str
+    password2: str
+
+
+class PasswordChangeIn(Schema):
+    old_password: str
+    new_password1: str
+    new_password2: str
+
+
+class AuthErrorOut(Schema):
+    detail: str
+
+
+class AuthValidationErrorOut(Schema):
+    errors: dict[str, list[str]]
+
+
+class ProfileOut(Schema):
+    username: str
+    firstName: str
+    lastName: str
+    email: str
+    language: str
+    delayValue: int
+    delayUnit: str
+
+
+class ProfileIn(Schema):
+    firstName: str
+    lastName: str
+    email: str
+    language: str
+    delayValue: int
+    delayUnit: str
