@@ -636,7 +636,11 @@ def auth_signup(request: HttpRequest, payload: SignUpIn):
         }
     )
     if not form.is_valid():
-        return 422, {"errors": form.errors}
+        errors: dict[str, list[str]] = {
+            field: [str(msg) for msg in msgs]
+            for field, msgs in form.errors.items()
+        }
+        return 422, {"errors": errors}
     user = form.save()
     login(request, user)
     return 201, {"username": user.get_username()}

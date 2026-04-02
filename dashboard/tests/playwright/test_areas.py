@@ -21,10 +21,13 @@ SIMPLE_POLYGON = MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)), srid=432
 
 
 def _login(page: Page, base_url: str, username: str, password: str) -> None:
+    """Log in via the Vue sign-in page and wait until redirected to /."""
     page.goto(base_url + "/accounts/signin/")
-    page.fill("#id_username", username)
-    page.fill("#id_password", password)
-    page.click("#gbif-alert-signin-button")
+    page.wait_for_load_state("networkidle")
+    page.locator("#signin-username").fill(username)
+    page.locator("#signin-password").fill(password)
+    with page.expect_navigation():
+        page.get_by_role("button", name="Sign in").click()
     page.wait_for_load_state("networkidle")
 
 

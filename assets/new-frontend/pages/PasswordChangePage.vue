@@ -11,8 +11,8 @@ const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
 
-const navConfig = (window as any).nav_config_json;
-const isAuthenticated = navConfig?.isAuthenticated ?? false;
+const navConfig = JSON.parse(document.getElementById("gbif-alert-nav-config")!.textContent!);
+const isAuthenticated = navConfig?.user?.isAuthenticated ?? false;
 
 onMounted(() => {
     if (!isAuthenticated) {
