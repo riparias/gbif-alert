@@ -9,6 +9,7 @@ import InputNumber from "primevue/inputnumber";
 import SpeciesFilterModal from "./SpeciesFilterModal.vue";
 import AreaFilterModal from "./AreaFilterModal.vue";
 import DatasetFilterModal from "./DatasetFilterModal.vue";
+import ObservationStatusToggle from "./ObservationStatusToggle.vue";
 import { useFiltersStore } from "../stores/filters";
 import type { components } from "../types/api";
 
@@ -113,14 +114,6 @@ const selectedVerifiedFilter = computed({
     },
 });
 
-// SelectButton requires non-null values, so we map null <-> "all" at the boundary.
-const selectedStatus = computed({
-    get: () => filtersStore.status ?? "all",
-    set: (val: string) => {
-        filtersStore.status = val === "all" ? null : (val as "seen" | "unseen");
-    },
-});
-
 const selectedAreaFilterMode = computed({
     get: () => filtersStore.areaFilterMode,
     set: (val: "inside" | "approaching" | "both") => {
@@ -176,12 +169,6 @@ const verifiedFilterOptions = computed(() => [
     { value: "verified", label: t("message.verifiedOnly") },
     { value: "unverified", label: t("message.unverifiedOnly") },
 ]);
-
-const statusOptions = [
-    { value: "all", label: t("message.all") },
-    { value: "seen", label: t("message.seen") },
-    { value: "unseen", label: t("message.unseen") },
-];
 
 const areaFilterModeOptions = computed(() => [
     { value: "inside", label: t("message.areaFilterModeInside") },
@@ -300,17 +287,7 @@ const areaFilterModeOptions = computed(() => [
         <!-- Observation status (authenticated users only) -->
         <div v-if="isAuthenticated" class="filter-group">
             <label>{{ t("message.observationStatus") }}</label>
-            <SelectButton
-                v-model="selectedStatus"
-                :options="statusOptions"
-                option-value="value"
-                :allow-empty="false"
-                class="status-select-button"
-            >
-                <template #option="{ option }">
-                    <span>{{ option.label }}</span>
-                </template>
-            </SelectButton>
+            <ObservationStatusToggle />
         </div>
     </div>
 </template>
@@ -392,27 +369,5 @@ const areaFilterModeOptions = computed(() => [
     color: #fff;
 }
 
-/* Status filter: All (1st) slate, Seen (2nd) green, Unseen (3rd) amber */
-:deep(.status-select-button .p-togglebutton:nth-child(1).p-togglebutton-checked),
-:deep(.status-select-button .p-togglebutton:nth-child(1).p-togglebutton-checked *) {
-    background: #475569;
-    border-color: #475569;
-    color: #fff;
-}
 
-/* Seen (2nd button) active: green */
-:deep(.status-select-button .p-togglebutton:nth-child(2).p-togglebutton-checked),
-:deep(.status-select-button .p-togglebutton:nth-child(2).p-togglebutton-checked *) {
-    background: #16a34a;
-    border-color: #16a34a;
-    color: #fff;
-}
-
-/* Unseen (3rd button) active: amber */
-:deep(.status-select-button .p-togglebutton:nth-child(3).p-togglebutton-checked),
-:deep(.status-select-button .p-togglebutton:nth-child(3).p-togglebutton-checked *) {
-    background: #d97706;
-    border-color: #d97706;
-    color: #fff;
-}
 </style>
