@@ -1,16 +1,14 @@
 {% load i18n %}
 {% load page_fragments %}
 
-<footer class="py-2">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg">
-                {% get_page_fragment 'footer_left_col' %}
-            </div>
-            <div class="col-lg">
-                {% translate "Latest data import:" %} <a href="{% url 'dashboard:pages:about-data' %}">#{{ latest_data_import.pk }}</a>- {{ latest_data_import.start }}<br/>
-                {% translate 'This site is powered by <a href="https://github.com/riparias/gbif-alert">GBIF Alert</a> version' %} <a href="https://github.com/riparias/gbif-alert/tree/{{ git_version_number }}">{{ git_version_number }}</a>
-            </div>
+<footer style="padding: 0.5rem 1rem; border-top: 1px solid #dee2e6; margin-top: 2rem;">
+    <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between;">
+        <div>
+            {% get_page_fragment 'footer_left_col' %}
+        </div>
+        <div style="font-size: 0.875rem; color: #6c757d;">
+            {% translate "Latest data import:" %} <a href="{% url 'dashboard:pages:about-data' %}">#{{ latest_data_import.pk }}</a> - {{ latest_data_import.start }}<br/>
+            {% translate 'This site is powered by <a href="https://github.com/riparias/gbif-alert">GBIF Alert</a> version' %} <a href="https://github.com/riparias/gbif-alert/tree/{{ git_version_number }}">{{ git_version_number }}</a>
         </div>
     </div>
 </footer>
