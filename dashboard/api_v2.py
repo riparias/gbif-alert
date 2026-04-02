@@ -699,15 +699,9 @@ def profile_get(request: HttpRequest):
 )
 def profile_put(request: HttpRequest, payload: ProfileIn):
     """Save profile changes. Returns 422 with field errors on duplicate email."""
-    from django.contrib.auth import get_user_model as _get_user_model
     user = cast(User, request.user)
     # Validate unique email (excluding self)
-    if (
-        _get_user_model()
-        .objects.filter(email=payload.email)
-        .exclude(pk=user.pk)
-        .exists()
-    ):
+    if User.objects.filter(email=payload.email).exclude(pk=user.pk).exists():
         return 422, {"errors": {"email": ["This email address is already in use."]}}
     user.first_name = payload.firstName
     user.last_name = payload.lastName
@@ -735,6 +729,6 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
 def account_delete(request: HttpRequest):
     """Delete the current user account and log out."""
     user = request.user
-    logout(request)
     user.delete()
+    logout(request)
     return 204, None

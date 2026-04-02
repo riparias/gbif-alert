@@ -1222,6 +1222,20 @@ class ApiV2AuthTests(TestCase):
         )
         self.assertEqual(resp.status_code, 401)
 
+    def test_password_change_mismatch(self):
+        self.client.force_login(self.user)
+        resp = self.client.post(
+            "/api/v2/auth/password-change/",
+            data={
+                "old_password": "correctpassword",
+                "new_password1": "NewSecure5678!",
+                "new_password2": "DifferentPassword!",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 422)
+        self.assertIn("new_password2", resp.json()["errors"])
+
     # --- news/mark-visited ---
 
     def test_news_mark_visited_authenticated(self):
@@ -1282,6 +1296,27 @@ class ApiV2AuthTests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 401)
+
+    def test_profile_put_duplicate_email(self):
+        User = get_user_model()
+        User.objects.create_user(
+            username="other", password="pass", email="other@example.com"
+        )
+        self.client.force_login(self.user)
+        resp = self.client.put(
+            "/api/v2/profile/",
+            data={
+                "firstName": "Test",
+                "lastName": "User",
+                "email": "other@example.com",
+                "language": "en",
+                "delayValue": 1,
+                "delayUnit": "days",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 422)
+        self.assertIn("email", resp.json()["errors"])
 
     # --- account delete ---
 
