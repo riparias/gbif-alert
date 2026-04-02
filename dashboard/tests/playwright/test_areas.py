@@ -72,3 +72,44 @@ def test_my_areas_page_requires_login(page: Page, live_server):
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
     expect(page).not_to_have_url(live_server.url + "/my-custom-areas")
+
+
+# ---------------------------------------------------------------------------
+# /my-custom-areas - delete
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db(transaction=True)
+def test_delete_area_confirmed(page: Page, live_server):
+    """Confirming delete removes the area from the list."""
+    User = get_user_model()
+    user = User.objects.create_user(username="a4", password="pass", email="a4@t.com")
+    area = _make_area(user, "Area to delete")
+
+    _login(page, live_server.url, "a4", "pass")
+    page.goto(live_server.url + "/my-custom-areas")
+    page.wait_for_load_state("networkidle")
+
+    page.get_by_role("button", name="Delete this area").click()
+    page.get_by_role("button", name="Yes, I'm sure").click()
+    page.wait_for_load_state("networkidle")
+
+    expect(page.locator(".area-card").filter(has_text="Area to delete")).not_to_be_visible()
+    assert not Area.objects.filter(pk=area.pk).exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_delete_area_cancelled(page: Page, live_server):
+    """Cancelling the delete dialog leaves the area intact."""
+    User = get_user_model()
+    user = User.objects.create_user(username="a5", password="pass", email="a5@t.com")
+    _make_area(user, "Area to keep")
+
+    _login(page, live_server.url, "a5", "pass")
+    page.goto(live_server.url + "/my-custom-areas")
+    page.wait_for_load_state("networkidle")
+
+    page.get_by_role("button", name="Delete this area").click()
+    page.get_by_role("button", name="Cancel").click()
+
+    expect(page.locator(".area-card").filter(has_text="Area to keep")).to_be_visible()

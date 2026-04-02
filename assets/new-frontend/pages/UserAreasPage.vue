@@ -3,8 +3,6 @@ import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 import ProgressSpinner from "primevue/progressspinner";
-import ConfirmDialog from "primevue/confirmdialog";
-import Toast from "primevue/toast";
 import AreaCard from "../components/AreaCard.vue";
 import AreaUploadDialog from "../components/AreaUploadDialog.vue";
 
@@ -61,7 +59,6 @@ onMounted(loadAreas);
 
             <div v-else class="grid">
                 <div v-for="area in areas" :key="area.id" class="col-12 md:col-6 lg:col-4">
-                    <span>{{ area.name }}</span>
                     <AreaCard :area="area" @deleted="onAreaDeleted" />
                 </div>
             </div>
@@ -71,8 +68,5 @@ onMounted(loadAreas);
             v-model:visible="showUploadDialog"
             @created="onAreaCreated"
         />
-
-        <ConfirmDialog />
-        <Toast />
     </div>
 </template>

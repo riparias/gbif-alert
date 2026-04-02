@@ -152,6 +152,11 @@ export const messages = {
             signInToComment: 'Please sign in to be able to post comments.',
             newArea: 'New area',
             noCustomAreasYet: "You don't have any custom areas yet.",
+            confirmDeleteArea: "Are you sure you want to delete this area?",
+            confirmDeleteAreaHeader: "Delete area",
+            areaDeleted: "Area deleted",
+            cannotDeleteArea: "Cannot delete area",
+            deleteArea: "Delete this area",
         }
     },
     fr: {
@@ -307,6 +312,11 @@ export const messages = {
             signInToComment: 'Veuillez vous connecter pour pouvoir publier des commentaires.',
             newArea: 'Nouvelle zone',
             noCustomAreasYet: "Vous n'avez pas encore de zones personnalis\u00e9es.",
+            confirmDeleteArea: "Etes-vous sur de vouloir supprimer cette zone ?",
+            confirmDeleteAreaHeader: "Supprimer la zone",
+            areaDeleted: "Zone supprimee",
+            cannotDeleteArea: "Impossible de supprimer la zone",
+            deleteArea: "Supprimer cette zone",
         }
     },
     nl: {
@@ -462,6 +472,11 @@ export const messages = {
             signInToComment: 'Meld u aan om reacties te kunnen plaatsen.',
             newArea: 'Nieuw gebied',
             noCustomAreasYet: 'U heeft nog geen aangepaste gebieden.',
+            confirmDeleteArea: "Weet u zeker dat u dit gebied wilt verwijderen?",
+            confirmDeleteAreaHeader: "Gebied verwijderen",
+            areaDeleted: "Gebied verwijderd",
+            cannotDeleteArea: "Kan gebied niet verwijderen",
+            deleteArea: "Dit gebied verwijderen",
         }
     }
 }
