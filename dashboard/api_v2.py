@@ -22,6 +22,7 @@ from dashboard.api_v2_schemas import (
     AlertOut,
     AlertValidationErrorOut,
     AreaCreateError,
+    AreaDeleteError,
     AreaOut,
     BasisOfRecordOut,
     CommentIn,
@@ -136,6 +137,31 @@ def area_create(
         "isUserSpecific": area.is_user_specific,
         "tags": [],
     }
+
+
+@api_v2.delete(
+    "/areas/{area_id}/",
+    response={204: None, 409: AreaDeleteError},
+    auth=django_auth,
+)
+def area_delete_endpoint(request: HttpRequest, area_id: int):
+    """Delete a user-owned area.
+
+    Returns 404 if the area does not exist or belongs to another user.
+    Returns 409 with a detail message if any alerts reference this area.
+    """
+    area = get_object_or_404(Area, pk=area_id, owner=request.user)
+    try:
+        area.delete()
+    except Area.HasAlerts:
+        return 409, {
+            "detail": str(
+                _(
+                    "The area cannot be deleted because it has alerts associated with it."
+                )
+            )
+        }
+    return 204, None
 
 
 @api_v2.get("/basis-of-record/", response=list[BasisOfRecordOut])

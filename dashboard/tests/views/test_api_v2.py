@@ -1044,3 +1044,49 @@ class ApiV2AreaEndpointsTests(TestCase):
         with open(gpkg, "rb") as f:
             response = self.client.post("/api/v2/areas/", {"name": "Unauth", "data_file": f})
         self.assertEqual(response.status_code, 401)
+
+    # --- DELETE /api/v2/areas/{id}/ ---
+
+    def test_delete_area_returns_204(self):
+        area = Area.objects.create(name="To delete", owner=self.owner, mpoly=SIMPLE_POLYGON)
+        self.client.login(username="owner", password="pass")
+        response = self.client.delete(f"/api/v2/areas/{area.pk}/")
+        self.assertEqual(response.status_code, 204)
+
+    def test_delete_area_removes_from_db(self):
+        area = Area.objects.create(name="Gone", owner=self.owner, mpoly=SIMPLE_POLYGON)
+        self.client.login(username="owner", password="pass")
+        self.client.delete(f"/api/v2/areas/{area.pk}/")
+        self.assertFalse(Area.objects.filter(pk=area.pk).exists())
+
+    def test_delete_area_returns_404_for_nonexistent(self):
+        self.client.login(username="owner", password="pass")
+        response = self.client.delete("/api/v2/areas/99999/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_area_returns_404_for_other_user_area(self):
+        """Cannot delete another user's area."""
+        area = Area.objects.create(name="Other's", owner=self.other, mpoly=SIMPLE_POLYGON)
+        self.client.login(username="owner", password="pass")
+        response = self.client.delete(f"/api/v2/areas/{area.pk}/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_area_with_alert_returns_409(self):
+        """Area referenced by an alert returns 409 with a detail message."""
+        area = Area.objects.create(name="Has alert", owner=self.owner, mpoly=SIMPLE_POLYGON)
+        sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+        alert = Alert.objects.create(
+            name="Alert", user=self.owner, email_notifications_frequency="N"
+        )
+        alert.species.add(sp)
+        alert.areas.add(area)
+
+        self.client.login(username="owner", password="pass")
+        response = self.client.delete(f"/api/v2/areas/{area.pk}/")
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("detail", response.json())
+        self.assertTrue(Area.objects.filter(pk=area.pk).exists())
+
+    def test_delete_area_requires_authentication(self):
+        response = self.client.delete(f"/api/v2/areas/{self.area.pk}/")
+        self.assertEqual(response.status_code, 401)
