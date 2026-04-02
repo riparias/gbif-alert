@@ -149,7 +149,9 @@ export const messages = {
             writeComment: 'Write a comment...',
             errorPostingComment: 'An error occurred while posting your comment.',
             postComment: 'Post comment',
-            signInToComment: 'Please sign in to be able to post comments.'
+            signInToComment: 'Please sign in to be able to post comments.',
+            newArea: 'New area',
+            noCustomAreasYet: "You don't have any custom areas yet.",
         }
     },
     fr: {
@@ -302,7 +304,9 @@ export const messages = {
             writeComment: 'Écrire un commentaire...',
             errorPostingComment: 'Une erreur est survenue lors de la publication de votre commentaire.',
             postComment: 'Publier le commentaire',
-            signInToComment: 'Veuillez vous connecter pour pouvoir publier des commentaires.'
+            signInToComment: 'Veuillez vous connecter pour pouvoir publier des commentaires.',
+            newArea: 'Nouvelle zone',
+            noCustomAreasYet: "Vous n'avez pas encore de zones personnalis\u00e9es.",
         }
     },
     nl: {
@@ -456,6 +460,8 @@ export const messages = {
             errorPostingComment: 'Er is een fout opgetreden bij het plaatsen van uw reactie.',
             postComment: 'Reactie plaatsen',
             signInToComment: 'Meld u aan om reacties te kunnen plaatsen.',
+            newArea: 'Nieuw gebied',
+            noCustomAreasYet: 'U heeft nog geen aangepaste gebieden.',
         }
     }
 }
