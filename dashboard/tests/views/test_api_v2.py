@@ -1180,3 +1180,117 @@ class ApiV2AuthTests(TestCase):
         )
         self.assertEqual(resp.status_code, 422)
         self.assertIn("errors", resp.json())
+
+    # --- password-change ---
+
+    def test_password_change_success(self):
+        self.client.force_login(self.user)
+        resp = self.client.post(
+            "/api/v2/auth/password-change/",
+            data={
+                "old_password": "correctpassword",
+                "new_password1": "NewSecure5678!",
+                "new_password2": "NewSecure5678!",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 204)
+
+    def test_password_change_wrong_old_password(self):
+        self.client.force_login(self.user)
+        resp = self.client.post(
+            "/api/v2/auth/password-change/",
+            data={
+                "old_password": "wrong",
+                "new_password1": "NewSecure5678!",
+                "new_password2": "NewSecure5678!",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 422)
+        self.assertIn("old_password", resp.json()["errors"])
+
+    def test_password_change_unauthenticated(self):
+        resp = self.client.post(
+            "/api/v2/auth/password-change/",
+            data={
+                "old_password": "x",
+                "new_password1": "y",
+                "new_password2": "y",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 401)
+
+    # --- news/mark-visited ---
+
+    def test_news_mark_visited_authenticated(self):
+        self.client.force_login(self.user)
+        resp = self.client.post("/api/v2/news/mark-visited/", content_type="application/json")
+        self.assertEqual(resp.status_code, 204)
+
+    def test_news_mark_visited_anonymous(self):
+        resp = self.client.post("/api/v2/news/mark-visited/", content_type="application/json")
+        self.assertEqual(resp.status_code, 204)
+
+    # --- profile ---
+
+    def test_profile_get(self):
+        self.client.force_login(self.user)
+        resp = self.client.get("/api/v2/profile/")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["username"], "testuser")
+        self.assertIn("firstName", data)
+        self.assertIn("delayValue", data)
+        self.assertIn("delayUnit", data)
+
+    def test_profile_get_unauthenticated(self):
+        resp = self.client.get("/api/v2/profile/")
+        self.assertEqual(resp.status_code, 401)
+
+    def test_profile_put_success(self):
+        self.client.force_login(self.user)
+        resp = self.client.put(
+            "/api/v2/profile/",
+            data={
+                "firstName": "Alice",
+                "lastName": "Smith",
+                "email": "alice@example.com",
+                "language": "en",
+                "delayValue": 2,
+                "delayUnit": "weeks",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["firstName"], "Alice")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.notification_delay_days, 14)
+
+    def test_profile_put_unauthenticated(self):
+        resp = self.client.put(
+            "/api/v2/profile/",
+            data={
+                "firstName": "X",
+                "lastName": "",
+                "email": "x@example.com",
+                "language": "en",
+                "delayValue": 1,
+                "delayUnit": "days",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 401)
+
+    # --- account delete ---
+
+    def test_delete_account_success(self):
+        User = get_user_model()
+        user2 = User.objects.create_user(
+            username="todelete", password="pass", email="del@example.com"
+        )
+        self.client.force_login(user2)
+        resp = self.client.delete("/api/v2/account/")
+        self.assertEqual(resp.status_code, 204)
+        self.assertFalse(User.objects.filter(username="todelete").exists())

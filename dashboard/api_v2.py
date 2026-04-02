@@ -3,7 +3,7 @@ import json
 import tempfile
 from typing import Annotated, cast
 
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon as GEOSMultiPolygon
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers import serialize
@@ -37,12 +37,15 @@ from dashboard.api_v2_schemas import (
     HistogramEntryOut,
     ObservationDetailOut,
     ObservationsPageOut,
+    PasswordChangeIn,
+    ProfileIn,
+    ProfileOut,
     SignInIn,
     SignInOut,
     SignUpIn,
     SpeciesOut,
 )
-from dashboard.forms import SignUpForm
+from dashboard.forms import SignUpForm, _days_to_value_unit, _value_unit_to_days
 from dashboard.geo_utils import file_to_wkt_multipolygon
 from dashboard.models import (
     Alert,
@@ -637,3 +640,101 @@ def auth_signup(request: HttpRequest, payload: SignUpIn):
     user = form.save()
     login(request, user)
     return 201, {"username": user.get_username()}
+
+
+@api_v2.post(
+    "/auth/password-change/",
+    response={204: None, 422: AuthValidationErrorOut},
+    auth=django_auth,
+)
+def auth_password_change(request: HttpRequest, payload: PasswordChangeIn):
+    """Change password. Returns 204 on success, 422 with field errors on failure."""
+    user = cast(User, request.user)
+    if not user.check_password(payload.old_password):
+        return 422, {"errors": {"old_password": ["The old password is incorrect."]}}
+    if payload.new_password1 != payload.new_password2:
+        return 422, {"errors": {"new_password2": ["The two passwords do not match."]}}
+    user.set_password(payload.new_password1)
+    user.save()
+    update_session_auth_hash(request, user)
+    return 204, None
+
+
+@api_v2.post(
+    "/news/mark-visited/",
+    response={204: None},
+    auth=None,
+)
+def news_mark_visited(request: HttpRequest):
+    """Mark news as visited for the current user. No-op for anonymous users."""
+    if request.user.is_authenticated:
+        request.user.mark_news_as_visited_now()
+    return 204, None
+
+
+@api_v2.get(
+    "/profile/",
+    response=ProfileOut,
+    auth=django_auth,
+)
+def profile_get(request: HttpRequest):
+    """Return the current user's editable profile fields."""
+    user = cast(User, request.user)
+    value, unit = _days_to_value_unit(user.notification_delay_days)
+    return {
+        "username": user.get_username(),
+        "firstName": user.first_name,
+        "lastName": user.last_name,
+        "email": user.email,
+        "language": user.language,
+        "delayValue": value,
+        "delayUnit": unit,
+    }
+
+
+@api_v2.put(
+    "/profile/",
+    response={200: ProfileOut, 422: AuthValidationErrorOut},
+    auth=django_auth,
+)
+def profile_put(request: HttpRequest, payload: ProfileIn):
+    """Save profile changes. Returns 422 with field errors on duplicate email."""
+    from django.contrib.auth import get_user_model as _get_user_model
+    user = cast(User, request.user)
+    # Validate unique email (excluding self)
+    if (
+        _get_user_model()
+        .objects.filter(email=payload.email)
+        .exclude(pk=user.pk)
+        .exists()
+    ):
+        return 422, {"errors": {"email": ["This email address is already in use."]}}
+    user.first_name = payload.firstName
+    user.last_name = payload.lastName
+    user.email = payload.email
+    user.language = payload.language
+    user.notification_delay_days = _value_unit_to_days(payload.delayValue, payload.delayUnit)
+    user.save()
+    value, unit = _days_to_value_unit(user.notification_delay_days)
+    return 200, {
+        "username": user.get_username(),
+        "firstName": user.first_name,
+        "lastName": user.last_name,
+        "email": user.email,
+        "language": user.language,
+        "delayValue": value,
+        "delayUnit": unit,
+    }
+
+
+@api_v2.delete(
+    "/account/",
+    response={204: None},
+    auth=django_auth,
+)
+def account_delete(request: HttpRequest):
+    """Delete the current user account and log out."""
+    user = request.user
+    logout(request)
+    user.delete()
+    return 204, None
