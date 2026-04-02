@@ -559,6 +559,8 @@ export interface components {
             approachingDistanceKm: number | null;
             /** Unseencount */
             unseenCount: number;
+            /** Speciesdetails */
+            speciesDetails: components["schemas"]["AlertSpeciesOut"][];
             /** Specieslist */
             speciesList: string;
             /** Areadescription */
@@ -573,6 +575,13 @@ export interface components {
             emailNotificationsFrequencyDisplay: string;
             /** Lastemailsenton */
             lastEmailSentOn: string | null;
+        };
+        /** AlertSpeciesOut */
+        AlertSpeciesOut: {
+            /** Scientificname */
+            scientificName: string;
+            /** Vernacularname */
+            vernacularName: string;
         };
         /** AlertValidationErrorOut */
         AlertValidationErrorOut: {

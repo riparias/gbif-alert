@@ -134,6 +134,11 @@ class AlertIn(Schema):
     approachingDistanceKm: float | None = None
 
 
+class AlertSpeciesOut(Schema):
+    scientificName: str
+    vernacularName: str
+
+
 class AlertOut(Schema):
     id: int
     name: str
@@ -146,6 +151,7 @@ class AlertOut(Schema):
     areaFilterMode: str
     approachingDistanceKm: float | None
     unseenCount: int
+    speciesDetails: list[AlertSpeciesOut]
     speciesList: str
     areaDescription: str
     datasetsList: str

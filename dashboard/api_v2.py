@@ -363,6 +363,10 @@ def _alert_to_out(alert: Alert) -> dict:
         "areaFilterMode": alert.area_filter_mode,
         "approachingDistanceKm": alert.approaching_distance_km,
         "unseenCount": alert.unseen_observations().count(),
+        "speciesDetails": [
+            {"scientificName": s.name, "vernacularName": s.vernacular_name}
+            for s in alert.species.all()
+        ],
         "speciesList": alert.species_list,
         "areaDescription": alert.area_description,
         "datasetsList": alert.datasets_list,
