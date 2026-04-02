@@ -1,7 +1,9 @@
 import datetime
+import json
 from typing import Annotated, cast
 
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.serializers import serialize
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.http import HttpRequest
@@ -83,6 +85,20 @@ def areas_list(request: HttpRequest):
         }
         for a in Area.objects.available_to(request.user).prefetch_related("tags")
     ]
+
+
+@api_v2.get("/areas/{area_id}/geojson/", response=dict)
+def area_geojson(request: HttpRequest, area_id: int):
+    """Return GeoJSON (FeatureCollection, EPSG:4326) for a single area.
+
+    Available to any user who can access the area (public or owned).
+    Returns 403 if the area exists but the user cannot access it.
+    Returns 404 if the area does not exist.
+    """
+    area = get_object_or_404(Area, pk=area_id)
+    if not area.is_available_to(request.user):
+        raise HttpError(403, "Forbidden")
+    return json.loads(serialize("geojson", [area], srid=4326))
 
 
 @api_v2.get("/basis-of-record/", response=list[BasisOfRecordOut])

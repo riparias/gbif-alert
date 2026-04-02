@@ -937,3 +937,52 @@ class ApiV2AlertTests(TestCase):
         response = self.client.post("/api/v2/alerts/", payload, content_type="application/json")
         self.assertEqual(response.status_code, 422)
         self.assertIn("area_filter_mode", response.json()["errors"])
+
+
+class ApiV2AreaEndpointsTests(TestCase):
+    """Tests for POST /api/v2/areas/, DELETE /api/v2/areas/{id}/, GET /api/v2/areas/{id}/geojson/."""
+
+    @classmethod
+    def setUpTestData(cls):
+        User = get_user_model()
+        cls.owner = User.objects.create_user(
+            username="owner", password="pass", email="owner@example.com"
+        )
+        cls.other = User.objects.create_user(
+            username="other", password="pass", email="other@example.com"
+        )
+        cls.area = Area.objects.create(
+            name="My area",
+            owner=cls.owner,
+            mpoly=SIMPLE_POLYGON,
+        )
+
+    # --- GET /api/v2/areas/{id}/geojson/ ---
+
+    def test_geojson_returns_200_for_owner(self):
+        self.client.login(username="owner", password="pass")
+        response = self.client.get(f"/api/v2/areas/{self.area.pk}/geojson/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_geojson_returns_geojson_content_type(self):
+        self.client.login(username="owner", password="pass")
+        response = self.client.get(f"/api/v2/areas/{self.area.pk}/geojson/")
+        self.assertIn("application/json", response.get("Content-Type", ""))
+
+    def test_geojson_body_is_feature_collection(self):
+        self.client.login(username="owner", password="pass")
+        response = self.client.get(f"/api/v2/areas/{self.area.pk}/geojson/")
+        data = response.json()
+        self.assertEqual(data["type"], "FeatureCollection")
+        self.assertEqual(len(data["features"]), 1)
+
+    def test_geojson_returns_403_for_unrelated_user(self):
+        """User cannot fetch GeoJSON for another user's private area."""
+        self.client.login(username="other", password="pass")
+        response = self.client.get(f"/api/v2/areas/{self.area.pk}/geojson/")
+        self.assertEqual(response.status_code, 403)
+
+    def test_geojson_returns_404_for_nonexistent(self):
+        self.client.login(username="owner", password="pass")
+        response = self.client.get("/api/v2/areas/99999/geojson/")
+        self.assertEqual(response.status_code, 404)
