@@ -157,6 +157,11 @@ export const messages = {
             areaDeleted: "Area deleted",
             cannotDeleteArea: "Cannot delete area",
             deleteArea: "Delete this area",
+            areaCreated: "Area created",
+            areaName: "Area name",
+            areaFile: "Data file",
+            areaFileHint: "GeoPackage (.gpkg), single polygon or multipolygon layer",
+            upload: "Upload",
         }
     },
     fr: {
@@ -317,6 +322,11 @@ export const messages = {
             areaDeleted: "Zone supprimee",
             cannotDeleteArea: "Impossible de supprimer la zone",
             deleteArea: "Supprimer cette zone",
+            areaCreated: "Zone créée",
+            areaName: "Nom de la zone",
+            areaFile: "Fichier de données",
+            areaFileHint: "GeoPackage (.gpkg), couche de type polygone ou multipolygone unique",
+            upload: "Envoyer",
         }
     },
     nl: {
@@ -477,6 +487,11 @@ export const messages = {
             areaDeleted: "Gebied verwijderd",
             cannotDeleteArea: "Kan gebied niet verwijderen",
             deleteArea: "Dit gebied verwijderen",
+            areaCreated: "Gebied aangemaakt",
+            areaName: "Naam van het gebied",
+            areaFile: "Gegevensbestand",
+            areaFileHint: "GeoPackage (.gpkg), enkele polygoon- of multipolygoonlaag",
+            upload: "Uploaden",
         }
     }
 }
