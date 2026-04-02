@@ -3,7 +3,6 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.http import (
-    HttpResponseForbidden,
     HttpRequest,
     HttpResponse,
 )
@@ -13,12 +12,10 @@ from django.utils.translation import gettext as _
 from dashboard.forms import (
     SignUpForm,
     EditProfileForm,
-    NewObservationCommentForm,
 )
-from dashboard.models import DataImport, Observation, Alert
+from dashboard.models import DataImport, Alert
 from dashboard.views.helpers import (
     AuthenticatedHttpRequest,
-    extract_str_request,
 )
 
 
@@ -48,42 +45,7 @@ def news_page(request: HttpRequest) -> HttpResponse:
 
 
 def observation_details_page(request: HttpRequest, stable_id: str) -> HttpResponse:
-    observation = get_object_or_404(Observation, stable_id=stable_id)
-
-    user = request.user
-
-    observation.mark_as_seen_by(user)
-    origin_url = extract_str_request(request, "origin")
-
-    if request.method == "POST":
-        if not user.is_authenticated:  # Only authenticated users can post comments
-            return HttpResponseForbidden()
-
-        form = NewObservationCommentForm(request.POST)
-        if form.is_valid():
-            comment = form.save(commit=False)
-            comment.author = user
-            comment.observation = observation
-            comment.save()
-            form = NewObservationCommentForm()  # Show a new empty one to the user
-    else:
-        form = NewObservationCommentForm()
-
-    can_be_marked_unseen = False
-    if user.is_authenticated:
-        if observation.already_seen_by(user):
-            can_be_marked_unseen = user.obs_match_alerts(observation)
-
-    return render(
-        request,
-        "dashboard/observation_details.html",
-        {
-            "observation": observation,
-            "new_comment_form": form,
-            "can_be_marked_unseen": can_be_marked_unseen,
-            "origin_url": origin_url,
-        },
-    )
+    return spa_shell(request)
 
 
 @login_required

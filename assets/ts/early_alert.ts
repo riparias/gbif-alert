@@ -1,6 +1,5 @@
 import * as bootstrap from "bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
-import SingleObservationMap from "./components/SingleObservationMap.vue";
 import DeleteAccountButton from "./components/DeleteAccountButton.vue";
 import {Component, createApp} from "vue";
 import {createI18n} from "vue-i18n";
@@ -36,10 +35,6 @@ function createAndMountComponent(component: Component, rootContainer = "#app") {
     app.config.globalProperties.window = window;
     app.mount(rootContainer);
 }
-
-(window as any).initObservationDetailsPage = function () {
-    createAndMountComponent({components: {SingleObservationMap}}, "#single-observation-app");
-};
 
 (window as any).initUserProfilePage = function () {
     createAndMountComponent({components: {DeleteAccountButton}});

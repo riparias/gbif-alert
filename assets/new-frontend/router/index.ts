@@ -7,6 +7,7 @@ import UserAreasPage from "../pages/UserAreasPage.vue";
 
 export const routes: RouteRecordRaw[] = [
     { path: "/", component: IndexPage },
+    { path: "/observation/:stableId", redirect: (to) => ({ path: "/", query: { obs: to.params.stableId as string } }) },
     { path: "/my-alerts", component: UserAlertsPage },
     { path: "/new-alert", component: AlertFormPage },
     { path: "/edit-alert/:alertId", component: AlertFormPage },
