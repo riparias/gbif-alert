@@ -90,12 +90,6 @@ def js_config_object(context):
             "myCustomAreasUrl": reverse(
                 "dashboard:pages:my-custom-areas"
             ),  # TODO: some entries are not API endpoints, but regular pages URLs. Maybe we should have a separate object for those? OR just rename this "apiEndpoints" to "urls"?
-            "areasUrlTemplate": reverse(
-                "dashboard:internal-api:area-geojson", kwargs={"id": 1}
-            ).replace("1", "{id}"),
-            "areaDeleteUrlTemplate": reverse(
-                "dashboard:actions:area-delete", kwargs={"id": 1}
-            ).replace("1", "{id}"),
             "minMaxOccPerHexagonUrl": reverse(
                 "dashboard:internal-api:maps:mvt-min-max-per-hexagon"
             ),
@@ -175,9 +169,6 @@ def nav_config_json(context):
             "tileServerAggregatedUrlTemplate": _build_mvt_url_template(
                 "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated"
             ),
-            "areasUrlTemplate": reverse(
-                "dashboard:internal-api:area-geojson", kwargs={"id": 1}
-            ).replace("1", "{id}"),
             "minMaxOccPerHexagonUrl": reverse(
                 "dashboard:internal-api:maps:mvt-min-max-per-hexagon"
             ),
