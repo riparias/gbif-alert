@@ -149,9 +149,9 @@ def test_create_alert_succeeds(page: Page, live_server):
     page.goto(live_server.url + "/new-alert")
     page.wait_for_load_state("networkidle")
 
-    # Select a species
-    page.locator(".p-multiselect").filter(has_text="All species").click()
-    page.get_by_text("Procambarus fallax").click()
+    # Open the species modal and select a species
+    page.get_by_role("button", name="All species").click()
+    page.get_by_role("row", name="Procambarus fallax").click()
     page.keyboard.press("Escape")
 
     # Save
