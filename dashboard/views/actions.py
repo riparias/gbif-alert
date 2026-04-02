@@ -3,11 +3,11 @@
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden, HttpResponseRedirect
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.translation import gettext as _
 
-from dashboard.models import Observation, Alert, Area
+from dashboard.models import Observation, Alert
 from dashboard.views.helpers import AuthenticatedHttpRequest, extract_str_request
 
 
@@ -51,25 +51,3 @@ def delete_own_account(request: AuthenticatedHttpRequest):
         else:
             return HttpResponseForbidden()
 
-
-@login_required
-def area_delete(
-    request: AuthenticatedHttpRequest, id: int
-) -> HttpResponseRedirect | HttpResponseForbidden:
-    """Delete an area"""
-    if request.method == "POST":
-        area = get_object_or_404(Area, pk=id)
-        if area.owner == request.user:
-            try:
-                area.delete()
-                messages.success(request, _("The area has been deleted."))
-            except Area.HasAlerts:
-                messages.error(
-                    request,
-                    _(
-                        "The area could not be deleted because it has alerts associated with it."
-                    ),
-                )
-            return redirect("dashboard:pages:my-custom-areas")
-
-    return HttpResponseForbidden()

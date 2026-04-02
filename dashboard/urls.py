@@ -70,8 +70,7 @@ internal_api_urls = [
         name="alert-as-filters-json",
     ),
     path("alert", views.alert, name="alert"),
-    path("area/<int:id>", views.area_geojson, name="area-geojson"),
-    path("areas", views.areas_list_json, name="areas-list-json"),
+path("areas", views.areas_list_json, name="areas-list-json"),
     path(
         "available-alert-intervals",
         views.available_alert_intervals,
@@ -111,7 +110,6 @@ actions_urls = [
         name="mark-observation-as-unseen",
     ),
     path("delete-own-account", views.delete_own_account, name="delete-own-account"),
-    path("area/delete/<int:id>", views.area_delete, name="area-delete"),
 ]
 
 urlpatterns = [

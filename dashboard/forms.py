@@ -9,16 +9,6 @@ from crispy_forms.layout import Layout, Div, HTML  # type: ignore
 from dashboard.models import ObservationComment
 
 
-class NewCustomAreaForm(forms.Form):
-    name = forms.CharField(
-        label=_("Area name"),
-        max_length=255,
-        help_text=_("A short name to identify this area"),
-    )
-    data_file = forms.FileField(
-        label=_("Data file"),
-    )
-
 
 def _enabled_languages_as_tuple():
     """

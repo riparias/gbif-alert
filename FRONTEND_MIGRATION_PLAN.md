@@ -184,11 +184,11 @@ ok- [x] 2.3 - `filters` Pinia store (`assets/new-frontend/stores/filters.ts`),
 
 ### Phase 4: User Areas
 
-- [ ] 4.1 - Django Ninja endpoints for area CRUD and GeoJSON
-- [ ] 4.2 - Migrate `UserAreasPage.vue` (area list, map with area polygons, draw/edit)
-- [ ] 4.3 - Add Vue Router route, update Django URL routing
-- [ ] 4.4 - Remove old template and UserAreasPageRootComponent
-- [ ] 4.5 - Playwright tests
+- [x] 4.1 - Django Ninja endpoints for area CRUD and GeoJSON
+- [x] 4.2 - Migrate `UserAreasPage.vue` (area list, map with area polygons, draw/edit)
+- [x] 4.3 - Add Vue Router route, update Django URL routing
+- [x] 4.4 - Remove old template and UserAreasPageRootComponent
+- [x] 4.5 - Playwright tests
 
 ### Phase 5: Simple Pages + Auth
 

@@ -5,7 +5,6 @@ import DeleteAccountButton from "./components/DeleteAccountButton.vue";
 import {Component, createApp} from "vue";
 import {createI18n} from "vue-i18n";
 import {messages} from "./translations";
-import UserAreasPageRootComponent from "./components/pages_root_components/UserAreasPageRootComponent.vue";
 
 require("bootstrap-icons/font/bootstrap-icons.css");
 
@@ -44,8 +43,4 @@ function createAndMountComponent(component: Component, rootContainer = "#app") {
 
 (window as any).initUserProfilePage = function () {
     createAndMountComponent({components: {DeleteAccountButton}});
-};
-
-(window as any).initUserAreasPage = function () {
-    createAndMountComponent({components: {UserAreasPageRootComponent}}, "#vue-app");
 };
