@@ -25,11 +25,7 @@ urlpatterns = [
     path("", include("dashboard.urls")),
     # User accounts
     path("i18n/", include("django.conf.urls.i18n")),
-    path(
-        "accounts/signin/",
-        auth_views.LoginView.as_view(template_name="dashboard/signin.html"),
-        name="signin",
-    ),
+    path("accounts/signin/", spa_shell, name="signin"),
     path("accounts/signout/", auth_views.LogoutView.as_view(), name="signout"),
     path(
         "accounts/password-reset/",
@@ -39,20 +35,7 @@ urlpatterns = [
         ),
         name="password_reset",
     ),
-    path(
-        "accounts/password-change/",
-        auth_views.PasswordChangeView.as_view(
-            template_name="dashboard/password_change.html",
-        ),
-        name="password_change",
-    ),
-    path(
-        "accounts/password-change-done/",
-        auth_views.PasswordChangeDoneView.as_view(
-            template_name="dashboard/password_change_done.html"
-        ),
-        name="password_change_done",
-    ),
+    path("accounts/password-change/", spa_shell, name="password_change"),
     path(
         "accounts/password-reset-done",
         auth_views.PasswordResetDoneView.as_view(
