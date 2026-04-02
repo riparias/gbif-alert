@@ -34,6 +34,11 @@ class DataImportOut(Schema):
     id: int
     name: str
     startTimestamp: datetime.datetime
+    endTimestamp: datetime.datetime | None
+    importedCount: int
+    newObservationsCount: int
+    skippedCount: int
+    gbifDownloadId: str
 
 
 class FiltersQuery(Schema):

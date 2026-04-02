@@ -29,7 +29,7 @@ async function submit() {
         window.location.href = "/";
     } else {
         const data = await resp.json();
-        errorMessage.value = data.detail ?? t("message.signIn") + " failed.";
+        errorMessage.value = t("message.invalidCredentials");
     }
 }
 </script>

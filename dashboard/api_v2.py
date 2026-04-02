@@ -182,9 +182,21 @@ def basis_of_record_list(request: HttpRequest):
 
 @api_v2.get("/data-imports/", response=list[DataImportOut])
 def data_imports_list(request: HttpRequest):
+    qs = DataImport.objects.order_by("-start").annotate(
+        new_observations_count=Count("occurrences_initially_imported")
+    )
     return [
-        {"id": di.pk, "name": f"Data import #{di.pk}", "startTimestamp": di.start}
-        for di in DataImport.objects.order_by("-start")
+        {
+            "id": di.pk,
+            "name": f"Data import #{di.pk}",
+            "startTimestamp": di.start,
+            "endTimestamp": di.end,
+            "importedCount": di.imported_observations_counter,
+            "newObservationsCount": di.new_observations_count,
+            "skippedCount": di.skipped_observations_counter,
+            "gbifDownloadId": di.gbif_download_id,
+        }
+        for di in qs
     ]
 
 

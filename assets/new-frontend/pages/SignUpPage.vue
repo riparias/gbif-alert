@@ -9,6 +9,8 @@ import { getCsrf } from "../utils/csrf";
 const { t } = useI18n();
 
 const username = ref("");
+const firstName = ref("");
+const lastName = ref("");
 const email = ref("");
 const language = ref((window as any).LANGUAGE_CODE ?? "en");
 const password1 = ref("");
@@ -31,6 +33,8 @@ async function submit() {
         },
         body: JSON.stringify({
             username: username.value,
+            first_name: firstName.value,
+            last_name: lastName.value,
             email: email.value,
             language: language.value,
             password1: password1.value,
@@ -53,25 +57,43 @@ async function submit() {
 
         <div style="display: flex; flex-direction: column; gap: 1rem;">
             <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="su-username" style="font-weight: 500;">{{ t("message.username") }}</label>
+                <label for="su-username" style="font-weight: 500;">{{ t("message.username") }} <span style="font-weight: 400; color: var(--p-text-muted-color);">*</span></label>
                 <InputText id="su-username" v-model="username" class="w-full" autocomplete="username" />
                 <small v-if="fieldError('username')" style="color: var(--p-red-500);">{{ fieldError("username") }}</small>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="su-email" style="font-weight: 500;">{{ t("message.email") }}</label>
+                <label for="su-email" style="font-weight: 500;">{{ t("message.email") }} <span style="font-weight: 400; color: var(--p-text-muted-color);">*</span></label>
                 <InputText id="su-email" v-model="email" type="email" class="w-full" autocomplete="email" />
                 <small v-if="fieldError('email')" style="color: var(--p-red-500);">{{ fieldError("email") }}</small>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="su-password1" style="font-weight: 500;">{{ t("message.newPassword") }}</label>
+                <label for="su-firstname" style="font-weight: 500;">
+                    {{ t("message.firstName") }}
+                    <span style="font-weight: 400; color: var(--p-text-muted-color);">({{ t("message.optional") }})</span>
+                </label>
+                <InputText id="su-firstname" v-model="firstName" class="w-full" autocomplete="given-name" />
+                <small v-if="fieldError('first_name')" style="color: var(--p-red-500);">{{ fieldError("first_name") }}</small>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
+                <label for="su-lastname" style="font-weight: 500;">
+                    {{ t("message.lastName") }}
+                    <span style="font-weight: 400; color: var(--p-text-muted-color);">({{ t("message.optional") }})</span>
+                </label>
+                <InputText id="su-lastname" v-model="lastName" class="w-full" autocomplete="family-name" />
+                <small v-if="fieldError('last_name')" style="color: var(--p-red-500);">{{ fieldError("last_name") }}</small>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
+                <label for="su-password1" style="font-weight: 500;">{{ t("message.newPassword") }} <span style="font-weight: 400; color: var(--p-text-muted-color);">*</span></label>
                 <InputText id="su-password1" v-model="password1" type="password" class="w-full" autocomplete="new-password" />
                 <small v-if="fieldError('password1')" style="color: var(--p-red-500);">{{ fieldError("password1") }}</small>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="su-password2" style="font-weight: 500;">{{ t("message.confirmNewPassword") }}</label>
+                <label for="su-password2" style="font-weight: 500;">{{ t("message.confirmNewPassword") }} <span style="font-weight: 400; color: var(--p-text-muted-color);">*</span></label>
                 <InputText id="su-password2" v-model="password2" type="password" class="w-full" autocomplete="new-password" @keyup.enter="submit" />
                 <small v-if="fieldError('password2')" style="color: var(--p-red-500);">{{ fieldError("password2") }}</small>
             </div>
