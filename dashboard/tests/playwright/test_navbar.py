@@ -120,7 +120,7 @@ def test_navbar_superuser_sees_admin_panel(page: Page, live_server):
 
 @pytest.mark.django_db(transaction=True)
 def test_navbar_red_dot_with_unseen_observations(page: Page, live_server):
-    """A red dot appears next to 'My alerts' and the user button when the user
+    """A red dot appears inside the 'My alerts' menubar item when the user
     has an alert with unseen observations.
 
     ObservationUnseen records must be created explicitly - they are not produced
@@ -136,29 +136,27 @@ def test_navbar_red_dot_with_unseen_observations(page: Page, live_server):
     _login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/")
 
-    # Red dot next to "My alerts" in the menubar.
+    # Red dot inside the "My alerts" menubar item.
     my_alerts_item = page.get_by_role("menuitem", name="My alerts")
     expect(my_alerts_item.locator(".gbif-nav-dot")).to_be_visible()
-
-    # Red dot next to the user button in the end slot.
-    expect(page.locator(".gbif-navbar-end .gbif-nav-dot")).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
 def test_navbar_no_observations_dot_without_unseen_observations(page: Page, live_server):
-    """No observations red dot is shown when the user has no unseen observations.
+    """No red dot is shown on 'My alerts' when the user has no unseen observations.
 
     Note: the news dot (.gbif-nav-dot on the 'What's new' item) is intentionally
     ignored here - it is controlled by has_unseen_news and is always shown for
     fresh users whose last_visit_news_page is None. This test only checks the
-    observations dot (the one next to the user button in .gbif-navbar-end).
+    observations dot on the 'My alerts' menubar item.
     """
     User = get_user_model()
     User.objects.create_user(username="testuser", password="testpass123")
     _login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/")
 
-    expect(page.locator(".gbif-navbar-end .gbif-nav-dot")).not_to_be_visible()
+    my_alerts_item = page.get_by_role("menuitem", name="My alerts")
+    expect(my_alerts_item.locator(".gbif-nav-dot")).not_to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
