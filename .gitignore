@@ -144,3 +144,5 @@ openapi-schema.json
 
 # macOS metadata (hidden by PyCharm but not actually gitignored without this)
 .DS_Store
+# Git worktrees
+.worktrees/
