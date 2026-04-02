@@ -10,9 +10,7 @@ import { createI18n } from "vue-i18n";
 import ConfirmationService from "primevue/confirmationservice";
 import ToastService from "primevue/toastservice";
 
-// Temporary cross-reference: translations live in the old frontend until Phase 6
-// removes assets/ts/ entirely.
-import { messages } from "../ts/translations";
+import { messages } from "./translations";
 
 import App from "./App.vue";
 import { routes } from "./router/index";
