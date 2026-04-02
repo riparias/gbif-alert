@@ -115,6 +115,36 @@ def test_delete_area_cancelled(page: Page, live_server):
     expect(page.locator(".area-card").filter(has_text="Area to keep")).to_be_visible()
 
 
+@pytest.mark.django_db(transaction=True)
+def test_delete_area_with_alert_shows_error(page: Page, live_server):
+    """Trying to delete an area referenced by an alert shows an error toast."""
+    User = get_user_model()
+    user = User.objects.create_user(username="a8", password="pass", email="a8@t.com")
+    area = _make_area(user, "Area with alert")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    alert = Alert.objects.create(
+        name="My alert", user=user, email_notifications_frequency="N"
+    )
+    alert.species.add(sp)
+    alert.areas.add(area)
+
+    _login(page, live_server.url, "a8", "pass")
+    page.goto(live_server.url + "/my-custom-areas")
+    page.wait_for_load_state("networkidle")
+
+    page.get_by_role("button", name="Delete this area").click()
+    page.get_by_role("button", name="Yes, I'm sure").click()
+    page.wait_for_load_state("networkidle")
+
+    # Error toast must be visible
+    expect(page.locator(".p-toast")).to_be_visible()
+    expect(page.locator(".p-toast")).to_contain_text("Cannot delete area", ignore_case=True)
+
+    # Area is still in the list
+    expect(page.locator(".area-card").filter(has_text="Area with alert")).to_be_visible()
+    assert Area.objects.filter(pk=area.pk).exists()
+
+
 # ---------------------------------------------------------------------------
 # /my-custom-areas - create
 # ---------------------------------------------------------------------------
