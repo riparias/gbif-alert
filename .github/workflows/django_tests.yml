@@ -63,8 +63,6 @@ jobs:
       run: google-chrome --version
     - name: Install frontend dependencies
       run: npm install
-    - name: Run webpack
-      run: npm run webpack-prod
     - name: Run vite build
       run: npm run vite-build
     - name: Run Django tests (parallel)
