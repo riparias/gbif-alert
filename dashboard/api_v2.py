@@ -3,6 +3,7 @@ import json
 import tempfile
 from typing import Annotated, cast
 
+from django.contrib.auth import authenticate, login
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon as GEOSMultiPolygon
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers import serialize
@@ -25,6 +26,8 @@ from dashboard.api_v2_schemas import (
     AreaCreateError,
     AreaDeleteError,
     AreaOut,
+    AuthErrorOut,
+    AuthValidationErrorOut,
     BasisOfRecordOut,
     CommentIn,
     CommentOut,
@@ -34,8 +37,12 @@ from dashboard.api_v2_schemas import (
     HistogramEntryOut,
     ObservationDetailOut,
     ObservationsPageOut,
+    SignInIn,
+    SignInOut,
+    SignUpIn,
     SpeciesOut,
 )
+from dashboard.forms import SignUpForm
 from dashboard.geo_utils import file_to_wkt_multipolygon
 from dashboard.models import (
     Alert,
@@ -589,3 +596,44 @@ def alert_as_filters_v2(request: HttpRequest, alert_id: int):
     """Return the alert's filters in DashboardFilters shape for pre-loading the index page."""
     alert = get_object_or_404(Alert, id=alert_id, user=request.user)
     return alert.as_dashboard_filters
+
+
+# ---- Auth endpoints ----
+
+@api_v2.post(
+    "/auth/signin/",
+    response={200: SignInOut, 401: AuthErrorOut},
+    auth=None,
+)
+def auth_signin(request: HttpRequest, payload: SignInIn):
+    """Authenticate and create a session. Returns 401 on bad credentials."""
+    user = authenticate(request, username=payload.username, password=payload.password)
+    if user is None:
+        return 401, {"detail": "Invalid username or password."}
+    login(request, user)
+    return 200, {"username": user.get_username()}
+
+
+@api_v2.post(
+    "/auth/signup/",
+    response={201: SignInOut, 422: AuthValidationErrorOut},
+    auth=None,
+)
+def auth_signup(request: HttpRequest, payload: SignUpIn):
+    """Create an account and log in. Returns 422 with field errors on failure."""
+    form = SignUpForm(
+        data={
+            "username": payload.username,
+            "first_name": payload.first_name,
+            "last_name": payload.last_name,
+            "email": payload.email,
+            "language": payload.language,
+            "password1": payload.password1,
+            "password2": payload.password2,
+        }
+    )
+    if not form.is_valid():
+        return 422, {"errors": form.errors}
+    user = form.save()
+    login(request, user)
+    return 201, {"username": user.get_username()}

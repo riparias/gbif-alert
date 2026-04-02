@@ -1090,3 +1090,93 @@ class ApiV2AreaEndpointsTests(TestCase):
     def test_delete_area_requires_authentication(self):
         response = self.client.delete(f"/api/v2/areas/{self.area.pk}/")
         self.assertEqual(response.status_code, 401)
+
+
+class ApiV2AuthTests(TestCase):
+    """Tests for /api/v2/auth/signin/ and /api/v2/auth/signup/"""
+
+    @classmethod
+    def setUpTestData(cls):
+        User = get_user_model()
+        cls.user = User.objects.create_user(
+            username="testuser",
+            password="correctpassword",
+            email="test@example.com",
+        )
+
+    # --- signin ---
+
+    def test_signin_success(self):
+        resp = self.client.post(
+            "/api/v2/auth/signin/",
+            data={"username": "testuser", "password": "correctpassword"},
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["username"], "testuser")
+
+    def test_signin_wrong_password(self):
+        resp = self.client.post(
+            "/api/v2/auth/signin/",
+            data={"username": "testuser", "password": "wrong"},
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 401)
+        self.assertIn("detail", resp.json())
+
+    def test_signin_nonexistent_user(self):
+        resp = self.client.post(
+            "/api/v2/auth/signin/",
+            data={"username": "nobody", "password": "x"},
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 401)
+
+    # --- signup ---
+
+    def test_signup_success(self):
+        User = get_user_model()
+        resp = self.client.post(
+            "/api/v2/auth/signup/",
+            data={
+                "username": "newuser",
+                "email": "new@example.com",
+                "language": "en",
+                "password1": "Secure1234!",
+                "password2": "Secure1234!",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.json()["username"], "newuser")
+        self.assertTrue(User.objects.filter(username="newuser").exists())
+
+    def test_signup_duplicate_username(self):
+        resp = self.client.post(
+            "/api/v2/auth/signup/",
+            data={
+                "username": "testuser",  # already exists
+                "email": "other@example.com",
+                "language": "en",
+                "password1": "Secure1234!",
+                "password2": "Secure1234!",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 422)
+        self.assertIn("username", resp.json()["errors"])
+
+    def test_signup_password_mismatch(self):
+        resp = self.client.post(
+            "/api/v2/auth/signup/",
+            data={
+                "username": "anotheruser",
+                "email": "a@example.com",
+                "language": "en",
+                "password1": "Secure1234!",
+                "password2": "Different!",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 422)
+        self.assertIn("errors", resp.json())
