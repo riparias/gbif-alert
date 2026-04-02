@@ -1318,6 +1318,23 @@ class ApiV2AuthTests(TestCase):
         self.assertEqual(resp.status_code, 422)
         self.assertIn("email", resp.json()["errors"])
 
+    def test_profile_put_invalid_delay_unit(self):
+        self.client.force_login(self.user)
+        resp = self.client.put(
+            "/api/v2/profile/",
+            data={
+                "firstName": "Test",
+                "lastName": "User",
+                "email": "testuser@example.com",
+                "language": "en",
+                "delayValue": 1,
+                "delayUnit": "fortnights",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 422)
+        self.assertIn("delayUnit", resp.json()["errors"])
+
     # --- account delete ---
 
     def test_delete_account_success(self):

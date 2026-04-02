@@ -10,14 +10,20 @@ import Select from "primevue/select";
 import ProgressSpinner from "primevue/progressspinner";
 import { getCsrf } from "../utils/csrf";
 
+interface Language {
+    code: string;
+    nameLocal: string;
+}
+
 const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
 
-const navConfig = (window as any).nav_config_json;
-const isAuthenticated = navConfig?.isAuthenticated ?? false;
-const enabledLanguages: string[] = navConfig?.enabledLanguages ?? ["en"];
+const textContent = document.getElementById("gbif-alert-nav-config")?.textContent ?? "{}";
+const navConfig = JSON.parse(textContent);
+const isAuthenticated: boolean = navConfig?.user?.isAuthenticated ?? false;
+const enabledLanguages: Language[] = navConfig?.enabledLanguages ?? [{ code: "en", nameLocal: "English" }];
 
 onMounted(async () => {
     if (!isAuthenticated) {
@@ -40,7 +46,7 @@ const delayValue = ref(1);
 const delayUnit = ref("years");
 
 const languageOptions = computed(() =>
-    enabledLanguages.map((code) => ({ value: code, label: code.toUpperCase() }))
+    enabledLanguages.map((lang) => ({ value: lang.code, label: lang.nameLocal }))
 );
 
 const delayUnitOptions = computed(() => [

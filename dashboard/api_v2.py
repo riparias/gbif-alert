@@ -707,6 +707,9 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
     # Validate unique email (excluding self)
     if User.objects.filter(email=payload.email).exclude(pk=user.pk).exists():
         return 422, {"errors": {"email": ["This email address is already in use."]}}
+    valid_units = ("days", "weeks", "months", "years")
+    if payload.delayUnit not in valid_units:
+        return 422, {"errors": {"delayUnit": ["Invalid unit."]}}
     user.first_name = payload.firstName
     user.last_name = payload.lastName
     user.email = payload.email
