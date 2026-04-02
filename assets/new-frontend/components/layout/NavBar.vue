@@ -147,8 +147,8 @@ function changeLanguage(event: { value: string }) {
 
 const userMenuRef = ref();
 
-const userMenuItems = computed((): MenuItem[] => {
-    const items: MenuItem[] = [
+const userMenuItems = computed((): NavItem[] => {
+    const items: NavItem[] = [
         {
             label: t("message.navMyProfile"),
             icon: "pi pi-user",
@@ -163,6 +163,7 @@ const userMenuItems = computed((): MenuItem[] => {
             label: t("message.navMyAlerts"),
             icon: "pi pi-exclamation-circle",
             url: config.urls.myAlerts,
+            showDot: config.user.hasAlertsWithUnseenObservations,
         },
         {
             label: t("message.navMyCustomAreas"),
@@ -246,11 +247,15 @@ function toggleUserMenu(event: Event) {
                             class="gbif-navbar-user-btn"
                             @click="toggleUserMenu"
                         />
-                        <span
-                            v-if="config.user.hasAlertsWithUnseenObservations"
-                            class="gbif-nav-dot"
-                        />
-                        <Menu ref="userMenuRef" :model="userMenuItems" popup />
+                        <Menu ref="userMenuRef" :model="userMenuItems" popup>
+                            <template #item="{ item, props }">
+                                <a v-bind="props.action" :href="(item as NavItem).url" class="gbif-user-menu-item">
+                                    <i v-if="item.icon" :class="item.icon" />
+                                    <span>{{ item.label }}</span>
+                                    <span v-if="(item as NavItem).showDot" class="gbif-nav-dot gbif-nav-dot--menu" />
+                                </a>
+                            </template>
+                        </Menu>
                     </template>
 
                     <!-- Anonymous user: sign in / sign up -->
@@ -332,6 +337,19 @@ function toggleUserMenu(event: Event) {
 
 .gbif-navbar-user-btn {
     color: inherit !important;
+}
+
+.gbif-user-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+/* In the dropdown, drop the white ring (light background makes it invisible anyway) */
+.gbif-nav-dot--menu {
+    box-shadow: none;
+    margin-left: auto;
 }
 
 /* Sign-in / sign-up buttons sit on the primary-colored navbar, so override

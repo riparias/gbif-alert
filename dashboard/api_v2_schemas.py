@@ -154,6 +154,8 @@ class AlertOut(Schema):
     speciesDetails: list[AlertSpeciesOut]
     speciesList: str
     areaDescription: str
+    areaNames: list[str]
+    datasetNames: list[str]
     datasetsList: str
     basisOfRecordList: str
     verifiedFilterDisplay: str

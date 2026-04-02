@@ -565,6 +565,10 @@ export interface components {
             speciesList: string;
             /** Areadescription */
             areaDescription: string;
+            /** Areanames */
+            areaNames: string[];
+            /** Datasetnames */
+            datasetNames: string[];
             /** Datasetslist */
             datasetsList: string;
             /** Basisofrecordlist */

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useConfirm } from "primevue/useconfirm";
@@ -6,11 +7,13 @@ import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
 import Badge from "primevue/badge";
 import Card from "primevue/card";
-import Divider from "primevue/divider";
+import Tag from "primevue/tag";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
 
 type AlertOut = components["schemas"]["AlertOut"];
+
+const SPECIES_COLLAPSE_THRESHOLD = 4;
 
 const props = defineProps<{ alert: AlertOut }>();
 const emit = defineEmits<{ deleted: [] }>();
@@ -19,6 +22,32 @@ const { t } = useI18n();
 const router = useRouter();
 const confirm = useConfirm();
 const toast = useToast();
+
+const speciesExpanded = ref(false);
+
+const areaDescription = computed(() => {
+    const names = props.alert.areaNames;
+    if (names.length === 0) return "";
+    const quoted = names.map((n) => `'${n}'`);
+    const areas =
+        quoted.length === 1
+            ? quoted[0]
+            : quoted.slice(0, -1).join(", ") + t("message.areaListJoiner") + quoted[quoted.length - 1];
+    const mode = props.alert.areaFilterMode;
+    const dist = props.alert.approachingDistanceKm;
+    if (mode === "inside") return t("message.areaDescriptionInside", { areas });
+    if (mode === "approaching") return t("message.areaDescriptionApproaching", { dist, areas });
+    return t("message.areaDescriptionBoth", { dist, areas });
+});
+
+const tooManySpecies = computed(
+    () => props.alert.speciesDetails.length > SPECIES_COLLAPSE_THRESHOLD
+);
+const visibleSpecies = computed(() =>
+    tooManySpecies.value && !speciesExpanded.value
+        ? props.alert.speciesDetails.slice(0, SPECIES_COLLAPSE_THRESHOLD)
+        : props.alert.speciesDetails
+);
 
 function formatDate(iso: string | null): string {
     if (!iso) return t("message.never");
@@ -64,39 +93,61 @@ function confirmDelete() {
         </template>
 
         <template #content>
-            <!-- Species -->
-            <ul class="species-list">
-                <li v-for="sp in alert.speciesDetails" :key="sp.scientificName">
-                    <em>{{ sp.scientificName }}</em>
-                    <span v-if="sp.vernacularName" class="vernacular-name">
-                        ({{ sp.vernacularName }})
-                    </span>
-                </li>
-            </ul>
+            <!-- Species section -->
+            <div class="section">
+                <ul class="species-list">
+                    <li v-for="sp in visibleSpecies" :key="sp.scientificName">
+                        <em>{{ sp.scientificName }}</em>
+                        <span v-if="sp.vernacularName" class="vernacular-name">
+                            ({{ sp.vernacularName }})
+                        </span>
+                    </li>
+                </ul>
+                <button
+                    v-if="tooManySpecies"
+                    class="expand-toggle"
+                    @click="speciesExpanded = !speciesExpanded"
+                >
+                    <i :class="speciesExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" />
+                    {{
+                        speciesExpanded
+                            ? t("message.showLess")
+                            : `${alert.speciesDetails.length - SPECIES_COLLAPSE_THRESHOLD} ${t("message.more")}...`
+                    }}
+                </button>
+            </div>
 
-            <Divider />
+            <!-- Area -->
+            <div class="section meta-row">
+                <i class="pi pi-map-marker meta-icon" />
+                <span :class="{ muted: !areaDescription }">
+                    {{ areaDescription || t("message.everywhere") }}
+                </span>
+            </div>
 
-            <!-- Metadata summary -->
-            <dl class="alert-meta">
-                <dt>{{ t("message.area") }}</dt>
-                <dd>{{ alert.areaDescription || t("message.everywhere") }}</dd>
+            <!-- Datasets (only when filtered) -->
+            <div v-if="alert.datasetNames.length > 0" class="section chips-row">
+                <i class="pi pi-database meta-icon" />
+                <div class="chips">
+                    <Tag
+                        v-for="name in alert.datasetNames"
+                        :key="name"
+                        :value="name"
+                        severity="secondary"
+                        class="dataset-chip"
+                    />
+                </div>
+            </div>
 
-                <template v-if="alert.datasetsList">
-                    <dt>{{ t("message.dataset") }}</dt>
-                    <dd>{{ alert.datasetsList }}</dd>
-                </template>
-
-                <template v-if="alert.basisOfRecordList">
-                    <dt>{{ t("message.basisOfRecord") }}</dt>
-                    <dd>{{ alert.basisOfRecordList }}</dd>
-                </template>
-
-                <dt>{{ t("message.alertNotificationsFrequency") }}</dt>
-                <dd>{{ alert.emailNotificationsFrequencyDisplay }}</dd>
-
-                <dt>{{ t("message.lastEmailSentOn") }}</dt>
-                <dd>{{ formatDate(alert.lastEmailSentOn) }}</dd>
-            </dl>
+            <!-- Notifications -->
+            <div class="section meta-row">
+                <i class="pi pi-bell meta-icon" />
+                <span>
+                    {{ alert.emailNotificationsFrequencyDisplay }}
+                    &middot;
+                    <span class="muted">{{ t("message.lastEmailSentOn") }} {{ formatDate(alert.lastEmailSentOn) }}</span>
+                </span>
+            </div>
         </template>
 
         <template #footer>
@@ -134,7 +185,6 @@ function confirmDelete() {
     height: 100%;
 }
 
-/* Make title slot clickable and styled */
 .card-title-row {
     display: flex;
     align-items: center;
@@ -156,10 +206,19 @@ function confirmDelete() {
     flex-shrink: 0;
 }
 
+/* Shared section spacing */
+.section {
+    margin-bottom: 0.75rem;
+}
+
+.section:last-child {
+    margin-bottom: 0;
+}
+
 /* Species */
 .species-list {
     list-style: none;
-    margin: 0 0 0 0;
+    margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
@@ -172,30 +231,68 @@ function confirmDelete() {
 
 .vernacular-name {
     color: var(--p-text-muted-color);
-    font-size: 0.9rem;
-    margin-left: 0.3rem;
+    font-size: 0.875rem;
+    margin-left: 0.25rem;
 }
 
-/* Metadata dl */
-.alert-meta {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: 0.2rem 1rem;
-    margin: 0;
+.expand-toggle {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--p-primary-color);
+    margin-top: 0.35rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.expand-toggle:hover {
+    text-decoration: underline;
+}
+
+/* Meta rows */
+.meta-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
     font-size: 0.875rem;
 }
 
-.alert-meta dt {
-    font-weight: 600;
+.meta-icon {
+    flex-shrink: 0;
     color: var(--p-text-muted-color);
-    white-space: nowrap;
+    margin-top: 0.15rem;
+    font-size: 0.8rem;
 }
 
-.alert-meta dd {
-    margin: 0;
+.muted {
+    color: var(--p-text-muted-color);
 }
 
-/* Actions */
+/* Dataset chips */
+.chips-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.dataset-chip {
+    font-size: 0.75rem;
+}
+
+/* Footer actions */
+:deep(.p-card-footer) {
+    border-top: 1px solid var(--p-content-border-color);
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+}
+
 .card-actions {
     display: flex;
     gap: 0.5rem;
