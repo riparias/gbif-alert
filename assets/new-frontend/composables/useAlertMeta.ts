@@ -36,5 +36,5 @@ export function useAlertMeta(alert: () => AlertOut) {
         return t("message.areaDescriptionBoth", { dist, areas });
     });
 
-    return { speciesExpanded, tooManySpecies, visibleSpecies, areaDescription };
+    return { speciesExpanded, tooManySpecies, visibleSpecies, areaDescription, SPECIES_COLLAPSE_THRESHOLD };
 }

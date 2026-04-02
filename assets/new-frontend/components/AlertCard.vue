@@ -21,7 +21,7 @@ const router = useRouter();
 const confirm = useConfirm();
 const toast = useToast();
 
-const { speciesExpanded, tooManySpecies, visibleSpecies, areaDescription } = useAlertMeta(
+const { speciesExpanded, tooManySpecies, visibleSpecies, areaDescription, SPECIES_COLLAPSE_THRESHOLD } = useAlertMeta(
     () => props.alert
 );
 

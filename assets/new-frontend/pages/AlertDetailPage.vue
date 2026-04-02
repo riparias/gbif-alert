@@ -28,7 +28,7 @@ const alertLoading = ref(false);
 const alertNotFound = ref(false);
 
 // alertMeta is only used once alert is loaded; the template guards with v-else-if="alert"
-const { speciesExpanded, tooManySpecies, visibleSpecies, areaDescription } = useAlertMeta(
+const { speciesExpanded, tooManySpecies, visibleSpecies, areaDescription, SPECIES_COLLAPSE_THRESHOLD } = useAlertMeta(
     () => alert.value!
 );
 
@@ -144,7 +144,7 @@ onUnmounted(() => {
                                 {{
                                     speciesExpanded
                                         ? t("message.showLess")
-                                        : `${alert.speciesDetails.length - 4} ${t("message.more")}...`
+                                        : `${alert.speciesDetails.length - SPECIES_COLLAPSE_THRESHOLD} ${t("message.more")}...`
                                 }}
                             </button>
                         </div>
