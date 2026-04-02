@@ -1,5 +1,5 @@
 import datetime
-from typing import Annotated
+from typing import Annotated, cast
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Count
@@ -39,6 +39,7 @@ from dashboard.models import (
     ObservationComment,
     ObservationUnseen,
     Species,
+    User,
 )
 from markdownx.utils import markdownify  # type: ignore
 from page_fragments.models import PageFragment
@@ -418,8 +419,9 @@ def _save_alert(alert: Alert, payload: AlertIn) -> dict[str, list[str]]:
 @api_v2.get("/alerts/suggest-name/", response=dict, auth=django_auth)
 def alert_suggest_name(request: HttpRequest):
     """Suggest the next available 'My alert #N' name for the current user."""
+    user = cast(User, request.user)
     existing = set(
-        Alert.objects.filter(user=request.user).values_list("name", flat=True)
+        Alert.objects.filter(user=user).values_list("name", flat=True)
     )
     n = 1
     while f"My alert #{n}" in existing:
@@ -440,8 +442,9 @@ def alert_notification_frequencies(request: HttpRequest):
 @api_v2.get("/alerts/", response=list[AlertOut], auth=django_auth)
 def alerts_list(request: HttpRequest):
     """Return all alerts belonging to the authenticated user."""
+    user = cast(User, request.user)
     alerts = (
-        Alert.objects.filter(user=request.user)
+        Alert.objects.filter(user=user)
         .prefetch_related("species", "datasets", "areas", "basis_of_record_filters")
         .order_by("id")
     )
@@ -451,7 +454,7 @@ def alerts_list(request: HttpRequest):
 @api_v2.post("/alerts/", response={201: AlertOut, 422: AlertValidationErrorOut}, auth=django_auth)
 def alert_create(request: HttpRequest, payload: AlertIn):
     """Create a new alert for the authenticated user."""
-    alert = Alert(user=request.user)
+    alert = Alert(user=cast(User, request.user))
     errors = _save_alert(alert, payload)
     if errors:
         return 422, {"errors": errors}
