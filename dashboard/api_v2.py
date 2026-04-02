@@ -3,6 +3,7 @@ import json
 import tempfile
 from typing import Annotated, cast
 
+from django.contrib.gis.geos import GEOSGeometry, MultiPolygon as GEOSMultiPolygon
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers import serialize
 from django.db.models import Count
@@ -130,7 +131,7 @@ def area_create(
         except ValueError as exc:
             return 422, {"detail": str(exc)}
 
-    area = Area.objects.create(mpoly=wkt, owner=user, name=name)
+    area = Area.objects.create(mpoly=cast(GEOSMultiPolygon, GEOSGeometry(wkt)), owner=user, name=name)
     return 201, {
         "id": area.pk,
         "name": area.name,

@@ -84,20 +84,20 @@ async function upload() {
         :style="{ width: '480px' }"
         @update:visible="onHide"
     >
-        <div class="flex flex-column gap-3">
-            <div>
-                <label for="area-name" class="block font-medium mb-1">
+        <div style="display: flex; flex-direction: column; gap: 1.25rem; padding: 0.5rem 0;">
+            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
+                <label for="area-name" style="display: block; font-weight: 500;">
                     {{ t("message.areaName") }}
                 </label>
                 <InputText id="area-name" v-model="name" class="w-full" />
             </div>
 
-            <div>
-                <label class="block font-medium mb-1">
+            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
+                <label style="display: block; font-weight: 500;">
                     {{ t("message.areaFile") }}
                 </label>
-                <input ref="fileInput" type="file" accept=".gpkg" class="w-full" />
-                <small class="text-color-secondary">{{ t("message.areaFileHint") }}</small>
+                <input ref="fileInput" type="file" accept=".gpkg" style="display: block; width: 100%;" />
+                <small style="color: var(--p-text-muted-color, #6b7280);">{{ t("message.areaFileHint") }}</small>
             </div>
 
             <Message

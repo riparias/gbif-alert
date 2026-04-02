@@ -160,7 +160,7 @@ export const messages = {
             areaCreated: "Area created",
             areaName: "Area name",
             areaFile: "Data file",
-            areaFileHint: "GeoPackage (.gpkg), single polygon or multipolygon layer",
+            areaFileHint: "GeoPackage (.gpkg) - single layer with one polygon or multipolygon feature",
             upload: "Upload",
         }
     },
@@ -325,7 +325,7 @@ export const messages = {
             areaCreated: "Zone créée",
             areaName: "Nom de la zone",
             areaFile: "Fichier de données",
-            areaFileHint: "GeoPackage (.gpkg), couche de type polygone ou multipolygone unique",
+            areaFileHint: "GeoPackage (.gpkg) - une seule couche avec un polygone ou multipolygone",
             upload: "Envoyer",
         }
     },
@@ -490,7 +490,7 @@ export const messages = {
             areaCreated: "Gebied aangemaakt",
             areaName: "Naam van het gebied",
             areaFile: "Gegevensbestand",
-            areaFileHint: "GeoPackage (.gpkg), enkele polygoon- of multipolygoonlaag",
+            areaFileHint: "GeoPackage (.gpkg) - enkele laag met één polygoon of multipolygoon",
             upload: "Uploaden",
         }
     }
