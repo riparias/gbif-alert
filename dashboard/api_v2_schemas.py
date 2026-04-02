@@ -165,3 +165,11 @@ class AlertOut(Schema):
 
 class AlertValidationErrorOut(Schema):
     errors: dict[str, list[str]]
+
+
+class AreaCreateError(Schema):
+    detail: str
+
+
+class AreaDeleteError(Schema):
+    detail: str

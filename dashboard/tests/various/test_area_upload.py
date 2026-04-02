@@ -3,7 +3,7 @@ from pathlib import Path
 from django.contrib.gis.gdal import OGRGeometry, SpatialReference
 from django.test import TestCase
 
-from dashboard.views.pages import _file_to_wkt_multipolygon
+from dashboard.geo_utils import file_to_wkt_multipolygon
 
 THIS_SCRIPT_PATH = Path(__file__).parent
 SAMPLE_DATA_PATH = THIS_SCRIPT_PATH / "sample_data"
@@ -30,35 +30,35 @@ class AreaUploadTests(TestCase):
         self.assertFalse(geom.contains(crl_airport))
 
     def test_uploaded_file_to_multipolygon_gpkg_polygon_3857(self):
-        wkt = _file_to_wkt_multipolygon(
+        wkt = file_to_wkt_multipolygon(
             SAMPLE_DATA_PATH / "polygon_3857.gpkg", dest_srid=3857
         )
         self.assertCorrectPolygon(wkt)
 
     def test_default_srid(self):
-        wkt = _file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "polygon_3857.gpkg")
+        wkt = file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "polygon_3857.gpkg")
         self.assertCorrectPolygon(wkt)
 
     def test_uploaded_file_to_multipolygon_gpkg_multipolygon_3857(self):
-        wkt = _file_to_wkt_multipolygon(
+        wkt = file_to_wkt_multipolygon(
             SAMPLE_DATA_PATH / "multipolygon_3857.gpkg", dest_srid=3857
         )
         self.assertCorrectPolygon(wkt)
 
     def test_uploaded_file_to_multipolygon_gpkg_polygon_4326(self):
-        wkt = _file_to_wkt_multipolygon(
+        wkt = file_to_wkt_multipolygon(
             SAMPLE_DATA_PATH / "polygon_4326.gpkg", dest_srid=3857
         )
         self.assertCorrectPolygon(wkt)
 
     def test_uploaded_file_to_multipolygon_gpkg_polygon_lambert(self):
-        wkt = _file_to_wkt_multipolygon(
+        wkt = file_to_wkt_multipolygon(
             SAMPLE_DATA_PATH / "polygon_lambert.gpkg", dest_srid=3857
         )
         self.assertCorrectPolygon(wkt)
 
     def test_uploaded_file_to_multipolygon_gpkg_multipolygon_4326(self):
-        wkt = _file_to_wkt_multipolygon(
+        wkt = file_to_wkt_multipolygon(
             SAMPLE_DATA_PATH / "multipolygon_4326.gpkg", dest_srid=3857
         )
         self.assertCorrectPolygon(wkt)
@@ -67,7 +67,7 @@ class AreaUploadTests(TestCase):
         with self.assertRaisesRegex(
             ValueError, "The file must contain a single feature, 2 features found"
         ):
-            _file_to_wkt_multipolygon(
+            file_to_wkt_multipolygon(
                 SAMPLE_DATA_PATH / "polygon_4326_too_many_features.gpkg", dest_srid=3857
             )
 
@@ -75,14 +75,14 @@ class AreaUploadTests(TestCase):
         with self.assertRaisesRegex(
             ValueError, "The file must contain a single feature, 0 features found"
         ):
-            _file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "empty.gpkg", dest_srid=3857)
+            file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "empty.gpkg", dest_srid=3857)
 
     def test_uploaded_file_to_multipolygon_no_polygon_or_multipolygon(self):
         with self.assertRaisesRegex(
             ValueError,
-            "The file must contains a single layer of type Polygon or MultiPolygon, Point found",
+            "The file must contain a single layer of type Polygon or MultiPolygon, Point found",
         ):
-            _file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "point.gpkg", dest_srid=3857)
+            file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "point.gpkg", dest_srid=3857)
 
     def test_uploaded_file_to_multipolygon_no_srs(self):
         # TODO: implement this, QGIS doesn't seem to allow to create a file without SRS
