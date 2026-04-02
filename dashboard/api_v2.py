@@ -1,5 +1,6 @@
 import datetime
 import json
+import tempfile
 from typing import Annotated, cast
 
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -9,7 +10,8 @@ from django.db.models.functions import TruncMonth
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
-from ninja import NinjaAPI, Query
+from ninja import File, Form, NinjaAPI, Query
+from ninja.files import UploadedFile
 from ninja.errors import HttpError
 from ninja.security import django_auth
 from pydantic import Field
@@ -19,6 +21,7 @@ from dashboard.api_v2_schemas import (
     AlertNotificationFrequencyOut,
     AlertOut,
     AlertValidationErrorOut,
+    AreaCreateError,
     AreaOut,
     BasisOfRecordOut,
     CommentIn,
@@ -31,6 +34,7 @@ from dashboard.api_v2_schemas import (
     ObservationsPageOut,
     SpeciesOut,
 )
+from dashboard.geo_utils import file_to_wkt_multipolygon
 from dashboard.models import (
     Alert,
     Area,
@@ -99,6 +103,39 @@ def area_geojson(request: HttpRequest, area_id: int):
     if not area.is_available_to(request.user):
         raise HttpError(403, "Forbidden")
     return json.loads(serialize("geojson", [area], srid=4326))
+
+
+@api_v2.post(
+    "/areas/",
+    response={201: AreaOut, 422: AreaCreateError},
+    auth=django_auth,
+)
+def area_create(
+    request: HttpRequest,
+    name: Form[str],
+    data_file: File[UploadedFile],
+):
+    """Create a new user-specific area from an uploaded GeoPackage file.
+
+    Returns 422 with a human-readable detail message if the file fails
+    validation (wrong geometry type, multiple layers, missing SRS, etc.).
+    """
+    user = cast(User, request.user)
+    with tempfile.NamedTemporaryFile(suffix=data_file.name) as tmp:
+        tmp.write(data_file.read())
+        tmp.flush()
+        try:
+            wkt = file_to_wkt_multipolygon(tmp.name)
+        except ValueError as exc:
+            return 422, {"detail": str(exc)}
+
+    area = Area.objects.create(mpoly=wkt, owner=user, name=name)
+    return 201, {
+        "id": area.pk,
+        "name": area.name,
+        "isUserSpecific": area.is_user_specific,
+        "tags": [],
+    }
 
 
 @api_v2.get("/basis-of-record/", response=list[BasisOfRecordOut])

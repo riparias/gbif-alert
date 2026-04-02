@@ -942,6 +942,9 @@ class ApiV2AlertTests(TestCase):
 class ApiV2AreaEndpointsTests(TestCase):
     """Tests for POST /api/v2/areas/, DELETE /api/v2/areas/{id}/, GET /api/v2/areas/{id}/geojson/."""
 
+    from pathlib import Path
+    SAMPLE_DATA_DIR = Path(__file__).parent.parent / "various" / "sample_data"
+
     @classmethod
     def setUpTestData(cls):
         User = get_user_model()
@@ -986,3 +989,58 @@ class ApiV2AreaEndpointsTests(TestCase):
         self.client.login(username="owner", password="pass")
         response = self.client.get("/api/v2/areas/99999/geojson/")
         self.assertEqual(response.status_code, 404)
+
+    # --- POST /api/v2/areas/ ---
+
+    def test_create_area_returns_201(self):
+        self.client.login(username="owner", password="pass")
+        gpkg = self.SAMPLE_DATA_DIR / "polygon_4326.gpkg"
+        with open(gpkg, "rb") as f:
+            response = self.client.post(
+                "/api/v2/areas/",
+                {"name": "New area", "data_file": f},
+            )
+        self.assertEqual(response.status_code, 201)
+
+    def test_create_area_persists_in_db(self):
+        self.client.login(username="owner", password="pass")
+        gpkg = self.SAMPLE_DATA_DIR / "polygon_4326.gpkg"
+        with open(gpkg, "rb") as f:
+            self.client.post("/api/v2/areas/", {"name": "Persisted area", "data_file": f})
+        self.assertTrue(Area.objects.filter(name="Persisted area", owner=self.owner).exists())
+
+    def test_create_area_response_shape(self):
+        self.client.login(username="owner", password="pass")
+        gpkg = self.SAMPLE_DATA_DIR / "polygon_4326.gpkg"
+        with open(gpkg, "rb") as f:
+            response = self.client.post(
+                "/api/v2/areas/",
+                {"name": "Shape test", "data_file": f},
+            )
+        data = response.json()
+        self.assertIn("id", data)
+        self.assertIn("name", data)
+        self.assertIn("isUserSpecific", data)
+        self.assertTrue(data["isUserSpecific"])
+
+    def test_create_area_wrong_geometry_returns_422(self):
+        """Uploading a point GeoPackage (wrong geometry type) returns 422."""
+        self.client.login(username="owner", password="pass")
+        gpkg = self.SAMPLE_DATA_DIR / "point.gpkg"
+        with open(gpkg, "rb") as f:
+            response = self.client.post("/api/v2/areas/", {"name": "Bad", "data_file": f})
+        self.assertEqual(response.status_code, 422)
+        self.assertIn("detail", response.json())
+
+    def test_create_area_too_many_features_returns_422(self):
+        self.client.login(username="owner", password="pass")
+        gpkg = self.SAMPLE_DATA_DIR / "polygon_4326_too_many_features.gpkg"
+        with open(gpkg, "rb") as f:
+            response = self.client.post("/api/v2/areas/", {"name": "Bad", "data_file": f})
+        self.assertEqual(response.status_code, 422)
+
+    def test_create_area_requires_authentication(self):
+        gpkg = self.SAMPLE_DATA_DIR / "polygon_4326.gpkg"
+        with open(gpkg, "rb") as f:
+            response = self.client.post("/api/v2/areas/", {"name": "Unauth", "data_file": f})
+        self.assertEqual(response.status_code, 401)
