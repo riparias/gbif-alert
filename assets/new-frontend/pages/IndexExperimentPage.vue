@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import FilterSidebar from "../components/FilterSidebar.vue";
@@ -23,6 +23,15 @@ const isAuthenticated: boolean = navConfig.user.isAuthenticated;
 document.title = `${t("message.home")} - ${navConfig.siteName}`;
 
 const unseenFallback = computed(() => isAuthenticated && !route.query.status);
+
+const welcomeHtml = ref("");
+onMounted(async () => {
+    const resp = await fetch("/api/v2/page-fragments/welcome_text/");
+    if (resp.ok) {
+        const data = await resp.json();
+        welcomeHtml.value = data.html;
+    }
+});
 </script>
 
 <template>
@@ -32,6 +41,7 @@ const unseenFallback = computed(() => isAuthenticated && !route.query.status);
         </aside>
 
         <div class="experiment-main">
+            <div v-if="welcomeHtml" class="welcome-text" v-html="welcomeHtml" />
             <ActiveFilterChips />
             <HistogramBrush />
             <ObservationsView variant="experiment" :unseen-fallback="unseenFallback" />
@@ -64,4 +74,7 @@ const unseenFallback = computed(() => isAuthenticated && !route.query.status);
     gap: 0.75rem;
     min-width: 0; /* prevent CSS grid blowout */
 }
+
+.welcome-text :deep(p) { margin: 0 0 0.5rem; font-size: 0.9rem; }
+.welcome-text :deep(p:last-child) { margin-bottom: 0; }
 </style>

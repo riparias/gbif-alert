@@ -41,8 +41,8 @@ function buildFilterParams(): URLSearchParams {
     if (filtersStore.approachingDistanceKm !== null) {
         params.set("approachingDistanceKm", String(filtersStore.approachingDistanceKm));
     }
-    // startDate and endDate are intentionally omitted: the backend ignores them
-    // for the histogram, and we avoid sending unnecessary params.
+    if (filtersStore.startDate) params.set("startDate", filtersStore.startDate);
+    if (filtersStore.endDate) params.set("endDate", filtersStore.endDate);
     return params;
 }
 

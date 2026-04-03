@@ -409,16 +409,41 @@ const formattedDatasetsCount = computed(() =>
     width: 100%;
 }
 
+/* ---- Compact input sizing for all PrimeVue controls inside the sidebar ---- */
+
+/* Select / MultiSelect / DatePicker / InputNumber */
+:deep(.p-select),
+:deep(.p-multiselect),
+:deep(.p-datepicker),
+:deep(.p-inputnumber) {
+    font-size: 0.8rem;
+}
+
+:deep(.p-select .p-select-label),
+:deep(.p-multiselect .p-multiselect-label),
+:deep(.p-datepicker .p-datepicker-input),
+:deep(.p-inputnumber .p-inputtext) {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.5rem;
+}
+
+:deep(.p-select-dropdown),
+:deep(.p-multiselect-dropdown) {
+    width: 2rem;
+}
+
 :deep(.filter-modal-trigger) {
     width: 100%;
     justify-content: flex-start;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.6rem;
 }
 
 /* Compact sizing for all SelectButton toggles inside the sidebar */
 .filter-group :deep(.p-selectbutton .p-togglebutton) {
     flex: 1;
-    font-size: 0.78rem;
-    padding: 0.25rem 0.35rem;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.5rem;
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;

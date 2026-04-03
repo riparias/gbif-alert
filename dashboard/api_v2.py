@@ -303,14 +303,12 @@ def observations_list(
 def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
     user = request.user if request.user.is_authenticated else None
 
-    # Date filters are intentionally excluded: the histogram always shows the
-    # full temporal distribution regardless of the user's date range selection.
     qs = Observation.objects.filtered_from_my_params(
         species_ids=filters.speciesIds,
         datasets_ids=filters.datasetsIds,
         basis_of_record_ids=filters.basisOfRecordIds,
-        start_date=None,
-        end_date=None,
+        start_date=filters.startDate,
+        end_date=filters.endDate,
         areas_ids=filters.areaIds,
         status_for_user=filters.status,
         initial_data_import_ids=filters.initialDataImportIds,
