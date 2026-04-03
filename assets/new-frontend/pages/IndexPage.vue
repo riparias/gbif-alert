@@ -37,7 +37,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="index-page">
+    <div class="page-content index-page">
         <!-- Welcome text (page fragment, rendered HTML from backend) -->
         <div v-if="welcomeHtml" class="welcome-text" v-html="welcomeHtml" />
 
@@ -56,10 +56,10 @@ onMounted(() => {
 
 <style scoped>
 .index-page {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
+    /* Card's own body-padding already separates content from the navbar;
+       removing top padding avoids the double gap that makes the index page
+       look like it starts too far down. */
+    padding-top: 0;
 }
 
 .welcome-text :deep(p) { margin: 0 0 0.75rem; }

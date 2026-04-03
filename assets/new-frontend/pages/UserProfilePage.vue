@@ -123,7 +123,7 @@ async function deleteAccount() {
 </script>
 
 <template>
-    <div style="max-width: 500px; margin: 2rem auto; padding: 0 1rem;">
+    <div class="page-content--narrow">
         <h1 style="margin-bottom: 1.5rem;">{{ t("message.navMyProfile") }}</h1>
 
         <ProgressSpinner v-if="loading" />

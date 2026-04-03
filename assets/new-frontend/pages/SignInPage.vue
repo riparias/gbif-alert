@@ -35,7 +35,7 @@ async function submit() {
 </script>
 
 <template>
-    <div style="max-width: 400px; margin: 4rem auto; padding: 0 1rem;">
+    <div class="page-content--narrow signin-page">
         <h1 style="margin-bottom: 1.5rem;">{{ t("message.signIn") }}</h1>
 
         <div style="display: flex; flex-direction: column; gap: 1rem;">
@@ -82,3 +82,7 @@ async function submit() {
         </div>
     </div>
 </template>
+
+<style scoped>
+.signin-page { margin-top: 4rem; }
+</style>

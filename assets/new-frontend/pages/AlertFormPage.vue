@@ -172,7 +172,7 @@ async function save() {
 </script>
 
 <template>
-    <div class="alert-form-page">
+    <div class="page-content alert-form-page">
         <div class="page-header">
             <h1>{{ isEditMode ? t("message.editAlert") : t("message.createAlert") }}</h1>
             <Button
@@ -320,10 +320,6 @@ async function save() {
 
 <style scoped>
 .alert-form-page {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
     max-width: 720px;
     margin: 0 auto;
 }

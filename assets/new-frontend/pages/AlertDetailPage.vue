@@ -87,7 +87,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="alert-detail-page">
+    <div class="page-content alert-detail-page">
         <div v-if="alertLoading" class="loading-placeholder">
             <i class="pi pi-spin pi-spinner" style="font-size: 1.5rem" />
         </div>
@@ -200,13 +200,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.alert-detail-page {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
-}
-
 .alert-header {
     display: flex;
     justify-content: space-between;

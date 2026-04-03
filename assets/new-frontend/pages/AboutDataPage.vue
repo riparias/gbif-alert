@@ -38,7 +38,7 @@ function gbifDownloadUrl(downloadId: string): string {
 </script>
 
 <template>
-    <div style="max-width: 800px; margin: 2rem auto; padding: 0 1rem;">
+    <div class="page-content--wide">
         <h1 style="margin-bottom: 1rem;">{{ t("message.aboutData") }}</h1>
 
         <p>

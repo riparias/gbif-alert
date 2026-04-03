@@ -33,7 +33,7 @@ onMounted(loadAlerts);
 </script>
 
 <template>
-    <div class="user-alerts-page">
+    <div class="page-content user-alerts-page">
         <div class="page-header">
             <h1>{{ t("message.navMyAlerts") }}</h1>
             <Button
@@ -70,10 +70,7 @@ onMounted(loadAlerts);
 
 <style scoped>
 .user-alerts-page {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    padding: 1rem;
+    gap: 1.5rem; /* override .page-content's 1rem gap */
 }
 
 .page-header {

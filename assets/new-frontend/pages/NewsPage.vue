@@ -25,7 +25,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div style="max-width: 800px; margin: 2rem auto; padding: 0 1rem;">
+    <div class="page-content--wide">
         <h1 style="margin-bottom: 1.5rem;">{{ t("message.whatsNew") }}</h1>
         <ProgressSpinner v-if="loading" />
         <div v-else v-html="html" />

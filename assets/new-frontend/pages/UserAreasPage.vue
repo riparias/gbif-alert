@@ -38,9 +38,9 @@ onMounted(loadAreas);
 </script>
 
 <template>
-    <div class="p-4">
-        <div class="flex align-items-center justify-content-between mb-4">
-            <h1 class="text-2xl font-bold m-0">{{ t("message.navMyCustomAreas") }}</h1>
+    <div class="page-content user-areas-page">
+        <div class="page-header">
+            <h1>{{ t("message.navMyCustomAreas") }}</h1>
             <Button
                 :label="t('message.newArea')"
                 icon="pi pi-plus"
@@ -55,10 +55,13 @@ onMounted(loadAreas);
                 {{ t("message.noCustomAreasYet") }}
             </p>
 
-            <div v-else class="grid">
-                <div v-for="area in areas" :key="area.id" class="col-12 md:col-6 lg:col-4">
-                    <AreaCard :area="area" @deleted="onAreaDeleted" />
-                </div>
+            <div v-else class="areas-grid">
+                <AreaCard
+                    v-for="area in areas"
+                    :key="area.id"
+                    :area="area"
+                    @deleted="onAreaDeleted"
+                />
             </div>
         </template>
 
@@ -68,3 +71,26 @@ onMounted(loadAreas);
         />
     </div>
 </template>
+
+<style scoped>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.page-header h1 {
+    margin: 0;
+}
+
+.areas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.text-color-secondary {
+    color: var(--p-text-muted-color);
+}
+</style>
