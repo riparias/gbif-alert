@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useToast } from "primevue/usetoast";
@@ -65,6 +65,14 @@ const verifiedFilterOptions = computed(() => [
     { id: "verified", label: t("message.verifiedOnly") },
     { id: "unverified", label: t("message.unverifiedOnly") },
 ]);
+
+// Clear the distance when switching back to "inside" so the hidden field doesn't
+// trigger a backend validation error ("must be empty when mode is 'inside'").
+watch(areaFilterMode, (mode) => {
+    if (mode === "inside") {
+        approachingDistanceKm.value = null;
+    }
+});
 
 // Show approaching distance input only when mode requires it and areas are selected
 const showApproachingDistance = computed(
