@@ -12,6 +12,7 @@ import DatasetFilterModal from "./DatasetFilterModal.vue";
 import ObservationStatusToggle from "./ObservationStatusToggle.vue";
 import { useFiltersStore } from "../stores/filters";
 import { useResultsStore } from "../stores/results";
+import { useFilterOptionsStore } from "../stores/filterOptions";
 import type { components } from "../types/api";
 import { getNavConfig } from "../utils/navConfig";
 
@@ -23,6 +24,7 @@ type BasisOfRecordOut = components["schemas"]["BasisOfRecordOut"];
 const { t } = useI18n();
 const filtersStore = useFiltersStore();
 const resultsStore = useResultsStore();
+const filterOptionsStore = useFilterOptionsStore();
 
 // Auth state from the nav config Django injects on every page
 const isAuthenticated: boolean = getNavConfig().user.isAuthenticated;
@@ -45,6 +47,13 @@ onMounted(async () => {
     datasetOptions.value = datasets;
     areaOptions.value = areas;
     basisOfRecordOptions.value = basisOfRecord;
+
+    // Share loaded options so sibling components (e.g. ActiveFilterChips) can
+    // resolve IDs to names without making duplicate API requests.
+    filterOptionsStore.species = species;
+    filterOptionsStore.datasets = datasets;
+    filterOptionsStore.areas = areas;
+    filterOptionsStore.basisOfRecord = basisOfRecord;
 });
 
 // --- v-model bindings to the Pinia store (computed get/set) ---
@@ -185,136 +194,161 @@ const formattedCount = computed(() =>
         ? "--"
         : resultsStore.observationCount.toLocaleString()
 );
+
+const formattedSpeciesCount = computed(() =>
+    resultsStore.loading && resultsStore.speciesCount === 0
+        ? "--"
+        : resultsStore.speciesCount.toLocaleString()
+);
+
+const formattedDatasetsCount = computed(() =>
+    resultsStore.loading && resultsStore.datasetsCount === 0
+        ? "--"
+        : resultsStore.datasetsCount.toLocaleString()
+);
 </script>
 
 <template>
     <div class="filter-sidebar-panel">
-        <div class="sidebar-heading">FILTERS</div>
+        <div class="sidebar-heading">{{ t("message.filters").toUpperCase() }}</div>
 
-        <!-- Species -->
-        <div class="filter-group">
-            <label>{{ t("message.species") }}</label>
-            <SpeciesFilterModal
-                v-model="selectedSpeciesIds"
-                :options="speciesOptions"
-            />
+        <!-- WHAT section -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-heading">{{ t("message.filterSectionWhat") }}</div>
+
+            <div class="filter-group">
+                <label>{{ t("message.species") }}</label>
+                <SpeciesFilterModal
+                    v-model="selectedSpeciesIds"
+                    :options="speciesOptions"
+                />
+            </div>
+
+            <div class="filter-group">
+                <label>{{ t("message.dataset") }}</label>
+                <DatasetFilterModal
+                    v-model="selectedDatasetIds"
+                    :options="datasetOptions"
+                />
+            </div>
+
+            <div class="filter-group">
+                <label>{{ t("message.basisOfRecord") }}</label>
+                <MultiSelect
+                    v-model="selectedBasisOfRecordIds"
+                    :options="basisOfRecordOptions"
+                    option-value="id"
+                    option-label="name"
+                    filter
+                    :placeholder="t('message.allBasisOfRecord')"
+                    :selected-items-label="`{0} ${t('message.xSelectedBasisOfRecord')}`"
+                    :max-selected-labels="0"
+                    class="sidebar-control"
+                />
+            </div>
         </div>
 
-        <!-- Areas -->
-        <div class="filter-group">
-            <label>{{ t("message.area") }}</label>
-            <AreaFilterModal
-                v-model="selectedAreaIds"
-                :options="areaOptions"
-            />
+        <!-- WHERE section -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-heading">{{ t("message.filterSectionWhere") }}</div>
+
+            <div class="filter-group">
+                <label>{{ t("message.area") }}</label>
+                <AreaFilterModal
+                    v-model="selectedAreaIds"
+                    :options="areaOptions"
+                />
+            </div>
+
+            <!-- Area filter mode (only when areas are selected) -->
+            <div v-if="hasAreaSelection" class="filter-group">
+                <label>{{ t("message.areaFilterMode") }}</label>
+                <Select
+                    v-model="selectedAreaFilterMode"
+                    :options="areaFilterModeOptions"
+                    option-value="value"
+                    option-label="label"
+                    class="sidebar-control"
+                />
+            </div>
+
+            <!-- Approaching distance (only when mode requires it) -->
+            <div v-if="showApproachingDistance" class="filter-group">
+                <label>{{ t("message.approachingDistanceKm") }}</label>
+                <InputNumber
+                    v-model="approachingDistanceKm"
+                    :min="0.1"
+                    :max="50"
+                    :step="0.1"
+                    :min-fraction-digits="1"
+                    :max-fraction-digits="1"
+                    class="sidebar-control"
+                />
+            </div>
         </div>
 
-        <!-- Datasets -->
-        <div class="filter-group">
-            <label>{{ t("message.dataset") }}</label>
-            <DatasetFilterModal
-                v-model="selectedDatasetIds"
-                :options="datasetOptions"
-            />
+        <!-- WHEN section -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-heading">{{ t("message.filterSectionWhen") }}</div>
+
+            <div class="filter-group">
+                <label>{{ t("message.dateFrom") }}</label>
+                <DatePicker
+                    v-model="startDateObj"
+                    date-format="yy-mm-dd"
+                    show-button-bar
+                    class="sidebar-control"
+                />
+            </div>
+
+            <div class="filter-group">
+                <label>{{ t("message.dateTo") }}</label>
+                <DatePicker
+                    v-model="endDateObj"
+                    date-format="yy-mm-dd"
+                    show-button-bar
+                    class="sidebar-control"
+                />
+            </div>
         </div>
 
-        <!-- Area filter mode (only when areas are selected) -->
-        <div v-if="hasAreaSelection" class="filter-group">
-            <label>{{ t("message.areaFilterMode") }}</label>
-            <Select
-                v-model="selectedAreaFilterMode"
-                :options="areaFilterModeOptions"
-                option-value="value"
-                option-label="label"
-                class="sidebar-control"
-            />
-        </div>
+        <!-- STATUS section -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-heading">{{ t("message.filterSectionStatus") }}</div>
 
-        <!-- Approaching distance (only when mode requires it) -->
-        <div v-if="showApproachingDistance" class="filter-group">
-            <label>{{ t("message.approachingDistanceKm") }}</label>
-            <InputNumber
-                v-model="approachingDistanceKm"
-                :min="0.1"
-                :max="50"
-                :step="0.1"
-                :min-fraction-digits="1"
-                :max-fraction-digits="1"
-                class="sidebar-control"
-            />
-        </div>
+            <div class="filter-group">
+                <label>{{ t("message.verificationFilter") }}</label>
+                <SelectButton
+                    v-model="selectedVerifiedFilter"
+                    :options="verifiedFilterOptions"
+                    option-value="value"
+                    option-label="label"
+                    :allow-empty="false"
+                    class="verified-select-button"
+                />
+            </div>
 
-        <!-- Start date -->
-        <div class="filter-group">
-            <label>{{ t("message.date") }} (from)</label>
-            <DatePicker
-                v-model="startDateObj"
-                date-format="yy-mm-dd"
-                show-button-bar
-                class="sidebar-control"
-            />
-        </div>
-
-        <!-- End date -->
-        <div class="filter-group">
-            <label>{{ t("message.date") }} (to)</label>
-            <DatePicker
-                v-model="endDateObj"
-                date-format="yy-mm-dd"
-                show-button-bar
-                class="sidebar-control"
-            />
-        </div>
-
-        <!-- Basis of record -->
-        <div class="filter-group">
-            <label>{{ t("message.basisOfRecord") }}</label>
-            <MultiSelect
-                v-model="selectedBasisOfRecordIds"
-                :options="basisOfRecordOptions"
-                option-value="id"
-                option-label="name"
-                filter
-                :placeholder="t('message.allBasisOfRecord')"
-                :selected-items-label="`{0} ${t('message.xSelectedBasisOfRecord')}`"
-                :max-selected-labels="0"
-                class="sidebar-control"
-            />
-        </div>
-
-        <!-- Verification filter -->
-        <div class="filter-group">
-            <label>{{ t("message.verificationFilter") }}</label>
-            <SelectButton
-                v-model="selectedVerifiedFilter"
-                :options="verifiedFilterOptions"
-                option-value="value"
-                option-label="label"
-                :allow-empty="false"
-                class="verified-select-button"
-            />
-        </div>
-
-        <!-- Observation status (authenticated users only) -->
-        <div v-if="isAuthenticated" class="filter-group">
-            <label>{{ t("message.observationStatus") }}</label>
-            <ObservationStatusToggle />
+            <!-- Observation status (authenticated users only) -->
+            <div v-if="isAuthenticated" class="filter-group">
+                <label>{{ t("message.observationStatus") }}</label>
+                <ObservationStatusToggle />
+            </div>
         </div>
 
         <!-- Stat block -->
         <div class="stat-block">
             <div class="stat-main">
                 <span class="stat-count">{{ formattedCount }}</span>
-                <span class="stat-label">matching observations</span>
+                <span class="stat-label">{{ t("message.statObservationsLabel") }}</span>
             </div>
             <div class="stat-cards">
                 <div class="stat-card">
-                    <span class="stat-card-value">--</span>
-                    <span class="stat-card-label">species</span>
+                    <span class="stat-card-value">{{ formattedSpeciesCount }}</span>
+                    <span class="stat-card-label">{{ t("message.statSpeciesLabel") }}</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-card-value">--</span>
-                    <span class="stat-card-label">datasets</span>
+                    <span class="stat-card-value">{{ formattedDatasetsCount }}</span>
+                    <span class="stat-card-label">{{ t("message.statDatasetsLabel") }}</span>
                 </div>
             </div>
         </div>
@@ -325,7 +359,7 @@ const formattedCount = computed(() =>
 .filter-sidebar-panel {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
     padding: 0.75rem;
     height: 100%;
 }
@@ -335,6 +369,27 @@ const formattedCount = computed(() =>
     font-weight: 700;
     letter-spacing: 0.08em;
     color: #64748b; /* slate-500 - muted on dark */
+    text-transform: uppercase;
+}
+
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #334155; /* slate-700 */
+}
+
+.sidebar-section:last-of-type {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.sidebar-section-heading {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #475569; /* slate-600 - subtler than the main FILTERS heading */
     text-transform: uppercase;
 }
 

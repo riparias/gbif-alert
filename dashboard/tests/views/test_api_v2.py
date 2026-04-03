@@ -227,13 +227,44 @@ class ApiV2ObservationsTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_observations_list_response_shape(self):
-        """Response must have 'count' (int) and 'items' (list) at the top level."""
+        """Response must have 'count', 'speciesCount', 'datasetsCount', and 'items' at the top level."""
         response = self.client.get(reverse("api-v2:observations_list"))
         data = response.json()
         self.assertIn("count", data)
+        self.assertIn("speciesCount", data)
+        self.assertIn("datasetsCount", data)
         self.assertIn("items", data)
         self.assertIsInstance(data["count"], int)
+        self.assertIsInstance(data["speciesCount"], int)
+        self.assertIsInstance(data["datasetsCount"], int)
         self.assertIsInstance(data["items"], list)
+
+    def test_species_count_reflects_distinct_species(self):
+        """speciesCount must equal the number of distinct species in the result set."""
+        # setUpTestData creates 2 observations across 2 species in the same dataset
+        response = self.client.get(reverse("api-v2:observations_list"))
+        data = response.json()
+        self.assertEqual(data["speciesCount"], 2)
+        self.assertEqual(data["datasetsCount"], 1)
+
+    def test_species_count_respects_filters(self):
+        """speciesCount must drop when a species filter reduces the result set."""
+        response = self.client.get(
+            reverse("api-v2:observations_list"), {"speciesIds": self.species.pk}
+        )
+        data = response.json()
+        self.assertEqual(data["speciesCount"], 1)
+        self.assertEqual(data["datasetsCount"], 1)
+
+    def test_counts_are_zero_when_no_results(self):
+        """speciesCount and datasetsCount must both be 0 when the filter matches nothing."""
+        response = self.client.get(
+            reverse("api-v2:observations_list"), {"speciesIds": 999999}
+        )
+        data = response.json()
+        self.assertEqual(data["count"], 0)
+        self.assertEqual(data["speciesCount"], 0)
+        self.assertEqual(data["datasetsCount"], 0)
 
     def test_observations_list_camel_case_keys(self):
         """All expected camelCase keys must be present in each item."""

@@ -209,6 +209,28 @@ export const messages = {
             newObservationsThisImport: 'New observations in this import',
             skippedObservations: 'Skipped observations',
             gbifDownload: 'GBIF download',
+            // Experiment page - filter sidebar sections
+            filterSectionWhat: 'What',
+            filterSectionWhere: 'Where',
+            filterSectionWhen: 'When',
+            filterSectionStatus: 'Status',
+            dateFrom: 'Date (from)',
+            dateTo: 'Date (to)',
+            dateFromPrefix: 'From',
+            dateUntilPrefix: 'Until',
+            // Experiment page - stat block
+            statObservationsLabel: 'matching observations',
+            statSpeciesLabel: 'species',
+            statDatasetsLabel: 'datasets',
+            // Experiment page - histogram brush
+            observationsOverTime: 'Observations over time',
+            allDates: 'All dates',
+            // Experiment page - active filter chips
+            clearAllFilters: 'Clear all',
+            removeFilter: 'Remove {label}',
+            // Experiment page - timeline tab
+            timelineView: 'Timeline',
+            newBadge: 'NEW',
         }
     },
     fr: {
@@ -421,6 +443,28 @@ export const messages = {
             newObservationsThisImport: 'Nouvelles observations dans cet import',
             skippedObservations: 'Observations ignorees',
             gbifDownload: 'telechargement GBIF',
+            // Experiment page - filter sidebar sections
+            filterSectionWhat: 'Quoi',
+            filterSectionWhere: 'Où',
+            filterSectionWhen: 'Quand',
+            filterSectionStatus: 'Statut',
+            dateFrom: 'Date (depuis)',
+            dateTo: 'Date (jusqu\'à)',
+            dateFromPrefix: 'Depuis',
+            dateUntilPrefix: 'Jusqu\'en',
+            // Experiment page - stat block
+            statObservationsLabel: 'observations correspondantes',
+            statSpeciesLabel: 'espèces',
+            statDatasetsLabel: 'jeux de données',
+            // Experiment page - histogram brush
+            observationsOverTime: 'Observations au fil du temps',
+            allDates: 'Toutes les dates',
+            // Experiment page - active filter chips
+            clearAllFilters: 'Tout effacer',
+            removeFilter: 'Supprimer {label}',
+            // Experiment page - timeline tab
+            timelineView: 'Chronologie',
+            newBadge: 'NOUVEAU',
         }
     },
     nl: {
@@ -633,6 +677,28 @@ export const messages = {
             newObservationsThisImport: 'Nieuwe waarnemingen in deze import',
             skippedObservations: 'Overgeslagen waarnemingen',
             gbifDownload: 'GBIF download',
+            // Experiment page - filter sidebar sections
+            filterSectionWhat: 'Wat',
+            filterSectionWhere: 'Waar',
+            filterSectionWhen: 'Wanneer',
+            filterSectionStatus: 'Status',
+            dateFrom: 'Datum (van)',
+            dateTo: 'Datum (tot)',
+            dateFromPrefix: 'Vanaf',
+            dateUntilPrefix: 'Tot',
+            // Experiment page - stat block
+            statObservationsLabel: 'overeenkomende waarnemingen',
+            statSpeciesLabel: 'soorten',
+            statDatasetsLabel: 'datasets',
+            // Experiment page - histogram brush
+            observationsOverTime: 'Waarnemingen in de tijd',
+            allDates: 'Alle datums',
+            // Experiment page - active filter chips
+            clearAllFilters: 'Alles wissen',
+            removeFilter: 'Verwijder {label}',
+            // Experiment page - timeline tab
+            timelineView: 'Tijdlijn',
+            newBadge: 'NIEUW',
         }
     }
 }

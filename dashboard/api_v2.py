@@ -250,7 +250,12 @@ def observations_list(
         approaching_distance_km=filters.approachingDistanceKm,
     )
 
-    total = qs.count()
+    aggregates = qs.aggregate(
+        total=Count("pk"),
+        species_count=Count("species_id", distinct=True),
+        datasets_count=Count("source_dataset_id", distinct=True),
+    )
+    total: int = aggregates["total"]
     offset = (page - 1) * pageSize
     sort_field = _SORT_FIELD_MAP.get(orderBy, "date")
     sort_prefix = "" if orderDir == "asc" else "-"
@@ -286,7 +291,12 @@ def observations_list(
         for obs in obs_page
     ]
 
-    return {"count": total, "items": items}
+    return {
+        "count": total,
+        "speciesCount": aggregates["species_count"],
+        "datasetsCount": aggregates["datasets_count"],
+        "items": items,
+    }
 
 
 @api_v2.get("/observations/histogram/", response=list[HistogramEntryOut])

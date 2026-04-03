@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import FilterSidebar from "../components/FilterSidebar.vue";
+import ActiveFilterChips from "../components/ActiveFilterChips.vue";
 import HistogramBrush from "../components/HistogramBrush.vue";
 import ObservationsView from "../components/ObservationsView.vue";
 import { useFilterSync } from "../composables/useFilterSync";
@@ -31,6 +32,7 @@ const unseenFallback = computed(() => isAuthenticated && !route.query.status);
         </aside>
 
         <div class="experiment-main">
+            <ActiveFilterChips />
             <HistogramBrush />
             <ObservationsView variant="experiment" :unseen-fallback="unseenFallback" />
         </div>

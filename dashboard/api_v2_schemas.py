@@ -74,6 +74,8 @@ class ObservationOut(Schema):
 
 class ObservationsPageOut(Schema):
     count: int
+    speciesCount: int
+    datasetsCount: int
     items: list[ObservationOut]
 
 

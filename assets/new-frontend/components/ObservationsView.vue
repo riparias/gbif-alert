@@ -146,6 +146,8 @@ async function loadObservations() {
             observations.value = data.items;
             totalRecords.value = data.count;
             resultsStore.observationCount = data.count;
+            resultsStore.speciesCount = data.speciesCount;
+            resultsStore.datasetsCount = data.datasetsCount;
         }
     } finally {
         loading.value = false;
@@ -209,7 +211,7 @@ onMounted(async () => {
         <Tabs value="map">
             <TabList>
                 <Tab value="map"><i class="pi pi-map" /> {{ t("message.mapView") }}</Tab>
-                <Tab v-if="props.variant === 'experiment'" value="timeline"><i class="pi pi-chart-bar" /> Timeline</Tab>
+                <Tab v-if="props.variant === 'experiment'" value="timeline"><i class="pi pi-chart-bar" /> {{ t("message.timelineView") }} <span class="tab-new-badge">{{ t("message.newBadge") }}</span></Tab>
                 <Tab value="table"><i class="pi pi-table" /> {{ t("message.tableView") }}</Tab>
             </TabList>
             <TabPanels>
@@ -276,7 +278,7 @@ onMounted(async () => {
                                 </a>
                             </template>
                         </Column>
-                        <Column v-if="visibleColumns.has('dataset')" field="datasetName" :header="t('message.dataset')" sortable>
+                        <Column v-if="visibleColumns.has('dataset')" field="datasetName" :header="t('message.dataset')" sortable header-class="col-dataset" body-class="col-dataset">
                             <template #body="{ data }">
                                 <span class="cell-text" :title="data.datasetName">{{ data.datasetName }}</span>
                             </template>
@@ -333,6 +335,9 @@ onMounted(async () => {
 .species-link { color: inherit; text-decoration: none; }
 .species-link:hover { text-decoration: underline; }
 .observations-table :deep(tbody tr) { cursor: pointer; }
+.observations-table :deep(table) { table-layout: fixed; }
+.observations-table :deep(th.col-dataset),
+.observations-table :deep(td.col-dataset) { width: 180px; }
 .gbif-link { color: var(--p-primary-color); font-size: 0.85rem; }
 .empty-state { display: flex; flex-direction: column; align-items: center; padding: 3rem 1rem; gap: 0.5rem; color: var(--p-text-muted-color); }
 .empty-state-icon { font-size: 2.5rem; line-height: 1; }
@@ -344,4 +349,16 @@ onMounted(async () => {
 .column-picker-item label { cursor: pointer; user-select: none; }
 .cell-text { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .observations-table :deep(td) { overflow: hidden; }
+.tab-new-badge {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--p-primary-500, #00a58d);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.1rem 0.35rem;
+    vertical-align: middle;
+    margin-left: 0.25rem;
+}
 </style>
