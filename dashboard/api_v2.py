@@ -391,7 +391,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
 @api_v2.post("/observations/{stable_id}/comments/", response=CommentOut)
 def observation_add_comment(request: HttpRequest, stable_id: str, payload: CommentIn):
     if not request.user.is_authenticated:
-        raise HttpError(403, "Authentication required")
+        raise HttpError(403, _("Authentication required"))
 
     try:
         obs = Observation.objects.get(stable_id=stable_id)
@@ -435,7 +435,7 @@ def page_fragment(request: HttpRequest, identifier: str):
 @api_v2.post("/observations/{stable_id}/mark-unseen/", response={200: dict, 403: dict})
 def observation_mark_unseen(request: HttpRequest, stable_id: str):
     if not request.user.is_authenticated:
-        raise HttpError(403, "Authentication required")
+        raise HttpError(403, _("Authentication required"))
 
     try:
         obs = Observation.objects.get(stable_id=stable_id)
@@ -624,7 +624,7 @@ def auth_signin(request: HttpRequest, payload: SignInIn):
     """Authenticate and create a session. Returns 401 on bad credentials."""
     user = authenticate(request, username=payload.username, password=payload.password)
     if user is None:
-        return 401, {"detail": "Invalid username or password."}
+        return 401, {"detail": str(_("Invalid username or password."))}
     login(request, user)
     return 200, {"username": user.get_username()}
 
@@ -667,9 +667,9 @@ def auth_password_change(request: HttpRequest, payload: PasswordChangeIn):
     """Change password. Returns 204 on success, 422 with field errors on failure."""
     user = cast(User, request.user)
     if not user.check_password(payload.old_password):
-        return 422, {"errors": {"old_password": ["The old password is incorrect."]}}
+        return 422, {"errors": {"old_password": [str(_("The old password is incorrect."))]}}
     if payload.new_password1 != payload.new_password2:
-        return 422, {"errors": {"new_password2": ["The two passwords do not match."]}}
+        return 422, {"errors": {"new_password2": [str(_("The two passwords do not match."))]}}
     user.set_password(payload.new_password1)
     user.save()
     update_session_auth_hash(request, user)
@@ -718,7 +718,7 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
     user = cast(User, request.user)
     # Validate unique email (excluding self)
     if User.objects.filter(email=payload.email).exclude(pk=user.pk).exists():
-        return 422, {"errors": {"email": ["This email address is already in use."]}}
+        return 422, {"errors": {"email": [str(_("This email address is already in use."))]}}
     valid_units = ("days", "weeks", "months", "years")
     if payload.delayUnit not in valid_units:
         return 422, {"errors": {"delayUnit": ["Invalid unit."]}}
