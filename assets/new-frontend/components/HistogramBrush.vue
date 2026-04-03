@@ -24,7 +24,7 @@ const dateRangeLabel = computed(() => {
             <span class="brush-pill">{{ dateRangeLabel }}</span>
         </div>
         <div class="brush-body">
-            <ObservationHistogram />
+            <ObservationHistogram :height="90" />
             <!-- Static selection overlay (stub - not interactive yet) -->
             <div class="brush-overlay" aria-hidden="true" />
         </div>

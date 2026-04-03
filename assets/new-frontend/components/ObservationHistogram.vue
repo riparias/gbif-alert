@@ -93,9 +93,11 @@ const isEmpty = computed(() => barData.value.every((b) => b.count === 0));
 
 // --- D3 scales ---
 
-const SVG_H = 160;
+const props = withDefaults(defineProps<{ height?: number }>(), { height: 160 });
+
 const M = { top: 10, right: 20, bottom: 25, left: 40 };
-const innerH = SVG_H - M.top - M.bottom;
+const svgH = computed(() => props.height);
+const innerH = computed(() => svgH.value - M.top - M.bottom);
 
 // containerWidth is kept in sync with the wrapper element via ResizeObserver.
 // Using real pixel dimensions (instead of viewBox scaling) ensures axis text
@@ -116,7 +118,7 @@ const xScale = computed(() =>
 const yMax = computed(() => max(barData.value, (d) => d.count) ?? 0);
 
 const yScale = computed(() =>
-    scaleLinear().domain([0, yMax.value]).range([innerH, 0]).nice()
+    scaleLinear().domain([0, yMax.value]).range([innerH.value, 0]).nice()
 );
 
 // --- D3 axis directives ---
@@ -174,7 +176,7 @@ onUnmounted(() => {
         <svg
             v-else
             :width="containerWidth"
-            :height="SVG_H"
+            :height="svgH"
             class="histogram-svg"
             aria-hidden="true"
         >

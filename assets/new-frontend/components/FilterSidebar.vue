@@ -177,8 +177,13 @@ const areaFilterModeOptions = computed(() => [
 
 // --- Results stat ---
 
+// Show "--" only on the initial load (count still 0). Once a count has been
+// fetched, keep showing the last known value during filter/sort reloads so the
+// counter doesn't flash "--" on every interaction.
 const formattedCount = computed(() =>
-    resultsStore.loading ? "--" : resultsStore.observationCount.toLocaleString()
+    resultsStore.loading && resultsStore.observationCount === 0
+        ? "--"
+        : resultsStore.observationCount.toLocaleString()
 );
 </script>
 
@@ -286,7 +291,7 @@ const formattedCount = computed(() =>
                 option-value="value"
                 option-label="label"
                 :allow-empty="false"
-                class="verified-select-button sidebar-select-button"
+                class="verified-select-button"
             />
         </div>
 
@@ -354,10 +359,15 @@ const formattedCount = computed(() =>
     justify-content: flex-start;
 }
 
-.sidebar-select-button :deep(.p-togglebutton) {
+/* Compact sizing for all SelectButton toggles inside the sidebar */
+.filter-group :deep(.p-selectbutton .p-togglebutton) {
     flex: 1;
-    font-size: 0.8rem;
-    padding: 0.3rem 0.5rem;
+    font-size: 0.78rem;
+    padding: 0.25rem 0.35rem;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Verified filter: All (1st) slate, Verified (2nd) green, Unverified (3rd) red */
