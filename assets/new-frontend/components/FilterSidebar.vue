@@ -178,7 +178,7 @@ const areaFilterModeOptions = computed(() => [
 // --- Results stat ---
 
 const formattedCount = computed(() =>
-    resultsStore.observationCount.toLocaleString()
+    resultsStore.loading ? "--" : resultsStore.observationCount.toLocaleString()
 );
 </script>
 
