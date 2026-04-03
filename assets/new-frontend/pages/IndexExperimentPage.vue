@@ -7,9 +7,13 @@ import HistogramBrush from "../components/HistogramBrush.vue";
 import ObservationsView from "../components/ObservationsView.vue";
 import { useFilterSync } from "../composables/useFilterSync";
 import { getNavConfig } from "../utils/navConfig";
+import { useResultsStore } from "../stores/results";
 
 const { t } = useI18n();
 const route = useRoute();
+
+const resultsStore = useResultsStore();
+resultsStore.loading = true;
 
 useFilterSync();
 
