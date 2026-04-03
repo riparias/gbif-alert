@@ -51,8 +51,7 @@ const unseenFallback = computed(() => isAuthenticated && !route.query.status);
     position: sticky;
     top: 1rem;
     height: fit-content;
-    background: var(--p-surface-0, #fff);
-    border: 1px solid var(--p-surface-200, #e5e7eb);
+    background: #1e293b;
     border-radius: 8px;
     overflow: hidden;
 }

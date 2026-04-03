@@ -334,7 +334,7 @@ const formattedCount = computed(() =>
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.08em;
-    color: var(--p-text-muted-color);
+    color: #64748b; /* slate-500 - muted on dark */
     text-transform: uppercase;
 }
 
@@ -347,7 +347,7 @@ const formattedCount = computed(() =>
 .filter-group label {
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--p-text-muted-color);
+    color: #94a3b8; /* slate-400 - readable on dark */
 }
 
 .sidebar-control {
@@ -394,7 +394,7 @@ const formattedCount = computed(() =>
 
 .stat-block {
     margin-top: auto;
-    border-top: 1px solid var(--p-surface-200, #e5e7eb);
+    border-top: 1px solid #334155; /* slate-700 */
     padding-top: 1rem;
 }
 
@@ -408,12 +408,12 @@ const formattedCount = computed(() =>
 .stat-count {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--p-text-color);
+    color: #f1f5f9; /* slate-100 */
 }
 
 .stat-label {
     font-size: 0.8rem;
-    color: var(--p-text-muted-color);
+    color: #64748b; /* slate-500 */
 }
 
 .stat-cards {
@@ -425,8 +425,8 @@ const formattedCount = computed(() =>
 .stat-card {
     display: flex;
     flex-direction: column;
-    background: var(--p-surface-50, #f9fafb);
-    border: 1px solid var(--p-surface-200, #e5e7eb);
+    background: #0f172a; /* slate-900 - darker inset card */
+    border: 1px solid #334155; /* slate-700 */
     border-radius: 6px;
     padding: 0.5rem 0.75rem;
     line-height: 1.2;
@@ -435,11 +435,11 @@ const formattedCount = computed(() =>
 .stat-card-value {
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--p-text-color);
+    color: #f1f5f9; /* slate-100 */
 }
 
 .stat-card-label {
     font-size: 0.72rem;
-    color: var(--p-text-muted-color);
+    color: #64748b; /* slate-500 */
 }
 </style>
