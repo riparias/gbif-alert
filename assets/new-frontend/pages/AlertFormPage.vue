@@ -13,6 +13,7 @@ import Message from "primevue/message";
 import SpeciesFilterModal from "../components/SpeciesFilterModal.vue";
 import AreaFilterModal from "../components/AreaFilterModal.vue";
 import DatasetFilterModal from "../components/DatasetFilterModal.vue";
+import { getNavConfig } from "../utils/navConfig";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
 
@@ -73,13 +74,16 @@ const showApproachingDistance = computed(
 );
 
 async function loadOptions() {
-    const [species, datasets, areas, basisOfRecord, frequencies] = await Promise.all([
-        fetch("/api/v2/species/").then((r) => r.json()),
-        fetch("/api/v2/datasets/").then((r) => r.json()),
-        fetch("/api/v2/areas/").then((r) => r.json()),
-        fetch("/api/v2/basis-of-record/").then((r) => r.json()),
-        fetch("/api/v2/alerts/notification-frequencies/").then((r) => r.json()),
+    const responses = await Promise.all([
+        fetch("/api/v2/species/"),
+        fetch("/api/v2/datasets/"),
+        fetch("/api/v2/areas/"),
+        fetch("/api/v2/basis-of-record/"),
+        fetch("/api/v2/alerts/notification-frequencies/"),
     ]);
+    const [species, datasets, areas, basisOfRecord, frequencies] = await Promise.all(
+        responses.map((r) => r.json())
+    );
     speciesOptions.value = species;
     datasetOptions.value = datasets;
     areaOptions.value = areas;
@@ -108,9 +112,7 @@ async function suggestName() {
     name.value = (await res.json()).name;
 }
 
-const navConfig = JSON.parse(
-    document.getElementById("gbif-alert-nav-config")!.textContent!
-);
+const navConfig = getNavConfig();
 
 onMounted(async () => {
     await loadOptions();

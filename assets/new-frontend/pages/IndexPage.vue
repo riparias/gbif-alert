@@ -6,13 +6,14 @@ import Card from "primevue/card";
 import FilterPanel from "../components/FilterPanel.vue";
 import ObservationsView from "../components/ObservationsView.vue";
 import { useFilterSync } from "../composables/useFilterSync";
+import { getNavConfig } from "../utils/navConfig";
 
 const { t } = useI18n();
 const route = useRoute();
 
 useFilterSync();
 
-const navConfig = JSON.parse(document.getElementById("gbif-alert-nav-config")!.textContent!);
+const navConfig = getNavConfig();
 const isAuthenticated: boolean = navConfig.user.isAuthenticated;
 document.title = `${t("message.home")} - ${navConfig.siteName}`;
 

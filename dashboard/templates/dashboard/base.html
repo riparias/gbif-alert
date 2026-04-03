@@ -20,11 +20,8 @@
     {% include "dashboard/_favicon.html" %}
 
     <link rel="stylesheet" href="{% static "css/early_alert.css" %}">
-    {# A global configuration object is passed from Python via a custom template tag. This hack allows easy configuration of the frontend from Django #}
     {% get_current_language as LANGUAGE_CODE %}
     <script type="text/javascript">
-        const gbifAlertConfig = {% js_config_object %};
-        window.CSRF_TOKEN = "{{ csrf_token }}";
         window.LANGUAGE_CODE = "{{ LANGUAGE_CODE }}";
     </script>
 

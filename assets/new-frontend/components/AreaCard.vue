@@ -13,13 +13,9 @@ import OSM from "ol/source/OSM";
 import { GeoJSON } from "ol/format";
 import { Style, Stroke } from "ol/style";
 import "ol/ol.css";
+import type { components } from "../types/api";
 
-interface AreaOut {
-    id: number;
-    name: string;
-    isUserSpecific: boolean;
-    tags: string[];
-}
+type AreaOut = components["schemas"]["AreaOut"];
 
 const props = defineProps<{ area: AreaOut }>();
 const emit = defineEmits<{ deleted: [areaId: number] }>();

@@ -119,6 +119,7 @@ function buildFilterParams(): URLSearchParams {
     for (const id of filtersStore.datasetsIds) params.append("datasetsIds", String(id));
     for (const id of filtersStore.areaIds) params.append("areaIds", String(id));
     for (const id of filtersStore.basisOfRecordIds) params.append("basisOfRecordIds", String(id));
+    for (const id of filtersStore.initialDataImportIds) params.append("initialDataImportIds", String(id));
     if (filtersStore.startDate) params.set("startDate", filtersStore.startDate);
     if (filtersStore.endDate) params.set("endDate", filtersStore.endDate);
     if (filtersStore.status) params.set("status", filtersStore.status);
@@ -135,9 +136,11 @@ async function loadObservations() {
     loading.value = true;
     try {
         const response = await fetch(`/api/v2/observations/?${buildFilterParams()}`);
-        const data = await response.json();
-        observations.value = data.items;
-        totalRecords.value = data.count;
+        if (response.ok) {
+            const data = await response.json();
+            observations.value = data.items;
+            totalRecords.value = data.count;
+        }
     } finally {
         loading.value = false;
     }

@@ -93,19 +93,13 @@ Last update: 01 aug 2023.
 
 ## Frontend-backend integration
 
-The project is in the process of migrating from Webpack to Vite (see `FRONTEND_MIGRATION_PLAN.md`).
-During the migration, both bundlers coexist. Old pages use the Webpack bundle; new pages will use
-the Vite bundle.
+The frontend is a Vue 3 single-page application managed by Vite. All pages are served
+by the `spa_shell` Django view; Vue Router handles client-side routing.
 
-### Existing frontend (Webpack)
+Frontend source lives in `./assets/new-frontend/`. The main entry point is `main.ts`.
 
 - npm is used to manage JS dependencies (**npm install** should be run once)
-- **During development**, run `npm run webpack-dev` so Webpack constantly watches our source frontend (in `./assets/ts`) and creates bundles (in `./static_global/js`)
-- **When deploying**, use `npm run webpack-prod` instead (smaller bundle size + one single copy - rather than watching files)
-
-### New frontend (Vite - in progress)
-
-- **During development**, run `npm run vite-dev` to start the Vite dev server on port 5274 (required for HMR on pages served by the new frontend)
+- **During development**, run `npm run vite-dev` to start the Vite dev server (required for HMR)
 - **When deploying**, use `npm run vite-build` to produce hashed assets in `./static_global/vite`
 
 ### API v2 (Django Ninja)

@@ -5,15 +5,11 @@ import Button from "primevue/button";
 import ProgressSpinner from "primevue/progressspinner";
 import AreaCard from "../components/AreaCard.vue";
 import AreaUploadDialog from "../components/AreaUploadDialog.vue";
+import type { components } from "../types/api";
+
+type AreaOut = components["schemas"]["AreaOut"];
 
 const { t } = useI18n();
-
-interface AreaOut {
-    id: number;
-    name: string;
-    isUserSpecific: boolean;
-    tags: string[];
-}
 
 const areas = ref<AreaOut[]>([]);
 const loading = ref(true);
@@ -22,8 +18,10 @@ const showUploadDialog = ref(false);
 async function loadAreas() {
     loading.value = true;
     const resp = await fetch("/api/v2/areas/");
-    const data: AreaOut[] = await resp.json();
-    areas.value = data.filter((a) => a.isUserSpecific);
+    if (resp.ok) {
+        const data: AreaOut[] = await resp.json();
+        areas.value = data.filter((a) => a.isUserSpecific);
+    }
     loading.value = false;
 }
 

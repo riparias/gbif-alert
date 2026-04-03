@@ -12,6 +12,7 @@ import DatasetFilterModal from "./DatasetFilterModal.vue";
 import ObservationStatusToggle from "./ObservationStatusToggle.vue";
 import { useFiltersStore } from "../stores/filters";
 import type { components } from "../types/api";
+import { getNavConfig } from "../utils/navConfig";
 
 type SpeciesOut = components["schemas"]["SpeciesOut"];
 type DatasetOut = components["schemas"]["DatasetOut"];
@@ -23,10 +24,7 @@ const { t } = useI18n();
 const filtersStore = useFiltersStore();
 
 // Auth state from the nav config Django injects on every page
-const navConfig = JSON.parse(
-    document.getElementById("gbif-alert-nav-config")!.textContent!
-);
-const isAuthenticated: boolean = navConfig.user.isAuthenticated;
+const isAuthenticated: boolean = getNavConfig().user.isAuthenticated;
 
 // --- Available filter options (loaded from API on mount) ---
 

@@ -7,13 +7,9 @@ import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import Message from "primevue/message";
 import { getCsrf } from "../utils/csrf";
+import type { components } from "../types/api";
 
-interface AreaOut {
-    id: number;
-    name: string;
-    isUserSpecific: boolean;
-    tags: string[];
-}
+type AreaOut = components["schemas"]["AreaOut"];
 
 const props = defineProps<{ visible: boolean }>();
 const emit = defineEmits<{

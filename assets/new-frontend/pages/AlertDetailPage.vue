@@ -12,6 +12,7 @@ import type { components } from "../types/api";
 import { useFiltersStore } from "../stores/filters";
 import { getCsrf } from "../utils/csrf";
 import { useAlertMeta } from "../composables/useAlertMeta";
+import { getNavConfig } from "../utils/navConfig";
 
 type AlertOut = components["schemas"]["AlertOut"];
 
@@ -48,9 +49,7 @@ function confirmDelete() {
     });
 }
 
-const navConfig = JSON.parse(
-    document.getElementById("gbif-alert-nav-config")!.textContent!
-);
+const navConfig = getNavConfig();
 
 onMounted(async () => {
     alertLoading.value = true;

@@ -11,6 +11,7 @@ import AboutSitePage from "../pages/AboutSitePage.vue";
 import AboutDataPage from "../pages/AboutDataPage.vue";
 import NewsPage from "../pages/NewsPage.vue";
 import UserProfilePage from "../pages/UserProfilePage.vue";
+import NotFoundPage from "../pages/NotFoundPage.vue";
 
 export const routes: RouteRecordRaw[] = [
     { path: "/", component: IndexPage },
@@ -27,4 +28,5 @@ export const routes: RouteRecordRaw[] = [
     { path: "/about-data", component: AboutDataPage },
     { path: "/whats-new", component: NewsPage },
     { path: "/profile", component: UserProfilePage },
+    { path: "/:pathMatch(.*)*", component: NotFoundPage },
 ];

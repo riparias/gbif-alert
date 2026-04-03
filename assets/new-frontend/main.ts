@@ -11,6 +11,7 @@ import ConfirmationService from "primevue/confirmationservice";
 import ToastService from "primevue/toastservice";
 
 import { messages } from "./translations";
+import { getNavConfig } from "./utils/navConfig";
 
 import App from "./App.vue";
 import { routes } from "./router/index";
@@ -19,9 +20,7 @@ import { routes } from "./router/index";
 // Read the primary palette name from the nav config Django injects into every page
 // (via the nav_config_json template tag). This lets each deployment choose its own
 // branding color via GBIF_ALERT["PRIMEVUE_PRIMARY_PALETTE"] in Django settings.
-const primaryPalette: string = JSON.parse(
-    document.getElementById("gbif-alert-nav-config")!.textContent!
-).primaryPalette;
+const primaryPalette: string = getNavConfig().primaryPalette;
 
 const shades = [
     "50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950",

@@ -9,8 +9,8 @@ GBIF Alert is a Django-based early alert system for invasive species using GBIF 
 ## Tech Stack
 
 - **Backend:** Python 3.11+, Django 4.2 (GeoDjango), PostgreSQL/PostGIS 3.1+, Redis (django-rq)
-- **Frontend:** TypeScript, Vue.js 3, Bootstrap 5.3, OpenLayers (maps), D3.js (charts)
-- **Build tools:** Poetry (Python), npm + Webpack (frontend)
+- **Frontend:** TypeScript, Vue.js 3, PrimeVue (Aura preset), Vue Router, Pinia, OpenLayers (maps), D3.js (charts)
+- **Build tools:** Poetry (Python), npm + Vite (frontend)
 
 ## Commands
 
@@ -28,7 +28,7 @@ npm install             # Install frontend dependencies
 
 ### Development
 ```bash
-npm run webpack-dev                          # Watch & rebuild frontend assets
+npm run vite-dev                             # Start Vite dev server (HMR)
 poetry run python manage.py runserver        # Start Django dev server
 poetry run python manage.py rqworker default # Start Redis queue worker
 ```
@@ -64,7 +64,12 @@ poetry run python manage.py load_area <source_file>          # Import geographic
 
 ### Production Build
 ```bash
-npm run webpack-prod    # Build optimized frontend bundle
+npm run vite-build      # Build optimized frontend bundle
+```
+
+### Regenerate TypeScript types (after any API change)
+```bash
+npm run generate-types  # Exports OpenAPI schema, writes assets/new-frontend/types/api.ts
 ```
 
 ## Architecture
@@ -78,14 +83,19 @@ npm run webpack-prod    # Build optimized frontend bundle
 Each GBIF Alert instance is configured via `local_settings.py` which contains a `GBIF_ALERT` dict with site name, colors, enabled languages, GBIF download credentials, and a `PREDICATE_BUILDER` function that defines the GBIF search query. This is how different instances target different species/regions.
 
 ### Frontend-Backend Integration
-Hybrid approach: Django templates render pages, but interactive components use Vue.js. Webpack bundles TypeScript/Vue source from `assets/ts/` into `static/`. Each major page has a Vue root component (e.g., `IndexPageRootComponent.vue`, `AlertDetailsPageRootComponent.vue`). Vue components communicate with Django via REST APIs defined in `dashboard/views/public_api.py` and `dashboard/views/internal_api.py`.
+Single-page application: all pages are served by the `spa_shell` Django view, which injects a `gbif-alert-nav-config` JSON block (site name, enabled languages, auth state) and loads the Vite bundle. Vue Router (history mode) handles client-side routing. Pinia manages shared state (active filters). A Django catch-all pattern in `djangoproject/urls.py` forwards unmatched paths to the SPA shell.
+
+The API layer is Django Ninja at `/api/v2/`. Schemas live in `dashboard/api_v2_schemas.py`. TypeScript types are auto-generated from the OpenAPI spec via `npm run generate-types` and committed to `assets/new-frontend/types/api.ts`.
+
+Frontend source lives entirely in `assets/new-frontend/` (Vite-managed). The old `assets/ts/` directory has been removed.
 
 ### Views Organization (`dashboard/views/`)
-- `pages.py` — Full page views (Django templates)
-- `maps.py` — Map-related endpoints
-- `public_api.py` — Public REST API (observations, species, datasets, areas)
-- `internal_api.py` — Authenticated internal API
-- `actions.py` — User action handlers (mark as seen, etc.)
+- `pages.py` — `spa_shell` view + legacy page stubs
+- `maps.py` — Map tile endpoints (still used by the SPA map components)
+- `api_v2.py` — Django Ninja v2 API (main API for the SPA)
+- `public_api.py` — Legacy public REST API (WFS + some endpoints; partially superseded by v2)
+- `internal_api.py` — Legacy authenticated API (map tiles still active; other endpoints superseded by v2)
+- `actions.py` — Legacy action handlers (partially superseded by v2)
 
 ### Observation Import Pipeline (`import_observations` command)
 This is the most critical and performance-sensitive process. It:
@@ -105,7 +115,7 @@ Observations are identified across imports by `stable_id` — a SHA1 hash of `oc
 
 ### Internationalization
 - Backend/templates: Standard Django i18n (`gettext`, `trans` template tag). Supported locales: English, French, Dutch.
-- Vue components: `vue-i18n` with translations in `assets/ts/translations.ts` (keep keys alphabetically sorted)
+- Vue components: `vue-i18n` with translations in `assets/new-frontend/translations.ts` (keep keys alphabetically sorted)
 - Database content: Translated via `django-modeltranslation` in Django Admin
 
 ### Background Tasks

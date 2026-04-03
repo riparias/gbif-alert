@@ -17,6 +17,7 @@ import Slider from "primevue/slider";
 import { useRouter, useRoute } from "vue-router";
 import { useFiltersStore } from "../stores/filters";
 import BaseMap from "./BaseMap.vue";
+import { getNavConfig } from "../utils/navConfig";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -25,19 +26,7 @@ const store = useFiltersStore();
 
 // --- Map config injected by Django (via nav_config_json template tag) ---
 
-interface MapConfig {
-    initialPosition: { initialZoom: number; initialLat: number; initialLon: number };
-    zoomLevelMinMaxQuery: number;
-    tileServerUrlTemplate: string;
-    tileServerAggregatedUrlTemplate: string;
-    areasUrlTemplate: string;
-    minMaxOccPerHexagonUrl: string;
-    observationDetailsUrlTemplate: string;
-}
-
-const mapCfg: MapConfig = JSON.parse(
-    document.getElementById("gbif-alert-nav-config")!.textContent!
-).map;
+const mapCfg = getNavConfig().map;
 
 // --- Controls ---
 

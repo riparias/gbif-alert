@@ -7,6 +7,7 @@ import Textarea from "primevue/textarea";
 import SingleObservationMap from "./SingleObservationMap.vue";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
+import { getNavConfig } from "../utils/navConfig";
 
 type ObservationDetail = components["schemas"]["ObservationDetailOut"];
 type Comment = components["schemas"]["CommentOut"];
@@ -28,9 +29,7 @@ const commentError = ref<string | null>(null);
 // Mark-unseen
 const markingUnseen = ref(false);
 
-// Read auth state from nav config (same pattern as NavBar / FilterPanel)
-const navConfig = JSON.parse(document.getElementById("gbif-alert-nav-config")!.textContent!);
-const isAuthenticated: boolean = navConfig.user.isAuthenticated;
+const isAuthenticated: boolean = getNavConfig().user.isAuthenticated;
 
 async function load() {
     notFound.value = false;

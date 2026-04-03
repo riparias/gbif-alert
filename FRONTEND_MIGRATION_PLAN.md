@@ -192,24 +192,25 @@ ok- [x] 2.3 - `filters` Pinia store (`assets/new-frontend/stores/filters.ts`),
 
 ### Phase 5: Simple Pages + Auth
 
-- [ ] 5.1 - Migrate About, What's New pages (can stay as Django templates with new
-        layout, or become thin Vue pages - low priority either way)
-- [ ] 5.2 - User Profile page (PrimeVue form components, delete account)
-- [ ] 5.3 - Auth pages: evaluate whether to keep Django's built-in auth views with
-        the PrimeVue layout, or rewrite as Vue pages. Django auth views are
-        battle-tested - recommendation is to keep them as Django templates.
+- [x] 5.1 - Migrate About, What's New pages (`AboutSitePage.vue`, `AboutDataPage.vue`,
+        `NewsPage.vue`; content loaded via `GET /api/v2/page-fragments/`)
+- [x] 5.2 - User Profile page (`UserProfilePage.vue`; profile editing and account deletion
+        via `GET/PUT /api/v2/profile/` and `DELETE /api/v2/account/`)
+- [x] 5.3 - Auth pages: rewritten as Vue pages (`SignInPage.vue`, `SignUpPage.vue`,
+        `PasswordChangePage.vue`). Password-reset flow intentionally kept as Django
+        templates (battle-tested, low traffic, no Vue added value).
 
 ### Phase 6: Cleanup
 
-- [ ] 6.1 - Remove Webpack config (`webpack.common.js`, `webpack.dev.js`,
+- [x] 6.1 - Remove Webpack config (`webpack.common.js`, `webpack.dev.js`,
         `webpack.prod.js`)
-- [ ] 6.2 - Remove `assets/ts/` directory entirely
-- [ ] 6.3 - Remove Bootstrap from dependencies
-- [ ] 6.4 - Remove old Selenium tests
-- [ ] 6.5 - Clean up `package.json` (remove webpack-related devDependencies)
-- [ ] 6.6 - Update deployment scripts / CI to use `vite build` instead of
+- [x] 6.2 - Remove `assets/ts/` directory entirely
+- [x] 6.3 - Remove Bootstrap from dependencies
+- [x] 6.4 - Remove old Selenium tests
+- [x] 6.5 - Clean up `package.json` (remove webpack-related devDependencies)
+- [x] 6.6 - Update deployment scripts / CI to use `vite build` instead of
         `npm run webpack-prod`
-- [ ] 6.7 - Update `base.html` to only load Vite assets
+- [x] 6.7 - Update `base.html` to only load Vite assets
 - [ ] 6.8 - Final review: no dead code, no unused dependencies
 
 ## Risks and Mitigations

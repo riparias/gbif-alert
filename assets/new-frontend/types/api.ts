@@ -48,8 +48,62 @@ export interface paths {
         /** Areas List */
         get: operations["dashboard_api_v2_areas_list"];
         put?: never;
+        /**
+         * Area Create
+         * @description Create a new user-specific area from an uploaded GeoPackage file.
+         *
+         *     Returns 422 with a human-readable detail message if the file fails
+         *     validation (wrong geometry type, multiple layers, missing SRS, etc.).
+         */
+        post: operations["dashboard_api_v2_area_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/areas/{area_id}/geojson/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Area Geojson
+         * @description Return GeoJSON (FeatureCollection, EPSG:4326) for a single area.
+         *
+         *     Available to any user who can access the area (public or owned).
+         *     Returns 403 if the area exists but the user cannot access it.
+         *     Returns 404 if the area does not exist.
+         */
+        get: operations["dashboard_api_v2_area_geojson"];
+        put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/areas/{area_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Area Delete Endpoint
+         * @description Delete a user-owned area.
+         *
+         *     Returns 404 if the area does not exist or belongs to another user.
+         *     Returns 409 with a detail message if any alerts reference this area.
+         */
+        delete: operations["dashboard_api_v2_area_delete_endpoint"];
         options?: never;
         head?: never;
         patch?: never;
@@ -316,6 +370,130 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/auth/signin/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Auth Signin
+         * @description Authenticate and create a session. Returns 401 on bad credentials.
+         */
+        post: operations["dashboard_api_v2_auth_signin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/auth/signup/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Auth Signup
+         * @description Create an account and log in. Returns 422 with field errors on failure.
+         */
+        post: operations["dashboard_api_v2_auth_signup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/auth/password-change/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Auth Password Change
+         * @description Change password. Returns 204 on success, 422 with field errors on failure.
+         */
+        post: operations["dashboard_api_v2_auth_password_change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/news/mark-visited/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * News Mark Visited
+         * @description Mark news as visited for the current user. No-op for anonymous users.
+         */
+        post: operations["dashboard_api_v2_news_mark_visited"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/profile/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Profile Get
+         * @description Return the current user's editable profile fields.
+         */
+        get: operations["dashboard_api_v2_profile_get"];
+        /**
+         * Profile Put
+         * @description Save profile changes. Returns 422 with field errors on duplicate email.
+         */
+        put: operations["dashboard_api_v2_profile_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/account/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Account Delete
+         * @description Delete the current user account and log out.
+         */
+        delete: operations["dashboard_api_v2_account_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -353,6 +531,16 @@ export interface components {
             /** Tags */
             tags: string[];
         };
+        /** AreaCreateError */
+        AreaCreateError: {
+            /** Detail */
+            detail: string;
+        };
+        /** AreaDeleteError */
+        AreaDeleteError: {
+            /** Detail */
+            detail: string;
+        };
         /** BasisOfRecordOut */
         BasisOfRecordOut: {
             /** Id */
@@ -371,6 +559,16 @@ export interface components {
              * Format: date-time
              */
             startTimestamp: string;
+            /** Endtimestamp */
+            endTimestamp: string | null;
+            /** Importedcount */
+            importedCount: number;
+            /** Newobservationscount */
+            newObservationsCount: number;
+            /** Skippedcount */
+            skippedCount: number;
+            /** Gbifdownloadid */
+            gbifDownloadId: string;
         };
         /** FiltersQuery */
         FiltersQuery: {
@@ -624,6 +822,94 @@ export interface components {
             /** Approachingdistancekm */
             approachingDistanceKm?: number | null;
         };
+        /** SignInOut */
+        SignInOut: {
+            /** Username */
+            username: string;
+        };
+        /** AuthErrorOut */
+        AuthErrorOut: {
+            /** Detail */
+            detail: string;
+        };
+        /** SignInIn */
+        SignInIn: {
+            /** Username */
+            username: string;
+            /** Password */
+            password: string;
+        };
+        /** AuthValidationErrorOut */
+        AuthValidationErrorOut: {
+            /** Errors */
+            errors: {
+                [key: string]: string[];
+            };
+        };
+        /** SignUpIn */
+        SignUpIn: {
+            /** Username */
+            username: string;
+            /**
+             * First Name
+             * @default
+             */
+            first_name: string;
+            /**
+             * Last Name
+             * @default
+             */
+            last_name: string;
+            /** Email */
+            email: string;
+            /** Language */
+            language: string;
+            /** Password1 */
+            password1: string;
+            /** Password2 */
+            password2: string;
+        };
+        /** PasswordChangeIn */
+        PasswordChangeIn: {
+            /** Old Password */
+            old_password: string;
+            /** New Password1 */
+            new_password1: string;
+            /** New Password2 */
+            new_password2: string;
+        };
+        /** ProfileOut */
+        ProfileOut: {
+            /** Username */
+            username: string;
+            /** Firstname */
+            firstName: string;
+            /** Lastname */
+            lastName: string;
+            /** Email */
+            email: string;
+            /** Language */
+            language: string;
+            /** Delayvalue */
+            delayValue: number;
+            /** Delayunit */
+            delayUnit: string;
+        };
+        /** ProfileIn */
+        ProfileIn: {
+            /** Firstname */
+            firstName: string;
+            /** Lastname */
+            lastName: string;
+            /** Email */
+            email: string;
+            /** Language */
+            language: string;
+            /** Delayvalue */
+            delayValue: number;
+            /** Delayunit */
+            delayUnit: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -689,6 +975,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AreaOut"][];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_area_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Name */
+                    name: string;
+                    /**
+                     * Data File
+                     * Format: binary
+                     */
+                    data_file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaCreateError"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_area_geojson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                area_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    dashboard_api_v2_area_delete_endpoint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                area_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaDeleteError"];
                 };
             };
         };
@@ -1101,6 +1481,192 @@ export interface operations {
                         [key: string]: unknown;
                     };
                 };
+            };
+        };
+    };
+    dashboard_api_v2_auth_signin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignInIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignInOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_auth_signup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignUpIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignInOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthValidationErrorOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_auth_password_change: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChangeIn"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthValidationErrorOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_news_mark_visited: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    dashboard_api_v2_profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_profile_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthValidationErrorOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_account_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

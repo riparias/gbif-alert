@@ -6,13 +6,13 @@ import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import { getCsrf } from "../utils/csrf";
+import { getNavConfig } from "../utils/navConfig";
 
 const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
 
-const navConfig = JSON.parse(document.getElementById("gbif-alert-nav-config")!.textContent!);
-const isAuthenticated = navConfig?.user?.isAuthenticated ?? false;
+const isAuthenticated = getNavConfig().user?.isAuthenticated ?? false;
 
 onMounted(() => {
     if (!isAuthenticated) {

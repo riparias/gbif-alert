@@ -5,6 +5,7 @@ import { useRouter } from "vue-router";
 import Button from "primevue/button";
 import AlertCard from "../components/AlertCard.vue";
 import type { components } from "../types/api";
+import { getNavConfig } from "../utils/navConfig";
 
 type AlertOut = components["schemas"]["AlertOut"];
 
@@ -25,9 +26,7 @@ async function loadAlerts() {
     }
 }
 
-const navConfig = JSON.parse(
-    document.getElementById("gbif-alert-nav-config")!.textContent!
-);
+const navConfig = getNavConfig();
 document.title = `${t("message.navMyAlerts")} - ${navConfig.siteName}`;
 
 onMounted(loadAlerts);

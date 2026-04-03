@@ -1,51 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 import Menubar from "primevue/menubar";
 import Button from "primevue/button";
 import Select from "primevue/select";
 import Menu from "primevue/menu";
 import type { MenuItem } from "primevue/menuitem";
-
-// --- Types ---
-
-interface Language {
-    code: string;
-    nameLocal: string;
-}
-
-interface NavUser {
-    isAuthenticated: boolean;
-    username: string | null;
-    isSuperuser: boolean;
-    hasUnseenNews: boolean;
-    hasAlertsWithUnseenObservations: boolean;
-}
-
-interface NavUrls {
-    index: string;
-    news: string;
-    myAlerts: string;
-    aboutSite: string;
-    aboutData: string;
-    profile: string;
-    passwordChange: string;
-    myCustomAreas: string;
-    signout: string;
-    signin: string;
-    signup: string;
-    admin: string;
-    setLanguage: string;
-}
-
-interface NavConfig {
-    siteName: string;
-    primaryPalette: string;
-    currentLanguage: string;
-    enabledLanguages: Language[];
-    user: NavUser;
-    urls: NavUrls;
-}
+import { getNavConfig } from "../../utils/navConfig";
+import { getCsrf } from "../../utils/csrf";
 
 // Custom nav item: extends MenuItem with our badge-dot flag.
 // PrimeVue's MenuItem type has an open index signature, so extra fields are allowed.
@@ -55,18 +18,14 @@ interface NavItem extends MenuItem {
 
 // --- Config ---
 
-const configEl = document.getElementById("gbif-alert-nav-config");
-const config: NavConfig = configEl
-    ? JSON.parse(configEl.textContent!)
-    : ({} as NavConfig);
-
+const config = getNavConfig();
+const route = useRoute();
 const { t } = useI18n();
 
 // --- Active page detection ---
-// During Phase 1-2, Django controls routing, so useRoute() is not available.
-// TODO: replace with useRoute().path once all pages are Vue routes (Phase 3+).
+
 function isActive(url: string): boolean {
-    return window.location.pathname === url;
+    return route.path === url;
 }
 
 // --- Main nav items ---
@@ -126,7 +85,7 @@ function changeLanguage(event: { value: string }) {
     form.action = config.urls.setLanguage;
 
     const fields: Record<string, string> = {
-        csrfmiddlewaretoken: (window as any).CSRF_TOKEN,
+        csrfmiddlewaretoken: getCsrf(),
         language: event.value,
         next: window.location.href,
     };

@@ -9,21 +9,15 @@ import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import ProgressSpinner from "primevue/progressspinner";
 import { getCsrf } from "../utils/csrf";
-
-interface Language {
-    code: string;
-    nameLocal: string;
-}
+import { getNavConfig } from "../utils/navConfig";
 
 const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
 
-const textContent = document.getElementById("gbif-alert-nav-config")?.textContent ?? "{}";
-const navConfig = JSON.parse(textContent);
-const isAuthenticated: boolean = navConfig?.user?.isAuthenticated ?? false;
-const enabledLanguages: Language[] = navConfig?.enabledLanguages ?? [{ code: "en", nameLocal: "English" }];
+const isAuthenticated: boolean = getNavConfig().user?.isAuthenticated ?? false;
+const enabledLanguages = getNavConfig().enabledLanguages ?? [{ code: "en", nameLocal: "English" }];
 
 onMounted(async () => {
     if (!isAuthenticated) {

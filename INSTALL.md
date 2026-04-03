@@ -108,7 +108,7 @@ You'll also need to:
 - Create a virtual environment and install the Python dependencies: `$ poetry install`.
 - Generate the database schema: `$ poetry run python manage.py migrate` before the first execution.
 - Install frontend dependencies: `$ npm install`.
-- Generate static assets: `$ npm run webpack-prod`.
+- Generate static assets: `$ npm run vite-build`.
 - Compile translations: `$ poetry run python manage.py compilemessages`.
 - Run Django through Gunicorn (or your favourite WSGI server), and place a reverse proxy in front of it (e.g. Nginx).
 - Install two Cron jobs:

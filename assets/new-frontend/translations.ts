@@ -119,6 +119,7 @@ export const messages = {
             navSignOut: 'Sign out',
             navSignIn: 'Sign in',
             navSignUp: 'Sign up',
+            pageNotFound: 'Page not found',
             yesImSure: 'Yes, I\'m sure',
             // Observation detail page
             loading: 'Loading...',
@@ -330,6 +331,7 @@ export const messages = {
             navSignOut: 'Se déconnecter',
             navSignIn: 'Se connecter',
             navSignUp: "S'inscrire",
+            pageNotFound: 'Page introuvable',
             yesImSure: 'Oui, je suis sûr',
             // Observation detail page
             loading: 'Chargement...',
@@ -541,6 +543,7 @@ export const messages = {
             navSignOut: 'Afmelden',
             navSignIn: 'Aanmelden',
             navSignUp: 'Registreren',
+            pageNotFound: 'Pagina niet gevonden',
             yesImSure: 'Ja, ik ben zeker',
             // Observation detail page
             loading: 'Laden...',
