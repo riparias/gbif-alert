@@ -36,6 +36,8 @@ const dateRangeLabel = computed(() => {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    width: 45%;
+    margin-left: auto;
 }
 
 .brush-header {
