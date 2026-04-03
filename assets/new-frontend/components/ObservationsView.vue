@@ -20,6 +20,7 @@ import Tab from "primevue/tab";
 import TabPanels from "primevue/tabpanels";
 import TabPanel from "primevue/tabpanel";
 import { useFiltersStore } from "../stores/filters";
+import { useResultsStore } from "../stores/results";
 import type { components } from "../types/api";
 
 type ObservationOut = components["schemas"]["ObservationOut"];
@@ -27,9 +28,12 @@ type ObservationOut = components["schemas"]["ObservationOut"];
 const props = withDefaults(
     defineProps<{
         unseenFallback?: boolean;
+        variant?: "default" | "experiment";
     }>(),
-    { unseenFallback: false }
+    { unseenFallback: false, variant: "default" }
 );
+
+const resultsStore = useResultsStore();
 
 const { t } = useI18n();
 const filtersStore = useFiltersStore();
@@ -134,15 +138,18 @@ function buildFilterParams(): URLSearchParams {
 
 async function loadObservations() {
     loading.value = true;
+    resultsStore.loading = true;
     try {
         const response = await fetch(`/api/v2/observations/?${buildFilterParams()}`);
         if (response.ok) {
             const data = await response.json();
             observations.value = data.items;
             totalRecords.value = data.count;
+            resultsStore.observationCount = data.count;
         }
     } finally {
         loading.value = false;
+        resultsStore.loading = false;
     }
 }
 
@@ -180,8 +187,8 @@ onMounted(async () => {
 </script>
 
 <template>
-    <!-- Counter -->
-    <ObservationCounter :count="totalRecords" :loading="loading" />
+    <!-- Counter (hidden in experiment variant - sidebar shows it there) -->
+    <ObservationCounter v-if="props.variant !== 'experiment'" :count="totalRecords" :loading="loading" />
 
     <!-- Empty state -->
     <div v-if="!loading && totalRecords === 0" class="empty-state">
@@ -191,22 +198,27 @@ onMounted(async () => {
     </div>
 
     <template v-else>
-        <!-- Histogram -->
-        <Card>
+        <!-- Histogram (hidden in experiment variant - shown via HistogramBrush above the tabs) -->
+        <Card v-if="props.variant !== 'experiment'">
             <template #content>
                 <ObservationHistogram />
             </template>
         </Card>
 
-        <!-- Map / Table tabs -->
+        <!-- Map / Timeline (experiment only) / Table tabs -->
         <Tabs value="map">
             <TabList>
                 <Tab value="map"><i class="pi pi-map" /> {{ t("message.mapView") }}</Tab>
+                <Tab v-if="props.variant === 'experiment'" value="timeline"><i class="pi pi-chart-bar" /> Timeline</Tab>
                 <Tab value="table"><i class="pi pi-table" /> {{ t("message.tableView") }}</Tab>
             </TabList>
             <TabPanels>
                 <TabPanel value="map">
                     <ObservationsMap />
+                </TabPanel>
+
+                <TabPanel v-if="props.variant === 'experiment'" value="timeline">
+                    <ObservationHistogram />
                 </TabPanel>
 
                 <TabPanel value="table">
