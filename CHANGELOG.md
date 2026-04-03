@@ -1,5 +1,6 @@
 # Current (unreleased)
 
+- Fully revamped user interface!
 - (experimental) New filter options for areas: inside/approaching/both (https://github.com/riparias/gbif-alert/issues/300)
 - Vernacular name of species is now shown in the map popup (https://github.com/riparias/gbif-alert/issues/165)
 

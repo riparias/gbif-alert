@@ -94,8 +94,6 @@ Frontend source lives entirely in `assets/new-frontend/` (Vite-managed). The old
 - `maps.py` — Map tile endpoints (still used by the SPA map components)
 - `api_v2.py` — Django Ninja v2 API (main API for the SPA)
 - `public_api.py` — Legacy public REST API (WFS + some endpoints; partially superseded by v2)
-- `internal_api.py` — Legacy authenticated API (map tiles still active; other endpoints superseded by v2)
-- `actions.py` — Legacy action handlers (partially superseded by v2)
 
 ### Observation Import Pipeline (`import_observations` command)
 This is the most critical and performance-sensitive process. It:

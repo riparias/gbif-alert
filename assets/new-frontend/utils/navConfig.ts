@@ -58,5 +58,5 @@ export function getNavConfig(): NavConfig {
         const el = document.getElementById("gbif-alert-nav-config");
         _cache = el ? JSON.parse(el.textContent!) : ({} as NavConfig);
     }
-    return _cache;
+    return <NavConfig>_cache;
 }

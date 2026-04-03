@@ -52,67 +52,6 @@ def dashboard_url_filtered_by_data_import(data_import: DataImport) -> str:
 
 
 @register.simple_tag(takes_context=True)
-def js_config_object(context):
-    # When adding stuff here, don't forget to update the corresponding TypeScript interface in assets/ts/interfaces.ts
-    observation_details_url_template = reverse(
-        "dashboard:pages:observation-details", kwargs={"stable_id": 1}
-    ).replace("1", "{stable_id}")
-    observation_details_url_template_with_origin = (
-        f"{observation_details_url_template}?origin={{origin}}"
-    )
-
-    conf = {
-        "authenticatedUser": context.request.user.is_authenticated,
-        "apiEndpoints": {
-            "speciesListUrl": reverse("dashboard:public-api:species-list-json"),
-            "datasetsListUrl": reverse("dashboard:internal-api:datasets-list-json"),
-            "basisOfRecordListUrl": reverse("dashboard:internal-api:basis-of-record-list-json"),
-            "areasListUrl": reverse("dashboard:internal-api:areas-list-json"),
-            "dataImportsListUrl": reverse(
-                "dashboard:internal-api:dataimports-list-json"
-            ),
-            "observationsCounterUrl": reverse(
-                "dashboard:public-api:filtered-observations-counter"
-            ),
-            "observationsJsonUrl": reverse(
-                "dashboard:public-api:filtered-observations-data-page"
-            ),
-            "markObservationsAsSeenUrl": reverse(
-                "dashboard:internal-api:filtered-observations-mark-as-seen"
-            ),
-            "tileServerAggregatedUrlTemplate": _build_mvt_url_template(
-                "dashboard:internal-api:maps:mvt-tiles-hexagon-grid-aggregated"
-            ),
-            "tileServerUrlTemplate": _build_mvt_url_template(
-                "dashboard:internal-api:maps:mvt-tiles"
-            ),
-            "observationDetailsUrlTemplate": observation_details_url_template_with_origin,
-            "myCustomAreasUrl": reverse(
-                "dashboard:pages:my-custom-areas"
-            ),  # TODO: some entries are not API endpoints, but regular pages URLs. Maybe we should have a separate object for those? OR just rename this "apiEndpoints" to "urls"?
-            "minMaxOccPerHexagonUrl": reverse(
-                "dashboard:internal-api:maps:mvt-min-max-per-hexagon"
-            ),
-            "observationsHistogramDataUrl": reverse(
-                "dashboard:internal-api:filtered-observations-monthly-histogram"
-            ),
-            "alertAsFiltersUrl": reverse(
-                "dashboard:internal-api:alert-as-filters-json"
-            ),
-            "alertPageUrlTemplate": reverse(
-                "dashboard:pages:alert-details", kwargs={"alert_id": 1}
-            ).replace("1", "{id}"),
-        },
-        "mainMapConfig": settings.GBIF_ALERT["MAIN_MAP_CONFIG"],
-        "zoomLevelMinMaxQuery": settings.ZOOM_LEVEL_FOR_MIN_MAX_QUERY,
-    }
-    if context.request.user.is_authenticated:
-        conf["userId"] = context.request.user.pk
-
-    return mark_safe(json.dumps(conf))
-
-
-@register.simple_tag(takes_context=True)
 def nav_config_json(context):
     """Serialize all data the Vue navbar needs into a JSON string.
 
@@ -158,8 +97,7 @@ def nav_config_json(context):
             "setLanguage": reverse("set_language"),
         },
         # Map configuration: initial viewport and tile/API endpoint URL templates.
-        # Used by ObservationsMap.vue in the new frontend; the old frontend reads
-        # the same data via the js_config_object template tag instead.
+        # Used by ObservationsMap.vue to initialise the map without a fetch round-trip.
         "map": {
             "initialPosition": settings.GBIF_ALERT["MAIN_MAP_CONFIG"],
             "zoomLevelMinMaxQuery": settings.ZOOM_LEVEL_FOR_MIN_MAX_QUERY,

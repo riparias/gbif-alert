@@ -65,51 +65,11 @@ public_api_urls = [
 
 internal_api_urls = [
     path(
-        "alert/as-filters",
-        views.alert_as_filters,
-        name="alert-as-filters-json",
-    ),
-    path("alert", views.alert, name="alert"),
-path("areas", views.areas_list_json, name="areas-list-json"),
-    path(
-        "available-alert-intervals",
-        views.available_alert_intervals,
-        name="available-alert-intervals",
-    ),
-    path("suggest-alert-name", views.suggest_alert_name, name="suggest-alert-name"),
-    path("data-imports", views.dataimports_list_json, name="dataimports-list-json"),
-    path("datasets", views.datasets_list_json, name="datasets-list-json"),
-    path(
-        "basis-of-record",
-        views.basis_of_record_list_json,
-        name="basis-of-record-list-json",
-    ),
-    path(
-        "filtered-observations/mark_as_seen",
-        views.filtered_observations_mark_as_seen,
-        name="filtered-observations-mark-as-seen",
-    ),
-    path(
-        "filtered-observations/monthly_histogram",
-        views.filtered_observations_monthly_histogram_json,
-        name="filtered-observations-monthly-histogram",
-    ),
-    path(
         "maps/",
         include(
             (maps_api_urls, "maps"),
         ),
     ),
-]
-
-actions_urls = [
-    path("delete_alert", views.delete_alert, name="delete-alert"),
-    path(
-        "mark-observation-as-unseen",
-        views.mark_observation_as_unseen,
-        name="mark-observation-as-unseen",
-    ),
-    path("delete-own-account", views.delete_own_account, name="delete-own-account"),
 ]
 
 urlpatterns = [
@@ -129,12 +89,6 @@ urlpatterns = [
         "internal-api/",
         include(
             (internal_api_urls, "internal-api"),  # type: ignore
-        ),
-    ),
-    path(
-        "actions/",
-        include(
-            (actions_urls, "actions"),
         ),
     ),
 ]
