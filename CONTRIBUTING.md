@@ -96,7 +96,7 @@ Last update: 01 aug 2023.
 The frontend is a Vue 3 single-page application managed by Vite. All pages are served
 by the `spa_shell` Django view; Vue Router handles client-side routing.
 
-Frontend source lives in `./assets/new-frontend/`. The main entry point is `main.ts`.
+Frontend source lives in `./assets/frontend/`. The main entry point is `main.ts`.
 
 - npm is used to manage JS dependencies (**npm install** should be run once)
 - **During development**, run `npm run vite-dev` to start the Vite dev server (required for HMR)
@@ -121,7 +121,7 @@ $ npm run generate-types
 ```
 
 This exports the schema from Django (no server required) into `openapi-schema.json`
-(gitignored), then generates `assets/new-frontend/types/api.ts` (committed).
+(gitignored), then generates `assets/frontend/types/api.ts` (committed).
 Re-run and commit `api.ts` whenever an endpoint or schema changes.
 
 Endpoints are defined in `dashboard/api_v2.py`; response schemas in `dashboard/api_v2_schemas.py`.

@@ -31,15 +31,6 @@ class IndexPageTests(TestCase):
 @override_settings(
     STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"
 )
-class ExperimentPageTests(TestCase):
-    """Tests for the /experiment/ UI experiment page."""
-
-    def test_experiment_page(self):
-        """The Vue SPA shell is served at /experiment/"""
-        response = self.client.get("/experiment/")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "dashboard/base.html")
-
 
 @override_settings(
     STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage"

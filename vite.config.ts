@@ -8,7 +8,7 @@ export default defineConfig({
     outDir: "static_global/vite",
     manifest: true,
     rollupOptions: {
-      input: "assets/new-frontend/main.ts",
+      input: "assets/frontend/main.ts",
       output: {
         manualChunks(id) {
           if (id.includes("node_modules/ol/")) return "vendor-openlayers";

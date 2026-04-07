@@ -209,7 +209,7 @@ export const messages = {
             newObservationsThisImport: 'New observations in this import',
             skippedObservations: 'Skipped observations',
             gbifDownload: 'GBIF download',
-            // Experiment page - filter sidebar sections
+            // Index page - filter sidebar sections
             filterSectionWhat: 'What',
             filterSectionWhere: 'Where',
             filterSectionWhen: 'When',
@@ -218,18 +218,18 @@ export const messages = {
             dateTo: 'Date (to)',
             dateFromPrefix: 'From',
             dateUntilPrefix: 'Until',
-            // Experiment page - stat block
+            // Index page - stat block
             statObservationsLabel: 'matching observations',
             statSpeciesLabel: 'species',
             statDatasetsLabel: 'datasets',
-            // Experiment page - histogram brush
+            // Index page - histogram brush
             observationsOverTime: 'Observations over time',
             allDates: 'All dates',
-            // Experiment page - active filter chips
+            // Index page - active filter chips
             activeFilters: 'Active filters',
             clearAllFilters: 'Clear all',
             removeFilter: 'Remove {label}',
-            // Experiment page - timeline tab
+            // Index page - timeline tab
             timelineView: 'Timeline',
             newBadge: 'NEW',
         }
@@ -444,7 +444,7 @@ export const messages = {
             newObservationsThisImport: 'Nouvelles observations dans cet import',
             skippedObservations: 'Observations ignorees',
             gbifDownload: 'telechargement GBIF',
-            // Experiment page - filter sidebar sections
+            // Index page - filter sidebar sections
             filterSectionWhat: 'Quoi',
             filterSectionWhere: 'Où',
             filterSectionWhen: 'Quand',
@@ -453,18 +453,18 @@ export const messages = {
             dateTo: 'Date (jusqu\'à)',
             dateFromPrefix: 'Depuis',
             dateUntilPrefix: 'Jusqu\'en',
-            // Experiment page - stat block
+            // Index page - stat block
             statObservationsLabel: 'observations correspondantes',
             statSpeciesLabel: 'espèces',
             statDatasetsLabel: 'jeux de données',
-            // Experiment page - histogram brush
+            // Index page - histogram brush
             observationsOverTime: 'Observations au fil du temps',
             allDates: 'Toutes les dates',
-            // Experiment page - active filter chips
+            // Index page - active filter chips
             activeFilters: 'Filtres actifs',
             clearAllFilters: 'Tout effacer',
             removeFilter: 'Supprimer {label}',
-            // Experiment page - timeline tab
+            // Index page - timeline tab
             timelineView: 'Chronologie',
             newBadge: 'NOUVEAU',
         }
@@ -679,7 +679,7 @@ export const messages = {
             newObservationsThisImport: 'Nieuwe waarnemingen in deze import',
             skippedObservations: 'Overgeslagen waarnemingen',
             gbifDownload: 'GBIF download',
-            // Experiment page - filter sidebar sections
+            // Index page - filter sidebar sections
             filterSectionWhat: 'Wat',
             filterSectionWhere: 'Waar',
             filterSectionWhen: 'Wanneer',
@@ -688,18 +688,18 @@ export const messages = {
             dateTo: 'Datum (tot)',
             dateFromPrefix: 'Vanaf',
             dateUntilPrefix: 'Tot',
-            // Experiment page - stat block
+            // Index page - stat block
             statObservationsLabel: 'overeenkomende waarnemingen',
             statSpeciesLabel: 'soorten',
             statDatasetsLabel: 'datasets',
-            // Experiment page - histogram brush
+            // Index page - histogram brush
             observationsOverTime: 'Waarnemingen in de tijd',
             allDates: 'Alle datums',
-            // Experiment page - active filter chips
+            // Index page - active filter chips
             activeFilters: 'Actieve filters',
             clearAllFilters: 'Alles wissen',
             removeFilter: 'Verwijder {label}',
-            // Experiment page - timeline tab
+            // Index page - timeline tab
             timelineView: 'Tijdlijn',
             newBadge: 'NIEUW',
         }

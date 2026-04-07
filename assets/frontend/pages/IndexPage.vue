@@ -35,22 +35,22 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="experiment-layout">
-        <aside class="experiment-sidebar">
+    <div class="index-layout">
+        <aside class="index-sidebar">
             <FilterSidebar />
         </aside>
 
-        <div class="experiment-main">
+        <div class="index-main">
             <div v-if="welcomeHtml" class="welcome-text" v-html="welcomeHtml" />
             <HistogramBrush />
             <ActiveFilterChips />
-            <ObservationsView variant="experiment" :unseen-fallback="unseenFallback" />
+            <ObservationsView variant="sidebar" :unseen-fallback="unseenFallback" />
         </div>
     </div>
 </template>
 
 <style scoped>
-.experiment-layout {
+.index-layout {
     display: grid;
     grid-template-columns: 310px 1fr;
     gap: 1rem;
@@ -58,7 +58,7 @@ onMounted(async () => {
     min-height: 0;
 }
 
-.experiment-sidebar {
+.index-sidebar {
     /* Sticky so the sidebar stays in view while the user scrolls results */
     position: sticky;
     top: 1rem;
@@ -67,7 +67,7 @@ onMounted(async () => {
     overflow: hidden;
 }
 
-.experiment-main {
+.index-main {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;

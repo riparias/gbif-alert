@@ -6,7 +6,6 @@ import NotFoundPage from "../pages/NotFoundPage.vue";
 // it is trivial (no heavy deps) and must render without a network round-trip.
 export const routes: RouteRecordRaw[] = [
     { path: "/", component: () => import("../pages/IndexPage.vue") },
-    { path: "/experiment", component: () => import("../pages/IndexExperimentPage.vue") },
     { path: "/observation/:stableId", redirect: (to) => ({ path: "/", query: { obs: to.params.stableId as string } }) },
     { path: "/my-alerts", component: () => import("../pages/UserAlertsPage.vue") },
     { path: "/new-alert", component: () => import("../pages/AlertFormPage.vue") },

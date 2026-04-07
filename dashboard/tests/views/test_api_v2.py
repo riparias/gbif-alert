@@ -450,16 +450,17 @@ class ApiV2HistogramTests(TestCase):
         self.assertEqual(by_month[(2024, 2)], 1)
         self.assertEqual(by_month[(2024, 3)], 1)
 
-    def test_histogram_ignores_date_filters(self):
-        """startDate/endDate params must be ignored: histogram always shows full range."""
-        # Passing startDate and endDate that exclude obs_jan should not affect results
+    def test_histogram_respects_date_filters(self):
+        """startDate/endDate params must restrict which observations are counted."""
+        # Exclude January by starting from February
         response = self.client.get(
             reverse("api-v2:observations_histogram"),
             {"startDate": "2024-02-01", "endDate": "2024-12-31"},
         )
         by_month = {(e["year"], e["month"]): e["count"] for e in response.json()}
-        self.assertIn((2024, 1), by_month)
-        self.assertEqual(by_month[(2024, 1)], 1)
+        self.assertNotIn((2024, 1), by_month)
+        self.assertIn((2024, 2), by_month)
+        self.assertEqual(by_month[(2024, 2)], 1)
 
     def test_histogram_species_filter(self):
         """speciesIds filter must restrict which observations are counted."""

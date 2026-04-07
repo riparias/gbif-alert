@@ -28,7 +28,7 @@ type ObservationOut = components["schemas"]["ObservationOut"];
 const props = withDefaults(
     defineProps<{
         unseenFallback?: boolean;
-        variant?: "default" | "experiment";
+        variant?: "default" | "sidebar";
     }>(),
     { unseenFallback: false, variant: "default" }
 );
@@ -189,8 +189,8 @@ onMounted(async () => {
 </script>
 
 <template>
-    <!-- Counter (hidden in experiment variant - sidebar shows it there) -->
-    <ObservationCounter v-if="props.variant !== 'experiment'" :count="totalRecords" :loading="loading" />
+    <!-- Counter (hidden in sidebar variant - the sidebar shows it there) -->
+    <ObservationCounter v-if="props.variant !== 'sidebar'" :count="totalRecords" :loading="loading" />
 
     <!-- Empty state -->
     <div v-if="!loading && totalRecords === 0" class="empty-state">
@@ -200,18 +200,18 @@ onMounted(async () => {
     </div>
 
     <template v-else>
-        <!-- Histogram (hidden in experiment variant - shown via HistogramBrush above the tabs) -->
-        <Card v-if="props.variant !== 'experiment'">
+        <!-- Histogram (hidden in sidebar variant - shown via HistogramBrush above the tabs) -->
+        <Card v-if="props.variant !== 'sidebar'">
             <template #content>
                 <ObservationHistogram />
             </template>
         </Card>
 
-        <!-- Map / Timeline (experiment only) / Table tabs -->
+        <!-- Map / Timeline (sidebar variant only) / Table tabs -->
         <Tabs value="map">
             <TabList>
                 <Tab value="map"><i class="pi pi-map" /> {{ t("message.mapView") }}</Tab>
-                <Tab v-if="props.variant === 'experiment'" value="timeline"><i class="pi pi-chart-bar" /> {{ t("message.timelineView") }} <span class="tab-new-badge">{{ t("message.newBadge") }}</span></Tab>
+                <Tab v-if="props.variant === 'sidebar'" value="timeline"><i class="pi pi-chart-bar" /> {{ t("message.timelineView") }} <span class="tab-new-badge">{{ t("message.newBadge") }}</span></Tab>
                 <Tab value="table"><i class="pi pi-table" /> {{ t("message.tableView") }}</Tab>
             </TabList>
             <TabPanels>
@@ -219,7 +219,7 @@ onMounted(async () => {
                     <ObservationsMap />
                 </TabPanel>
 
-                <TabPanel v-if="props.variant === 'experiment'" value="timeline">
+                <TabPanel v-if="props.variant === 'sidebar'" value="timeline">
                     <ObservationHistogram />
                 </TabPanel>
 

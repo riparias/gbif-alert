@@ -69,7 +69,7 @@ npm run vite-build      # Build optimized frontend bundle
 
 ### Regenerate TypeScript types (after any API change)
 ```bash
-npm run generate-types  # Exports OpenAPI schema, writes assets/new-frontend/types/api.ts
+npm run generate-types  # Exports OpenAPI schema, writes assets/frontend/types/api.ts
 ```
 
 ## Architecture
@@ -85,9 +85,9 @@ Each GBIF Alert instance is configured via `local_settings.py` which contains a 
 ### Frontend-Backend Integration
 Single-page application: all pages are served by the `spa_shell` Django view, which injects a `gbif-alert-nav-config` JSON block (site name, enabled languages, auth state) and loads the Vite bundle. Vue Router (history mode) handles client-side routing. Pinia manages shared state (active filters). A Django catch-all pattern in `djangoproject/urls.py` forwards unmatched paths to the SPA shell.
 
-The API layer is Django Ninja at `/api/v2/`. Schemas live in `dashboard/api_v2_schemas.py`. TypeScript types are auto-generated from the OpenAPI spec via `npm run generate-types` and committed to `assets/new-frontend/types/api.ts`.
+The API layer is Django Ninja at `/api/v2/`. Schemas live in `dashboard/api_v2_schemas.py`. TypeScript types are auto-generated from the OpenAPI spec via `npm run generate-types` and committed to `assets/frontend/types/api.ts`.
 
-Frontend source lives entirely in `assets/new-frontend/` (Vite-managed). The old `assets/ts/` directory has been removed.
+Frontend source lives entirely in `assets/frontend/` (Vite-managed). The old `assets/ts/` directory has been removed.
 
 ### Views Organization (`dashboard/views/`)
 - `pages.py` — `spa_shell` view + legacy page stubs
@@ -113,7 +113,7 @@ Observations are identified across imports by `stable_id` — a SHA1 hash of `oc
 
 ### Internationalization
 - Backend/templates: Standard Django i18n (`gettext`, `trans` template tag). Supported locales: English, French, Dutch.
-- Vue components: `vue-i18n` with translations in `assets/new-frontend/translations.ts` (keep keys alphabetically sorted)
+- Vue components: `vue-i18n` with translations in `assets/frontend/translations.ts` (keep keys alphabetically sorted)
 - Database content: Translated via `django-modeltranslation` in Django Admin
 
 ### Background Tasks

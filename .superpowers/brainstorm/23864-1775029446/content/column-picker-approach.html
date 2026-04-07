@@ -1,0 +1,86 @@
+<h2>Column picker: where and how?</h2>
+<p class="subtitle">Three approaches for showing/hiding DataTable columns. Click to select your preference.</p>
+
+<div class="cards">
+
+  <!-- Option A: Toolbar button + popover -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:1rem;background:#f8f9fa;border-radius:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+        <span style="font-size:0.75rem;color:#6c757d;">Table view</span>
+        <button style="font-size:0.75rem;padding:3px 10px;border:1px solid #dee2e6;border-radius:4px;background:#fff;cursor:pointer;">
+          &#9776; Columns
+        </button>
+      </div>
+      <div style="background:#fff;border:1px solid #dee2e6;border-radius:4px;overflow:hidden;font-size:0.7rem;">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);background:#e9ecef;padding:4px 8px;font-weight:600;gap:8px;">
+          <span>Date</span><span>Species</span><span>Municipality</span><span>Verified</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);padding:4px 8px;gap:8px;border-top:1px solid #dee2e6;">
+          <span>2024-03-01</span><span><em>Lynx lynx</em></span><span>Gent</span>
+          <span style="display:inline-block;background:#22c55e;color:#fff;border-radius:99px;padding:1px 6px;font-size:0.65rem;">Verified</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);padding:4px 8px;gap:8px;border-top:1px solid #dee2e6;background:#f8f9fa;">
+          <span>2024-02-28</span><span><em>Canis lupus</em></span><span>Brugge</span>
+          <span style="display:inline-block;background:#ef4444;color:#fff;border-radius:99px;padding:1px 6px;font-size:0.65rem;">Unverified</span>
+        </div>
+      </div>
+      <div style="position:relative;margin-top:4px;">
+        <div style="position:absolute;right:0;top:0;background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:6px 10px;font-size:0.7rem;z-index:10;width:130px;">
+          <div style="font-weight:600;margin-bottom:4px;color:#495057;">Visible columns</div>
+          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" checked disabled> Date</label>
+          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" checked disabled> Species</label>
+          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" checked disabled> Dataset</label>
+          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" checked disabled> Municipality</label>
+          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" checked disabled> Verified</label>
+          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" disabled> GBIF ID</label>
+          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" disabled> Seen</label>
+        </div>
+      </div>
+      <div style="height:80px;"></div>
+    </div>
+    <div class="card-body">
+      <h3>A - Toolbar button + popover</h3>
+      <p>A "Columns" button above the table opens a small checklist popover. Clean, discoverable, out of the way when not needed.</p>
+    </div>
+  </div>
+
+  <!-- Option B: MultiSelect inline in toolbar -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:1rem;background:#f8f9fa;border-radius:6px;">
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+        <span style="font-size:0.75rem;color:#6c757d;">Columns:</span>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <span style="font-size:0.65rem;padding:2px 6px;background:#0d6efd;color:#fff;border-radius:3px;">Date &times;</span>
+          <span style="font-size:0.65rem;padding:2px 6px;background:#0d6efd;color:#fff;border-radius:3px;">Species &times;</span>
+          <span style="font-size:0.65rem;padding:2px 6px;background:#0d6efd;color:#fff;border-radius:3px;">Municipality &times;</span>
+          <span style="font-size:0.65rem;padding:2px 6px;background:#0d6efd;color:#fff;border-radius:3px;">Verified &times;</span>
+          <span style="font-size:0.65rem;padding:2px 6px;background:#e9ecef;color:#495057;border-radius:3px;">+ 3 more</span>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #dee2e6;border-radius:4px;overflow:hidden;font-size:0.7rem;">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);background:#e9ecef;padding:4px 8px;font-weight:600;gap:8px;">
+          <span>Date</span><span>Species</span><span>Municipality</span><span>Verified</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);padding:4px 8px;gap:8px;border-top:1px solid #dee2e6;">
+          <span>2024-03-01</span><span><em>Lynx lynx</em></span><span>Gent</span>
+          <span style="display:inline-block;background:#22c55e;color:#fff;border-radius:99px;padding:1px 6px;font-size:0.65rem;">Verified</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);padding:4px 8px;gap:8px;border-top:1px solid #dee2e6;background:#f8f9fa;">
+          <span>2024-02-28</span><span><em>Canis lupus</em></span><span>Brugge</span>
+          <span style="display:inline-block;background:#ef4444;color:#fff;border-radius:99px;padding:1px 6px;font-size:0.65rem;">Unverified</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B - MultiSelect chip bar</h3>
+      <p>A PrimeVue MultiSelect always visible above the table shows active columns as chips. More prominent, but takes up permanent space.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top:1.5rem;">
+  <h3>What about persistence?</h3>
+  <p class="subtitle">Regardless of approach: column preferences are saved to <strong>localStorage</strong> so they survive page refreshes but aren't shared via URL. Does that sound right?</p>
+</div>

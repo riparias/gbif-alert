@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "vite-dev": "vite",
     "vite-build": "vite build",
-    "generate-types": "python scripts/export_openapi_schema.py && openapi-typescript openapi-schema.json -o assets/new-frontend/types/api.ts"
+    "generate-types": "python scripts/export_openapi_schema.py && openapi-typescript openapi-schema.json -o assets/frontend/types/api.ts"
   },
   "repository": {
     "type": "git",

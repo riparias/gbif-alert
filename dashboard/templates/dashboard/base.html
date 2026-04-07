@@ -34,7 +34,7 @@
 <script type="application/json" id="gbif-alert-nav-config">{% nav_config_json %}</script>
 {% get_page_fragment 'over_navbar' %}
 {# Vue app mount point: renders NavBar (Phase 1) and full page content via RouterView (Phase 2+). #}
-<div id="new-frontend"></div>
+<div id="frontend"></div>
 {% include "dashboard/_messages.html" %}
 
 <div style="margin-bottom: 100px;">
@@ -44,6 +44,6 @@
 {% include "dashboard/_footer.html" %}
 <link rel="stylesheet" href="{% static "css/show_body.css" %}">
 {% vite_hmr_client %}
-{% vite_asset 'assets/new-frontend/main.ts' %}
+{% vite_asset 'assets/frontend/main.ts' %}
 </body>
 </html>

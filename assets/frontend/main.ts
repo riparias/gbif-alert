@@ -75,4 +75,4 @@ app.use(PrimeVue, { theme: { preset: GbifAlertPreset } });
 app.use(i18n);
 app.use(ConfirmationService);
 app.use(ToastService);
-app.mount("#new-frontend");
+app.mount("#frontend");

@@ -392,3 +392,63 @@ def test_smart_status_default_falls_back_to_all(page: Page, live_server):
 
     # Falls back to 'all': both observations are shown
     expect(page.get_by_text("2 matching observations")).to_be_visible()
+
+
+# ---------------------------------------------------------------------------
+# Sidebar layout tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db(transaction=True)
+def test_index_page_renders_sidebar(page: Page, live_server):
+    """The index page loads with the sidebar filter panel visible."""
+    page.goto(live_server.url + "/?status=all")
+    page.wait_for_load_state("networkidle")
+    expect(page.get_by_text("FILTERS", exact=True)).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_index_page_has_three_tabs(page: Page, live_server):
+    """The index page shows Map, Timeline, and Table tabs."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+
+    page.goto(live_server.url + "/?status=all")
+    page.wait_for_load_state("networkidle")
+
+    expect(page.get_by_role("tab", name="Map")).to_be_visible()
+    expect(page.get_by_role("tab", name="Timeline")).to_be_visible()
+    expect(page.get_by_role("tab", name="Table")).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_index_observation_count_in_sidebar(page: Page, live_server):
+    """Sidebar stat block shows the live observation count."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+    _make_observation(gbif_id=2, occurrence_id="2", species=sp, basis=basis)
+
+    page.goto(live_server.url + "/?status=all")
+    page.wait_for_load_state("networkidle")
+
+    stat_block = page.locator(".stat-block")
+    expect(stat_block).to_be_visible()
+    expect(stat_block.get_by_text("2")).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_index_timeline_tab_shows_histogram(page: Page, live_server):
+    """Clicking the Timeline tab shows the histogram chart."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+
+    page.goto(live_server.url + "/?status=all")
+    page.wait_for_load_state("networkidle")
+
+    page.get_by_role("tab", name="Timeline").click()
+    page.wait_for_load_state("networkidle")
+
+    expect(page.locator(".p-tabpanel:visible .histogram-svg")).to_be_visible()

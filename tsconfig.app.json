@@ -7,5 +7,5 @@
     "jsx": "preserve",
     "sourceMap": true
   },
-  "include": ["assets/new-frontend/**/*.ts", "assets/new-frontend/**/*.vue"]
+  "include": ["assets/frontend/**/*.ts", "assets/frontend/**/*.vue"]
 }
