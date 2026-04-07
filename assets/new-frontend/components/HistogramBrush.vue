@@ -26,9 +26,7 @@ const dateRangeLabel = computed(() => {
             <span class="brush-pill">{{ dateRangeLabel }}</span>
         </div>
         <div class="brush-body">
-            <ObservationHistogram :height="90" />
-            <!-- Static selection overlay (stub - not interactive yet) -->
-            <div class="brush-overlay" aria-hidden="true" />
+            <ObservationHistogram :height="90" full-range />
         </div>
     </div>
 </template>
@@ -69,17 +67,4 @@ const dateRangeLabel = computed(() => {
     position: relative;
 }
 
-/* Static teal selection overlay spanning the rightmost ~38% of the chart.
-   This is a visual stub - the position does not correspond to actual dates. */
-.brush-overlay {
-    position: absolute;
-    top: 0;
-    left: 62%;
-    right: 0;
-    bottom: 25px; /* leave room for x-axis labels */
-    background: var(--p-primary-500, #00a58d);
-    opacity: 0.15;
-    pointer-events: none;
-    border-radius: 2px;
-}
 </style>

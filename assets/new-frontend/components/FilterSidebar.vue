@@ -389,7 +389,7 @@ const formattedDatasetsCount = computed(() =>
     font-size: 0.65rem;
     font-weight: 700;
     letter-spacing: 0.1em;
-    color: #475569; /* slate-600 - subtler than the main FILTERS heading */
+    color: #e2e8f0; /* slate-200 - high hierarchy, stands out on dark */
     text-transform: uppercase;
 }
 
@@ -400,9 +400,9 @@ const formattedDatasetsCount = computed(() =>
 }
 
 .filter-group label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #94a3b8; /* slate-400 - readable on dark */
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #64748b; /* slate-500 - subordinate to section headings */
 }
 
 .sidebar-control {
@@ -442,12 +442,21 @@ const formattedDatasetsCount = computed(() =>
 /* Compact sizing for all SelectButton toggles inside the sidebar */
 .filter-group :deep(.p-selectbutton .p-togglebutton) {
     flex: 1;
-    font-size: 0.8rem;
-    padding: 0.3rem 0.5rem;
     min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    padding: 0;
+}
+
+.filter-group :deep(.p-selectbutton .p-togglebutton .p-togglebutton-content) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3rem 0.4rem;
+    font-size: 0.8rem;
+    white-space: normal;
+    line-height: 1.2;
+    text-align: center;
+    width: 100%;
+    height: 100%;
 }
 
 /* Verified filter: All (1st) slate, Verified (2nd) green, Unverified (3rd) red */

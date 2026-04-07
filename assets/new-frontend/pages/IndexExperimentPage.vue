@@ -42,8 +42,8 @@ onMounted(async () => {
 
         <div class="experiment-main">
             <div v-if="welcomeHtml" class="welcome-text" v-html="welcomeHtml" />
-            <ActiveFilterChips />
             <HistogramBrush />
+            <ActiveFilterChips />
             <ObservationsView variant="experiment" :unseen-fallback="unseenFallback" />
         </div>
     </div>
@@ -52,7 +52,7 @@ onMounted(async () => {
 <style scoped>
 .experiment-layout {
     display: grid;
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: 310px 1fr;
     gap: 1rem;
     padding: 1rem;
     min-height: 0;
@@ -64,7 +64,6 @@ onMounted(async () => {
     top: 1rem;
     height: fit-content;
     background: #1e293b;
-    border-radius: 8px;
     overflow: hidden;
 }
 

@@ -226,6 +226,7 @@ export const messages = {
             observationsOverTime: 'Observations over time',
             allDates: 'All dates',
             // Experiment page - active filter chips
+            activeFilters: 'Active filters',
             clearAllFilters: 'Clear all',
             removeFilter: 'Remove {label}',
             // Experiment page - timeline tab
@@ -460,6 +461,7 @@ export const messages = {
             observationsOverTime: 'Observations au fil du temps',
             allDates: 'Toutes les dates',
             // Experiment page - active filter chips
+            activeFilters: 'Filtres actifs',
             clearAllFilters: 'Tout effacer',
             removeFilter: 'Supprimer {label}',
             // Experiment page - timeline tab
@@ -694,6 +696,7 @@ export const messages = {
             observationsOverTime: 'Waarnemingen in de tijd',
             allDates: 'Alle datums',
             // Experiment page - active filter chips
+            activeFilters: 'Actieve filters',
             clearAllFilters: 'Alles wissen',
             removeFilter: 'Verwijder {label}',
             // Experiment page - timeline tab
