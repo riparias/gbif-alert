@@ -36,9 +36,6 @@ def test_alert_detail_page_has_sidebar_layout(page: Page, live_server, django_us
 
     page.goto(f"{live_server.url}/alert/{alert.id}/")
 
-    # Sidebar element must be present and visible
+    # Sidebar must be visible and contain the alert name (auto-waits for Vue to render)
     sidebar = page.locator(".alert-detail-sidebar")
-    expect(sidebar).to_be_visible()
-
-    # Alert name must appear inside the sidebar
     expect(sidebar).to_contain_text("Sidebar Layout Alert")

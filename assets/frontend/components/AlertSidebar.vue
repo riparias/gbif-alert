@@ -136,7 +136,7 @@ const formattedDatasetsCount = computed(() =>
                 }}</span>
             </div>
             <div v-if="isAuthenticated" class="filter-group">
-                <label class="filter-label">{{ t("message.observationStatus") }}</label>
+                <label>{{ t("message.observationStatus") }}</label>
                 <ObservationStatusToggle />
             </div>
         </div>
@@ -160,7 +160,7 @@ const formattedDatasetsCount = computed(() =>
         </div>
 
         <!-- Edit / Delete buttons -->
-        <div class="sidebar-actions">
+        <div v-if="isAuthenticated" class="sidebar-actions">
             <Button
                 :label="t('message.editThisAlert')"
                 icon="pi pi-pencil"
@@ -291,12 +291,6 @@ const formattedDatasetsCount = computed(() =>
 }
 
 .filter-group label {
-    font-size: 0.78rem;
-    font-weight: 500;
-    color: #64748b; /* slate-500 */
-}
-
-.filter-label {
     font-size: 0.78rem;
     font-weight: 500;
     color: #64748b; /* slate-500 */
