@@ -95,16 +95,16 @@ def _switch_to_table_view(page: Page) -> None:
 
 @pytest.mark.django_db(transaction=True)
 def test_index_page_renders(page: Page, live_server):
-    """The index page loads: filter panel and observation counter are visible."""
+    """The index page loads: sidebar filter panel and stat block are visible."""
     page.goto(live_server.url + "/")
     page.wait_for_load_state("networkidle")
-    expect(page.get_by_text("Filters", exact=True)).to_be_visible()
-    expect(page.locator(".observation-counter")).to_be_visible()
+    expect(page.get_by_text("FILTERS", exact=True)).to_be_visible()
+    expect(page.locator(".stat-block")).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
 def test_counter_plural(page: Page, live_server):
-    """The counter shows the plural form for multiple observations."""
+    """The sidebar stat block shows the correct count for multiple observations."""
     basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
     sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
     _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
@@ -113,12 +113,12 @@ def test_counter_plural(page: Page, live_server):
     page.goto(live_server.url + "/?status=all")
     page.wait_for_load_state("networkidle")
 
-    expect(page.get_by_text("2 matching observations")).to_be_visible()
+    expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
 def test_counter_singular(page: Page, live_server):
-    """The counter shows the singular form for exactly one observation."""
+    """The sidebar stat block shows the correct count for exactly one observation."""
     basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
     sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
     _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
@@ -126,7 +126,7 @@ def test_counter_singular(page: Page, live_server):
     page.goto(live_server.url + "/?status=all")
     page.wait_for_load_state("networkidle")
 
-    expect(page.get_by_text("One matching observation")).to_be_visible()
+    expect(page.locator(".stat-count").get_by_text("1")).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -167,12 +167,12 @@ def test_species_filter_narrows_results(page: Page, live_server):
     # Unfiltered: 3 observations
     page.goto(live_server.url + "/?status=all")
     page.wait_for_load_state("networkidle")
-    expect(page.get_by_text("3 matching observations")).to_be_visible()
+    expect(page.locator(".stat-count").get_by_text("3")).to_be_visible()
 
     # Filtered to sp1: 2 observations
     page.goto(live_server.url + f"/?status=all&speciesIds={sp1.pk}")
     page.wait_for_load_state("networkidle")
-    expect(page.get_by_text("2 matching observations")).to_be_visible()
+    expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -189,7 +189,7 @@ def test_dataset_filter_narrows_results(page: Page, live_server):
     # Filtered to ds1: 2 observations
     page.goto(live_server.url + f"/?status=all&datasetsIds={ds1.pk}")
     page.wait_for_load_state("networkidle")
-    expect(page.get_by_text("2 matching observations")).to_be_visible()
+    expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
 
 
 # ---------------------------------------------------------------------------
@@ -366,7 +366,7 @@ def test_authenticated_user_sees_unseen_by_default(page: Page, live_server):
     page.goto(live_server.url + "/")
     page.wait_for_load_state("networkidle")
 
-    expect(page.get_by_text("2 matching observations")).to_be_visible()
+    expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -391,7 +391,7 @@ def test_smart_status_default_falls_back_to_all(page: Page, live_server):
     page.wait_for_load_state("networkidle")
 
     # Falls back to 'all': both observations are shown
-    expect(page.get_by_text("2 matching observations")).to_be_visible()
+    expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
 
 
 # ---------------------------------------------------------------------------
@@ -435,7 +435,7 @@ def test_index_observation_count_in_sidebar(page: Page, live_server):
 
     stat_block = page.locator(".stat-block")
     expect(stat_block).to_be_visible()
-    expect(stat_block.get_by_text("2")).to_be_visible()
+    expect(stat_block.locator(".stat-count").get_by_text("2")).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
