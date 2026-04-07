@@ -44,7 +44,7 @@ onMounted(async () => {
             <div v-if="welcomeHtml" class="welcome-text" v-html="welcomeHtml" />
             <HistogramBrush />
             <ActiveFilterChips />
-            <ObservationsView variant="sidebar" :unseen-fallback="unseenFallback" />
+            <ObservationsView :unseen-fallback="unseenFallback" />
         </div>
     </div>
 </template>

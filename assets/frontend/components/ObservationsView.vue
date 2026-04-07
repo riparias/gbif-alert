@@ -10,10 +10,8 @@ import Column from "primevue/column";
 import Button from "primevue/button";
 import Popover from "primevue/popover";
 import Checkbox from "primevue/checkbox";
-import ObservationCounter from "./ObservationCounter.vue";
 import ObservationHistogram from "./ObservationHistogram.vue";
 import ObservationsMap from "./ObservationsMap.vue";
-import Card from "primevue/card";
 import Tabs from "primevue/tabs";
 import TabList from "primevue/tablist";
 import Tab from "primevue/tab";
@@ -25,13 +23,9 @@ import type { components } from "../types/api";
 
 type ObservationOut = components["schemas"]["ObservationOut"];
 
-const props = withDefaults(
-    defineProps<{
-        unseenFallback?: boolean;
-        variant?: "default" | "sidebar";
-    }>(),
-    { unseenFallback: false, variant: "default" }
-);
+const props = defineProps<{
+    unseenFallback?: boolean;
+}>();
 
 const resultsStore = useResultsStore();
 
@@ -189,9 +183,6 @@ onMounted(async () => {
 </script>
 
 <template>
-    <!-- Counter (hidden in sidebar variant - the sidebar shows it there) -->
-    <ObservationCounter v-if="props.variant !== 'sidebar'" :count="totalRecords" :loading="loading" />
-
     <!-- Empty state -->
     <div v-if="!loading && totalRecords === 0" class="empty-state">
         <span class="empty-state-icon">&#128269;</span>
@@ -200,18 +191,11 @@ onMounted(async () => {
     </div>
 
     <template v-else>
-        <!-- Histogram (hidden in sidebar variant - shown via HistogramBrush above the tabs) -->
-        <Card v-if="props.variant !== 'sidebar'">
-            <template #content>
-                <ObservationHistogram />
-            </template>
-        </Card>
-
-        <!-- Map / Timeline (sidebar variant only) / Table tabs -->
+        <!-- Map / Timeline / Table tabs -->
         <Tabs value="map">
             <TabList>
                 <Tab value="map"><i class="pi pi-map" /> {{ t("message.mapView") }}</Tab>
-                <Tab v-if="props.variant === 'sidebar'" value="timeline"><i class="pi pi-chart-bar" /> {{ t("message.timelineView") }} <span class="tab-new-badge">{{ t("message.newBadge") }}</span></Tab>
+                <Tab value="timeline"><i class="pi pi-chart-bar" /> {{ t("message.timelineView") }} <span class="tab-new-badge">{{ t("message.newBadge") }}</span></Tab>
                 <Tab value="table"><i class="pi pi-table" /> {{ t("message.tableView") }}</Tab>
             </TabList>
             <TabPanels>
@@ -219,7 +203,7 @@ onMounted(async () => {
                     <ObservationsMap />
                 </TabPanel>
 
-                <TabPanel v-if="props.variant === 'sidebar'" value="timeline">
+                <TabPanel value="timeline">
                     <ObservationHistogram />
                 </TabPanel>
 
