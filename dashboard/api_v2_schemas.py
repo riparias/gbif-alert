@@ -182,6 +182,16 @@ class AreaDeleteError(Schema):
     detail: str
 
 
+class AreaFromDrawingIn(Schema):
+    name: str
+    geojson: dict  # GeoJSON FeatureCollection, EPSG:4326
+
+
+class AreaPatchIn(Schema):
+    name: str | None = None
+    geojson: dict | None = None  # None means "leave geometry unchanged"
+
+
 class SignInIn(Schema):
     username: str
     password: str
