@@ -86,6 +86,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/areas/from-drawing/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Area Create From Drawing
+         * @description Create a new user-specific area from a GeoJSON FeatureCollection.
+         *
+         *     Accepts a GeoJSON FeatureCollection (EPSG:4326) with Polygon or MultiPolygon
+         *     features drawn by the user. All features are merged into a single MultiPolygon.
+         *
+         *     Returns 422 with a detail message if the geometry is invalid.
+         */
+        post: operations["dashboard_api_v2_area_create_from_drawing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/areas/{area_id}/": {
         parameters: {
             query?: never;
@@ -106,7 +131,14 @@ export interface paths {
         delete: operations["dashboard_api_v2_area_delete_endpoint"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Area Patch
+         * @description Update the name and/or geometry of a user-owned area.
+         *
+         *     Both fields are optional. Passing geojson=None leaves the geometry unchanged.
+         *     Returns 404 if the area does not exist or belongs to another user.
+         */
+        patch: operations["dashboard_api_v2_area_patch"];
         trace?: never;
     };
     "/api/v2/basis-of-record/": {
@@ -536,6 +568,24 @@ export interface components {
             /** Detail */
             detail: string;
         };
+        /** AreaFromDrawingIn */
+        AreaFromDrawingIn: {
+            /** Name */
+            name: string;
+            /** Geojson */
+            geojson: {
+                [key: string]: unknown;
+            };
+        };
+        /** AreaPatchIn */
+        AreaPatchIn: {
+            /** Name */
+            name?: string | null;
+            /** Geojson */
+            geojson?: {
+                [key: string]: unknown;
+            } | null;
+        };
         /** AreaDeleteError */
         AreaDeleteError: {
             /** Detail */
@@ -639,6 +689,10 @@ export interface components {
         ObservationsPageOut: {
             /** Count */
             count: number;
+            /** Speciescount */
+            speciesCount: number;
+            /** Datasetscount */
+            datasetsCount: number;
             /** Items */
             items: components["schemas"]["ObservationOut"][];
         };
@@ -1044,6 +1098,39 @@ export interface operations {
             };
         };
     };
+    dashboard_api_v2_area_create_from_drawing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AreaFromDrawingIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaCreateError"];
+                };
+            };
+        };
+    };
     dashboard_api_v2_area_delete_endpoint: {
         parameters: {
             query?: never;
@@ -1069,6 +1156,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AreaDeleteError"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_area_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                area_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AreaPatchIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaCreateError"];
                 };
             };
         };
