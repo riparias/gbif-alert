@@ -99,3 +99,82 @@ class GeoJSONToMultiPolygonTests(TestCase):
         # Coordinates should be large (Web Mercator, not lon/lat)
         centroid = result.centroid
         self.assertGreater(abs(centroid.x), 100_000)
+
+
+from django.contrib.auth import get_user_model
+from django.contrib.gis.geos import MultiPolygon, Polygon
+
+from dashboard.models import Area
+
+
+User = get_user_model()
+
+SIMPLE_FC = {
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[[4.0, 50.0], [4.0, 51.0], [5.0, 51.0], [4.0, 50.0]]],
+            },
+            "properties": {},
+        }
+    ],
+}
+
+
+class AreaFromDrawingAPITests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="drawer", password="pass", email="drawer@t.com"
+        )
+        self.client.force_login(self.user)
+
+    def test_create_from_drawing_returns_201(self):
+        resp = self.client.post(
+            "/api/v2/areas/from-drawing/",
+            data=json.dumps({"name": "My drawn area", "geojson": SIMPLE_FC}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 201)
+        data = resp.json()
+        self.assertEqual(data["name"], "My drawn area")
+        self.assertTrue(data["isUserSpecific"])
+
+    def test_create_from_drawing_requires_auth(self):
+        self.client.logout()
+        resp = self.client.post(
+            "/api/v2/areas/from-drawing/",
+            data=json.dumps({"name": "Anon area", "geojson": SIMPLE_FC}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 401)
+
+    def test_create_from_drawing_invalid_geometry_returns_422(self):
+        bad_fc = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [4.0, 50.0]},
+                    "properties": {},
+                }
+            ],
+        }
+        resp = self.client.post(
+            "/api/v2/areas/from-drawing/",
+            data=json.dumps({"name": "Bad area", "geojson": bad_fc}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 422)
+        self.assertIn("detail", resp.json())
+
+    def test_create_from_drawing_empty_fc_returns_422(self):
+        empty_fc = {"type": "FeatureCollection", "features": []}
+        resp = self.client.post(
+            "/api/v2/areas/from-drawing/",
+            data=json.dumps({"name": "Empty", "geojson": empty_fc}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 422)

@@ -25,6 +25,7 @@ from dashboard.api_v2_schemas import (
     AlertValidationErrorOut,
     AreaCreateError,
     AreaDeleteError,
+    AreaFromDrawingIn,
     AreaOut,
     AuthErrorOut,
     AuthValidationErrorOut,
@@ -46,7 +47,7 @@ from dashboard.api_v2_schemas import (
     SpeciesOut,
 )
 from dashboard.forms import SignUpForm, _days_to_value_unit, _value_unit_to_days
-from dashboard.geo_utils import file_to_wkt_multipolygon
+from dashboard.geo_utils import file_to_wkt_multipolygon, geojson_to_multipolygon
 from dashboard.models import (
     Alert,
     Area,
@@ -142,6 +143,33 @@ def area_create(
             return 422, {"detail": str(exc)}
 
     area = Area.objects.create(mpoly=cast(GEOSMultiPolygon, GEOSGeometry(wkt)), owner=user, name=name)
+    return 201, {
+        "id": area.pk,
+        "name": area.name,
+        "isUserSpecific": area.is_user_specific,
+        "tags": [],
+    }
+
+
+@api_v2.post(
+    "/areas/from-drawing/",
+    response={201: AreaOut, 422: AreaCreateError},
+    auth=django_auth,
+)
+def area_create_from_drawing(request: HttpRequest, payload: AreaFromDrawingIn):
+    """Create a new user-specific area from a GeoJSON FeatureCollection.
+
+    Accepts a GeoJSON FeatureCollection (EPSG:4326) with Polygon or MultiPolygon
+    features drawn by the user. All features are merged into a single MultiPolygon.
+
+    Returns 422 with a detail message if the geometry is invalid.
+    """
+    user = cast(User, request.user)
+    try:
+        mpoly = geojson_to_multipolygon(payload.geojson)
+    except ValueError as exc:
+        return 422, {"detail": str(exc)}
+    area = Area.objects.create(mpoly=mpoly, owner=user, name=payload.name)
     return 201, {
         "id": area.pk,
         "name": area.name,
