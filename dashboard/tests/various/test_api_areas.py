@@ -1,8 +1,12 @@
 import json
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from dashboard.geo_utils import geojson_to_multipolygon
+from dashboard.models import Area
+
+User = get_user_model()
 
 
 SINGLE_POLYGON_FC = {
@@ -101,14 +105,6 @@ class GeoJSONToMultiPolygonTests(TestCase):
         self.assertGreater(abs(centroid.x), 100_000)
 
 
-from django.contrib.auth import get_user_model
-from django.contrib.gis.geos import MultiPolygon, Polygon
-
-from dashboard.models import Area
-
-
-User = get_user_model()
-
 SIMPLE_FC = {
     "type": "FeatureCollection",
     "features": [
@@ -141,6 +137,7 @@ class AreaFromDrawingAPITests(TestCase):
         data = resp.json()
         self.assertEqual(data["name"], "My drawn area")
         self.assertTrue(data["isUserSpecific"])
+        self.assertIsInstance(data["id"], int)
 
     def test_create_from_drawing_requires_auth(self):
         self.client.logout()
