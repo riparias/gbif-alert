@@ -43,7 +43,7 @@ onMounted(loadAreas);
     <div class="page-content user-areas-page">
         <div class="page-header">
             <h1>{{ t("message.navMyCustomAreas") }}</h1>
-            <div style="display: flex; gap: 0.5rem;">
+            <div class="flex gap-2">
                 <Button
                     :label="t('message.drawArea')"
                     icon="pi pi-pencil"

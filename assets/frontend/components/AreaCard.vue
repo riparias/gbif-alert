@@ -93,7 +93,7 @@ onMounted(async () => {
     <div class="area-card p-3 border-1 surface-border border-round mb-3">
         <h3 class="text-lg font-semibold mt-0 mb-2">{{ area.name }}</h3>
         <BaseMap ref="baseMapRef" height="200px" />
-        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+        <div class="flex gap-2 mt-2">
             <Button
                 :label="t('message.editArea')"
                 icon="pi pi-pencil"
