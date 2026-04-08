@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import Button from "primevue/button";
 import ProgressSpinner from "primevue/progressspinner";
 import AreaCard from "../components/AreaCard.vue";
@@ -10,6 +11,7 @@ import type { components } from "../types/api";
 type AreaOut = components["schemas"]["AreaOut"];
 
 const { t } = useI18n();
+const router = useRouter();
 
 const areas = ref<AreaOut[]>([]);
 const loading = ref(true);
@@ -41,11 +43,19 @@ onMounted(loadAreas);
     <div class="page-content user-areas-page">
         <div class="page-header">
             <h1>{{ t("message.navMyCustomAreas") }}</h1>
-            <Button
-                :label="t('message.newArea')"
-                icon="pi pi-plus"
-                @click="showUploadDialog = true"
-            />
+            <div style="display: flex; gap: 0.5rem;">
+                <Button
+                    :label="t('message.drawArea')"
+                    icon="pi pi-pencil"
+                    severity="secondary"
+                    @click="router.push('/my-custom-areas/new')"
+                />
+                <Button
+                    :label="t('message.newArea')"
+                    icon="pi pi-upload"
+                    @click="showUploadDialog = true"
+                />
+            </div>
         </div>
 
         <ProgressSpinner v-if="loading" />

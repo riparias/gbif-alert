@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, markRaw } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
@@ -18,6 +19,7 @@ const props = defineProps<{ area: AreaOut }>();
 const emit = defineEmits<{ deleted: [areaId: number] }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const confirm = useConfirm();
 const toast = useToast();
 
@@ -91,12 +93,21 @@ onMounted(async () => {
     <div class="area-card p-3 border-1 surface-border border-round mb-3">
         <h3 class="text-lg font-semibold mt-0 mb-2">{{ area.name }}</h3>
         <BaseMap ref="baseMapRef" height="200px" />
-        <Button
-            :label="t('message.deleteArea')"
-            icon="pi pi-trash"
-            severity="danger"
-            size="small"
-            @click="confirmDelete"
-        />
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <Button
+                :label="t('message.editArea')"
+                icon="pi pi-pencil"
+                severity="secondary"
+                size="small"
+                @click="router.push(`/my-custom-areas/${props.area.id}/edit`)"
+            />
+            <Button
+                :label="t('message.deleteArea')"
+                icon="pi pi-trash"
+                severity="danger"
+                size="small"
+                @click="confirmDelete"
+            />
+        </div>
     </div>
 </template>
