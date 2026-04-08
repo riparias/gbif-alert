@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, markRaw } from "vue";
+import { ref, onMounted, onUnmounted, markRaw } from "vue";
 import { useI18n } from "vue-i18n";
 import { Map as OLMap, View } from "ol";
 import { fromLonLat } from "ol/proj";
-import TileLayer from "ol/layer/Tile";
-import StadiaMaps from "ol/source/StadiaMaps";
-import OSM from "ol/source/OSM";
-import XYZ from "ol/source/XYZ";
 import Select from "primevue/select";
 import "ol/ol.css";
+import { useBaseLayer, makeBaseLayer, BASE_LAYER_OPTIONS } from "../composables/useBaseLayer";
 
 const props = withDefaults(
     defineProps<{
@@ -26,40 +23,9 @@ const props = withDefaults(
 );
 
 const { t } = useI18n();
-
-const BASE_LAYER_OPTIONS = [
-    { id: "osmHot", label: "OSM HOT" },
-    { id: "toner", label: "Stamen Toner" },
-    { id: "esriImagery", label: "ESRI World Imagery" },
-] as const;
-
-const selectedBaseLayerId = ref<string>("osmHot");
+const { selectedBaseLayerId, attachToMap } = useBaseLayer();
 const mapEl = ref<HTMLElement | null>(null);
 let olMap: OLMap | null = null;
-
-function makeBaseLayer(id: string): TileLayer<any> {
-    if (id === "toner") {
-        return new TileLayer({ source: new StadiaMaps({ layer: "stamen_toner" }) });
-    }
-    if (id === "esriImagery") {
-        return new TileLayer({
-            source: new XYZ({
-                url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-                maxZoom: 19,
-            }),
-        });
-    }
-    return new TileLayer({
-        source: new OSM({ url: "https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png" }),
-    });
-}
-
-watch(selectedBaseLayerId, (newId) => {
-    if (!olMap) return;
-    const layers = olMap.getLayers();
-    layers.removeAt(0);
-    layers.insertAt(0, markRaw(makeBaseLayer(newId)));
-});
 
 onMounted(() => {
     olMap = markRaw(
@@ -72,6 +38,7 @@ onMounted(() => {
             }),
         })
     );
+    attachToMap(olMap);
 });
 
 onUnmounted(() => {
