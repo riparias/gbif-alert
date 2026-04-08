@@ -1,6 +1,7 @@
 import json
 
 from django.contrib.auth import get_user_model
+from django.contrib.gis.geos import MultiPolygon, Polygon
 from django.test import TestCase
 
 from dashboard.geo_utils import geojson_to_multipolygon
@@ -175,3 +176,79 @@ class AreaFromDrawingAPITests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 422)
+
+
+SIMPLE_MPOLY = MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)), srid=4326))
+
+
+class AreaPatchAPITests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="patcher", password="pass", email="patcher@t.com"
+        )
+        self.other = User.objects.create_user(
+            username="other", password="pass", email="other@t.com"
+        )
+        self.area = Area.objects.create(
+            name="Original", owner=self.user, mpoly=SIMPLE_MPOLY
+        )
+        self.client.force_login(self.user)
+
+    def test_patch_name_returns_200(self):
+        resp = self.client.patch(
+            f"/api/v2/areas/{self.area.pk}/",
+            data=json.dumps({"name": "Renamed"}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.area.refresh_from_db()
+        self.assertEqual(self.area.name, "Renamed")
+
+    def test_patch_geometry_returns_200(self):
+        resp = self.client.patch(
+            f"/api/v2/areas/{self.area.pk}/",
+            data=json.dumps({"name": "Original", "geojson": SIMPLE_FC}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.area.refresh_from_db()
+        self.assertEqual(self.area.mpoly.geom_type, "MultiPolygon")
+
+    def test_patch_null_geojson_leaves_geometry_unchanged(self):
+        original_wkt = self.area.mpoly.wkt
+        resp = self.client.patch(
+            f"/api/v2/areas/{self.area.pk}/",
+            data=json.dumps({"name": "New name", "geojson": None}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.area.refresh_from_db()
+        self.assertEqual(self.area.mpoly.wkt, original_wkt)
+
+    def test_patch_another_users_area_returns_404(self):
+        other_area = Area.objects.create(
+            name="Other area", owner=self.other, mpoly=SIMPLE_MPOLY
+        )
+        resp = self.client.patch(
+            f"/api/v2/areas/{other_area.pk}/",
+            data=json.dumps({"name": "Hijacked"}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 404)
+
+    def test_patch_nonexistent_area_returns_404(self):
+        resp = self.client.patch(
+            "/api/v2/areas/99999/",
+            data=json.dumps({"name": "Ghost"}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 404)
+
+    def test_patch_requires_auth(self):
+        self.client.logout()
+        resp = self.client.patch(
+            f"/api/v2/areas/{self.area.pk}/",
+            data=json.dumps({"name": "Anon"}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 401)

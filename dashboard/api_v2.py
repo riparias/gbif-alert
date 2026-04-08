@@ -27,6 +27,7 @@ from dashboard.api_v2_schemas import (
     AreaDeleteError,
     AreaFromDrawingIn,
     AreaOut,
+    AreaPatchIn,
     AuthErrorOut,
     AuthValidationErrorOut,
     BasisOfRecordOut,
@@ -175,6 +176,34 @@ def area_create_from_drawing(request: HttpRequest, payload: AreaFromDrawingIn):
         "name": area.name,
         "isUserSpecific": area.is_user_specific,
         "tags": [],
+    }
+
+
+@api_v2.patch(
+    "/areas/{area_id}/",
+    response={200: AreaOut, 422: AreaCreateError},
+    auth=django_auth,
+)
+def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
+    """Update the name and/or geometry of a user-owned area.
+
+    Both fields are optional. Passing geojson=None leaves the geometry unchanged.
+    Returns 404 if the area does not exist or belongs to another user.
+    """
+    area = get_object_or_404(Area, pk=area_id, owner=request.user)
+    if payload.name is not None:
+        area.name = payload.name
+    if payload.geojson is not None:
+        try:
+            area.mpoly = geojson_to_multipolygon(payload.geojson)
+        except ValueError as exc:
+            return 422, {"detail": str(exc)}
+    area.save()
+    return {
+        "id": area.pk,
+        "name": area.name,
+        "isUserSpecific": area.is_user_specific,
+        "tags": [t.name for t in area.tags.all()],
     }
 
 
