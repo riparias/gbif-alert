@@ -1,6 +1,5 @@
 import json
 
-from django.contrib.gis.geos import GEOSGeometry
 from django.test import TestCase
 
 from dashboard.geo_utils import geojson_to_multipolygon
