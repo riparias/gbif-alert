@@ -5,6 +5,8 @@ import { useRouter } from "vue-router";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
+import Card from "primevue/card";
+import Tag from "primevue/tag";
 import { getCsrf } from "../utils/csrf";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
@@ -90,24 +92,85 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="area-card p-3 border-1 surface-border border-round mb-3">
-        <h3 class="text-lg font-semibold mt-0 mb-2">{{ area.name }}</h3>
-        <BaseMap ref="baseMapRef" height="200px" />
-        <div class="flex gap-2 mt-2">
-            <Button
-                :label="t('message.editArea')"
-                icon="pi pi-pencil"
-                severity="secondary"
-                size="small"
-                @click="router.push(`/my-custom-areas/${props.area.id}/edit`)"
-            />
-            <Button
-                :label="t('message.deleteArea')"
-                icon="pi pi-trash"
-                severity="danger"
-                size="small"
-                @click="confirmDelete"
-            />
-        </div>
-    </div>
+    <Card class="area-card">
+        <template #title>
+            <span class="area-name">{{ area.name }}</span>
+        </template>
+
+        <template #content>
+            <BaseMap ref="baseMapRef" height="150px" />
+            <div v-if="area.tags.length > 0" class="tags-row">
+                <Tag
+                    v-for="tag in area.tags"
+                    :key="tag"
+                    :value="tag"
+                    severity="secondary"
+                    class="area-tag"
+                />
+            </div>
+        </template>
+
+        <template #footer>
+            <div class="card-actions">
+                <Button
+                    :label="t('message.viewAreaObservations')"
+                    icon="pi pi-chart-bar"
+                    size="small"
+                    @click="router.push(`/?areaIds=${props.area.id}`)"
+                />
+                <Button
+                    :label="t('message.editArea')"
+                    icon="pi pi-pencil"
+                    severity="secondary"
+                    size="small"
+                    @click="router.push(`/my-custom-areas/${props.area.id}/edit`)"
+                />
+                <Button
+                    :label="t('message.deleteArea')"
+                    icon="pi pi-trash"
+                    severity="danger"
+                    size="small"
+                    outlined
+                    @click="confirmDelete"
+                />
+            </div>
+        </template>
+    </Card>
 </template>
+
+<style scoped>
+.area-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.area-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--p-primary-color);
+}
+
+.tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.6rem;
+}
+
+.area-tag {
+    font-size: 0.75rem;
+}
+
+:deep(.p-card-footer) {
+    border-top: 1px solid var(--p-content-border-color);
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+</style>
