@@ -246,6 +246,8 @@ export const messages = {
             // Index page - histogram brush
             observationsOverTime: 'Observations over time',
             allDates: 'All dates',
+            lastMonth: 'Last month',
+            lastYear: 'Last year',
             // Index page - active filter chips
             activeFilters: 'Active filters',
             clearAllFilters: 'Clear all',
@@ -502,6 +504,8 @@ export const messages = {
             // Index page - histogram brush
             observationsOverTime: 'Observations au fil du temps',
             allDates: 'Toutes les dates',
+            lastMonth: 'Dernier mois',
+            lastYear: 'Dernière année',
             // Index page - active filter chips
             activeFilters: 'Filtres actifs',
             clearAllFilters: 'Tout effacer',
@@ -758,6 +762,8 @@ export const messages = {
             // Index page - histogram brush
             observationsOverTime: 'Waarnemingen in de tijd',
             allDates: 'Alle datums',
+            lastMonth: 'Afgelopen maand',
+            lastYear: 'Afgelopen jaar',
             // Index page - active filter chips
             activeFilters: 'Actieve filters',
             clearAllFilters: 'Alles wissen',
