@@ -5,7 +5,7 @@ import { createApp } from "vue";
 import { createPinia } from "pinia";
 import { createRouter, createWebHistory } from "vue-router";
 import PrimeVue from "primevue/config";
-import Aura from "@primeuix/themes/aura";
+import Material from "@primeuix/themes/material";
 import { definePreset } from "@primeuix/themes";
 import { createI18n } from "vue-i18n";
 import ConfirmationService from "primevue/confirmationservice";
@@ -27,7 +27,7 @@ const shades = [
     "50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950",
 ];
 
-const GbifAlertPreset = definePreset(Aura, {
+const GbifAlertPreset = definePreset(Material, {
     semantic: {
         // Map all primary tokens to the chosen palette so every PrimeVue component
         // (buttons, focus rings, active states, ...) uses the deployment's color.
