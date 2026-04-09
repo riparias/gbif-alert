@@ -75,3 +75,13 @@ def user_alerts_page(request: AuthenticatedHttpRequest) -> HttpResponse:
 @login_required
 def user_areas_page(request: AuthenticatedHttpRequest) -> HttpResponse:
     return spa_shell(request)
+
+
+@login_required
+def area_editor_new_page(request: AuthenticatedHttpRequest) -> HttpResponse:
+    return spa_shell(request)
+
+
+@login_required
+def area_editor_edit_page(request: AuthenticatedHttpRequest, area_id: int) -> HttpResponse:
+    return spa_shell(request)

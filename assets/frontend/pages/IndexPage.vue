@@ -16,11 +16,11 @@ const route = useRoute();
 const resultsStore = useResultsStore();
 resultsStore.loading = true;
 
-useFilterSync();
-
 const navConfig = getNavConfig();
 const isAuthenticated: boolean = navConfig.user.isAuthenticated;
 document.title = `${t("message.home")} - ${navConfig.siteName}`;
+
+useFilterSync(isAuthenticated);
 
 const unseenFallback = computed(() => isAuthenticated && !route.query.status);
 

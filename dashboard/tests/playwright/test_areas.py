@@ -193,3 +193,117 @@ def test_create_area_invalid_file_shows_error(page: Page, live_server):
 
     # Dialog stays open and shows an error
     expect(page.locator("[data-testid='area-upload-error']")).to_be_visible()
+
+
+# ---------------------------------------------------------------------------
+# /my-custom-areas/new - editor create mode
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db(transaction=True)
+def test_editor_create_mode_loads(page: Page, live_server):
+    """Create-mode editor page renders with correct elements."""
+    User = get_user_model()
+    User.objects.create_user(username="e1", password="pass", email="e1@t.com")
+
+    _login(page, live_server.url, "e1", "pass")
+    page.goto(live_server.url + "/my-custom-areas/new")
+    page.wait_for_load_state("networkidle")
+
+    expect(page.locator("#editor-area-name")).to_be_visible()
+    expect(page.get_by_role("button", name="Draw polygon")).to_be_visible()
+    expect(page.get_by_role("button", name="Edit vertices")).to_be_visible()
+    expect(page.get_by_role("button", name="Delete polygon")).to_be_visible()
+    expect(page.get_by_role("button", name="Save")).to_be_visible()
+    expect(page.get_by_role("button", name="Cancel")).to_be_visible()
+    # Save is disabled - no name or polygon yet
+    expect(page.get_by_role("button", name="Save")).to_be_disabled()
+    # "Delete area" button must NOT appear in create mode
+    expect(page.get_by_role("button", name="Delete area")).not_to_be_attached()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_editor_create_mode_requires_login(page: Page, live_server):
+    """Anonymous user is redirected away from the create editor."""
+    page.goto(live_server.url + "/my-custom-areas/new")
+    page.wait_for_load_state("networkidle")
+    expect(page).not_to_have_url(live_server.url + "/my-custom-areas/new")
+
+
+# ---------------------------------------------------------------------------
+# /my-custom-areas/:id/edit - editor edit mode
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db(transaction=True)
+def test_editor_edit_mode_prefills_name(page: Page, live_server):
+    """Edit-mode editor pre-fills the area name input."""
+    User = get_user_model()
+    user = User.objects.create_user(username="e2", password="pass", email="e2@t.com")
+    area = _make_area(user, "Prefilled area")
+
+    _login(page, live_server.url, "e2", "pass")
+    page.goto(live_server.url + f"/my-custom-areas/{area.pk}/edit")
+    page.wait_for_load_state("networkidle")
+
+    expect(page.locator("#editor-area-name")).to_have_value("Prefilled area")
+    expect(page.get_by_role("button", name="Delete area")).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_editor_edit_mode_rename_and_save(page: Page, live_server):
+    """Renaming an area via the editor persists to the database."""
+    User = get_user_model()
+    user = User.objects.create_user(username="e3", password="pass", email="e3@t.com")
+    area = _make_area(user, "Old name")
+
+    _login(page, live_server.url, "e3", "pass")
+    page.goto(live_server.url + f"/my-custom-areas/{area.pk}/edit")
+    page.wait_for_load_state("networkidle")
+
+    page.locator("#editor-area-name").fill("New name")
+    page.get_by_role("button", name="Save").click()
+    page.wait_for_load_state("networkidle")
+
+    # Should redirect back to the list page
+    expect(page).to_have_url(live_server.url + "/my-custom-areas")
+
+    area.refresh_from_db()
+    assert area.name == "New name"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_editor_delete_area_button(page: Page, live_server):
+    """Delete area button in the editor removes the area and redirects to the list."""
+    User = get_user_model()
+    user = User.objects.create_user(username="e4", password="pass", email="e4@t.com")
+    area = _make_area(user, "Area to delete from editor")
+
+    _login(page, live_server.url, "e4", "pass")
+    page.goto(live_server.url + f"/my-custom-areas/{area.pk}/edit")
+    page.wait_for_load_state("networkidle")
+
+    page.get_by_role("button", name="Delete area").click()
+    # PrimeVue ConfirmDialog - click the accept button
+    page.get_by_role("button", name="Yes, I'm sure").click()
+    page.wait_for_load_state("networkidle")
+
+    expect(page).to_have_url(live_server.url + "/my-custom-areas")
+    assert not Area.objects.filter(pk=area.pk).exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_editor_cancel_returns_to_list(page: Page, live_server):
+    """Clicking Cancel in the editor navigates back to the area list."""
+    User = get_user_model()
+    user = User.objects.create_user(username="e5", password="pass", email="e5@t.com")
+    area = _make_area(user, "Stay intact")
+
+    _login(page, live_server.url, "e5", "pass")
+    page.goto(live_server.url + f"/my-custom-areas/{area.pk}/edit")
+    page.wait_for_load_state("networkidle")
+
+    page.get_by_role("button", name="Cancel").click()
+    page.wait_for_load_state("networkidle")
+
+    expect(page).to_have_url(live_server.url + "/my-custom-areas")

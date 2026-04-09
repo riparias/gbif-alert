@@ -28,7 +28,10 @@ function getFloat(query: LocationQuery, key: string): number | null {
 
 type QueryRecord = Record<string, string | string[]>;
 
-function buildQuery(store: ReturnType<typeof useFiltersStore>): QueryRecord {
+function buildQuery(
+    store: ReturnType<typeof useFiltersStore>,
+    isAuthenticated: boolean,
+): QueryRecord {
     const q: QueryRecord = {};
     if (store.speciesIds.length) q.speciesIds = store.speciesIds.map(String);
     if (store.datasetsIds.length) q.datasetsIds = store.datasetsIds.map(String);
@@ -38,10 +41,17 @@ function buildQuery(store: ReturnType<typeof useFiltersStore>): QueryRecord {
         q.initialDataImportIds = store.initialDataImportIds.map(String);
     if (store.startDate) q.startDate = store.startDate;
     if (store.endDate) q.endDate = store.endDate;
-    // "unseen" is the default - omit it from the URL (clean URL on first visit).
-    // null means "all" - write explicitly so the user can bookmark/share "show all".
-    if (store.status === null) q.status = "all";
-    else if (store.status === "seen") q.status = "seen";
+    if (isAuthenticated) {
+        // For auth users "unseen" is the default - omit it for a clean URL.
+        // null means "all" - write explicitly so the user can bookmark/share it.
+        if (store.status === null) q.status = "all";
+        else if (store.status === "seen") q.status = "seen";
+    } else {
+        // For anonymous users null (all) is the default - omit it.
+        // Explicit "seen" or "unseen" choices are written to the URL.
+        if (store.status === "seen") q.status = "seen";
+        else if (store.status === "unseen") q.status = "unseen";
+    }
     if (store.verifiedFilter !== "all") q.verifiedFilter = store.verifiedFilter;
     if (store.areaFilterMode !== "inside") q.areaFilterMode = store.areaFilterMode;
     if (store.approachingDistanceKm !== null)
@@ -65,7 +75,7 @@ function queriesEqual(a: LocationQuery, b: QueryRecord): boolean {
 
 // --- Composable ---
 
-export function useFilterSync(): void {
+export function useFilterSync(isAuthenticated: boolean = true): void {
     const route = useRoute();
     const router = useRouter();
     const store = useFiltersStore();
@@ -86,9 +96,15 @@ export function useFilterSync(): void {
             store.initialDataImportIds = getIntArray(query, "initialDataImportIds");
             store.startDate = getString(query, "startDate");
             store.endDate = getString(query, "endDate");
-            // "unseen" is the default (no param). "all" in the URL means null (no filter).
-            store.status =
-                status === "seen" ? "seen" : status === "all" ? null : "unseen";
+            // Auth users: "unseen" is the default (no param); "all" in the URL means null.
+            // Anonymous users: null (all) is the default (no param); "unseen" must be explicit.
+            if (isAuthenticated) {
+                store.status =
+                    status === "seen" ? "seen" : status === "all" ? null : "unseen";
+            } else {
+                store.status =
+                    status === "seen" ? "seen" : status === "unseen" ? "unseen" : null;
+            }
             store.verifiedFilter =
                 verified === "verified" || verified === "unverified" ? verified : "all";
             store.areaFilterMode =
@@ -106,7 +122,7 @@ export function useFilterSync(): void {
     // the store watch fires but buildQuery() produces the same URL, so we skip
     // router.replace() and the cycle stops.
     const syncToUrl = debounce(() => {
-        const q = buildQuery(store);
+        const q = buildQuery(store, isAuthenticated);
         // NOTE: The ?obs= param is managed by ObservationsView's drawer, not by the filter
         // store. We carry it through verbatim so that changing a filter does not
         // close an open drawer. It is intentionally excluded from buildQuery() to

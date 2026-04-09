@@ -94,9 +94,11 @@ function activateDrawMode(): void {
 function activateEditMode(): void {
     clearInteractions();
     if (!olMap) return;
+    selectInteraction = markRaw(new OLSelect());
     modifyInteraction = markRaw(new Modify({ source: vectorSource }));
     modifyInteraction.on("modifyend", () => { isDirty.value = true; });
     snapInteraction = markRaw(new Snap({ source: vectorSource }));
+    olMap.addInteraction(selectInteraction);
     olMap.addInteraction(modifyInteraction);
     olMap.addInteraction(snapInteraction);
     activeMode.value = "edit";
@@ -112,14 +114,16 @@ function activateDeleteMode(): void {
             pendingDeleteFeature.value = e.selected[0];
         }
     });
+    snapInteraction = markRaw(new Snap({ source: vectorSource }));
     olMap.addInteraction(selectInteraction);
+    olMap.addInteraction(snapInteraction);
     activeMode.value = "delete";
 }
 
 function confirmDeletePolygon(): void {
     if (!pendingDeleteFeature.value) return;
     vectorSource.removeFeature(pendingDeleteFeature.value);
-    polygonCount.value--;
+    polygonCount.value = vectorSource.getFeatures().length;
     isDirty.value = true;
     activateEditMode();
 }
@@ -150,20 +154,21 @@ async function save(): Promise<void> {
         : "/api/v2/areas/from-drawing/";
     const method = isEditMode.value ? "PATCH" : "POST";
 
-    const resp = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json", "X-CSRFToken": getCsrf() },
-        body: JSON.stringify({ name: areaName.value, geojson }),
-    });
-
-    saving.value = false;
-
-    if (resp.ok) {
-        toast.add({ severity: "success", summary: t("message.areaSaved"), life: 3000 });
-        await router.push("/my-custom-areas");
-    } else {
-        const data = await resp.json();
-        errorMessage.value = data.detail ?? t("message.unexpectedError");
+    try {
+        const resp = await fetch(url, {
+            method,
+            headers: { "Content-Type": "application/json", "X-CSRFToken": getCsrf() },
+            body: JSON.stringify({ name: areaName.value, geojson }),
+        });
+        if (resp.ok) {
+            toast.add({ severity: "success", summary: t("message.areaSaved"), life: 3000 });
+            await router.push("/my-custom-areas");
+        } else {
+            const data = await resp.json();
+            errorMessage.value = data.detail ?? t("message.unexpectedError");
+        }
+    } finally {
+        saving.value = false;
     }
 }
 
@@ -188,6 +193,8 @@ async function doDeleteArea(): Promise<void> {
     } else if (resp.status === 409) {
         const data = await resp.json();
         errorMessage.value = data.detail;
+    } else {
+        errorMessage.value = t("message.unexpectedError");
     }
 }
 
@@ -237,9 +244,13 @@ onMounted(async () => {
             if (extent && extent.every(isFinite)) {
                 olMap.getView().fit(extent, { padding: [20, 20, 20, 20] });
             }
+
+            loading.value = false;
+            activateEditMode();
+        } else {
+            errorMessage.value = t("message.unexpectedError");
+            loading.value = false;
         }
-        loading.value = false;
-        activateEditMode();
     } else {
         activateDrawMode();
     }
@@ -460,7 +471,7 @@ onUnmounted(() => {
 }
 
 .editor-sidebar {
-    width: 220px;
+    width: 200px;
     flex-shrink: 0;
     background: var(--p-surface-card);
     border-left: 1px solid var(--p-surface-border);

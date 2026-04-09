@@ -394,6 +394,67 @@ def test_smart_status_default_falls_back_to_all(page: Page, live_server):
     expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
 
 
+@pytest.mark.django_db(transaction=True)
+def test_anonymous_user_sees_no_unseen_filter_badge(page: Page, live_server):
+    """An anonymous user visiting the index page must not see an 'Unseen' active
+    filter badge.
+
+    Before the fix, the Pinia store initialised status='unseen' unconditionally,
+    so the ActiveFilterChips component would show an 'Unseen' badge for every
+    visitor regardless of whether they were logged in - which makes no sense for
+    anonymous users who have no seen/unseen tracking at all.
+    """
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+
+    page.goto(live_server.url + "/")
+    page.wait_for_load_state("networkidle")
+
+    # No "Unseen" chip should be rendered
+    expect(page.get_by_text("Unseen", exact=True)).not_to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_anonymous_user_sees_all_observations_by_default(page: Page, live_server):
+    """An anonymous user on the index page sees all observations, not just 'unseen'.
+
+    The default status filter for anonymous users must be null (all), not 'unseen'.
+    """
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+    _make_observation(gbif_id=2, occurrence_id="2", species=sp, basis=basis)
+
+    page.goto(live_server.url + "/")
+    page.wait_for_load_state("networkidle")
+
+    # Both observations are shown - no unseen pre-filter was applied
+    expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_authenticated_user_with_unseen_sees_unseen_badge(page: Page, live_server):
+    """An authenticated user who has unseen observations sees an 'Unseen' active
+    filter badge on the index page.
+
+    The 'unseen by default' behaviour is only meaningful when the user is logged
+    in and has unseen observations; the badge should confirm the active filter.
+    """
+    User = get_user_model()
+    user = User.objects.create_user(username="testuser", password="testpass123")
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    obs = _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+    ObservationUnseen.objects.create(observation=obs, user=user)
+
+    _login(page, live_server.url, "testuser", "testpass123")
+    page.goto(live_server.url + "/")
+    page.wait_for_load_state("networkidle")
+
+    expect(page.get_by_text("Unseen", exact=True)).to_be_visible()
+
+
 # ---------------------------------------------------------------------------
 # Sidebar layout tests
 # ---------------------------------------------------------------------------

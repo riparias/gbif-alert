@@ -21,6 +21,12 @@ pages_urls = [
     path("profile", views.user_profile_page, name="profile"),
     path("signup", views.user_signup_page, name="signup"),
     path("my-custom-areas", views.user_areas_page, name="my-custom-areas"),
+    path("my-custom-areas/new", views.area_editor_new_page, name="area-editor-new"),
+    path(
+        "my-custom-areas/<int:area_id>/edit",
+        views.area_editor_edit_page,
+        name="area-editor-edit",
+    ),
 ]
 
 maps_api_urls = [

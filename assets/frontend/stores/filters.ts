@@ -11,7 +11,7 @@ export const useFiltersStore = defineStore("filters", () => {
     const startDate = ref<string | null>(null);
     const endDate = ref<string | null>(null);
 
-    const status = ref<"seen" | "unseen" | null>("unseen");
+    const status = ref<"seen" | "unseen" | null>(null);
     const verifiedFilter = ref<"all" | "verified" | "unverified">("all");
 
     const areaFilterMode = ref<"inside" | "approaching" | "both">("inside");
@@ -25,7 +25,7 @@ export const useFiltersStore = defineStore("filters", () => {
         initialDataImportIds.value = [];
         startDate.value = null;
         endDate.value = null;
-        status.value = "unseen";
+        status.value = null;
         verifiedFilter.value = "all";
         areaFilterMode.value = "inside";
         approachingDistanceKm.value = null;
