@@ -103,7 +103,7 @@ def geojson_to_multipolygon(
         if geom.geom_type == "Polygon":
             polygons.append(geom)
         elif geom.geom_type == "MultiPolygon":
-            polygons.extend(list(geom))  # type: ignore[arg-type]  # MultiPolygon is iterable at runtime
+            polygons.extend(list(geom))  # type: ignore[call-overload]  # MultiPolygon is iterable at runtime
         else:
             raise ValueError(
                 f"Expected Polygon or MultiPolygon features, got {geom.geom_type}"
