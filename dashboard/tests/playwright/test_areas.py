@@ -55,6 +55,40 @@ def test_my_areas_page_shows_area_list(page: Page, live_server):
 
 
 @pytest.mark.django_db(transaction=True)
+def test_area_card_shows_tags(page: Page, live_server):
+    """Tags stored on an area are displayed as chips on its card."""
+    User = get_user_model()
+    user = User.objects.create_user(username="t1", password="pass", email="t1@t.com")
+    area = _make_area(user, "Tagged area")
+    area.tags.add("woodland", "protected")
+
+    _login(page, live_server.url, "t1", "pass")
+    page.goto(live_server.url + "/my-custom-areas")
+    page.wait_for_load_state("networkidle")
+
+    expect(page.get_by_text("woodland", exact=True)).to_be_visible()
+    expect(page.get_by_text("protected", exact=True)).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_area_card_view_observations_navigates(page: Page, live_server):
+    """'View observations' button on an area card navigates to the index page
+    filtered by that area."""
+    User = get_user_model()
+    user = User.objects.create_user(username="t2", password="pass", email="t2@t.com")
+    area = _make_area(user, "Nav area")
+
+    _login(page, live_server.url, "t2", "pass")
+    page.goto(live_server.url + "/my-custom-areas")
+    page.wait_for_load_state("networkidle")
+
+    page.get_by_role("button", name="View observations").click()
+    page.wait_for_load_state("networkidle")
+
+    expect(page).to_have_url(f"{live_server.url}/?areaIds={area.pk}")
+
+
+@pytest.mark.django_db(transaction=True)
 def test_my_areas_empty_state(page: Page, live_server):
     """User with no areas sees an empty state message."""
     User = get_user_model()
