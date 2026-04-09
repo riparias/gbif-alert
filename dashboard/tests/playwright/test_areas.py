@@ -127,7 +127,7 @@ def test_delete_area_confirmed(page: Page, live_server):
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
 
-    page.get_by_role("button", name="Delete this area").click()
+    page.get_by_role("button", name="Delete").click()
     page.get_by_role("button", name="Yes, I'm sure").click()
     page.wait_for_load_state("networkidle")
 
@@ -146,7 +146,7 @@ def test_delete_area_cancelled(page: Page, live_server):
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
 
-    page.get_by_role("button", name="Delete this area").click()
+    page.get_by_role("button", name="Delete").click()
     page.get_by_role("button", name="Cancel").click()
 
     expect(page.locator(".area-card").filter(has_text="Area to keep")).to_be_visible()
@@ -169,7 +169,7 @@ def test_delete_area_with_alert_shows_error(page: Page, live_server):
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
 
-    page.get_by_role("button", name="Delete this area").click()
+    page.get_by_role("button", name="Delete").click()
     page.get_by_role("button", name="Yes, I'm sure").click()
     page.wait_for_load_state("networkidle")
 

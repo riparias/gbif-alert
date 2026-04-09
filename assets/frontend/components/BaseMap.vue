@@ -13,12 +13,14 @@ const props = withDefaults(
         initialLon?: number;
         initialLat?: number;
         initialZoom?: number;
+        showControls?: boolean;
     }>(),
     {
         height: "480px",
         initialLon: 0,
         initialLat: 20,
         initialZoom: 2,
+        showControls: true,
     }
 );
 
@@ -52,7 +54,7 @@ defineExpose({ getOlMap: () => olMap });
 <template>
     <div class="base-map-wrapper" :style="{ height: props.height }">
         <!-- Floating controls panel, top-right corner -->
-        <div class="map-float-controls">
+        <div v-if="props.showControls" class="map-float-controls">
             <div class="float-control-row">
                 <span class="float-control-label">{{ t("message.baseLayer") }}</span>
                 <Select

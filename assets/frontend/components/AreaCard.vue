@@ -98,7 +98,7 @@ onMounted(async () => {
         </template>
 
         <template #content>
-            <BaseMap ref="baseMapRef" height="150px" />
+            <BaseMap ref="baseMapRef" height="200px" :show-controls="false" />
             <div v-if="area.tags.length > 0" class="tags-row">
                 <Tag
                     v-for="tag in area.tags"
@@ -112,13 +112,7 @@ onMounted(async () => {
 
         <template #footer>
             <div class="card-actions">
-                <Button
-                    :label="t('message.viewAreaObservations')"
-                    icon="pi pi-chart-bar"
-                    size="small"
-                    @click="router.push(`/?areaIds=${props.area.id}`)"
-                />
-                <Button
+<Button
                     :label="t('message.editArea')"
                     icon="pi pi-pencil"
                     severity="secondary"

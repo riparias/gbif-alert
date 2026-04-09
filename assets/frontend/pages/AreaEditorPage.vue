@@ -20,6 +20,7 @@ import type { Polygon } from "ol/geom";
 import { MultiPolygon as OLMultiPolygon } from "ol/geom";
 import { useBaseLayer, makeBaseLayer, BASE_LAYER_OPTIONS } from "../composables/useBaseLayer";
 import { getCsrf } from "../utils/csrf";
+import { getNavConfig } from "../utils/navConfig";
 import "ol/ol.css";
 
 type ActiveMode = "draw" | "edit" | "delete";
@@ -43,7 +44,6 @@ const isDirty = ref(false);
 const saving = ref(false);
 const loading = ref(false);
 const errorMessage = ref<string | null>(null);
-const pendingDeleteFeature = ref<Feature | null>(null);
 
 const { selectedBaseLayerId, attachToMap } = useBaseLayer();
 const mapEl = ref<HTMLElement | null>(null);
@@ -88,7 +88,6 @@ function activateDrawMode(): void {
     olMap.addInteraction(drawInteraction);
     olMap.addInteraction(snapInteraction);
     activeMode.value = "draw";
-    pendingDeleteFeature.value = null;
 }
 
 function activateEditMode(): void {
@@ -102,7 +101,6 @@ function activateEditMode(): void {
     olMap.addInteraction(modifyInteraction);
     olMap.addInteraction(snapInteraction);
     activeMode.value = "edit";
-    pendingDeleteFeature.value = null;
 }
 
 function activateDeleteMode(): void {
@@ -110,9 +108,25 @@ function activateDeleteMode(): void {
     if (!olMap) return;
     selectInteraction = markRaw(new OLSelect());
     selectInteraction.on("select", (e) => {
-        if (e.selected.length > 0) {
-            pendingDeleteFeature.value = e.selected[0];
-        }
+        if (e.selected.length === 0) return;
+        const feature = e.selected[0];
+        confirm.require({
+            message: t("message.confirmDeletePolygon"),
+            header: t("message.deletePolygon"),
+            acceptLabel: t("message.yesImSure"),
+            rejectLabel: t("message.cancel"),
+            accept: () => {
+                clearInteractions();
+                vectorSource.removeFeature(feature);
+                polygonCount.value = vectorSource.getFeatures().length;
+                isDirty.value = true;
+                activateDrawMode();
+            },
+            reject: () => {
+                clearInteractions();
+                activateDrawMode();
+            },
+        });
     });
     snapInteraction = markRaw(new Snap({ source: vectorSource }));
     olMap.addInteraction(selectInteraction);
@@ -120,24 +134,16 @@ function activateDeleteMode(): void {
     activeMode.value = "delete";
 }
 
-function confirmDeletePolygon(): void {
-    if (!pendingDeleteFeature.value) return;
-    vectorSource.removeFeature(pendingDeleteFeature.value);
-    polygonCount.value = vectorSource.getFeatures().length;
-    isDirty.value = true;
-    activateEditMode();
-}
-
-function cancelDeletePolygon(): void {
-    selectInteraction?.getFeatures().clear();
-    pendingDeleteFeature.value = null;
-    activateEditMode();
-}
-
 const canSave = computed(
     () => areaName.value.trim() !== "" && polygonCount.value > 0 && !saving.value
 );
-const canDeletePolygon = computed(() => polygonCount.value > 1);
+const canDeletePolygon = computed(() => polygonCount.value > 0);
+
+const saveBlocker = computed<string | null>(() => {
+    if (areaName.value.trim() === "") return t("message.saveHintNoName");
+    if (polygonCount.value === 0) return t("message.saveHintNoPolygon");
+    return null;
+});
 
 async function save(): Promise<void> {
     if (!canSave.value) return;
@@ -203,7 +209,13 @@ onMounted(async () => {
         new OLMap({
             target: mapEl.value!,
             layers: [markRaw(makeBaseLayer("osmHot")), vectorLayer],
-            view: new View({ zoom: 2, center: fromLonLat([0, 20]) }),
+            view: new View({
+                    zoom: getNavConfig().map.initialPosition.initialZoom,
+                    center: fromLonLat([
+                        getNavConfig().map.initialPosition.initialLon,
+                        getNavConfig().map.initialPosition.initialLat,
+                    ]),
+                }),
         })
     );
     attachToMap(olMap);
@@ -298,6 +310,7 @@ onUnmounted(() => {
                     v-model="areaName"
                     class="w-full"
                     :placeholder="t('message.areaName') + '...'"
+                    :autofocus="!isEditMode"
                 />
             </div>
 
@@ -307,8 +320,7 @@ onUnmounted(() => {
             <div class="sidebar-section">
                 <div class="sidebar-label">{{ t("message.drawingTool") }}</div>
 
-                <!-- Normal tool list -->
-                <div v-if="!(activeMode === 'delete' && pendingDeleteFeature)" class="tool-buttons">
+                <div class="tool-buttons">
                     <Button
                         :label="t('message.drawPolygon')"
                         icon="pi pi-pencil"
@@ -325,6 +337,9 @@ onUnmounted(() => {
                         fluid
                         @click="activateEditMode"
                     />
+                    <small v-if="activeMode === 'edit'" class="sidebar-hint">
+                        {{ t("message.editVerticesHint") }}
+                    </small>
                     <Button
                         :label="t('message.deletePolygon')"
                         icon="pi pi-trash"
@@ -336,27 +351,11 @@ onUnmounted(() => {
                     />
                 </div>
 
-                <!-- Delete polygon confirmation (replaces tool list) -->
-                <div v-else class="delete-confirm">
-                    <p class="delete-confirm-label">{{ t("message.confirmDeletePolygon") }}</p>
-                    <Button
-                        :label="t('message.yesImSure')"
-                        severity="danger"
-                        size="small"
-                        fluid
-                        @click="confirmDeletePolygon"
-                    />
-                    <Button
-                        :label="t('message.cancel')"
-                        severity="secondary"
-                        size="small"
-                        fluid
-                        @click="cancelDeletePolygon"
-                    />
-                </div>
-
                 <small class="sidebar-hint">
                     {{ t("message.polygonCount", { count: polygonCount }) }}
+                </small>
+                <small class="sidebar-hint">
+                    {{ t("message.multiPolygonHint") }}
                 </small>
             </div>
 
@@ -375,6 +374,7 @@ onUnmounted(() => {
 
             <!-- Save / Cancel -->
             <div class="sidebar-section">
+                <small v-if="saveBlocker" class="sidebar-hint">{{ saveBlocker }}</small>
                 <Button
                     :label="t('message.save')"
                     :disabled="!canSave"
@@ -520,16 +520,5 @@ onUnmounted(() => {
     font-size: 0.8rem;
     color: var(--p-orange-400);
     margin-bottom: 0.5rem;
-}
-
-.delete-confirm {
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-}
-
-.delete-confirm-label {
-    margin: 0;
-    font-size: 0.875rem;
 }
 </style>

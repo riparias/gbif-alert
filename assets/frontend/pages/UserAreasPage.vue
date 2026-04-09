@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import Button from "primevue/button";
+import Menu from "primevue/menu";
 import ProgressSpinner from "primevue/progressspinner";
 import AreaCard from "../components/AreaCard.vue";
 import AreaUploadDialog from "../components/AreaUploadDialog.vue";
@@ -13,6 +14,7 @@ type AreaOut = components["schemas"]["AreaOut"];
 const { t } = useI18n();
 const router = useRouter();
 
+const addAreaMenu = ref();
 const areas = ref<AreaOut[]>([]);
 const loading = ref(true);
 const showUploadDialog = ref(false);
@@ -36,6 +38,21 @@ function onAreaDeleted(areaId: number) {
     areas.value = areas.value.filter((a) => a.id !== areaId);
 }
 
+const addAreaItems = computed(() => [
+    {
+        label: t("message.drawOnMap"),
+        icon: "pi pi-pencil",
+        command: () => router.push("/my-custom-areas/new"),
+    },
+    {
+        label: t("message.uploadFile"),
+        icon: "pi pi-upload",
+        command: () => {
+            showUploadDialog.value = true;
+        },
+    },
+]);
+
 onMounted(loadAreas);
 </script>
 
@@ -43,19 +60,13 @@ onMounted(loadAreas);
     <div class="page-content user-areas-page">
         <div class="page-header">
             <h1>{{ t("message.navMyCustomAreas") }}</h1>
-            <div class="flex gap-2">
-                <Button
-                    :label="t('message.drawArea')"
-                    icon="pi pi-pencil"
-                    severity="secondary"
-                    @click="router.push('/my-custom-areas/new')"
-                />
-                <Button
-                    :label="t('message.newArea')"
-                    icon="pi pi-upload"
-                    @click="showUploadDialog = true"
-                />
-            </div>
+            <Button
+                :label="t('message.addArea')"
+                icon="pi pi-plus"
+                aria-haspopup="true"
+                @click="addAreaMenu.toggle($event)"
+            />
+            <Menu ref="addAreaMenu" :model="addAreaItems" popup />
         </div>
 
         <ProgressSpinner v-if="loading" />
