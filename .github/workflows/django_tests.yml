@@ -65,23 +65,11 @@ jobs:
       run: npm install
     - name: Run vite build
       run: npm run vite-build
-    - name: Run Django tests (parallel)
-      env:
-        DJANGO_SETTINGS_MODULE: djangoproject.local_settings
-      run: |
-        source .venv/bin/activate
-        python manage.py test --parallel --exclude-tag=sequential
-    - name: Run Django tests (sequential - TransactionTestCase and Selenium)
-      env:
-        DJANGO_SETTINGS_MODULE: djangoproject.local_settings
-      run: |
-        source .venv/bin/activate
-        python manage.py test --tag=sequential
     - name: Install Playwright browsers
       run: |
         source .venv/bin/activate
         playwright install chromium --with-deps
-    - name: Run Playwright tests
+    - name: Run tests
       run: |
         source .venv/bin/activate
         pytest
