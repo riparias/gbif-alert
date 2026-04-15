@@ -45,7 +45,10 @@ pytest-playwright = "^0.7.2"
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "djangoproject.local_settings"
-testpaths = ["dashboard/tests/playwright"]
+testpaths = ["dashboard/tests"]
+markers = [
+    "sequential: marks tests as sequential (avoids DB deadlocks when run in parallel)",
+]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
