@@ -14,7 +14,7 @@ def assert_correct_polygon(wkt: str | None) -> None:
     geom = OGRGeometry(wkt, SpatialReference(3857))
     geom.transform(4326)
     assert geom.geom_type == "MultiPolygon"
-    assert len(geom) == 1
+    assert len(geom) == 1  # type: ignore[arg-type]
     bru_airport = OGRGeometry("POINT (4.483998064 50.90082973)", SpatialReference(4326))
     crl_airport = OGRGeometry("POINT (4.45166486 50.455998176)", SpatialReference(4326))
     assert geom.contains(bru_airport)
