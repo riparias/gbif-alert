@@ -14,38 +14,30 @@
 ## Testing / typing
 This project provides the following tools to ensure the application and code stays in a decent state:
 
-### Django unit tests (`manage.py test`)
+### Running all tests (`pytest`)
 
-Most tests (model, view, API) run via Django's test runner:
-
-Tests are split into two groups to avoid PostgreSQL deadlocks caused by concurrent `TRUNCATE`
-operations from `TransactionTestCase`/`StaticLiveServerTestCase` teardowns:
-
-- **Parallel** (most tests - `TestCase` subclasses): `$ python manage.py test --parallel --exclude-tag=sequential`
-- **Sequential** (`TransactionTestCase` and Selenium tests): `$ python manage.py test --tag=sequential`
-
-Running `$ python manage.py test` without flags also works and is safe, but slower.
-
-> Note: these tests require `DJANGO_SETTINGS_MODULE=djangoproject.local_settings` (e.g. set in
-> PyCharm's Django run configuration, or exported in your shell).
-
-### Playwright browser tests (`pytest`)
-
-End-to-end browser tests use Playwright and run via pytest:
+All tests - Django unit tests, API tests, and Playwright browser tests - run via a single command:
 
 ```
 $ pytest
 ```
 
-pytest is configured in `pyproject.toml` (`testpaths = ["dashboard/tests/playwright"]`).
-These tests start a live Django server and drive a headless Chromium browser.
-The Vite dev server does **not** need to be running - the tests use the pre-built bundle in
-`static_global/vite/` (run `npm run vite-build` first if the bundle is stale).
+pytest is configured in `pyproject.toml` (`testpaths = ["dashboard/tests"]`). The command automatically runs `npm run vite-build` before the tests start, so the Playwright tests always have an up-to-date frontend bundle.
 
-To run a single test file: `$ pytest dashboard/tests/playwright/test_navbar.py`
+To run a single test file:
 
-> **Future direction:** The goal is to migrate all tests to pytest so there is a single test
-> runner. This is tracked as a separate initiative.
+```
+$ pytest dashboard/tests/models/test_alert.py
+```
+
+To run a single test:
+
+```
+$ pytest dashboard/tests/models/test_alert.py::test_has_unseen_observations_true
+```
+
+> **Note:** these tests require `DJANGO_SETTINGS_MODULE=djangoproject.local_settings`
+> (configured in `pyproject.toml` under `[tool.pytest.ini_options]`).
 
 ### Typing
 
