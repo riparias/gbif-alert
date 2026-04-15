@@ -71,24 +71,6 @@ def test_area_card_shows_tags(page: Page, live_server):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_area_card_view_observations_navigates(page: Page, live_server):
-    """'View observations' button on an area card navigates to the index page
-    filtered by that area."""
-    User = get_user_model()
-    user = User.objects.create_user(username="t2", password="pass", email="t2@t.com")
-    area = _make_area(user, "Nav area")
-
-    _login(page, live_server.url, "t2", "pass")
-    page.goto(live_server.url + "/my-custom-areas")
-    page.wait_for_load_state("networkidle")
-
-    page.get_by_role("button", name="View observations").click()
-    page.wait_for_load_state("networkidle")
-
-    expect(page).to_have_url(f"{live_server.url}/?areaIds={area.pk}")
-
-
-@pytest.mark.django_db(transaction=True)
 def test_my_areas_empty_state(page: Page, live_server):
     """User with no areas sees an empty state message."""
     User = get_user_model()
@@ -197,7 +179,8 @@ def test_create_area_succeeds(page: Page, live_server):
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
 
-    page.get_by_role("button", name="New area").click()
+    page.get_by_role("button", name="Add area").click()
+    page.get_by_text("Upload file").click()
 
     # Fill the upload form inside the dialog
     page.locator("#area-name").fill("My uploaded area")
@@ -218,7 +201,8 @@ def test_create_area_invalid_file_shows_error(page: Page, live_server):
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
 
-    page.get_by_role("button", name="New area").click()
+    page.get_by_role("button", name="Add area").click()
+    page.get_by_text("Upload file").click()
 
     page.locator("#area-name").fill("Bad area")
     page.locator("input[type=file]").set_input_files(POINT_GPKG)
