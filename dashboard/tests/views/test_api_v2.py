@@ -1,1380 +1,1647 @@
 import datetime
 import json
+from pathlib import Path
 
+import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import MultiPolygon, Point, Polygon
-from django.test import TestCase
 from django.urls import reverse
-from django.utils import timezone
 
 from dashboard.models import Alert, Area, BasisOfRecord, DataImport, Dataset, Observation, ObservationComment, ObservationUnseen, Species
+
+pytestmark = pytest.mark.django_db
 
 # A minimal polygon - geometry is irrelevant for these tests.
 SIMPLE_POLYGON = MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)), srid=4326))
 
+SAMPLE_DATA_DIR = Path(__file__).parent.parent / "various" / "sample_data"
+
+
+# ---------------------------------------------------------------------------
+# ApiV2FilterListsTests fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def filter_lists_data():
+    """Fixture for the filter-lists tests (species, datasets, areas, basis-of-record, data-imports)."""
+    User = get_user_model()
+
+    area_owner = User.objects.create_user(
+        username="area_owner", password="12345", email="area_owner@example.com"
+    )
+    other_user = User.objects.create_user(
+        username="other_user", password="12345", email="other_user@example.com"
+    )
+
+    species = Species.objects.create(
+        name="Procambarus fallax",
+        vernacular_name="marbled crayfish",
+        gbif_taxon_key=8879526,
+    )
+    species_no_tags = Species.objects.create(
+        name="Orconectes virilis",
+        vernacular_name="",
+        gbif_taxon_key=2227064,
+    )
+    species.tags.add("invasive", "crustacean")
+
+    dataset = Dataset.objects.create(
+        name="Test dataset",
+        gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e",
+    )
+
+    basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+
+    di = DataImport.objects.create(
+        start=datetime.datetime(2024, 3, 15, 10, 0, 0, tzinfo=datetime.timezone.utc),
+        end=datetime.datetime(2024, 3, 15, 11, 0, 0, tzinfo=datetime.timezone.utc),
+        completed=True,
+    )
+
+    public_area = Area.objects.create(
+        name="Public area", mpoly=SIMPLE_POLYGON
+    )
+    user_area = Area.objects.create(
+        name="User area", owner=area_owner, mpoly=SIMPLE_POLYGON
+    )
+
+    return {
+        "area_owner": area_owner,
+        "other_user": other_user,
+        "species": species,
+        "species_no_tags": species_no_tags,
+        "dataset": dataset,
+        "basis_of_record": basis_of_record,
+        "di": di,
+        "public_area": public_area,
+        "user_area": user_area,
+    }
+
+
+# --- /api/v2/species/ ---
+
+def test_species_list_status(client):
+    response = client.get(reverse("api-v2:species_list"))
+    assert response.status_code == 200
+
+
+def test_species_list_camel_case_keys(client, filter_lists_data):
+    """Field renames must produce camelCase JSON keys."""
+    species = filter_lists_data["species"]
+    response = client.get(reverse("api-v2:species_list"))
+    species_data = [s for s in response.json() if s["id"] == species.pk]
+    assert len(species_data) == 1
+    entry = species_data[0]
+
+    assert entry["id"] == species.pk
+    assert entry["scientificName"] == "Procambarus fallax"
+    assert entry["vernacularName"] == "marbled crayfish"
+    assert entry["gbifTaxonKey"] == 8879526
+    assert sorted(entry["tags"]) == sorted(["invasive", "crustacean"])
+
+
+def test_species_list_empty_tags(client, filter_lists_data):
+    """A species with no tags returns an empty list, not null."""
+    species_no_tags = filter_lists_data["species_no_tags"]
+    response = client.get(reverse("api-v2:species_list"))
+    entry = next(s for s in response.json() if s["id"] == species_no_tags.pk)
+    assert entry["tags"] == []
+
+
+# --- /api/v2/datasets/ ---
+
+def test_datasets_list_status(client):
+    response = client.get(reverse("api-v2:datasets_list"))
+    assert response.status_code == 200
+
+
+def test_datasets_list_gbif_key_resolver(client, filter_lists_data):
+    """gbifKey must be taken from Dataset.gbif_dataset_key, not a non-existent field."""
+    dataset = filter_lists_data["dataset"]
+    response = client.get(reverse("api-v2:datasets_list"))
+    entry = next(d for d in response.json() if d["id"] == dataset.pk)
 
-class ApiV2FilterListsTests(TestCase):
-    """Tests for the /api/v2/ list endpoints that populate filter dropdowns.
-
-    These tests focus on:
-    - HTTP status and response shape (correct camelCase keys)
-    - Resolver correctness (field renames, computed values)
-    - Edge cases: empty tags, no data
-    """
-
-    @classmethod
-    def setUpTestData(cls):
-        User = get_user_model()
-
-        cls.area_owner = User.objects.create_user(
-            username="area_owner", password="12345", email="area_owner@example.com"
-        )
-        cls.other_user = User.objects.create_user(
-            username="other_user", password="12345", email="other_user@example.com"
-        )
-
-        cls.species = Species.objects.create(
-            name="Procambarus fallax",
-            vernacular_name="marbled crayfish",
-            gbif_taxon_key=8879526,
-        )
-        cls.species_no_tags = Species.objects.create(
-            name="Orconectes virilis",
-            vernacular_name="",
-            gbif_taxon_key=2227064,
-        )
-        cls.species.tags.add("invasive", "crustacean")
-
-        cls.dataset = Dataset.objects.create(
-            name="Test dataset",
-            gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e",
-        )
-
-        cls.basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
-
-        cls.di = DataImport.objects.create(
-            start=datetime.datetime(2024, 3, 15, 10, 0, 0, tzinfo=datetime.timezone.utc),
-            end=datetime.datetime(2024, 3, 15, 11, 0, 0, tzinfo=datetime.timezone.utc),
-            completed=True,
-        )
-
-        cls.public_area = Area.objects.create(
-            name="Public area", mpoly=SIMPLE_POLYGON
-        )
-        cls.user_area = Area.objects.create(
-            name="User area", owner=cls.area_owner, mpoly=SIMPLE_POLYGON
-        )
-
-    # --- /api/v2/species/ ---
-
-    def test_species_list_status(self):
-        response = self.client.get(reverse("api-v2:species_list"))
-        self.assertEqual(response.status_code, 200)
-
-    def test_species_list_camel_case_keys(self):
-        """Field renames must produce camelCase JSON keys."""
-        response = self.client.get(reverse("api-v2:species_list"))
-        species_data = [s for s in response.json() if s["id"] == self.species.pk]
-        self.assertEqual(len(species_data), 1)
-        entry = species_data[0]
-
-        self.assertEqual(entry["id"], self.species.pk)
-        self.assertEqual(entry["scientificName"], "Procambarus fallax")
-        self.assertEqual(entry["vernacularName"], "marbled crayfish")
-        self.assertEqual(entry["gbifTaxonKey"], 8879526)
-        self.assertCountEqual(entry["tags"], ["invasive", "crustacean"])
-
-    def test_species_list_empty_tags(self):
-        """A species with no tags returns an empty list, not null."""
-        response = self.client.get(reverse("api-v2:species_list"))
-        entry = next(s for s in response.json() if s["id"] == self.species_no_tags.pk)
-        self.assertEqual(entry["tags"], [])
-
-    # --- /api/v2/datasets/ ---
-
-    def test_datasets_list_status(self):
-        response = self.client.get(reverse("api-v2:datasets_list"))
-        self.assertEqual(response.status_code, 200)
-
-    def test_datasets_list_gbif_key_resolver(self):
-        """gbifKey must be taken from Dataset.gbif_dataset_key, not a non-existent field."""
-        response = self.client.get(reverse("api-v2:datasets_list"))
-        entry = next(d for d in response.json() if d["id"] == self.dataset.pk)
-
-        self.assertEqual(entry["gbifKey"], "4fa7b334-ce0d-4e88-aaae-2e0c138d049e")
-        self.assertEqual(entry["name"], "Test dataset")
-
-    # --- /api/v2/areas/ ---
-
-    def test_areas_list_anonymous_sees_only_public(self):
-        response = self.client.get(reverse("api-v2:areas_list"))
-        self.assertEqual(response.status_code, 200)
-        ids = [a["id"] for a in response.json()]
-        self.assertIn(self.public_area.pk, ids)
-        self.assertNotIn(self.user_area.pk, ids)
-
-    def test_areas_list_owner_sees_own_and_public(self):
-        self.client.login(username="area_owner", password="12345")
-        response = self.client.get(reverse("api-v2:areas_list"))
-        ids = [a["id"] for a in response.json()]
-        self.assertIn(self.public_area.pk, ids)
-        self.assertIn(self.user_area.pk, ids)
-
-    def test_areas_list_other_user_sees_only_public(self):
-        self.client.login(username="other_user", password="12345")
-        response = self.client.get(reverse("api-v2:areas_list"))
-        ids = [a["id"] for a in response.json()]
-        self.assertIn(self.public_area.pk, ids)
-        self.assertNotIn(self.user_area.pk, ids)
-
-    def test_areas_list_is_user_specific_field(self):
-        """isUserSpecific must reflect area ownership correctly."""
-        self.client.login(username="area_owner", password="12345")
-        response = self.client.get(reverse("api-v2:areas_list"))
-        by_id = {a["id"]: a for a in response.json()}
-        self.assertFalse(by_id[self.public_area.pk]["isUserSpecific"])
-        self.assertTrue(by_id[self.user_area.pk]["isUserSpecific"])
-
-    # --- /api/v2/basis-of-record/ ---
-
-    def test_basis_of_record_list_status(self):
-        response = self.client.get(reverse("api-v2:basis_of_record_list"))
-        self.assertEqual(response.status_code, 200)
-
-    def test_basis_of_record_list_fields(self):
-        response = self.client.get(reverse("api-v2:basis_of_record_list"))
-        entry = next(b for b in response.json() if b["id"] == self.basis_of_record.pk)
-        self.assertEqual(entry["name"], "HUMAN_OBSERVATION")
-
-    # --- /api/v2/data-imports/ ---
-
-    def test_data_imports_list_status(self):
-        response = self.client.get(reverse("api-v2:data_imports_list"))
-        self.assertEqual(response.status_code, 200)
-
-    def test_data_imports_list_computed_name(self):
-        """name is computed as 'Data import #N', not a model field."""
-        response = self.client.get(reverse("api-v2:data_imports_list"))
-        entry = next(d for d in response.json() if d["id"] == self.di.pk)
-        self.assertEqual(entry["name"], f"Data import #{self.di.pk}")
-
-    def test_data_imports_list_start_timestamp(self):
-        """startTimestamp is present and formatted as an ISO datetime string."""
-        response = self.client.get(reverse("api-v2:data_imports_list"))
-        entry = next(d for d in response.json() if d["id"] == self.di.pk)
-        self.assertEqual(entry["startTimestamp"], "2024-03-15T10:00:00Z")
-
-
-class ApiV2ObservationsTests(TestCase):
-    """Tests for GET /api/v2/observations/.
-
-    Covers: HTTP status, response shape, camelCase keys, pagination,
-    seenByCurrentUser (anonymous/seen/unseen), and basic filter wiring.
-    """
-
-    @classmethod
-    def setUpTestData(cls):
-        User = get_user_model()
-        cls.user = User.objects.create_user(
-            username="obs_user", password="12345", email="obs_user@example.com"
-        )
-
-        cls.species = Species.objects.create(
-            name="Procambarus fallax",
-            vernacular_name="marbled crayfish",
-            gbif_taxon_key=8879526,
-        )
-        cls.other_species = Species.objects.create(
-            name="Vespa velutina",
-            vernacular_name="Asian hornet",
-            gbif_taxon_key=1311477,
-        )
-        cls.dataset = Dataset.objects.create(
-            name="Test dataset",
-            gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e",
-        )
-        cls.basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
-        cls.di = DataImport.objects.create(
-            start=datetime.datetime(2024, 3, 15, 10, 0, 0, tzinfo=datetime.timezone.utc)
-        )
-
-        cls.obs = Observation.objects.create(
-            gbif_id="123",
-            occurrence_id="occ:123",
-            species=cls.species,
-            source_dataset=cls.dataset,
-            date=datetime.date(2024, 3, 10),
-            data_import=cls.di,
-            initial_data_import=cls.di,
-            basis_of_record=cls.basis_of_record,
-            location=Point(4.35, 50.85, srid=4326),
-        )
-        cls.obs_other_species = Observation.objects.create(
-            gbif_id="456",
-            occurrence_id="occ:456",
-            species=cls.other_species,
-            source_dataset=cls.dataset,
-            date=datetime.date(2024, 3, 9),
-            data_import=cls.di,
-            initial_data_import=cls.di,
-            basis_of_record=cls.basis_of_record,
-        )
-
-    # --- Basic HTTP / shape ---
-
-    def test_observations_list_status(self):
-        response = self.client.get(reverse("api-v2:observations_list"))
-        self.assertEqual(response.status_code, 200)
-
-    def test_observations_list_response_shape(self):
-        """Response must have 'count', 'speciesCount', 'datasetsCount', and 'items' at the top level."""
-        response = self.client.get(reverse("api-v2:observations_list"))
-        data = response.json()
-        self.assertIn("count", data)
-        self.assertIn("speciesCount", data)
-        self.assertIn("datasetsCount", data)
-        self.assertIn("items", data)
-        self.assertIsInstance(data["count"], int)
-        self.assertIsInstance(data["speciesCount"], int)
-        self.assertIsInstance(data["datasetsCount"], int)
-        self.assertIsInstance(data["items"], list)
-
-    def test_species_count_reflects_distinct_species(self):
-        """speciesCount must equal the number of distinct species in the result set."""
-        # setUpTestData creates 2 observations across 2 species in the same dataset
-        response = self.client.get(reverse("api-v2:observations_list"))
-        data = response.json()
-        self.assertEqual(data["speciesCount"], 2)
-        self.assertEqual(data["datasetsCount"], 1)
-
-    def test_species_count_respects_filters(self):
-        """speciesCount must drop when a species filter reduces the result set."""
-        response = self.client.get(
-            reverse("api-v2:observations_list"), {"speciesIds": self.species.pk}
-        )
-        data = response.json()
-        self.assertEqual(data["speciesCount"], 1)
-        self.assertEqual(data["datasetsCount"], 1)
-
-    def test_counts_are_zero_when_no_results(self):
-        """speciesCount and datasetsCount must both be 0 when the filter matches nothing."""
-        response = self.client.get(
-            reverse("api-v2:observations_list"), {"speciesIds": 999999}
-        )
-        data = response.json()
-        self.assertEqual(data["count"], 0)
-        self.assertEqual(data["speciesCount"], 0)
-        self.assertEqual(data["datasetsCount"], 0)
-
-    def test_observations_list_camel_case_keys(self):
-        """All expected camelCase keys must be present in each item."""
-        response = self.client.get(reverse("api-v2:observations_list"))
-        item = next(i for i in response.json()["items"] if i["id"] == self.obs.pk)
-        for key in ("id", "stableId", "gbifId", "lat", "lon", "scientificName",
-                    "vernacularName", "datasetName", "date",
-                    "municipality", "verified", "identificationVerificationStatus", "basisOfRecord"):
-            self.assertIn(key, item, msg=f"Missing key: {key}")
-
-    def test_observations_list_new_fields(self):
-        """municipality, verified, and identificationVerificationStatus must be present with correct values."""
-        response = self.client.get(reverse("api-v2:observations_list"))
-        item = next(i for i in response.json()["items"] if i["id"] == self.obs.pk)
-        self.assertEqual(item["municipality"], "")
-        self.assertIs(item["verified"], False)
-        self.assertEqual(item["identificationVerificationStatus"], "")
-        self.assertEqual(item["basisOfRecord"], "HUMAN_OBSERVATION")
-
-    def test_observations_list_field_values(self):
-        """Field values must match the observation data."""
-        response = self.client.get(reverse("api-v2:observations_list"))
-        item = next(i for i in response.json()["items"] if i["id"] == self.obs.pk)
-        self.assertEqual(item["scientificName"], "Procambarus fallax")
-        self.assertEqual(item["vernacularName"], "marbled crayfish")
-        self.assertEqual(item["datasetName"], "Test dataset")
-        self.assertEqual(item["date"], "2024-03-10")
-        self.assertEqual(item["gbifId"], "123")
-        # lat/lon are present (location was set)
-        self.assertIsNotNone(item["lat"])
-        self.assertIsNotNone(item["lon"])
-
-    def test_observations_list_null_location(self):
-        """An observation without a location must return null lat and lon."""
-        response = self.client.get(reverse("api-v2:observations_list"))
-        item = next(i for i in response.json()["items"] if i["id"] == self.obs_other_species.pk)
-        self.assertIsNone(item["lat"])
-        self.assertIsNone(item["lon"])
-
-    # --- seenByCurrentUser ---
-
-    def test_seen_by_current_user_is_null_for_anonymous(self):
-        """Anonymous users get null for seenByCurrentUser."""
-        response = self.client.get(reverse("api-v2:observations_list"))
-        item = next(i for i in response.json()["items"] if i["id"] == self.obs.pk)
-        self.assertIsNone(item["seenByCurrentUser"])
-
-    def test_seen_by_current_user_true_when_no_unseen_record(self):
-        """Observation with no ObservationUnseen entry is considered seen."""
-        self.client.login(username="obs_user", password="12345")
-        response = self.client.get(reverse("api-v2:observations_list"))
-        item = next(i for i in response.json()["items"] if i["id"] == self.obs.pk)
-        self.assertTrue(item["seenByCurrentUser"])
-
-    def test_seen_by_current_user_false_when_unseen_record_exists(self):
-        """Observation with an ObservationUnseen entry is considered unseen."""
-        ObservationUnseen.objects.create(observation=self.obs, user=self.user)
-        self.client.login(username="obs_user", password="12345")
-        response = self.client.get(reverse("api-v2:observations_list"))
-        item = next(i for i in response.json()["items"] if i["id"] == self.obs.pk)
-        self.assertFalse(item["seenByCurrentUser"])
-        ObservationUnseen.objects.filter(observation=self.obs, user=self.user).delete()
-
-    # --- Pagination ---
-
-    def test_pagination_count_reflects_total(self):
-        """count must reflect total matching observations, not just current page."""
-        response = self.client.get(reverse("api-v2:observations_list"))
-        self.assertEqual(response.json()["count"], 2)
-
-    def test_pagination_page_size_respected(self):
-        """pageSize=1 must return exactly 1 item."""
-        response = self.client.get(
-            reverse("api-v2:observations_list"), {"pageSize": 1, "page": 1}
-        )
-        data = response.json()
-        self.assertEqual(len(data["items"]), 1)
-        self.assertEqual(data["count"], 2)
-
-    def test_pagination_second_page(self):
-        """Page 2 with pageSize=1 returns the second observation."""
-        response_p1 = self.client.get(
-            reverse("api-v2:observations_list"), {"pageSize": 1, "page": 1}
-        )
-        response_p2 = self.client.get(
-            reverse("api-v2:observations_list"), {"pageSize": 1, "page": 2}
-        )
-        id_p1 = response_p1.json()["items"][0]["id"]
-        id_p2 = response_p2.json()["items"][0]["id"]
-        self.assertNotEqual(id_p1, id_p2)
-
-    # --- Filter wiring ---
-
-    def test_species_filter(self):
-        """speciesIds filter must restrict results to matching observations."""
-        response = self.client.get(
-            reverse("api-v2:observations_list"), {"speciesIds": self.species.pk}
-        )
-        data = response.json()
-        self.assertEqual(data["count"], 1)
-        self.assertEqual(data["items"][0]["id"], self.obs.pk)
-
-
-class ApiV2HistogramTests(TestCase):
-    """Tests for GET /api/v2/observations/histogram/."""
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.species = Species.objects.create(
-            name="Procambarus fallax", gbif_taxon_key=8879526
-        )
-        cls.other_species = Species.objects.create(
-            name="Vespa velutina", gbif_taxon_key=1311477
-        )
-        cls.dataset = Dataset.objects.create(
-            name="Test dataset",
-            gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e",
-        )
-        cls.basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
-        cls.di = DataImport.objects.create(
-            start=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
-        )
-        # Two observations in different months
-        cls.obs_jan = Observation.objects.create(
-            gbif_id="h1",
-            occurrence_id="occ:h1",
-            species=cls.species,
-            source_dataset=cls.dataset,
-            date=datetime.date(2024, 1, 15),
-            data_import=cls.di,
-            initial_data_import=cls.di,
-            basis_of_record=cls.basis_of_record,
-        )
-        cls.obs_mar = Observation.objects.create(
-            gbif_id="h2",
-            occurrence_id="occ:h2",
-            species=cls.species,
-            source_dataset=cls.dataset,
-            date=datetime.date(2024, 3, 10),
-            data_import=cls.di,
-            initial_data_import=cls.di,
-            basis_of_record=cls.basis_of_record,
-        )
-        cls.obs_other_species = Observation.objects.create(
-            gbif_id="h3",
-            occurrence_id="occ:h3",
-            species=cls.other_species,
-            source_dataset=cls.dataset,
-            date=datetime.date(2024, 2, 5),
-            data_import=cls.di,
-            initial_data_import=cls.di,
-            basis_of_record=cls.basis_of_record,
-        )
-
-    def test_histogram_status(self):
-        response = self.client.get(reverse("api-v2:observations_histogram"))
-        self.assertEqual(response.status_code, 200)
-
-    def test_histogram_response_is_list(self):
-        response = self.client.get(reverse("api-v2:observations_histogram"))
-        self.assertIsInstance(response.json(), list)
-
-    def test_histogram_entry_shape(self):
-        """Each entry must have year, month, count keys."""
-        response = self.client.get(reverse("api-v2:observations_histogram"))
-        for entry in response.json():
-            self.assertIn("year", entry)
-            self.assertIn("month", entry)
-            self.assertIn("count", entry)
-
-    def test_histogram_chronological_order(self):
-        """Entries must be in ascending chronological order."""
-        response = self.client.get(reverse("api-v2:observations_histogram"))
-        entries = response.json()
-        dates = [(e["year"], e["month"]) for e in entries]
-        self.assertEqual(dates, sorted(dates))
-
-    def test_histogram_counts_by_month(self):
-        """Each month must report the correct observation count."""
-        response = self.client.get(reverse("api-v2:observations_histogram"))
-        by_month = {(e["year"], e["month"]): e["count"] for e in response.json()}
-        self.assertEqual(by_month[(2024, 1)], 1)
-        self.assertEqual(by_month[(2024, 2)], 1)
-        self.assertEqual(by_month[(2024, 3)], 1)
-
-    def test_histogram_respects_date_filters(self):
-        """startDate/endDate params must restrict which observations are counted."""
-        # Exclude January by starting from February
-        response = self.client.get(
-            reverse("api-v2:observations_histogram"),
-            {"startDate": "2024-02-01", "endDate": "2024-12-31"},
-        )
-        by_month = {(e["year"], e["month"]): e["count"] for e in response.json()}
-        self.assertNotIn((2024, 1), by_month)
-        self.assertIn((2024, 2), by_month)
-        self.assertEqual(by_month[(2024, 2)], 1)
-
-    def test_histogram_species_filter(self):
-        """speciesIds filter must restrict which observations are counted."""
-        response = self.client.get(
-            reverse("api-v2:observations_histogram"),
-            {"speciesIds": self.species.pk},
-        )
-        by_month = {(e["year"], e["month"]): e["count"] for e in response.json()}
-        # February only has obs_other_species, so it should be absent or 0
-        self.assertNotIn((2024, 2), by_month)
-
-
-class ApiV2ObservationsSortingTests(TestCase):
-    """Tests for the orderBy / orderDir parameters of GET /api/v2/observations/.
-
-    Fixture contains two observations designed so each sort column produces a
-    distinct, deterministic order:
-
-    - obs_alpha: species "Anas platyrhynchos" / dataset "Alpha dataset" / date 2024-01-01
-    - obs_zeta:  species "Zeta vulgaris"      / dataset "Zeta dataset"  / date 2024-06-15
-
-    Expected orders per sort key:
-      date asc:               obs_alpha, obs_zeta
-      date desc (default):    obs_zeta,  obs_alpha
-      scientificName asc:     obs_alpha, obs_zeta
-      scientificName desc:    obs_zeta,  obs_alpha
-      datasetName asc:        obs_alpha, obs_zeta
-      datasetName desc:       obs_zeta,  obs_alpha
-    """
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.species_alpha = Species.objects.create(
-            name="Anas platyrhynchos", gbif_taxon_key=2498252
-        )
-        cls.species_zeta = Species.objects.create(
-            name="Zeta vulgaris", gbif_taxon_key=9999999
-        )
-        cls.dataset_alpha = Dataset.objects.create(
-            name="Alpha dataset",
-            gbif_dataset_key="aaaaaaaa-0000-0000-0000-000000000001",
-        )
-        cls.dataset_zeta = Dataset.objects.create(
-            name="Zeta dataset",
-            gbif_dataset_key="zzzzzzzz-0000-0000-0000-000000000002",
-        )
-        cls.basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
-        cls.di = DataImport.objects.create(
-            start=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
-        )
-        cls.obs_alpha = Observation.objects.create(
-            gbif_id="sort1",
-            occurrence_id="occ:sort1",
-            species=cls.species_alpha,
-            source_dataset=cls.dataset_alpha,
-            date=datetime.date(2024, 1, 1),
-            data_import=cls.di,
-            initial_data_import=cls.di,
-            basis_of_record=cls.basis,
-        )
-        cls.obs_zeta = Observation.objects.create(
-            gbif_id="sort2",
-            occurrence_id="occ:sort2",
-            species=cls.species_zeta,
-            source_dataset=cls.dataset_zeta,
-            date=datetime.date(2024, 6, 15),
-            data_import=cls.di,
-            initial_data_import=cls.di,
-            basis_of_record=cls.basis,
-        )
-
-    def _ids(self, **params):
-        """Return the ordered list of observation ids from a GET request."""
-        response = self.client.get(reverse("api-v2:observations_list"), params)
-        self.assertEqual(response.status_code, 200)
-        return [item["id"] for item in response.json()["items"]]
-
-    # --- date ---
-
-    def test_default_order_is_date_descending(self):
-        """With no sort params the newest observation must come first."""
-        ids = self._ids()
-        alpha_pos = ids.index(self.obs_alpha.pk)
-        zeta_pos = ids.index(self.obs_zeta.pk)
-        self.assertLess(zeta_pos, alpha_pos)
-
-    def test_order_by_date_descending_explicit(self):
-        """orderBy=date&orderDir=desc puts the newest observation first."""
-        ids = self._ids(orderBy="date", orderDir="desc")
-        self.assertLess(ids.index(self.obs_zeta.pk), ids.index(self.obs_alpha.pk))
-
-    def test_order_by_date_ascending(self):
-        """orderBy=date&orderDir=asc puts the oldest observation first."""
-        ids = self._ids(orderBy="date", orderDir="asc")
-        self.assertLess(ids.index(self.obs_alpha.pk), ids.index(self.obs_zeta.pk))
-
-    # --- scientificName ---
-
-    def test_order_by_scientific_name_ascending(self):
-        """orderBy=scientificName&orderDir=asc puts Anas before Zeta."""
-        ids = self._ids(orderBy="scientificName", orderDir="asc")
-        self.assertLess(ids.index(self.obs_alpha.pk), ids.index(self.obs_zeta.pk))
-
-    def test_order_by_scientific_name_descending(self):
-        """orderBy=scientificName&orderDir=desc puts Zeta before Anas."""
-        ids = self._ids(orderBy="scientificName", orderDir="desc")
-        self.assertLess(ids.index(self.obs_zeta.pk), ids.index(self.obs_alpha.pk))
-
-    # --- datasetName ---
-
-    def test_order_by_dataset_name_ascending(self):
-        """orderBy=datasetName&orderDir=asc puts Alpha dataset before Zeta dataset."""
-        ids = self._ids(orderBy="datasetName", orderDir="asc")
-        self.assertLess(ids.index(self.obs_alpha.pk), ids.index(self.obs_zeta.pk))
-
-    def test_order_by_dataset_name_descending(self):
-        """orderBy=datasetName&orderDir=desc puts Zeta dataset before Alpha dataset."""
-        ids = self._ids(orderBy="datasetName", orderDir="desc")
-        self.assertLess(ids.index(self.obs_zeta.pk), ids.index(self.obs_alpha.pk))
-
-    # --- robustness ---
-
-    def test_unknown_order_by_falls_back_to_date(self):
-        """An unrecognised orderBy value must not crash - falls back to date sort."""
-        response = self.client.get(
-            reverse("api-v2:observations_list"), {"orderBy": "nonExistentField"}
-        )
-        self.assertEqual(response.status_code, 200)
-        # Default date-desc order: obs_zeta (newer) before obs_alpha (older)
-        ids = [item["id"] for item in response.json()["items"]]
-        self.assertLess(ids.index(self.obs_zeta.pk), ids.index(self.obs_alpha.pk))
-
-    def test_unknown_order_dir_treated_as_desc(self):
-        """Any orderDir value other than 'asc' must be treated as descending."""
-        ids = self._ids(orderBy="date", orderDir="INVALID")
-        self.assertLess(ids.index(self.obs_zeta.pk), ids.index(self.obs_alpha.pk))
-
-
-class ApiV2ObservationDetailTests(TestCase):
-    """Tests for GET /api/v2/observations/{stable_id}/.
-
-    Covers: 404, response shape, canBeMarkedUnseen logic, and comments.
-    """
-
-    @classmethod
-    def setUpTestData(cls):
-        User = get_user_model()
-        cls.user = User.objects.create_user(
-            username="detail_user", password="12345", email="detail_user@example.com"
-        )
-        cls.commenter = User.objects.create_user(
-            username="commenter", password="12345", email="commenter@example.com"
-        )
-
-        cls.species = Species.objects.create(
-            name="Harmonia axyridis",
-            vernacular_name="harlequin ladybird",
-            gbif_taxon_key=1234567,
-        )
-        cls.dataset = Dataset.objects.create(
-            name="Detail dataset",
-            gbif_dataset_key="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-        )
-        cls.basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
-        cls.di = DataImport.objects.create(
-            start=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
-        )
-        cls.obs = Observation.objects.create(
-            gbif_id="999",
-            occurrence_id="occ:999",
-            species=cls.species,
-            source_dataset=cls.dataset,
-            date=datetime.date(2024, 5, 1),
-            data_import=cls.di,
-            initial_data_import=cls.di,
-            basis_of_record=cls.basis_of_record,
-            location=Point(4.35, 50.85, srid=4326),
-        )
-
-    def _url(self):
-        return f"/api/v2/observations/{self.obs.stable_id}/"
-
-    # --- Basic HTTP / shape ---
-
-    def test_detail_404_for_unknown_stable_id(self):
-        response = self.client.get("/api/v2/observations/nonexistent/")
-        self.assertEqual(response.status_code, 404)
-
-    def test_detail_status_200(self):
-        response = self.client.get(self._url())
-        self.assertEqual(response.status_code, 200)
-
-    def test_detail_camel_case_keys(self):
-        """All expected camelCase keys must be present in the response."""
-        response = self.client.get(self._url())
-        data = response.json()
-        for key in (
-            "id", "stableId", "gbifId", "lat", "lon",
-            "scientificName", "vernacularName", "datasetName", "datasetGbifKey",
-            "date", "basisOfRecord", "seenByCurrentUser", "canBeMarkedUnseen",
-            "comments",
-        ):
-            self.assertIn(key, data, msg=f"Missing key: {key}")
-
-    def test_detail_field_values(self):
-        response = self.client.get(self._url())
-        data = response.json()
-        self.assertEqual(data["stableId"], self.obs.stable_id)
-        self.assertEqual(data["scientificName"], "Harmonia axyridis")
-        self.assertEqual(data["vernacularName"], "harlequin ladybird")
-        self.assertEqual(data["datasetName"], "Detail dataset")
-        self.assertEqual(data["date"], "2024-05-01")
-
-    # --- canBeMarkedUnseen ---
-
-    def test_can_be_marked_unseen_false_for_anonymous(self):
-        response = self.client.get(self._url())
-        self.assertFalse(response.json()["canBeMarkedUnseen"])
-
-    def test_can_be_marked_unseen_false_when_no_matching_alert(self):
-        """Authenticated user with no alerts: cannot mark unseen."""
-        self.client.force_login(self.user)
-        response = self.client.get(self._url())
-        self.assertFalse(response.json()["canBeMarkedUnseen"])
-
-    def test_can_be_marked_unseen_true_when_alert_matches(self):
-        """Authenticated user with a matching alert: can mark unseen."""
-        self.client.force_login(self.user)
-        alert = Alert.objects.create(
-            user=self.user, email_notifications_frequency=Alert.DAILY_EMAILS
-        )
-        alert.species.add(self.obs.species)
-        response = self.client.get(self._url())
-        self.assertTrue(response.json()["canBeMarkedUnseen"])
-
-    # --- comments ---
-
-    def test_comments_returned_with_author_username(self):
-        """Comments list must include the author's username."""
-        ObservationComment.objects.create(
-            observation=self.obs, author=self.commenter, text="Nice find!"
-        )
-        response = self.client.get(self._url())
-        comments = response.json()["comments"]
-        self.assertEqual(len(comments), 1)
-        self.assertEqual(comments[0]["authorUsername"], "commenter")
-        self.assertEqual(comments[0]["text"], "Nice find!")
-
-    def test_comments_empty_list_when_none(self):
-        response = self.client.get(self._url())
-        self.assertEqual(response.json()["comments"], [])
-
-
-class ApiV2ObservationsMunicipalityVerifiedSortTests(TestCase):
-    """Tests for sorting by municipality and verified in GET /api/v2/observations/.
-
-    Fixture:
-    - obs_gent: municipality="Gent",  verified=True
-    - obs_mons: municipality="Mons",  verified=False
-
-    Expected orders:
-      municipality asc:  obs_gent, obs_mons  (G before M)
-      municipality desc: obs_mons, obs_gent
-      verified asc:      obs_mons (False=0), obs_gent (True=1)
-      verified desc:     obs_gent (True=1),  obs_mons (False=0)
-    """
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.species = Species.objects.create(
-            name="Testus sorticus", gbif_taxon_key=9990001
-        )
-        cls.dataset = Dataset.objects.create(
-            name="Sort test dataset",
-            gbif_dataset_key="11111111-0000-0000-0000-000000000099",
-        )
-        cls.basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
-        cls.di = DataImport.objects.create(
-            start=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
-        )
-        cls.obs_gent = Observation.objects.create(
-            gbif_id="munis1",
-            occurrence_id="occ:munis1",
-            species=cls.species,
-            source_dataset=cls.dataset,
-            date=datetime.date(2024, 1, 1),
-            data_import=cls.di,
-            initial_data_import=cls.di,
-            basis_of_record=cls.basis,
-            municipality="Gent",
-            verified=True,
-        )
-        cls.obs_mons = Observation.objects.create(
-            gbif_id="munis2",
-            occurrence_id="occ:munis2",
-            species=cls.species,
-            source_dataset=cls.dataset,
-            date=datetime.date(2024, 1, 2),
-            data_import=cls.di,
-            initial_data_import=cls.di,
-            basis_of_record=cls.basis,
-            municipality="Mons",
-            verified=False,
-        )
-
-    def _ids(self, **params):
-        """Return the ordered list of observation ids from a GET request."""
-        response = self.client.get(reverse("api-v2:observations_list"), params)
-        self.assertEqual(response.status_code, 200)
-        return [item["id"] for item in response.json()["items"]]
-
-    def test_order_by_municipality_ascending(self):
-        """orderBy=municipality&orderDir=asc puts Gent before Mons."""
-        ids = self._ids(orderBy="municipality", orderDir="asc")
-        self.assertLess(ids.index(self.obs_gent.pk), ids.index(self.obs_mons.pk))
-
-    def test_order_by_municipality_descending(self):
-        """orderBy=municipality&orderDir=desc puts Mons before Gent."""
-        ids = self._ids(orderBy="municipality", orderDir="desc")
-        self.assertLess(ids.index(self.obs_mons.pk), ids.index(self.obs_gent.pk))
-
-    def test_order_by_verified_ascending(self):
-        """orderBy=verified&orderDir=asc puts False (obs_mons) before True (obs_gent)."""
-        ids = self._ids(orderBy="verified", orderDir="asc")
-        self.assertLess(ids.index(self.obs_mons.pk), ids.index(self.obs_gent.pk))
-
-    def test_order_by_verified_descending(self):
-        """orderBy=verified&orderDir=desc puts True (obs_gent) before False (obs_mons)."""
-        ids = self._ids(orderBy="verified", orderDir="desc")
-        self.assertLess(ids.index(self.obs_gent.pk), ids.index(self.obs_mons.pk))
-
-
-class ApiV2AlertTests(TestCase):
-    """Tests for the /api/v2/alerts/ CRUD endpoints."""
-
-    @classmethod
-    def setUpTestData(cls):
-        User = get_user_model()
-        cls.user = User.objects.create_user(
-            username="alertuser", password="12345", email="alert@example.com"
-        )
-        cls.other_user = User.objects.create_user(
-            username="otheruser", password="12345", email="other@example.com"
-        )
-        cls.sp1 = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
-        cls.sp2 = Species.objects.create(name="Orconectes virilis", gbif_taxon_key=2227064)
-        cls.alert = Alert.objects.create(
-            name="My alert #1", user=cls.user, email_notifications_frequency="N"
-        )
-        cls.alert.species.add(cls.sp1)
-
-    # --- /api/v2/alerts/ (list) ---
-
-    def test_alerts_list_requires_auth(self):
-        response = self.client.get("/api/v2/alerts/")
-        self.assertEqual(response.status_code, 401)
-
-    def test_alerts_list_returns_own_alerts(self):
-        self.client.login(username="alertuser", password="12345")
-        response = self.client.get("/api/v2/alerts/")
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]["name"], "My alert #1")
-        self.assertIn("speciesIds", data[0])
-        self.assertIn("unseenCount", data[0])
-
-    def test_alerts_list_does_not_include_other_users_alerts(self):
-        other_alert = Alert.objects.create(
-            name="Other alert", user=self.other_user, email_notifications_frequency="N"
-        )
-        other_alert.species.add(self.sp1)
-        self.client.login(username="alertuser", password="12345")
-        response = self.client.get("/api/v2/alerts/")
-        self.assertEqual(len(response.json()), 1)
-
-    # --- POST /api/v2/alerts/ (create) ---
-
-    def test_alert_create_success(self):
-        self.client.login(username="alertuser", password="12345")
-        payload = json.dumps({"name": "New alert", "speciesIds": [self.sp1.pk]})
-        response = self.client.post("/api/v2/alerts/", payload, content_type="application/json")
-        self.assertEqual(response.status_code, 201)
-        self.assertTrue(Alert.objects.filter(name="New alert", user=self.user).exists())
-
-    def test_alert_create_no_species_returns_422(self):
-        self.client.login(username="alertuser", password="12345")
-        payload = json.dumps({"name": "Bad alert", "speciesIds": []})
-        response = self.client.post("/api/v2/alerts/", payload, content_type="application/json")
-        self.assertEqual(response.status_code, 422)
-        self.assertIn("species", response.json()["errors"])
-
-    def test_alert_create_requires_auth(self):
-        payload = json.dumps({"name": "Unauth alert", "speciesIds": [self.sp1.pk]})
-        response = self.client.post("/api/v2/alerts/", payload, content_type="application/json")
-        self.assertEqual(response.status_code, 401)
-
-    # --- GET /api/v2/alerts/{alert_id}/ (detail) ---
-
-    def test_alert_detail_returns_correct_fields(self):
-        self.client.login(username="alertuser", password="12345")
-        response = self.client.get(f"/api/v2/alerts/{self.alert.pk}/")
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(data["name"], "My alert #1")
-        self.assertEqual(data["speciesIds"], [self.sp1.pk])
-        self.assertIn("speciesList", data)
-        self.assertIn("emailNotificationsFrequencyDisplay", data)
-
-    def test_alert_detail_wrong_user_returns_404(self):
-        self.client.login(username="otheruser", password="12345")
-        response = self.client.get(f"/api/v2/alerts/{self.alert.pk}/")
-        self.assertEqual(response.status_code, 404)
-
-    # --- PUT /api/v2/alerts/{alert_id}/ (update) ---
-
-    def test_alert_update_success(self):
-        self.client.login(username="alertuser", password="12345")
-        payload = json.dumps({"name": "Renamed alert", "speciesIds": [self.sp1.pk, self.sp2.pk]})
-        response = self.client.put(
-            f"/api/v2/alerts/{self.alert.pk}/", payload, content_type="application/json"
-        )
-        self.assertEqual(response.status_code, 200)
-        self.alert.refresh_from_db()
-        self.assertEqual(self.alert.name, "Renamed alert")
-        self.assertEqual(self.alert.species.count(), 2)
-
-    def test_alert_update_wrong_user_returns_404(self):
-        self.client.login(username="otheruser", password="12345")
-        payload = json.dumps({"name": "Hacked", "speciesIds": [self.sp1.pk]})
-        response = self.client.put(
-            f"/api/v2/alerts/{self.alert.pk}/", payload, content_type="application/json"
-        )
-        self.assertEqual(response.status_code, 404)
-
-    # --- DELETE /api/v2/alerts/{alert_id}/ ---
-
-    def test_alert_delete_success(self):
-        to_delete = Alert.objects.create(
-            name="To delete", user=self.user, email_notifications_frequency="N"
-        )
-        to_delete.species.add(self.sp1)
-        self.client.login(username="alertuser", password="12345")
-        response = self.client.delete(f"/api/v2/alerts/{to_delete.pk}/")
-        self.assertEqual(response.status_code, 204)
-        self.assertFalse(Alert.objects.filter(pk=to_delete.pk).exists())
-
-    def test_alert_delete_wrong_user_returns_404(self):
-        self.client.login(username="otheruser", password="12345")
-        response = self.client.delete(f"/api/v2/alerts/{self.alert.pk}/")
-        self.assertEqual(response.status_code, 404)
-        self.assertTrue(Alert.objects.filter(pk=self.alert.pk).exists())
-
-    # --- GET /api/v2/alerts/{alert_id}/as-filters/ ---
-
-    def test_alert_as_filters_returns_dashboard_filter_shape(self):
-        self.client.login(username="alertuser", password="12345")
-        response = self.client.get(f"/api/v2/alerts/{self.alert.pk}/as-filters/")
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(data["speciesIds"], [self.sp1.pk])
-        self.assertEqual(data["status"], "unseen")
-        self.assertIn("verifiedFilter", data)
-        self.assertIn("areaFilterMode", data)
-
-    # --- GET /api/v2/alerts/suggest-name/ ---
-
-    def test_suggest_name_returns_first_available(self):
-        # "My alert #1" is taken; next should be "My alert #2"
-        self.client.login(username="alertuser", password="12345")
-        response = self.client.get("/api/v2/alerts/suggest-name/")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["name"], "My alert #2")
-
-    # --- GET /api/v2/alerts/notification-frequencies/ ---
-
-    def test_notification_frequencies_list(self):
-        response = self.client.get("/api/v2/alerts/notification-frequencies/")
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        ids = [f["id"] for f in data]
-        self.assertIn("N", ids)
-        self.assertIn("D", ids)
-        self.assertIn("W", ids)
-        self.assertIn("M", ids)
-
-    def test_alert_create_duplicate_name_returns_422(self):
-        """Creating an alert with a name already owned by this user returns 422."""
-        self.client.login(username="alertuser", password="12345")
-        # "My alert #1" already exists in setUpTestData
-        payload = json.dumps({"name": "My alert #1", "speciesIds": [self.sp1.pk]})
-        response = self.client.post("/api/v2/alerts/", payload, content_type="application/json")
-        self.assertEqual(response.status_code, 422)
-        data = response.json()
-        self.assertIn("errors", data)
-
-    def test_alert_create_approaching_mode_without_area_returns_422(self):
-        """Creating an alert with areaFilterMode='approaching' but no areaIds returns 422."""
-        self.client.login(username="alertuser", password="12345")
-        payload = json.dumps({
-            "name": "Approaching alert",
-            "speciesIds": [self.sp1.pk],
-            "areaFilterMode": "approaching",
-            "areaIds": [],
-        })
-        response = self.client.post("/api/v2/alerts/", payload, content_type="application/json")
-        self.assertEqual(response.status_code, 422)
-        self.assertIn("area_filter_mode", response.json()["errors"])
-
-
-class ApiV2AreaEndpointsTests(TestCase):
-    """Tests for POST /api/v2/areas/, DELETE /api/v2/areas/{id}/, GET /api/v2/areas/{id}/geojson/."""
-
-    from pathlib import Path
-    SAMPLE_DATA_DIR = Path(__file__).parent.parent / "various" / "sample_data"
-
-    @classmethod
-    def setUpTestData(cls):
-        User = get_user_model()
-        cls.owner = User.objects.create_user(
-            username="owner", password="pass", email="owner@example.com"
-        )
-        cls.other = User.objects.create_user(
-            username="other", password="pass", email="other@example.com"
-        )
-        cls.area = Area.objects.create(
-            name="My area",
-            owner=cls.owner,
-            mpoly=SIMPLE_POLYGON,
-        )
-
-    # --- GET /api/v2/areas/{id}/geojson/ ---
-
-    def test_geojson_returns_200_for_owner(self):
-        self.client.login(username="owner", password="pass")
-        response = self.client.get(f"/api/v2/areas/{self.area.pk}/geojson/")
-        self.assertEqual(response.status_code, 200)
-
-    def test_geojson_returns_geojson_content_type(self):
-        self.client.login(username="owner", password="pass")
-        response = self.client.get(f"/api/v2/areas/{self.area.pk}/geojson/")
-        self.assertIn("application/json", response.get("Content-Type", ""))
-
-    def test_geojson_body_is_feature_collection(self):
-        self.client.login(username="owner", password="pass")
-        response = self.client.get(f"/api/v2/areas/{self.area.pk}/geojson/")
-        data = response.json()
-        self.assertEqual(data["type"], "FeatureCollection")
-        self.assertEqual(len(data["features"]), 1)
-
-    def test_geojson_returns_403_for_unrelated_user(self):
-        """User cannot fetch GeoJSON for another user's private area."""
-        self.client.login(username="other", password="pass")
-        response = self.client.get(f"/api/v2/areas/{self.area.pk}/geojson/")
-        self.assertEqual(response.status_code, 403)
-
-    def test_geojson_returns_404_for_nonexistent(self):
-        self.client.login(username="owner", password="pass")
-        response = self.client.get("/api/v2/areas/99999/geojson/")
-        self.assertEqual(response.status_code, 404)
-
-    # --- POST /api/v2/areas/ ---
-
-    def test_create_area_returns_201(self):
-        self.client.login(username="owner", password="pass")
-        gpkg = self.SAMPLE_DATA_DIR / "polygon_4326.gpkg"
-        with open(gpkg, "rb") as f:
-            response = self.client.post(
-                "/api/v2/areas/",
-                {"name": "New area", "data_file": f},
-            )
-        self.assertEqual(response.status_code, 201)
-
-    def test_create_area_persists_in_db(self):
-        self.client.login(username="owner", password="pass")
-        gpkg = self.SAMPLE_DATA_DIR / "polygon_4326.gpkg"
-        with open(gpkg, "rb") as f:
-            self.client.post("/api/v2/areas/", {"name": "Persisted area", "data_file": f})
-        self.assertTrue(Area.objects.filter(name="Persisted area", owner=self.owner).exists())
-
-    def test_create_area_response_shape(self):
-        self.client.login(username="owner", password="pass")
-        gpkg = self.SAMPLE_DATA_DIR / "polygon_4326.gpkg"
-        with open(gpkg, "rb") as f:
-            response = self.client.post(
-                "/api/v2/areas/",
-                {"name": "Shape test", "data_file": f},
-            )
-        data = response.json()
-        self.assertIn("id", data)
-        self.assertIn("name", data)
-        self.assertIn("isUserSpecific", data)
-        self.assertTrue(data["isUserSpecific"])
-
-    def test_create_area_wrong_geometry_returns_422(self):
-        """Uploading a point GeoPackage (wrong geometry type) returns 422."""
-        self.client.login(username="owner", password="pass")
-        gpkg = self.SAMPLE_DATA_DIR / "point.gpkg"
-        with open(gpkg, "rb") as f:
-            response = self.client.post("/api/v2/areas/", {"name": "Bad", "data_file": f})
-        self.assertEqual(response.status_code, 422)
-        self.assertIn("detail", response.json())
-
-    def test_create_area_too_many_features_returns_422(self):
-        self.client.login(username="owner", password="pass")
-        gpkg = self.SAMPLE_DATA_DIR / "polygon_4326_too_many_features.gpkg"
-        with open(gpkg, "rb") as f:
-            response = self.client.post("/api/v2/areas/", {"name": "Bad", "data_file": f})
-        self.assertEqual(response.status_code, 422)
-
-    def test_create_area_requires_authentication(self):
-        gpkg = self.SAMPLE_DATA_DIR / "polygon_4326.gpkg"
-        with open(gpkg, "rb") as f:
-            response = self.client.post("/api/v2/areas/", {"name": "Unauth", "data_file": f})
-        self.assertEqual(response.status_code, 401)
-
-    # --- DELETE /api/v2/areas/{id}/ ---
-
-    def test_delete_area_returns_204(self):
-        area = Area.objects.create(name="To delete", owner=self.owner, mpoly=SIMPLE_POLYGON)
-        self.client.login(username="owner", password="pass")
-        response = self.client.delete(f"/api/v2/areas/{area.pk}/")
-        self.assertEqual(response.status_code, 204)
-
-    def test_delete_area_removes_from_db(self):
-        area = Area.objects.create(name="Gone", owner=self.owner, mpoly=SIMPLE_POLYGON)
-        self.client.login(username="owner", password="pass")
-        self.client.delete(f"/api/v2/areas/{area.pk}/")
-        self.assertFalse(Area.objects.filter(pk=area.pk).exists())
-
-    def test_delete_area_returns_404_for_nonexistent(self):
-        self.client.login(username="owner", password="pass")
-        response = self.client.delete("/api/v2/areas/99999/")
-        self.assertEqual(response.status_code, 404)
-
-    def test_delete_area_returns_404_for_other_user_area(self):
-        """Cannot delete another user's area."""
-        area = Area.objects.create(name="Other's", owner=self.other, mpoly=SIMPLE_POLYGON)
-        self.client.login(username="owner", password="pass")
-        response = self.client.delete(f"/api/v2/areas/{area.pk}/")
-        self.assertEqual(response.status_code, 404)
-
-    def test_delete_area_with_alert_returns_409(self):
-        """Area referenced by an alert returns 409 with a detail message."""
-        area = Area.objects.create(name="Has alert", owner=self.owner, mpoly=SIMPLE_POLYGON)
-        sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
-        alert = Alert.objects.create(
-            name="Alert", user=self.owner, email_notifications_frequency="N"
-        )
-        alert.species.add(sp)
-        alert.areas.add(area)
-
-        self.client.login(username="owner", password="pass")
-        response = self.client.delete(f"/api/v2/areas/{area.pk}/")
-        self.assertEqual(response.status_code, 409)
-        self.assertIn("detail", response.json())
-        self.assertTrue(Area.objects.filter(pk=area.pk).exists())
-
-    def test_delete_area_requires_authentication(self):
-        response = self.client.delete(f"/api/v2/areas/{self.area.pk}/")
-        self.assertEqual(response.status_code, 401)
-
-
-class ApiV2AuthTests(TestCase):
-    """Tests for /api/v2/auth/signin/ and /api/v2/auth/signup/"""
-
-    @classmethod
-    def setUpTestData(cls):
-        User = get_user_model()
-        cls.user = User.objects.create_user(
-            username="testuser",
-            password="correctpassword",
-            email="test@example.com",
-        )
-
-    # --- signin ---
-
-    def test_signin_success(self):
-        resp = self.client.post(
-            "/api/v2/auth/signin/",
-            data={"username": "testuser", "password": "correctpassword"},
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()["username"], "testuser")
-
-    def test_signin_wrong_password(self):
-        resp = self.client.post(
-            "/api/v2/auth/signin/",
-            data={"username": "testuser", "password": "wrong"},
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 401)
-        self.assertIn("detail", resp.json())
-
-    def test_signin_nonexistent_user(self):
-        resp = self.client.post(
-            "/api/v2/auth/signin/",
-            data={"username": "nobody", "password": "x"},
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 401)
-
-    # --- signup ---
-
-    def test_signup_success(self):
-        User = get_user_model()
-        resp = self.client.post(
-            "/api/v2/auth/signup/",
-            data={
-                "username": "newuser",
-                "email": "new@example.com",
-                "language": "en",
-                "password1": "Secure1234!",
-                "password2": "Secure1234!",
-            },
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp.json()["username"], "newuser")
-        self.assertTrue(User.objects.filter(username="newuser").exists())
-
-    def test_signup_duplicate_username(self):
-        resp = self.client.post(
-            "/api/v2/auth/signup/",
-            data={
-                "username": "testuser",  # already exists
-                "email": "other@example.com",
-                "language": "en",
-                "password1": "Secure1234!",
-                "password2": "Secure1234!",
-            },
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 422)
-        self.assertIn("username", resp.json()["errors"])
-
-    def test_signup_password_mismatch(self):
-        resp = self.client.post(
-            "/api/v2/auth/signup/",
-            data={
-                "username": "anotheruser",
-                "email": "a@example.com",
-                "language": "en",
-                "password1": "Secure1234!",
-                "password2": "Different!",
-            },
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 422)
-        self.assertIn("errors", resp.json())
-
-    # --- password-change ---
-
-    def test_password_change_success(self):
-        self.client.force_login(self.user)
-        resp = self.client.post(
-            "/api/v2/auth/password-change/",
-            data={
-                "old_password": "correctpassword",
-                "new_password1": "NewSecure5678!",
-                "new_password2": "NewSecure5678!",
-            },
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 204)
-
-    def test_password_change_wrong_old_password(self):
-        self.client.force_login(self.user)
-        resp = self.client.post(
-            "/api/v2/auth/password-change/",
-            data={
-                "old_password": "wrong",
-                "new_password1": "NewSecure5678!",
-                "new_password2": "NewSecure5678!",
-            },
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 422)
-        self.assertIn("old_password", resp.json()["errors"])
-
-    def test_password_change_unauthenticated(self):
-        resp = self.client.post(
-            "/api/v2/auth/password-change/",
-            data={
-                "old_password": "x",
-                "new_password1": "y",
-                "new_password2": "y",
-            },
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 401)
-
-    def test_password_change_mismatch(self):
-        self.client.force_login(self.user)
-        resp = self.client.post(
-            "/api/v2/auth/password-change/",
-            data={
-                "old_password": "correctpassword",
-                "new_password1": "NewSecure5678!",
-                "new_password2": "DifferentPassword!",
-            },
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 422)
-        self.assertIn("new_password2", resp.json()["errors"])
-
-    # --- news/mark-visited ---
-
-    def test_news_mark_visited_authenticated(self):
-        self.client.force_login(self.user)
-        resp = self.client.post("/api/v2/news/mark-visited/", content_type="application/json")
-        self.assertEqual(resp.status_code, 204)
-
-    def test_news_mark_visited_anonymous(self):
-        resp = self.client.post("/api/v2/news/mark-visited/", content_type="application/json")
-        self.assertEqual(resp.status_code, 204)
-
-    # --- profile ---
-
-    def test_profile_get(self):
-        self.client.force_login(self.user)
-        resp = self.client.get("/api/v2/profile/")
-        self.assertEqual(resp.status_code, 200)
-        data = resp.json()
-        self.assertEqual(data["username"], "testuser")
-        self.assertIn("firstName", data)
-        self.assertIn("delayValue", data)
-        self.assertIn("delayUnit", data)
-
-    def test_profile_get_unauthenticated(self):
-        resp = self.client.get("/api/v2/profile/")
-        self.assertEqual(resp.status_code, 401)
-
-    def test_profile_put_success(self):
-        self.client.force_login(self.user)
-        resp = self.client.put(
-            "/api/v2/profile/",
-            data={
-                "firstName": "Alice",
-                "lastName": "Smith",
-                "email": "alice@example.com",
-                "language": "en",
-                "delayValue": 2,
-                "delayUnit": "weeks",
-            },
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()["firstName"], "Alice")
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.notification_delay_days, 14)
-
-    def test_profile_put_unauthenticated(self):
-        resp = self.client.put(
-            "/api/v2/profile/",
-            data={
-                "firstName": "X",
-                "lastName": "",
-                "email": "x@example.com",
-                "language": "en",
-                "delayValue": 1,
-                "delayUnit": "days",
-            },
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 401)
-
-    def test_profile_put_duplicate_email(self):
-        User = get_user_model()
-        User.objects.create_user(
-            username="other", password="pass", email="other@example.com"
-        )
-        self.client.force_login(self.user)
-        resp = self.client.put(
-            "/api/v2/profile/",
-            data={
-                "firstName": "Test",
-                "lastName": "User",
-                "email": "other@example.com",
-                "language": "en",
-                "delayValue": 1,
-                "delayUnit": "days",
-            },
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 422)
-        self.assertIn("email", resp.json()["errors"])
-
-    def test_profile_put_invalid_delay_unit(self):
-        self.client.force_login(self.user)
-        resp = self.client.put(
-            "/api/v2/profile/",
-            data={
-                "firstName": "Test",
-                "lastName": "User",
-                "email": "testuser@example.com",
-                "language": "en",
-                "delayValue": 1,
-                "delayUnit": "fortnights",
-            },
-            content_type="application/json",
-        )
-        self.assertEqual(resp.status_code, 422)
-        self.assertIn("delayUnit", resp.json()["errors"])
-
-    # --- account delete ---
-
-    def test_delete_account_success(self):
-        User = get_user_model()
-        user2 = User.objects.create_user(
-            username="todelete", password="pass", email="del@example.com"
-        )
-        self.client.force_login(user2)
-        resp = self.client.delete("/api/v2/account/")
-        self.assertEqual(resp.status_code, 204)
-        self.assertFalse(User.objects.filter(username="todelete").exists())
+    assert entry["gbifKey"] == "4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+    assert entry["name"] == "Test dataset"
+
+
+# --- /api/v2/areas/ ---
+
+def test_areas_list_anonymous_sees_only_public(client, filter_lists_data):
+    public_area = filter_lists_data["public_area"]
+    user_area = filter_lists_data["user_area"]
+    response = client.get(reverse("api-v2:areas_list"))
+    assert response.status_code == 200
+    ids = [a["id"] for a in response.json()]
+    assert public_area.pk in ids
+    assert user_area.pk not in ids
+
+
+def test_areas_list_owner_sees_own_and_public(client, filter_lists_data):
+    public_area = filter_lists_data["public_area"]
+    user_area = filter_lists_data["user_area"]
+    client.login(username="area_owner", password="12345")
+    response = client.get(reverse("api-v2:areas_list"))
+    ids = [a["id"] for a in response.json()]
+    assert public_area.pk in ids
+    assert user_area.pk in ids
+
+
+def test_areas_list_other_user_sees_only_public(client, filter_lists_data):
+    public_area = filter_lists_data["public_area"]
+    user_area = filter_lists_data["user_area"]
+    client.login(username="other_user", password="12345")
+    response = client.get(reverse("api-v2:areas_list"))
+    ids = [a["id"] for a in response.json()]
+    assert public_area.pk in ids
+    assert user_area.pk not in ids
+
+
+def test_areas_list_is_user_specific_field(client, filter_lists_data):
+    """isUserSpecific must reflect area ownership correctly."""
+    public_area = filter_lists_data["public_area"]
+    user_area = filter_lists_data["user_area"]
+    client.login(username="area_owner", password="12345")
+    response = client.get(reverse("api-v2:areas_list"))
+    by_id = {a["id"]: a for a in response.json()}
+    assert not by_id[public_area.pk]["isUserSpecific"]
+    assert by_id[user_area.pk]["isUserSpecific"]
+
+
+# --- /api/v2/basis-of-record/ ---
+
+def test_basis_of_record_list_status(client):
+    response = client.get(reverse("api-v2:basis_of_record_list"))
+    assert response.status_code == 200
+
+
+def test_basis_of_record_list_fields(client, filter_lists_data):
+    basis_of_record = filter_lists_data["basis_of_record"]
+    response = client.get(reverse("api-v2:basis_of_record_list"))
+    entry = next(b for b in response.json() if b["id"] == basis_of_record.pk)
+    assert entry["name"] == "HUMAN_OBSERVATION"
+
+
+# --- /api/v2/data-imports/ ---
+
+def test_data_imports_list_status(client):
+    response = client.get(reverse("api-v2:data_imports_list"))
+    assert response.status_code == 200
+
+
+def test_data_imports_list_computed_name(client, filter_lists_data):
+    """name is computed as 'Data import #N', not a model field."""
+    di = filter_lists_data["di"]
+    response = client.get(reverse("api-v2:data_imports_list"))
+    entry = next(d for d in response.json() if d["id"] == di.pk)
+    assert entry["name"] == f"Data import #{di.pk}"
+
+
+def test_data_imports_list_start_timestamp(client, filter_lists_data):
+    """startTimestamp is present and formatted as an ISO datetime string."""
+    di = filter_lists_data["di"]
+    response = client.get(reverse("api-v2:data_imports_list"))
+    entry = next(d for d in response.json() if d["id"] == di.pk)
+    assert entry["startTimestamp"] == "2024-03-15T10:00:00Z"
+
+
+# ---------------------------------------------------------------------------
+# ApiV2ObservationsTests fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def observations_data():
+    """Fixture for the observations list tests."""
+    User = get_user_model()
+    user = User.objects.create_user(
+        username="obs_user", password="12345", email="obs_user@example.com"
+    )
+
+    species = Species.objects.create(
+        name="Procambarus fallax",
+        vernacular_name="marbled crayfish",
+        gbif_taxon_key=8879526,
+    )
+    other_species = Species.objects.create(
+        name="Vespa velutina",
+        vernacular_name="Asian hornet",
+        gbif_taxon_key=1311477,
+    )
+    dataset = Dataset.objects.create(
+        name="Test dataset",
+        gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e",
+    )
+    basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    di = DataImport.objects.create(
+        start=datetime.datetime(2024, 3, 15, 10, 0, 0, tzinfo=datetime.timezone.utc)
+    )
+
+    obs = Observation.objects.create(
+        gbif_id="123",
+        occurrence_id="occ:123",
+        species=species,
+        source_dataset=dataset,
+        date=datetime.date(2024, 3, 10),
+        data_import=di,
+        initial_data_import=di,
+        basis_of_record=basis_of_record,
+        location=Point(4.35, 50.85, srid=4326),
+    )
+    obs_other_species = Observation.objects.create(
+        gbif_id="456",
+        occurrence_id="occ:456",
+        species=other_species,
+        source_dataset=dataset,
+        date=datetime.date(2024, 3, 9),
+        data_import=di,
+        initial_data_import=di,
+        basis_of_record=basis_of_record,
+    )
+
+    return {
+        "user": user,
+        "species": species,
+        "other_species": other_species,
+        "dataset": dataset,
+        "basis_of_record": basis_of_record,
+        "di": di,
+        "obs": obs,
+        "obs_other_species": obs_other_species,
+    }
+
+
+# --- Basic HTTP / shape ---
+
+def test_observations_list_status(client):
+    response = client.get(reverse("api-v2:observations_list"))
+    assert response.status_code == 200
+
+
+def test_observations_list_response_shape(client, observations_data):
+    """Response must have 'count', 'speciesCount', 'datasetsCount', and 'items' at the top level."""
+    response = client.get(reverse("api-v2:observations_list"))
+    data = response.json()
+    assert "count" in data
+    assert "speciesCount" in data
+    assert "datasetsCount" in data
+    assert "items" in data
+    assert isinstance(data["count"], int)
+    assert isinstance(data["speciesCount"], int)
+    assert isinstance(data["datasetsCount"], int)
+    assert isinstance(data["items"], list)
+
+
+def test_species_count_reflects_distinct_species(client, observations_data):
+    """speciesCount must equal the number of distinct species in the result set."""
+    response = client.get(reverse("api-v2:observations_list"))
+    data = response.json()
+    assert data["speciesCount"] == 2
+    assert data["datasetsCount"] == 1
+
+
+def test_species_count_respects_filters(client, observations_data):
+    """speciesCount must drop when a species filter reduces the result set."""
+    species = observations_data["species"]
+    response = client.get(
+        reverse("api-v2:observations_list"), {"speciesIds": species.pk}
+    )
+    data = response.json()
+    assert data["speciesCount"] == 1
+    assert data["datasetsCount"] == 1
+
+
+def test_counts_are_zero_when_no_results(client, observations_data):
+    """speciesCount and datasetsCount must both be 0 when the filter matches nothing."""
+    response = client.get(
+        reverse("api-v2:observations_list"), {"speciesIds": 999999}
+    )
+    data = response.json()
+    assert data["count"] == 0
+    assert data["speciesCount"] == 0
+    assert data["datasetsCount"] == 0
+
+
+def test_observations_list_camel_case_keys(client, observations_data):
+    """All expected camelCase keys must be present in each item."""
+    obs = observations_data["obs"]
+    response = client.get(reverse("api-v2:observations_list"))
+    item = next(i for i in response.json()["items"] if i["id"] == obs.pk)
+    for key in ("id", "stableId", "gbifId", "lat", "lon", "scientificName",
+                "vernacularName", "datasetName", "date",
+                "municipality", "verified", "identificationVerificationStatus", "basisOfRecord"):
+        assert key in item, f"Missing key: {key}"
+
+
+def test_observations_list_new_fields(client, observations_data):
+    """municipality, verified, and identificationVerificationStatus must be present with correct values."""
+    obs = observations_data["obs"]
+    response = client.get(reverse("api-v2:observations_list"))
+    item = next(i for i in response.json()["items"] if i["id"] == obs.pk)
+    assert item["municipality"] == ""
+    assert item["verified"] is False
+    assert item["identificationVerificationStatus"] == ""
+    assert item["basisOfRecord"] == "HUMAN_OBSERVATION"
+
+
+def test_observations_list_field_values(client, observations_data):
+    """Field values must match the observation data."""
+    obs = observations_data["obs"]
+    response = client.get(reverse("api-v2:observations_list"))
+    item = next(i for i in response.json()["items"] if i["id"] == obs.pk)
+    assert item["scientificName"] == "Procambarus fallax"
+    assert item["vernacularName"] == "marbled crayfish"
+    assert item["datasetName"] == "Test dataset"
+    assert item["date"] == "2024-03-10"
+    assert item["gbifId"] == "123"
+    # lat/lon are present (location was set)
+    assert item["lat"] is not None
+    assert item["lon"] is not None
+
+
+def test_observations_list_null_location(client, observations_data):
+    """An observation without a location must return null lat and lon."""
+    obs_other_species = observations_data["obs_other_species"]
+    response = client.get(reverse("api-v2:observations_list"))
+    item = next(i for i in response.json()["items"] if i["id"] == obs_other_species.pk)
+    assert item["lat"] is None
+    assert item["lon"] is None
+
+
+# --- seenByCurrentUser ---
+
+def test_seen_by_current_user_is_null_for_anonymous(client, observations_data):
+    """Anonymous users get null for seenByCurrentUser."""
+    obs = observations_data["obs"]
+    response = client.get(reverse("api-v2:observations_list"))
+    item = next(i for i in response.json()["items"] if i["id"] == obs.pk)
+    assert item["seenByCurrentUser"] is None
+
+
+def test_seen_by_current_user_true_when_no_unseen_record(client, observations_data):
+    """Observation with no ObservationUnseen entry is considered seen."""
+    obs = observations_data["obs"]
+    client.login(username="obs_user", password="12345")
+    response = client.get(reverse("api-v2:observations_list"))
+    item = next(i for i in response.json()["items"] if i["id"] == obs.pk)
+    assert item["seenByCurrentUser"]
+
+
+def test_seen_by_current_user_false_when_unseen_record_exists(client, observations_data):
+    """Observation with an ObservationUnseen entry is considered unseen."""
+    obs = observations_data["obs"]
+    user = observations_data["user"]
+    ObservationUnseen.objects.create(observation=obs, user=user)
+    client.login(username="obs_user", password="12345")
+    response = client.get(reverse("api-v2:observations_list"))
+    item = next(i for i in response.json()["items"] if i["id"] == obs.pk)
+    assert not item["seenByCurrentUser"]
+
+
+# --- Pagination ---
+
+def test_pagination_count_reflects_total(client, observations_data):
+    """count must reflect total matching observations, not just current page."""
+    response = client.get(reverse("api-v2:observations_list"))
+    assert response.json()["count"] == 2
+
+
+def test_pagination_page_size_respected(client, observations_data):
+    """pageSize=1 must return exactly 1 item."""
+    response = client.get(
+        reverse("api-v2:observations_list"), {"pageSize": 1, "page": 1}
+    )
+    data = response.json()
+    assert len(data["items"]) == 1
+    assert data["count"] == 2
+
+
+def test_pagination_second_page(client, observations_data):
+    """Page 2 with pageSize=1 returns the second observation."""
+    response_p1 = client.get(
+        reverse("api-v2:observations_list"), {"pageSize": 1, "page": 1}
+    )
+    response_p2 = client.get(
+        reverse("api-v2:observations_list"), {"pageSize": 1, "page": 2}
+    )
+    id_p1 = response_p1.json()["items"][0]["id"]
+    id_p2 = response_p2.json()["items"][0]["id"]
+    assert id_p1 != id_p2
+
+
+# --- Filter wiring ---
+
+def test_species_filter(client, observations_data):
+    """speciesIds filter must restrict results to matching observations."""
+    species = observations_data["species"]
+    obs = observations_data["obs"]
+    response = client.get(
+        reverse("api-v2:observations_list"), {"speciesIds": species.pk}
+    )
+    data = response.json()
+    assert data["count"] == 1
+    assert data["items"][0]["id"] == obs.pk
+
+
+# ---------------------------------------------------------------------------
+# ApiV2HistogramTests fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def histogram_data():
+    """Fixture for the histogram endpoint tests."""
+    species = Species.objects.create(
+        name="Procambarus fallax", gbif_taxon_key=8879526
+    )
+    other_species = Species.objects.create(
+        name="Vespa velutina", gbif_taxon_key=1311477
+    )
+    dataset = Dataset.objects.create(
+        name="Test dataset",
+        gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e",
+    )
+    basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    di = DataImport.objects.create(
+        start=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
+    )
+    # Two observations in different months
+    obs_jan = Observation.objects.create(
+        gbif_id="h1",
+        occurrence_id="occ:h1",
+        species=species,
+        source_dataset=dataset,
+        date=datetime.date(2024, 1, 15),
+        data_import=di,
+        initial_data_import=di,
+        basis_of_record=basis_of_record,
+    )
+    obs_mar = Observation.objects.create(
+        gbif_id="h2",
+        occurrence_id="occ:h2",
+        species=species,
+        source_dataset=dataset,
+        date=datetime.date(2024, 3, 10),
+        data_import=di,
+        initial_data_import=di,
+        basis_of_record=basis_of_record,
+    )
+    obs_other_species = Observation.objects.create(
+        gbif_id="h3",
+        occurrence_id="occ:h3",
+        species=other_species,
+        source_dataset=dataset,
+        date=datetime.date(2024, 2, 5),
+        data_import=di,
+        initial_data_import=di,
+        basis_of_record=basis_of_record,
+    )
+
+    return {
+        "species": species,
+        "other_species": other_species,
+        "dataset": dataset,
+        "basis_of_record": basis_of_record,
+        "di": di,
+        "obs_jan": obs_jan,
+        "obs_mar": obs_mar,
+        "obs_other_species": obs_other_species,
+    }
+
+
+def test_histogram_status(client):
+    response = client.get(reverse("api-v2:observations_histogram"))
+    assert response.status_code == 200
+
+
+def test_histogram_response_is_list(client):
+    response = client.get(reverse("api-v2:observations_histogram"))
+    assert isinstance(response.json(), list)
+
+
+def test_histogram_entry_shape(client, histogram_data):
+    """Each entry must have year, month, count keys."""
+    response = client.get(reverse("api-v2:observations_histogram"))
+    for entry in response.json():
+        assert "year" in entry
+        assert "month" in entry
+        assert "count" in entry
+
+
+def test_histogram_chronological_order(client, histogram_data):
+    """Entries must be in ascending chronological order."""
+    response = client.get(reverse("api-v2:observations_histogram"))
+    entries = response.json()
+    dates = [(e["year"], e["month"]) for e in entries]
+    assert dates == sorted(dates)
+
+
+def test_histogram_counts_by_month(client, histogram_data):
+    """Each month must report the correct observation count."""
+    response = client.get(reverse("api-v2:observations_histogram"))
+    by_month = {(e["year"], e["month"]): e["count"] for e in response.json()}
+    assert by_month[(2024, 1)] == 1
+    assert by_month[(2024, 2)] == 1
+    assert by_month[(2024, 3)] == 1
+
+
+def test_histogram_respects_date_filters(client, histogram_data):
+    """startDate/endDate params must restrict which observations are counted."""
+    # Exclude January by starting from February
+    response = client.get(
+        reverse("api-v2:observations_histogram"),
+        {"startDate": "2024-02-01", "endDate": "2024-12-31"},
+    )
+    by_month = {(e["year"], e["month"]): e["count"] for e in response.json()}
+    assert (2024, 1) not in by_month
+    assert (2024, 2) in by_month
+    assert by_month[(2024, 2)] == 1
+
+
+def test_histogram_species_filter(client, histogram_data):
+    """speciesIds filter must restrict which observations are counted."""
+    species = histogram_data["species"]
+    response = client.get(
+        reverse("api-v2:observations_histogram"),
+        {"speciesIds": species.pk},
+    )
+    by_month = {(e["year"], e["month"]): e["count"] for e in response.json()}
+    # February only has obs_other_species, so it should be absent or 0
+    assert (2024, 2) not in by_month
+
+
+# ---------------------------------------------------------------------------
+# ApiV2ObservationsSortingTests fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def sorting_data():
+    """Fixture for the observations sorting tests."""
+    species_alpha = Species.objects.create(
+        name="Anas platyrhynchos", gbif_taxon_key=2498252
+    )
+    species_zeta = Species.objects.create(
+        name="Zeta vulgaris", gbif_taxon_key=9999999
+    )
+    dataset_alpha = Dataset.objects.create(
+        name="Alpha dataset",
+        gbif_dataset_key="aaaaaaaa-0000-0000-0000-000000000001",
+    )
+    dataset_zeta = Dataset.objects.create(
+        name="Zeta dataset",
+        gbif_dataset_key="zzzzzzzz-0000-0000-0000-000000000002",
+    )
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    di = DataImport.objects.create(
+        start=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
+    )
+    obs_alpha = Observation.objects.create(
+        gbif_id="sort1",
+        occurrence_id="occ:sort1",
+        species=species_alpha,
+        source_dataset=dataset_alpha,
+        date=datetime.date(2024, 1, 1),
+        data_import=di,
+        initial_data_import=di,
+        basis_of_record=basis,
+    )
+    obs_zeta = Observation.objects.create(
+        gbif_id="sort2",
+        occurrence_id="occ:sort2",
+        species=species_zeta,
+        source_dataset=dataset_zeta,
+        date=datetime.date(2024, 6, 15),
+        data_import=di,
+        initial_data_import=di,
+        basis_of_record=basis,
+    )
+
+    return {
+        "species_alpha": species_alpha,
+        "species_zeta": species_zeta,
+        "dataset_alpha": dataset_alpha,
+        "dataset_zeta": dataset_zeta,
+        "basis": basis,
+        "di": di,
+        "obs_alpha": obs_alpha,
+        "obs_zeta": obs_zeta,
+    }
+
+
+def _sorting_ids(client, **params):
+    """Return the ordered list of observation ids from a GET request."""
+    response = client.get(reverse("api-v2:observations_list"), params)
+    assert response.status_code == 200
+    return [item["id"] for item in response.json()["items"]]
+
+
+# --- date ---
+
+def test_default_order_is_date_descending(client, sorting_data):
+    """With no sort params the newest observation must come first."""
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    ids = _sorting_ids(client)
+    assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
+
+
+def test_order_by_date_descending_explicit(client, sorting_data):
+    """orderBy=date&orderDir=desc puts the newest observation first."""
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    ids = _sorting_ids(client, orderBy="date", orderDir="desc")
+    assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
+
+
+def test_order_by_date_ascending(client, sorting_data):
+    """orderBy=date&orderDir=asc puts the oldest observation first."""
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    ids = _sorting_ids(client, orderBy="date", orderDir="asc")
+    assert ids.index(obs_alpha.pk) < ids.index(obs_zeta.pk)
+
+
+# --- scientificName ---
+
+def test_order_by_scientific_name_ascending(client, sorting_data):
+    """orderBy=scientificName&orderDir=asc puts Anas before Zeta."""
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    ids = _sorting_ids(client, orderBy="scientificName", orderDir="asc")
+    assert ids.index(obs_alpha.pk) < ids.index(obs_zeta.pk)
+
+
+def test_order_by_scientific_name_descending(client, sorting_data):
+    """orderBy=scientificName&orderDir=desc puts Zeta before Anas."""
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    ids = _sorting_ids(client, orderBy="scientificName", orderDir="desc")
+    assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
+
+
+# --- datasetName ---
+
+def test_order_by_dataset_name_ascending(client, sorting_data):
+    """orderBy=datasetName&orderDir=asc puts Alpha dataset before Zeta dataset."""
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    ids = _sorting_ids(client, orderBy="datasetName", orderDir="asc")
+    assert ids.index(obs_alpha.pk) < ids.index(obs_zeta.pk)
+
+
+def test_order_by_dataset_name_descending(client, sorting_data):
+    """orderBy=datasetName&orderDir=desc puts Zeta dataset before Alpha dataset."""
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    ids = _sorting_ids(client, orderBy="datasetName", orderDir="desc")
+    assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
+
+
+# --- robustness ---
+
+def test_unknown_order_by_falls_back_to_date(client, sorting_data):
+    """An unrecognised orderBy value must not crash - falls back to date sort."""
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    response = client.get(
+        reverse("api-v2:observations_list"), {"orderBy": "nonExistentField"}
+    )
+    assert response.status_code == 200
+    # Default date-desc order: obs_zeta (newer) before obs_alpha (older)
+    ids = [item["id"] for item in response.json()["items"]]
+    assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
+
+
+def test_unknown_order_dir_treated_as_desc(client, sorting_data):
+    """Any orderDir value other than 'asc' must be treated as descending."""
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    ids = _sorting_ids(client, orderBy="date", orderDir="INVALID")
+    assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
+
+
+# ---------------------------------------------------------------------------
+# ApiV2ObservationDetailTests fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def observation_detail_data():
+    """Fixture for the observation detail endpoint tests."""
+    User = get_user_model()
+    user = User.objects.create_user(
+        username="detail_user", password="12345", email="detail_user@example.com"
+    )
+    commenter = User.objects.create_user(
+        username="commenter", password="12345", email="commenter@example.com"
+    )
+
+    species = Species.objects.create(
+        name="Harmonia axyridis",
+        vernacular_name="harlequin ladybird",
+        gbif_taxon_key=1234567,
+    )
+    dataset = Dataset.objects.create(
+        name="Detail dataset",
+        gbif_dataset_key="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    )
+    basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    di = DataImport.objects.create(
+        start=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
+    )
+    obs = Observation.objects.create(
+        gbif_id="999",
+        occurrence_id="occ:999",
+        species=species,
+        source_dataset=dataset,
+        date=datetime.date(2024, 5, 1),
+        data_import=di,
+        initial_data_import=di,
+        basis_of_record=basis_of_record,
+        location=Point(4.35, 50.85, srid=4326),
+    )
+
+    return {
+        "user": user,
+        "commenter": commenter,
+        "species": species,
+        "dataset": dataset,
+        "basis_of_record": basis_of_record,
+        "di": di,
+        "obs": obs,
+    }
+
+
+# --- Basic HTTP / shape ---
+
+def test_detail_404_for_unknown_stable_id(client):
+    response = client.get("/api/v2/observations/nonexistent/")
+    assert response.status_code == 404
+
+
+def test_detail_status_200(client, observation_detail_data):
+    obs = observation_detail_data["obs"]
+    response = client.get(f"/api/v2/observations/{obs.stable_id}/")
+    assert response.status_code == 200
+
+
+def test_detail_camel_case_keys(client, observation_detail_data):
+    """All expected camelCase keys must be present in the response."""
+    obs = observation_detail_data["obs"]
+    response = client.get(f"/api/v2/observations/{obs.stable_id}/")
+    data = response.json()
+    for key in (
+        "id", "stableId", "gbifId", "lat", "lon",
+        "scientificName", "vernacularName", "datasetName", "datasetGbifKey",
+        "date", "basisOfRecord", "seenByCurrentUser", "canBeMarkedUnseen",
+        "comments",
+    ):
+        assert key in data, f"Missing key: {key}"
+
+
+def test_detail_field_values(client, observation_detail_data):
+    obs = observation_detail_data["obs"]
+    response = client.get(f"/api/v2/observations/{obs.stable_id}/")
+    data = response.json()
+    assert data["stableId"] == obs.stable_id
+    assert data["scientificName"] == "Harmonia axyridis"
+    assert data["vernacularName"] == "harlequin ladybird"
+    assert data["datasetName"] == "Detail dataset"
+    assert data["date"] == "2024-05-01"
+
+
+# --- canBeMarkedUnseen ---
+
+def test_can_be_marked_unseen_false_for_anonymous(client, observation_detail_data):
+    obs = observation_detail_data["obs"]
+    response = client.get(f"/api/v2/observations/{obs.stable_id}/")
+    assert not response.json()["canBeMarkedUnseen"]
+
+
+def test_can_be_marked_unseen_false_when_no_matching_alert(client, observation_detail_data):
+    """Authenticated user with no alerts: cannot mark unseen."""
+    obs = observation_detail_data["obs"]
+    user = observation_detail_data["user"]
+    client.force_login(user)
+    response = client.get(f"/api/v2/observations/{obs.stable_id}/")
+    assert not response.json()["canBeMarkedUnseen"]
+
+
+def test_can_be_marked_unseen_true_when_alert_matches(client, observation_detail_data):
+    """Authenticated user with a matching alert: can mark unseen."""
+    obs = observation_detail_data["obs"]
+    user = observation_detail_data["user"]
+    client.force_login(user)
+    alert = Alert.objects.create(
+        user=user, email_notifications_frequency=Alert.DAILY_EMAILS
+    )
+    alert.species.add(obs.species)
+    response = client.get(f"/api/v2/observations/{obs.stable_id}/")
+    assert response.json()["canBeMarkedUnseen"]
+
+
+# --- comments ---
+
+def test_comments_returned_with_author_username(client, observation_detail_data):
+    """Comments list must include the author's username."""
+    obs = observation_detail_data["obs"]
+    commenter = observation_detail_data["commenter"]
+    ObservationComment.objects.create(
+        observation=obs, author=commenter, text="Nice find!"
+    )
+    response = client.get(f"/api/v2/observations/{obs.stable_id}/")
+    comments = response.json()["comments"]
+    assert len(comments) == 1
+    assert comments[0]["authorUsername"] == "commenter"
+    assert comments[0]["text"] == "Nice find!"
+
+
+def test_comments_empty_list_when_none(client, observation_detail_data):
+    obs = observation_detail_data["obs"]
+    response = client.get(f"/api/v2/observations/{obs.stable_id}/")
+    assert response.json()["comments"] == []
+
+
+# ---------------------------------------------------------------------------
+# ApiV2ObservationsMunicipalityVerifiedSortTests fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def municipality_sort_data():
+    """Fixture for the municipality/verified sorting tests."""
+    species = Species.objects.create(
+        name="Testus sorticus", gbif_taxon_key=9990001
+    )
+    dataset = Dataset.objects.create(
+        name="Sort test dataset",
+        gbif_dataset_key="11111111-0000-0000-0000-000000000099",
+    )
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    di = DataImport.objects.create(
+        start=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
+    )
+    obs_gent = Observation.objects.create(
+        gbif_id="munis1",
+        occurrence_id="occ:munis1",
+        species=species,
+        source_dataset=dataset,
+        date=datetime.date(2024, 1, 1),
+        data_import=di,
+        initial_data_import=di,
+        basis_of_record=basis,
+        municipality="Gent",
+        verified=True,
+    )
+    obs_mons = Observation.objects.create(
+        gbif_id="munis2",
+        occurrence_id="occ:munis2",
+        species=species,
+        source_dataset=dataset,
+        date=datetime.date(2024, 1, 2),
+        data_import=di,
+        initial_data_import=di,
+        basis_of_record=basis,
+        municipality="Mons",
+        verified=False,
+    )
+
+    return {
+        "species": species,
+        "dataset": dataset,
+        "basis": basis,
+        "di": di,
+        "obs_gent": obs_gent,
+        "obs_mons": obs_mons,
+    }
+
+
+def _municipality_ids(client, **params):
+    """Return the ordered list of observation ids from a GET request."""
+    response = client.get(reverse("api-v2:observations_list"), params)
+    assert response.status_code == 200
+    return [item["id"] for item in response.json()["items"]]
+
+
+def test_order_by_municipality_ascending(client, municipality_sort_data):
+    """orderBy=municipality&orderDir=asc puts Gent before Mons."""
+    obs_gent = municipality_sort_data["obs_gent"]
+    obs_mons = municipality_sort_data["obs_mons"]
+    ids = _municipality_ids(client, orderBy="municipality", orderDir="asc")
+    assert ids.index(obs_gent.pk) < ids.index(obs_mons.pk)
+
+
+def test_order_by_municipality_descending(client, municipality_sort_data):
+    """orderBy=municipality&orderDir=desc puts Mons before Gent."""
+    obs_gent = municipality_sort_data["obs_gent"]
+    obs_mons = municipality_sort_data["obs_mons"]
+    ids = _municipality_ids(client, orderBy="municipality", orderDir="desc")
+    assert ids.index(obs_mons.pk) < ids.index(obs_gent.pk)
+
+
+def test_order_by_verified_ascending(client, municipality_sort_data):
+    """orderBy=verified&orderDir=asc puts False (obs_mons) before True (obs_gent)."""
+    obs_gent = municipality_sort_data["obs_gent"]
+    obs_mons = municipality_sort_data["obs_mons"]
+    ids = _municipality_ids(client, orderBy="verified", orderDir="asc")
+    assert ids.index(obs_mons.pk) < ids.index(obs_gent.pk)
+
+
+def test_order_by_verified_descending(client, municipality_sort_data):
+    """orderBy=verified&orderDir=desc puts True (obs_gent) before False (obs_mons)."""
+    obs_gent = municipality_sort_data["obs_gent"]
+    obs_mons = municipality_sort_data["obs_mons"]
+    ids = _municipality_ids(client, orderBy="verified", orderDir="desc")
+    assert ids.index(obs_gent.pk) < ids.index(obs_mons.pk)
+
+
+# ---------------------------------------------------------------------------
+# ApiV2AlertTests fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def alert_data():
+    """Fixture for the alerts CRUD endpoint tests."""
+    User = get_user_model()
+    user = User.objects.create_user(
+        username="alertuser", password="12345", email="alert@example.com"
+    )
+    other_user = User.objects.create_user(
+        username="otheruser", password="12345", email="other@example.com"
+    )
+    sp1 = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    sp2 = Species.objects.create(name="Orconectes virilis", gbif_taxon_key=2227064)
+    alert = Alert.objects.create(
+        name="My alert #1", user=user, email_notifications_frequency="N"
+    )
+    alert.species.add(sp1)
+
+    return {
+        "user": user,
+        "other_user": other_user,
+        "sp1": sp1,
+        "sp2": sp2,
+        "alert": alert,
+    }
+
+
+# --- /api/v2/alerts/ (list) ---
+
+def test_alerts_list_requires_auth(client):
+    response = client.get("/api/v2/alerts/")
+    assert response.status_code == 401
+
+
+def test_alerts_list_returns_own_alerts(client, alert_data):
+    client.login(username="alertuser", password="12345")
+    response = client.get("/api/v2/alerts/")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["name"] == "My alert #1"
+    assert "speciesIds" in data[0]
+    assert "unseenCount" in data[0]
+
+
+def test_alerts_list_does_not_include_other_users_alerts(client, alert_data):
+    other_user = alert_data["other_user"]
+    sp1 = alert_data["sp1"]
+    other_alert = Alert.objects.create(
+        name="Other alert", user=other_user, email_notifications_frequency="N"
+    )
+    other_alert.species.add(sp1)
+    client.login(username="alertuser", password="12345")
+    response = client.get("/api/v2/alerts/")
+    assert len(response.json()) == 1
+
+
+# --- POST /api/v2/alerts/ (create) ---
+
+def test_alert_create_success(client, alert_data):
+    user = alert_data["user"]
+    sp1 = alert_data["sp1"]
+    client.login(username="alertuser", password="12345")
+    payload = json.dumps({"name": "New alert", "speciesIds": [sp1.pk]})
+    response = client.post("/api/v2/alerts/", payload, content_type="application/json")
+    assert response.status_code == 201
+    assert Alert.objects.filter(name="New alert", user=user).exists()
+
+
+def test_alert_create_no_species_returns_422(client, alert_data):
+    client.login(username="alertuser", password="12345")
+    payload = json.dumps({"name": "Bad alert", "speciesIds": []})
+    response = client.post("/api/v2/alerts/", payload, content_type="application/json")
+    assert response.status_code == 422
+    assert "species" in response.json()["errors"]
+
+
+def test_alert_create_requires_auth(client, alert_data):
+    sp1 = alert_data["sp1"]
+    payload = json.dumps({"name": "Unauth alert", "speciesIds": [sp1.pk]})
+    response = client.post("/api/v2/alerts/", payload, content_type="application/json")
+    assert response.status_code == 401
+
+
+# --- GET /api/v2/alerts/{alert_id}/ (detail) ---
+
+def test_alert_detail_returns_correct_fields(client, alert_data):
+    alert = alert_data["alert"]
+    sp1 = alert_data["sp1"]
+    client.login(username="alertuser", password="12345")
+    response = client.get(f"/api/v2/alerts/{alert.pk}/")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "My alert #1"
+    assert data["speciesIds"] == [sp1.pk]
+    assert "speciesList" in data
+    assert "emailNotificationsFrequencyDisplay" in data
+
+
+def test_alert_detail_wrong_user_returns_404(client, alert_data):
+    alert = alert_data["alert"]
+    client.login(username="otheruser", password="12345")
+    response = client.get(f"/api/v2/alerts/{alert.pk}/")
+    assert response.status_code == 404
+
+
+# --- PUT /api/v2/alerts/{alert_id}/ (update) ---
+
+def test_alert_update_success(client, alert_data):
+    alert = alert_data["alert"]
+    sp1 = alert_data["sp1"]
+    sp2 = alert_data["sp2"]
+    client.login(username="alertuser", password="12345")
+    payload = json.dumps({"name": "Renamed alert", "speciesIds": [sp1.pk, sp2.pk]})
+    response = client.put(
+        f"/api/v2/alerts/{alert.pk}/", payload, content_type="application/json"
+    )
+    assert response.status_code == 200
+    alert.refresh_from_db()
+    assert alert.name == "Renamed alert"
+    assert alert.species.count() == 2
+
+
+def test_alert_update_wrong_user_returns_404(client, alert_data):
+    alert = alert_data["alert"]
+    sp1 = alert_data["sp1"]
+    client.login(username="otheruser", password="12345")
+    payload = json.dumps({"name": "Hacked", "speciesIds": [sp1.pk]})
+    response = client.put(
+        f"/api/v2/alerts/{alert.pk}/", payload, content_type="application/json"
+    )
+    assert response.status_code == 404
+
+
+# --- DELETE /api/v2/alerts/{alert_id}/ ---
+
+def test_alert_delete_success(client, alert_data):
+    user = alert_data["user"]
+    sp1 = alert_data["sp1"]
+    to_delete = Alert.objects.create(
+        name="To delete", user=user, email_notifications_frequency="N"
+    )
+    to_delete.species.add(sp1)
+    client.login(username="alertuser", password="12345")
+    response = client.delete(f"/api/v2/alerts/{to_delete.pk}/")
+    assert response.status_code == 204
+    assert not Alert.objects.filter(pk=to_delete.pk).exists()
+
+
+def test_alert_delete_wrong_user_returns_404(client, alert_data):
+    alert = alert_data["alert"]
+    client.login(username="otheruser", password="12345")
+    response = client.delete(f"/api/v2/alerts/{alert.pk}/")
+    assert response.status_code == 404
+    assert Alert.objects.filter(pk=alert.pk).exists()
+
+
+# --- GET /api/v2/alerts/{alert_id}/as-filters/ ---
+
+def test_alert_as_filters_returns_dashboard_filter_shape(client, alert_data):
+    alert = alert_data["alert"]
+    sp1 = alert_data["sp1"]
+    client.login(username="alertuser", password="12345")
+    response = client.get(f"/api/v2/alerts/{alert.pk}/as-filters/")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["speciesIds"] == [sp1.pk]
+    assert data["status"] == "unseen"
+    assert "verifiedFilter" in data
+    assert "areaFilterMode" in data
+
+
+# --- GET /api/v2/alerts/suggest-name/ ---
+
+def test_suggest_name_returns_first_available(client, alert_data):
+    # "My alert #1" is taken; next should be "My alert #2"
+    client.login(username="alertuser", password="12345")
+    response = client.get("/api/v2/alerts/suggest-name/")
+    assert response.status_code == 200
+    assert response.json()["name"] == "My alert #2"
+
+
+# --- GET /api/v2/alerts/notification-frequencies/ ---
+
+def test_notification_frequencies_list(client):
+    response = client.get("/api/v2/alerts/notification-frequencies/")
+    assert response.status_code == 200
+    data = response.json()
+    ids = [f["id"] for f in data]
+    assert "N" in ids
+    assert "D" in ids
+    assert "W" in ids
+    assert "M" in ids
+
+
+def test_alert_create_duplicate_name_returns_422(client, alert_data):
+    """Creating an alert with a name already owned by this user returns 422."""
+    sp1 = alert_data["sp1"]
+    client.login(username="alertuser", password="12345")
+    # "My alert #1" already exists in alert_data
+    payload = json.dumps({"name": "My alert #1", "speciesIds": [sp1.pk]})
+    response = client.post("/api/v2/alerts/", payload, content_type="application/json")
+    assert response.status_code == 422
+    data = response.json()
+    assert "errors" in data
+
+
+def test_alert_create_approaching_mode_without_area_returns_422(client, alert_data):
+    """Creating an alert with areaFilterMode='approaching' but no areaIds returns 422."""
+    sp1 = alert_data["sp1"]
+    client.login(username="alertuser", password="12345")
+    payload = json.dumps({
+        "name": "Approaching alert",
+        "speciesIds": [sp1.pk],
+        "areaFilterMode": "approaching",
+        "areaIds": [],
+    })
+    response = client.post("/api/v2/alerts/", payload, content_type="application/json")
+    assert response.status_code == 422
+    assert "area_filter_mode" in response.json()["errors"]
+
+
+# ---------------------------------------------------------------------------
+# ApiV2AreaEndpointsTests fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def area_endpoints_data():
+    """Fixture for the area CRUD/GeoJSON endpoint tests."""
+    User = get_user_model()
+    owner = User.objects.create_user(
+        username="owner", password="pass", email="owner@example.com"
+    )
+    other = User.objects.create_user(
+        username="other", password="pass", email="other@example.com"
+    )
+    area = Area.objects.create(
+        name="My area",
+        owner=owner,
+        mpoly=SIMPLE_POLYGON,
+    )
+
+    return {
+        "owner": owner,
+        "other": other,
+        "area": area,
+    }
+
+
+# --- GET /api/v2/areas/{id}/geojson/ ---
+
+def test_geojson_returns_200_for_owner(client, area_endpoints_data):
+    area = area_endpoints_data["area"]
+    client.login(username="owner", password="pass")
+    response = client.get(f"/api/v2/areas/{area.pk}/geojson/")
+    assert response.status_code == 200
+
+
+def test_geojson_returns_geojson_content_type(client, area_endpoints_data):
+    area = area_endpoints_data["area"]
+    client.login(username="owner", password="pass")
+    response = client.get(f"/api/v2/areas/{area.pk}/geojson/")
+    assert "application/json" in response.get("Content-Type", "")
+
+
+def test_geojson_body_is_feature_collection(client, area_endpoints_data):
+    area = area_endpoints_data["area"]
+    client.login(username="owner", password="pass")
+    response = client.get(f"/api/v2/areas/{area.pk}/geojson/")
+    data = response.json()
+    assert data["type"] == "FeatureCollection"
+    assert len(data["features"]) == 1
+
+
+def test_geojson_returns_403_for_unrelated_user(client, area_endpoints_data):
+    """User cannot fetch GeoJSON for another user's private area."""
+    area = area_endpoints_data["area"]
+    client.login(username="other", password="pass")
+    response = client.get(f"/api/v2/areas/{area.pk}/geojson/")
+    assert response.status_code == 403
+
+
+def test_geojson_returns_404_for_nonexistent(client, area_endpoints_data):
+    client.login(username="owner", password="pass")
+    response = client.get("/api/v2/areas/99999/geojson/")
+    assert response.status_code == 404
+
+
+# --- POST /api/v2/areas/ ---
+
+def test_create_area_returns_201(client, area_endpoints_data):
+    client.login(username="owner", password="pass")
+    gpkg = SAMPLE_DATA_DIR / "polygon_4326.gpkg"
+    with open(gpkg, "rb") as f:
+        response = client.post(
+            "/api/v2/areas/",
+            {"name": "New area", "data_file": f},
+        )
+    assert response.status_code == 201
+
+
+def test_create_area_persists_in_db(client, area_endpoints_data):
+    owner = area_endpoints_data["owner"]
+    client.login(username="owner", password="pass")
+    gpkg = SAMPLE_DATA_DIR / "polygon_4326.gpkg"
+    with open(gpkg, "rb") as f:
+        client.post("/api/v2/areas/", {"name": "Persisted area", "data_file": f})
+    assert Area.objects.filter(name="Persisted area", owner=owner).exists()
+
+
+def test_create_area_response_shape(client, area_endpoints_data):
+    client.login(username="owner", password="pass")
+    gpkg = SAMPLE_DATA_DIR / "polygon_4326.gpkg"
+    with open(gpkg, "rb") as f:
+        response = client.post(
+            "/api/v2/areas/",
+            {"name": "Shape test", "data_file": f},
+        )
+    data = response.json()
+    assert "id" in data
+    assert "name" in data
+    assert "isUserSpecific" in data
+    assert data["isUserSpecific"]
+
+
+def test_create_area_wrong_geometry_returns_422(client, area_endpoints_data):
+    """Uploading a point GeoPackage (wrong geometry type) returns 422."""
+    client.login(username="owner", password="pass")
+    gpkg = SAMPLE_DATA_DIR / "point.gpkg"
+    with open(gpkg, "rb") as f:
+        response = client.post("/api/v2/areas/", {"name": "Bad", "data_file": f})
+    assert response.status_code == 422
+    assert "detail" in response.json()
+
+
+def test_create_area_too_many_features_returns_422(client, area_endpoints_data):
+    client.login(username="owner", password="pass")
+    gpkg = SAMPLE_DATA_DIR / "polygon_4326_too_many_features.gpkg"
+    with open(gpkg, "rb") as f:
+        response = client.post("/api/v2/areas/", {"name": "Bad", "data_file": f})
+    assert response.status_code == 422
+
+
+def test_create_area_requires_authentication(client):
+    gpkg = SAMPLE_DATA_DIR / "polygon_4326.gpkg"
+    with open(gpkg, "rb") as f:
+        response = client.post("/api/v2/areas/", {"name": "Unauth", "data_file": f})
+    assert response.status_code == 401
+
+
+# --- DELETE /api/v2/areas/{id}/ ---
+
+def test_delete_area_returns_204(client, area_endpoints_data):
+    owner = area_endpoints_data["owner"]
+    area = Area.objects.create(name="To delete", owner=owner, mpoly=SIMPLE_POLYGON)
+    client.login(username="owner", password="pass")
+    response = client.delete(f"/api/v2/areas/{area.pk}/")
+    assert response.status_code == 204
+
+
+def test_delete_area_removes_from_db(client, area_endpoints_data):
+    owner = area_endpoints_data["owner"]
+    area = Area.objects.create(name="Gone", owner=owner, mpoly=SIMPLE_POLYGON)
+    client.login(username="owner", password="pass")
+    client.delete(f"/api/v2/areas/{area.pk}/")
+    assert not Area.objects.filter(pk=area.pk).exists()
+
+
+def test_delete_area_returns_404_for_nonexistent(client, area_endpoints_data):
+    client.login(username="owner", password="pass")
+    response = client.delete("/api/v2/areas/99999/")
+    assert response.status_code == 404
+
+
+def test_delete_area_returns_404_for_other_user_area(client, area_endpoints_data):
+    """Cannot delete another user's area."""
+    other = area_endpoints_data["other"]
+    area = Area.objects.create(name="Other's", owner=other, mpoly=SIMPLE_POLYGON)
+    client.login(username="owner", password="pass")
+    response = client.delete(f"/api/v2/areas/{area.pk}/")
+    assert response.status_code == 404
+
+
+def test_delete_area_with_alert_returns_409(client, area_endpoints_data):
+    """Area referenced by an alert returns 409 with a detail message."""
+    owner = area_endpoints_data["owner"]
+    area = Area.objects.create(name="Has alert", owner=owner, mpoly=SIMPLE_POLYGON)
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    alert = Alert.objects.create(
+        name="Alert", user=owner, email_notifications_frequency="N"
+    )
+    alert.species.add(sp)
+    alert.areas.add(area)
+
+    client.login(username="owner", password="pass")
+    response = client.delete(f"/api/v2/areas/{area.pk}/")
+    assert response.status_code == 409
+    assert "detail" in response.json()
+    assert Area.objects.filter(pk=area.pk).exists()
+
+
+def test_delete_area_requires_authentication(client, area_endpoints_data):
+    area = area_endpoints_data["area"]
+    response = client.delete(f"/api/v2/areas/{area.pk}/")
+    assert response.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# ApiV2AuthTests fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def auth_data():
+    """Fixture for the auth endpoint tests."""
+    User = get_user_model()
+    user = User.objects.create_user(
+        username="testuser",
+        password="correctpassword",
+        email="test@example.com",
+    )
+    return {"user": user}
+
+
+# --- signin ---
+
+def test_signin_success(client, auth_data):
+    resp = client.post(
+        "/api/v2/auth/signin/",
+        data={"username": "testuser", "password": "correctpassword"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert resp.json()["username"] == "testuser"
+
+
+def test_signin_wrong_password(client, auth_data):
+    resp = client.post(
+        "/api/v2/auth/signin/",
+        data={"username": "testuser", "password": "wrong"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 401
+    assert "detail" in resp.json()
+
+
+def test_signin_nonexistent_user(client):
+    resp = client.post(
+        "/api/v2/auth/signin/",
+        data={"username": "nobody", "password": "x"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 401
+
+
+# --- signup ---
+
+def test_signup_success(client):
+    User = get_user_model()
+    resp = client.post(
+        "/api/v2/auth/signup/",
+        data={
+            "username": "newuser",
+            "email": "new@example.com",
+            "language": "en",
+            "password1": "Secure1234!",
+            "password2": "Secure1234!",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    assert resp.json()["username"] == "newuser"
+    assert User.objects.filter(username="newuser").exists()
+
+
+def test_signup_duplicate_username(client, auth_data):
+    resp = client.post(
+        "/api/v2/auth/signup/",
+        data={
+            "username": "testuser",  # already exists
+            "email": "other@example.com",
+            "language": "en",
+            "password1": "Secure1234!",
+            "password2": "Secure1234!",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "username" in resp.json()["errors"]
+
+
+def test_signup_password_mismatch(client):
+    resp = client.post(
+        "/api/v2/auth/signup/",
+        data={
+            "username": "anotheruser",
+            "email": "a@example.com",
+            "language": "en",
+            "password1": "Secure1234!",
+            "password2": "Different!",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "errors" in resp.json()
+
+
+# --- password-change ---
+
+def test_password_change_success(client, auth_data):
+    user = auth_data["user"]
+    client.force_login(user)
+    resp = client.post(
+        "/api/v2/auth/password-change/",
+        data={
+            "old_password": "correctpassword",
+            "new_password1": "NewSecure5678!",
+            "new_password2": "NewSecure5678!",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 204
+
+
+def test_password_change_wrong_old_password(client, auth_data):
+    user = auth_data["user"]
+    client.force_login(user)
+    resp = client.post(
+        "/api/v2/auth/password-change/",
+        data={
+            "old_password": "wrong",
+            "new_password1": "NewSecure5678!",
+            "new_password2": "NewSecure5678!",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "old_password" in resp.json()["errors"]
+
+
+def test_password_change_unauthenticated(client):
+    resp = client.post(
+        "/api/v2/auth/password-change/",
+        data={
+            "old_password": "x",
+            "new_password1": "y",
+            "new_password2": "y",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 401
+
+
+def test_password_change_mismatch(client, auth_data):
+    user = auth_data["user"]
+    client.force_login(user)
+    resp = client.post(
+        "/api/v2/auth/password-change/",
+        data={
+            "old_password": "correctpassword",
+            "new_password1": "NewSecure5678!",
+            "new_password2": "DifferentPassword!",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "new_password2" in resp.json()["errors"]
+
+
+# --- news/mark-visited ---
+
+def test_news_mark_visited_authenticated(client, auth_data):
+    user = auth_data["user"]
+    client.force_login(user)
+    resp = client.post("/api/v2/news/mark-visited/", content_type="application/json")
+    assert resp.status_code == 204
+
+
+def test_news_mark_visited_anonymous(client):
+    resp = client.post("/api/v2/news/mark-visited/", content_type="application/json")
+    assert resp.status_code == 204
+
+
+# --- profile ---
+
+def test_profile_get(client, auth_data):
+    user = auth_data["user"]
+    client.force_login(user)
+    resp = client.get("/api/v2/profile/")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["username"] == "testuser"
+    assert "firstName" in data
+    assert "delayValue" in data
+    assert "delayUnit" in data
+
+
+def test_profile_get_unauthenticated(client):
+    resp = client.get("/api/v2/profile/")
+    assert resp.status_code == 401
+
+
+def test_profile_put_success(client, auth_data):
+    user = auth_data["user"]
+    client.force_login(user)
+    resp = client.put(
+        "/api/v2/profile/",
+        data={
+            "firstName": "Alice",
+            "lastName": "Smith",
+            "email": "alice@example.com",
+            "language": "en",
+            "delayValue": 2,
+            "delayUnit": "weeks",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert resp.json()["firstName"] == "Alice"
+    user.refresh_from_db()
+    assert user.notification_delay_days == 14
+
+
+def test_profile_put_unauthenticated(client):
+    resp = client.put(
+        "/api/v2/profile/",
+        data={
+            "firstName": "X",
+            "lastName": "",
+            "email": "x@example.com",
+            "language": "en",
+            "delayValue": 1,
+            "delayUnit": "days",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 401
+
+
+def test_profile_put_duplicate_email(client, auth_data):
+    User = get_user_model()
+    User.objects.create_user(
+        username="other", password="pass", email="other@example.com"
+    )
+    user = auth_data["user"]
+    client.force_login(user)
+    resp = client.put(
+        "/api/v2/profile/",
+        data={
+            "firstName": "Test",
+            "lastName": "User",
+            "email": "other@example.com",
+            "language": "en",
+            "delayValue": 1,
+            "delayUnit": "days",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "email" in resp.json()["errors"]
+
+
+def test_profile_put_invalid_delay_unit(client, auth_data):
+    user = auth_data["user"]
+    client.force_login(user)
+    resp = client.put(
+        "/api/v2/profile/",
+        data={
+            "firstName": "Test",
+            "lastName": "User",
+            "email": "testuser@example.com",
+            "language": "en",
+            "delayValue": 1,
+            "delayUnit": "fortnights",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "delayUnit" in resp.json()["errors"]
+
+
+# --- account delete ---
+
+def test_delete_account_success(client):
+    User = get_user_model()
+    user2 = User.objects.create_user(
+        username="todelete", password="pass", email="del@example.com"
+    )
+    client.force_login(user2)
+    resp = client.delete("/api/v2/account/")
+    assert resp.status_code == 204
+    assert not User.objects.filter(username="todelete").exists()
