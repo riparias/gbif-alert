@@ -146,3 +146,8 @@ openapi-schema.json
 .DS_Store
 # Git worktrees
 .worktrees/
+
+docs/superpowers
+.superpowers
+
+deploy.sh
