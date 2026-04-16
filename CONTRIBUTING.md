@@ -2,7 +2,7 @@
 
 ## Technological backbone
 - [Python](https://www.python.org/) 3.11+, [(Geo)Django](https://www.djangoproject.com/) 4.2 [PostgreSQL](https://www.postgresql.org/), [PostGIS](https://postgis.net/) 3.1+, [Redis](https://redis.io/),  [TypeScript](https://www.typescriptlang.org/) and [Vue.js v3](https://vuejs.org/)
-- CSS: [Bootstrap](https://getbootstrap.com/) 5.3  
+- UI components: [PrimeVue](https://primevue.org/) v4
 - [Poetry](https://python-poetry.org/) is used to manage dependencies (use `poetry add`, `poetry install`, ... instead of pip). PyCharm also has a Poetry plugin available.
 
 ## Dev environment configuration
@@ -170,22 +170,6 @@ The web application handle three categories of users:
   being upgraded to this status by an existing Admin after registering as a normal user, or via Django's 
   `createsuperuser` management command.
   
-## Use of the messages framework
-
-We make use of [Django's message framework](https://docs.djangoproject.com/en/3.2/ref/contrib/messages/), and the 
-base template is configured to display a nice Bootstrap alert for the following message levels: `info`, `success`, 
-`warning` and `error`.
-
-Example use:
-```
-from django.contrib import messages
-
-def my_view(request):
-  ...
-  messages.success(request, "Your profile was successfully updated.")
-  return redirect("dashboard:pages:index")
-```
-
 ## Use of Redis
 
 Redis is currently used with [django-rq](https://github.com/rq/django-rq) to manage queues for long-running tasks 

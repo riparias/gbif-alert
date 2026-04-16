@@ -35,8 +35,6 @@
 {% get_page_fragment 'over_navbar' %}
 {# Vue app mount point: renders NavBar (Phase 1) and full page content via RouterView (Phase 2+). #}
 <div id="frontend"></div>
-{% include "dashboard/_messages.html" %}
-
 <div style="margin-bottom: 100px;">
     {% block after_messages %}{% endblock %}
 </div>
