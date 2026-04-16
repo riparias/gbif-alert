@@ -344,5 +344,11 @@ onMounted(async () => {
     padding: 0.1rem 0.35rem;
     vertical-align: middle;
     margin-left: 0.25rem;
+    animation: badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 </style>

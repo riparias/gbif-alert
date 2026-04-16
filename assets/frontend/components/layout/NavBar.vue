@@ -251,6 +251,7 @@ function toggleUserMenu(event: Event) {
     border-radius: 0;
     padding: 0.5rem 1rem;
     margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 .gbif-navbar-brand {
@@ -272,7 +273,9 @@ function toggleUserMenu(event: Event) {
 
 .gbif-nav-link.gbif-nav-active {
     font-weight: bold;
-    text-decoration: underline;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 0.35rem 0.6rem;
 }
 
 .gbif-navbar-end {

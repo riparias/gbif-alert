@@ -214,7 +214,7 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- WHAT section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading">{{ t("message.filterSectionWhat") }}</div>
+            <div class="sidebar-section-heading"><i class="pi pi-search" />{{ t("message.filterSectionWhat") }}</div>
 
             <div class="filter-group">
                 <label>{{ t("message.species") }}</label>
@@ -250,7 +250,7 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- WHERE section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading">{{ t("message.filterSectionWhere") }}</div>
+            <div class="sidebar-section-heading"><i class="pi pi-map-marker" />{{ t("message.filterSectionWhere") }}</div>
 
             <div class="filter-group">
                 <label>{{ t("message.area") }}</label>
@@ -289,7 +289,7 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- WHEN section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading">{{ t("message.filterSectionWhen") }}</div>
+            <div class="sidebar-section-heading"><i class="pi pi-calendar" />{{ t("message.filterSectionWhen") }}</div>
 
             <div class="filter-group">
                 <label>{{ t("message.dateFrom") }}</label>
@@ -314,7 +314,7 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- STATUS section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading">{{ t("message.filterSectionStatus") }}</div>
+            <div class="sidebar-section-heading"><i class="pi pi-check-circle" />{{ t("message.filterSectionStatus") }}</div>
 
             <div class="filter-group">
                 <label>{{ t("message.verificationFilter") }}</label>
@@ -343,11 +343,11 @@ const formattedDatasetsCount = computed(() =>
             </div>
             <div class="stat-cards">
                 <div class="stat-card">
-                    <span class="stat-card-value">{{ formattedSpeciesCount }}</span>
+                    <span class="stat-card-value"><i class="pi pi-list stat-card-icon" />{{ formattedSpeciesCount }}</span>
                     <span class="stat-card-label">{{ t("message.statSpeciesLabel") }}</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-card-value">{{ formattedDatasetsCount }}</span>
+                    <span class="stat-card-value"><i class="pi pi-database stat-card-icon" />{{ formattedDatasetsCount }}</span>
                     <span class="stat-card-label">{{ t("message.statDatasetsLabel") }}</span>
                 </div>
             </div>
@@ -386,11 +386,19 @@ const formattedDatasetsCount = computed(() =>
 }
 
 .sidebar-section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
     font-size: 0.65rem;
     font-weight: 700;
     letter-spacing: 0.1em;
     color: #e2e8f0; /* slate-200 - high hierarchy, stands out on dark */
     text-transform: uppercase;
+}
+
+.sidebar-section-heading .pi {
+    font-size: 0.7rem;
+    color: #94a3b8; /* slate-400 - slightly muted relative to heading text */
 }
 
 .filter-group {
@@ -522,9 +530,17 @@ const formattedDatasetsCount = computed(() =>
 }
 
 .stat-card-value {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
     font-size: 1.1rem;
     font-weight: 700;
     color: #f1f5f9; /* slate-100 */
+}
+
+.stat-card-icon {
+    font-size: 0.8rem;
+    color: #94a3b8; /* slate-400 */
 }
 
 .stat-card-label {

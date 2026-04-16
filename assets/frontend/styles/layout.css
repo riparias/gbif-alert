@@ -24,3 +24,37 @@
     margin: 2rem auto;
     padding: 0 1rem;
 }
+
+/* Sidebar + main content grid used by IndexPage and AlertDetailPage */
+.sidebar-layout {
+    display: grid;
+    grid-template-columns: 310px 1fr;
+    gap: 1rem;
+    padding: 1rem;
+    min-height: 0;
+}
+
+/* Breathing room on wider screens */
+@media (min-width: 768px) {
+    .page-content,
+    .sidebar-layout {
+        padding: 1.5rem 2rem;
+    }
+}
+
+.sidebar-layout__aside {
+    position: sticky;
+    top: 1rem;
+    height: fit-content;
+    background: #1e293b;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-layout__main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+}

@@ -69,7 +69,7 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- SPECIES section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading">{{ t("message.filterSectionWhat") }}</div>
+            <div class="sidebar-section-heading"><i class="pi pi-search" />{{ t("message.filterSectionWhat") }}</div>
             <ul class="species-list">
                 <li v-for="sp in visibleSpecies" :key="sp.scientificName">
                     <em>{{ sp.scientificName }}</em>
@@ -92,7 +92,7 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- WHERE section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading">{{ t("message.filterSectionWhere") }}</div>
+            <div class="sidebar-section-heading"><i class="pi pi-map-marker" />{{ t("message.filterSectionWhere") }}</div>
             <div class="meta-row">
                 <i class="pi pi-map-marker meta-icon" />
                 <span :class="{ muted: !areaDescription }">
@@ -103,7 +103,7 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- DATASETS section (hidden when no datasets configured) -->
         <div v-if="alert.datasetNames.length > 0" class="sidebar-section">
-            <div class="sidebar-section-heading">{{ t("message.dataset") }}</div>
+            <div class="sidebar-section-heading"><i class="pi pi-database" />{{ t("message.dataset") }}</div>
             <div class="chips">
                 <Tag
                     v-for="name in alert.datasetNames"
@@ -117,7 +117,7 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- BASIS OF RECORD section (hidden when all) -->
         <div v-if="alert.basisOfRecordList" class="sidebar-section">
-            <div class="sidebar-section-heading">{{ t("message.basisOfRecord") }}</div>
+            <div class="sidebar-section-heading"><i class="pi pi-tag" />{{ t("message.basisOfRecord") }}</div>
             <div class="meta-row">
                 <i class="pi pi-tag meta-icon" />
                 <span>{{ alert.basisOfRecordList }}</span>
@@ -126,7 +126,7 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- STATUS section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading">{{ t("message.filterSectionStatus") }}</div>
+            <div class="sidebar-section-heading"><i class="pi pi-check-circle" />{{ t("message.filterSectionStatus") }}</div>
             <div v-if="alert.verifiedFilter !== 'all'" class="meta-row">
                 <i class="pi pi-check-circle meta-icon" />
                 <span>{{
@@ -149,11 +149,11 @@ const formattedDatasetsCount = computed(() =>
             </div>
             <div class="stat-cards">
                 <div class="stat-card">
-                    <span class="stat-card-value">{{ formattedSpeciesCount }}</span>
+                    <span class="stat-card-value"><i class="pi pi-list stat-card-icon" />{{ formattedSpeciesCount }}</span>
                     <span class="stat-card-label">{{ t("message.statSpeciesLabel") }}</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-card-value">{{ formattedDatasetsCount }}</span>
+                    <span class="stat-card-value"><i class="pi pi-database stat-card-icon" />{{ formattedDatasetsCount }}</span>
                     <span class="stat-card-label">{{ t("message.statDatasetsLabel") }}</span>
                 </div>
             </div>
@@ -214,11 +214,19 @@ const formattedDatasetsCount = computed(() =>
 }
 
 .sidebar-section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
     font-size: 0.65rem;
     font-weight: 700;
     letter-spacing: 0.1em;
     color: #e2e8f0; /* slate-200 */
     text-transform: uppercase;
+}
+
+.sidebar-section-heading .pi {
+    font-size: 0.7rem;
+    color: #94a3b8; /* slate-400 - slightly muted relative to heading text */
 }
 
 .species-list {
@@ -337,9 +345,17 @@ const formattedDatasetsCount = computed(() =>
 }
 
 .stat-card-value {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
     font-size: 1.1rem;
     font-weight: 700;
     color: #f1f5f9;
+}
+
+.stat-card-icon {
+    font-size: 0.8rem;
+    color: #94a3b8; /* slate-400 */
 }
 
 .stat-card-label {

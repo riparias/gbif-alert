@@ -66,41 +66,18 @@ onUnmounted(() => {
         <Button :label="t('message.backToAlertsList')" @click="router.push('/my-alerts')" />
     </div>
 
-    <div v-else-if="alert" class="alert-detail-layout">
-        <aside class="alert-detail-sidebar">
+    <div v-else-if="alert" class="sidebar-layout">
+        <aside class="sidebar-layout__aside">
             <AlertSidebar :alert="alert" />
         </aside>
 
-        <div class="alert-detail-main">
+        <div class="sidebar-layout__main">
             <ObservationsView :unseen-fallback="true" />
         </div>
     </div>
 </template>
 
 <style scoped>
-.alert-detail-layout {
-    display: grid;
-    grid-template-columns: 310px 1fr;
-    gap: 1rem;
-    padding: 1rem;
-    min-height: 0;
-}
-
-.alert-detail-sidebar {
-    position: sticky;
-    top: 1rem;
-    height: fit-content;
-    background: #1e293b;
-    overflow: hidden;
-}
-
-.alert-detail-main {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    min-width: 0;
-}
-
 .loading-placeholder,
 .not-found {
     display: flex;

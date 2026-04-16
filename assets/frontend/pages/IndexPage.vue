@@ -35,12 +35,12 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="index-layout">
-        <aside class="index-sidebar">
+    <div class="sidebar-layout">
+        <aside class="sidebar-layout__aside">
             <FilterSidebar />
         </aside>
 
-        <div class="index-main">
+        <div class="sidebar-layout__main">
             <div v-if="welcomeHtml" class="welcome-text" v-html="welcomeHtml" />
             <HistogramBrush />
             <ActiveFilterChips />
@@ -50,30 +50,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.index-layout {
-    display: grid;
-    grid-template-columns: 310px 1fr;
-    gap: 1rem;
-    padding: 1rem;
-    min-height: 0;
-}
-
-.index-sidebar {
-    /* Sticky so the sidebar stays in view while the user scrolls results */
-    position: sticky;
-    top: 1rem;
-    height: fit-content;
-    background: #1e293b;
-    overflow: hidden;
-}
-
-.index-main {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    min-width: 0; /* prevent CSS grid blowout */
-}
-
 .welcome-text :deep(p) { margin: 0 0 0.5rem; font-size: 0.9rem; }
 .welcome-text :deep(p:last-child) { margin-bottom: 0; }
 </style>
