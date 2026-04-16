@@ -181,6 +181,7 @@ async function deleteAccount() {
                             style="flex: 1;"
                         />
                     </div>
+                    <small style="color: var(--p-text-muted-color);">{{ t("message.notificationDelayHelp") }}</small>
                     <small v-if="fieldError('delayValue')" style="color: var(--p-red-500);">{{ fieldError("delayValue") }}</small>
                 </div>
 
