@@ -227,16 +227,22 @@ $ docker push niconoe/gbif-alert-nginx:1.1.0
 
 ## How to link to a GBIF alert instance with specific filters
 
-The URL format is: `<GBIF_ALERT_INSTANCE>/?filters=<filters>`
+The index page (`/`) reads filters from URL query parameters. All parameters are optional and can be combined.
 
-The following filters can be specified:
-- 
-- speciesIds: list of species IDs (integer)
-- datasetsIds: list of dataset IDs (integer)
-- areaIds: list of area IDs (integer)
-- initialDataImportIds: list of data import IDs (integer)
+| Parameter               | Type                            | Example                          |
+|-------------------------|---------------------------------|----------------------------------|
+| `speciesIds`            | integer (repeatable)            | `speciesIds=2&speciesIds=14`     |
+| `datasetsIds`           | integer (repeatable)            | `datasetsIds=5`                  |
+| `basisOfRecordIds`      | integer (repeatable)            | `basisOfRecordIds=1`             |
+| `areaIds`               | integer (repeatable)            | `areaIds=1`                      |
+| `initialDataImportIds`  | integer (repeatable)            | `initialDataImportIds=3`         |
+| `startDate` / `endDate` | date string                     | `startDate=2024-01-01`           |
+| `status`                | `seen` / `unseen` / `all`       | `status=all`                     |
+| `verifiedFilter`        | `verified` / `unverified` / `all` | `verifiedFilter=verified`      |
+| `areaFilterMode`        | `inside` / `approaching` / `both` | `areaFilterMode=approaching`   |
+| `approachingDistanceKm` | float                           | `approachingDistanceKm=5.0`      |
 
 Examples:
 
-- https://alert.riparias.be/?filters={'speciesIds':[2,14,15]}
-- https://alert.riparias.be/?filters={'speciesIds':[2,14,15],'areaIds':[1]}
+- `https://alert.riparias.be/?speciesIds=2&speciesIds=14&speciesIds=15`
+- `https://alert.riparias.be/?speciesIds=2&areaIds=1`
