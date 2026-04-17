@@ -209,7 +209,7 @@ const formattedDatasetsCount = computed(() =>
 </script>
 
 <template>
-    <div class="filter-sidebar-panel">
+    <div class="sidebar-panel">
         <div class="sidebar-heading">{{ t("message.filters").toUpperCase() }}</div>
 
         <!-- WHAT section -->
@@ -355,62 +355,15 @@ const formattedDatasetsCount = computed(() =>
     </div>
 </template>
 
-<style scoped>
-.filter-sidebar-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    height: 100%;
-}
+<style src="../styles/sidebar.css"></style>
 
+<style scoped>
 .sidebar-heading {
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     color: #64748b; /* slate-500 - muted on dark */
     text-transform: uppercase;
-}
-
-.sidebar-section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #334155; /* slate-700 */
-}
-
-.sidebar-section:last-of-type {
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
-.sidebar-section-heading {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    color: #e2e8f0; /* slate-200 - high hierarchy, stands out on dark */
-    text-transform: uppercase;
-}
-
-.sidebar-section-heading .pi {
-    font-size: 0.7rem;
-    color: #94a3b8; /* slate-400 - slightly muted relative to heading text */
-}
-
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-}
-
-.filter-group label {
-    font-size: 0.78rem;
-    font-weight: 500;
-    color: #64748b; /* slate-500 - subordinate to section headings */
 }
 
 .sidebar-control {
@@ -487,64 +440,5 @@ const formattedDatasetsCount = computed(() =>
     background: #dc2626;
     border-color: #dc2626;
     color: #fff;
-}
-
-.stat-block {
-    margin-top: auto;
-    border-top: 1px solid #334155; /* slate-700 */
-    padding-top: 1rem;
-}
-
-.stat-main {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.1;
-    margin-bottom: 0.75rem;
-}
-
-.stat-count {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #f1f5f9; /* slate-100 */
-}
-
-.stat-label {
-    font-size: 0.8rem;
-    color: #64748b; /* slate-500 */
-}
-
-.stat-cards {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-}
-
-.stat-card {
-    display: flex;
-    flex-direction: column;
-    background: #0f172a; /* slate-900 - darker inset card */
-    border: 1px solid #334155; /* slate-700 */
-    border-radius: 6px;
-    padding: 0.5rem 0.75rem;
-    line-height: 1.2;
-}
-
-.stat-card-value {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #f1f5f9; /* slate-100 */
-}
-
-.stat-card-icon {
-    font-size: 0.8rem;
-    color: #94a3b8; /* slate-400 */
-}
-
-.stat-card-label {
-    font-size: 0.72rem;
-    color: #64748b; /* slate-500 */
 }
 </style>
