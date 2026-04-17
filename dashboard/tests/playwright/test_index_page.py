@@ -263,7 +263,7 @@ def test_seen_column_shown_for_authenticated_user(page: Page, live_server):
     page.wait_for_load_state("networkidle")
     _switch_to_table_view(page)
 
-    expect(page.get_by_role("columnheader", name="Seen")).to_be_visible()
+    expect(page.get_by_role("columnheader", name="Viewed")).to_be_visible()
 
 
 # ---------------------------------------------------------------------------
@@ -411,8 +411,8 @@ def test_anonymous_user_sees_no_unseen_filter_badge(page: Page, live_server):
     page.goto(live_server.url + "/")
     page.wait_for_load_state("networkidle")
 
-    # No "Unseen" chip should be rendered
-    expect(page.get_by_text("Unseen", exact=True)).not_to_be_visible()
+    # No "Not viewed" chip should be rendered
+    expect(page.get_by_text("Not viewed", exact=True)).not_to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -452,7 +452,7 @@ def test_authenticated_user_with_unseen_sees_unseen_badge(page: Page, live_serve
     page.goto(live_server.url + "/")
     page.wait_for_load_state("networkidle")
 
-    expect(page.get_by_text("Unseen", exact=True)).to_be_visible()
+    expect(page.get_by_text("Not viewed", exact=True)).to_be_visible()
 
 
 # ---------------------------------------------------------------------------
