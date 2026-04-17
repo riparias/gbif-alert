@@ -106,7 +106,7 @@ msgstr "Unité de délai"
 #: dashboard/forms.py:148
 msgid ""
 "Observations older than this delay will be automatically considered as "
-"'seen'. Note: 1 month = 30 days, 1 year = 365 days."
+"'viewed'. Note: 1 month = 30 days, 1 year = 365 days."
 msgstr ""
 "Les observations plus anciennes que ce délai seront automatiquement "
 "considérées comme 'vues'. Note : 1 mois = 30 jours, 1 an = 365 jours."
@@ -187,8 +187,8 @@ msgid "email notifications frequency"
 msgstr "fréquence des notifications par email"
 
 #: dashboard/models.py:1324
-msgid "unseen observation(s) for your alert"
-msgstr "observation(s) non vue(s) pour votre alerte"
+msgid "new observation(s) for your alert"
+msgstr "nouvelle(s) observation(s) pour votre alerte"
 
 #: dashboard/templates/dashboard/503.html:6
 msgid "In maintenance"

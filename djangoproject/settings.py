@@ -42,8 +42,6 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     # Third-party
     "maintenance_mode",
-    "crispy_forms",
-    "crispy_bootstrap5",
     "import_export",
     "corsheaders",
     "markdownx",
@@ -177,9 +175,6 @@ LOGIN_URL = "signin"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
-
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_METHODS = [

@@ -1321,7 +1321,7 @@ class Alert(models.Model):
 
         # Message subject
         _ = get_translator(language_code)
-        unseen_obs_translated = _("unseen observation(s) for your alert")
+        unseen_obs_translated = _("new observation(s) for your alert")
         subject = f"{settings.EMAIL_SUBJECT_PREFIX} {self.unseen_observations().count()} {unseen_obs_translated} {self.name}"
 
         # Message body

@@ -107,9 +107,9 @@ msgstr "Eenheid van vertraging"
 #: dashboard/forms.py:148
 msgid ""
 "Observations older than this delay will be automatically considered as "
-"'seen'. Note: 1 month = 30 days, 1 year = 365 days."
+"'viewed'. Note: 1 month = 30 days, 1 year = 365 days."
 msgstr ""
-"Waarnemingen ouder dan deze vertraging worden automatisch als 'gezien' "
+"Waarnemingen ouder dan deze vertraging worden automatisch als 'bekeken' "
 "beschouwd. Opmerking: 1 maand = 30 dagen, 1 jaar = 365 dagen."
 
 #: dashboard/models.py:1053
@@ -187,8 +187,8 @@ msgid "email notifications frequency"
 msgstr "frequentie email notificaties"
 
 #: dashboard/models.py:1324
-msgid "unseen observation(s) for your alert"
-msgstr "niet bekeken waarneming(en) voor je waarschuwing"
+msgid "new observation(s) for your alert"
+msgstr "nieuwe waarneming(en) voor je waarschuwing"
 
 #: dashboard/templates/dashboard/503.html:6
 msgid "In maintenance"
