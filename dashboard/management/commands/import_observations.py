@@ -5,6 +5,8 @@ import logging
 import os
 import tempfile
 import time
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
@@ -41,36 +43,135 @@ _VERIFICATION_STATUS_JSON = os.path.join(
 
 
 def load_verification_status_hash() -> dict[str, bool]:
-    """Load verification_status_classification.json into a dict mapping status string → verified bool."""
+    """Load verification_status_classification.json into a dict mapping status string -> verified bool."""
     with open(_VERIFICATION_STATUS_JSON, encoding="utf-8") as f:
         entries = json.load(f)
     return {entry["key"]: entry["verified"] for entry in entries}
 
 
-def species_for_row(row: CoreRow, hash_species) -> Species:
-    """Based first on taxonKey, with fallback to acceptedTaxonKey then speciesKey
+@dataclass(frozen=True)
+class RawObservationRow:
+    """Format-agnostic representation of a single observation row.
 
-    Raises keyerror if the corresponding species cannot be found
+    Produced by adapters (e.g. ``dwca_row_to_raw``) and consumed by the
+    import pipeline. Unparseable numeric fields are represented as ``None``
+    so the business logic (not the adapter) owns the skip-vs-default
+    decision.
     """
-    taxon_key = int(
-        get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/taxonKey")
-    )
 
-    accepted_taxon_key = int(
-        get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/acceptedTaxonKey")
-    )
+    gbif_id: int
+    occurrence_id: str
+    occurrence_status: str
+    year: int | None
+    month: int | None
+    day: int | None
+    decimal_longitude: float | None
+    decimal_latitude: float | None
+    dataset_key: str
+    dataset_name: str
+    taxon_key: int
+    accepted_taxon_key: int
+    species_key: int
+    basis_of_record: str
+    individual_count: int | None
+    coordinate_uncertainty_in_meters: float | None
+    identification_verification_status: str
+    locality: str
+    municipality: str
+    recorded_by: str
+    references: str
 
-    species_key = int(
-        get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/speciesKey")
-    )
 
+def _get_int_or_none(row: CoreRow, field_name: str) -> int | None:
     try:
-        return hash_species[taxon_key]
+        return int(get_string_data(row, field_name=field_name))
+    except ValueError:
+        return None
+
+
+def _get_float_or_none(row: CoreRow, field_name: str) -> float | None:
+    try:
+        return float(get_string_data(row, field_name=field_name))
+    except ValueError:
+        return None
+
+
+def dwca_row_to_raw(row: CoreRow) -> RawObservationRow:
+    """Convert a DwCA CoreRow into a typed RawObservationRow."""
+    return RawObservationRow(
+        gbif_id=int(
+            get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/gbifID")
+        ),
+        occurrence_id=get_string_data(row, field_name=qn("occurrenceID")),
+        occurrence_status=get_string_data(row, field_name=qn("occurrenceStatus")),
+        year=_get_int_or_none(row, qn("year")),
+        month=_get_int_or_none(row, qn("month")),
+        day=_get_int_or_none(row, qn("day")),
+        decimal_longitude=_get_float_or_none(row, qn("decimalLongitude")),
+        decimal_latitude=_get_float_or_none(row, qn("decimalLatitude")),
+        dataset_key=get_string_data(
+            row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
+        ),
+        dataset_name=get_string_data(row, field_name=qn("datasetName")),
+        taxon_key=int(
+            get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/taxonKey")
+        ),
+        accepted_taxon_key=int(
+            get_string_data(
+                row, field_name="http://rs.gbif.org/terms/1.0/acceptedTaxonKey"
+            )
+        ),
+        species_key=int(
+            get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/speciesKey")
+        ),
+        basis_of_record=get_string_data(row, field_name=qn("basisOfRecord")),
+        individual_count=_get_int_or_none(row, qn("individualCount")),
+        coordinate_uncertainty_in_meters=_get_float_or_none(
+            row, qn("coordinateUncertaintyInMeters")
+        ),
+        identification_verification_status=get_string_data(
+            row, field_name=qn("identificationVerificationStatus")
+        ),
+        locality=get_string_data(row, field_name=qn("locality")),
+        municipality=get_string_data(row, field_name=qn("municipality")),
+        recorded_by=get_string_data(row, field_name=qn("recordedBy")),
+        references=get_string_data(row, field_name=qn("references")),
+    )
+
+
+def species_for_raw(
+    raw: RawObservationRow, hash_species: dict[int, Species]
+) -> Species:
+    """Look up a Species from a RawObservationRow.
+
+    Tries taxon_key first, falls back to accepted_taxon_key, then species_key.
+    Raises KeyError if none match.
+    """
+    try:
+        return hash_species[raw.taxon_key]
     except KeyError:
         try:
-            return hash_species[accepted_taxon_key]
+            return hash_species[raw.accepted_taxon_key]
         except KeyError:
-            return hash_species[species_key]
+            return hash_species[raw.species_key]
+
+
+def discover_datasets_and_basis_of_record(
+    rows: Iterable[RawObservationRow],
+) -> tuple[dict[str, str], set[str]]:
+    """Walk a row stream once, collecting distinct dataset keys (with their
+    names) and distinct basis-of-record values.
+
+    Memory is O(distinct datasets + distinct BoR values), never O(rows),
+    so this is safe for multi-million-row imports.
+    """
+    datasets: dict[str, str] = {}
+    basis_of_record_values: set[str] = set()
+    for raw in rows:
+        datasets[raw.dataset_key] = raw.dataset_name
+        if raw.basis_of_record:
+            basis_of_record_values.add(raw.basis_of_record)
+    return datasets, basis_of_record_values
 
 
 def extract_gbif_download_id_from_dwca(dwca: DwCAReader) -> str:
@@ -94,130 +195,71 @@ def get_string_data(row: CoreRow, field_name: str) -> str:
     return row.data[field_name].strip()
 
 
-def get_float_data(row: CoreRow, field_name: str) -> float:
-    """Extract float data from a row
-
-    :raise ValueError if the value can't be converted
-    """
-    return float(get_string_data(row, field_name))
-
-
-def get_int_data(row: CoreRow, field_name: str) -> int:
-    """Extract int data from a row
-
-    :raise ValueError if the value can't be converted
-    """
-    return int(get_string_data(row, field_name))
-
-
 class SkippedObservationException(Exception):
     pass
 
 
-def build_single_observation(
-    row: CoreRow,
+def build_observation_from_raw(
+    raw: RawObservationRow,
     current_data_import: DataImport,
     hash_datasets: dict[str, Dataset],
-    hash_species: dict[str, Species],
+    hash_species: dict[int, Species],
     hash_basis_of_record: dict[str, BasisOfRecord],
     hash_verification_status: dict[str, bool],
 ) -> Observation:
-    """Import a single observation into the database
+    """Build an Observation from a RawObservationRow.
 
-    :raise: Species.DoesNotExist if the species referenced in the row cannot be found in the database
+    Raises SkippedObservationException when the row is unusable (missing
+    year, missing coordinates, missing occurrence_id, or occurrence_status
+    other than "PRESENT"). Missing month/day default to 1.
 
-    :return True if successful, False if observation was skipped (=unusable OR is an absence)
+    Raises KeyError if the species referenced cannot be found.
     """
-    # For-filtering data extraction
-    year_str = get_string_data(row, field_name=qn("year"))
-
-    try:
-        point: Point | None = Point(
-            get_float_data(row, field_name=qn("decimalLongitude")),
-            get_float_data(row, field_name=qn("decimalLatitude")),
-            srid=4326,
-        )
-    except ValueError:
-        point = None
-
-    occurrence_id_str = get_string_data(row, field_name=qn("occurrenceID"))
-    occurrence_status_str = get_string_data(row, field_name=qn("occurrenceStatus"))
-
-    # Only import records with a year, coordinates, an occurrenceID which represent "presence" data
     if (
-        year_str != ""
-        and point
-        and occurrence_id_str != ""
-        and occurrence_status_str == "PRESENT"
+        raw.year is None
+        or raw.decimal_longitude is None
+        or raw.decimal_latitude is None
+        or raw.occurrence_id == ""
+        or raw.occurrence_status != "PRESENT"
     ):
-        # Some dates are incomplete, we're good as long as we have a year
-        year = int(year_str)
-        try:
-            month = get_int_data(row, field_name=qn("month"))
-        except ValueError:
-            month = 1
+        raise SkippedObservationException()
 
-        try:
-            day = get_int_data(row, field_name=qn("day"))
-        except ValueError:
-            day = 1
+    # Some dates are incomplete, we're good as long as we have a year
+    month = raw.month if raw.month is not None else 1
+    day = raw.day if raw.day is not None else 1
+    date = datetime.date(raw.year, month, day)
 
-        date = datetime.date(year, month, day)
-        gbif_dataset_key = get_string_data(
-            row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
-        )
+    point = Point(raw.decimal_longitude, raw.decimal_latitude, srid=4326)
 
-        try:
-            individual_count: int | None = get_int_data(
-                row, field_name=qn("individualCount")
-            )
-        except ValueError:
-            individual_count = None
+    identification_verification_status_str = raw.identification_verification_status[:255]
 
-        try:
-            coordinates_uncertainty: float | None = get_float_data(
-                row, field_name=qn("coordinateUncertaintyInMeters")
-            )
-        except ValueError:
-            coordinates_uncertainty = None
+    new_observation = Observation(
+        gbif_id=raw.gbif_id,
+        occurrence_id=raw.occurrence_id,
+        species=species_for_raw(raw, hash_species),
+        location=point,
+        date=date,
+        data_import=current_data_import,
+        source_dataset=hash_datasets[raw.dataset_key],
+        individual_count=raw.individual_count,
+        locality=raw.locality,
+        municipality=raw.municipality,
+        basis_of_record=hash_basis_of_record[raw.basis_of_record],
+        identification_verification_status=identification_verification_status_str,
+        verified=hash_verification_status.get(
+            identification_verification_status_str, False
+        ),
+        recorded_by=raw.recorded_by,
+        coordinate_uncertainty_in_meters=raw.coordinate_uncertainty_in_meters,
+        references=raw.references,
+    )
+    new_observation.set_or_migrate_initial_data_import(
+        current_data_import=current_data_import
+    )
 
-        identification_verification_status_str = get_string_data(
-            row, field_name=qn("identificationVerificationStatus")
-        )[:255]
-
-        new_observation = Observation(
-            gbif_id=int(
-                get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/gbifID")
-            ),
-            occurrence_id=occurrence_id_str,
-            species=species_for_row(row, hash_species),
-            location=point,
-            date=date,
-            data_import=current_data_import,
-            source_dataset=hash_datasets[gbif_dataset_key],
-            individual_count=individual_count,
-            locality=get_string_data(row, field_name=qn("locality")),
-            municipality=get_string_data(row, field_name=qn("municipality")),
-            basis_of_record=hash_basis_of_record[
-                get_string_data(row, field_name=qn("basisOfRecord"))
-            ],
-            identification_verification_status=identification_verification_status_str,
-            verified=hash_verification_status.get(
-                identification_verification_status_str, False
-            ),
-            recorded_by=get_string_data(row, field_name=qn("recordedBy")),
-            coordinate_uncertainty_in_meters=coordinates_uncertainty,
-            references=get_string_data(row, field_name=qn("references")),
-        )
-        new_observation.set_or_migrate_initial_data_import(
-            current_data_import=current_data_import
-        )
-
-        # We'll use bulk_create() later, so we need to call set_stable_id() on each object
-        new_observation.set_stable_id()
-        return new_observation
-
-    raise SkippedObservationException()
+    # We'll use bulk_create() later, so we need to call set_stable_id() on each object
+    new_observation.set_stable_id()
+    return new_observation
 
 
 def send_successful_import_email():
@@ -236,6 +278,273 @@ def send_error_import_email():
     )
 
 
+def _log_with_time(stdout, message: str) -> None:
+    """Timestamped log line, suppressed if stdout is None (e.g. tests)."""
+    if stdout is not None:
+        stdout.write(f"{time.ctime()}: {message}")
+
+
+def _batch_insert_observations(
+    observations_to_insert: list[Observation],
+    stdout=None,
+) -> None:
+    _log_with_time(stdout, "Bulk creation")
+    inserted_observations = Observation.objects.bulk_create(observations_to_insert)
+    _log_with_time(stdout, "Migrating comments")
+
+    # Optimization: batch-fetch all potential replaced observations in ONE query
+    # instead of one query per inserted observation (N+1 problem)
+    stable_ids = [obs.stable_id for obs in inserted_observations]
+    inserted_obs_pks = {obs.pk for obs in inserted_observations}
+
+    existing_obs_by_stable_id = {}
+    for obs in Observation.objects.filter(stable_id__in=stable_ids).exclude(
+        pk__in=inserted_obs_pks
+    ):
+        existing_obs_by_stable_id[obs.stable_id] = obs
+
+    new_obs_ids = []
+    replaced_obs_pks = []
+    stable_id_to_new_obs = {}
+
+    for obs in inserted_observations:
+        if stdout is not None:
+            stdout.write("/", ending="")
+        replaced_obs = existing_obs_by_stable_id.get(obs.stable_id)
+        if replaced_obs is not None:
+            replaced_obs_pks.append(replaced_obs.pk)
+            stable_id_to_new_obs[obs.stable_id] = obs
+        else:
+            new_obs_ids.append(obs.id)
+
+    # Batch migrate comments in ONE update query (no need to load comments into memory)
+    from dashboard.models import ObservationComment
+
+    if replaced_obs_pks:
+        for old_obs in Observation.objects.filter(pk__in=replaced_obs_pks):
+            new_obs = stable_id_to_new_obs.get(old_obs.stable_id)
+            if new_obs:
+                ObservationComment.objects.filter(observation=old_obs).update(
+                    observation=new_obs
+                )
+
+    _log_with_time(stdout, "Creating unseen observations for new observations")
+    create_unseen_observations(Observation.objects.filter(id__in=new_obs_ids))
+
+
+def _import_all_observations(
+    raw_rows: Iterable[RawObservationRow],
+    data_import: DataImport,
+    hash_table_datasets: dict[str, Dataset],
+    hash_table_species: dict[int, Species],
+    hash_table_basis_of_record: dict[str, BasisOfRecord],
+    hash_table_verification_status: dict[str, bool],
+    stdout=None,
+) -> int:
+    """Stream rows into the DB in chunks of BULK_CREATE_CHUNK_SIZE.
+
+    Returns the number of skipped observations.
+    """
+    skipped_observations_counter = 0
+    observations_to_insert: list[Observation] = []
+
+    for index, raw_row in enumerate(raw_rows):
+        try:
+            obs = build_observation_from_raw(
+                raw_row,
+                data_import,
+                hash_datasets=hash_table_datasets,
+                hash_species=hash_table_species,
+                hash_basis_of_record=hash_table_basis_of_record,
+                hash_verification_status=hash_table_verification_status,
+            )
+            observations_to_insert.append(obs)
+            if stdout is not None:
+                stdout.write(".", ending="")
+        except KeyError:
+            raise CommandError(f"species not found in db for raw row: {raw_row}")
+        except SkippedObservationException:
+            skipped_observations_counter += 1
+            if stdout is not None:
+                stdout.write("x", ending="")
+
+        if index > 0 and index % BULK_CREATE_CHUNK_SIZE == 0:
+            _log_with_time(stdout, "Bulk size reached...")
+            _batch_insert_observations(observations_to_insert, stdout=stdout)
+            observations_to_insert = []
+
+    # Insert the last chunk
+    if observations_to_insert:
+        _batch_insert_observations(observations_to_insert, stdout=stdout)
+
+    return skipped_observations_counter
+
+
+def run_import(
+    raw_rows_factory: Callable[[], Iterable[RawObservationRow]],
+    *,
+    gbif_download_id: str | None = None,
+    gbif_predicate: dict | None = None,
+    stdout=None,
+) -> DataImport:
+    """Run the transactional observation-import pipeline.
+
+    ``raw_rows_factory`` is invoked twice: once for dataset / basis-of-record
+    discovery, once to build and insert observations. Each call must return
+    a fresh iterable. This preserves streaming for multi-million-row imports:
+    no row is held in memory across passes.
+
+    On exception inside the transaction, the transaction rolls back and
+    maintenance mode is left ON (callers that want it cleared must do so
+    themselves). On successful commit, maintenance mode is cleared and an
+    admin email is sent.
+    """
+    transaction_success: list[bool] = [False]
+
+    def _mark_success() -> None:
+        transaction_success[0] = True
+
+    _log_with_time(
+        stdout,
+        "Real import is starting. We'll use a transaction and put the website in maintenance mode",
+    )
+
+    set_maintenance_mode(True)
+    with transaction.atomic():
+        transaction.on_commit(_mark_success)
+
+        current_data_import = DataImport.objects.create(
+            start=timezone.now(), gbif_predicate=gbif_predicate
+        )
+        _log_with_time(
+            stdout, f"Created a new DataImport object: #{current_data_import.pk}"
+        )
+
+        # Pass 1: discover datasets + basis-of-record values
+        _log_with_time(
+            stdout, "3. Pre-importing all datasets and basis of record values"
+        )
+        _log_with_time(
+            stdout,
+            "3.1 Scanning rows to get the dataset keys and basis of record values",
+        )
+        datasets_referenced, bor_values_referenced = (
+            discover_datasets_and_basis_of_record(raw_rows_factory())
+        )
+
+        _log_with_time(stdout, "3.3 Creating/updating the Dataset objects")
+        hash_table_datasets: dict[str, Dataset] = {}
+        for dataset_key, dataset_name in datasets_referenced.items():
+            _log_with_time(stdout, f"Creating/updating dataset {dataset_key}")
+            dataset, _ = Dataset.objects.update_or_create(
+                gbif_dataset_key=dataset_key,
+                defaults={"name": dataset_name},
+            )
+            hash_table_datasets[dataset_key] = dataset
+
+        _log_with_time(stdout, "3.4 Creating/getting the BasisOfRecord objects")
+        hash_table_basis_of_record: dict[str, BasisOfRecord] = {}
+        for bor_value in bor_values_referenced:
+            bor, _ = BasisOfRecord.objects.get_or_create(name=bor_value)
+            hash_table_basis_of_record[bor_value] = bor
+
+        _log_with_time(stdout, "4. Creating a hash table of species")
+        hash_table_species: dict[int, Species] = {
+            species.gbif_taxon_key: species for species in Species.objects.all()
+        }
+
+        _log_with_time(stdout, "5. Building verification status hash")
+        hash_table_verification_status = load_verification_status_hash()
+
+        if gbif_download_id is not None:
+            current_data_import.set_gbif_download_id(gbif_download_id)
+
+        # Pass 2: build and insert observations
+        _log_with_time(stdout, "Importing all rows")
+        current_data_import.skipped_observations_counter = _import_all_observations(
+            raw_rows_factory(),
+            current_data_import,
+            hash_table_datasets=hash_table_datasets,
+            hash_table_species=hash_table_species,
+            hash_table_basis_of_record=hash_table_basis_of_record,
+            hash_table_verification_status=hash_table_verification_status,
+            stdout=stdout,
+        )
+
+        _log_with_time(stdout, "All observations imported")
+
+        _log_with_time(stdout, "Migrating unseen observations")
+        migrate_unseen_observations(current_data_import)
+
+        _log_with_time(
+            stdout, "now deleting observations linked to previous data imports..."
+        )
+        Observation.objects.exclude(data_import=current_data_import).delete()
+        _log_with_time(stdout, "Previous observations deleted")
+
+        _log_with_time(
+            stdout,
+            "We'll now create or refresh the materialized views. This can take a while.",
+        )
+        create_or_refresh_materialized_views(
+            zoom_levels=[settings.ZOOM_LEVEL_FOR_MIN_MAX_QUERY]
+        )
+
+        # Remove unused Dataset entries (and edit related alerts)
+        empty_datasets = (
+            Dataset.objects.annotate(obs_count=Count("observation"))
+            .filter(obs_count=0)
+            .prefetch_related("alert_set")
+        )
+        for dataset in empty_datasets:
+            _log_with_time(stdout, f"Deleting (no longer used) dataset {dataset}")
+            alerts_referencing_dataset = dataset.alert_set.all()  # Prefetched
+            if alerts_referencing_dataset:
+                for alert in alerts_referencing_dataset:
+                    _log_with_time(
+                        stdout,
+                        f"We'll first need to un-reference this dataset from alert #{alert}",
+                    )
+                    alert.datasets.remove(dataset)
+            dataset.delete()
+
+        # Remove unused BasisOfRecord entries (and edit related alerts)
+        empty_basis_of_records = (
+            BasisOfRecord.objects.annotate(obs_count=Count("observation"))
+            .filter(obs_count=0)
+            .prefetch_related("alert_set")
+        )
+        for bor in empty_basis_of_records:
+            _log_with_time(
+                stdout, f"Deleting (no longer used) basis of record {bor}"
+            )
+            alerts_referencing_bor = bor.alert_set.all()  # Prefetched
+            if alerts_referencing_bor:
+                for alert in alerts_referencing_bor:
+                    _log_with_time(
+                        stdout,
+                        f"We'll first need to un-reference this basis of record from alert #{alert}",
+                    )
+                    alert.basis_of_record_filters.remove(bor)
+            bor.delete()
+
+        _log_with_time(stdout, "Updating the DataImport object")
+        current_data_import.complete()
+        _log_with_time(stdout, "Committing the transaction")
+
+    _log_with_time(stdout, "Transaction committed")
+    _log_with_time(stdout, "Leaving maintenance mode.")
+    set_maintenance_mode(False)
+
+    _log_with_time(stdout, "Sending email report")
+    if transaction_success[0]:
+        send_successful_import_email()
+    else:
+        send_error_import_email()
+
+    return current_data_import
+
+
 class Command(BaseCommand):
     help = (
         "Import new observations and delete previous ones. "
@@ -244,110 +553,12 @@ class Command(BaseCommand):
         "The --source-dwca option can be used to provide an existing local file instead."
     )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.transaction_was_successful = False
-
-    def log_with_time(self, message: str):
-        self.stdout.write(f"{time.ctime()}: {message}")
-
-    def _import_all_observations_from_dwca(
-        self,
-        dwca: DwCAReader,
-        data_import: DataImport,
-        hash_table_datasets: dict,
-        hash_table_species: dict,
-        hash_table_basis_of_record: dict,
-        hash_table_verification_status: dict[str, bool],
-    ) -> int:
-        """:return the number of skipped observations"""
-        skipped_observations_counter = 0
-
-        observations_to_insert = []
-        for index, core_row in enumerate(dwca):
-            try:
-                obs = build_single_observation(
-                    core_row,
-                    data_import,
-                    hash_datasets=hash_table_datasets,
-                    hash_species=hash_table_species,
-                    hash_basis_of_record=hash_table_basis_of_record,
-                    hash_verification_status=hash_table_verification_status,
-                )
-                observations_to_insert.append(obs)
-                self.stdout.write(".", ending="")
-            except KeyError:
-                raise CommandError(f"species not found in db for row: {core_row}")
-            except SkippedObservationException:
-                skipped_observations_counter = skipped_observations_counter + 1
-                self.stdout.write("x", ending="")
-
-            if index > 0 and index % BULK_CREATE_CHUNK_SIZE == 0:
-                self.log_with_time("Bulk size reached...")
-                self.batch_insert_observations(observations_to_insert)
-                observations_to_insert = []
-
-        # Insert the last chunk
-        if observations_to_insert:
-            self.batch_insert_observations(observations_to_insert)
-
-        return skipped_observations_counter
-
-    def batch_insert_observations(self, observations_to_insert: list[Observation]):
-        self.log_with_time("Bulk creation")
-        inserted_observations = Observation.objects.bulk_create(observations_to_insert)
-        self.log_with_time("Migrating comments")
-
-        # Optimization: batch-fetch all potential replaced observations in ONE query
-        # instead of one query per inserted observation (N+1 problem)
-        stable_ids = [obs.stable_id for obs in inserted_observations]
-        inserted_obs_pks = {obs.pk for obs in inserted_observations}
-
-        # Find all existing observations with matching stable_ids (excluding newly inserted ones)
-        existing_obs_by_stable_id = {}
-        for obs in Observation.objects.filter(stable_id__in=stable_ids).exclude(
-            pk__in=inserted_obs_pks
-        ):
-            existing_obs_by_stable_id[obs.stable_id] = obs
-
-        # Build mapping from new observations to replaced observations
-        new_obs_ids = []
-        replaced_obs_pks = []
-        stable_id_to_new_obs = {}
-
-        for obs in inserted_observations:
-            self.stdout.write("/", ending="")
-            replaced_obs = existing_obs_by_stable_id.get(obs.stable_id)
-            if replaced_obs is not None:
-                replaced_obs_pks.append(replaced_obs.pk)
-                stable_id_to_new_obs[obs.stable_id] = obs
-            else:
-                new_obs_ids.append(obs.id)
-
-        # Batch migrate comments in ONE update query (no need to load comments into memory)
-        from dashboard.models import ObservationComment
-
-        if replaced_obs_pks:
-            # For each comment on a replaced observation, update it to point to the new one
-            for old_obs in Observation.objects.filter(pk__in=replaced_obs_pks):
-                new_obs = stable_id_to_new_obs.get(old_obs.stable_id)
-                if new_obs:
-                    ObservationComment.objects.filter(observation=old_obs).update(
-                        observation=new_obs
-                    )
-
-        self.log_with_time("Creating unseen observations for new observations")
-        create_unseen_observations(Observation.objects.filter(id__in=new_obs_ids))
-
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
             "--source-dwca",
             type=argparse.FileType("r"),
             help="Use an existing dwca file as source (otherwise a new GBIF download will be generated and downloaded)",
         )
-
-    def flag_transaction_as_successful(self):
-        self.transaction_was_successful = True
 
     def handle(self, *args, **options) -> None:
         start_time = time.time()
@@ -359,23 +570,27 @@ class Command(BaseCommand):
         if verbosity > 1:
             root_logger.setLevel(logging.DEBUG)
 
-        self.log_with_time("(Re)importing all observations")
+        _log_with_time(self.stdout, "(Re)importing all observations")
 
-        # 1. Data preparation / download
-        gbif_predicate = None
+        # 1. Resolve DwCA source (existing file or trigger a new GBIF download)
+        gbif_predicate: dict | None = None
+        tmp_source_path: str | None = None
         if options["source_dwca"]:
-            self.log_with_time("Using a user-provided DWCA file")
+            _log_with_time(self.stdout, "Using a user-provided DWCA file")
             source_data_path = options["source_dwca"].name
         else:
-            self.log_with_time(
-                "No DWCA file provided, we'll generate and get a new GBIF download"
+            _log_with_time(
+                self.stdout,
+                "No DWCA file provided, we'll generate and get a new GBIF download",
             )
-            self.log_with_time(
-                "Triggering a GBIF download and waiting for it - this can be long..."
+            _log_with_time(
+                self.stdout,
+                "Triggering a GBIF download and waiting for it - this can be long...",
             )
 
             tmp_file = tempfile.NamedTemporaryFile(delete=False)
             source_data_path = tmp_file.name
+            tmp_source_path = source_data_path
             tmp_file.close()
             # This might take several minutes...
             gbif_predicate = settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"][
@@ -388,190 +603,36 @@ class Command(BaseCommand):
                 password=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PASSWORD"],
                 output_path=source_data_path,
             )
-            self.log_with_time("Observations downloaded")
+            _log_with_time(self.stdout, "Observations downloaded")
 
-        self.log_with_time(
-            "We now have a (locally accessible) source dwca, real import is starting. We'll use a transaction and put the website in maintenance mode"
+        # 2. Extract gbif_download_id from DwCA metadata (only needs to read metadata)
+        with DwCAReader(source_data_path) as dwca:
+            gbif_download_id = extract_gbif_download_id_from_dwca(dwca)
+
+        # 3. Build a fresh-generator factory that lazily streams rows
+        def raw_rows_factory() -> Iterable[RawObservationRow]:
+            return (
+                dwca_row_to_raw(core_row)
+                for core_row in DwCAReader(source_data_path)
+            )
+
+        # 4. Run the transactional pipeline
+        run_import(
+            raw_rows_factory,
+            gbif_download_id=gbif_download_id,
+            gbif_predicate=gbif_predicate,
+            stdout=self.stdout,
         )
 
-        set_maintenance_mode(True)
-        with transaction.atomic():
-            transaction.on_commit(self.flag_transaction_as_successful)
-
-            # 2. Create the DataImport object
-            current_data_import = DataImport.objects.create(
-                start=timezone.now(), gbif_predicate=gbif_predicate
-            )
-            self.log_with_time(
-                f"Created a new DataImport object: #{current_data_import.pk}"
-            )
-
-            # 3. Pre-import all the datasets and basis of record values
-            self.log_with_time(
-                "3. Pre-importing all datasets and basis of record values"
-            )
-            # 3.1 Get all the dataset keys / names and basis of record values from the DwCA
-            datasets_referenced_in_dwca = dict()
-            basis_of_record_values_in_dwca: set[str] = set()
-            self.log_with_time(
-                "3.1 Reading the DwCA to get the dataset keys and basis of record values"
-            )
-            with DwCAReader(source_data_path) as dwca:
-                for core_row in dwca:
-                    gbif_dataset_key = get_string_data(
-                        core_row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
-                    )
-                    dataset_name = get_string_data(
-                        core_row, field_name=qn("datasetName")
-                    )
-                    datasets_referenced_in_dwca[gbif_dataset_key] = dataset_name
-
-                    basis_of_record_value = get_string_data(
-                        core_row, field_name=qn("basisOfRecord")
-                    )
-                    if basis_of_record_value:
-                        basis_of_record_values_in_dwca.add(basis_of_record_value)
-
-            # 3.2 Fix the empty names (see GBIF bug)
-            # self.log_with_time("3.2 Fixing empty dataset names")
-            # TODO: uncomment this after GBIF outage
-            # for dataset_key, dataset_name in datasets_referenced_in_dwca.items():
-            #     if dataset_name == "":
-            #         datasets_referenced_in_dwca[
-            #             dataset_key
-            #         ] = get_dataset_name_from_gbif_api(dataset_key)
-
-            # 3.3 Create/update the Dataset objects
-            self.log_with_time("3.3 Creating/updating the Dataset objects")
-            hash_table_datasets = (
-                dict()
-            )  # We also create a hash table, so the huge loop below does not need lookups
-            for dataset_key, dataset_name in datasets_referenced_in_dwca.items():
-                self.log_with_time(f"Creating/updating dataset {dataset_key}")
-                dataset, _ = Dataset.objects.update_or_create(
-                    gbif_dataset_key=dataset_key,
-                    defaults={"name": dataset_name},
-                )
-                hash_table_datasets[dataset_key] = dataset
-
-            # 3.4 Creating/getting the BasisOfRecord objects
-            self.log_with_time("3.4 Creating/getting the BasisOfRecord objects")
-            hash_table_basis_of_record: dict[str, BasisOfRecord] = dict()
-            for bor_value in basis_of_record_values_in_dwca:
-                bor, _ = BasisOfRecord.objects.get_or_create(name=bor_value)
-                hash_table_basis_of_record[bor_value] = bor
-
-            # 4. We also create a hash table of species, to avoid lookups in the huge loop below
-            self.log_with_time("4. Creating a hash table of species")
-            hash_table_species = dict()
-            for species in Species.objects.all():
-                hash_table_species[species.gbif_taxon_key] = species
-
-            # 5. Build verification status hash and import data from DwCA
-            self.log_with_time("5. Building verification status hash")
-            hash_table_verification_status = load_verification_status_hash()
-
-            with DwCAReader(source_data_path) as dwca:
-                current_data_import.set_gbif_download_id(
-                    extract_gbif_download_id_from_dwca(dwca)
-                )
-                self.log_with_time("Importing all rows")
-                current_data_import.skipped_observations_counter = (
-                    self._import_all_observations_from_dwca(
-                        dwca,
-                        current_data_import,
-                        hash_table_datasets,
-                        hash_table_species,
-                        hash_table_basis_of_record,
-                        hash_table_verification_status,
-                    )
-                )
-
-            self.log_with_time("All observations imported")
-
-            # Migrate the unseen objects, or delete them if they are not relevant anymore
-            self.log_with_time("Migrating unseen observations")
-            migrate_unseen_observations(current_data_import)
-
-            self.log_with_time(
-                "now deleting observations linked to previous data imports..."
-            )
-            # 6. Remove previous observations
-            Observation.objects.exclude(data_import=current_data_import).delete()
-            self.log_with_time("Previous observations deleted")
-
-            self.log_with_time(
-                "We'll now create or refresh the materialized views. This can take a while."
-            )
-
-            # 7. Create or refresh the materialized view (for the map)
-            create_or_refresh_materialized_views(
-                zoom_levels=[settings.ZOOM_LEVEL_FOR_MIN_MAX_QUERY]
-            )
-
-            # 8. Remove unused Dataset entries (and edit related alerts)
-            # Optimization: use annotation to find empty datasets in ONE query
-            empty_datasets = (
-                Dataset.objects.annotate(obs_count=Count("observation"))
-                .filter(obs_count=0)
-                .prefetch_related("alert_set")
-            )
-
-            for dataset in empty_datasets:
-                self.log_with_time(f"Deleting (no longer used) dataset {dataset}")
-
-                alerts_referencing_dataset = dataset.alert_set.all()  # Prefetched
-                if alerts_referencing_dataset:
-                    for alert in alerts_referencing_dataset:
-                        self.log_with_time(
-                            f"We'll first need to un-reference this dataset from alert #{alert}"
-                        )
-                        alert.datasets.remove(dataset)
-
-                dataset.delete()
-
-            # 8b. Remove unused BasisOfRecord entries (and edit related alerts)
-            empty_basis_of_records = (
-                BasisOfRecord.objects.annotate(obs_count=Count("observation"))
-                .filter(obs_count=0)
-                .prefetch_related("alert_set")
-            )
-
-            for bor in empty_basis_of_records:
-                self.log_with_time(f"Deleting (no longer used) basis of record {bor}")
-
-                alerts_referencing_bor = bor.alert_set.all()  # Prefetched
-                if alerts_referencing_bor:
-                    for alert in alerts_referencing_bor:
-                        self.log_with_time(
-                            f"We'll first need to un-reference this basis of record from alert #{alert}"
-                        )
-                        alert.basis_of_record_filters.remove(bor)
-
-                bor.delete()
-
-            # 9. Finalize the DataImport object
-            self.log_with_time("Updating the DataImport object")
-
-            current_data_import.complete()
-            if options["source_dwca"] is None:
-                self.log_with_time("Deleting the (temporary) source DWCA file")
-                os.unlink(source_data_path)
-            self.log_with_time("Committing the transaction")
-
-        self.log_with_time("Transaction committed")
-        self.log_with_time("Leaving maintenance mode.")
-        set_maintenance_mode(False)
-
-        self.log_with_time("Sending email report")
-        if self.transaction_was_successful:
-            send_successful_import_email()
-        else:
-            send_error_import_email()
+        # 5. Clean up the temporary DwCA (only if we downloaded it ourselves)
+        if tmp_source_path is not None:
+            _log_with_time(self.stdout, "Deleting the (temporary) source DWCA file")
+            os.unlink(tmp_source_path)
 
         elapsed_time = time.time() - start_time
         elapsed_minutes = int(elapsed_time // 60)
         elapsed_seconds = int(elapsed_time % 60)
-        self.log_with_time(
-            f"Import observations process successfully completed in {elapsed_minutes}m {elapsed_seconds}s"
+        _log_with_time(
+            self.stdout,
+            f"Import observations process successfully completed in {elapsed_minutes}m {elapsed_seconds}s",
         )
