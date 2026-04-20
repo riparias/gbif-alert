@@ -5,6 +5,7 @@ import logging
 import os
 import tempfile
 import time
+from dataclasses import dataclass
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
@@ -41,36 +42,117 @@ _VERIFICATION_STATUS_JSON = os.path.join(
 
 
 def load_verification_status_hash() -> dict[str, bool]:
-    """Load verification_status_classification.json into a dict mapping status string → verified bool."""
+    """Load verification_status_classification.json into a dict mapping status string -> verified bool."""
     with open(_VERIFICATION_STATUS_JSON, encoding="utf-8") as f:
         entries = json.load(f)
     return {entry["key"]: entry["verified"] for entry in entries}
 
 
-def species_for_row(row: CoreRow, hash_species) -> Species:
-    """Based first on taxonKey, with fallback to acceptedTaxonKey then speciesKey
+@dataclass(frozen=True)
+class RawObservationRow:
+    """Format-agnostic representation of a single observation row.
 
-    Raises keyerror if the corresponding species cannot be found
+    Produced by adapters (e.g. ``dwca_row_to_raw``) and consumed by the
+    import pipeline. Unparseable numeric fields are represented as ``None``
+    so the business logic (not the adapter) owns the skip-vs-default
+    decision.
     """
-    taxon_key = int(
-        get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/taxonKey")
-    )
 
-    accepted_taxon_key = int(
-        get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/acceptedTaxonKey")
-    )
+    gbif_id: int
+    occurrence_id: str
+    occurrence_status: str
+    year: int | None
+    month: int | None
+    day: int | None
+    decimal_longitude: float | None
+    decimal_latitude: float | None
+    dataset_key: str
+    dataset_name: str
+    taxon_key: int
+    accepted_taxon_key: int
+    species_key: int
+    basis_of_record: str
+    individual_count: int | None
+    coordinate_uncertainty_in_meters: float | None
+    identification_verification_status: str
+    locality: str
+    municipality: str
+    recorded_by: str
+    references: str
 
-    species_key = int(
-        get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/speciesKey")
-    )
 
+def _get_int_or_none(row: CoreRow, field_name: str) -> int | None:
     try:
-        return hash_species[taxon_key]
+        return int(get_string_data(row, field_name=field_name))
+    except ValueError:
+        return None
+
+
+def _get_float_or_none(row: CoreRow, field_name: str) -> float | None:
+    try:
+        return float(get_string_data(row, field_name=field_name))
+    except ValueError:
+        return None
+
+
+def dwca_row_to_raw(row: CoreRow) -> RawObservationRow:
+    """Convert a DwCA CoreRow into a typed RawObservationRow."""
+    return RawObservationRow(
+        gbif_id=int(
+            get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/gbifID")
+        ),
+        occurrence_id=get_string_data(row, field_name=qn("occurrenceID")),
+        occurrence_status=get_string_data(row, field_name=qn("occurrenceStatus")),
+        year=_get_int_or_none(row, qn("year")),
+        month=_get_int_or_none(row, qn("month")),
+        day=_get_int_or_none(row, qn("day")),
+        decimal_longitude=_get_float_or_none(row, qn("decimalLongitude")),
+        decimal_latitude=_get_float_or_none(row, qn("decimalLatitude")),
+        dataset_key=get_string_data(
+            row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
+        ),
+        dataset_name=get_string_data(row, field_name=qn("datasetName")),
+        taxon_key=int(
+            get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/taxonKey")
+        ),
+        accepted_taxon_key=int(
+            get_string_data(
+                row, field_name="http://rs.gbif.org/terms/1.0/acceptedTaxonKey"
+            )
+        ),
+        species_key=int(
+            get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/speciesKey")
+        ),
+        basis_of_record=get_string_data(row, field_name=qn("basisOfRecord")),
+        individual_count=_get_int_or_none(row, qn("individualCount")),
+        coordinate_uncertainty_in_meters=_get_float_or_none(
+            row, qn("coordinateUncertaintyInMeters")
+        ),
+        identification_verification_status=get_string_data(
+            row, field_name=qn("identificationVerificationStatus")
+        ),
+        locality=get_string_data(row, field_name=qn("locality")),
+        municipality=get_string_data(row, field_name=qn("municipality")),
+        recorded_by=get_string_data(row, field_name=qn("recordedBy")),
+        references=get_string_data(row, field_name=qn("references")),
+    )
+
+
+def species_for_raw(
+    raw: RawObservationRow, hash_species: dict[int, Species]
+) -> Species:
+    """Look up a Species from a RawObservationRow.
+
+    Tries taxon_key first, falls back to accepted_taxon_key, then species_key.
+    Raises KeyError if none match.
+    """
+    try:
+        return hash_species[raw.taxon_key]
     except KeyError:
         try:
-            return hash_species[accepted_taxon_key]
+            return hash_species[raw.accepted_taxon_key]
         except KeyError:
-            return hash_species[species_key]
+            return hash_species[raw.species_key]
 
 
 def extract_gbif_download_id_from_dwca(dwca: DwCAReader) -> str:
@@ -94,130 +176,71 @@ def get_string_data(row: CoreRow, field_name: str) -> str:
     return row.data[field_name].strip()
 
 
-def get_float_data(row: CoreRow, field_name: str) -> float:
-    """Extract float data from a row
-
-    :raise ValueError if the value can't be converted
-    """
-    return float(get_string_data(row, field_name))
-
-
-def get_int_data(row: CoreRow, field_name: str) -> int:
-    """Extract int data from a row
-
-    :raise ValueError if the value can't be converted
-    """
-    return int(get_string_data(row, field_name))
-
-
 class SkippedObservationException(Exception):
     pass
 
 
-def build_single_observation(
-    row: CoreRow,
+def build_observation_from_raw(
+    raw: RawObservationRow,
     current_data_import: DataImport,
     hash_datasets: dict[str, Dataset],
-    hash_species: dict[str, Species],
+    hash_species: dict[int, Species],
     hash_basis_of_record: dict[str, BasisOfRecord],
     hash_verification_status: dict[str, bool],
 ) -> Observation:
-    """Import a single observation into the database
+    """Build an Observation from a RawObservationRow.
 
-    :raise: Species.DoesNotExist if the species referenced in the row cannot be found in the database
+    Raises SkippedObservationException when the row is unusable (missing
+    year, missing coordinates, missing occurrence_id, or occurrence_status
+    other than "PRESENT"). Missing month/day default to 1.
 
-    :return True if successful, False if observation was skipped (=unusable OR is an absence)
+    Raises KeyError if the species referenced cannot be found.
     """
-    # For-filtering data extraction
-    year_str = get_string_data(row, field_name=qn("year"))
-
-    try:
-        point: Point | None = Point(
-            get_float_data(row, field_name=qn("decimalLongitude")),
-            get_float_data(row, field_name=qn("decimalLatitude")),
-            srid=4326,
-        )
-    except ValueError:
-        point = None
-
-    occurrence_id_str = get_string_data(row, field_name=qn("occurrenceID"))
-    occurrence_status_str = get_string_data(row, field_name=qn("occurrenceStatus"))
-
-    # Only import records with a year, coordinates, an occurrenceID which represent "presence" data
     if (
-        year_str != ""
-        and point
-        and occurrence_id_str != ""
-        and occurrence_status_str == "PRESENT"
+        raw.year is None
+        or raw.decimal_longitude is None
+        or raw.decimal_latitude is None
+        or raw.occurrence_id == ""
+        or raw.occurrence_status != "PRESENT"
     ):
-        # Some dates are incomplete, we're good as long as we have a year
-        year = int(year_str)
-        try:
-            month = get_int_data(row, field_name=qn("month"))
-        except ValueError:
-            month = 1
+        raise SkippedObservationException()
 
-        try:
-            day = get_int_data(row, field_name=qn("day"))
-        except ValueError:
-            day = 1
+    # Some dates are incomplete, we're good as long as we have a year
+    month = raw.month if raw.month is not None else 1
+    day = raw.day if raw.day is not None else 1
+    date = datetime.date(raw.year, month, day)
 
-        date = datetime.date(year, month, day)
-        gbif_dataset_key = get_string_data(
-            row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
-        )
+    point = Point(raw.decimal_longitude, raw.decimal_latitude, srid=4326)
 
-        try:
-            individual_count: int | None = get_int_data(
-                row, field_name=qn("individualCount")
-            )
-        except ValueError:
-            individual_count = None
+    identification_verification_status_str = raw.identification_verification_status[:255]
 
-        try:
-            coordinates_uncertainty: float | None = get_float_data(
-                row, field_name=qn("coordinateUncertaintyInMeters")
-            )
-        except ValueError:
-            coordinates_uncertainty = None
+    new_observation = Observation(
+        gbif_id=raw.gbif_id,
+        occurrence_id=raw.occurrence_id,
+        species=species_for_raw(raw, hash_species),
+        location=point,
+        date=date,
+        data_import=current_data_import,
+        source_dataset=hash_datasets[raw.dataset_key],
+        individual_count=raw.individual_count,
+        locality=raw.locality,
+        municipality=raw.municipality,
+        basis_of_record=hash_basis_of_record[raw.basis_of_record],
+        identification_verification_status=identification_verification_status_str,
+        verified=hash_verification_status.get(
+            identification_verification_status_str, False
+        ),
+        recorded_by=raw.recorded_by,
+        coordinate_uncertainty_in_meters=raw.coordinate_uncertainty_in_meters,
+        references=raw.references,
+    )
+    new_observation.set_or_migrate_initial_data_import(
+        current_data_import=current_data_import
+    )
 
-        identification_verification_status_str = get_string_data(
-            row, field_name=qn("identificationVerificationStatus")
-        )[:255]
-
-        new_observation = Observation(
-            gbif_id=int(
-                get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/gbifID")
-            ),
-            occurrence_id=occurrence_id_str,
-            species=species_for_row(row, hash_species),
-            location=point,
-            date=date,
-            data_import=current_data_import,
-            source_dataset=hash_datasets[gbif_dataset_key],
-            individual_count=individual_count,
-            locality=get_string_data(row, field_name=qn("locality")),
-            municipality=get_string_data(row, field_name=qn("municipality")),
-            basis_of_record=hash_basis_of_record[
-                get_string_data(row, field_name=qn("basisOfRecord"))
-            ],
-            identification_verification_status=identification_verification_status_str,
-            verified=hash_verification_status.get(
-                identification_verification_status_str, False
-            ),
-            recorded_by=get_string_data(row, field_name=qn("recordedBy")),
-            coordinate_uncertainty_in_meters=coordinates_uncertainty,
-            references=get_string_data(row, field_name=qn("references")),
-        )
-        new_observation.set_or_migrate_initial_data_import(
-            current_data_import=current_data_import
-        )
-
-        # We'll use bulk_create() later, so we need to call set_stable_id() on each object
-        new_observation.set_stable_id()
-        return new_observation
-
-    raise SkippedObservationException()
+    # We'll use bulk_create() later, so we need to call set_stable_id() on each object
+    new_observation.set_stable_id()
+    return new_observation
 
 
 def send_successful_import_email():
@@ -265,9 +288,10 @@ class Command(BaseCommand):
 
         observations_to_insert = []
         for index, core_row in enumerate(dwca):
+            raw_row = dwca_row_to_raw(core_row)
             try:
-                obs = build_single_observation(
-                    core_row,
+                obs = build_observation_from_raw(
+                    raw_row,
                     data_import,
                     hash_datasets=hash_table_datasets,
                     hash_species=hash_table_species,
