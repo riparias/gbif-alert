@@ -12,6 +12,7 @@ from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
 from dashboard.models import (
     Alert,
+    BasisOfRecord,
     DataImport,
     Dataset,
     Observation,
@@ -567,6 +568,50 @@ def test_dataset_cleanup_mechanism(test_data):
 
     assert alert.datasets.count() == 1
     assert alert.datasets.first().gbif_dataset_key == INATURALIST_KEY
+
+
+def test_basis_of_record_cleanup_mechanism(test_data):
+    """After import, BasisOfRecord objects with no associated observations
+    are deleted; alerts referencing those empty BoRs are un-referenced.
+
+    Mirror of test_dataset_cleanup_mechanism for the parallel BoR branch
+    in run_import.
+    """
+    # A BoR that's not used by any observation in test_data.
+    machine_observation = BasisOfRecord.objects.create(name="MACHINE_OBSERVATION")
+
+    # An alert that filters on this (about-to-be-unused) BoR.
+    alert = Alert.objects.create(
+        name="Machine-only alert", user=test_data["user"]
+    )
+    alert.basis_of_record_filters.add(machine_observation)
+
+    # Import one row using HUMAN_OBSERVATION. After import,
+    # MACHINE_OBSERVATION still has zero observations and should be
+    # cleaned up; the alert's filter set should be cleared.
+    run_import_with_rows(
+        [
+            make_raw_row(
+                gbif_id=1,
+                occurrence_id="bor-cleanup-new",
+                dataset_key=INATURALIST_KEY,
+                dataset_name="iNaturalist",
+                taxon_key=LIXUS_KEY,
+                accepted_taxon_key=LIXUS_KEY,
+                species_key=LIXUS_KEY,
+                basis_of_record="HUMAN_OBSERVATION",
+            ),
+        ]
+    )
+
+    alert.refresh_from_db()
+
+    with pytest.raises(BasisOfRecord.DoesNotExist):
+        machine_observation.refresh_from_db()
+
+    assert alert.basis_of_record_filters.count() == 0
+    # HUMAN_OBSERVATION is still around (the new row uses it)
+    assert BasisOfRecord.objects.filter(name="HUMAN_OBSERVATION").exists()
 
 
 def test_transaction(test_data):
