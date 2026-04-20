@@ -231,6 +231,40 @@ def test_observation_comments_migrated(test_data):
     assert comment.observation.stable_id == previous_stable_id
 
 
+def test_comment_on_unreplaced_observation_is_cascade_deleted(test_data):
+    """A comment on an observation that has NO replacement in the new
+    import is cascade-deleted along with its observation.
+
+    Documents current behavior, worth pinning before the perf refactor:
+    ObservationComment.observation is on_delete=CASCADE, and run_import
+    wipes old-import observations with a bulk ``exclude().delete()``.
+    The comment-migration code in _batch_insert_observations only re-
+    links comments for observations whose stable_id DOES match a new
+    row; comments on orphaned observations are silently lost.
+    """
+    # Attach a second comment to an observation that will NOT be
+    # replaced by this import (observation_not_replaced, reachable via
+    # observation_unseen_to_delete.observation - it's created in test_data
+    # but not exposed directly).
+    # test_data already puts one comment on observation_unseen_to_be_replaced,
+    # which WILL be replaced here.
+    orphaned_observation = test_data["observation_unseen_to_delete"].observation
+    ObservationComment.objects.create(
+        author=test_data["user"],
+        observation=orphaned_observation,
+        text="this comment should vanish",
+    )
+    assert ObservationComment.objects.count() == 2  # sanity
+
+    # Import only replaces observation_unseen_to_be_replaced.
+    run_import_with_rows([_row_replacing_unseen_observation()])
+
+    # The migrated comment survives on the replacement; the orphan is gone.
+    surviving_comments = list(ObservationComment.objects.all())
+    assert len(surviving_comments) == 1
+    assert surviving_comments[0].text == "This is a comment to migrate"
+
+
 def test_observation_unseen_migrated(test_data):
     """An ObservationUnseen is re-linked to the new observation when the
     old one is replaced; it stays unseen when the user's notification
