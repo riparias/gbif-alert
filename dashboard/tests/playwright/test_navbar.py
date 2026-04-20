@@ -25,26 +25,12 @@ from dashboard.models import (
     ObservationUnseen,
     Species,
 )
+from dashboard.tests.playwright.helpers import login
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _login(page: Page, base_url: str, username: str, password: str) -> None:
-    """Log in via the Vue sign-in page and wait until fully on "/"."""
-    page.goto(base_url + "/accounts/signin/")
-    page.wait_for_load_state("networkidle")
-    page.locator("#signin-username").fill(username)
-    page.locator("#signin-password").fill(password)
-    page.get_by_role("button", name="Sign in").click()
-    # Match by path only: IndexPage's useFilterSync may debounce-append
-    # "?status=all" to the URL for authenticated users.
-    page.wait_for_url(
-        lambda url: url == base_url + "/" or url.startswith(base_url + "/?"),
-        wait_until="networkidle",
-    )
 
 
 def _create_observation() -> Observation:
@@ -90,7 +76,7 @@ def test_navbar_authenticated_shows_my_alerts(page: Page, live_server):
     """Authenticated users see 'My alerts' in the menubar."""
     User = get_user_model()
     User.objects.create_user(username="testuser", password="testpass123")
-    _login(page, live_server.url, "testuser", "testpass123")
+    login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/")
     expect(page.get_by_role("menuitem", name="My alerts")).to_be_visible()
 
@@ -100,7 +86,7 @@ def test_navbar_regular_user_no_admin_panel(page: Page, live_server):
     """The admin panel link is absent from the user dropdown for regular users."""
     User = get_user_model()
     User.objects.create_user(username="testuser", password="testpass123")
-    _login(page, live_server.url, "testuser", "testpass123")
+    login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/")
 
     # Open the user dropdown to confirm the menu rendered without admin panel.
@@ -117,7 +103,7 @@ def test_navbar_superuser_sees_admin_panel(page: Page, live_server):
     User.objects.create_superuser(
         username="admin", password="adminpass123", email="admin@example.com"
     )
-    _login(page, live_server.url, "admin", "adminpass123")
+    login(page, live_server.url, "admin", "adminpass123")
     page.goto(live_server.url + "/")
 
     page.get_by_role("button", name="admin").click()
@@ -139,7 +125,7 @@ def test_navbar_red_dot_with_unseen_observations(page: Page, live_server):
     obs = _create_observation()
     ObservationUnseen.objects.create(observation=obs, user=user)
 
-    _login(page, live_server.url, "testuser", "testpass123")
+    login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/")
 
     # Red dot inside the "My alerts" menubar item.
@@ -158,7 +144,7 @@ def test_navbar_no_observations_dot_without_unseen_observations(page: Page, live
     """
     User = get_user_model()
     User.objects.create_user(username="testuser", password="testpass123")
-    _login(page, live_server.url, "testuser", "testpass123")
+    login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/")
 
     my_alerts_item = page.get_by_role("menuitem", name="My alerts")
@@ -170,7 +156,7 @@ def test_regular_user_cannot_access_admin_directly(page: Page, live_server):
     """A regular user who navigates directly to /admin is denied access."""
     User = get_user_model()
     User.objects.create_user(username="testuser", password="testpass123")
-    _login(page, live_server.url, "testuser", "testpass123")
+    login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/admin/")
     page.wait_for_load_state("networkidle")
 
@@ -188,7 +174,7 @@ def test_superuser_can_access_admin_directly(page: Page, live_server):
     User.objects.create_superuser(
         username="admin", password="adminpass123", email="admin@example.com"
     )
-    _login(page, live_server.url, "admin", "adminpass123")
+    login(page, live_server.url, "admin", "adminpass123")
     page.goto(live_server.url + "/admin/")
     page.wait_for_load_state("networkidle")
 

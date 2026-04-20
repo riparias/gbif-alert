@@ -11,6 +11,7 @@ from django.contrib.gis.geos import MultiPolygon, Polygon
 from playwright.sync_api import Page, expect
 
 from dashboard.models import Alert, Area, Species
+from dashboard.tests.playwright.helpers import login
 
 
 SAMPLE_DATA_DIR = Path(__file__).parent.parent / "various" / "sample_data"
@@ -18,21 +19,6 @@ POLYGON_GPKG = str(SAMPLE_DATA_DIR / "polygon_4326.gpkg")
 POINT_GPKG = str(SAMPLE_DATA_DIR / "point.gpkg")
 
 SIMPLE_POLYGON = MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)), srid=4326))
-
-
-def _login(page: Page, base_url: str, username: str, password: str) -> None:
-    """Log in via the Vue sign-in page and wait until fully on "/"."""
-    page.goto(base_url + "/accounts/signin/")
-    page.wait_for_load_state("networkidle")
-    page.locator("#signin-username").fill(username)
-    page.locator("#signin-password").fill(password)
-    page.get_by_role("button", name="Sign in").click()
-    # Match by path only: IndexPage's useFilterSync may debounce-append
-    # "?status=all" to the URL for authenticated users.
-    page.wait_for_url(
-        lambda url: url == base_url + "/" or url.startswith(base_url + "/?"),
-        wait_until="networkidle",
-    )
 
 
 def _make_area(user, name: str) -> Area:
@@ -51,7 +37,7 @@ def test_my_areas_page_shows_area_list(page: Page, live_server):
     user = User.objects.create_user(username="a1", password="pass", email="a1@t.com")
     _make_area(user, "My polygon area")
 
-    _login(page, live_server.url, "a1", "pass")
+    login(page, live_server.url, "a1", "pass")
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
 
@@ -66,7 +52,7 @@ def test_area_card_shows_tags(page: Page, live_server):
     area = _make_area(user, "Tagged area")
     area.tags.add("woodland", "protected")
 
-    _login(page, live_server.url, "t1", "pass")
+    login(page, live_server.url, "t1", "pass")
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
 
@@ -80,7 +66,7 @@ def test_my_areas_empty_state(page: Page, live_server):
     User = get_user_model()
     User.objects.create_user(username="a2", password="pass", email="a2@t.com")
 
-    _login(page, live_server.url, "a2", "pass")
+    login(page, live_server.url, "a2", "pass")
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
 
@@ -109,7 +95,7 @@ def test_delete_area_confirmed(page: Page, live_server):
     user = User.objects.create_user(username="a4", password="pass", email="a4@t.com")
     area = _make_area(user, "Area to delete")
 
-    _login(page, live_server.url, "a4", "pass")
+    login(page, live_server.url, "a4", "pass")
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
 
@@ -128,7 +114,7 @@ def test_delete_area_cancelled(page: Page, live_server):
     user = User.objects.create_user(username="a5", password="pass", email="a5@t.com")
     _make_area(user, "Area to keep")
 
-    _login(page, live_server.url, "a5", "pass")
+    login(page, live_server.url, "a5", "pass")
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
 
@@ -151,7 +137,7 @@ def test_delete_area_with_alert_shows_error(page: Page, live_server):
     alert.species.add(sp)
     alert.areas.add(area)
 
-    _login(page, live_server.url, "a8", "pass")
+    login(page, live_server.url, "a8", "pass")
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
 
@@ -179,7 +165,7 @@ def test_create_area_succeeds(page: Page, live_server):
     User = get_user_model()
     User.objects.create_user(username="a6", password="pass", email="a6@t.com")
 
-    _login(page, live_server.url, "a6", "pass")
+    login(page, live_server.url, "a6", "pass")
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
 
@@ -201,7 +187,7 @@ def test_create_area_invalid_file_shows_error(page: Page, live_server):
     User = get_user_model()
     User.objects.create_user(username="a7", password="pass", email="a7@t.com")
 
-    _login(page, live_server.url, "a7", "pass")
+    login(page, live_server.url, "a7", "pass")
     page.goto(live_server.url + "/my-custom-areas")
     page.wait_for_load_state("networkidle")
 
@@ -228,7 +214,7 @@ def test_editor_create_mode_loads(page: Page, live_server):
     User = get_user_model()
     User.objects.create_user(username="e1", password="pass", email="e1@t.com")
 
-    _login(page, live_server.url, "e1", "pass")
+    login(page, live_server.url, "e1", "pass")
     page.goto(live_server.url + "/my-custom-areas/new")
     page.wait_for_load_state("networkidle")
 
@@ -264,7 +250,7 @@ def test_editor_edit_mode_prefills_name(page: Page, live_server):
     user = User.objects.create_user(username="e2", password="pass", email="e2@t.com")
     area = _make_area(user, "Prefilled area")
 
-    _login(page, live_server.url, "e2", "pass")
+    login(page, live_server.url, "e2", "pass")
     page.goto(live_server.url + f"/my-custom-areas/{area.pk}/edit")
     page.wait_for_load_state("networkidle")
 
@@ -279,7 +265,7 @@ def test_editor_edit_mode_rename_and_save(page: Page, live_server):
     user = User.objects.create_user(username="e3", password="pass", email="e3@t.com")
     area = _make_area(user, "Old name")
 
-    _login(page, live_server.url, "e3", "pass")
+    login(page, live_server.url, "e3", "pass")
     page.goto(live_server.url + f"/my-custom-areas/{area.pk}/edit")
     page.wait_for_load_state("networkidle")
 
@@ -301,7 +287,7 @@ def test_editor_delete_area_button(page: Page, live_server):
     user = User.objects.create_user(username="e4", password="pass", email="e4@t.com")
     area = _make_area(user, "Area to delete from editor")
 
-    _login(page, live_server.url, "e4", "pass")
+    login(page, live_server.url, "e4", "pass")
     page.goto(live_server.url + f"/my-custom-areas/{area.pk}/edit")
     page.wait_for_load_state("networkidle")
 
@@ -321,7 +307,7 @@ def test_editor_cancel_returns_to_list(page: Page, live_server):
     user = User.objects.create_user(username="e5", password="pass", email="e5@t.com")
     area = _make_area(user, "Stay intact")
 
-    _login(page, live_server.url, "e5", "pass")
+    login(page, live_server.url, "e5", "pass")
     page.goto(live_server.url + f"/my-custom-areas/{area.pk}/edit")
     page.wait_for_load_state("networkidle")
 

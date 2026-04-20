@@ -10,6 +10,7 @@ from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
 from dashboard.models import Alert, Species
+from dashboard.tests.playwright.helpers import login
 
 
 # ---------------------------------------------------------------------------
@@ -27,31 +28,6 @@ def _make_alert(user, name: str, *species) -> Alert:
     return a
 
 
-def _login(page: Page, base_url: str, username: str, password: str) -> None:
-    """Log in via the Vue sign-in page and wait until fully on "/".
-
-    SignInPage does ``window.location.href = "/"`` on success (see
-    SignInPage.vue) - a hard redirect. We wait for the URL to actually
-    BE "/" rather than just for "a navigation to happen", because the
-    latter can race with subsequent page.goto() calls on slow CI
-    (observed: goto("/my-alerts") reported as "interrupted by another
-    navigation to /" because the login redirect hadn't fully committed
-    yet).
-    """
-    page.goto(base_url + "/accounts/signin/")
-    page.wait_for_load_state("networkidle")
-    page.locator("#signin-username").fill(username)
-    page.locator("#signin-password").fill(password)
-    page.get_by_role("button", name="Sign in").click()
-    # Match by path only: IndexPage's useFilterSync may debounce-append
-    # "?status=all" to the URL for authenticated users, so waiting for
-    # exactly base_url + "/" is non-deterministic.
-    page.wait_for_url(
-        lambda url: url == base_url + "/" or url.startswith(base_url + "/?"),
-        wait_until="networkidle",
-    )
-
-
 # ---------------------------------------------------------------------------
 # /my-alerts tests
 # ---------------------------------------------------------------------------
@@ -65,7 +41,7 @@ def test_my_alerts_page_shows_alert_list(page: Page, live_server):
     sp = _make_species("Procambarus fallax", 8879526)
     _make_alert(user, "My test alert", sp)
 
-    _login(page, live_server.url, "u1", "pass")
+    login(page, live_server.url, "u1", "pass")
     page.goto(live_server.url + "/my-alerts")
     page.wait_for_load_state("networkidle")
 
@@ -79,7 +55,7 @@ def test_my_alerts_empty_state(page: Page, live_server):
     User = get_user_model()
     User.objects.create_user(username="u2", password="pass", email="u2@t.com")
 
-    _login(page, live_server.url, "u2", "pass")
+    login(page, live_server.url, "u2", "pass")
     page.goto(live_server.url + "/my-alerts")
     page.wait_for_load_state("networkidle")
 
@@ -103,7 +79,7 @@ def test_my_alerts_navigate_to_create(page: Page, live_server):
     User = get_user_model()
     User.objects.create_user(username="u3", password="pass", email="u3@t.com")
 
-    _login(page, live_server.url, "u3", "pass")
+    login(page, live_server.url, "u3", "pass")
     page.goto(live_server.url + "/my-alerts")
     page.wait_for_load_state("networkidle")
     page.get_by_text("Create a new alert").first.click()
@@ -120,7 +96,7 @@ def test_my_alerts_delete_alert(page: Page, live_server):
     sp = _make_species("Orconectes virilis", 2227064)
     _make_alert(user, "Alert to delete", sp)
 
-    _login(page, live_server.url, "u4", "pass")
+    login(page, live_server.url, "u4", "pass")
     page.goto(live_server.url + "/my-alerts")
     page.wait_for_load_state("networkidle")
 
@@ -146,7 +122,7 @@ def test_create_alert_form_renders(page: Page, live_server):
     User.objects.create_user(username="u5", password="pass", email="u5@t.com")
     _make_species("Procambarus fallax", 8879526)
 
-    _login(page, live_server.url, "u5", "pass")
+    login(page, live_server.url, "u5", "pass")
     page.goto(live_server.url + "/new-alert")
     page.wait_for_load_state("networkidle")
 
@@ -162,7 +138,7 @@ def test_create_alert_succeeds(page: Page, live_server):
     user = User.objects.create_user(username="u6", password="pass", email="u6@t.com")
     _make_species("Procambarus fallax", 8879526)
 
-    _login(page, live_server.url, "u6", "pass")
+    login(page, live_server.url, "u6", "pass")
     page.goto(live_server.url + "/new-alert")
     page.wait_for_load_state("networkidle")
 
@@ -191,7 +167,7 @@ def test_create_alert_shows_error_when_no_species(page: Page, live_server):
     User = get_user_model()
     User.objects.create_user(username="u7", password="pass", email="u7@t.com")
 
-    _login(page, live_server.url, "u7", "pass")
+    login(page, live_server.url, "u7", "pass")
     page.goto(live_server.url + "/new-alert")
     page.wait_for_load_state("networkidle")
 
@@ -220,7 +196,7 @@ def test_edit_alert_form_pre_fills_existing_data(page: Page, live_server):
     sp = _make_species("Procambarus fallax", 8879526)
     alert = _make_alert(user, "Existing alert name", sp)
 
-    _login(page, live_server.url, "u8", "pass")
+    login(page, live_server.url, "u8", "pass")
     page.goto(live_server.url + f"/edit-alert/{alert.pk}")
     page.wait_for_load_state("networkidle")
 
@@ -236,7 +212,7 @@ def test_edit_alert_saves_changes(page: Page, live_server):
     sp = _make_species("Procambarus fallax", 8879526)
     alert = _make_alert(user, "Original name", sp)
 
-    _login(page, live_server.url, "u12", "pass")
+    login(page, live_server.url, "u12", "pass")
     page.goto(live_server.url + f"/edit-alert/{alert.pk}")
     page.wait_for_load_state("networkidle")
 
@@ -261,7 +237,7 @@ def test_my_alerts_delete_cancel_keeps_alert(page: Page, live_server):
     sp = _make_species("Procambarus fallax", 8879526)
     _make_alert(user, "Alert to keep", sp)
 
-    _login(page, live_server.url, "u13", "pass")
+    login(page, live_server.url, "u13", "pass")
     page.goto(live_server.url + "/my-alerts")
     page.wait_for_load_state("networkidle")
 
@@ -286,7 +262,7 @@ def test_alert_detail_page_renders(page: Page, live_server):
     sp = _make_species("Procambarus fallax", 8879526)
     alert = _make_alert(user, "My detail alert", sp)
 
-    _login(page, live_server.url, "u9", "pass")
+    login(page, live_server.url, "u9", "pass")
     page.goto(live_server.url + f"/alert/{alert.pk}")
     page.wait_for_load_state("networkidle")
 
@@ -302,7 +278,7 @@ def test_alert_detail_edit_button_navigates(page: Page, live_server):
     sp = _make_species("Procambarus fallax", 8879526)
     alert = _make_alert(user, "Editable alert", sp)
 
-    _login(page, live_server.url, "u10", "pass")
+    login(page, live_server.url, "u10", "pass")
     page.goto(live_server.url + f"/alert/{alert.pk}")
     page.wait_for_load_state("networkidle")
 
@@ -320,7 +296,7 @@ def test_alert_detail_delete_navigates_to_my_alerts(page: Page, live_server):
     sp = _make_species("Procambarus fallax", 8879526)
     alert = _make_alert(user, "Alert to delete", sp)
 
-    _login(page, live_server.url, "u11", "pass")
+    login(page, live_server.url, "u11", "pass")
     page.goto(live_server.url + f"/alert/{alert.pk}")
     page.wait_for_load_state("networkidle")
 
