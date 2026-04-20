@@ -21,14 +21,18 @@ SIMPLE_POLYGON = MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)), srid=432
 
 
 def _login(page: Page, base_url: str, username: str, password: str) -> None:
-    """Log in via the Vue sign-in page and wait until redirected to /."""
+    """Log in via the Vue sign-in page and wait until fully on "/"."""
     page.goto(base_url + "/accounts/signin/")
     page.wait_for_load_state("networkidle")
     page.locator("#signin-username").fill(username)
     page.locator("#signin-password").fill(password)
-    with page.expect_navigation():
-        page.get_by_role("button", name="Sign in").click()
-    page.wait_for_load_state("networkidle")
+    page.get_by_role("button", name="Sign in").click()
+    # Match by path only: IndexPage's useFilterSync may debounce-append
+    # "?status=all" to the URL for authenticated users.
+    page.wait_for_url(
+        lambda url: url == base_url + "/" or url.startswith(base_url + "/?"),
+        wait_until="networkidle",
+    )
 
 
 def _make_area(user, name: str) -> Area:

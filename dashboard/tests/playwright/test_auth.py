@@ -1,19 +1,25 @@
 """Playwright E2E tests for Phase 5 auth pages (sign-in, sign-up, password-change)."""
 
+import re
+
 import pytest
 from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
 
 def _login(page: Page, base_url: str, username: str, password: str) -> None:
-    """Log in via the Vue sign-in page and wait until redirected to /."""
+    """Log in via the Vue sign-in page and wait until fully on "/"."""
     page.goto(base_url + "/accounts/signin/")
     page.wait_for_load_state("networkidle")
     page.locator("#signin-username").fill(username)
     page.locator("#signin-password").fill(password)
-    with page.expect_navigation():
-        page.get_by_role("button", name="Sign in").click()
-    page.wait_for_load_state("networkidle")
+    page.get_by_role("button", name="Sign in").click()
+    # Match by path only: IndexPage's useFilterSync may debounce-append
+    # "?status=all" to the URL for authenticated users.
+    page.wait_for_url(
+        lambda url: url == base_url + "/" or url.startswith(base_url + "/?"),
+        wait_until="networkidle",
+    )
 
 
 @pytest.mark.django_db(transaction=True)
@@ -24,7 +30,11 @@ def test_signin_succeeds(page: Page, live_server):
 
     _login(page, live_server.url, "auth1", "pass1234")
 
-    expect(page).to_have_url(live_server.url + "/")
+    # Path should be "/"; a trailing "?status=all" may appear because of
+    # IndexPage's useFilterSync debounced URL sync.
+    expect(page).to_have_url(
+        re.compile(rf"^{re.escape(live_server.url)}/(\?.*)?$")
+    )
     expect(page.get_by_text("auth1")).to_be_visible()
 
 
