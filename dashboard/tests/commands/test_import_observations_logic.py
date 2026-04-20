@@ -421,6 +421,125 @@ def test_seen_status_new_to_unseen(test_data):
     ObservationUnseen.objects.get(observation=obs, user=test_data["user"])
 
 
+def test_chunked_import_detects_replacement_in_later_chunk(test_data, monkeypatch):
+    """With BULK_CREATE_CHUNK_SIZE overridden small, the import flushes
+    to the DB in multiple batches. Verify that:
+
+    - _batch_insert_observations is actually called more than once
+    - all rows are imported (nothing lost at chunk boundaries)
+    - replacement detection (stable_id lookup against pre-existing DB
+      rows) works for a row that lands in a later chunk
+    - the comment on the replaced observation ends up on the new row
+      inserted in the later chunk
+
+    Current chunking quirk (worth pinning as a test so a refactor doesn't
+    silently break it): the flush fires when ``index > 0 and index %
+    CHUNK_SIZE == 0``. With CHUNK_SIZE=3 and 7 rows (indices 0-6), the
+    first flush carries 4 items (0-3), the second carries 3 (4-6), and
+    no final flush runs because the list ends empty.
+    """
+    from dashboard.management.commands import import_observations as mod
+
+    monkeypatch.setattr(mod, "BULK_CREATE_CHUNK_SIZE", 3)
+
+    rows = [
+        # Chunk 1 (indices 0-3): four brand-new rows, no pre-existing match
+        make_raw_row(
+            gbif_id=100,
+            occurrence_id="chunk-new-0",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+        ),
+        make_raw_row(
+            gbif_id=101,
+            occurrence_id="chunk-new-1",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+        ),
+        make_raw_row(
+            gbif_id=102,
+            occurrence_id="chunk-new-2",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+        ),
+        make_raw_row(
+            gbif_id=103,
+            occurrence_id="chunk-new-3",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+        ),
+        # Chunk 2 (indices 4-6): replacement lives here (index 5)
+        make_raw_row(
+            gbif_id=104,
+            occurrence_id="chunk-new-4",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+        ),
+        # Matches observation_unseen_to_be_replaced's stable_id
+        _row_replacing_unseen_observation(gbif_id=105),
+        make_raw_row(
+            gbif_id=106,
+            occurrence_id="chunk-new-6",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+        ),
+    ]
+
+    with mock.patch.object(
+        mod,
+        "_batch_insert_observations",
+        wraps=mod._batch_insert_observations,
+    ) as batch_spy:
+        run_import_with_rows(rows)
+
+    # Chunking actually happened
+    assert batch_spy.call_count == 2, (
+        f"Expected 2 chunk flushes, got {batch_spy.call_count}"
+    )
+    # First call got indices 0-3 (4 items), second got 4-6 (3 items)
+    first_chunk_obs = batch_spy.call_args_list[0].args[0]
+    second_chunk_obs = batch_spy.call_args_list[1].args[0]
+    assert len(first_chunk_obs) == 4
+    assert len(second_chunk_obs) == 3
+
+    # All 7 rows made it to the DB
+    assert Observation.objects.count() == 7
+    di = DataImport.objects.latest("id")
+    assert di.skipped_observations_counter == 0
+    assert di.imported_observations_counter == 7
+
+    # Replacement was correctly detected in chunk 2: the comment that
+    # was on the pre-existing observation_unseen_to_be_replaced now
+    # points to the new row with the same stable_id.
+    comment = ObservationComment.objects.get()
+    assert (
+        comment.observation.occurrence_id
+        == "https://www.inaturalist.org/observations/33366292"
+    )
+    assert comment.observation.data_import == di
+    # And the replacement's initial_data_import was preserved from the
+    # original import (not reset to the current one).
+    assert comment.observation.initial_data_import == test_data["initial_di"]
+
+
 def test_dataset_cleanup_mechanism(test_data):
     """After import, Dataset objects with no associated observations are
     deleted; alerts referencing those empty datasets are un-referenced."""
