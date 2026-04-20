@@ -7,21 +7,7 @@ from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
 from dashboard.models import DataImport
-
-
-def _login(page: Page, base_url: str, username: str, password: str) -> None:
-    """Log in via the Vue sign-in page and wait until fully on "/"."""
-    page.goto(base_url + "/accounts/signin/")
-    page.wait_for_load_state("networkidle")
-    page.locator("#signin-username").fill(username)
-    page.locator("#signin-password").fill(password)
-    page.get_by_role("button", name="Sign in").click()
-    # Match by path only: IndexPage's useFilterSync may debounce-append
-    # "?status=all" to the URL for authenticated users.
-    page.wait_for_url(
-        lambda url: url == base_url + "/" or url.startswith(base_url + "/?"),
-        wait_until="networkidle",
-    )
+from dashboard.tests.playwright.helpers import login
 
 
 @pytest.mark.django_db(transaction=True)
@@ -64,7 +50,7 @@ def test_profile_page_loads(page: Page, live_server):
         first_name="Alice",
     )
 
-    _login(page, live_server.url, "profiletest", "pass1234")
+    login(page, live_server.url, "profiletest", "pass1234")
     page.goto(live_server.url + "/profile")
     page.wait_for_load_state("networkidle")
 
@@ -83,7 +69,7 @@ def test_profile_save_succeeds(page: Page, live_server):
         first_name="Bob",
     )
 
-    _login(page, live_server.url, "profilesave", "pass1234")
+    login(page, live_server.url, "profilesave", "pass1234")
     page.goto(live_server.url + "/profile")
     page.wait_for_load_state("networkidle")
 
@@ -101,7 +87,7 @@ def test_delete_account_confirmed(page: Page, live_server):
     User = get_user_model()
     User.objects.create_user(username="todel", password="pass1234", email="todel@t.com")
 
-    _login(page, live_server.url, "todel", "pass1234")
+    login(page, live_server.url, "todel", "pass1234")
     page.goto(live_server.url + "/profile")
     page.wait_for_load_state("networkidle")
 
@@ -119,7 +105,7 @@ def test_delete_account_cancelled(page: Page, live_server):
     User = get_user_model()
     User.objects.create_user(username="tokeep", password="pass1234", email="keep@t.com")
 
-    _login(page, live_server.url, "tokeep", "pass1234")
+    login(page, live_server.url, "tokeep", "pass1234")
     page.goto(live_server.url + "/profile")
     page.wait_for_load_state("networkidle")
 

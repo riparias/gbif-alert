@@ -6,20 +6,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
-
-def _login(page: Page, base_url: str, username: str, password: str) -> None:
-    """Log in via the Vue sign-in page and wait until fully on "/"."""
-    page.goto(base_url + "/accounts/signin/")
-    page.wait_for_load_state("networkidle")
-    page.locator("#signin-username").fill(username)
-    page.locator("#signin-password").fill(password)
-    page.get_by_role("button", name="Sign in").click()
-    # Match by path only: IndexPage's useFilterSync may debounce-append
-    # "?status=all" to the URL for authenticated users.
-    page.wait_for_url(
-        lambda url: url == base_url + "/" or url.startswith(base_url + "/?"),
-        wait_until="networkidle",
-    )
+from dashboard.tests.playwright.helpers import login
 
 
 @pytest.mark.django_db(transaction=True)
@@ -28,7 +15,7 @@ def test_signin_succeeds(page: Page, live_server):
     User = get_user_model()
     User.objects.create_user(username="auth1", password="pass1234", email="auth1@t.com")
 
-    _login(page, live_server.url, "auth1", "pass1234")
+    login(page, live_server.url, "auth1", "pass1234")
 
     # Path should be "/"; a trailing "?status=all" may appear because of
     # IndexPage's useFilterSync debounced URL sync.
@@ -98,7 +85,7 @@ def test_password_change_succeeds(page: Page, live_server):
     User = get_user_model()
     User.objects.create_user(username="auth5", password="OldPass123!", email="auth5@t.com")
 
-    _login(page, live_server.url, "auth5", "OldPass123!")
+    login(page, live_server.url, "auth5", "OldPass123!")
     page.goto(live_server.url + "/accounts/password-change/")
     page.wait_for_load_state("networkidle")
 
@@ -118,7 +105,7 @@ def test_password_change_wrong_old_password(page: Page, live_server):
     User = get_user_model()
     User.objects.create_user(username="auth6", password="Correct123!", email="auth6@t.com")
 
-    _login(page, live_server.url, "auth6", "Correct123!")
+    login(page, live_server.url, "auth6", "Correct123!")
     page.goto(live_server.url + "/accounts/password-change/")
     page.wait_for_load_state("networkidle")
 

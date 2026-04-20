@@ -34,6 +34,7 @@ from dashboard.models import (
     ObservationUnseen,
     Species,
 )
+from dashboard.tests.playwright.helpers import login
 
 
 # ---------------------------------------------------------------------------
@@ -69,21 +70,6 @@ def _make_observation(
         basis_of_record=basis,
         verified=verified,
         municipality=municipality,
-    )
-
-
-def _login(page: Page, base_url: str, username: str, password: str) -> None:
-    """Log in via the Vue sign-in page and wait until fully on "/"."""
-    page.goto(base_url + "/accounts/signin/")
-    page.wait_for_load_state("networkidle")
-    page.locator("#signin-username").fill(username)
-    page.locator("#signin-password").fill(password)
-    page.get_by_role("button", name="Sign in").click()
-    # Match by path only: IndexPage's useFilterSync may debounce-append
-    # "?status=all" to the URL for authenticated users.
-    page.wait_for_url(
-        lambda url: url == base_url + "/" or url.startswith(base_url + "/?"),
-        wait_until="networkidle",
     )
 
 
@@ -262,7 +248,7 @@ def test_seen_column_shown_for_authenticated_user(page: Page, live_server):
     obs = _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
     ObservationUnseen.objects.create(observation=obs, user=user)
 
-    _login(page, live_server.url, "testuser", "testpass123")
+    login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/?status=all")
     page.wait_for_load_state("networkidle")
     _switch_to_table_view(page)
@@ -366,7 +352,7 @@ def test_authenticated_user_sees_unseen_by_default(page: Page, live_server):
     ObservationUnseen.objects.create(observation=obs1, user=user)
     ObservationUnseen.objects.create(observation=obs2, user=user)
 
-    _login(page, live_server.url, "testuser", "testpass123")
+    login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/")
     page.wait_for_load_state("networkidle")
 
@@ -390,7 +376,7 @@ def test_smart_status_default_falls_back_to_all(page: Page, live_server):
     _make_observation(gbif_id=2, occurrence_id="2", species=sp, basis=basis)
     # No ObservationUnseen records - user has nothing unseen
 
-    _login(page, live_server.url, "testuser", "testpass123")
+    login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/")
     page.wait_for_load_state("networkidle")
 
@@ -452,7 +438,7 @@ def test_authenticated_user_with_unseen_sees_unseen_badge(page: Page, live_serve
     obs = _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
     ObservationUnseen.objects.create(observation=obs, user=user)
 
-    _login(page, live_server.url, "testuser", "testpass123")
+    login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/")
     page.wait_for_load_state("networkidle")
 
