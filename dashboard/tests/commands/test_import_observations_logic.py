@@ -1,8 +1,7 @@
 """Import-pipeline tests that drive run_import with in-memory rows.
 
 Tests here do NOT use a DwCA zip file. Real-DwCA tests live in
-test_import_observations.py (to be renamed to test_import_observations_dwca.py
-once all logic tests are migrated).
+test_import_observations_dwca.py.
 """
 
 import datetime

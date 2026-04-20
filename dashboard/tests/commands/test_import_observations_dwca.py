@@ -1,3 +1,13 @@
+"""Import tests that exercise the real DwCA zip format.
+
+Scope is deliberately narrow: this file covers DwCA parsing + metadata
+extraction, the GBIF HTTP flow, and one real-world end-to-end smoke test.
+Business-logic tests (skip rules, seen/unseen, comment/unseen migration,
+dataset cleanup, transaction rollback) live in
+test_import_observations_logic.py and are driven by in-memory
+RawObservationRow fixtures - they don't need the zip.
+"""
+
 from pathlib import Path
 
 import pytest
