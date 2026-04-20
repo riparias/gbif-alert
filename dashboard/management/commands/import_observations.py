@@ -5,6 +5,7 @@ import logging
 import os
 import tempfile
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from django.conf import settings
@@ -153,6 +154,24 @@ def species_for_raw(
             return hash_species[raw.accepted_taxon_key]
         except KeyError:
             return hash_species[raw.species_key]
+
+
+def discover_datasets_and_basis_of_record(
+    rows: Iterable[RawObservationRow],
+) -> tuple[dict[str, str], set[str]]:
+    """Walk a row stream once, collecting distinct dataset keys (with their
+    names) and distinct basis-of-record values.
+
+    Memory is O(distinct datasets + distinct BoR values), never O(rows),
+    so this is safe for multi-million-row imports.
+    """
+    datasets: dict[str, str] = {}
+    basis_of_record_values: set[str] = set()
+    for raw in rows:
+        datasets[raw.dataset_key] = raw.dataset_name
+        if raw.basis_of_record:
+            basis_of_record_values.add(raw.basis_of_record)
+    return datasets, basis_of_record_values
 
 
 def extract_gbif_download_id_from_dwca(dwca: DwCAReader) -> str:
@@ -435,26 +454,15 @@ class Command(BaseCommand):
                 "3. Pre-importing all datasets and basis of record values"
             )
             # 3.1 Get all the dataset keys / names and basis of record values from the DwCA
-            datasets_referenced_in_dwca = dict()
-            basis_of_record_values_in_dwca: set[str] = set()
             self.log_with_time(
                 "3.1 Reading the DwCA to get the dataset keys and basis of record values"
             )
             with DwCAReader(source_data_path) as dwca:
-                for core_row in dwca:
-                    gbif_dataset_key = get_string_data(
-                        core_row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
+                datasets_referenced_in_dwca, basis_of_record_values_in_dwca = (
+                    discover_datasets_and_basis_of_record(
+                        dwca_row_to_raw(core_row) for core_row in dwca
                     )
-                    dataset_name = get_string_data(
-                        core_row, field_name=qn("datasetName")
-                    )
-                    datasets_referenced_in_dwca[gbif_dataset_key] = dataset_name
-
-                    basis_of_record_value = get_string_data(
-                        core_row, field_name=qn("basisOfRecord")
-                    )
-                    if basis_of_record_value:
-                        basis_of_record_values_in_dwca.add(basis_of_record_value)
+                )
 
             # 3.2 Fix the empty names (see GBIF bug)
             # self.log_with_time("3.2 Fixing empty dataset names")
