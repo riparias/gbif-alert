@@ -6,7 +6,6 @@ from django.core.management import call_command
 
 from dashboard.models import (
     DataImport,
-    Dataset,
     Observation,
 )
 
@@ -263,24 +262,3 @@ def test_gbif_predicate_stored(test_data, gbif_download_config):
             }
 
 
-def test_dataset_cleanup_mechanism(test_data):
-    """At the end of the import process, datasets that have no longer any associated observations are deleted
-
-    Alerts referencing those empty datasets are updated appropriately
-    """
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
-
-    alert_referencing_unused_dataset = test_data["alert_referencing_unused_dataset"]
-    dataset_without_observations = test_data["dataset_without_observations"]
-
-    alert_referencing_unused_dataset.refresh_from_db()
-
-    with pytest.raises(Dataset.DoesNotExist):
-        dataset_without_observations.refresh_from_db()
-
-    assert alert_referencing_unused_dataset.datasets.count() == 1
-    assert (
-        alert_referencing_unused_dataset.datasets.first().gbif_dataset_key
-        == "50c9509d-22c7-4a22-a47d-8c48425ef4a7"
-    )

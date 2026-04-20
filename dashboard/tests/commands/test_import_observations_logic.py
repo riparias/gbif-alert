@@ -342,6 +342,35 @@ def test_seen_status_new_to_unseen(test_data):
     ObservationUnseen.objects.get(observation=obs, user=test_data["user"])
 
 
+def test_dataset_cleanup_mechanism(test_data):
+    """After import, Dataset objects with no associated observations are
+    deleted; alerts referencing those empty datasets are un-referenced."""
+    run_import_with_rows(
+        [
+            make_raw_row(
+                gbif_id=1,
+                occurrence_id="for-cleanup-test",
+                dataset_key=INATURALIST_KEY,
+                dataset_name="iNaturalist",
+                taxon_key=LIXUS_KEY,
+                accepted_taxon_key=LIXUS_KEY,
+                species_key=LIXUS_KEY,
+            ),
+        ]
+    )
+
+    alert = test_data["alert_referencing_unused_dataset"]
+    dataset_without_observations = test_data["dataset_without_observations"]
+
+    alert.refresh_from_db()
+
+    with pytest.raises(Dataset.DoesNotExist):
+        dataset_without_observations.refresh_from_db()
+
+    assert alert.datasets.count() == 1
+    assert alert.datasets.first().gbif_dataset_key == INATURALIST_KEY
+
+
 def test_transaction(test_data):
     """The whole import runs in one transaction: if it fails near the end,
     no DB changes are persisted."""
