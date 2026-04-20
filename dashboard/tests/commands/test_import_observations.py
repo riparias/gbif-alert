@@ -1,19 +1,13 @@
-import datetime
 from pathlib import Path
-from unittest import mock
-from zoneinfo import ZoneInfo
 
 import pytest
 import requests_mock as requests_mock_module
 from django.core.management import call_command
 
 from dashboard.models import (
-    Alert,
     DataImport,
     Dataset,
     Observation,
-    ObservationUnseen,
-    Species,
 )
 
 THIS_SCRIPT_PATH = Path(__file__).parent
@@ -189,139 +183,6 @@ def test_gbif_request_not_necessary(test_data) -> None:
             )
             request_history = m.request_history
             assert len(request_history) == 0
-
-
-def test_seen_status_unseen_to_seen_age(test_data) -> None:
-    """An old unseen observation is marked as seen after import (because it's older than the user delay)"""
-    # user delay is the default (365 days)
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
-
-    observations_after = Observation.objects.all()
-    obs = observations_after.get(
-        occurrence_id=test_data["observation_unseen_to_be_replaced"].occurrence_id
-    )
-
-    with pytest.raises(ObservationUnseen.DoesNotExist):
-        ObservationUnseen.objects.get(observation=obs, user=test_data["user"])
-
-
-def test_seen_status_unseen_to_unseen(test_data) -> None:
-    """Same situation than test_seen_status_unseen_to_seen_age() but we force the
-    user delay to be very long, so the unseen status is kept"""
-    user = test_data["user"]
-    user.notification_delay_days = 365 * 20
-    user.save()
-
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
-
-    observations_after = Observation.objects.all()
-    obs = observations_after.get(
-        occurrence_id=test_data["observation_unseen_to_be_replaced"].occurrence_id
-    )
-
-    ObservationUnseen.objects.get(observation=obs, user=user)
-
-
-def test_seen_status_seen_to_seen(test_data) -> None:
-    """An observation that was already seen remains seen after import"""
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
-
-    observations_after = Observation.objects.all()
-
-    # Case 1: An existing seen observation has been replaced, it should be marked as seen
-    case1 = observations_after.get(
-        occurrence_id=test_data["observation_seen_to_be_replaced"].occurrence_id
-    )
-    # Case 1 result: unseen not found => seen
-    with pytest.raises(ObservationUnseen.DoesNotExist):
-        ObservationUnseen.objects.get(observation=case1, user=test_data["user"])
-
-
-def test_seen_status_new_to_seen_because_no_alert(test_data) -> None:
-    """New observation in the system. It's more recent than the user delay, but is
-    not part of any alert, so it's marked as seen"""
-
-    # Make sure we don't have any lingering alert
-    Alert.objects.filter(user=test_data["user"]).delete()
-
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
-
-    observations_after = Observation.objects.all()
-    last_di = DataImport.objects.latest("id")
-
-    # Those are the observations that are totally new in the system
-    fresh_observations = observations_after.filter(initial_data_import=last_di)
-
-    recent_observation_not_in_alerts = fresh_observations.get(
-        stable_id="4aa3b8d81c4a62c89b73a4416af7d51968c29104"
-    )
-
-    with pytest.raises(ObservationUnseen.DoesNotExist):
-        ObservationUnseen.objects.get(
-            observation=recent_observation_not_in_alerts, user=test_data["user"]
-        )
-
-
-def test_seen_status_new_to_seen_because_old(test_data) -> None:
-    """New observation in the system. It's older than the user delay, so it's
-    marked as seen (even if it's part of an alert)"""
-
-    # We create an alert that matches the observation (all lixus bardanae observations)
-    alert = Alert.objects.create(
-        user=test_data["user"], email_notifications_frequency=Alert.DAILY_EMAILS
-    )
-    alert.species.add(test_data["lixus"])
-
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
-
-    observations_after = Observation.objects.all()
-    last_di = DataImport.objects.latest("id")
-
-    # Those are the observations that are totally new in the system
-    fresh_observations = observations_after.filter(initial_data_import=last_di)
-
-    old_lixus_bardanae = fresh_observations.get(occurrence_id="Ugent:UGMD:16879")
-
-    # It is considered seen because it's older than the user delay
-    with pytest.raises(ObservationUnseen.DoesNotExist):
-        ObservationUnseen.objects.get(
-            observation=old_lixus_bardanae, user=test_data["user"]
-        )
-
-
-def test_seen_status_new_to_unseen(test_data) -> None:
-    """New observation in the system. It's more recent than the user delay, and is
-    part of an alert, so it's marked as unseen"""
-
-    # Test code: identical to test_seen_status_new_to_seen_because_old() but we
-    # pretend we're running the import in 1950
-    alert = Alert.objects.create(
-        user=test_data["user"], email_notifications_frequency=Alert.DAILY_EMAILS
-    )
-    alert.species.add(test_data["lixus"])
-
-    mocked = datetime.datetime(1950, 7, 1, tzinfo=ZoneInfo("UTC"))
-    with mock.patch("django.utils.timezone.now", mock.Mock(return_value=mocked)):
-        with open(
-            SAMPLE_DATA_PATH / "gbif_download.zip", "rb"
-        ) as gbif_download_file:
-            call_command("import_observations", source_dwca=gbif_download_file)
-
-    observations_after = Observation.objects.all()
-    last_di = DataImport.objects.latest("id")
-
-    # Those are the observations that are totally new in the system
-    fresh_observations = observations_after.filter(initial_data_import=last_di)
-
-    old_lixus_bardanae = fresh_observations.get(occurrence_id="Ugent:UGMD:16879")
-
-    # It is considered not seen because it's only a few days old
-    ObservationUnseen.objects.get(observation=old_lixus_bardanae, user=test_data["user"])
 
 
 def test_gbif_request(test_data, gbif_download_config) -> None:

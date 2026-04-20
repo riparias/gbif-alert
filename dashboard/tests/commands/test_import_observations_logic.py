@@ -5,12 +5,14 @@ test_import_observations.py (to be renamed to test_import_observations_dwca.py
 once all logic tests are migrated).
 """
 
+import datetime
 from unittest import mock
 
 import pytest
 from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
 from dashboard.models import (
+    Alert,
     DataImport,
     Dataset,
     Observation,
@@ -113,6 +115,28 @@ def _row_replacing_unseen_observation(**overrides):
     return make_raw_row(**{**defaults, **overrides})
 
 
+def _row_replacing_seen_observation(**overrides):
+    """Build a row whose stable_id matches observation_seen_to_be_replaced
+    from test_data (inaturalist dataset, polydrusus, occurrence 42577016)."""
+    defaults = dict(
+        gbif_id=55,
+        occurrence_id="https://www.inaturalist.org/observations/42577016",
+        dataset_key=INATURALIST_KEY,
+        dataset_name="iNaturalist",
+        taxon_key=POLYDRUSUS_KEY,
+        accepted_taxon_key=POLYDRUSUS_KEY,
+        species_key=POLYDRUSUS_KEY,
+    )
+    return make_raw_row(**{**defaults, **overrides})
+
+
+def _recent_raw_row(**overrides):
+    """make_raw_row with a date 30 days before today - guaranteed within
+    any reasonable notification_delay_days (default 365)."""
+    d = datetime.date.today() - datetime.timedelta(days=30)
+    return make_raw_row(year=d.year, month=d.month, day=d.day, **overrides)
+
+
 def test_observation_comments_migrated(test_data):
     """A comment on a replaced observation is re-linked to the new
     observation (same stable_id, different pk)."""
@@ -194,6 +218,128 @@ def test_old_observations_deleted(test_data):
 
     ids_after = set(Observation.objects.values_list("id", flat=True))
     assert not (ids_before & ids_after)
+
+
+def test_seen_status_unseen_to_seen_age(test_data):
+    """An ObservationUnseen linked to an observation whose replacement is
+    older than the user's notification delay gets deleted (new obs treated
+    as seen). Default user delay is 365 days; default row date is years
+    old, so it qualifies as 'too old'."""
+    run_import_with_rows([_row_replacing_unseen_observation()])
+
+    obs = Observation.objects.get(
+        occurrence_id=test_data["observation_unseen_to_be_replaced"].occurrence_id
+    )
+    with pytest.raises(ObservationUnseen.DoesNotExist):
+        ObservationUnseen.objects.get(observation=obs, user=test_data["user"])
+
+
+def test_seen_status_unseen_to_unseen(test_data):
+    """Same replacement scenario but with a very long user delay: the new
+    observation still counts as recent, so the unseen is re-linked rather
+    than deleted."""
+    user = test_data["user"]
+    user.notification_delay_days = 365 * 20
+    user.save()
+
+    run_import_with_rows([_row_replacing_unseen_observation()])
+
+    obs = Observation.objects.get(
+        occurrence_id=test_data["observation_unseen_to_be_replaced"].occurrence_id
+    )
+    # Should not raise - the unseen was migrated to the replacement
+    ObservationUnseen.objects.get(observation=obs, user=user)
+
+
+def test_seen_status_seen_to_seen(test_data):
+    """An observation with no prior ObservationUnseen stays without one
+    after being replaced."""
+    run_import_with_rows([_row_replacing_seen_observation()])
+
+    obs = Observation.objects.get(
+        occurrence_id=test_data["observation_seen_to_be_replaced"].occurrence_id
+    )
+    with pytest.raises(ObservationUnseen.DoesNotExist):
+        ObservationUnseen.objects.get(observation=obs, user=test_data["user"])
+
+
+def test_seen_status_new_to_seen_because_no_alert(test_data):
+    """A brand-new, recent observation is NOT marked unseen when the user
+    has no alert matching it."""
+    Alert.objects.filter(user=test_data["user"]).delete()
+
+    run_import_with_rows(
+        [
+            _recent_raw_row(
+                gbif_id=77,
+                occurrence_id="totally-new",
+                dataset_key=INATURALIST_KEY,
+                dataset_name="iNaturalist",
+                taxon_key=LIXUS_KEY,
+                accepted_taxon_key=LIXUS_KEY,
+                species_key=LIXUS_KEY,
+            ),
+        ]
+    )
+
+    obs = Observation.objects.get(occurrence_id="totally-new")
+    with pytest.raises(ObservationUnseen.DoesNotExist):
+        ObservationUnseen.objects.get(observation=obs, user=test_data["user"])
+
+
+def test_seen_status_new_to_seen_because_old(test_data):
+    """A brand-new observation older than the user's delay is NOT marked
+    unseen, even when an alert matches its species."""
+    alert = Alert.objects.create(
+        user=test_data["user"], email_notifications_frequency=Alert.DAILY_EMAILS
+    )
+    alert.species.add(test_data["lixus"])
+
+    # Default date on make_raw_row is years old - older than 365-day delay
+    run_import_with_rows(
+        [
+            make_raw_row(
+                gbif_id=88,
+                occurrence_id="old-lixus",
+                dataset_key=INATURALIST_KEY,
+                dataset_name="iNaturalist",
+                taxon_key=LIXUS_KEY,
+                accepted_taxon_key=LIXUS_KEY,
+                species_key=LIXUS_KEY,
+            ),
+        ]
+    )
+
+    obs = Observation.objects.get(occurrence_id="old-lixus")
+    with pytest.raises(ObservationUnseen.DoesNotExist):
+        ObservationUnseen.objects.get(observation=obs, user=test_data["user"])
+
+
+def test_seen_status_new_to_unseen(test_data):
+    """A brand-new, recent observation that matches a user's alert by
+    species gets an ObservationUnseen record."""
+    alert = Alert.objects.create(
+        user=test_data["user"], email_notifications_frequency=Alert.DAILY_EMAILS
+    )
+    alert.species.add(test_data["lixus"])
+
+    run_import_with_rows(
+        [
+            _recent_raw_row(
+                gbif_id=99,
+                occurrence_id="recent-lixus",
+                dataset_key=INATURALIST_KEY,
+                dataset_name="iNaturalist",
+                taxon_key=LIXUS_KEY,
+                accepted_taxon_key=LIXUS_KEY,
+                species_key=LIXUS_KEY,
+            ),
+        ]
+    )
+
+    obs = Observation.objects.get(occurrence_id="recent-lixus")
+    # Should not raise - unseen was created
+    ObservationUnseen.objects.get(observation=obs, user=test_data["user"])
 
 
 def test_transaction(test_data):
