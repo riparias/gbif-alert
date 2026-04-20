@@ -5,10 +5,14 @@ test_import_observations.py (to be renamed to test_import_observations_dwca.py
 once all logic tests are migrated).
 """
 
+from unittest import mock
+
 import pytest
+from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
 from dashboard.models import (
     DataImport,
+    Dataset,
     Observation,
     ObservationComment,
     ObservationUnseen,
@@ -168,3 +172,71 @@ def test_unmigrated_ou_gets_deleted(test_data):
 
     with pytest.raises(ObservationUnseen.DoesNotExist):
         ObservationUnseen.objects.get(id=ou_id)
+
+
+def test_old_observations_deleted(test_data):
+    """Observations from previous imports are gone after a new import."""
+    ids_before = set(Observation.objects.values_list("id", flat=True))
+
+    run_import_with_rows(
+        [
+            make_raw_row(
+                gbif_id=999,
+                occurrence_id="any-new-occurrence",
+                dataset_key=INATURALIST_KEY,
+                dataset_name="iNaturalist",
+                taxon_key=LIXUS_KEY,
+                accepted_taxon_key=LIXUS_KEY,
+                species_key=LIXUS_KEY,
+            ),
+        ]
+    )
+
+    ids_after = set(Observation.objects.values_list("id", flat=True))
+    assert not (ids_before & ids_after)
+
+
+def test_transaction(test_data):
+    """The whole import runs in one transaction: if it fails near the end,
+    no DB changes are persisted."""
+    MODELS_TO_OBSERVE = [
+        Dataset,
+        Species,
+        ObservationComment,
+        DataImport,
+        Observation,
+    ]
+
+    models_before = {
+        Model._meta.label: list(Model.objects.all().order_by("pk"))
+        for Model in MODELS_TO_OBSERVE
+    }
+
+    # DataImport.complete() fires at the very end; force it to raise.
+    with mock.patch(
+        "dashboard.models.DataImport.complete", side_effect=Exception("Boom!")
+    ):
+        with pytest.raises(Exception):
+            run_import_with_rows(
+                [
+                    make_raw_row(
+                        gbif_id=1,
+                        occurrence_id="some-new-occurrence",
+                        dataset_key=INATURALIST_KEY,
+                        dataset_name="iNaturalist",
+                        taxon_key=LIXUS_KEY,
+                        accepted_taxon_key=LIXUS_KEY,
+                        species_key=LIXUS_KEY,
+                    ),
+                ]
+            )
+
+    # run_import leaves maintenance mode ON when it raises; reset so later
+    # tests aren't affected.
+    set_maintenance_mode(False)
+
+    for Model in MODELS_TO_OBSERVE:
+        assert (
+            list(Model.objects.all().order_by("pk"))
+            == models_before[Model._meta.label]
+        )

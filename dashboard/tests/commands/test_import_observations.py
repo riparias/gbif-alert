@@ -6,14 +6,12 @@ from zoneinfo import ZoneInfo
 import pytest
 import requests_mock as requests_mock_module
 from django.core.management import call_command
-from maintenance_mode.core import set_maintenance_mode  # type: ignore
 
 from dashboard.models import (
     Alert,
     DataImport,
     Dataset,
     Observation,
-    ObservationComment,
     ObservationUnseen,
     Species,
 )
@@ -22,42 +20,6 @@ THIS_SCRIPT_PATH = Path(__file__).parent
 SAMPLE_DATA_PATH = THIS_SCRIPT_PATH / "sample_data"
 
 pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.sequential]
-
-
-def test_transaction(test_data) -> None:
-    """The whole process happens in a transaction: no DB changes are made if an exception occurs near the end
-    of the process"""
-
-    MODELS_TO_OBSERVE = [
-        Dataset,
-        Species,
-        ObservationComment,
-        DataImport,
-        Observation,
-    ]
-
-    models_before = {}  # key: model name. value: list representation
-
-    for Model in MODELS_TO_OBSERVE:
-        models_before[Model._meta.label] = list(Model.objects.all().order_by("pk"))
-
-    # DataImport.complete() is called at the end of the import process. We make it fail so we can check what happens
-    with mock.patch(
-        "dashboard.models.DataImport.complete", side_effect=Exception("Boom!")
-    ):
-        with open(
-            SAMPLE_DATA_PATH / "gbif_download.zip", "rb"
-        ) as gbif_download_file:
-            with pytest.raises(Exception):
-                call_command("import_observations", source_dwca=gbif_download_file)
-
-    # We left the command due to an exception, so maintenance mode is still set
-    # We disable it, so it doesn't break the rest of the test suite
-    set_maintenance_mode(False)
-
-    # Note: cannot use assertQuerySetEqual because of lazy evaluation
-    for Model in MODELS_TO_OBSERVE:
-        assert list(Model.objects.all().order_by("pk")) == models_before[Model._meta.label]
 
 
 def test_ignore_unusable_observations(test_data) -> None:
@@ -194,20 +156,6 @@ def test_load_observations_values(test_data) -> None:
         == "Ghent university - Zoology Museum - Insect Collection"
     )
     # We stop there, the remaining rows in DwC-A miss either the location or the occurrence id
-
-
-def test_old_observations_deleted(test_data) -> None:
-    """The old observations (replaced and not replaced) are deleted from the database after a new import"""
-    id_observations_before = list(
-        Observation.objects.all().values_list("id", flat=True)
-    )
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
-
-    id_observations_after = list(
-        Observation.objects.all().values_list("id", flat=True)
-    )
-    assert not bool(set(id_observations_before) & set(id_observations_after))
 
 
 def test_dataimport_object_values(test_data):
