@@ -130,6 +130,86 @@ def _row_replacing_seen_observation(**overrides):
     return make_raw_row(**{**defaults, **overrides})
 
 
+def test_ignore_unusable_observations_logic(test_data):
+    """Each skip rule in build_observation_from_raw skips its row.
+
+    Complements the DwCA-backed test_ignore_unusable_observations (which
+    verifies the same logic end-to-end through the real DwCA format).
+    """
+    good_row = make_raw_row(
+        gbif_id=1,
+        occurrence_id="good-1",
+        dataset_key=INATURALIST_KEY,
+        dataset_name="iNaturalist",
+        taxon_key=LIXUS_KEY,
+        accepted_taxon_key=LIXUS_KEY,
+        species_key=LIXUS_KEY,
+    )
+    rows = [
+        good_row,
+        # missing longitude -> skip
+        make_raw_row(
+            gbif_id=2,
+            occurrence_id="no-lon",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+            decimal_longitude=None,
+        ),
+        # missing latitude -> skip
+        make_raw_row(
+            gbif_id=3,
+            occurrence_id="no-lat",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+            decimal_latitude=None,
+        ),
+        # missing year -> skip
+        make_raw_row(
+            gbif_id=4,
+            occurrence_id="no-year",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+            year=None,
+        ),
+        # empty occurrence_id -> skip
+        make_raw_row(
+            gbif_id=5,
+            occurrence_id="",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+        ),
+        # absence (occurrence_status != "PRESENT") -> skip
+        make_raw_row(
+            gbif_id=6,
+            occurrence_id="absent-1",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+            occurrence_status="ABSENT",
+        ),
+    ]
+
+    run_import_with_rows(rows)
+
+    assert Observation.objects.count() == 1
+    assert Observation.objects.get().occurrence_id == "good-1"
+    assert DataImport.objects.latest("id").skipped_observations_counter == 5
+
+
 def _recent_raw_row(**overrides):
     """make_raw_row with a date 30 days before today - guaranteed within
     any reasonable notification_delay_days (default 365)."""
