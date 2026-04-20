@@ -8,7 +8,10 @@ import datetime
 from unittest import mock
 
 import pytest
-from maintenance_mode.core import set_maintenance_mode  # type: ignore
+from maintenance_mode.core import (  # type: ignore
+    get_maintenance_mode,
+    set_maintenance_mode,
+)
 
 from dashboard.models import (
     Alert,
@@ -29,6 +32,56 @@ LIXUS_KEY = 1224034
 POLYDRUSUS_KEY = 7972617
 
 pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.sequential]
+
+
+def test_zero_rows_import(test_data):
+    """run_import handles an empty row stream gracefully: a DataImport is
+    still created (counters at 0), all previous observations are deleted,
+    and the transaction commits normally."""
+    obs_ids_before = set(Observation.objects.values_list("id", flat=True))
+    di_count_before = DataImport.objects.count()
+    assert obs_ids_before  # sanity: test_data creates some observations
+
+    run_import_with_rows([])
+
+    assert DataImport.objects.count() == di_count_before + 1
+    di = DataImport.objects.latest("id")
+    assert di.completed
+    assert di.end is not None
+    assert di.imported_observations_counter == 0
+    assert di.skipped_observations_counter == 0
+
+    # Previous-import observations are gone, same as any other import
+    obs_ids_after = set(Observation.objects.values_list("id", flat=True))
+    assert not (obs_ids_before & obs_ids_after)
+    assert obs_ids_after == set()
+
+
+def test_maintenance_mode_cleared_after_success(test_data):
+    """On a successful import run_import leaves maintenance mode OFF.
+
+    Companion to test_transaction which asserts the OTHER half of the
+    contract: maintenance mode stays ON when the transaction raises.
+    """
+    # Baseline: some prior test could have left it on. Clear it first.
+    set_maintenance_mode(False)
+    assert get_maintenance_mode() is False
+
+    run_import_with_rows(
+        [
+            make_raw_row(
+                gbif_id=1,
+                occurrence_id="mm-check",
+                dataset_key=INATURALIST_KEY,
+                dataset_name="iNaturalist",
+                taxon_key=LIXUS_KEY,
+                accepted_taxon_key=LIXUS_KEY,
+                species_key=LIXUS_KEY,
+            ),
+        ]
+    )
+
+    assert get_maintenance_mode() is False
 
 
 def test_run_import_with_rows_sanity():
