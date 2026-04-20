@@ -22,6 +22,7 @@ from dashboard.models import (
     ObservationComment,
     ObservationUnseen,
     Species,
+    User,
 )
 from dashboard.tests.commands.factories import make_raw_row, run_import_with_rows
 
@@ -96,6 +97,81 @@ def test_run_import_with_rows_sanity():
     obs = Observation.objects.get()
     assert obs.occurrence_id == "sanity-1"
     assert obs.gbif_id == "42"  # gbif_id is stored as a string on Observation
+
+
+def test_verified_classification(test_data):
+    """build_observation_from_raw maps identification_verification_status to
+    obs.verified via verification_status_classification.json:
+
+    - a key marked verified=true   -> obs.verified is True
+    - a key marked verified=false  -> obs.verified is False
+    - an unknown string            -> fallback to False (dict.get default)
+    - empty string                 -> also False (it's an explicit entry)
+
+    The raw status string itself is preserved on the observation (no
+    mapping / normalization), so alerting / filtering code downstream
+    can inspect it independently of the boolean.
+    """
+    rows = [
+        make_raw_row(
+            gbif_id=1,
+            occurrence_id="verified-yes",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+            identification_verification_status="validated",
+        ),
+        make_raw_row(
+            gbif_id=2,
+            occurrence_id="verified-no",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+            identification_verification_status="Unvalidated",
+        ),
+        make_raw_row(
+            gbif_id=3,
+            occurrence_id="verified-unknown",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+            identification_verification_status="not-a-known-classification",
+        ),
+        make_raw_row(
+            gbif_id=4,
+            occurrence_id="verified-empty",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            taxon_key=LIXUS_KEY,
+            accepted_taxon_key=LIXUS_KEY,
+            species_key=LIXUS_KEY,
+            # default is "" which is explicitly in the JSON as verified=false
+        ),
+    ]
+
+    run_import_with_rows(rows)
+
+    yes = Observation.objects.get(occurrence_id="verified-yes")
+    no = Observation.objects.get(occurrence_id="verified-no")
+    unknown = Observation.objects.get(occurrence_id="verified-unknown")
+    empty = Observation.objects.get(occurrence_id="verified-empty")
+
+    assert yes.verified is True
+    assert no.verified is False
+    assert unknown.verified is False
+    assert empty.verified is False
+
+    # Raw status string is preserved verbatim on the observation
+    assert yes.identification_verification_status == "validated"
+    assert no.identification_verification_status == "Unvalidated"
+    assert unknown.identification_verification_status == "not-a-known-classification"
+    assert empty.identification_verification_status == ""
 
 
 def test_initial_data_import_value_replaced(test_data):
@@ -337,6 +413,54 @@ def test_observation_unseen_migrated(test_data):
     ou.refresh_from_db()
     assert ou.observation_id != previous_observation_id
     assert ou.observation.stable_id == previous_stable_id
+
+
+def test_multi_user_unseen_migration_with_different_delays(test_data):
+    """migrate_unseen_observations decides delete-vs-migrate INDEPENDENTLY
+    per ObservationUnseen, using that unseen's own user.notification_delay_days.
+
+    Scenario: the same pre-existing observation is unseen by two extra
+    users, A (short delay, 30 days) and B (very long delay, 20 years).
+    A row in the new import replaces that observation with a date years
+    in the past (default make_raw_row date).
+
+    Expected: A's unseen is deleted (too old for 30-day delay); B's
+    unseen is migrated to the new observation (still "recent" for a
+    20-year delay).
+    """
+    user_strict = User.objects.create_user(
+        username="strict_user",
+        password="pw",
+        email="strict@example.com",
+        notification_delay_days=30,
+    )
+    user_lenient = User.objects.create_user(
+        username="lenient_user",
+        password="pw",
+        email="lenient@example.com",
+        notification_delay_days=365 * 20,
+    )
+    existing_obs = test_data["observation_unseen_to_be_replaced"]
+    strict_unseen = ObservationUnseen.objects.create(
+        user=user_strict, observation=existing_obs
+    )
+    lenient_unseen = ObservationUnseen.objects.create(
+        user=user_lenient, observation=existing_obs
+    )
+
+    # Default row date is years old: too old for 30 days, still recent
+    # for 20 years.
+    run_import_with_rows([_row_replacing_unseen_observation()])
+
+    new_obs = Observation.objects.get(occurrence_id=existing_obs.occurrence_id)
+
+    # Strict user: unseen deleted (replacement is older than delay)
+    with pytest.raises(ObservationUnseen.DoesNotExist):
+        ObservationUnseen.objects.get(id=strict_unseen.id)
+
+    # Lenient user: unseen migrated to the new observation
+    lenient_unseen.refresh_from_db()
+    assert lenient_unseen.observation == new_obs
 
 
 def test_unmigrated_ou_gets_deleted(test_data):
