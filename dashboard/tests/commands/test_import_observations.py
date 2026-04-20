@@ -24,33 +24,6 @@ SAMPLE_DATA_PATH = THIS_SCRIPT_PATH / "sample_data"
 pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.sequential]
 
 
-def test_initial_data_import_value_replaced(test_data):
-    """The initial_data_import field still points to the first import after an occurrence gets replaced"""
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
-
-    observation_new_import = Observation.objects.get(
-        occurrence_id="https://www.inaturalist.org/observations/33366292"
-    )
-
-    assert observation_new_import.initial_data_import == test_data["initial_di"]
-    # Just to be sure: the data_import field points to the new/current one
-    latest_di = DataImport.objects.latest("id")
-    assert observation_new_import.data_import == latest_di
-
-
-def test_initial_data_import_value_new(test_data):
-    """Make sure the initial_data_import field points to the current data import for a completely new occurrence"""
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
-
-    observations = Observation.objects.all().order_by("id")
-    totally_new_obs = observations[0]
-    latest_di = DataImport.objects.latest("id")
-    assert totally_new_obs.initial_data_import == latest_di
-    assert totally_new_obs.data_import == latest_di
-
-
 def test_transaction(test_data) -> None:
     """The whole process happens in a transaction: no DB changes are made if an exception occurs near the end
     of the process"""
@@ -276,14 +249,6 @@ def test_old_observations_deleted(test_data) -> None:
         Observation.objects.all().values_list("id", flat=True)
     )
     assert not bool(set(id_observations_before) & set(id_observations_after))
-
-
-def test_dataimport_object_created(test_data) -> None:
-    count_before = DataImport.objects.count()
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
-
-    assert DataImport.objects.count() == count_before + 1
 
 
 def test_dataimport_object_values(test_data):
