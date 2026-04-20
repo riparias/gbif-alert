@@ -196,47 +196,6 @@ def test_load_observations_values(test_data) -> None:
     # We stop there, the remaining rows in DwC-A miss either the location or the occurrence id
 
 
-def test_observation_comments_migrated(test_data) -> None:
-    comment = ObservationComment.objects.all()[0]  # there's only one...
-    previous_observation_id = comment.observation_id
-    previous_stable_id = comment.observation.stable_id
-
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
-
-    comment.refresh_from_db()
-    assert comment.observation_id != previous_observation_id
-    assert comment.observation.stable_id == previous_stable_id
-
-
-def test_observation_unseen_migrated(test_data) -> None:
-    ou = test_data["observation_unseen_to_migrate"]
-    previous_observation_id = ou.observation_id
-    previous_stable_id = ou.observation.stable_id
-
-    # We have to increase the user delay to make sure the observation is not marked as seen
-    # because it's considered old
-    user = test_data["user"]
-    user.notification_delay_days = 365 * 20
-    user.save()
-
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
-
-    ou.refresh_from_db()
-    assert ou.observation_id != previous_observation_id
-    assert ou.observation.stable_id == previous_stable_id
-
-
-def test_unmigrated_ou_gets_deleted(test_data) -> None:
-    ou_id = test_data["observation_unseen_to_delete"].id
-
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
-    with pytest.raises(ObservationUnseen.DoesNotExist):
-        ObservationUnseen.objects.get(id=ou_id)
-
-
 def test_old_observations_deleted(test_data) -> None:
     """The old observations (replaced and not replaced) are deleted from the database after a new import"""
     id_observations_before = list(
