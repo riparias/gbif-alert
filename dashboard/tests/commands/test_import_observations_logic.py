@@ -13,13 +13,6 @@ from dashboard.tests.commands.factories import make_raw_row, run_import_with_row
 pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.sequential]
 
 
-@pytest.fixture(autouse=True)
-def use_static_files_storage(settings):
-    settings.STATICFILES_STORAGE = (
-        "django.contrib.staticfiles.storage.StaticFilesStorage"
-    )
-
-
 def test_run_import_with_rows_sanity():
     """One valid row in -> one Observation out. Confirms factories.py is
     wired correctly to run_import and the pipeline handles a trivial case."""
