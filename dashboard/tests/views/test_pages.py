@@ -257,6 +257,7 @@ def test_superuser_flag(client, nav_users):
     assert not user_data["isSuperuser"]
 
 
+# Mirror of dashboard.templatetags.gbif-alert_extras.SPECIES_NAME_MODE_COOKIE - keep in sync.
 SPECIES_NAME_MODE_COOKIE = "gbif-alert.species-name-display"
 
 
