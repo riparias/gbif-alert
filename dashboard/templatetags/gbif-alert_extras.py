@@ -51,6 +51,11 @@ def dashboard_url_filtered_by_data_import(data_import: DataImport) -> str:
     )
 
 
+SPECIES_NAME_MODE_COOKIE = "gbif-alert.species-name-display"
+SPECIES_NAME_MODES = {"scientific", "vernacular"}
+SPECIES_NAME_MODE_DEFAULT = "scientific"
+
+
 @register.simple_tag(takes_context=True)
 def nav_config_json(context):
     """Serialize all data the Vue navbar needs into a JSON string.
@@ -59,6 +64,11 @@ def nav_config_json(context):
     the Vue app can read it synchronously at mount time without a fetch round-trip.
     """
     user = context.request.user
+
+    raw_mode = context.request.COOKIES.get(SPECIES_NAME_MODE_COOKIE, "")
+    species_name_mode = (
+        raw_mode if raw_mode in SPECIES_NAME_MODES else SPECIES_NAME_MODE_DEFAULT
+    )
 
     enabled_languages = [
         {"code": code, "nameLocal": get_language_info(code)["name_local"]}
@@ -115,6 +125,7 @@ def nav_config_json(context):
                 kwargs={"stable_id": "PLACEHOLDER"},
             ).replace("PLACEHOLDER", "{stable_id}"),
         },
+        "speciesNameMode": species_name_mode,
     }
 
     return mark_safe(json.dumps(conf))

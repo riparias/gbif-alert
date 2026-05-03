@@ -255,3 +255,33 @@ def test_superuser_flag(client, nav_users):
     client.login(username="testuser", password="testpass123")
     user_data = _get_nav_config(client.get("/"))["user"]
     assert not user_data["isSuperuser"]
+
+
+SPECIES_NAME_MODE_COOKIE = "gbif-alert.species-name-display"
+
+
+def test_species_name_mode_default_is_scientific(client):
+    """When the cookie is absent, the nav config exposes 'scientific'."""
+    config = _get_nav_config(client.get("/"))
+    assert config["speciesNameMode"] == "scientific"
+
+
+def test_species_name_mode_scientific_cookie(client):
+    """A cookie set to 'scientific' produces 'scientific' in the nav config."""
+    client.cookies[SPECIES_NAME_MODE_COOKIE] = "scientific"
+    config = _get_nav_config(client.get("/"))
+    assert config["speciesNameMode"] == "scientific"
+
+
+def test_species_name_mode_vernacular_cookie(client):
+    """A cookie set to 'vernacular' produces 'vernacular' in the nav config."""
+    client.cookies[SPECIES_NAME_MODE_COOKIE] = "vernacular"
+    config = _get_nav_config(client.get("/"))
+    assert config["speciesNameMode"] == "vernacular"
+
+
+def test_species_name_mode_unknown_cookie_falls_back_to_default(client):
+    """An unrecognised cookie value is treated as the default ('scientific')."""
+    client.cookies[SPECIES_NAME_MODE_COOKIE] = "tlhIngan"
+    config = _get_nav_config(client.get("/"))
+    assert config["speciesNameMode"] == "scientific"
