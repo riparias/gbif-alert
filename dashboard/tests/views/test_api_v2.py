@@ -576,10 +576,14 @@ def test_histogram_species_filter(client, histogram_data):
 def sorting_data():
     """Fixture for the observations sorting tests."""
     species_alpha = Species.objects.create(
-        name="Anas platyrhynchos", gbif_taxon_key=2498252
+        name="Anas platyrhynchos", gbif_taxon_key=2498252,
+        vernacular_name_en="Mallard",        # alphabetically AFTER Common pochard
+        vernacular_name_fr="Canard colvert",
     )
     species_zeta = Species.objects.create(
-        name="Zeta vulgaris", gbif_taxon_key=9999999
+        name="Zeta vulgaris", gbif_taxon_key=9999999,
+        vernacular_name_en="Common pochard",  # alphabetically BEFORE Mallard
+        vernacular_name_fr="Fuligule milouin",
     )
     dataset_alpha = Dataset.objects.create(
         name="Alpha dataset",
@@ -675,6 +679,68 @@ def test_order_by_scientific_name_descending(client, sorting_data):
     obs_zeta = sorting_data["obs_zeta"]
     ids = _sorting_ids(client, orderBy="scientificName", orderDir="desc")
     assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
+
+
+# --- vernacularName ---
+
+
+def test_order_by_vernacular_name_ascending_uses_active_locale(client, sorting_data):
+    """orderBy=vernacularName&orderDir=asc orders by the request's active vernacular locale.
+
+    species_zeta has English vernacular 'Common pochard' (sorts BEFORE);
+    species_alpha has 'Mallard' (sorts AFTER). Default test locale is 'en'.
+    """
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    ids = _sorting_ids(client, orderBy="vernacularName", orderDir="asc")
+    assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
+
+
+def test_order_by_vernacular_name_descending(client, sorting_data):
+    """orderBy=vernacularName&orderDir=desc reverses the asc order."""
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    ids = _sorting_ids(client, orderBy="vernacularName", orderDir="desc")
+    assert ids.index(obs_alpha.pk) < ids.index(obs_zeta.pk)
+
+
+def test_order_by_vernacular_name_falls_back_to_scientific_when_missing(client, sorting_data):
+    """When a species has no vernacular in the active locale, the scientific name
+    is used as the sort key instead.
+
+    We empty species_alpha's English vernacular ('Mallard') and re-fetch in 'en'.
+    Now species_alpha's effective sort key is 'Anas platyrhynchos' (its scientific
+    name, alphabetically before species_zeta's 'Common pochard'), so obs_alpha
+    sorts first.
+    """
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    species_alpha = sorting_data["species_alpha"]
+    species_alpha.vernacular_name_en = ""
+    species_alpha.save()
+
+    ids = _sorting_ids(client, orderBy="vernacularName", orderDir="asc")
+    assert ids.index(obs_alpha.pk) < ids.index(obs_zeta.pk)
+
+
+def test_order_by_vernacular_name_uses_french_when_lang_is_french(client, sorting_data):
+    """Switching the request locale to French changes the vernacular column used.
+
+    species_alpha FR vernacular: 'Canard colvert' (sorts BEFORE);
+    species_zeta  FR vernacular: 'Fuligule milouin' (sorts AFTER).
+    Opposite of the English order asserted in test_order_by_vernacular_name_ascending.
+    """
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+
+    response = client.get(
+        reverse("api-v2:observations_list"),
+        {"orderBy": "vernacularName", "orderDir": "asc"},
+        HTTP_ACCEPT_LANGUAGE="fr",
+    )
+    assert response.status_code == 200
+    ids = [item["id"] for item in response.json()["items"]]
+    assert ids.index(obs_alpha.pk) < ids.index(obs_zeta.pk)
 
 
 # --- datasetName ---

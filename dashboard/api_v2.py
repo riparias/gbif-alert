@@ -7,11 +7,11 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon as GEOSMultiPolygon
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers import serialize
-from django.db.models import Count
-from django.db.models.functions import TruncMonth
+from django.db.models import Count, F, Value
+from django.db.models.functions import Coalesce, NullIf, TruncMonth
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
-from django.utils.translation import gettext as _
+from django.utils.translation import get_language, gettext as _
 from ninja import File, Form, NinjaAPI, Query
 from ninja.files import UploadedFile
 from ninja.errors import HttpError
@@ -257,13 +257,27 @@ def data_imports_list(request: HttpRequest):
     ]
 
 
-_SORT_FIELD_MAP = {
+_SIMPLE_SORT_FIELD_MAP = {
     "date": "date",
     "scientificName": "species__name",
     "datasetName": "source_dataset__name",
     "municipality": "municipality",
     "verified": "verified",
 }
+
+# Set of orderBy values that need locale-aware annotation rather than a
+# direct column reference. Kept separate so the simple map stays minimal.
+_LOCALISED_SORT_FIELDS = {"vernacularName"}
+
+
+def _vernacular_sort_field(language_code: str) -> str:
+    """Return the species column to use as the vernacular sort key for a locale.
+
+    django-modeltranslation uses one column per language: vernacular_name_en,
+    vernacular_name_fr, vernacular_name_nl. The active language is determined
+    by Django's locale middleware (get_language()).
+    """
+    return f"species__vernacular_name_{language_code}"
 
 
 @api_v2.get("/observations/", response=ObservationsPageOut, summary="List observations")
@@ -274,7 +288,7 @@ def observations_list(
     pageSize: int = 20,
     orderBy: Annotated[
         str,
-        Field(description="Field to sort by. Accepted: date, scientificName, datasetName, municipality, verified. Unknown values fall back to date."),
+        Field(description="Field to sort by. Accepted: date, scientificName, vernacularName, datasetName, municipality, verified. Unknown values fall back to date."),
     ] = "date",
     orderDir: Annotated[
         str,
@@ -314,9 +328,27 @@ def observations_list(
     )
     total: int = aggregates["total"]
     offset = (page - 1) * pageSize
-    sort_field = _SORT_FIELD_MAP.get(orderBy, "date")
     sort_prefix = "" if orderDir == "asc" else "-"
-    obs_page = list(qs.order_by(f"{sort_prefix}{sort_field}", "-pk")[offset : offset + pageSize])
+
+    if orderBy in _LOCALISED_SORT_FIELDS:
+        # Build a sort key that falls back to the scientific name when the
+        # vernacular column is empty for the active locale.
+        lang = get_language() or "en"
+        field = _vernacular_sort_field(lang)
+        qs = qs.annotate(
+            _species_display=Coalesce(
+                NullIf(F(field), Value("")),
+                F("species__name"),
+            )
+        )
+        obs_page = list(
+            qs.order_by(f"{sort_prefix}_species_display", "-pk")[offset : offset + pageSize]
+        )
+    else:
+        sort_field = _SIMPLE_SORT_FIELD_MAP.get(orderBy, "date")
+        obs_page = list(
+            qs.order_by(f"{sort_prefix}{sort_field}", "-pk")[offset : offset + pageSize]
+        )
 
     # Fetch unseen status for the current page in one extra query
     if user is not None and obs_page:
