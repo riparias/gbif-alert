@@ -7,7 +7,17 @@ from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import MultiPolygon, Point, Polygon
 from django.urls import reverse
 
-from dashboard.models import Alert, Area, BasisOfRecord, DataImport, Dataset, Observation, ObservationComment, ObservationUnseen, Species
+from dashboard.models import (
+    Alert,
+    Area,
+    BasisOfRecord,
+    DataImport,
+    Dataset,
+    Observation,
+    ObservationComment,
+    ObservationUnseen,
+    Species,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -20,6 +30,7 @@ SAMPLE_DATA_DIR = Path(__file__).parent.parent / "various" / "sample_data"
 # ---------------------------------------------------------------------------
 # ApiV2FilterListsTests fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def filter_lists_data():
@@ -58,9 +69,7 @@ def filter_lists_data():
         completed=True,
     )
 
-    public_area = Area.objects.create(
-        name="Public area", mpoly=SIMPLE_POLYGON
-    )
+    public_area = Area.objects.create(name="Public area", mpoly=SIMPLE_POLYGON)
     user_area = Area.objects.create(
         name="User area", owner=area_owner, mpoly=SIMPLE_POLYGON
     )
@@ -79,6 +88,7 @@ def filter_lists_data():
 
 
 # --- /api/v2/species/ ---
+
 
 def test_species_list_status(client):
     response = client.get(reverse("api-v2:species_list"))
@@ -110,6 +120,7 @@ def test_species_list_empty_tags(client, filter_lists_data):
 
 # --- /api/v2/datasets/ ---
 
+
 def test_datasets_list_status(client):
     response = client.get(reverse("api-v2:datasets_list"))
     assert response.status_code == 200
@@ -126,6 +137,7 @@ def test_datasets_list_gbif_key_resolver(client, filter_lists_data):
 
 
 # --- /api/v2/areas/ ---
+
 
 def test_areas_list_anonymous_sees_only_public(client, filter_lists_data):
     public_area = filter_lists_data["public_area"]
@@ -170,6 +182,7 @@ def test_areas_list_is_user_specific_field(client, filter_lists_data):
 
 # --- /api/v2/basis-of-record/ ---
 
+
 def test_basis_of_record_list_status(client):
     response = client.get(reverse("api-v2:basis_of_record_list"))
     assert response.status_code == 200
@@ -183,6 +196,7 @@ def test_basis_of_record_list_fields(client, filter_lists_data):
 
 
 # --- /api/v2/data-imports/ ---
+
 
 def test_data_imports_list_status(client):
     response = client.get(reverse("api-v2:data_imports_list"))
@@ -208,6 +222,7 @@ def test_data_imports_list_start_timestamp(client, filter_lists_data):
 # ---------------------------------------------------------------------------
 # ApiV2ObservationsTests fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def observations_data():
@@ -272,6 +287,7 @@ def observations_data():
 
 # --- Basic HTTP / shape ---
 
+
 def test_observations_list_status(client):
     response = client.get(reverse("api-v2:observations_list"))
     assert response.status_code == 200
@@ -312,9 +328,7 @@ def test_species_count_respects_filters(client, observations_data):
 
 def test_counts_are_zero_when_no_results(client, observations_data):
     """speciesCount and datasetsCount must both be 0 when the filter matches nothing."""
-    response = client.get(
-        reverse("api-v2:observations_list"), {"speciesIds": 999999}
-    )
+    response = client.get(reverse("api-v2:observations_list"), {"speciesIds": 999999})
     data = response.json()
     assert data["count"] == 0
     assert data["speciesCount"] == 0
@@ -326,9 +340,21 @@ def test_observations_list_camel_case_keys(client, observations_data):
     obs = observations_data["obs"]
     response = client.get(reverse("api-v2:observations_list"))
     item = next(i for i in response.json()["items"] if i["id"] == obs.pk)
-    for key in ("id", "stableId", "gbifId", "lat", "lon", "scientificName",
-                "vernacularName", "datasetName", "date",
-                "municipality", "verified", "identificationVerificationStatus", "basisOfRecord"):
+    for key in (
+        "id",
+        "stableId",
+        "gbifId",
+        "lat",
+        "lon",
+        "scientificName",
+        "vernacularName",
+        "datasetName",
+        "date",
+        "municipality",
+        "verified",
+        "identificationVerificationStatus",
+        "basisOfRecord",
+    ):
         assert key in item, f"Missing key: {key}"
 
 
@@ -369,6 +395,7 @@ def test_observations_list_null_location(client, observations_data):
 
 # --- seenByCurrentUser ---
 
+
 def test_seen_by_current_user_is_null_for_anonymous(client, observations_data):
     """Anonymous users get null for seenByCurrentUser."""
     obs = observations_data["obs"]
@@ -386,7 +413,9 @@ def test_seen_by_current_user_true_when_no_unseen_record(client, observations_da
     assert item["seenByCurrentUser"]
 
 
-def test_seen_by_current_user_false_when_unseen_record_exists(client, observations_data):
+def test_seen_by_current_user_false_when_unseen_record_exists(
+    client, observations_data
+):
     """Observation with an ObservationUnseen entry is considered unseen."""
     obs = observations_data["obs"]
     user = observations_data["user"]
@@ -398,6 +427,7 @@ def test_seen_by_current_user_false_when_unseen_record_exists(client, observatio
 
 
 # --- Pagination ---
+
 
 def test_pagination_count_reflects_total(client, observations_data):
     """count must reflect total matching observations, not just current page."""
@@ -430,6 +460,7 @@ def test_pagination_second_page(client, observations_data):
 
 # --- Filter wiring ---
 
+
 def test_species_filter(client, observations_data):
     """speciesIds filter must restrict results to matching observations."""
     species = observations_data["species"]
@@ -446,12 +477,11 @@ def test_species_filter(client, observations_data):
 # ApiV2HistogramTests fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def histogram_data():
     """Fixture for the histogram endpoint tests."""
-    species = Species.objects.create(
-        name="Procambarus fallax", gbif_taxon_key=8879526
-    )
+    species = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
     other_species = Species.objects.create(
         name="Vespa velutina", gbif_taxon_key=1311477
     )
@@ -572,14 +602,21 @@ def test_histogram_species_filter(client, histogram_data):
 # ApiV2ObservationsSortingTests fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def sorting_data():
     """Fixture for the observations sorting tests."""
     species_alpha = Species.objects.create(
-        name="Anas platyrhynchos", gbif_taxon_key=2498252
+        name="Anas platyrhynchos",
+        gbif_taxon_key=2498252,
+        vernacular_name_en="Mallard",  # alphabetically AFTER Common pochard
+        vernacular_name_fr="Canard colvert",
     )
     species_zeta = Species.objects.create(
-        name="Zeta vulgaris", gbif_taxon_key=9999999
+        name="Zeta vulgaris",
+        gbif_taxon_key=9999999,
+        vernacular_name_en="Common pochard",  # alphabetically BEFORE Mallard
+        vernacular_name_fr="Fuligule milouin",
     )
     dataset_alpha = Dataset.objects.create(
         name="Alpha dataset",
@@ -635,6 +672,7 @@ def _sorting_ids(client, **params):
 
 # --- date ---
 
+
 def test_default_order_is_date_descending(client, sorting_data):
     """With no sort params the newest observation must come first."""
     obs_alpha = sorting_data["obs_alpha"]
@@ -661,6 +699,7 @@ def test_order_by_date_ascending(client, sorting_data):
 
 # --- scientificName ---
 
+
 def test_order_by_scientific_name_ascending(client, sorting_data):
     """orderBy=scientificName&orderDir=asc puts Anas before Zeta."""
     obs_alpha = sorting_data["obs_alpha"]
@@ -677,7 +716,72 @@ def test_order_by_scientific_name_descending(client, sorting_data):
     assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
 
 
+# --- vernacularName ---
+
+
+def test_order_by_vernacular_name_ascending_uses_active_locale(client, sorting_data):
+    """orderBy=vernacularName&orderDir=asc orders by the request's active vernacular locale.
+
+    species_zeta has English vernacular 'Common pochard' (sorts BEFORE);
+    species_alpha has 'Mallard' (sorts AFTER). Default test locale is 'en'.
+    """
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    ids = _sorting_ids(client, orderBy="vernacularName", orderDir="asc")
+    assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
+
+
+def test_order_by_vernacular_name_descending(client, sorting_data):
+    """orderBy=vernacularName&orderDir=desc reverses the asc order."""
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    ids = _sorting_ids(client, orderBy="vernacularName", orderDir="desc")
+    assert ids.index(obs_alpha.pk) < ids.index(obs_zeta.pk)
+
+
+def test_order_by_vernacular_name_falls_back_to_scientific_when_missing(
+    client, sorting_data
+):
+    """When a species has no vernacular in the active locale, the scientific name
+    is used as the sort key instead.
+
+    We empty species_alpha's English vernacular ('Mallard') and re-fetch in 'en'.
+    Now species_alpha's effective sort key is 'Anas platyrhynchos' (its scientific
+    name, alphabetically before species_zeta's 'Common pochard'), so obs_alpha
+    sorts first.
+    """
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+    species_alpha = sorting_data["species_alpha"]
+    species_alpha.vernacular_name_en = ""
+    species_alpha.save()
+
+    ids = _sorting_ids(client, orderBy="vernacularName", orderDir="asc")
+    assert ids.index(obs_alpha.pk) < ids.index(obs_zeta.pk)
+
+
+def test_order_by_vernacular_name_uses_french_when_lang_is_french(client, sorting_data):
+    """Switching the request locale to French changes the vernacular column used.
+
+    species_alpha FR vernacular: 'Canard colvert' (sorts BEFORE);
+    species_zeta  FR vernacular: 'Fuligule milouin' (sorts AFTER).
+    Opposite of the English order asserted in test_order_by_vernacular_name_ascending_uses_active_locale.
+    """
+    obs_alpha = sorting_data["obs_alpha"]
+    obs_zeta = sorting_data["obs_zeta"]
+
+    response = client.get(
+        reverse("api-v2:observations_list"),
+        {"orderBy": "vernacularName", "orderDir": "asc"},
+        HTTP_ACCEPT_LANGUAGE="fr",
+    )
+    assert response.status_code == 200
+    ids = [item["id"] for item in response.json()["items"]]
+    assert ids.index(obs_alpha.pk) < ids.index(obs_zeta.pk)
+
+
 # --- datasetName ---
+
 
 def test_order_by_dataset_name_ascending(client, sorting_data):
     """orderBy=datasetName&orderDir=asc puts Alpha dataset before Zeta dataset."""
@@ -696,6 +800,7 @@ def test_order_by_dataset_name_descending(client, sorting_data):
 
 
 # --- robustness ---
+
 
 def test_unknown_order_by_falls_back_to_date(client, sorting_data):
     """An unrecognised orderBy value must not crash - falls back to date sort."""
@@ -721,6 +826,7 @@ def test_unknown_order_dir_treated_as_desc(client, sorting_data):
 # ---------------------------------------------------------------------------
 # ApiV2ObservationDetailTests fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def observation_detail_data():
@@ -771,6 +877,7 @@ def observation_detail_data():
 
 # --- Basic HTTP / shape ---
 
+
 def test_detail_404_for_unknown_stable_id(client):
     response = client.get("/api/v2/observations/nonexistent/")
     assert response.status_code == 404
@@ -788,9 +895,19 @@ def test_detail_camel_case_keys(client, observation_detail_data):
     response = client.get(f"/api/v2/observations/{obs.stable_id}/")
     data = response.json()
     for key in (
-        "id", "stableId", "gbifId", "lat", "lon",
-        "scientificName", "vernacularName", "datasetName", "datasetGbifKey",
-        "date", "basisOfRecord", "seenByCurrentUser", "canBeMarkedUnseen",
+        "id",
+        "stableId",
+        "gbifId",
+        "lat",
+        "lon",
+        "scientificName",
+        "vernacularName",
+        "datasetName",
+        "datasetGbifKey",
+        "date",
+        "basisOfRecord",
+        "seenByCurrentUser",
+        "canBeMarkedUnseen",
         "comments",
     ):
         assert key in data, f"Missing key: {key}"
@@ -809,13 +926,16 @@ def test_detail_field_values(client, observation_detail_data):
 
 # --- canBeMarkedUnseen ---
 
+
 def test_can_be_marked_unseen_false_for_anonymous(client, observation_detail_data):
     obs = observation_detail_data["obs"]
     response = client.get(f"/api/v2/observations/{obs.stable_id}/")
     assert not response.json()["canBeMarkedUnseen"]
 
 
-def test_can_be_marked_unseen_false_when_no_matching_alert(client, observation_detail_data):
+def test_can_be_marked_unseen_false_when_no_matching_alert(
+    client, observation_detail_data
+):
     """Authenticated user with no alerts: cannot mark unseen."""
     obs = observation_detail_data["obs"]
     user = observation_detail_data["user"]
@@ -838,6 +958,7 @@ def test_can_be_marked_unseen_true_when_alert_matches(client, observation_detail
 
 
 # --- comments ---
+
 
 def test_comments_returned_with_author_username(client, observation_detail_data):
     """Comments list must include the author's username."""
@@ -863,12 +984,11 @@ def test_comments_empty_list_when_none(client, observation_detail_data):
 # ApiV2ObservationsMunicipalityVerifiedSortTests fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def municipality_sort_data():
     """Fixture for the municipality/verified sorting tests."""
-    species = Species.objects.create(
-        name="Testus sorticus", gbif_taxon_key=9990001
-    )
+    species = Species.objects.create(name="Testus sorticus", gbif_taxon_key=9990001)
     dataset = Dataset.objects.create(
         name="Sort test dataset",
         gbif_dataset_key="11111111-0000-0000-0000-000000000099",
@@ -955,6 +1075,7 @@ def test_order_by_verified_descending(client, municipality_sort_data):
 # ApiV2AlertTests fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def alert_data():
     """Fixture for the alerts CRUD endpoint tests."""
@@ -982,6 +1103,7 @@ def alert_data():
 
 
 # --- /api/v2/alerts/ (list) ---
+
 
 def test_alerts_list_requires_auth(client):
     response = client.get("/api/v2/alerts/")
@@ -1013,6 +1135,7 @@ def test_alerts_list_does_not_include_other_users_alerts(client, alert_data):
 
 # --- POST /api/v2/alerts/ (create) ---
 
+
 def test_alert_create_success(client, alert_data):
     user = alert_data["user"]
     sp1 = alert_data["sp1"]
@@ -1040,6 +1163,7 @@ def test_alert_create_requires_auth(client, alert_data):
 
 # --- GET /api/v2/alerts/{alert_id}/ (detail) ---
 
+
 def test_alert_detail_returns_correct_fields(client, alert_data):
     alert = alert_data["alert"]
     sp1 = alert_data["sp1"]
@@ -1061,6 +1185,7 @@ def test_alert_detail_wrong_user_returns_404(client, alert_data):
 
 
 # --- PUT /api/v2/alerts/{alert_id}/ (update) ---
+
 
 def test_alert_update_success(client, alert_data):
     alert = alert_data["alert"]
@@ -1090,6 +1215,7 @@ def test_alert_update_wrong_user_returns_404(client, alert_data):
 
 # --- DELETE /api/v2/alerts/{alert_id}/ ---
 
+
 def test_alert_delete_success(client, alert_data):
     user = alert_data["user"]
     sp1 = alert_data["sp1"]
@@ -1113,6 +1239,7 @@ def test_alert_delete_wrong_user_returns_404(client, alert_data):
 
 # --- GET /api/v2/alerts/{alert_id}/as-filters/ ---
 
+
 def test_alert_as_filters_returns_dashboard_filter_shape(client, alert_data):
     alert = alert_data["alert"]
     sp1 = alert_data["sp1"]
@@ -1128,6 +1255,7 @@ def test_alert_as_filters_returns_dashboard_filter_shape(client, alert_data):
 
 # --- GET /api/v2/alerts/suggest-name/ ---
 
+
 def test_suggest_name_returns_first_available(client, alert_data):
     # "My alert #1" is taken; next should be "My alert #2"
     client.login(username="alertuser", password="12345")
@@ -1137,6 +1265,7 @@ def test_suggest_name_returns_first_available(client, alert_data):
 
 
 # --- GET /api/v2/alerts/notification-frequencies/ ---
+
 
 def test_notification_frequencies_list(client):
     response = client.get("/api/v2/alerts/notification-frequencies/")
@@ -1165,12 +1294,14 @@ def test_alert_create_approaching_mode_without_area_returns_422(client, alert_da
     """Creating an alert with areaFilterMode='approaching' but no areaIds returns 422."""
     sp1 = alert_data["sp1"]
     client.login(username="alertuser", password="12345")
-    payload = json.dumps({
-        "name": "Approaching alert",
-        "speciesIds": [sp1.pk],
-        "areaFilterMode": "approaching",
-        "areaIds": [],
-    })
+    payload = json.dumps(
+        {
+            "name": "Approaching alert",
+            "speciesIds": [sp1.pk],
+            "areaFilterMode": "approaching",
+            "areaIds": [],
+        }
+    )
     response = client.post("/api/v2/alerts/", payload, content_type="application/json")
     assert response.status_code == 422
     assert "area_filter_mode" in response.json()["errors"]
@@ -1179,6 +1310,7 @@ def test_alert_create_approaching_mode_without_area_returns_422(client, alert_da
 # ---------------------------------------------------------------------------
 # ApiV2AreaEndpointsTests fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def area_endpoints_data():
@@ -1204,6 +1336,7 @@ def area_endpoints_data():
 
 
 # --- GET /api/v2/areas/{id}/geojson/ ---
+
 
 def test_geojson_returns_200_for_owner(client, area_endpoints_data):
     area = area_endpoints_data["area"]
@@ -1243,6 +1376,7 @@ def test_geojson_returns_404_for_nonexistent(client, area_endpoints_data):
 
 
 # --- POST /api/v2/areas/ ---
+
 
 def test_create_area_returns_201(client, area_endpoints_data):
     client.login(username="owner", password="pass")
@@ -1306,6 +1440,7 @@ def test_create_area_requires_authentication(client):
 
 # --- DELETE /api/v2/areas/{id}/ ---
 
+
 def test_delete_area_returns_204(client, area_endpoints_data):
     owner = area_endpoints_data["owner"]
     area = Area.objects.create(name="To delete", owner=owner, mpoly=SIMPLE_POLYGON)
@@ -1365,6 +1500,7 @@ def test_delete_area_requires_authentication(client, area_endpoints_data):
 # ApiV2AuthTests fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def auth_data():
     """Fixture for the auth endpoint tests."""
@@ -1378,6 +1514,7 @@ def auth_data():
 
 
 # --- signin ---
+
 
 def test_signin_success(client, auth_data):
     resp = client.post(
@@ -1409,6 +1546,7 @@ def test_signin_nonexistent_user(client):
 
 
 # --- signup ---
+
 
 def test_signup_success(client):
     User = get_user_model()
@@ -1461,6 +1599,7 @@ def test_signup_password_mismatch(client):
 
 
 # --- password-change ---
+
 
 def test_password_change_success(client, auth_data):
     user = auth_data["user"]
@@ -1524,6 +1663,7 @@ def test_password_change_mismatch(client, auth_data):
 
 # --- news/mark-visited ---
 
+
 def test_news_mark_visited_authenticated(client, auth_data):
     user = auth_data["user"]
     client.force_login(user)
@@ -1537,6 +1677,7 @@ def test_news_mark_visited_anonymous(client):
 
 
 # --- profile ---
+
 
 def test_profile_get(client, auth_data):
     user = auth_data["user"]
@@ -1635,6 +1776,7 @@ def test_profile_put_invalid_delay_unit(client, auth_data):
 
 
 # --- account delete ---
+
 
 def test_delete_account_success(client):
     User = get_user_model()

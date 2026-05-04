@@ -3,16 +3,27 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useFiltersStore } from "../stores/filters";
 import { useFilterOptionsStore } from "../stores/filterOptions";
+import SpeciesName from "./SpeciesName.vue";
 
 const { t } = useI18n();
 const filtersStore = useFiltersStore();
 const optionsStore = useFilterOptionsStore();
 
-interface Chip {
+interface BaseChip {
     key: string;
-    label: string;
     clear: () => void;
 }
+interface TextChip extends BaseChip {
+    kind: "text";
+    label: string;
+}
+interface SpeciesChip extends BaseChip {
+    kind: "species";
+    scientificName: string;
+    vernacularName: string;
+    fallbackLabel: string;  // for the "Species #42" case when the option is unknown
+}
+type Chip = TextChip | SpeciesChip;
 
 const chips = computed<Chip[]>(() => {
     const result: Chip[] = [];
@@ -21,8 +32,11 @@ const chips = computed<Chip[]>(() => {
     for (const id of filtersStore.speciesIds) {
         const sp = optionsStore.species.find((s) => s.id === id);
         result.push({
+            kind: "species",
             key: `species-${id}`,
-            label: sp ? sp.scientificName : `Species #${id}`,
+            scientificName: sp ? sp.scientificName : "",
+            vernacularName: sp ? sp.vernacularName : "",
+            fallbackLabel: `Species #${id}`,
             clear: () => {
                 filtersStore.speciesIds = filtersStore.speciesIds.filter((i) => i !== id);
             },
@@ -33,6 +47,7 @@ const chips = computed<Chip[]>(() => {
     for (const id of filtersStore.datasetsIds) {
         const ds = optionsStore.datasets.find((d) => d.id === id);
         result.push({
+            kind: "text",
             key: `dataset-${id}`,
             label: ds ? ds.name : `Dataset #${id}`,
             clear: () => {
@@ -45,6 +60,7 @@ const chips = computed<Chip[]>(() => {
     for (const id of filtersStore.areaIds) {
         const area = optionsStore.areas.find((a) => a.id === id);
         result.push({
+            kind: "text",
             key: `area-${id}`,
             label: area ? area.name : `Area #${id}`,
             clear: () => {
@@ -57,6 +73,7 @@ const chips = computed<Chip[]>(() => {
     for (const id of filtersStore.basisOfRecordIds) {
         const bor = optionsStore.basisOfRecord.find((b) => b.id === id);
         result.push({
+            kind: "text",
             key: `bor-${id}`,
             label: bor ? bor.name : `Record type #${id}`,
             clear: () => {
@@ -69,6 +86,7 @@ const chips = computed<Chip[]>(() => {
     if (filtersStore.startDate) {
         const d = filtersStore.startDate;
         result.push({
+            kind: "text",
             key: "start-date",
             label: `${t("message.dateFromPrefix")} ${d}`,
             clear: () => { filtersStore.startDate = null; },
@@ -77,6 +95,7 @@ const chips = computed<Chip[]>(() => {
     if (filtersStore.endDate) {
         const d = filtersStore.endDate;
         result.push({
+            kind: "text",
             key: "end-date",
             label: `${t("message.dateUntilPrefix")} ${d}`,
             clear: () => { filtersStore.endDate = null; },
@@ -90,6 +109,7 @@ const chips = computed<Chip[]>(() => {
                 ? t("message.verifiedOnly")
                 : t("message.unverifiedOnly");
         result.push({
+            kind: "text",
             key: "verified",
             label,
             clear: () => { filtersStore.verifiedFilter = "all"; },
@@ -100,6 +120,7 @@ const chips = computed<Chip[]>(() => {
     if (filtersStore.status !== null) {
         const label = filtersStore.status === "unseen" ? t("message.unseen") : t("message.seen");
         result.push({
+            kind: "text",
             key: "status",
             label,
             clear: () => { filtersStore.status = null; },
@@ -132,10 +153,31 @@ function clearAll() {
                 :key="chip.key"
                 class="filter-chip"
             >
-                {{ chip.label }}
-                <button class="chip-clear" :aria-label="t('message.removeFilter', { label: chip.label })" @click="chip.clear()">
-                    &times;
-                </button>
+                <template v-if="chip.kind === 'species'">
+                    <SpeciesName
+                        v-if="chip.scientificName"
+                        :scientific-name="chip.scientificName"
+                        :vernacular-name="chip.vernacularName"
+                    />
+                    <template v-else>{{ chip.fallbackLabel }}</template>
+                    <button
+                        class="chip-clear"
+                        :aria-label="t('message.removeFilter', { label: chip.scientificName || chip.fallbackLabel })"
+                        @click="chip.clear()"
+                    >
+                        &times;
+                    </button>
+                </template>
+                <template v-else>
+                    {{ chip.label }}
+                    <button
+                        class="chip-clear"
+                        :aria-label="t('message.removeFilter', { label: chip.label })"
+                        @click="chip.clear()"
+                    >
+                        &times;
+                    </button>
+                </template>
             </span>
             <button class="clear-all-btn" @click="clearAll">{{ t("message.clearAllFilters") }}</button>
         </div>

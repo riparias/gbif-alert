@@ -5,6 +5,7 @@ import Card from "primevue/card";
 import Button from "primevue/button";
 import Textarea from "primevue/textarea";
 import SingleObservationMap from "./SingleObservationMap.vue";
+import SpeciesName from "./SpeciesName.vue";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
 import { getNavConfig } from "../utils/navConfig";
@@ -116,8 +117,10 @@ onMounted(load);
                         {{ obs.verified ? t("message.verified") : t("message.unverified") }}
                     </span>
                     <h2>
-                        <em>{{ obs.scientificName }}</em>
-                        <span v-if="obs.vernacularName"> ({{ obs.vernacularName }})</span>
+                        <SpeciesName
+                            :scientific-name="obs.scientificName"
+                            :vernacular-name="obs.vernacularName"
+                        />
                         &mdash; {{ obs.date }}
                     </h2>
                 </div>
@@ -160,8 +163,10 @@ onMounted(load);
 
                             <dt>{{ t("message.species") }}</dt>
                             <dd>
-                                <em>{{ obs.scientificName }}</em>
-                                <span v-if="obs.vernacularName"> ({{ obs.vernacularName }})</span>
+                                <SpeciesName
+                                    :scientific-name="obs.scientificName"
+                                    :vernacular-name="obs.vernacularName"
+                                />
                             </dd>
 
                             <dt>{{ t("message.individualCount") }}</dt>

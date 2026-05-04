@@ -3,15 +3,16 @@ import json
 import tempfile
 from typing import Annotated, cast
 
+from django.conf import settings
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon as GEOSMultiPolygon
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers import serialize
-from django.db.models import Count
-from django.db.models.functions import TruncMonth
+from django.db.models import Count, F, Value
+from django.db.models.functions import Coalesce, NullIf, TruncMonth
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
-from django.utils.translation import gettext as _
+from django.utils.translation import get_language, gettext as _
 from ninja import File, Form, NinjaAPI, Query
 from ninja.files import UploadedFile
 from ninja.errors import HttpError
@@ -143,7 +144,9 @@ def area_create(
         except ValueError as exc:
             return 422, {"detail": str(exc)}
 
-    area = Area.objects.create(mpoly=cast(GEOSMultiPolygon, GEOSGeometry(wkt)), owner=user, name=name)
+    area = Area.objects.create(
+        mpoly=cast(GEOSMultiPolygon, GEOSGeometry(wkt)), owner=user, name=name
+    )
     return 201, {
         "id": area.pk,
         "name": area.name,
@@ -257,13 +260,21 @@ def data_imports_list(request: HttpRequest):
     ]
 
 
-_SORT_FIELD_MAP = {
+_SIMPLE_SORT_FIELD_MAP = {
     "date": "date",
     "scientificName": "species__name",
     "datasetName": "source_dataset__name",
     "municipality": "municipality",
     "verified": "verified",
 }
+
+# Set of orderBy values that need locale-aware annotation rather than a
+# direct column reference. Kept separate so the simple map stays minimal.
+_LOCALISED_SORT_FIELDS = {"vernacularName"}
+
+# Active language codes recognised when picking the vernacular_name_<lang>
+# column. Mirrors the pattern in dashboard/views/maps.py.
+_VERNACULAR_LANG_CODES = {code[:2] for code, _name in settings.LANGUAGES}
 
 
 @api_v2.get("/observations/", response=ObservationsPageOut, summary="List observations")
@@ -274,11 +285,15 @@ def observations_list(
     pageSize: int = 20,
     orderBy: Annotated[
         str,
-        Field(description="Field to sort by. Accepted: date, scientificName, datasetName, municipality, verified. Unknown values fall back to date."),
+        Field(
+            description="Field to sort by. Accepted: date, scientificName, vernacularName, datasetName, municipality, verified. Unknown values fall back to date."
+        ),
     ] = "date",
     orderDir: Annotated[
         str,
-        Field(description="Sort direction: asc or desc. Any value other than asc is treated as desc."),
+        Field(
+            description="Sort direction: asc or desc. Any value other than asc is treated as desc."
+        ),
     ] = "desc",
 ):
     """Return a paginated, filtered, and sorted page of observations.
@@ -314,9 +329,29 @@ def observations_list(
     )
     total: int = aggregates["total"]
     offset = (page - 1) * pageSize
-    sort_field = _SORT_FIELD_MAP.get(orderBy, "date")
     sort_prefix = "" if orderDir == "asc" else "-"
-    obs_page = list(qs.order_by(f"{sort_prefix}{sort_field}", "-pk")[offset : offset + pageSize])
+
+    if orderBy in _LOCALISED_SORT_FIELDS:
+        # Build a sort key that falls back to the scientific name when the
+        # vernacular column is empty for the active locale. django-modeltranslation
+        # uses one column per language: vernacular_name_en, vernacular_name_fr,
+        # vernacular_name_nl. Normalise the active locale to a known two-letter
+        # code to avoid building a field name that doesn't exist (e.g. "fr-be").
+        lang = get_language() or "en"
+        lang_code = lang[:2] if lang[:2] in _VERNACULAR_LANG_CODES else "en"
+        field = f"species__vernacular_name_{lang_code}"
+        annotated_qs = qs.annotate(
+            vernacular_sort_key=Coalesce(
+                NullIf(F(field), Value("")),
+                F("species__name"),
+            )
+        )
+        ordered = annotated_qs.order_by(f"{sort_prefix}vernacular_sort_key", "-pk")
+    else:
+        sort_field = _SIMPLE_SORT_FIELD_MAP.get(orderBy, "date")
+        ordered = qs.order_by(f"{sort_prefix}{sort_field}", "-pk")  # type: ignore[assignment]
+
+    obs_page = list(ordered[offset : offset + pageSize])
 
     # Fetch unseen status for the current page in one extra query
     if user is not None and obs_page:
@@ -343,7 +378,9 @@ def observations_list(
             "verified": obs.verified,
             "identificationVerificationStatus": obs.identification_verification_status,
             "basisOfRecord": str(obs.basis_of_record),
-            "seenByCurrentUser": (obs.pk not in unseen_ids) if user is not None else None,
+            "seenByCurrentUser": (obs.pk not in unseen_ids)
+            if user is not None
+            else None,
         }
         for obs in obs_page
     ]
@@ -417,12 +454,16 @@ def observation_detail(request: HttpRequest, stable_id: str):
     comments = [
         {
             "id": c.pk,
-            "authorUsername": c.author.username if c.author and not c.emptied_because_author_deleted_account else None,
+            "authorUsername": c.author.username
+            if c.author and not c.emptied_because_author_deleted_account
+            else None,
             "createdAt": c.created_at,
             "text": c.text if not c.emptied_because_author_deleted_account else None,
             "deletedBecauseAuthorDeleted": c.emptied_because_author_deleted_account,
         }
-        for c in obs.observationcomment_set.select_related("author").order_by("-created_at")
+        for c in obs.observationcomment_set.select_related("author").order_by(
+            "-created_at"
+        )
     ]
 
     return {
@@ -537,7 +578,9 @@ def _alert_to_out(alert: Alert) -> dict:
         "speciesList": alert.species_list,
         "areaDescription": alert.area_description,
         "areaNames": list(alert.areas.order_by("name").values_list("name", flat=True)),
-        "datasetNames": list(alert.datasets.order_by("name").values_list("name", flat=True)),
+        "datasetNames": list(
+            alert.datasets.order_by("name").values_list("name", flat=True)
+        ),
         "datasetsList": alert.datasets_list,
         "basisOfRecordList": alert.basis_of_record_list,
         "verifiedFilterDisplay": alert.verified_filter_display,
@@ -565,7 +608,9 @@ def _save_alert(alert: Alert, payload: AlertIn) -> dict[str, list[str]]:
 
     if payload.areaFilterMode != Alert.AREA_FILTER_INSIDE and not payload.areaIds:
         errors["area_filter_mode"] = [
-            str(_("At least one area must be selected for the chosen area filter mode."))
+            str(
+                _("At least one area must be selected for the chosen area filter mode.")
+            )
         ]
 
     try:
@@ -593,9 +638,7 @@ def _save_alert(alert: Alert, payload: AlertIn) -> dict[str, list[str]]:
 def alert_suggest_name(request: HttpRequest):
     """Suggest the next available 'My alert #N' name for the current user."""
     user = cast(User, request.user)
-    existing = set(
-        Alert.objects.filter(user=user).values_list("name", flat=True)
-    )
+    existing = set(Alert.objects.filter(user=user).values_list("name", flat=True))
     n = 1
     while f"My alert #{n}" in existing:
         n += 1
@@ -624,7 +667,9 @@ def alerts_list(request: HttpRequest):
     return [_alert_to_out(a) for a in alerts]
 
 
-@api_v2.post("/alerts/", response={201: AlertOut, 422: AlertValidationErrorOut}, auth=django_auth)
+@api_v2.post(
+    "/alerts/", response={201: AlertOut, 422: AlertValidationErrorOut}, auth=django_auth
+)
 def alert_create(request: HttpRequest, payload: AlertIn):
     """Create a new alert for the authenticated user."""
     alert = Alert(user=cast(User, request.user))
@@ -638,7 +683,9 @@ def alert_create(request: HttpRequest, payload: AlertIn):
 def alert_detail(request: HttpRequest, alert_id: int):
     """Return one alert. 404 if it does not belong to the current user."""
     alert = get_object_or_404(
-        Alert.objects.prefetch_related("species", "datasets", "areas", "basis_of_record_filters"),
+        Alert.objects.prefetch_related(
+            "species", "datasets", "areas", "basis_of_record_filters"
+        ),
         id=alert_id,
         user=request.user,
     )
@@ -653,7 +700,9 @@ def alert_detail(request: HttpRequest, alert_id: int):
 def alert_update(request: HttpRequest, alert_id: int, payload: AlertIn):
     """Update an existing alert. 404 if it does not belong to the current user."""
     alert = get_object_or_404(
-        Alert.objects.prefetch_related("species", "datasets", "areas", "basis_of_record_filters"),
+        Alert.objects.prefetch_related(
+            "species", "datasets", "areas", "basis_of_record_filters"
+        ),
         id=alert_id,
         user=request.user,
     )
@@ -679,6 +728,7 @@ def alert_as_filters_v2(request: HttpRequest, alert_id: int):
 
 
 # ---- Auth endpoints ----
+
 
 @api_v2.post(
     "/auth/signin/",
@@ -714,8 +764,7 @@ def auth_signup(request: HttpRequest, payload: SignUpIn):
     )
     if not form.is_valid():
         errors: dict[str, list[str]] = {
-            field: [str(msg) for msg in msgs]
-            for field, msgs in form.errors.items()
+            field: [str(msg) for msg in msgs] for field, msgs in form.errors.items()
         }
         return 422, {"errors": errors}
     user = form.save()
@@ -732,9 +781,13 @@ def auth_password_change(request: HttpRequest, payload: PasswordChangeIn):
     """Change password. Returns 204 on success, 422 with field errors on failure."""
     user = cast(User, request.user)
     if not user.check_password(payload.old_password):
-        return 422, {"errors": {"old_password": [str(_("The old password is incorrect."))]}}
+        return 422, {
+            "errors": {"old_password": [str(_("The old password is incorrect."))]}
+        }
     if payload.new_password1 != payload.new_password2:
-        return 422, {"errors": {"new_password2": [str(_("The two passwords do not match."))]}}
+        return 422, {
+            "errors": {"new_password2": [str(_("The two passwords do not match."))]}
+        }
     user.set_password(payload.new_password1)
     user.save()
     update_session_auth_hash(request, user)
@@ -783,7 +836,9 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
     user = cast(User, request.user)
     # Validate unique email (excluding self)
     if User.objects.filter(email=payload.email).exclude(pk=user.pk).exists():
-        return 422, {"errors": {"email": [str(_("This email address is already in use."))]}}
+        return 422, {
+            "errors": {"email": [str(_("This email address is already in use."))]}
+        }
     valid_units = ("days", "weeks", "months", "years")
     if payload.delayUnit not in valid_units:
         return 422, {"errors": {"delayUnit": ["Invalid unit."]}}
@@ -791,7 +846,9 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
     user.last_name = payload.lastName
     user.email = payload.email
     user.language = payload.language
-    user.notification_delay_days = _value_unit_to_days(payload.delayValue, payload.delayUnit)
+    user.notification_delay_days = _value_unit_to_days(
+        payload.delayValue, payload.delayUnit
+    )
     user.save()
     value, unit = _days_to_value_unit(user.notification_delay_days)
     return 200, {
