@@ -6,9 +6,12 @@ import Menubar from "primevue/menubar";
 import Button from "primevue/button";
 import Select from "primevue/select";
 import Menu from "primevue/menu";
+import ToggleSwitch from "primevue/toggleswitch";
 import type { MenuItem } from "primevue/menuitem";
+import { storeToRefs } from "pinia";
 import { getNavConfig } from "../../utils/navConfig";
 import { getCsrf } from "../../utils/csrf";
+import { usePreferencesStore } from "../../stores/preferences";
 
 // Custom nav item: extends MenuItem with our badge-dot flag.
 // PrimeVue's MenuItem type has an open index signature, so extra fields are allowed.
@@ -21,6 +24,14 @@ interface NavItem extends MenuItem {
 const config = getNavConfig();
 const route = useRoute();
 const { t } = useI18n();
+
+const preferences = usePreferencesStore();
+const { speciesNameMode } = storeToRefs(preferences);
+
+const speciesNameSwitchValue = computed<boolean>({
+    get: () => speciesNameMode.value === "vernacular",
+    set: (value) => preferences.setSpeciesNameMode(value ? "vernacular" : "scientific"),
+});
 
 // --- Active page detection ---
 
@@ -185,6 +196,23 @@ function toggleUserMenu(event: Event) {
 
             <template #end>
                 <div class="gbif-navbar-end">
+                    <div
+                        class="gbif-species-name-toggle"
+                        :aria-label="t('message.speciesDisplayToggleLabel')"
+                        :title="t('message.speciesDisplayToggleLabel')"
+                    >
+                        <span class="gbif-species-name-toggle-label" :class="{ 'is-active': !speciesNameSwitchValue }">
+                            <em>{{ t("message.speciesDisplayShowScientific") }}</em>
+                        </span>
+                        <ToggleSwitch
+                            v-model="speciesNameSwitchValue"
+                            :aria-label="t('message.speciesDisplayToggleLabel')"
+                        />
+                        <span class="gbif-species-name-toggle-label" :class="{ 'is-active': speciesNameSwitchValue }">
+                            {{ t("message.speciesDisplayShowVernacular") }}
+                        </span>
+                    </div>
+
                     <!-- Language selector: only shown when more than one language is enabled -->
                     <Select
                         v-if="config.enabledLanguages.length > 1"
@@ -328,5 +356,22 @@ function toggleUserMenu(event: Event) {
 .gbif-lang-select {
     /* Keep the language selector compact within the navbar */
     min-width: 0;
+}
+
+.gbif-species-name-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #ffffff;
+}
+
+.gbif-species-name-toggle-label {
+    font-size: 0.85rem;
+    opacity: 0.55;
+    transition: opacity 120ms ease;
+}
+
+.gbif-species-name-toggle-label.is-active {
+    opacity: 1;
 }
 </style>
