@@ -17,6 +17,7 @@ import Slider from "primevue/slider";
 import { useRouter, useRoute } from "vue-router";
 import { useFiltersStore } from "../stores/filters";
 import BaseMap from "./BaseMap.vue";
+import SpeciesName from "./SpeciesName.vue";
 import { getNavConfig } from "../utils/navConfig";
 
 const { t } = useI18n();
@@ -294,7 +295,12 @@ onUnmounted(() => {
                     <a
                         href="#"
                         @click.prevent="openObservationFromMap(obs.stableId)"
-                    ><em>{{ obs.scientificName }}</em><span v-if="obs.vernacularName"> ({{ obs.vernacularName }})</span></a>
+                    >
+                        <SpeciesName
+                            :scientific-name="obs.scientificName"
+                            :vernacular-name="obs.vernacularName"
+                        />
+                    </a>
                     <span class="popup-gbif-id"> - {{ obs.gbifId }}</span>
                 </li>
             </ul>
