@@ -35,22 +35,42 @@ const variant = computed<Variant>(() => {
     return props.vernacularName ? "vernacular" : "vernacular-fallback";
 });
 
-const tooltipText = computed(() => {
+function escapeHtml(s: string): string {
+    return s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+// PrimeVue's v-tooltip accepts an object with `escape: false` to render HTML.
+// We use it only to italicise the scientific name; all interpolated values are
+// HTML-escaped first.
+const tooltipBinding = computed(() => {
     if (variant.value === "scientific") {
         return props.vernacularName
-            ? props.vernacularName
-            : t("message.noVernacularAvailable", { language: activeLanguageNameLocal.value });
+            ? { value: props.vernacularName, escape: true }
+            : {
+                  value: t("message.noVernacularAvailable", {
+                      language: activeLanguageNameLocal.value,
+                  }),
+                  escape: true,
+              };
     }
     if (variant.value === "vernacular") {
-        return props.scientificName;
+        return { value: `<em>${escapeHtml(props.scientificName)}</em>`, escape: false };
     }
     // vernacular-fallback
-    return t("message.noVernacularAvailable", { language: activeLanguageNameLocal.value });
+    return {
+        value: t("message.noVernacularAvailable", { language: activeLanguageNameLocal.value }),
+        escape: true,
+    };
 });
 </script>
 
 <template>
-    <span v-tooltip.top="tooltipText" class="species-name">
+    <span v-tooltip.top="tooltipBinding" class="species-name">
         <em v-if="variant === 'scientific'">{{ scientificName }}</em>
         <template v-else-if="variant === 'vernacular'">{{ vernacularName }}</template>
         <template v-else>

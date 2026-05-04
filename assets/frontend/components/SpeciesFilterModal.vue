@@ -175,7 +175,7 @@ function tagColor(name: string): string {
             <Column field="scientificName" :header="t('message.scientificName')" sortable>
                 <template #body="{ data }"><em>{{ data.scientificName }}</em></template>
             </Column>
-            <Column field="vernacularName" :header="t('message.vernacularName')" />
+            <Column field="vernacularName" :header="t('message.vernacularName')" sortable />
             <Column :header="t('message.gbifTaxonKey')" style="width: 9rem">
                 <template #body="{ data }">
                     <a

@@ -206,10 +206,19 @@ const formattedDatasetsCount = computed(() =>
     gap: 0.2rem;
 }
 
-.species-list em {
-    font-style: italic;
+/*
+ * SpeciesName renders inside a child component, so its inner <em> is not
+ * reachable via plain scoped selectors - use :deep() to colour the text and
+ * the dotted underline against the dark sidebar background.
+ */
+.species-list :deep(.species-name) {
     font-size: 0.82rem;
     color: #cbd5e1; /* slate-300 */
+    text-decoration-color: #64748b; /* slate-500 */
+}
+
+.species-list :deep(.species-name em) {
+    font-style: italic;
 }
 
 .expand-toggle {
