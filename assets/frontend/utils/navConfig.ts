@@ -41,6 +41,8 @@ interface MapConfig {
     observationDetailsUrlTemplate: string;
 }
 
+export type SpeciesNameMode = "scientific" | "vernacular";
+
 export interface NavConfig {
     siteName: string;
     primaryPalette: string;
@@ -49,6 +51,7 @@ export interface NavConfig {
     user: NavUser;
     urls: NavUrls;
     map: MapConfig;
+    speciesNameMode: SpeciesNameMode;
 }
 
 let _cache: NavConfig | null = null;
