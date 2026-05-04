@@ -5,6 +5,7 @@ import { useRouter } from "vue-router";
 import { useConfirm } from "primevue/useconfirm";
 import Button from "primevue/button";
 import Tag from "primevue/tag";
+import SpeciesName from "./SpeciesName.vue";
 import ObservationStatusToggle from "./ObservationStatusToggle.vue";
 import { useAlertMeta } from "../composables/useAlertMeta";
 import { useResultsStore } from "../stores/results";
@@ -72,8 +73,10 @@ const formattedDatasetsCount = computed(() =>
             <div class="sidebar-section-heading"><i class="pi pi-search" />{{ t("message.filterSectionWhat") }}</div>
             <ul class="species-list">
                 <li v-for="sp in visibleSpecies" :key="sp.scientificName">
-                    <em>{{ sp.scientificName }}</em>
-                    <span v-if="sp.vernacularName" class="vernacular-name"> ({{ sp.vernacularName }})</span>
+                    <SpeciesName
+                        :scientific-name="sp.scientificName"
+                        :vernacular-name="sp.vernacularName ?? ''"
+                    />
                 </li>
             </ul>
             <button
@@ -207,11 +210,6 @@ const formattedDatasetsCount = computed(() =>
     font-style: italic;
     font-size: 0.82rem;
     color: #cbd5e1; /* slate-300 */
-}
-
-.vernacular-name {
-    font-size: 0.78rem;
-    color: #64748b; /* slate-500 */
 }
 
 .expand-toggle {
