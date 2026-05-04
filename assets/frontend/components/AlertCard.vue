@@ -7,6 +7,7 @@ import Button from "primevue/button";
 import Badge from "primevue/badge";
 import Card from "primevue/card";
 import Tag from "primevue/tag";
+import SpeciesName from "./SpeciesName.vue";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
 import { useAlertMeta } from "../composables/useAlertMeta";
@@ -73,10 +74,10 @@ function confirmDelete() {
             <div class="section">
                 <ul class="species-list">
                     <li v-for="sp in visibleSpecies" :key="sp.scientificName">
-                        <em>{{ sp.scientificName }}</em>
-                        <span v-if="sp.vernacularName" class="vernacular-name">
-                            ({{ sp.vernacularName }})
-                        </span>
+                        <SpeciesName
+                            :scientific-name="sp.scientificName"
+                            :vernacular-name="sp.vernacularName ?? ''"
+                        />
                     </li>
                 </ul>
                 <button
@@ -203,12 +204,6 @@ function confirmDelete() {
 
 .species-list em {
     font-style: italic;
-}
-
-.vernacular-name {
-    color: var(--p-text-muted-color);
-    font-size: 0.875rem;
-    margin-left: 0.25rem;
 }
 
 .expand-toggle {
