@@ -20,6 +20,9 @@ import TabPanel from "primevue/tabpanel";
 import { useFiltersStore } from "../stores/filters";
 import { useResultsStore } from "../stores/results";
 import type { components } from "../types/api";
+import SpeciesName from "./SpeciesName.vue";
+import { storeToRefs } from "pinia";
+import { usePreferencesStore } from "../stores/preferences";
 
 type ObservationOut = components["schemas"]["ObservationOut"];
 
@@ -55,7 +58,7 @@ function closeDrawer() {
 
 const COLUMN_DEFS = [
     { key: "date",          sortField: "date",           defaultVisible: true  },
-    { key: "species",       sortField: "scientificName", defaultVisible: true  },
+    { key: "species",       sortField: null, defaultVisible: true  },
     { key: "dataset",       sortField: "datasetName",    defaultVisible: true  },
     { key: "municipality",  sortField: "municipality",   defaultVisible: true  },
     { key: "verified",      sortField: "verified",       defaultVisible: true  },
@@ -107,6 +110,14 @@ const currentPage = ref(1);
 const PAGE_SIZE = 20;
 const sortField = ref("date");
 const sortOrder = ref<1 | -1>(-1);
+
+const preferences = usePreferencesStore();
+const { speciesNameMode } = storeToRefs(preferences);
+
+// The species column's wire-level sort field follows the user's display preference.
+const speciesSortFieldName = computed<string>(() =>
+    speciesNameMode.value === "vernacular" ? "vernacularName" : "scientificName",
+);
 
 function buildFilterParams(): URLSearchParams {
     const params = new URLSearchParams({
@@ -167,6 +178,17 @@ const reloadOnFilterChange = debounce(() => {
 }, 300);
 
 watch(filtersStore, reloadOnFilterChange, { deep: true });
+
+// When the user flips the navbar species-name toggle while sorted on the
+// species column, re-issue the request so the backend sorts by the field
+// that matches what they now see. Direction is preserved.
+watch(speciesNameMode, () => {
+    if (sortField.value === "scientificName" || sortField.value === "vernacularName") {
+        sortField.value = speciesSortFieldName.value;
+        currentPage.value = 1;
+        loadObservations();
+    }
+});
 
 onUnmounted(() => reloadOnFilterChange.cancel());
 
@@ -254,12 +276,17 @@ onMounted(async () => {
                         @row-click="(e) => openObservation(e.data.stableId)"
                     >
                         <Column v-if="visibleColumns.has('date')" field="date" :header="t('message.date')" sortable />
-                        <Column v-if="visibleColumns.has('species')" field="scientificName" :header="t('message.species')" sortable>
+                        <Column
+                            v-if="visibleColumns.has('species')"
+                            :field="speciesSortFieldName"
+                            :header="t('message.species')"
+                            sortable
+                        >
                             <template #body="{ data }">
-                                <a href="#" class="species-link" @click.prevent="openObservation(data.stableId)">
-                                    <em>{{ data.scientificName }}</em>
-                                    <span v-if="data.vernacularName"> ({{ data.vernacularName }})</span>
-                                </a>
+                                <SpeciesName
+                                    :scientific-name="data.scientificName"
+                                    :vernacular-name="data.vernacularName"
+                                />
                             </template>
                         </Column>
                         <Column v-if="visibleColumns.has('dataset')" field="datasetName" :header="t('message.dataset')" sortable header-class="col-dataset" body-class="col-dataset">
