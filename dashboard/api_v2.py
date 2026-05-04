@@ -3,6 +3,7 @@ import json
 import tempfile
 from typing import Annotated, cast
 
+from django.conf import settings
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon as GEOSMultiPolygon
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -269,15 +270,9 @@ _SIMPLE_SORT_FIELD_MAP = {
 # direct column reference. Kept separate so the simple map stays minimal.
 _LOCALISED_SORT_FIELDS = {"vernacularName"}
 
-
-def _vernacular_sort_field(language_code: str) -> str:
-    """Return the species column to use as the vernacular sort key for a locale.
-
-    django-modeltranslation uses one column per language: vernacular_name_en,
-    vernacular_name_fr, vernacular_name_nl. The active language is determined
-    by Django's locale middleware (get_language()).
-    """
-    return f"species__vernacular_name_{language_code}"
+# Active language codes recognised when picking the vernacular_name_<lang>
+# column. Mirrors the pattern in dashboard/views/maps.py.
+_VERNACULAR_LANG_CODES = {code[:2] for code, _name in settings.LANGUAGES}
 
 
 @api_v2.get("/observations/", response=ObservationsPageOut, summary="List observations")
@@ -332,17 +327,21 @@ def observations_list(
 
     if orderBy in _LOCALISED_SORT_FIELDS:
         # Build a sort key that falls back to the scientific name when the
-        # vernacular column is empty for the active locale.
+        # vernacular column is empty for the active locale. django-modeltranslation
+        # uses one column per language: vernacular_name_en, vernacular_name_fr,
+        # vernacular_name_nl. Normalise the active locale to a known two-letter
+        # code to avoid building a field name that doesn't exist (e.g. "fr-be").
         lang = get_language() or "en"
-        field = _vernacular_sort_field(lang)
+        lang_code = lang[:2] if lang[:2] in _VERNACULAR_LANG_CODES else "en"
+        field = f"species__vernacular_name_{lang_code}"
         qs = qs.annotate(
-            _species_display=Coalesce(
+            vernacular_sort_key=Coalesce(
                 NullIf(F(field), Value("")),
                 F("species__name"),
             )
         )
         obs_page = list(
-            qs.order_by(f"{sort_prefix}_species_display", "-pk")[offset : offset + pageSize]
+            qs.order_by(f"{sort_prefix}vernacular_sort_key", "-pk")[offset : offset + pageSize]
         )
     else:
         sort_field = _SIMPLE_SORT_FIELD_MAP.get(orderBy, "date")

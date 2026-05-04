@@ -728,7 +728,7 @@ def test_order_by_vernacular_name_uses_french_when_lang_is_french(client, sortin
 
     species_alpha FR vernacular: 'Canard colvert' (sorts BEFORE);
     species_zeta  FR vernacular: 'Fuligule milouin' (sorts AFTER).
-    Opposite of the English order asserted in test_order_by_vernacular_name_ascending.
+    Opposite of the English order asserted in test_order_by_vernacular_name_ascending_uses_active_locale.
     """
     obs_alpha = sorting_data["obs_alpha"]
     obs_zeta = sorting_data["obs_zeta"]
