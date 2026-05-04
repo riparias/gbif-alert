@@ -343,8 +343,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.species-link { color: inherit; text-decoration: none; }
-.species-link:hover { text-decoration: underline; }
 .observations-table :deep(tbody tr) { cursor: pointer; }
 .observations-table :deep(table) { table-layout: fixed; }
 .observations-table :deep(th.col-dataset),
