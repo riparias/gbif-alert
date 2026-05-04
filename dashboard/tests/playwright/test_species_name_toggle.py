@@ -130,7 +130,9 @@ def test_preference_persists_across_reload(live_server, page: Page, two_observat
 
 
 @pytest.mark.django_db(transaction=True)
-def test_sort_re_issues_when_preference_changes(live_server, page: Page, two_observations):
+def test_sort_re_issues_when_preference_changes(
+    live_server, page: Page, two_observations
+):
     """While sorted on species, flipping the toggle re-fetches with the new orderBy."""
     page.goto(f"{live_server.url}/?status=all")
     page.wait_for_load_state("networkidle")
