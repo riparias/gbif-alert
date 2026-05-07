@@ -86,6 +86,23 @@ def test_index_base(client):
     assert "dashboard/base.html" in [t.name for t in response.templates]
 
 
+def test_spa_shell_sets_csrf_cookie_for_anonymous_user(client):
+    """A fresh anonymous GET of the SPA shell must set the csrftoken cookie.
+
+    The Vue language switcher (NavBar.vue) reads the CSRF token from
+    document.cookie and POSTs it to /i18n/setlang/. If the cookie is never
+    set, anonymous users with cleared cookies hit "CSRF verification failed"
+    on the first language switch.
+    """
+    client.cookies.clear()
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "csrftoken" in response.cookies, (
+        "spa_shell must set the csrftoken cookie so the Vue navbar can "
+        "include it in the language-switch POST"
+    )
+
+
 # --- AlertWebPagesTests ---
 
 def test_user_can_access_own_alert_details(client, alert_pages_data):

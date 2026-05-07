@@ -5,6 +5,7 @@ from django.http import (
     HttpResponse,
 )
 from django.shortcuts import render, get_object_or_404
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 from dashboard.models import Alert
 from dashboard.views.helpers import (
@@ -12,8 +13,14 @@ from dashboard.views.helpers import (
 )
 
 
+@ensure_csrf_cookie
 def spa_shell(request: HttpRequest, **kwargs) -> HttpResponse:
-    """Serve the Vue SPA shell for all Vue Router-managed routes."""
+    """Serve the Vue SPA shell for all Vue Router-managed routes.
+
+    The csrftoken cookie is forced on every response so the Vue navbar
+    (and any other client-side form) can read it from document.cookie
+    even on a fresh visit with no prior cookies.
+    """
     return render(request, "dashboard/base.html")
 
 
