@@ -111,6 +111,7 @@ You'll also need to:
 - Generate static assets: `$ npm run vite-build`.
 - Compile translations: `$ poetry run python manage.py compilemessages`.
 - Run Django through Gunicorn (or your favourite WSGI server), and place a reverse proxy in front of it (e.g. Nginx).
+  - Static files can be served either by Nginx directly (point it at `STATIC_ROOT`) for slightly better performance, or by Gunicorn itself: WhiteNoise is registered in the app and will serve the contents of `STATIC_ROOT`. If you let WhiteNoise handle static files, the Nginx config can be simplified to a pure reverse proxy (no `location /static/ { ... }` block needed). Either approach works.
 - Install two Cron jobs:
   - One to periodically download occurrences from GBIF and import them in the database: `$ poetry run python manage.py import_observations`
   - One to periodically send notification e-mails: `$ poetry run python manage.py send_alert_notifications_email`
