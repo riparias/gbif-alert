@@ -218,7 +218,7 @@ export default defineComponent({
         // If changing/adding fields there, please also consider adding them to the email notifications
         // (alert_notification.html)
         {sortId: null, label: ""},
-        {sortId: "gbif_id", label: this.$t("message.gbifId")},
+        {sortId: null, label: this.$t("message.observationId")},
         {sortId: null, label: this.$t("message.coordinates")},
         {sortId: "date", label: this.$t("message.date")},
         {sortId: "species__name", label: this.$t("message.species")},

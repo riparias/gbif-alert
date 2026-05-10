@@ -48,7 +48,11 @@ def _get(url: str, params: dict, requests_per_minute: int) -> dict:
         response = requests.get(url, params=params, timeout=30)
 
         if response.status_code == 429:
-            retry_after = int(response.headers.get("Retry-After", 60))
+            raw_retry = response.headers.get("Retry-After", "60")
+            try:
+                retry_after = int(raw_retry)
+            except ValueError:
+                retry_after = 60
             logger.warning("iNat rate limit hit, sleeping %ds", retry_after)
             time.sleep(retry_after)
             continue
@@ -179,9 +183,14 @@ def get_inat_taxon_id(gbif_taxon_key: int, scientific_name: str, requests_per_mi
 
     results = data.get("results", [])
 
-    # Priority 1: exact gbif_id match
+    # Priority 1: exact gbif_id match (cast to int; iNat sometimes returns strings)
     for taxon in results:
-        if taxon.get("gbif_id") == gbif_taxon_key:
+        raw_gbif_id = taxon.get("gbif_id")
+        try:
+            inat_gbif_id: int | None = int(raw_gbif_id) if raw_gbif_id is not None else None
+        except (ValueError, TypeError):
+            inat_gbif_id = None
+        if inat_gbif_id == gbif_taxon_key:
             logger.debug(
                 "Matched '%s' to iNat taxon %d via gbif_id", scientific_name, taxon["id"]
             )

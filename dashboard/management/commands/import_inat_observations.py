@@ -71,8 +71,15 @@ def build_observation_from_inat(
     if obs_date is None:
         return None
 
+    uuid = inat_obs.get("uuid") or ""
+    if not uuid:
+        # Every iNat observation should have a UUID; skip rather than create a collision-prone row
+        logger.warning(
+            "iNat observation id=%s has no uuid, skipping", inat_obs.get("id")
+        )
+        return None
+
     quality_grade = inat_obs.get("quality_grade", "")
-    uuid = inat_obs.get("uuid", "")
 
     obs = Observation(
         source=Observation.SOURCE_INAT,
@@ -182,7 +189,12 @@ class Command(BaseCommand):
             )
             return
 
-        place_id: int = inat_config["PLACE_ID"]
+        place_id: int | None = inat_config.get("PLACE_ID")
+        if place_id is None:
+            raise CommandError(
+                "INAT_IMPORT_CONFIG['PLACE_ID'] is required. "
+                "Set it to the iNaturalist place_id for your geographic scope."
+            )
         quality_grades: list[str] = inat_config.get("QUALITY_GRADES", ["research"])
         rpm: int = inat_config.get("REQUESTS_PER_MINUTE", 60)
         updated_since: str | None = options.get("updated_since")
@@ -234,6 +246,8 @@ class Command(BaseCommand):
                 total_imported = 0
                 total_skipped = 0
                 pending: list[Observation] = []
+                failed_taxon_ids: set[int] = set()
+                successful_taxon_ids: set[int] = set()
 
                 for inat_taxon_id, species in species_by_inat_id.items():
                     self.log(f"Fetching observations for {species.name} (iNat taxon {inat_taxon_id})")
@@ -268,6 +282,8 @@ class Command(BaseCommand):
                                 total_imported += len(pending)
                                 pending = []
 
+                        successful_taxon_ids.add(inat_taxon_id)
+
                     except InatApiError as exc:
                         logger.error("iNat API error for taxon %d: %s", inat_taxon_id, exc)
                         self.stdout.write(
@@ -275,6 +291,7 @@ class Command(BaseCommand):
                                 f"\nSkipped {species.name} due to API error: {exc}"
                             )
                         )
+                        failed_taxon_ids.add(inat_taxon_id)
 
                 if pending:
                     self._batch_insert(pending, current_data_import)
@@ -282,14 +299,33 @@ class Command(BaseCommand):
 
                 self.log(f"\nAll observations imported ({total_imported} imported, {total_skipped} skipped)")
 
-                self.log("Migrating unseen observations")
-                migrate_unseen_observations(current_data_import)
+                # Migrate unseen state for iNat-sourced observations only.
+                # Passing source=SOURCE_INAT ensures GBIF-backed ObservationUnseen entries
+                # are never touched by this partial import.
+                self.log("Migrating unseen observations (iNat source only)")
+                migrate_unseen_observations(
+                    current_data_import, source=Observation.SOURCE_INAT
+                )
 
-                # Delete previous iNaturalist observations only (GBIF observations untouched)
+                # Delete previous iNaturalist observations only (GBIF observations untouched).
+                # Only delete for taxa that were successfully fetched to avoid data loss on
+                # partial API failures (see failed_taxon_ids tracking above).
+                if failed_taxon_ids:
+                    self.log(
+                        f"Skipping delete for {len(failed_taxon_ids)} taxa that had API errors: "
+                        f"{failed_taxon_ids}"
+                    )
+                    safe_to_delete_qs = Observation.objects.filter(
+                        source=Observation.SOURCE_INAT,
+                        species__inat_taxon_id__in=successful_taxon_ids,
+                    ).exclude(data_import=current_data_import)
+                else:
+                    safe_to_delete_qs = Observation.objects.filter(
+                        source=Observation.SOURCE_INAT
+                    ).exclude(data_import=current_data_import)
+
                 self.log("Deleting previous iNaturalist observations")
-                deleted_count, _ = Observation.objects.filter(
-                    source=Observation.SOURCE_INAT
-                ).exclude(data_import=current_data_import).delete()
+                deleted_count, _ = safe_to_delete_qs.delete()
                 self.log(f"Deleted {deleted_count} previous iNaturalist observations")
 
                 self.log("Refreshing materialized views")

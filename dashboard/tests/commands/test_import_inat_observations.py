@@ -3,7 +3,7 @@ Tests for import_inat_observations management command and inat_api helpers.
 """
 
 import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from django.contrib.gis.geos import Point
 from django.core.management import call_command

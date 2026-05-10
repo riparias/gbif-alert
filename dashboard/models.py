@@ -429,16 +429,28 @@ class ObservationManager(models.Manager["Observation"]):
         return qs
 
 
-def migrate_unseen_observations(current_data_import: "DataImport") -> None:
-    """Migrate unseen observations to new observations or delete them if they are no longer relevant."""
+def migrate_unseen_observations(
+    current_data_import: "DataImport",
+    source: str | None = None,
+) -> None:
+    """Migrate unseen observations to new observations or delete them if they are no longer relevant.
+
+    :param current_data_import: The DataImport whose observations are the "new" reference set.
+    :param source: If provided, only process ObservationUnseen entries whose observation has this
+        source value (e.g. Observation.SOURCE_INAT). This is essential when running a partial
+        import (e.g. iNat only) to avoid wiping unseen state for observations from other sources.
+    """
     logger = logging.getLogger(__name__)
 
     logger.info("migrate_unseen_observations: Starting...")
     step_start = time.time()
 
-    unseen_observations = ObservationUnseen.objects.select_related(
+    unseen_qs = ObservationUnseen.objects.select_related(
         "observation", "observation__data_import", "user"
-    ).all()
+    )
+    if source is not None:
+        unseen_qs = unseen_qs.filter(observation__source=source)
+    unseen_observations = unseen_qs.all()
 
     if not unseen_observations.exists():
         logger.info(
@@ -767,8 +779,12 @@ class Observation(models.Model):
     def observation_url(self) -> str:
         """URL to the original observation on its source platform"""
         if self.source == self.SOURCE_INAT:
-            return f"https://www.inaturalist.org/observations/{self.inat_id}"
-        return f"https://www.gbif.org/occurrence/{self.gbif_id}"
+            if self.inat_id is not None:
+                return f"https://www.inaturalist.org/observations/{self.inat_id}"
+            return ""
+        if self.gbif_id:
+            return f"https://www.gbif.org/occurrence/{self.gbif_id}"
+        return ""
 
     # Keep in sync with JsonObservation (TypeScript interface)
     def as_dict(self, for_user: WebsiteUser) -> dict[str, Any]:

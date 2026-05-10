@@ -120,10 +120,11 @@ export interface JsonObservation {
   inatId: number | null;
   source: "gbif" | "inat";
   observationUrl: string;
-  lat: number;
-  lon: number;
+  lat: number | null;
+  lon: number | null;
   date: string;
   scientificName: string;
+  vernacularName: string;
   displayNameHtml: string;
   datasetName: string;
   seenByCurrentUser?: boolean;
