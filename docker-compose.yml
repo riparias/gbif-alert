@@ -58,6 +58,24 @@ services:
         target: /app/djangoproject/local_settings_docker.py
         read_only: true
 
+  # ---------------------------------------------------------------------------
+  # Periodic data import jobs (run via host cron or a scheduler of your choice)
+  #
+  # Recommended crontab (host machine):
+  #
+  #   # GBIF import — nightly at 02:00
+  #   0 2 * * * cd /path/to/instance && docker compose exec -T gbif-alert poetry run python manage.py import_observations
+  #
+  #   # iNaturalist import — nightly at 04:00 (after GBIF import finishes)
+  #   # Requires INAT_IMPORT_CONFIG["ENABLED"] = True in local_settings_docker.py
+  #   # Run sync_inat_taxon_ids once after adding new species:
+  #   #   docker compose exec gbif-alert poetry run python manage.py sync_inat_taxon_ids
+  #   0 4 * * * cd /path/to/instance && docker compose exec -T gbif-alert poetry run python manage.py import_inat_observations
+  #
+  #   # Email notifications — daily at 06:00
+  #   0 6 * * * cd /path/to/instance && docker compose exec -T gbif-alert poetry run python manage.py send_alert_notifications_email
+  # ---------------------------------------------------------------------------
+
 volumes:
   postgres_data:
   static_volume:

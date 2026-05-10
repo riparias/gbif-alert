@@ -115,6 +115,9 @@ class Species(models.Model):  # type: ignore
     name = models.CharField(max_length=100)  # Scientific name
     vernacular_name = models.CharField(max_length=100, blank=True)
     gbif_taxon_key = models.IntegerField(unique=True)
+    inat_taxon_id = models.IntegerField(
+        null=True, blank=True, unique=True
+    )  # iNaturalist taxon ID (different from GBIF taxon key)
 
     tags = TaggableManager(blank=True)
 
@@ -199,6 +202,13 @@ class BasisOfRecord(models.Model):
 
 
 class DataImport(models.Model):
+    SOURCE_GBIF = "gbif"
+    SOURCE_INAT = "inat"
+    SOURCE_CHOICES = [
+        (SOURCE_GBIF, "GBIF"),
+        (SOURCE_INAT, "iNaturalist"),
+    ]
+
     start = models.DateTimeField()
     end = models.DateTimeField(blank=True, null=True)
     completed = models.BooleanField(default=False)
@@ -208,6 +218,9 @@ class DataImport(models.Model):
     gbif_predicate = models.JSONField(
         blank=True, null=True
     )  # Null if a DwC-A file was provided - no GBIF download
+    source = models.CharField(
+        max_length=10, choices=SOURCE_CHOICES, default=SOURCE_GBIF
+    )
 
     class Meta:
         ordering = ["-pk"]
@@ -536,12 +549,26 @@ class Observation(models.Model):
     # purposes. gbif_id, occurrence_id and stable_id are documented below, Django also adds the usual and implicit "pk"
     # field.
 
-    # The GBIF-assigned identifier. We show it to the user (links to GBIF.org, ...) but don't rely on it as a stable
-    # identifier anymore. See: https://github.com/riparias/gbif-alert/issues/35#issuecomment-944073702 and
-    # https://github.com/gbif/pipelines/issues/604,
-    gbif_id = models.CharField(max_length=100)
+    SOURCE_GBIF = "gbif"
+    SOURCE_INAT = "inat"
+    SOURCE_CHOICES = [
+        (SOURCE_GBIF, "GBIF"),
+        (SOURCE_INAT, "iNaturalist"),
+    ]
 
-    # The raw occurrenceId GBIF field, as provided by GBIF data providers retrieved from the data download.
+    # The GBIF-assigned identifier. Null for iNaturalist observations. We show it to the user (links to GBIF.org, ...)
+    # but don't rely on it as a stable identifier anymore. See: https://github.com/riparias/gbif-alert/issues/35#issuecomment-944073702
+    gbif_id = models.CharField(max_length=100, blank=True)
+
+    # The iNaturalist observation integer ID. Null for GBIF observations.
+    inat_id = models.IntegerField(null=True, blank=True)
+
+    # The data source for this observation.
+    source = models.CharField(
+        max_length=10, choices=SOURCE_CHOICES, default=SOURCE_GBIF
+    )
+
+    # The raw occurrenceId field (GBIF: occurrenceID field; iNat: observation UUID).
     # It is an important data source, we use it to compute stable_id
     occurrence_id = models.TextField()
 
@@ -557,7 +584,7 @@ class Observation(models.Model):
     basis_of_record = models.ForeignKey(BasisOfRecord, on_delete=models.CASCADE)
     identification_verification_status = models.CharField(
         max_length=255, blank=True
-    )  # As provided by GBIF, not normalized
+    )  # As provided by the source, not normalized
     verified = models.BooleanField(default=False)
 
     recorded_by = models.TextField(blank=True)
@@ -575,9 +602,12 @@ class Observation(models.Model):
     objects = ObservationManager()
 
     class Meta:
-        unique_together = [("gbif_id", "data_import"), ("stable_id", "data_import")]
+        # gbif_id uniqueness only applies to GBIF observations (iNat obs have blank gbif_id),
+        # so we rely on the stable_id constraint for deduplication across both sources.
+        unique_together = [("stable_id", "data_import")]
         indexes = [
             models.Index(fields=["stable_id"], name="dashboard_o_stable__idx"),
+            models.Index(fields=["source"], name="dashboard_o_source__idx"),
         ]
 
     def __str__(self):
@@ -733,6 +763,13 @@ class Observation(models.Model):
             return coords[0], coords[1]
         return None, None
 
+    @property
+    def observation_url(self) -> str:
+        """URL to the original observation on its source platform"""
+        if self.source == self.SOURCE_INAT:
+            return f"https://www.inaturalist.org/observations/{self.inat_id}"
+        return f"https://www.gbif.org/occurrence/{self.gbif_id}"
+
     # Keep in sync with JsonObservation (TypeScript interface)
     def as_dict(self, for_user: WebsiteUser) -> dict[str, Any]:
         """Returns the model representation has a dict.
@@ -744,6 +781,9 @@ class Observation(models.Model):
             "id": self.pk,
             "stableId": self.stable_id,
             "gbifId": self.gbif_id,
+            "inatId": self.inat_id,
+            "source": self.source,
+            "observationUrl": self.observation_url,
             "lat": lat,
             "lon": lon,
             "scientificName": self.species.name,

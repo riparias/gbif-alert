@@ -116,7 +116,10 @@ export interface FrontEndConfig {
 export interface JsonObservation {
   id: number;
   stableId: string;
-  gbifId: number;
+  gbifId: string;
+  inatId: number | null;
+  source: "gbif" | "inat";
+  observationUrl: string;
   lat: number;
   lon: number;
   date: string;

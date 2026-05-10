@@ -12,7 +12,8 @@
         <span v-else class="gbif-alert-seen-row-marker"></span>
       </td>
       <td>
-        <a :href="occ.url">{{ occ.gbifId }}</a>
+        <a :href="occ.url">{{ occ.sourceId }}</a>
+        <a :href="occ.observationUrl" target="_blank" class="ms-1 text-muted small" :title="$t('message.viewOnSource')">&#8599;</a>
       </td>
       <td>{{ occ.lat }}, {{ occ.lon }}</td>
       <td>{{ occ.date }}</td>
@@ -28,7 +29,8 @@ import {JsonObservation} from "../interfaces";
 
 interface ObservationForDisplay {
   // Similar to JsonObservation, but ready to display
-  gbifId: number;
+  sourceId: string;        // GBIF ID for GBIF obs, iNat ID for iNat obs
+  observationUrl: string;  // External link to source platform
   lat: string;
   lon: string;
   date: string;
@@ -44,7 +46,8 @@ export default defineComponent({
     preparedObservations: function (): ObservationForDisplay[] {
       return this.observations.map((occ) => {
         return {
-          gbifId: occ.gbifId,
+          sourceId: occ.source === "inat" ? `iNat #${occ.inatId ?? ""}` : (occ.gbifId || ""),
+          observationUrl: occ.observationUrl,
           lat: occ.lat ? occ.lat.toFixed(3) : "",
           lon: occ.lon ? occ.lon.toFixed(3) : "",
           date: occ.date,

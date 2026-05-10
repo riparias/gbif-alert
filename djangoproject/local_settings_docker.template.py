@@ -31,6 +31,7 @@ ADMINS = [
 def build_gbif_download_predicate(species_list: "QuerySet[Species]"):  # type: ignore
     """
     Build a GBIF.org download predicate for Belgian observations, after 2000.
+    Includes iNaturalist research-grade observations via GBIF's iNat dataset.
 
     Species list is taken from the GBIF Alert database.
     """
@@ -71,6 +72,20 @@ GBIF_ALERT: dict[str, Any] = {
         "USERNAME": "aaaa",
         "PASSWORD": "bbbb",
         "PREDICATE_BUILDER": build_gbif_download_predicate,
+    },
+    # iNaturalist direct API import configuration.
+    # Observations are fetched directly from api.inaturalist.org for the configured place and species list.
+    # Run `python manage.py sync_inat_taxon_ids` once after adding new species, then schedule
+    # `python manage.py import_inat_observations` periodically (e.g. nightly after import_observations).
+    "INAT_IMPORT_CONFIG": {
+        "ENABLED": False,  # Set to True to activate iNaturalist imports
+        # iNaturalist place_id for the geographic scope of this instance.
+        # Find place IDs at https://www.inaturalist.org/places (e.g. Belgium = 6986)
+        "PLACE_ID": 6986,
+        # Quality grades to import. "research" = community-validated; "needs_id" = awaiting ID.
+        "QUALITY_GRADES": ["research"],
+        # Maximum requests per minute (iNat recommends staying at or below 60).
+        "REQUESTS_PER_MINUTE": 60,
     },
     # initial location of the map on the index page
     "MAIN_MAP_CONFIG": {

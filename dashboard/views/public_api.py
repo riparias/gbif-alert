@@ -226,6 +226,8 @@ class ObservationsWFSView(WFSView):
             fields=[
                 "location",
                 "gbif_id",
+                "inat_id",
+                "source",
                 "stable_id",
                 "species_id",
                 field(

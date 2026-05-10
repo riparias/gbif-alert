@@ -74,6 +74,12 @@ GBIF_ALERT: dict[str, Any] = {
         "PASSWORD": "riparias-dev",
         "PREDICATE_BUILDER": build_gbif_download_predicate,
     },
+    "INAT_IMPORT_CONFIG": {
+        "ENABLED": True,
+        "PLACE_ID": 6986,
+        "QUALITY_GRADES": ["research"],
+        "REQUESTS_PER_MINUTE": 60,
+    },
     "MAIN_MAP_CONFIG": {
         "initialZoom": 8,
         "initialLat": 50.50,
