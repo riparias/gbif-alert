@@ -133,4 +133,4 @@ dmypy.json
 /TODO.md
 
 static/
-djangoproject/maintenance_mode_state.txt
+djangoproject/maintenance_mode_state.txt.DS_Store
