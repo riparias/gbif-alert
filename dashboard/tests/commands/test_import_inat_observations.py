@@ -21,7 +21,9 @@ from dashboard.models import (
     DataImport,
     Dataset,
     Observation,
+    ObservationUnseen,
     Species,
+    User,
 )
 
 
@@ -330,6 +332,121 @@ class ImportInatObservationsCommandTest(TestCase):
         from django.core.management.base import CommandError
         with self.assertRaises(CommandError):
             call_command("import_inat_observations")
+
+    @patch("dashboard.management.commands.import_inat_observations.create_or_refresh_materialized_views")
+    @patch("dashboard.inat_api.get_observations")
+    def test_gbif_unseen_observations_survive_inat_import(self, mock_get_obs, mock_refresh):
+        """
+        Regression test: migrate_unseen_observations must NOT touch GBIF-sourced
+        ObservationUnseen entries when the iNat import runs.
+
+        Before the source-filter fix, calling migrate_unseen_observations without
+        a source filter during an iNat import would attempt to migrate ALL unseen
+        entries — including GBIF ones — against the new iNat DataImport, causing
+        every GBIF ObservationUnseen row to be deleted because no matching
+        stable_id existed in the new iNat import.
+        """
+        user = User.objects.create_user(username="reviewer", password="x")
+
+        # Create a GBIF observation and mark it unseen for the user
+        gbif_di = DataImport.objects.create(start=timezone.now(), source=DataImport.SOURCE_GBIF)
+        gbif_dataset = Dataset.objects.create(gbif_dataset_key="gbif-key-002", name="GBIF dataset")
+        bor, _ = BasisOfRecord.objects.get_or_create(name=INAT_BASIS_OF_RECORD)
+        gbif_obs = Observation.objects.create(
+            source=Observation.SOURCE_GBIF,
+            gbif_id="GBIF-002",
+            occurrence_id="gbif-occ-002",
+            stable_id=Observation.build_stable_id("gbif-occ-002", "gbif-key-002"),
+            species=self.species,
+            date=datetime.date(2024, 3, 1),
+            data_import=gbif_di,
+            initial_data_import=gbif_di,
+            source_dataset=gbif_dataset,
+            basis_of_record=bor,
+        )
+        ObservationUnseen.objects.create(observation=gbif_obs, user=user)
+
+        mock_get_obs.return_value = iter([make_inat_obs(obs_id=20, uuid="inat-uuid-020")])
+        call_command("import_inat_observations")
+
+        # The GBIF ObservationUnseen must still exist after the iNat import
+        self.assertTrue(
+            ObservationUnseen.objects.filter(observation=gbif_obs, user=user).exists(),
+            "GBIF ObservationUnseen was incorrectly deleted by the iNat import",
+        )
+
+    @patch("dashboard.management.commands.import_inat_observations.create_or_refresh_materialized_views")
+    @patch("dashboard.inat_api.get_observations")
+    def test_failed_taxon_observations_not_deleted(self, mock_get_obs, mock_refresh):
+        """
+        Regression test: when one taxon fails to fetch from the API, old iNat
+        observations for *that* taxon must be preserved, while old observations
+        for successfully-fetched taxa are still deleted.
+
+        Before the failed_taxon_ids fix, a partial API failure would cause the
+        deletion step to run unconditionally for all iNat observations, wiping
+        data for taxa that had no new results due to the error.
+        """
+        # A second species with a different iNat taxon ID
+        species2 = Species.objects.create(
+            name="Harmonia axyridis", gbif_taxon_key=5876466, inat_taxon_id=119020
+        )
+
+        # Pre-populate one old iNat observation for each species
+        old_di = DataImport.objects.create(start=timezone.now(), source=DataImport.SOURCE_INAT)
+        inat_dataset, _ = Dataset.objects.get_or_create(
+            gbif_dataset_key=INAT_DATASET_KEY, defaults={"name": "iNaturalist"}
+        )
+        bor, _ = BasisOfRecord.objects.get_or_create(name=INAT_BASIS_OF_RECORD)
+
+        old_obs_species1 = Observation.objects.create(
+            source=Observation.SOURCE_INAT,
+            inat_id=100,
+            occurrence_id="old-uuid-s1",
+            stable_id=Observation.build_stable_id("old-uuid-s1", INAT_DATASET_KEY),
+            species=self.species,
+            date=datetime.date(2023, 1, 1),
+            data_import=old_di,
+            initial_data_import=old_di,
+            source_dataset=inat_dataset,
+            basis_of_record=bor,
+        )
+        old_obs_species2 = Observation.objects.create(
+            source=Observation.SOURCE_INAT,
+            inat_id=200,
+            occurrence_id="old-uuid-s2",
+            stable_id=Observation.build_stable_id("old-uuid-s2", INAT_DATASET_KEY),
+            species=species2,
+            date=datetime.date(2023, 1, 1),
+            data_import=old_di,
+            initial_data_import=old_di,
+            source_dataset=inat_dataset,
+            basis_of_record=bor,
+        )
+
+        # species1 (taxon 119019) succeeds; species2 (taxon 119020) raises an API error
+        def side_effect(taxon_id, **kwargs):
+            from dashboard.inat_api import InatApiError
+            if taxon_id == 119019:
+                return iter([make_inat_obs(obs_id=101, uuid="new-uuid-s1", taxon_id=119019)])
+            raise InatApiError("simulated API failure for taxon 119020")
+
+        mock_get_obs.side_effect = side_effect
+
+        call_command("import_inat_observations")
+
+        # Old observation for the FAILED taxon (species2) must still exist
+        self.assertTrue(
+            Observation.objects.filter(pk=old_obs_species2.pk).exists(),
+            "Old iNat observation for failed taxon was incorrectly deleted",
+        )
+        # Old observation for the SUCCESSFUL taxon (species1) must be gone
+        self.assertFalse(
+            Observation.objects.filter(pk=old_obs_species1.pk).exists(),
+            "Old iNat observation for successful taxon should have been deleted",
+        )
+        # New observation for the successful taxon must exist
+        self.assertTrue(Observation.objects.filter(inat_id=101).exists())
 
 
 # ---------------------------------------------------------------------------
