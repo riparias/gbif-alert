@@ -67,6 +67,34 @@ if rq_redis_url := os.environ.get("RQ_REDIS_URL"):
         },
     }
 
+# Email backend defaults to SMTP. Override via local_settings.py if you need
+# the console backend for dev or LocMemEmailBackend for tests.
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "25"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "False").lower() == "true"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "")
+SERVER_EMAIL = os.environ.get("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
+EMAIL_SUBJECT_PREFIX = os.environ.get("EMAIL_SUBJECT_PREFIX", "[gbif-alert] ")
+
+# ADMINS is parsed from a single env var of the form "Name1 <a@b>, Name2 <c@d>"
+_admins_raw = os.environ.get("ADMINS", "")
+ADMINS: list[tuple[str, str]] = []
+if _admins_raw:
+    import re
+    for entry in _admins_raw.split(","):
+        entry = entry.strip()
+        if not entry:
+            continue
+        match = re.match(r"^(.*?)\s*<(.+?)>$", entry)
+        if match:
+            ADMINS.append((match.group(1).strip(), match.group(2).strip()))
+        else:
+            # Bare email: name = email
+            ADMINS.append((entry, entry))
+
 
 # Application definition
 
