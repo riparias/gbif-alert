@@ -464,7 +464,7 @@ if not _settings_module.startswith("djangoproject.local_settings"):
         # mypy: local_settings.py is operator-supplied and may legitimately
         # not exist (e.g. in CI or a fresh Docker image); the ImportError
         # branch handles that at runtime.
-        from djangoproject.local_settings import *  # type: ignore[import-not-found] # noqa: F401, F403
+        from djangoproject.local_settings import *  # type: ignore[import] # noqa: F401, F403
     except ImportError:
         pass
 
