@@ -97,22 +97,31 @@ Congrats, 👏 you can now access your instance at `http://localhost:1337`.
 
 ## Run GBIF Alert manually
 
-You don't like Docker and do you prefer to have full control on everything? Great!
+You don't like Docker and prefer full control? Great.
 
-You'll need to install Python, PostgreSQL, PostGIS and Redis on your system. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for the specific versions required. 
+You'll need to install Python, PostgreSQL, PostGIS and Redis (or Valkey) on your system. See [CONTRIBUTING.md](CONTRIBUTING.md) for specific versions.
 
-You'll also need to:
+### One-time setup
 
-- Create the database and install the PostGIS extension.
-- Adjust Django settings appropriately, you can use `local_settings.template.py` as a starting point.
-- Create a virtual environment and install the Python dependencies: `$ poetry install`.
-- Generate the database schema: `$ poetry run python manage.py migrate` before the first execution.
-- Install frontend dependencies: `$ npm install`.
-- Generate static assets: `$ npm run vite-build`.
-- Compile translations: `$ poetry run python manage.py compilemessages`.
-- Run Django through Gunicorn (or your favourite WSGI server), and place a reverse proxy in front of it (e.g. Nginx).
+1. Create the database and install the PostGIS extension.
+2. Create a Python virtual environment and install dependencies: `$ poetry install`.
+3. Copy `.env.example` to `.env` (at the project root) and edit:
+   ```
+   cp .env.example .env
+   $EDITOR .env
+   ```
+   Set at least `SECRET_KEY`, `DATABASE_URL`, `SITE_BASE_URL`, `DJANGO_ALLOWED_HOSTS`, and `SITE_NAME`. See `.env.example` for the full contract and `EMAIL_*` / `GBIF_DOWNLOAD_*` / `MAP_INITIAL_*` settings you'll want for production.
+4. (Optional) For settings that cannot be expressed as env vars (e.g. a custom `PREDICATE_BUILDER` callable), copy `djangoproject/local_settings.template.py` to `djangoproject/local_settings.py` and edit. This file is gitignored.
+5. Generate the database schema: `$ poetry run python manage.py migrate`.
+6. Install frontend dependencies: `$ npm install`.
+7. Generate static assets: `$ npm run vite-build`.
+8. Compile translations: `$ poetry run python manage.py compilemessages`.
+9. Collect static files: `$ poetry run python manage.py collectstatic --no-input`.
+
+### Running
+
+- Web server: `$ poetry run gunicorn djangoproject.wsgi`. Place an Nginx reverse proxy in front for TLS and (optionally) static-file serving.
   - Static files can be served either by Nginx directly (point it at `STATIC_ROOT`) for slightly better performance, or by Gunicorn itself: WhiteNoise is registered in the app and will serve the contents of `STATIC_ROOT`. If you let WhiteNoise handle static files, the Nginx config can be simplified to a pure reverse proxy (no `location /static/ { ... }` block needed). Either approach works.
-- Install two Cron jobs:
-  - One to periodically download occurrences from GBIF and import them in the database: `$ poetry run python manage.py import_observations`
-  - One to periodically send notification e-mails: `$ poetry run python manage.py send_alert_notifications_email`
-- Run  rqworker in the background to process long-running tasks: `$ poetry run python manage.py rqworker default`
+- RQ worker: `$ poetry run python manage.py rqworker default`.
+- Cron: schedule `python manage.py import_observations` and `python manage.py send_alert_notifications_email` periodically.
+- Process supervision (systemd, supervisord, etc.) and env-var loading mechanism are deployment-specific; settings can be provided via a project-root `.env` file or any other mechanism that populates the process environment.
