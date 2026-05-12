@@ -21,6 +21,12 @@ from django.utils.translation import gettext_lazy as _
 BASE_DIR = Path(__file__).resolve().parent.parent
 THIS_DIR = os.path.dirname(__file__)
 
+from dotenv import load_dotenv
+
+# Load .env from the project root if it exists. No-op if env vars are
+# already set (compose, systemd EnvironmentFile, shell exports, etc.).
+load_dotenv(BASE_DIR / ".env")
+
 # ---------------------------------------------------------------------------
 # Environment-driven configuration.
 #
