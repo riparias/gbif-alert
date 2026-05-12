@@ -441,3 +441,52 @@ ZOOM_TO_HEX_SIZE = {
 # will need to generate more materialized views (so the endpoint works), but it's only
 # when running tests and with a tiny amount of data.
 ZOOM_LEVEL_FOR_MIN_MAX_QUERY = 8
+
+
+# ---------------------------------------------------------------------------
+# Optional per-deployment Python overrides.
+#
+# `local_settings.py` may define or override any setting. This is the escape
+# hatch used by both the manual deploy (host file) and the Docker bind-mount.
+# It is imported AFTER all env-driven settings, so its values take precedence.
+#
+# Skipped when the entry point is one of the legacy `local_settings_*.py`
+# modules (they do `from .settings import *` and would form a circular import
+# if we tried to import them back here).
+# ---------------------------------------------------------------------------
+
+_settings_module = os.environ.get("DJANGO_SETTINGS_MODULE", "")
+if not _settings_module.startswith("djangoproject.local_settings"):
+    try:
+        from djangoproject.local_settings import *  # noqa: F401, F403
+    except ImportError:
+        pass
+
+# ---------------------------------------------------------------------------
+# Validation.
+#
+# Catches missing required settings whether they come from env vars or from
+# local_settings.py. Run only when settings.py is the entry point - under the
+# legacy `DJANGO_SETTINGS_MODULE=djangoproject.local_settings*` chain,
+# validation happens naturally when local_settings finishes loading.
+# ---------------------------------------------------------------------------
+
+if not _settings_module.startswith("djangoproject.local_settings"):
+    from django.core.exceptions import ImproperlyConfigured
+
+    _missing = []
+    if not SECRET_KEY:
+        _missing.append("SECRET_KEY")
+    if not SITE_BASE_URL:
+        _missing.append("SITE_BASE_URL")
+    if not ALLOWED_HOSTS:
+        _missing.append("DJANGO_ALLOWED_HOSTS")
+    if "default" not in globals().get("DATABASES", {}):
+        _missing.append("DATABASE_URL or DATABASES")
+    if _missing:
+        raise ImproperlyConfigured(
+            "Required settings not configured: "
+            + ", ".join(_missing)
+            + ". Set them via environment variables (or define them in "
+            "djangoproject/local_settings.py)."
+        )
