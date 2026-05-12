@@ -1,5 +1,3 @@
-from typing import Any
-
 from .settings import *
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -61,7 +59,7 @@ def build_gbif_download_predicate(species_list: "QuerySet[Species]"):  # type: i
     }
 
 
-GBIF_ALERT: dict[str, Any] = {
+GBIF_ALERT = {
     "SITE_NAME": "LIFE RIPARIAS early alert",
     "NAVBAR_BACKGROUND_COLOR": "#00a58d",
     "NAVBAR_LIGHT_TEXT": True,

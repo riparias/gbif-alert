@@ -95,6 +95,58 @@ if _admins_raw:
             # Bare email: name = email
             ADMINS.append((entry, entry))
 
+# ---------------------------------------------------------------------------
+# GBIF_ALERT settings (per-deployment branding, behaviour, and GBIF download
+# config). Each key is constructed from env vars; local_settings.py may
+# replace the entire dict or override individual keys after this module's
+# import.
+# ---------------------------------------------------------------------------
+
+
+def _default_predicate_builder(species_list):
+    """Default GBIF download predicate builder.
+
+    Builds a predicate from `GBIF_DOWNLOAD_COUNTRY` and `GBIF_DOWNLOAD_YEAR_MIN`.
+    Operators with more complex predicate needs override this in
+    `local_settings.py` by setting `GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"]`.
+    """
+    predicates: list[dict] = [
+        {
+            "type": "in",
+            "key": "TAXON_KEY",
+            "values": [str(s.gbif_taxon_key) for s in species_list],
+        },
+        {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"},
+    ]
+    if country := os.environ.get("GBIF_DOWNLOAD_COUNTRY"):
+        predicates.append({"type": "equals", "key": "COUNTRY", "value": country})
+    if year_min := os.environ.get("GBIF_DOWNLOAD_YEAR_MIN"):
+        predicates.append(
+            {"type": "greaterThanOrEquals", "key": "YEAR", "value": int(year_min)}
+        )
+    return {"predicate": {"type": "and", "predicates": predicates}}
+
+
+GBIF_ALERT: dict = {
+    "SITE_NAME": os.environ.get("SITE_NAME", ""),
+    "PRIMEVUE_PRIMARY_PALETTE": os.environ.get("PRIMEVUE_PRIMARY_PALETTE", "indigo"),
+    "ENABLED_LANGUAGES": tuple(
+        s.strip()
+        for s in os.environ.get("ENABLED_LANGUAGES", "en,fr,nl").split(",")
+        if s.strip()
+    ),
+    "GBIF_DOWNLOAD_CONFIG": {
+        "USERNAME": os.environ.get("GBIF_DOWNLOAD_USERNAME", ""),
+        "PASSWORD": os.environ.get("GBIF_DOWNLOAD_PASSWORD", ""),
+        "PREDICATE_BUILDER": _default_predicate_builder,
+    },
+    "MAIN_MAP_CONFIG": {
+        "initialZoom": int(os.environ.get("MAP_INITIAL_ZOOM", "2")),
+        "initialLat": float(os.environ.get("MAP_INITIAL_LAT", "0")),
+        "initialLon": float(os.environ.get("MAP_INITIAL_LON", "0")),
+    },
+}
+
 
 # Application definition
 
