@@ -18,6 +18,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, include, re_path, reverse_lazy
 
 from dashboard.api_v2 import api_v2
+from dashboard.views.healthz import healthz
 from dashboard.views.pages import spa_shell
 
 urlpatterns = [
@@ -60,10 +61,11 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("markdownx/", include("markdownx.urls")),
     path("django-rq/", include("django_rq.urls")),
+    path("healthz", healthz, name="healthz"),
     # Catch-all for Vue Router history mode: any path not matched by an explicit
     # Django URL returns the SPA shell so Vue Router can handle direct-load navigation.
     # The negative lookahead excludes Django-owned prefixes so that paths like /admin
     # (without trailing slash) still get redirected correctly by APPEND_SLASH middleware
     # rather than being swallowed by this rule. MUST be last.
-    re_path(r"^(?!admin|api/|accounts/|i18n/|markdownx/|django-rq/).*$", spa_shell, name="spa-shell"),
+    re_path(r"^(?!admin|api/|accounts/|i18n/|markdownx/|django-rq/|healthz).*$", spa_shell, name="spa-shell"),
 ]
