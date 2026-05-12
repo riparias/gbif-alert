@@ -2222,6 +2222,20 @@ socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["backports-zstd (>=1.0.0)"]
 
 [[package]]
+name = "whitenoise"
+version = "6.12.0"
+description = "Radically simplified static file serving for WSGI applications"
+optional = false
+python-versions = ">=3.10"
+files = [
+    {file = "whitenoise-6.12.0-py3-none-any.whl", hash = "sha256:fc5e8c572e33ebf24795b47b6a7da8da3c00cff2349f5b04c02f28d0cc5a3cc2"},
+    {file = "whitenoise-6.12.0.tar.gz", hash = "sha256:f723ebb76a112e98816ff80fcea0a6c9b8ecde835f8ddda25df7a30a3c2db6ad"},
+]
+
+[package.extras]
+brotli = ["brotli"]
+
+[[package]]
 name = "xlrd"
 version = "2.0.2"
 description = "Library for developers to extract data from Microsoft Excel (tm) .xls spreadsheet files"
@@ -2251,4 +2265,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "30468e34f4ae6fcb95749b5bb14b3a8c636c551b22ac9e7c2c0f51de1c32ebb6"
+content-hash = "54a2e8c87fd2ddf8a85678daf75c60c716730a06d214e52887bfb371c929c96b"

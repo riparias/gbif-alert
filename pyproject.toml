@@ -27,6 +27,7 @@ django-gisserver = "^1.2.7"
 setuptools = "*"
 django-vite = "^3.1.0"
 django-ninja = "^1.6.2"
+whitenoise = "^6.7.0"
 [tool.poetry.group.dev.dependencies]
 mypy = "1.4"
 django-stubs = "4.2.3"
