@@ -461,7 +461,10 @@ ZOOM_LEVEL_FOR_MIN_MAX_QUERY = 8
 _settings_module = os.environ.get("DJANGO_SETTINGS_MODULE", "")
 if not _settings_module.startswith("djangoproject.local_settings"):
     try:
-        from djangoproject.local_settings import *  # noqa: F401, F403
+        # mypy: local_settings.py is operator-supplied and may legitimately
+        # not exist (e.g. in CI or a fresh Docker image); the ImportError
+        # branch handles that at runtime.
+        from djangoproject.local_settings import *  # type: ignore[import-not-found] # noqa: F401, F403
     except ImportError:
         pass
 
