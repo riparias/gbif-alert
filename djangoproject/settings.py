@@ -59,19 +59,22 @@ if database_url := os.environ.get("DATABASE_URL"):
 
 from urllib.parse import urlparse
 
-# RQ_QUEUES is set only if RQ_REDIS_URL is present. Same backward-compat
-# rationale as DATABASES.
-if rq_redis_url := os.environ.get("RQ_REDIS_URL"):
-    _rq_url = urlparse(rq_redis_url)
-    RQ_QUEUES = {
-        "default": {
-            "HOST": _rq_url.hostname or "localhost",
-            "PORT": _rq_url.port or 6379,
-            "DB": int(_rq_url.path.lstrip("/")) if _rq_url.path.lstrip("/") else 0,
-            "PASSWORD": _rq_url.password or None,
-            "DEFAULT_TIMEOUT": 360,
-        },
-    }
+# RQ_QUEUES is always defined (django_rq raises ImproperlyConfigured at app
+# load time if it is missing). When RQ_REDIS_URL is unset we fall back to
+# `redis://localhost:6379/0` - a sensible default for a single-host manual
+# deploy. Operators with different topology (Docker, ECS, etc.) set
+# RQ_REDIS_URL to point at their broker. The escape-hatch import at the end
+# of this module lets local_settings.py replace RQ_QUEUES wholesale.
+_rq_url = urlparse(os.environ.get("RQ_REDIS_URL", "redis://localhost:6379/0"))
+RQ_QUEUES = {
+    "default": {
+        "HOST": _rq_url.hostname or "localhost",
+        "PORT": _rq_url.port or 6379,
+        "DB": int(_rq_url.path.lstrip("/")) if _rq_url.path.lstrip("/") else 0,
+        "PASSWORD": _rq_url.password or None,
+        "DEFAULT_TIMEOUT": 360,
+    },
+}
 
 # Email backend defaults to SMTP. Override via local_settings.py if you need
 # the console backend for dev or LocMemEmailBackend for tests.
