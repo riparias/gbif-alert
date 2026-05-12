@@ -58,8 +58,6 @@ def build_gbif_download_predicate(species_list: "QuerySet[Species]"):  # type: i
 
 GBIF_ALERT: dict[str, Any] = {
     "SITE_NAME": "GBIF alert - local",  # Name of the website, appears in various places (page titles, emails, ...)
-    "NAVBAR_BACKGROUND_COLOR": "crimson",
-    "NAVBAR_LIGHT_TEXT": True,  # Whether the text in the navbar should be light or dark
     "ENABLED_LANGUAGES": (  # Languages available in the interface. Subset of the languages in `LANGUAGES`.
         "en",
         "fr",
