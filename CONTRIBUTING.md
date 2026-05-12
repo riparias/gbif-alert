@@ -6,10 +6,25 @@
 - [Poetry](https://python-poetry.org/) is used to manage dependencies (use `poetry add`, `poetry install`, ... instead of pip). PyCharm also has a Poetry plugin available.
 
 ## Dev environment configuration
-- Python>=3.11, PostGIS>=3.1, Redis and `npm` are required
-- Use [Poetry](https://python-poetry.org/) to create an isolated virtualenv and install dependencies (`poetry install`) 
-- Copy `local_settings.template.py` to `local_settings.py`, adjust those settings and point Django to `local_settings.py`
-- [Point Django to local_settings](https://docs.djangoproject.com/en/3.2/topics/settings/#designating-the-settings)
+- Python>=3.11, PostGIS>=3.1, Redis (or Valkey) and `npm` are required
+- Use [Poetry](https://python-poetry.org/) to create an isolated virtualenv and install dependencies (`poetry install`)
+- Configure the app via environment variables. Copy `.env.example` at the project root to `.env` and fill in the values:
+   ```
+   cp .env.example .env
+   $EDITOR .env
+   ```
+   For dev, you typically want:
+   ```
+   DEBUG=True
+   SECRET_KEY=anything-not-empty
+   DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+   SITE_BASE_URL=http://localhost:8000
+   SITE_NAME=GBIF Alert (dev)
+   DATABASE_URL=postgis://gbif:gbif@localhost:5432/gbif_alert_dev
+   RQ_REDIS_URL=redis://localhost:6379/0
+   ```
+- For settings that cannot be expressed as env vars (e.g. a custom `PREDICATE_BUILDER` callable), copy `djangoproject/local_settings.template.py` to `djangoproject/local_settings.py` and edit. This file is gitignored and imported as an escape hatch after the env-driven settings.
+- Django is pointed at `djangoproject.settings` (the canonical entry point - it loads `.env`, then reads env vars, then imports `local_settings.py` as the escape hatch).
 
 ## Testing / typing
 This project provides the following tools to ensure the application and code stays in a decent state:
@@ -36,8 +51,7 @@ To run a single test:
 $ pytest dashboard/tests/models/test_alert.py::test_has_unseen_observations_true
 ```
 
-> **Note:** these tests require `DJANGO_SETTINGS_MODULE=djangoproject.local_settings`
-> (configured in `pyproject.toml` under `[tool.pytest.ini_options]`).
+> **Note:** tests run with `DJANGO_SETTINGS_MODULE=djangoproject.settings` (configured in `pyproject.toml` under `[tool.pytest.ini_options]`). Safe test env defaults (DB URL, GBIF creds, etc.) are provided via the `pytest-env` plugin in the same section, so a clean checkout can run tests without any local `.env`. Your own `.env` (if present) takes precedence.
 
 ### Typing
 
@@ -175,8 +189,7 @@ The web application handle three categories of users:
 Redis is currently used with [django-rq](https://github.com/rq/django-rq) to manage queues for long-running tasks 
 (as of 2023-08: mark all observations as seen).
 
-In addition to install a Redis instance on your development machine, you'll need to configure Django-rq to find it
-(see local_settings.template.py) and run a worker for the default queue with ``$ python manage.py rqworker default``
+In addition to installing a Redis (or Valkey) instance on your development machine, point Django-rq at it via the `RQ_REDIS_URL` env var (e.g. `redis://localhost:6379/0` in your `.env`), then run a worker for the default queue with `$ python manage.py rqworker default`.
 
 ## Maintenance mode
 

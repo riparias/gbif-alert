@@ -21,10 +21,140 @@ from django.utils.translation import gettext_lazy as _
 BASE_DIR = Path(__file__).resolve().parent.parent
 THIS_DIR = os.path.dirname(__file__)
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
+from dotenv import load_dotenv
 
-ALLOWED_HOSTS: list[str] = []
+# Load .env from the project root if it exists. No-op if env vars are
+# already set (compose, systemd EnvironmentFile, shell exports, etc.).
+load_dotenv(BASE_DIR / ".env")
+
+# ---------------------------------------------------------------------------
+# Environment-driven configuration.
+#
+# All operationally-significant settings come from environment variables with
+# sensible defaults. `local_settings.py` (imported at the end of this module)
+# may override any of these - that is the per-deployment escape hatch for
+# callable values like PREDICATE_BUILDER.
+#
+# Reads use `.get()` rather than `[]` so the module can load even when an env
+# var is missing. Final validation happens at the end of this module, after
+# the escape hatch has had a chance to set values from a Python file.
+# ---------------------------------------------------------------------------
+
+SECRET_KEY = os.environ.get("SECRET_KEY", "")
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()
+]
+SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "")
+
+import dj_database_url
+
+# DATABASES is set only if DATABASE_URL is present. Leaving it unset lets
+# local_settings.py define DATABASES the old way (explicit dict) without
+# env vars - useful for the manual deploy that pre-dates this refactor.
+if database_url := os.environ.get("DATABASE_URL"):
+    DATABASES = {
+        "default": dj_database_url.parse(database_url, conn_max_age=600),
+    }
+
+from urllib.parse import urlparse
+
+# RQ_QUEUES is always defined (django_rq raises ImproperlyConfigured at app
+# load time if it is missing). When RQ_REDIS_URL is unset we fall back to
+# `redis://localhost:6379/0` - a sensible default for a single-host manual
+# deploy. Operators with different topology (Docker, ECS, etc.) set
+# RQ_REDIS_URL to point at their broker. The escape-hatch import at the end
+# of this module lets local_settings.py replace RQ_QUEUES wholesale.
+_rq_url = urlparse(os.environ.get("RQ_REDIS_URL", "redis://localhost:6379/0"))
+RQ_QUEUES = {
+    "default": {
+        "HOST": _rq_url.hostname or "localhost",
+        "PORT": _rq_url.port or 6379,
+        "DB": int(_rq_url.path.lstrip("/")) if _rq_url.path.lstrip("/") else 0,
+        "PASSWORD": _rq_url.password or None,
+        "DEFAULT_TIMEOUT": 360,
+    },
+}
+
+# Email backend defaults to SMTP. Override via local_settings.py if you need
+# the console backend for dev or LocMemEmailBackend for tests.
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "25"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "False").lower() == "true"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "")
+SERVER_EMAIL = os.environ.get("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
+EMAIL_SUBJECT_PREFIX = os.environ.get("EMAIL_SUBJECT_PREFIX", "[gbif-alert] ")
+
+# ADMINS is parsed from a single env var of the form "Name1 <a@b>, Name2 <c@d>"
+_admins_raw = os.environ.get("ADMINS", "")
+ADMINS: list[tuple[str, str]] = []
+if _admins_raw:
+    import re
+    for entry in _admins_raw.split(","):
+        entry = entry.strip()
+        if not entry:
+            continue
+        match = re.match(r"^(.*?)\s*<(.+?)>$", entry)
+        if match:
+            ADMINS.append((match.group(1).strip(), match.group(2).strip()))
+        else:
+            # Bare email: name = email
+            ADMINS.append((entry, entry))
+
+# ---------------------------------------------------------------------------
+# GBIF_ALERT settings (per-deployment branding, behaviour, and GBIF download
+# config). Each key is constructed from env vars; local_settings.py may
+# replace the entire dict or override individual keys after this module's
+# import.
+# ---------------------------------------------------------------------------
+
+
+def _default_predicate_builder(species_list):
+    """Default GBIF download predicate builder.
+
+    Builds a predicate from `GBIF_DOWNLOAD_COUNTRY` and `GBIF_DOWNLOAD_YEAR_MIN`.
+    Operators with more complex predicate needs override this in
+    `local_settings.py` by setting `GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"]`.
+    """
+    predicates: list[dict] = [
+        {
+            "type": "in",
+            "key": "TAXON_KEY",
+            "values": [str(s.gbif_taxon_key) for s in species_list],
+        },
+        {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"},
+    ]
+    if country := os.environ.get("GBIF_DOWNLOAD_COUNTRY"):
+        predicates.append({"type": "equals", "key": "COUNTRY", "value": country})
+    if year_min := os.environ.get("GBIF_DOWNLOAD_YEAR_MIN"):
+        predicates.append(
+            {"type": "greaterThanOrEquals", "key": "YEAR", "value": int(year_min)}
+        )
+    return {"predicate": {"type": "and", "predicates": predicates}}
+
+
+GBIF_ALERT: dict = {
+    "SITE_NAME": os.environ.get("SITE_NAME", ""),
+    "PRIMEVUE_PRIMARY_PALETTE": os.environ.get("PRIMEVUE_PRIMARY_PALETTE", "indigo"),
+    "ENABLED_LANGUAGES": tuple(
+        s.strip()
+        for s in os.environ.get("ENABLED_LANGUAGES", "en,fr,nl").split(",")
+        if s.strip()
+    ),
+    "GBIF_DOWNLOAD_CONFIG": {
+        "USERNAME": os.environ.get("GBIF_DOWNLOAD_USERNAME", ""),
+        "PASSWORD": os.environ.get("GBIF_DOWNLOAD_PASSWORD", ""),
+        "PREDICATE_BUILDER": _default_predicate_builder,
+    },
+    "MAIN_MAP_CONFIG": {
+        "initialZoom": int(os.environ.get("MAP_INITIAL_ZOOM", "2")),
+        "initialLat": float(os.environ.get("MAP_INITIAL_LAT", "0")),
+        "initialLon": float(os.environ.get("MAP_INITIAL_LON", "0")),
+    },
+}
 
 
 # Application definition
@@ -124,7 +254,7 @@ LANGUAGES = [
     ("nl", _("Dutch")),
 ]
 
-TIME_ZONE = "Europe/Brussels"
+TIME_ZONE = os.environ.get("TIME_ZONE", "Europe/Brussels")
 
 USE_I18N = True
 
@@ -314,3 +444,55 @@ ZOOM_TO_HEX_SIZE = {
 # will need to generate more materialized views (so the endpoint works), but it's only
 # when running tests and with a tiny amount of data.
 ZOOM_LEVEL_FOR_MIN_MAX_QUERY = 8
+
+
+# ---------------------------------------------------------------------------
+# Optional per-deployment Python overrides.
+#
+# `local_settings.py` may define or override any setting. This is the escape
+# hatch used by both the manual deploy (host file) and the Docker bind-mount.
+# It is imported AFTER all env-driven settings, so its values take precedence.
+#
+# Skipped when the entry point is one of the legacy `local_settings_*.py`
+# modules (they do `from .settings import *` and would form a circular import
+# if we tried to import them back here).
+# ---------------------------------------------------------------------------
+
+_settings_module = os.environ.get("DJANGO_SETTINGS_MODULE", "")
+if not _settings_module.startswith("djangoproject.local_settings"):
+    try:
+        # mypy: local_settings.py is operator-supplied and may legitimately
+        # not exist (e.g. in CI or a fresh Docker image); the ImportError
+        # branch handles that at runtime.
+        from djangoproject.local_settings import *  # type: ignore[import] # noqa: F401, F403
+    except ImportError:
+        pass
+
+# ---------------------------------------------------------------------------
+# Validation.
+#
+# Catches missing required settings whether they come from env vars or from
+# local_settings.py. Run only when settings.py is the entry point - under the
+# legacy `DJANGO_SETTINGS_MODULE=djangoproject.local_settings*` chain,
+# validation happens naturally when local_settings finishes loading.
+# ---------------------------------------------------------------------------
+
+if not _settings_module.startswith("djangoproject.local_settings"):
+    from django.core.exceptions import ImproperlyConfigured
+
+    _missing = []
+    if not SECRET_KEY:
+        _missing.append("SECRET_KEY")
+    if not SITE_BASE_URL:
+        _missing.append("SITE_BASE_URL")
+    if not ALLOWED_HOSTS:
+        _missing.append("DJANGO_ALLOWED_HOSTS")
+    if "default" not in globals().get("DATABASES", {}):
+        _missing.append("DATABASE_URL or DATABASES")
+    if _missing:
+        raise ImproperlyConfigured(
+            "Required settings not configured: "
+            + ", ".join(_missing)
+            + ". Set them via environment variables (or define them in "
+            "djangoproject/local_settings.py)."
+        )
