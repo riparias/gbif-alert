@@ -57,8 +57,6 @@ jobs:
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install --no-interaction --no-root
-    - name: Install Django settings
-      run: cp djangoproject/local_settings_ci.py djangoproject/local_settings.py
     - name: Show chrome version (for debugging purposes)
       run: google-chrome --version
     - name: Install frontend dependencies
@@ -74,4 +72,12 @@ jobs:
         source .venv/bin/activate
         pytest
     - name: Run mypy
+      # Minimum env to satisfy settings.py's validation block when
+      # django-stubs loads djangoproject.settings during type checking.
+      # Values are throwaway - mypy doesn't run code, just imports it.
+      env:
+        SECRET_KEY: mypy-not-for-runtime
+        DJANGO_ALLOWED_HOSTS: localhost
+        SITE_BASE_URL: http://localhost
+        DATABASE_URL: postgis://postgres:postgres@127.0.0.1:5432/github_actions
       run: poetry run mypy --install-types --non-interactive .
