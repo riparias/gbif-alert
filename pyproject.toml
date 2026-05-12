@@ -52,8 +52,7 @@ markers = [
 # Safety-net env defaults for the env-driven settings module. Loaded by
 # pytest-env BEFORE Django settings are imported. Each entry uses
 # `D:` prefix (= "default") which means: do NOT override values the
-# developer/CI already set, but provide them if absent. Mirrors what
-# `local_settings_ci.py` historically provided.
+# developer/CI already set, but provide them if absent.
 env = [
     "D:SECRET_KEY=test-secret-key-not-for-production",
     "D:DEBUG=False",

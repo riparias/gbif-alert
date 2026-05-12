@@ -50,8 +50,8 @@ SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "")
 import dj_database_url
 
 # DATABASES is set only if DATABASE_URL is present. Leaving it unset lets
-# local_settings.py / local_settings_ci.py / local_settings_docker_base.py
-# define DATABASES the old way (explicit dict) without env vars.
+# local_settings.py define DATABASES the old way (explicit dict) without
+# env vars - useful for the manual deploy that pre-dates this refactor.
 if database_url := os.environ.get("DATABASE_URL"):
     DATABASES = {
         "default": dj_database_url.parse(database_url, conn_max_age=600),
