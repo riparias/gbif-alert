@@ -51,6 +51,22 @@ if database_url := os.environ.get("DATABASE_URL"):
         "default": dj_database_url.parse(database_url, conn_max_age=600),
     }
 
+from urllib.parse import urlparse
+
+# RQ_QUEUES is set only if RQ_REDIS_URL is present. Same backward-compat
+# rationale as DATABASES.
+if rq_redis_url := os.environ.get("RQ_REDIS_URL"):
+    _rq_url = urlparse(rq_redis_url)
+    RQ_QUEUES = {
+        "default": {
+            "HOST": _rq_url.hostname or "localhost",
+            "PORT": _rq_url.port or 6379,
+            "DB": int(_rq_url.path.lstrip("/")) if _rq_url.path.lstrip("/") else 0,
+            "PASSWORD": _rq_url.password or None,
+            "DEFAULT_TIMEOUT": 360,
+        },
+    }
+
 
 # Application definition
 
