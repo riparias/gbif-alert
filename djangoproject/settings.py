@@ -21,10 +21,25 @@ from django.utils.translation import gettext_lazy as _
 BASE_DIR = Path(__file__).resolve().parent.parent
 THIS_DIR = os.path.dirname(__file__)
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
+# ---------------------------------------------------------------------------
+# Environment-driven configuration.
+#
+# All operationally-significant settings come from environment variables with
+# sensible defaults. `local_settings.py` (imported at the end of this module)
+# may override any of these - that is the per-deployment escape hatch for
+# callable values like PREDICATE_BUILDER.
+#
+# Reads use `.get()` rather than `[]` so the module can load even when an env
+# var is missing. Final validation happens at the end of this module, after
+# the escape hatch has had a chance to set values from a Python file.
+# ---------------------------------------------------------------------------
 
-ALLOWED_HOSTS: list[str] = []
+SECRET_KEY = os.environ.get("SECRET_KEY", "")
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()
+]
+SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "")
 
 
 # Application definition
@@ -124,7 +139,7 @@ LANGUAGES = [
     ("nl", _("Dutch")),
 ]
 
-TIME_ZONE = "Europe/Brussels"
+TIME_ZONE = os.environ.get("TIME_ZONE", "Europe/Brussels")
 
 USE_I18N = True
 
