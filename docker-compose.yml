@@ -33,13 +33,17 @@ x-app-env: &app-env
   MAP_INITIAL_LON: ${MAP_INITIAL_LON:-0}
   TIME_ZONE: ${TIME_ZONE:-Europe/Brussels}
 
-x-app-image: &app-image
-  image: ghcr.io/riparias/gbif-alert:1.10.0
+# Image tag is operator-controlled: pin to a specific version (`:1.10.0`)
+# for stable deploys, or track a moving tag (`:devel`, `:latest`) for
+# auto-redeploy via registry polling. Inlined into each service (instead
+# of a YAML anchor) because some docker-compose implementations
+# (notably Dokploy's) do not interpolate `${VAR}` inside `x-*` extension
+# fields, which silently leaves the default value in every service.
 
 services:
 
   migrate:
-    <<: *app-image
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:-1.10.0}
     command: python manage.py migrate --noinput
     environment: *app-env
     volumes:
@@ -51,7 +55,7 @@ services:
     restart: "no"
 
   gbif-alert:
-    <<: *app-image
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:-1.10.0}
     # Dockerfile CMD reads ${GUNICORN_WORKERS:-3} at runtime.
     environment:
       <<: *app-env
@@ -89,7 +93,7 @@ services:
       ofelia.job-exec.send-notifications.no-overlap: "true"
 
   rqworker:
-    <<: *app-image
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:-1.10.0}
     command: python manage.py rqworker default
     environment: *app-env
     volumes:

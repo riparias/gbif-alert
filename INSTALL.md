@@ -121,7 +121,7 @@ docker compose exec gbif-alert python manage.py send_alert_notifications_email
 
 ### Upgrades
 
-1. Edit `docker-compose.yml`, change the image tag (e.g. `:1.10.0` -> `:1.11.0`).
+1. Bump `GBIF_ALERT_TAG` in your `.env` (e.g. `1.10.0` -> `1.11.0`). The compose file reads this var via `image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:-1.10.0}`, so you do not edit the committed compose file itself.
 2. Pull the new image and recreate:
    ```
    docker compose pull
