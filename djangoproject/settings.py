@@ -42,9 +42,21 @@ load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "")
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+# `ALLOWED_HOSTS` carries two kinds of entries:
+#   1. Hosts the operator declared via `DJANGO_ALLOWED_HOSTS` (what the
+#      validation at the end of this module cares about).
+#   2. Loopback addresses, always appended, so in-container healthchecks
+#      (the compose healthcheck hits `http://localhost:8000/healthz`) and
+#      `manage.py runserver` debugging work without operators having to
+#      remember them. Added attack surface is minimal: external clients
+#      sending `Host: localhost` against a reverse-proxied deploy still
+#      get filtered by the proxy's own host validation.
 ALLOWED_HOSTS = [
     h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()
 ]
+for _loopback in ("localhost", "127.0.0.1"):
+    if _loopback not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_loopback)
 SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "")
 
 import dj_database_url
@@ -485,8 +497,10 @@ if not _settings_module.startswith("djangoproject.local_settings"):
         _missing.append("SECRET_KEY")
     if not SITE_BASE_URL:
         _missing.append("SITE_BASE_URL")
-    if not ALLOWED_HOSTS:
-        _missing.append("DJANGO_ALLOWED_HOSTS")
+    # ALLOWED_HOSTS is intentionally NOT validated here: the loopback
+    # entries auto-added near the top of this module guarantee it is
+    # never empty, and a misconfigured host raises DisallowedHost on
+    # the first request with a clear error message anyway.
     if "default" not in globals().get("DATABASES", {}):
         _missing.append("DATABASE_URL or DATABASES")
     if _missing:

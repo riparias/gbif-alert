@@ -183,12 +183,16 @@ def test_minimal_required_env_loads(clean_env):
     """
     clean_env.setenv("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
     clean_env.setenv("SECRET_KEY", "x")
-    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "localhost")
+    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "example.org")
     clean_env.setenv("SITE_BASE_URL", "http://localhost")
     clean_env.setenv("DATABASE_URL", "postgis://u:p@h:5432/d")
     settings = _import_settings()
     assert settings.SECRET_KEY == "x"
+    assert "example.org" in settings.ALLOWED_HOSTS
+    # Loopback addresses are always added so in-container healthchecks
+    # work without operators having to remember to include them.
     assert "localhost" in settings.ALLOWED_HOSTS
+    assert "127.0.0.1" in settings.ALLOWED_HOSTS
     assert settings.DATABASES["default"]["NAME"] == "d"
 
 
@@ -203,7 +207,7 @@ def test_database_url_uses_postgis_engine(clean_env):
     """
     clean_env.setenv("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
     clean_env.setenv("SECRET_KEY", "x")
-    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "localhost")
+    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "example.org")
     clean_env.setenv("SITE_BASE_URL", "http://localhost")
     clean_env.setenv("DATABASE_URL", "postgis://u:p@h:5432/d")
     settings = _import_settings()
@@ -228,7 +232,7 @@ def test_gbif_alert_constructed_from_env(clean_env):
     """
     clean_env.setenv("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
     clean_env.setenv("SECRET_KEY", "x")
-    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "localhost")
+    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "example.org")
     clean_env.setenv("SITE_BASE_URL", "http://localhost")
     clean_env.setenv("DATABASE_URL", "postgis://u:p@h:5432/d")
     clean_env.setenv("SITE_NAME", "Test Site")
@@ -258,7 +262,7 @@ def test_default_time_zone_is_brussels(clean_env):
     """
     clean_env.setenv("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
     clean_env.setenv("SECRET_KEY", "x")
-    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "localhost")
+    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "example.org")
     clean_env.setenv("SITE_BASE_URL", "http://localhost")
     clean_env.setenv("DATABASE_URL", "postgis://u:p@h:5432/d")
     settings = _import_settings()
@@ -278,7 +282,7 @@ def test_admins_parsed_from_env_string(clean_env):
     """
     clean_env.setenv("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
     clean_env.setenv("SECRET_KEY", "x")
-    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "localhost")
+    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "example.org")
     clean_env.setenv("SITE_BASE_URL", "http://localhost")
     clean_env.setenv("DATABASE_URL", "postgis://u:p@h:5432/d")
     clean_env.setenv("ADMINS", "Alice <a@example.com>, Bob <b@example.com>")
