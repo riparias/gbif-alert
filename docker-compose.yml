@@ -1,63 +1,150 @@
-version: '3'
+# Production-only docker-compose for gbif-alert.
+#
+# Usage:
+#   docker compose up -d                          # external Postgres (set DATABASE_URL)
+#   docker compose --profile bundled-db up -d     # postgis service in compose
+#
+# All configuration via env vars - see .env.example for the contract.
+
+x-app-env: &app-env
+  SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+  DEBUG: ${DEBUG:-False}
+  DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+  DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?DJANGO_ALLOWED_HOSTS is required}
+  SITE_BASE_URL: ${SITE_BASE_URL:?SITE_BASE_URL is required}
+  SITE_NAME: ${SITE_NAME:?SITE_NAME is required}
+  RQ_REDIS_URL: ${RQ_REDIS_URL:-redis://valkey:6379/0}
+  EMAIL_HOST: ${EMAIL_HOST:-localhost}
+  EMAIL_PORT: ${EMAIL_PORT:-25}
+  EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+  EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+  EMAIL_USE_TLS: ${EMAIL_USE_TLS:-False}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
+  SERVER_EMAIL: ${SERVER_EMAIL:-}
+  ADMINS: ${ADMINS:-}
+  GBIF_DOWNLOAD_USERNAME: ${GBIF_DOWNLOAD_USERNAME:-}
+  GBIF_DOWNLOAD_PASSWORD: ${GBIF_DOWNLOAD_PASSWORD:-}
+  GBIF_DOWNLOAD_COUNTRY: ${GBIF_DOWNLOAD_COUNTRY:-}
+  GBIF_DOWNLOAD_YEAR_MIN: ${GBIF_DOWNLOAD_YEAR_MIN:-}
+  ENABLED_LANGUAGES: ${ENABLED_LANGUAGES:-en,fr,nl}
+  PRIMEVUE_PRIMARY_PALETTE: ${PRIMEVUE_PRIMARY_PALETTE:-indigo}
+  MAP_INITIAL_ZOOM: ${MAP_INITIAL_ZOOM:-2}
+  MAP_INITIAL_LAT: ${MAP_INITIAL_LAT:-0}
+  MAP_INITIAL_LON: ${MAP_INITIAL_LON:-0}
+  TIME_ZONE: ${TIME_ZONE:-Europe/Brussels}
+
+x-app-image: &app-image
+  image: ghcr.io/riparias/gbif-alert:1.10.0
 
 services:
-  nginx:
-    image: niconoe/gbif-alert-nginx:1.9.0
-    ports:
-      - "1337:80"
-    depends_on:
-      - gbif-alert
+
+  migrate:
+    <<: *app-image
+    command: python manage.py migrate --noinput
+    environment: *app-env
     volumes:
-      - static_volume:/app/staticfiles
+      - ./local_settings.py:/app/djangoproject/local_settings.py:ro
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false
+    restart: "no"
+
+  gbif-alert:
+    <<: *app-image
+    # Dockerfile CMD reads ${GUNICORN_WORKERS:-3} at runtime.
+    environment:
+      <<: *app-env
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+    volumes:
+      - ./local_settings.py:/app/djangoproject/local_settings.py:ro
+    expose:
+      - "8000"
+    ports:
+      - "${GBIF_ALERT_BIND:-127.0.0.1:8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz').read()"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    init: true
+    labels:
+      ofelia.enabled: "true"
+      ofelia.job-exec.import-observations.schedule: "${IMPORT_OBSERVATIONS_SCHEDULE:-0 2 * * *}"
+      ofelia.job-exec.import-observations.command: "python manage.py import_observations"
+      ofelia.job-exec.import-observations.no-overlap: "true"
+      ofelia.job-exec.send-notifications.schedule: "${SEND_NOTIFICATIONS_SCHEDULE:-0 4 * * *}"
+      ofelia.job-exec.send-notifications.command: "python manage.py send_alert_notifications_email"
+      ofelia.job-exec.send-notifications.no-overlap: "true"
+
+  rqworker:
+    <<: *app-image
+    command: python manage.py rqworker default
+    environment: *app-env
+    volumes:
+      - ./local_settings.py:/app/djangoproject/local_settings.py:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_started
+    restart: unless-stopped
+    init: true
+
+  scheduler:
+    image: mcuadros/ofelia:v0.3
+    command: daemon --docker -f label=com.docker.compose.project=${COMPOSE_PROJECT_NAME:-gbif-alert}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      gbif-alert:
+        condition: service_healthy
+    restart: unless-stopped
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    command: valkey-server --appendonly yes
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
   db:
     image: postgis/postgis:15-3.3
-    platform: linux/amd64
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
+    profiles: ["bundled-db"]
+    # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB are required ONLY when
+    # the bundled-db profile is enabled. Compose interpolates env vars for
+    # every service regardless of profile, so we use empty defaults here
+    # (postgres itself fails at startup if creds are missing - that error
+    # surfaces only when this service is actually started).
     environment:
-      - POSTGRES_PASSWORD=gbif-alert-db
-      - POSTGRES_USER=gbif-alert-db
-      - POSTGRES_DB=gbif-alert-db
+      POSTGRES_USER: ${POSTGRES_USER:-}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'psql -h localhost -U $${POSTGRES_USER} -c select 1 -d $${POSTGRES_DB}']
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
       timeout: 5s
       retries: 5
-  redis:
-    image: redis:7.0.12
-    expose:
-      - 6379
-  gbif-alert:
-    image : niconoe/gbif-alert:1.9.0
-    expose:
-      - 8000
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-
-    volumes:
-      - static_volume:/app/staticfiles
-      - type: bind
-        source: ./local_settings_docker.py
-        target: /app/djangoproject/local_settings_docker.py
-        read_only: true
-  rqworker:
-    image: niconoe/gbif-alert:1.9.0
-    entrypoint: poetry run python manage.py rqworker default
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    volumes:
-      - static_volume:/app/staticfiles
-      - type: bind
-        source: ./local_settings_docker.py
-        target: /app/djangoproject/local_settings_docker.py
-        read_only: true
+    restart: unless-stopped
 
 volumes:
+  valkey_data:
   postgres_data:
-  static_volume:
