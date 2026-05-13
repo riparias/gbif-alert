@@ -37,63 +37,118 @@ Please note that in order to run a production GBIF Alert instance, you will need
 
 ## Install and run GBIF Alert through Docker Compose
 
-Installing GBIF Alert through Docker Compose is the recommended way to install and run GBIF Alert. It is suitable for
-a quick test or a production deployment. It will install all the dependencies for you and will make sure they are
-properly configured.
+The Docker Compose stack is production-only. For local development, use the manual install (see below).
 
 ### Prerequisites
 
-- Make sure [Docker](https://docs.docker.com/get-docker/) is installed on your system
-- Identify the latest release of GBIF Alert on GitHub at https://github.com/riparias/gbif-alert/tags (currently [v1.9.0](https://github.com/riparias/gbif-alert/releases/tag/v1.9.0))
+- Docker (Engine 24+) and Docker Compose v2.20 or newer.
+- A Postgres + PostGIS database. You can either:
+  - **Bring your own** (recommended for production: managed Postgres on Dokploy, RDS, etc.). PostGIS extension required.
+  - **Use the bundled `db` service** (good for testing or hobbyist self-hosting). Backups are your responsibility.
+- An external reverse proxy in front of the stack (Dokploy/Traefik, ALB, Nginx, ...) handling TLS and routing. The `gbif-alert` container exposes port 8000 and serves static files via WhiteNoise; no nginx in compose.
 
-### Installation steps
+### Initial deploy
 
-- Create a new directory on your system, e.g. `invasive-fishes-nz` following the example above.
-- Go to the `docker-compose.yml` file from the latest release of GBIF Alert on GitHub: at the moment https://github.com/riparias/gbif-alert/blob/v1.9.0/docker-compose.yml (note that the URL contains the version number).
-- Save the file in the directory you have just created.
-- Go to the `local_settings_docker.template.py` file from the latest release of GBIF Alert on GitHub: at the moment https://github.com/riparias/gbif-alert/blob/v1.9.0/djangoproject/local_settings_docker.template.py.
-- Save the file in the directory you have just created. 
-- Rename this file to `local_settings_docker.py`.
-- Open a terminal, navigate to the `invasive-fishes-nz` directory and run the following command: `docker-compose up`. 
+1. Create a directory for the deploy:
+   ```
+   mkdir gbif-alert-deploy && cd gbif-alert-deploy
+   ```
 
-- The first execution will take a while, and you'll see logs from multiple Docker containers. Don't close this terminal. Once it stabilizes, open a second terminal for subsequent commands.
+2. Download the three artefacts from the release tag (replace `v1.10.0` with the version you want):
+   ```
+   curl -O https://raw.githubusercontent.com/riparias/gbif-alert/v1.10.0/docker-compose.yml
+   curl -O https://raw.githubusercontent.com/riparias/gbif-alert/v1.10.0/.env.example
+   curl -O https://raw.githubusercontent.com/riparias/gbif-alert/v1.10.0/local_settings.py.example
+   ```
 
-Congrats, 👏 you can now access your instance at `http://localhost:1337`.
+3. Copy the templates and edit:
+   ```
+   cp .env.example .env
+   cp local_settings.py.example local_settings.py
+   $EDITOR .env
+   ```
 
-### Next step: customization your GBIF Alert instance
+   Set at minimum: `SECRET_KEY`, `DATABASE_URL`, `SITE_BASE_URL`, `DJANGO_ALLOWED_HOSTS`, `SITE_NAME`. See `.env.example` for the full contract. `local_settings.py` should normally stay empty unless you need a custom callable like `PREDICATE_BUILDER`.
 
-- With your favourite text editor, open the `local_settings_docker.py` file you have just created.
-- Edit it to customize the following settings:
-  - The `GBIF_ALERT` dictionary is heavily commented and should be self-explanatory. It contains settings such as the site name, the credentials used to 
-  download occurrences from GBIF, ...
-  - A special attention point for the `GBIF_ALERT['GBIF_DOWNLOAD_CONFIG']['PREDICATE_BUILDER'']` setting: it defines the subset of GBIF occurrences that will be downloaded and imported in the GBIF Alert database. You need to provide a function that returns a GBIF predicate. You can get inspiration from `build_gbif_download_predicate()`. Please note that this function will receive a list of species at runtime, so it's important to keep the "TAXON_KEY IN (...)" part of predicate similar to the example function.
-- For production websites, you should also take care of the following settings:
-  - `SECRET_KEY` must be set. See the [Django documentation](https://docs.djangoproject.com/en/4.2/ref/settings/#std-setting-SECRET_KEY) for more details.
-  - Once confirmed that your instance is working properly, switch `DEBUG` to `False`.
-  - `SITE_BASE_URL` should be set to the base URL of your website, e.g. `https://invasive-fishes-nz.org`. This is used to generate links in the notification e-mails.
-  - The `EMAIL_*` settings are used to send notification e-mails. Please refer to the [Django documentation](https://docs.djangoproject.com/en/4.2/ref/settings/#email) for more details.
-- Save the file.
-- You might need to stop (CTRL+C) and restart (run `docker-compose up` again) the Docker Compose stack in the first terminal to take the changes into account. This is especially true if you have set `DEBUG` to `False`.
+4. Bring up the stack:
+   - With external Postgres:
+     ```
+     docker compose up -d
+     ```
+   - With the bundled Postgres+PostGIS (set `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB` in `.env` first):
+     ```
+     docker compose --profile bundled-db up -d
+     ```
 
-### Next step: create a first superuser, add a few species and import occurrence data from GBIF
+5. Create the first superuser:
+   ```
+   docker compose exec gbif-alert python manage.py createsuperuser
+   ```
 
-- Create a first superuser or **administrator**: in the second terminal, run the following command: `docker-compose exec gbif-alert poetry run python manage.py createsuperuser` and answer the questions.
-- Log in to the GBIF Alert instance you have just created. You can access to the Admin interface at `http://localhost:1337/admin`, or via the "Admin panel" link in the dropdown menu of the navigation bar on the top right.
-- Add the species you are interested to via the Admin panel. You will probably need to use the [GBIF species](https://www.gbif.org/species/) webpage to get the taxon keys. 
-- You are all set up to run the first data import from GBIF! 🚀 In the second terminal, run the following command: `docker-compose exec gbif-alert poetry run python manage.py import_observations`. This will take some time (a couple of minutes to a couple of hours).
-- After completion, you go back to your instance (http://localhost:1337) and start exploring the data.
-- Note that you'll need to run the import command periodically to keep your instance up-to-date. Since your instance will be in maintenance mode during (part of) the import, you might want to schedule the import command to run at night.
+6. Visit your site (via the reverse proxy you set up in front of port 8000) and log in to the admin (`/admin`).
 
-### Next step: Create alerts, test e-mail notifications
+### Customising your instance
 
-- Create a new alert via the "My alerts" page.
-- Make sure you have a valid e-mail address in your user profile and some unseen occurrences in your alert.
-- In the second terminal, run the following command: `docker-compose exec gbif-alert poetry run python manage.py send_alert_notifications_email`. This will send a notification e-mail to your e-mail address.
-- Similar to the import command, you'll need to run the notification command periodically to send notifications to your users. This will not work if your instance is still importing data from GBIF, so you'll want to schedule the notification command to run after the import command (with some margin).
+All operationally-significant settings live in `.env`. Highlights:
 
-### Next step: customize the website content (texts)
+- **Branding**: `SITE_NAME`, `PRIMEVUE_PRIMARY_PALETTE`.
+- **Map default view**: `MAP_INITIAL_ZOOM`, `MAP_INITIAL_LAT`, `MAP_INITIAL_LON`.
+- **Languages**: `ENABLED_LANGUAGES` (comma-separated subset of `en,fr,nl`).
+- **GBIF download filter**: `GBIF_DOWNLOAD_USERNAME`, `GBIF_DOWNLOAD_PASSWORD`, `GBIF_DOWNLOAD_COUNTRY`, `GBIF_DOWNLOAD_YEAR_MIN`. The default predicate builder uses these to construct the download filter.
+- **Custom predicate**: for filters not expressible via `GBIF_DOWNLOAD_*`, edit `local_settings.py` to override `GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"]`. See `local_settings.py.example` for a worked example.
 
-### Next steps: load a few areas of interest
+After editing `.env`, restart the stack:
+
+```
+docker compose up -d
+```
+
+### Periodic tasks (observation imports + email notifications)
+
+The compose stack includes an `ofelia` scheduler container that calls the two periodic management commands inside the `gbif-alert` container. Schedules are env-configurable:
+
+- `IMPORT_OBSERVATIONS_SCHEDULE` (default: `0 2 * * *` - daily at 02:00)
+- `SEND_NOTIFICATIONS_SCHEDULE` (default: `0 14 * * *` - daily at 14:00, giving the import a 12-hour window to complete)
+
+These cron expressions are evaluated in the `scheduler` container's timezone, which defaults to UTC.
+
+To run a job ad-hoc (outside the schedule):
+
+```
+docker compose exec gbif-alert python manage.py import_observations
+docker compose exec gbif-alert python manage.py send_alert_notifications_email
+```
+
+### Upgrades
+
+1. Edit `docker-compose.yml`, change the image tag (e.g. `:1.10.0` -> `:1.11.0`).
+2. Pull the new image and recreate:
+   ```
+   docker compose pull
+   docker compose up -d
+   ```
+
+The `migrate` service runs first and applies any new database migrations before the app comes back up. Volumes (`valkey_data`, `postgres_data`) are preserved across upgrades.
+
+### Backups (bundled-db only)
+
+If you use the bundled `db` service, plain `pg_dump` works:
+
+```
+docker compose exec db pg_dump -U $POSTGRES_USER $POSTGRES_DB > backup-$(date +%F).sql
+```
+
+Schedule via host cron (or external orchestration). Production deployments should prefer a managed Postgres with built-in backups.
+
+### Common operations
+
+| Op | Command |
+|---|---|
+| App logs | `docker compose logs -f gbif-alert` |
+| Scheduler logs | `docker compose logs -f scheduler` |
+| Restart app | `docker compose restart gbif-alert` |
+| Django shell | `docker compose exec gbif-alert python manage.py shell` |
+| Healthcheck | `curl http://localhost:8000/healthz` |
 
 ## Run GBIF Alert manually
 

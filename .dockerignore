@@ -1,0 +1,43 @@
+# Build artefacts and caches
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.tox/
+
+# Vite output (we want a fresh build inside the image, not whatever was
+# left behind on the build host)
+static_global/vite/
+
+# Django collected staticfiles - regenerated at image build time
+static/
+staticfiles/
+
+# Local dev / IDE
+.env
+.envrc
+local_settings.py
+djangoproject/local_settings.py
+djangoproject/.env
+.idea/
+.vscode/
+.DS_Store
+
+# Tests
+playwright-report/
+test-results/
+htmlcov/
+.coverage
+
+# Git, but keep the index for build-time `git describe` if ever needed
+.git/
+
+# Docs and design (irrelevant to runtime)
+docs/superpowers/
+
+# Worktrees managed by Claude Code superpowers
+.worktrees/
+.claude/
+.superpowers/
