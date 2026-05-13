@@ -84,7 +84,7 @@ services:
       ofelia.job-exec.import-observations.schedule: "${IMPORT_OBSERVATIONS_SCHEDULE:-0 2 * * *}"
       ofelia.job-exec.import-observations.command: "python manage.py import_observations"
       ofelia.job-exec.import-observations.no-overlap: "true"
-      ofelia.job-exec.send-notifications.schedule: "${SEND_NOTIFICATIONS_SCHEDULE:-0 4 * * *}"
+      ofelia.job-exec.send-notifications.schedule: "${SEND_NOTIFICATIONS_SCHEDULE:-0 14 * * *}"
       ofelia.job-exec.send-notifications.command: "python manage.py send_alert_notifications_email"
       ofelia.job-exec.send-notifications.no-overlap: "true"
 
