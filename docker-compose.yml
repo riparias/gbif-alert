@@ -34,7 +34,10 @@ x-app-env: &app-env
   TIME_ZONE: ${TIME_ZONE:-Europe/Brussels}
 
 x-app-image: &app-image
-  image: ghcr.io/riparias/gbif-alert:1.10.0
+  # Image tag is operator-controlled: pin to a specific version (`:1.10.0`)
+  # for stable deploys, or track a moving tag (`:devel`, `:latest`) for
+  # auto-redeploy via registry polling.
+  image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:-1.10.0}
 
 services:
 
