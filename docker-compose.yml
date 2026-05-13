@@ -103,7 +103,7 @@ services:
     init: true
 
   scheduler:
-    image: mcuadros/ofelia:v0.3
+    image: mcuadros/ofelia:0.3
     command: daemon --docker -f label=com.docker.compose.project=${COMPOSE_PROJECT_NAME:-gbif-alert}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
