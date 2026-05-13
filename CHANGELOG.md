@@ -4,6 +4,36 @@
 - (experimental) New filter options for areas: inside/approaching/both (https://github.com/riparias/gbif-alert/issues/300)
 - Vernacular name of species is now shown in the map popup (https://github.com/riparias/gbif-alert/issues/165)
 
+## Configuration and deployment
+
+**Breaking changes:**
+
+- **Docker image registry**: images are now published to GHCR (`ghcr.io/riparias/gbif-alert`) instead of Docker Hub (`niconoe/gbif-alert`). The Docker Hub repository is no longer maintained. Update your `docker-compose.yml` `image:` references.
+- **Configuration model**: settings are now driven by environment variables with an optional `local_settings.py` escape hatch. The previous bind-mount-a-Python-file pattern (`local_settings_docker.py`) is gone. See `INSTALL.md` for the new deploy flow and `.env.example` for the variable contract.
+- **Compose topology**: the custom nginx image and `static_volume` are removed. The app now serves static files via WhiteNoise. Operators need an external reverse proxy (Dokploy/Traefik, ALB, etc.) for TLS and public routing.
+- **Redis -> Valkey**: the in-compose broker is now Valkey (BSD-3-Clause). Same RESP protocol, drop-in for rq. The service name in compose changed from `redis` to `valkey`.
+- **Migrations** are now applied by a one-shot `migrate` service rather than at every container startup. Safer for multi-replica deployments.
+
+**Added:**
+
+- `/healthz` liveness endpoint (returns `{"status": "ok"}`).
+- ofelia scheduler in compose runs `import_observations` and `send_alert_notifications_email` on operator-configurable cron schedules.
+- `bundled-db` compose profile so the postgis service is opt-in (production deploys typically use managed Postgres).
+- GitHub Actions workflows: build on every push to `main`/`devel`, publish versioned tags on `v*`.
+- `.env.example` documents the full env-var contract.
+
+**Changed:**
+
+- Multi-stage Dockerfile: Node frontend build is in a separate stage; final image has no Node, smaller size.
+- `compilemessages` and `collectstatic` run at image build time (immutable image, faster startup).
+- gunicorn worker count is configurable via `GUNICORN_WORKERS` env var.
+- All compose services have `restart: unless-stopped` (except `migrate` which is one-shot).
+
+**Removed:**
+
+- Custom `niconoe/gbif-alert-nginx` image.
+- `nginx/` directory, `docker-entrypoint.sh`, `djangoproject/local_settings_docker.template.py`, `djangoproject/local_settings_docker_base.py`, `djangoproject/local_settings_ci.py`, `NAVBAR_BACKGROUND_COLOR`, `NAVBAR_LIGHT_TEXT` settings (dead code in the new SPA).
+
 # 1.9.0 (2026-03-06)
 
 - Allow to filter observations per basis of record
