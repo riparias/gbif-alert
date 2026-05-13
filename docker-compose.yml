@@ -86,6 +86,7 @@ services:
     restart: unless-stopped
     init: true
     labels:
+      # ofelia (in-stack scheduler) - see the `scheduler` service.
       ofelia.enabled: "true"
       ofelia.job-exec.import-observations.schedule: "${IMPORT_OBSERVATIONS_SCHEDULE:-0 2 * * *}"
       ofelia.job-exec.import-observations.command: "python manage.py import_observations"
@@ -93,6 +94,19 @@ services:
       ofelia.job-exec.send-notifications.schedule: "${SEND_NOTIFICATIONS_SCHEDULE:-0 14 * * *}"
       ofelia.job-exec.send-notifications.command: "python manage.py send_alert_notifications_email"
       ofelia.job-exec.send-notifications.no-overlap: "true"
+      # Traefik routing (Dokploy and any other Traefik-fronted host).
+      # Non-Traefik deploys (plain docker compose, ECS) ignore these
+      # labels entirely - they sit as inert metadata. Set
+      # `PUBLIC_DOMAIN` in the env when behind Traefik.
+      #
+      # Router/service name is hardcoded because compose does not
+      # interpolate `${VAR}` in label keys. Running multiple instances
+      # behind the same Traefik would conflict on the router name.
+      traefik.enable: "true"
+      traefik.http.routers.gbif-alert.rule: "Host(`${PUBLIC_DOMAIN:-}`)"
+      traefik.http.routers.gbif-alert.entrypoints: "websecure"
+      traefik.http.routers.gbif-alert.tls.certresolver: "${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      traefik.http.services.gbif-alert.loadbalancer.server.port: "8000"
 
   rqworker:
     image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:-1.10.0}

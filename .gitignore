@@ -57,7 +57,10 @@ coverage.xml
 
 # Django stuff:
 *.log
-local_settings.py
+# Ignore only the manual-deploy settings file (with secrets).
+# The repo-root `local_settings.py` is the Docker bind-mount target
+# (a committed empty stub) and must stay tracked.
+djangoproject/local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
