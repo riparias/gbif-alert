@@ -107,10 +107,12 @@ docker compose up -d
 
 The compose stack includes an `ofelia` scheduler container that calls the two periodic management commands inside the `gbif-alert` container. Schedules are env-configurable:
 
-- `IMPORT_OBSERVATIONS_SCHEDULE` (default: `0 2 * * *` - daily at 02:00)
-- `SEND_NOTIFICATIONS_SCHEDULE` (default: `0 14 * * *` - daily at 14:00, giving the import a 12-hour window to complete)
+- `IMPORT_OBSERVATIONS_SCHEDULE` (default: `0 0 2 * * *` - daily at 02:00:00)
+- `SEND_NOTIFICATIONS_SCHEDULE` (default: `0 0 14 * * *` - daily at 14:00:00, giving the import a 12-hour window to complete)
 
 These cron expressions are evaluated in the `scheduler` container's timezone, which defaults to UTC.
+
+**Cron format note:** Ofelia uses a SIX-field cron expression where the leading field is *seconds* (`second minute hour day month dayofweek`), not the standard five-field Unix cron. A five-field expression like `0 2 * * *` is silently misinterpreted as "every hour at HH:02:00" rather than "daily at 02:00". When overriding the defaults, always include the leading `0` for seconds.
 
 To run a job ad-hoc (outside the schedule):
 

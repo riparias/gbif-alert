@@ -89,10 +89,14 @@ services:
     labels:
       # ofelia (in-stack scheduler) - see the `scheduler` service.
       ofelia.enabled: "true"
-      ofelia.job-exec.import-observations.schedule: "${IMPORT_OBSERVATIONS_SCHEDULE:-0 2 * * *}"
+      # Ofelia's cron parser (robfig/cron v1) expects SIX fields with the
+      # leading one being seconds: "second minute hour day month dayofweek".
+      # A 5-field expression silently shifts left and runs hourly. So
+      # "0 0 2 * * *" = 02:00:00 daily, NOT "0 2 * * *".
+      ofelia.job-exec.import-observations.schedule: "${IMPORT_OBSERVATIONS_SCHEDULE:-0 0 2 * * *}"
       ofelia.job-exec.import-observations.command: "python manage.py import_observations"
       ofelia.job-exec.import-observations.no-overlap: "true"
-      ofelia.job-exec.send-notifications.schedule: "${SEND_NOTIFICATIONS_SCHEDULE:-0 14 * * *}"
+      ofelia.job-exec.send-notifications.schedule: "${SEND_NOTIFICATIONS_SCHEDULE:-0 0 14 * * *}"
       ofelia.job-exec.send-notifications.command: "python manage.py send_alert_notifications_email"
       ofelia.job-exec.send-notifications.no-overlap: "true"
       # Traefik routing (Dokploy and any other Traefik-fronted host).
