@@ -23,15 +23,26 @@ import { routes } from "./router/index";
 // branding color via GBIF_ALERT["PRIMEVUE_PRIMARY_PALETTE"] in Django settings.
 const primaryPalette: string = getNavConfig().primaryPalette;
 
-const shades = [
-    "50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950",
-];
-
 const GbifAlertPreset = definePreset(Material, {
     semantic: {
         // Map all primary tokens to the chosen palette so every PrimeVue component
         // (buttons, focus rings, active states, ...) uses the deployment's color.
-        primary: Object.fromEntries(shades.map((s) => [s, `{${primaryPalette}.${s}}`])),
+        // Written as a literal object (not Object.fromEntries) because the dynamic
+        // form crashes during PrimeVue mount in Vite production builds with a
+        // `nextSibling` null error in vendor-primevue.
+        primary: {
+            "50": `{${primaryPalette}.50}`,
+            "100": `{${primaryPalette}.100}`,
+            "200": `{${primaryPalette}.200}`,
+            "300": `{${primaryPalette}.300}`,
+            "400": `{${primaryPalette}.400}`,
+            "500": `{${primaryPalette}.500}`,
+            "600": `{${primaryPalette}.600}`,
+            "700": `{${primaryPalette}.700}`,
+            "800": `{${primaryPalette}.800}`,
+            "900": `{${primaryPalette}.900}`,
+            "950": `{${primaryPalette}.950}`,
+        },
     },
     components: {
         // Override Menubar tokens so the navbar background matches the primary color
