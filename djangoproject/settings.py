@@ -57,6 +57,26 @@ ALLOWED_HOSTS = [
 for _loopback in ("localhost", "127.0.0.1"):
     if _loopback not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(_loopback)
+
+# CSRF_TRUSTED_ORIGINS must include the scheme (e.g. "https://example.org").
+# Required when Django is behind a reverse proxy on a custom domain: since
+# Django 4.0, the CSRF middleware verifies the browser-sent Origin header
+# against this allowlist on every unsafe (POST/PUT/DELETE) request.
+# Comma-separated via env var.
+CSRF_TRUSTED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if o.strip()
+]
+
+# Trust the X-Forwarded-Proto header from the reverse proxy so that
+# request.is_secure() returns True for HTTPS requests terminated at the
+# proxy. Used for secure-cookie behavior and absolute URL building.
+# Safe here because the supported proxies (Traefik, nginx) overwrite this
+# header rather than forwarding a client-supplied value - if you put a
+# different proxy in front, verify it does the same before trusting this.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "")
 
 import dj_database_url

@@ -68,7 +68,7 @@ The Docker Compose stack is production-only. For local development, use the manu
    $EDITOR .env
    ```
 
-   Set at minimum: `SECRET_KEY`, `DATABASE_URL`, `SITE_BASE_URL`, `DJANGO_ALLOWED_HOSTS`, `SITE_NAME`. See `.env.example` for the full contract. `local_settings.py` should normally stay empty unless you need a custom callable like `PREDICATE_BUILDER`.
+   Set at minimum: `SECRET_KEY`, `DATABASE_URL`, `SITE_BASE_URL`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`, `SITE_NAME`. See `.env.example` for the full contract. `local_settings.py` should normally stay empty unless you need a custom callable like `PREDICATE_BUILDER`.
 
 4. Bring up the stack:
    - With external Postgres:
@@ -165,7 +165,7 @@ You'll need to install Python, PostgreSQL, PostGIS and Redis (or Valkey) on your
    cp .env.example .env
    $EDITOR .env
    ```
-   Set at least `SECRET_KEY`, `DATABASE_URL`, `SITE_BASE_URL`, `DJANGO_ALLOWED_HOSTS`, and `SITE_NAME`. See `.env.example` for the full contract and `EMAIL_*` / `GBIF_DOWNLOAD_*` / `MAP_INITIAL_*` settings you'll want for production.
+   Set at least `SECRET_KEY`, `DATABASE_URL`, `SITE_BASE_URL`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`, and `SITE_NAME`. See `.env.example` for the full contract and `EMAIL_*` / `GBIF_DOWNLOAD_*` / `MAP_INITIAL_*` settings you'll want for production.
 4. (Optional) For settings that cannot be expressed as env vars (e.g. a custom `PREDICATE_BUILDER` callable), copy `djangoproject/local_settings.template.py` to `djangoproject/local_settings.py` and edit. This file is gitignored.
 5. Generate the database schema: `$ poetry run python manage.py migrate`.
 6. Install frontend dependencies: `$ npm install`.
