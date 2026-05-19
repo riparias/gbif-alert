@@ -186,20 +186,30 @@ The web application handle three categories of users:
   
 ## Use of Redis
 
-Redis is currently used with [django-rq](https://github.com/rq/django-rq) to manage queues for long-running tasks 
-(as of 2023-08: mark all observations as seen).
+Redis is currently used for two things:
 
-In addition to installing a Redis (or Valkey) instance on your development machine, point Django-rq at it via the `RQ_REDIS_URL` env var (e.g. `redis://localhost:6379/0` in your `.env`), then run a worker for the default queue with `$ python manage.py rqworker default`.
+1. With [django-rq](https://github.com/rq/django-rq) to manage queues for long-running tasks (as of 2023-08: mark all observations as seen).
+2. As Django's cache backend, which `django-maintenance-mode` uses to share the maintenance flag across processes (gunicorn workers, the rqworker container, and the `import_observations` command).
+
+To set it up locally, install a Redis (or Valkey) instance on your development machine and point Django-rq at it via the `RQ_REDIS_URL` env var (e.g. `redis://localhost:6379/0` in your `.env`); the Django cache reuses the same URL automatically. Then run a worker for the default queue with `$ python manage.py rqworker default`.
+
+If you forget to start Redis/Valkey locally:
+
+- `manage.py runserver` keeps working: the cache falls back to an in-process `LocMemCache`, and any feature that tries to talk to it succeeds (just per-process).
+- RQ features (queued jobs, scheduled imports run via `rqworker`) will NOT work - they need a real broker.
+- Maintenance-mode toggles will not be visible across processes (each one has its own cache), but the single-process `runserver` is fine.
 
 ## Maintenance mode
 
-We make use of [django-maintenance-mode](https://github.com/fabiocaccamo/django-maintenance-mode). 
+We make use of [django-maintenance-mode](https://github.com/fabiocaccamo/django-maintenance-mode), configured with its `CacheBackend` so the flag is shared across all processes through the Django cache (see above).
 
 Maintenance mode will be set during each (observation) data import (data would be inconsistent at this stage, so we don't
 want to let users access the website, nor send e-mail notifications).
 
 This tool can also be used to manually activate maintenance mode during complex maintenance tasks, look at 
 [django-maintenance-mode documentation](https://github.com/fabiocaccamo/django-maintenance-mode).
+
+If the cache is misconfigured or unreachable in production, `CacheBackend` logs a warning and returns `MAINTENANCE_MODE_STATE_BACKEND_FALLBACK_VALUE` (set to `False` in `settings.py`) - so a Valkey outage degrades to "site stays up, maintenance toggle silently no-ops" rather than 5xx-ing every request.
 
 ## Internationalization (i18n)
 

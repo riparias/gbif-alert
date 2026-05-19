@@ -12,14 +12,9 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import os
 from pathlib import Path
 
-import fsutil
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-
 from django.utils.translation import gettext_lazy as _
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-THIS_DIR = os.path.dirname(__file__)
 
 from dotenv import load_dotenv
 
@@ -107,6 +102,30 @@ RQ_QUEUES = {
         "DEFAULT_TIMEOUT": 360,
     },
 }
+
+# Cache. Used by maintenance_mode (CacheBackend) to share state across
+# gunicorn workers, rqworker and the ofelia-triggered import_observations
+# command. CACHE_URL is an optional override; by default we reuse
+# RQ_REDIS_URL so a single env var is enough for the common case. When
+# neither is set (typical local `runserver` without any broker), fall
+# back to LocMemCache so the site keeps working - note that LocMemCache
+# is per-process, so the maintenance_mode flag will not be shared across
+# processes (fine for single-process dev, not for prod).
+_cache_url = os.environ.get("CACHE_URL", "") or os.environ.get("RQ_REDIS_URL", "")
+if _cache_url:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": _cache_url,
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "gbif-alert-default",
+        }
+    }
 
 # Email backend defaults to SMTP. Override via local_settings.py if you need
 # the console backend for dev or LocMemEmailBackend for tests.
@@ -350,11 +369,12 @@ RQ_SHOW_ADMIN_LINK = True
 
 # We have to explicitly set the various maintenance mode default settings because of https://github.com/fabiocaccamo/django-maintenance-mode/issues/59
 MAINTENANCE_MODE = None
-MAINTENANCE_MODE_STATE_BACKEND = "maintenance_mode.backends.LocalFileBackend"
-MAINTENANCE_MODE_STATE_FILE_NAME = "maintenance_mode_state.txt"
-MAINTENANCE_MODE_STATE_FILE_PATH = fsutil.join_path(
-    THIS_DIR, MAINTENANCE_MODE_STATE_FILE_NAME
-)
+# CacheBackend uses the Django cache configured above. It catches cache
+# errors internally and falls back to STATE_BACKEND_FALLBACK_VALUE, so a
+# Valkey outage degrades to "not in maintenance mode" rather than crashing
+# every request - the failure mode that caused this setting to exist.
+MAINTENANCE_MODE_STATE_BACKEND = "maintenance_mode.backends.CacheBackend"
+MAINTENANCE_MODE_STATE_BACKEND_FALLBACK_VALUE = False
 MAINTENANCE_MODE_IGNORE_ADMIN_SITE = False
 MAINTENANCE_MODE_IGNORE_ANONYMOUS_USER = False
 MAINTENANCE_MODE_IGNORE_AUTHENTICATED_USER = False

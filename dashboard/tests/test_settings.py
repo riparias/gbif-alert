@@ -269,6 +269,91 @@ def test_default_time_zone_is_brussels(clean_env):
     assert settings.TIME_ZONE == "Europe/Brussels"
 
 
+def test_caches_falls_back_to_locmem_when_no_redis_configured(clean_env):
+    """No `CACHE_URL` and no `RQ_REDIS_URL` -> `LocMemCache`.
+
+    Local-dev ergonomics: a developer running `manage.py runserver` with
+    neither env var set must not have the site crash on cache lookups
+    just because they forgot to start a local Valkey. The site should
+    keep working with an in-process cache (per-process state is fine
+    when there is only one process).
+    """
+    clean_env.setenv("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
+    clean_env.setenv("SECRET_KEY", "x")
+    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "example.org")
+    clean_env.setenv("SITE_BASE_URL", "http://localhost")
+    clean_env.setenv("DATABASE_URL", "postgis://u:p@h:5432/d")
+    settings = _import_settings()
+    assert (
+        settings.CACHES["default"]["BACKEND"]
+        == "django.core.cache.backends.locmem.LocMemCache"
+    )
+
+
+def test_caches_uses_rq_redis_url_by_default(clean_env):
+    """`RQ_REDIS_URL` set, `CACHE_URL` unset -> Redis-backed cache reusing
+    the RQ broker URL.
+
+    One env var is enough for the common deploy: the same Valkey/Redis
+    instance serves both the RQ queue and Django's cache. This is the
+    production default in `docker-compose.yml`.
+    """
+    clean_env.setenv("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
+    clean_env.setenv("SECRET_KEY", "x")
+    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "example.org")
+    clean_env.setenv("SITE_BASE_URL", "http://localhost")
+    clean_env.setenv("DATABASE_URL", "postgis://u:p@h:5432/d")
+    clean_env.setenv("RQ_REDIS_URL", "redis://valkey:6379/0")
+    settings = _import_settings()
+    assert (
+        settings.CACHES["default"]["BACKEND"]
+        == "django.core.cache.backends.redis.RedisCache"
+    )
+    assert settings.CACHES["default"]["LOCATION"] == "redis://valkey:6379/0"
+
+
+def test_cache_url_overrides_rq_redis_url(clean_env):
+    """Explicit `CACHE_URL` wins over `RQ_REDIS_URL`.
+
+    Lets operators put the cache on a different Redis database from RQ
+    (e.g. `/1` vs `/0`) without redirecting RQ too. The override path
+    must be honoured or the documented escape hatch in `.env.example` is
+    silently ignored.
+    """
+    clean_env.setenv("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
+    clean_env.setenv("SECRET_KEY", "x")
+    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "example.org")
+    clean_env.setenv("SITE_BASE_URL", "http://localhost")
+    clean_env.setenv("DATABASE_URL", "postgis://u:p@h:5432/d")
+    clean_env.setenv("RQ_REDIS_URL", "redis://valkey:6379/0")
+    clean_env.setenv("CACHE_URL", "redis://valkey:6379/1")
+    settings = _import_settings()
+    assert settings.CACHES["default"]["LOCATION"] == "redis://valkey:6379/1"
+
+
+def test_maintenance_mode_uses_cache_backend(clean_env):
+    """`MAINTENANCE_MODE_STATE_BACKEND` is the cache-backed variant.
+
+    The previous `LocalFileBackend` value wrote a state file to
+    `djangoproject/maintenance_mode_state.txt`. In production that file
+    was created as `root:root` mode `0600` by an ofelia-triggered exec,
+    locking out the gunicorn workers and breaking every request. This
+    test pins the cache-backed configuration so a regression to the file
+    backend would fail loudly here rather than at 02:00 on the next
+    `import_observations` run.
+    """
+    clean_env.setenv("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
+    clean_env.setenv("SECRET_KEY", "x")
+    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "example.org")
+    clean_env.setenv("SITE_BASE_URL", "http://localhost")
+    clean_env.setenv("DATABASE_URL", "postgis://u:p@h:5432/d")
+    settings = _import_settings()
+    assert (
+        settings.MAINTENANCE_MODE_STATE_BACKEND
+        == "maintenance_mode.backends.CacheBackend"
+    )
+
+
 def test_admins_parsed_from_env_string(clean_env):
     """`ADMINS` is parsed from a single env-var string of the form
     `Name1 <a@b>, Name2 <c@d>` into Django's `list[tuple[name, email]]`
