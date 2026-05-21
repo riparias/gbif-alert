@@ -186,18 +186,19 @@ The web application handle three categories of users:
   
 ## Use of Redis
 
-Redis is currently used for two things:
+Redis/Valkey is a hard local-dev dependency. It's used for two things:
 
 1. With [django-rq](https://github.com/rq/django-rq) to manage queues for long-running tasks (as of 2023-08: mark all observations as seen).
-2. As Django's cache backend, which `django-maintenance-mode` uses to share the maintenance flag across processes (gunicorn workers, the rqworker container, and the `import_observations` command).
+2. As Django's cache backend, which `django-maintenance-mode` uses to share the maintenance flag across processes (gunicorn workers, the rqworker container, the `import_observations` command, and `manage.py maintenance_mode on/off` from your terminal).
 
-To set it up locally, install a Redis (or Valkey) instance on your development machine and point Django-rq at it via the `RQ_REDIS_URL` env var (e.g. `redis://localhost:6379/0` in your `.env`); the Django cache reuses the same URL automatically. Then run a worker for the default queue with `$ python manage.py rqworker default`.
+Install a Redis or Valkey instance on your development machine and make sure it's listening on the default `localhost:6379`. On macOS the easiest path is `brew install valkey && brew services start valkey`. The Django settings default to `redis://localhost:6379/0` for both the cache and the RQ broker, so no env vars are needed for the standard setup; override `RQ_REDIS_URL` (and optionally `CACHE_URL`) in your `.env` if you run it elsewhere or want to isolate the cache on a different Redis DB.
 
-If you forget to start Redis/Valkey locally:
+Then run a worker for the default queue with `$ python manage.py rqworker default`.
 
-- `manage.py runserver` keeps working: the cache falls back to an in-process `LocMemCache`, and any feature that tries to talk to it succeeds (just per-process).
-- RQ features (queued jobs, scheduled imports run via `rqworker`) will NOT work - they need a real broker.
-- Maintenance-mode toggles will not be visible across processes (each one has its own cache), but the single-process `runserver` is fine.
+If you skip this step:
+
+- `manage.py runserver` will still render pages because `CacheBackend` swallows cache errors and falls back to "not in maintenance mode", but every request logs a warning and `manage.py maintenance_mode on` silently no-ops.
+- RQ features (queued jobs, scheduled imports run via `rqworker`) won't work at all.
 
 ## Maintenance mode
 

@@ -269,14 +269,18 @@ def test_default_time_zone_is_brussels(clean_env):
     assert settings.TIME_ZONE == "Europe/Brussels"
 
 
-def test_caches_falls_back_to_locmem_when_no_redis_configured(clean_env):
-    """No `CACHE_URL` and no `RQ_REDIS_URL` -> `LocMemCache`.
+def test_caches_defaults_to_localhost_redis_when_no_env(clean_env):
+    """No `CACHE_URL` and no `RQ_REDIS_URL` -> Redis at localhost:6379/0.
 
-    Local-dev ergonomics: a developer running `manage.py runserver` with
-    neither env var set must not have the site crash on cache lookups
-    just because they forgot to start a local Valkey. The site should
-    keep working with an in-process cache (per-process state is fine
-    when there is only one process).
+    Dev/prod parity: a developer running `manage.py runserver` with
+    neither env var set still goes through the exact same cache code
+    path as production. The localhost default matches the RQ default in
+    the same module, so a single local Valkey/Redis install serves
+    both. An earlier attempt at a LocMemCache fallback caused
+    `manage.py maintenance_mode on` to silently fail because the
+    management command and `runserver` had separate per-process caches
+    - this default-to-shared-Redis behaviour is what makes the toggle
+    actually propagate.
     """
     clean_env.setenv("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
     clean_env.setenv("SECRET_KEY", "x")
@@ -286,8 +290,9 @@ def test_caches_falls_back_to_locmem_when_no_redis_configured(clean_env):
     settings = _import_settings()
     assert (
         settings.CACHES["default"]["BACKEND"]
-        == "django.core.cache.backends.locmem.LocMemCache"
+        == "django.core.cache.backends.redis.RedisCache"
     )
+    assert settings.CACHES["default"]["LOCATION"] == "redis://localhost:6379/0"
 
 
 def test_caches_uses_rq_redis_url_by_default(clean_env):

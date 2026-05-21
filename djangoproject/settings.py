@@ -105,27 +105,22 @@ RQ_QUEUES = {
 
 # Cache. Used by maintenance_mode (CacheBackend) to share state across
 # gunicorn workers, rqworker and the ofelia-triggered import_observations
-# command. CACHE_URL is an optional override; by default we reuse
-# RQ_REDIS_URL so a single env var is enough for the common case. When
-# neither is set (typical local `runserver` without any broker), fall
-# back to LocMemCache so the site keeps working - note that LocMemCache
-# is per-process, so the maintenance_mode flag will not be shared across
-# processes (fine for single-process dev, not for prod).
-_cache_url = os.environ.get("CACHE_URL", "") or os.environ.get("RQ_REDIS_URL", "")
-if _cache_url:
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": _cache_url,
-        }
+# command. Defaults to localhost:6379/0 - the same default RQ uses - so
+# dev and prod take the exact same code path. CACHE_URL is an optional
+# override; set it to point the cache at a different Redis DB from the
+# RQ queue (e.g. CACHE_URL=redis://valkey:6379/1 vs RQ_REDIS_URL=.../0)
+# in deployments that want the two isolated.
+_cache_url = (
+    os.environ.get("CACHE_URL", "")
+    or os.environ.get("RQ_REDIS_URL", "")
+    or "redis://localhost:6379/0"
+)
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": _cache_url,
     }
-else:
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "gbif-alert-default",
-        }
-    }
+}
 
 # Email backend defaults to SMTP. Override via local_settings.py if you need
 # the console backend for dev or LocMemEmailBackend for tests.
