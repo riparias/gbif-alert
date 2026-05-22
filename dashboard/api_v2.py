@@ -550,11 +550,12 @@ def observation_detail(request: HttpRequest, stable_id: str):
     }
 
 
-@api_v2.post("/observations/{stable_id}/comments/", response=CommentOut)
+@api_v2.post(
+    "/observations/{stable_id}/comments/",
+    response=CommentOut,
+    auth=django_auth,
+)
 def observation_add_comment(request: HttpRequest, stable_id: str, payload: CommentIn):
-    if not request.user.is_authenticated:
-        raise HttpError(403, _("Authentication required"))
-
     try:
         obs = Observation.objects.get(stable_id=stable_id)
     except Observation.DoesNotExist:

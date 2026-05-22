@@ -980,6 +980,17 @@ def test_comments_empty_list_when_none(client, observation_detail_data):
     assert response.json()["comments"] == []
 
 
+def test_observation_add_comment_anonymous_returns_401(client, observation_detail_data):
+    """Anonymous users may not post comments. They get 401, not 403."""
+    obs = observation_detail_data["obs"]
+    resp = client.post(
+        f"/api/v2/observations/{obs.stable_id}/comments/",
+        data={"text": "Anonymous attempt"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 401
+
+
 # ---------------------------------------------------------------------------
 # ApiV2ObservationsMunicipalityVerifiedSortTests fixtures
 # ---------------------------------------------------------------------------
