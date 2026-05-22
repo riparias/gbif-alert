@@ -1613,6 +1613,7 @@ def test_signup_duplicate_username(client, auth_data):
         content_type="application/json",
     )
     assert resp.status_code == 422
+    assert resp.json()["detail"] == "Validation failed"
     assert "username" in resp.json()["errors"]
 
 
@@ -1629,6 +1630,7 @@ def test_signup_password_mismatch(client):
         content_type="application/json",
     )
     assert resp.status_code == 422
+    assert resp.json()["detail"] == "Validation failed"
     assert "errors" in resp.json()
 
 
@@ -1663,6 +1665,7 @@ def test_password_change_wrong_old_password(client, auth_data):
         content_type="application/json",
     )
     assert resp.status_code == 422
+    assert resp.json()["detail"] == "Validation failed"
     assert "old_password" in resp.json()["errors"]
 
 
@@ -1692,6 +1695,7 @@ def test_password_change_mismatch(client, auth_data):
         content_type="application/json",
     )
     assert resp.status_code == 422
+    assert resp.json()["detail"] == "Validation failed"
     assert "new_password2" in resp.json()["errors"]
 
 
@@ -1787,6 +1791,7 @@ def test_profile_put_duplicate_email(client, auth_data):
         content_type="application/json",
     )
     assert resp.status_code == 422
+    assert resp.json()["detail"] == "Validation failed"
     assert "email" in resp.json()["errors"]
 
 
@@ -1806,6 +1811,7 @@ def test_profile_put_invalid_delay_unit(client, auth_data):
         content_type="application/json",
     )
     assert resp.status_code == 422
+    assert resp.json()["detail"] == "Validation failed"
     assert "delayUnit" in resp.json()["errors"]
 
 

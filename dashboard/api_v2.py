@@ -26,7 +26,6 @@ from dashboard.api_v2_schemas import (
     AreaFromDrawingIn,
     AreaOut,
     AreaPatchIn,
-    AuthValidationErrorOut,
     BasisOfRecordOut,
     CommentIn,
     CommentOut,
@@ -802,7 +801,7 @@ def auth_signin(request: HttpRequest, payload: SignInIn):
 
 @api_v2.post(
     "/auth/signup/",
-    response={201: SignInOut, 422: AuthValidationErrorOut},
+    response={201: SignInOut, 422: ValidationErrorOut},
     auth=None,
 )
 def auth_signup(request: HttpRequest, payload: SignUpIn):
@@ -822,7 +821,7 @@ def auth_signup(request: HttpRequest, payload: SignUpIn):
         errors: dict[str, list[str]] = {
             field: [str(msg) for msg in msgs] for field, msgs in form.errors.items()
         }
-        return 422, {"errors": errors}
+        return 422, {"detail": "Validation failed", "errors": errors}
     user = form.save()
     login(request, user)
     return 201, {"username": user.get_username()}
@@ -830,7 +829,7 @@ def auth_signup(request: HttpRequest, payload: SignUpIn):
 
 @api_v2.post(
     "/auth/password-change/",
-    response={204: None, 422: AuthValidationErrorOut},
+    response={204: None, 422: ValidationErrorOut},
     auth=django_auth,
 )
 def auth_password_change(request: HttpRequest, payload: PasswordChangeIn):
@@ -838,11 +837,13 @@ def auth_password_change(request: HttpRequest, payload: PasswordChangeIn):
     user = cast(User, request.user)
     if not user.check_password(payload.old_password):
         return 422, {
-            "errors": {"old_password": [str(_("The old password is incorrect."))]}
+            "detail": "Validation failed",
+            "errors": {"old_password": [str(_("The old password is incorrect."))]},
         }
     if payload.new_password1 != payload.new_password2:
         return 422, {
-            "errors": {"new_password2": [str(_("The two passwords do not match."))]}
+            "detail": "Validation failed",
+            "errors": {"new_password2": [str(_("The two passwords do not match."))]},
         }
     user.set_password(payload.new_password1)
     user.save()
@@ -884,7 +885,7 @@ def profile_get(request: HttpRequest):
 
 @api_v2.put(
     "/profile/",
-    response={200: ProfileOut, 422: AuthValidationErrorOut},
+    response={200: ProfileOut, 422: ValidationErrorOut},
     auth=django_auth,
 )
 def profile_put(request: HttpRequest, payload: ProfileIn):
@@ -893,11 +894,12 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
     # Validate unique email (excluding self)
     if User.objects.filter(email=payload.email).exclude(pk=user.pk).exists():
         return 422, {
-            "errors": {"email": [str(_("This email address is already in use."))]}
+            "detail": "Validation failed",
+            "errors": {"email": [str(_("This email address is already in use."))]},
         }
     valid_units = ("days", "weeks", "months", "years")
     if payload.delayUnit not in valid_units:
-        return 422, {"errors": {"delayUnit": ["Invalid unit."]}}
+        return 422, {"detail": "Validation failed", "errors": {"delayUnit": ["Invalid unit."]}}
     user.first_name = payload.firstName
     user.last_name = payload.lastName
     user.email = payload.email
