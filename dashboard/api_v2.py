@@ -50,6 +50,7 @@ from dashboard.api_v2_schemas import (
 )
 from dashboard.forms import SignUpForm, _days_to_value_unit, _value_unit_to_days
 from dashboard.geo_utils import file_to_wkt_multipolygon, geojson_to_multipolygon
+from dashboard.utils import human_readable_git_version_number
 from dashboard.views import jobs as background_jobs
 from dashboard.models import (
     Alert,
@@ -69,7 +70,32 @@ from page_fragments.models import PageFragment
 # Internal API v2 - powered by Django Ninja.
 # This replaces the old internal-api/ endpoints incrementally (Phase 2+).
 # The public api/ endpoints are left unchanged.
-api_v2 = NinjaAPI(urls_namespace="api-v2")
+api_v2 = NinjaAPI(
+    urls_namespace="api-v2",
+    title="GBIF Alert API",
+    version=human_readable_git_version_number(),
+    description=(
+        "HTTP API powering the GBIF Alert single-page application. We are "
+        "considering exposing this as a stable public API for external "
+        "integrations; until that decision is made, endpoints, payloads, "
+        "and error shapes may change between releases. For currently-stable "
+        "external access, see the JSON endpoints under `/api/` and the OGC "
+        "WFS service at `/api/wfs/observations/`.\n\n"
+        "Source: https://github.com/riparias/gbif-alert"
+    ),
+    openapi_extra={
+        "info": {
+            "contact": {
+                "name": "GBIF Alert maintainers",
+                "url": "https://github.com/riparias/gbif-alert",
+            },
+            "license": {
+                "name": "MIT",
+                "url": "https://opensource.org/licenses/MIT",
+            },
+        }
+    },
+)
 
 
 @api_v2.get("/species/", response=list[SpeciesOut])

@@ -216,6 +216,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/observations/mark-as-seen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Observations Mark All As Seen
+         * @description Bulk-mark all observations matching the current filters as seen by
+         *     the requesting user. Runs asynchronously via django-rq.
+         */
+        post: operations["dashboard_api_v2_observations_mark_all_as_seen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/observations/{stable_id}/": {
         parameters: {
             query?: never;
@@ -1299,6 +1320,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HistogramEntryOut"][];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_observations_mark_all_as_seen: {
+        parameters: {
+            query?: {
+                speciesIds?: number[];
+                datasetsIds?: number[];
+                basisOfRecordIds?: number[];
+                startDate?: string | null;
+                endDate?: string | null;
+                areaIds?: number[];
+                status?: string | null;
+                initialDataImportIds?: number[];
+                verifiedFilter?: string;
+                areaFilterMode?: string;
+                approachingDistanceKm?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
