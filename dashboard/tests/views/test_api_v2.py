@@ -1180,7 +1180,9 @@ def test_alert_create_no_species_returns_422(client, alert_data):
     payload = json.dumps({"name": "Bad alert", "speciesIds": []})
     response = client.post("/api/v2/alerts/", payload, content_type="application/json")
     assert response.status_code == 422
-    assert "species" in response.json()["errors"]
+    data = response.json()
+    assert data["detail"] == "Validation failed"
+    assert "species" in data["errors"]
 
 
 def test_alert_create_requires_auth(client, alert_data):
@@ -1316,6 +1318,7 @@ def test_alert_create_duplicate_name_returns_422(client, alert_data):
     response = client.post("/api/v2/alerts/", payload, content_type="application/json")
     assert response.status_code == 422
     data = response.json()
+    assert data["detail"] == "Validation failed"
     assert "errors" in data
 
 
@@ -1333,7 +1336,9 @@ def test_alert_create_approaching_mode_without_area_returns_422(client, alert_da
     )
     response = client.post("/api/v2/alerts/", payload, content_type="application/json")
     assert response.status_code == 422
-    assert "area_filter_mode" in response.json()["errors"]
+    data = response.json()
+    assert data["detail"] == "Validation failed"
+    assert "area_filter_mode" in data["errors"]
 
 
 # ---------------------------------------------------------------------------

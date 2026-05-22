@@ -23,7 +23,6 @@ from dashboard.api_v2_schemas import (
     AlertIn,
     AlertNotificationFrequencyOut,
     AlertOut,
-    AlertValidationErrorOut,
     AreaFromDrawingIn,
     AreaOut,
     AreaPatchIn,
@@ -45,6 +44,7 @@ from dashboard.api_v2_schemas import (
     SignInOut,
     SignUpIn,
     SpeciesOut,
+    ValidationErrorOut,
 )
 from dashboard.forms import SignUpForm, _days_to_value_unit, _value_unit_to_days
 from dashboard.geo_utils import file_to_wkt_multipolygon, geojson_to_multipolygon
@@ -724,14 +724,14 @@ def alerts_list(request: HttpRequest):
 
 
 @api_v2.post(
-    "/alerts/", response={201: AlertOut, 422: AlertValidationErrorOut}, auth=django_auth
+    "/alerts/", response={201: AlertOut, 422: ValidationErrorOut}, auth=django_auth
 )
 def alert_create(request: HttpRequest, payload: AlertIn):
     """Create a new alert for the authenticated user."""
     alert = Alert(user=cast(User, request.user))
     errors = _save_alert(alert, payload)
     if errors:
-        return 422, {"errors": errors}
+        return 422, {"detail": "Validation failed", "errors": errors}
     return 201, _alert_to_out(alert)
 
 
@@ -750,7 +750,7 @@ def alert_detail(request: HttpRequest, alert_id: int):
 
 @api_v2.put(
     "/alerts/{alert_id}/",
-    response={200: AlertOut, 422: AlertValidationErrorOut},
+    response={200: AlertOut, 422: ValidationErrorOut},
     auth=django_auth,
 )
 def alert_update(request: HttpRequest, alert_id: int, payload: AlertIn):
@@ -764,7 +764,7 @@ def alert_update(request: HttpRequest, alert_id: int, payload: AlertIn):
     )
     errors = _save_alert(alert, payload)
     if errors:
-        return 422, {"errors": errors}
+        return 422, {"detail": "Validation failed", "errors": errors}
     return 200, _alert_to_out(alert)
 
 
