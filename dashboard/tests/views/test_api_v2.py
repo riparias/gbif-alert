@@ -1850,3 +1850,30 @@ def test_mark_all_as_seen_respects_species_filter(
     assert resp.status_code == 200
     assert captured["ids"] == [target_obs.pk]
     assert other_obs.pk not in captured["ids"]
+
+
+# ---------------------------------------------------------------------------
+# Shared error schemas (PR1)
+# ---------------------------------------------------------------------------
+
+
+def test_detail_error_out_schema_shape():
+    """DetailErrorOut wraps a single human-readable string."""
+    from dashboard.api_v2_schemas import DetailErrorOut
+
+    obj = DetailErrorOut(detail="Something went wrong")
+    assert obj.detail == "Something went wrong"
+
+
+def test_validation_error_out_schema_shape():
+    """ValidationErrorOut carries a top-level detail and a per-field errors map."""
+    from dashboard.api_v2_schemas import ValidationErrorOut
+
+    obj = ValidationErrorOut(
+        detail="Validation failed",
+        errors={"speciesIds": ["At least one species must be selected"]},
+    )
+    assert obj.detail == "Validation failed"
+    assert obj.errors == {
+        "speciesIds": ["At least one species must be selected"]
+    }
