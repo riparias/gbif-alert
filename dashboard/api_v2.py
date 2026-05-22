@@ -24,8 +24,6 @@ from dashboard.api_v2_schemas import (
     AlertNotificationFrequencyOut,
     AlertOut,
     AlertValidationErrorOut,
-    AreaCreateError,
-    AreaDeleteError,
     AreaFromDrawingIn,
     AreaOut,
     AreaPatchIn,
@@ -36,6 +34,7 @@ from dashboard.api_v2_schemas import (
     CommentOut,
     DataImportOut,
     DatasetOut,
+    DetailErrorOut,
     FiltersQuery,
     HistogramEntryOut,
     ObservationDetailOut,
@@ -149,7 +148,7 @@ def area_geojson(request: HttpRequest, area_id: int):
 
 @api_v2.post(
     "/areas/",
-    response={201: AreaOut, 422: AreaCreateError},
+    response={201: AreaOut, 422: DetailErrorOut},
     auth=django_auth,
 )
 def area_create(
@@ -184,7 +183,7 @@ def area_create(
 
 @api_v2.post(
     "/areas/from-drawing/",
-    response={201: AreaOut, 422: AreaCreateError},
+    response={201: AreaOut, 422: DetailErrorOut},
     auth=django_auth,
 )
 def area_create_from_drawing(request: HttpRequest, payload: AreaFromDrawingIn):
@@ -211,7 +210,7 @@ def area_create_from_drawing(request: HttpRequest, payload: AreaFromDrawingIn):
 
 @api_v2.patch(
     "/areas/{area_id}/",
-    response={200: AreaOut, 422: AreaCreateError},
+    response={200: AreaOut, 422: DetailErrorOut},
     auth=django_auth,
 )
 def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
@@ -239,7 +238,7 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
 
 @api_v2.delete(
     "/areas/{area_id}/",
-    response={204: None, 409: AreaDeleteError},
+    response={204: None, 409: DetailErrorOut},
     auth=django_auth,
 )
 def area_delete_endpoint(request: HttpRequest, area_id: int):
