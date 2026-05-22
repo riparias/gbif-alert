@@ -27,7 +27,6 @@ from dashboard.api_v2_schemas import (
     AreaFromDrawingIn,
     AreaOut,
     AreaPatchIn,
-    AuthErrorOut,
     AuthValidationErrorOut,
     BasisOfRecordOut,
     CommentIn,
@@ -789,7 +788,7 @@ def alert_as_filters_v2(request: HttpRequest, alert_id: int):
 
 @api_v2.post(
     "/auth/signin/",
-    response={200: SignInOut, 401: AuthErrorOut},
+    response={200: SignInOut, 401: DetailErrorOut},
     auth=None,
 )
 def auth_signin(request: HttpRequest, payload: SignInIn):
