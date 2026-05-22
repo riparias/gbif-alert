@@ -6,10 +6,12 @@ import { scaleBand, scaleLinear } from "d3-scale";
 import { max } from "d3-array";
 import { axisLeft, axisBottom, format, select } from "d3";
 import { useFiltersStore } from "../stores/filters";
+import { useResultsStore } from "../stores/results";
 import { filtersToParams } from "../utils/filterParams";
 
 const { t } = useI18n();
 const filtersStore = useFiltersStore();
+const resultsStore = useResultsStore();
 
 // --- Types ---
 
@@ -52,6 +54,7 @@ async function loadHistogram() {
 
 const debouncedReload = debounce(loadHistogram, 300);
 watch(filtersStore, debouncedReload, { deep: true });
+watch(() => resultsStore.statusEpoch, debouncedReload);
 
 // --- Data preparation ---
 

@@ -16,6 +16,7 @@ import { hsl } from "d3-color";
 import Slider from "primevue/slider";
 import { useRouter, useRoute } from "vue-router";
 import { useFiltersStore } from "../stores/filters";
+import { useResultsStore } from "../stores/results";
 import BaseMap from "./BaseMap.vue";
 import SpeciesName from "./SpeciesName.vue";
 import { getNavConfig } from "../utils/navConfig";
@@ -24,6 +25,7 @@ const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const store = useFiltersStore();
+const resultsStore = useResultsStore();
 
 // --- Map config injected by Django (via nav_config_json template tag) ---
 
@@ -210,6 +212,11 @@ watch(opacity, (val) => {
 
 // Replace data layers (and area overlays) when any filter changes
 watch(store, debouncedRefresh, { deep: true });
+
+// Same when an observation's seen/unseen status changes elsewhere (drawer
+// close, etc.) - the map's tile-server output depends on the user's status
+// filter, so a status change can affect what hexagons/points show up.
+watch(() => resultsStore.statusEpoch, debouncedRefresh);
 
 // --- Lifecycle ---
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
@@ -7,6 +7,7 @@ import AlertSidebar from "../components/AlertSidebar.vue";
 import ObservationsView from "../components/ObservationsView.vue";
 import type { components } from "../types/api";
 import { useFiltersStore } from "../stores/filters";
+import { useResultsStore } from "../stores/results";
 import { getNavConfig } from "../utils/navConfig";
 
 type AlertOut = components["schemas"]["AlertOut"];
@@ -15,6 +16,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const filtersStore = useFiltersStore();
+const resultsStore = useResultsStore();
 
 const alertId = Number(route.params.alertId);
 
@@ -24,24 +26,29 @@ const alertNotFound = ref(false);
 
 const navConfig = getNavConfig();
 
+async function fetchAlert(): Promise<void> {
+    const res = await fetch(`/api/v2/alerts/${alertId}/`);
+    if (!res.ok) {
+        alertNotFound.value = true;
+        return;
+    }
+    alert.value = await res.json();
+}
+
 onMounted(async () => {
     alertLoading.value = true;
     try {
-        const res = await fetch(`/api/v2/alerts/${alertId}/`);
-        if (!res.ok) {
-            alertNotFound.value = true;
-            return;
-        }
-        alert.value = await res.json();
-        document.title = `${alert.value!.name} - ${navConfig.siteName}`;
+        await fetchAlert();
+        if (!alert.value) return;
+        document.title = `${alert.value.name} - ${navConfig.siteName}`;
         filtersStore.$patch({
-            speciesIds: alert.value!.speciesIds,
-            datasetsIds: alert.value!.datasetIds,
-            basisOfRecordIds: alert.value!.basisOfRecordIds,
-            areaIds: alert.value!.areaIds,
-            verifiedFilter: alert.value!.verifiedFilter as "all" | "verified" | "unverified",
-            areaFilterMode: alert.value!.areaFilterMode as "inside" | "approaching" | "both",
-            approachingDistanceKm: alert.value!.approachingDistanceKm,
+            speciesIds: alert.value.speciesIds,
+            datasetsIds: alert.value.datasetIds,
+            basisOfRecordIds: alert.value.basisOfRecordIds,
+            areaIds: alert.value.areaIds,
+            verifiedFilter: alert.value.verifiedFilter as "all" | "verified" | "unverified",
+            areaFilterMode: alert.value.areaFilterMode as "inside" | "approaching" | "both",
+            approachingDistanceKm: alert.value.approachingDistanceKm,
             startDate: null,
             endDate: null,
             status: "unseen",
@@ -50,6 +57,10 @@ onMounted(async () => {
         alertLoading.value = false;
     }
 });
+
+// Re-fetch the alert (for unseenCount, which gates the sidebar bulk action)
+// whenever a consumer reports an observation status change.
+watch(() => resultsStore.statusEpoch, fetchAlert);
 
 onUnmounted(() => {
     filtersStore.$reset();

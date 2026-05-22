@@ -387,3 +387,53 @@ def test_alert_detail_mark_all_button_hidden_when_no_unseen(page: Page, live_ser
     page.wait_for_load_state("networkidle")
 
     expect(page.get_by_role("button", name="Mark all as viewed")).to_have_count(0)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_alert_detail_drawer_refreshes_list_and_sidebar(page: Page, live_server):
+    """Opening then closing the drawer drops the now-seen observation from the
+    status=unseen view and hides the bulk button (unseenCount becomes 0)."""
+    User = get_user_model()
+    user = User.objects.create_user(username="u14", password="pass", email="u14@t.com")
+    sp = _make_species("Procambarus fallax", 8879526)
+    alert = _make_alert(user, "Alert with one unseen", sp)
+
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    dataset = Dataset.objects.create(name="ds-refresh", gbif_dataset_key="ds-refresh")
+    di = DataImport.objects.create(start=timezone.now())
+    obs = Observation.objects.create(
+        gbif_id=43,
+        occurrence_id="occ-43",
+        species=sp,
+        date=datetime.date.today(),
+        data_import=di,
+        initial_data_import=di,
+        source_dataset=dataset,
+        location=Point(5.09513, 50.48941, srid=4326),
+        basis_of_record=basis,
+    )
+    ObservationUnseen.objects.create(observation=obs, user=user)
+
+    login(page, live_server.url, "u14", "pass")
+    page.goto(live_server.url + f"/alert/{alert.pk}")
+    page.wait_for_load_state("networkidle")
+
+    # The bulk button is visible (1 unseen observation matches).
+    bulk_btn = page.get_by_role("button", name="Mark all as viewed")
+    expect(bulk_btn).to_be_visible()
+
+    # Switch to the table tab so we can click the row.
+    page.get_by_role("tab", name="Table").click()
+    page.wait_for_load_state("networkidle")
+
+    # Open the drawer by clicking the species cell in the row.
+    page.get_by_role("cell", name=re.compile("Procambarus fallax", re.I)).first.click()
+    page.wait_for_load_state("networkidle")
+
+    # Close the drawer (Escape works for PrimeVue Drawer).
+    page.keyboard.press("Escape")
+    page.wait_for_load_state("networkidle")
+
+    # The (now-seen) observation no longer matches the status=unseen filter:
+    # the row is gone and the bulk button disappears (unseenCount == 0).
+    expect(page.get_by_role("button", name="Mark all as viewed")).to_have_count(0)
