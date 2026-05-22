@@ -595,11 +595,12 @@ def page_fragment(request: HttpRequest, identifier: str):
     return {"html": html}
 
 
-@api_v2.post("/observations/{stable_id}/mark-unseen/", response={200: dict, 403: dict})
+@api_v2.post(
+    "/observations/{stable_id}/mark-unseen/",
+    response={200: dict, 403: dict},
+    auth=django_auth,
+)
 def observation_mark_unseen(request: HttpRequest, stable_id: str):
-    if not request.user.is_authenticated:
-        raise HttpError(403, _("Authentication required"))
-
     try:
         obs = Observation.objects.get(stable_id=stable_id)
     except Observation.DoesNotExist:

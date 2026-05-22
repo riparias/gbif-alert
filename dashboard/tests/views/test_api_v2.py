@@ -991,6 +991,24 @@ def test_observation_add_comment_anonymous_returns_401(client, observation_detai
     assert resp.status_code == 401
 
 
+def test_observation_mark_unseen_anonymous_returns_401(client, observation_detail_data):
+    """Anonymous users get 401 from mark-unseen, not 403."""
+    obs = observation_detail_data["obs"]
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-unseen/")
+    assert resp.status_code == 401
+
+
+def test_observation_mark_unseen_no_matching_alert_returns_403(
+    client, observation_detail_data
+):
+    """Authenticated user with no matching alert cannot mark unseen: 403."""
+    user = observation_detail_data["user"]
+    obs = observation_detail_data["obs"]
+    client.force_login(user)
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-unseen/")
+    assert resp.status_code == 403
+
+
 # ---------------------------------------------------------------------------
 # ApiV2ObservationsMunicipalityVerifiedSortTests fixtures
 # ---------------------------------------------------------------------------
