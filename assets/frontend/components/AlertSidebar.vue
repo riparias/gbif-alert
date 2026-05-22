@@ -3,13 +3,16 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
 import Tag from "primevue/tag";
 import SpeciesName from "./SpeciesName.vue";
 import ObservationStatusToggle from "./ObservationStatusToggle.vue";
 import { useAlertMeta } from "../composables/useAlertMeta";
 import { useResultsStore } from "../stores/results";
+import { useFiltersStore } from "../stores/filters";
 import { getCsrf } from "../utils/csrf";
+import { filtersToParams } from "../utils/filterParams";
 import type { components } from "../types/api";
 import { getNavConfig } from "../utils/navConfig";
 
@@ -23,10 +26,36 @@ const { t } = useI18n();
 const router = useRouter();
 const isAuthenticated: boolean = getNavConfig().user.isAuthenticated;
 const confirm = useConfirm();
+const toast = useToast();
 const resultsStore = useResultsStore();
+const filtersStore = useFiltersStore();
 
 const { speciesExpanded, tooManySpecies, visibleSpecies, areaDescription, SPECIES_COLLAPSE_THRESHOLD } =
     useAlertMeta(() => props.alert);
+
+function confirmMarkAllAsViewed() {
+    confirm.require({
+        message: t("message.markAllAsViewedConfirm"),
+        header: t("message.markAllAsViewed"),
+        acceptLabel: t("message.yesImSure"),
+        rejectLabel: t("message.cancel"),
+        accept: async () => {
+            const resp = await fetch(
+                `/api/v2/observations/mark-as-seen/?${filtersToParams(filtersStore)}`,
+                {
+                    method: "POST",
+                    headers: { "X-CSRFToken": getCsrf() },
+                }
+            );
+            if (!resp.ok) return;
+            toast.add({
+                severity: "success",
+                summary: t("message.markAllAsViewedQueued"),
+                life: 5000,
+            });
+        },
+    });
+}
 
 function confirmDelete() {
     confirm.require({
@@ -141,6 +170,15 @@ const formattedDatasetsCount = computed(() =>
             <div v-if="isAuthenticated" class="filter-group">
                 <label>{{ t("message.observationStatus") }}</label>
                 <ObservationStatusToggle />
+                <Button
+                    v-if="alert.unseenCount > 0 && filtersStore.status !== 'seen'"
+                    :label="t('message.markAllAsViewed')"
+                    icon="pi pi-check"
+                    size="small"
+                    outlined
+                    class="mark-all-btn"
+                    @click="confirmMarkAllAsViewed"
+                />
             </div>
         </div>
 
@@ -272,6 +310,12 @@ const formattedDatasetsCount = computed(() =>
 }
 
 .action-btn {
+    width: 100%;
+    justify-content: center;
+}
+
+.mark-all-btn {
+    margin-top: 0.5rem;
     width: 100%;
     justify-content: center;
 }

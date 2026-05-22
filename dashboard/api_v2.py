@@ -50,6 +50,7 @@ from dashboard.api_v2_schemas import (
 )
 from dashboard.forms import SignUpForm, _days_to_value_unit, _value_unit_to_days
 from dashboard.geo_utils import file_to_wkt_multipolygon, geojson_to_multipolygon
+from dashboard.views import jobs as background_jobs
 from dashboard.models import (
     Alert,
     Area,
@@ -423,6 +424,35 @@ def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
         {"year": row["month"].year, "month": row["month"].month, "count": row["total"]}
         for row in rows
     ]
+
+
+@api_v2.post(
+    "/observations/mark-as-seen/",
+    response={200: dict},
+    auth=django_auth,
+)
+def observations_mark_all_as_seen(
+    request: HttpRequest, filters: Query[FiltersQuery]
+):
+    """Bulk-mark all observations matching the current filters as seen by
+    the requesting user. Runs asynchronously via django-rq."""
+    user = cast(User, request.user)
+    qs = Observation.objects.filtered_from_my_params(
+        species_ids=filters.speciesIds,
+        datasets_ids=filters.datasetsIds,
+        basis_of_record_ids=filters.basisOfRecordIds,
+        start_date=filters.startDate,
+        end_date=filters.endDate,
+        areas_ids=filters.areaIds,
+        status_for_user=filters.status,
+        initial_data_import_ids=filters.initialDataImportIds,
+        user=user,
+        verified_filter=filters.verifiedFilter,
+        area_filter_mode=filters.areaFilterMode,
+        approaching_distance_km=filters.approachingDistanceKm,
+    )
+    background_jobs.mark_many_observations_as_seen.delay(qs, user)
+    return 200, {"queued": True}
 
 
 @api_v2.get("/observations/{stable_id}/", response=ObservationDetailOut)

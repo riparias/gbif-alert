@@ -3,13 +3,24 @@
 Test data is created per-test (no shared state) using @pytest.mark.django_db(transaction=True).
 """
 
+import datetime
 import re
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.contrib.gis.geos import Point
+from django.utils import timezone
 from playwright.sync_api import Page, expect
 
-from dashboard.models import Alert, Species
+from dashboard.models import (
+    Alert,
+    BasisOfRecord,
+    DataImport,
+    Dataset,
+    Observation,
+    ObservationUnseen,
+    Species,
+)
 from dashboard.tests.playwright.helpers import login
 
 
@@ -306,3 +317,73 @@ def test_alert_detail_delete_navigates_to_my_alerts(page: Page, live_server):
 
     expect(page).to_have_url(live_server.url + "/my-alerts")
     assert not Alert.objects.filter(pk=alert.pk).exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_alert_detail_mark_all_as_viewed(page: Page, live_server, monkeypatch):
+    """Clicking 'Mark all as viewed' in the sidebar confirms and shows a toast.
+
+    The job is normally enqueued to django-rq; we stub the .delay() call so the
+    test does not depend on a running Redis/worker.
+    """
+    from dashboard.views import jobs
+
+    enqueued = []
+
+    def fake_delay(queryset, user):
+        enqueued.append((queryset.count(), user.pk))
+
+    monkeypatch.setattr(jobs.mark_many_observations_as_seen, "delay", fake_delay)
+
+    User = get_user_model()
+    user = User.objects.create_user(username="u12", password="pass", email="u12@t.com")
+    sp = _make_species("Procambarus fallax", 8879526)
+    alert = _make_alert(user, "Alert with unseen obs", sp)
+
+    # One unseen observation matching the alert so the button is visible.
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    dataset = Dataset.objects.create(name="ds", gbif_dataset_key="ds-key")
+    di = DataImport.objects.create(start=timezone.now())
+    obs = Observation.objects.create(
+        gbif_id=42,
+        occurrence_id="occ-42",
+        species=sp,
+        date=datetime.date.today(),
+        data_import=di,
+        initial_data_import=di,
+        source_dataset=dataset,
+        location=Point(5.09513, 50.48941, srid=4326),
+        basis_of_record=basis,
+    )
+    ObservationUnseen.objects.create(observation=obs, user=user)
+
+    login(page, live_server.url, "u12", "pass")
+    page.goto(live_server.url + f"/alert/{alert.pk}")
+    page.wait_for_load_state("networkidle")
+
+    page.get_by_role("button", name="Mark all as viewed").click()
+    page.get_by_role("button", name="Yes, I'm sure").click()
+
+    expect(
+        page.get_by_text(
+            "Marking observations as viewed in the background", exact=False
+        )
+    ).to_be_visible()
+    assert len(enqueued) == 1
+    assert enqueued[0][1] == user.pk
+
+
+@pytest.mark.django_db(transaction=True)
+def test_alert_detail_mark_all_button_hidden_when_no_unseen(page: Page, live_server):
+    """The button is not rendered when the alert has zero unseen observations."""
+    User = get_user_model()
+    user = User.objects.create_user(username="u13", password="pass", email="u13@t.com")
+    sp = _make_species("Procambarus fallax", 8879526)
+    alert = _make_alert(user, "Alert without unseen", sp)
+    # No matching unseen observation created -> unseenCount == 0.
+
+    login(page, live_server.url, "u13", "pass")
+    page.goto(live_server.url + f"/alert/{alert.pk}")
+    page.wait_for_load_state("networkidle")
+
+    expect(page.get_by_role("button", name="Mark all as viewed")).to_have_count(0)

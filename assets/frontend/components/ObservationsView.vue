@@ -19,6 +19,7 @@ import TabPanels from "primevue/tabpanels";
 import TabPanel from "primevue/tabpanel";
 import { useFiltersStore } from "../stores/filters";
 import { useResultsStore } from "../stores/results";
+import { filtersToParams } from "../utils/filterParams";
 import type { components } from "../types/api";
 import SpeciesName from "./SpeciesName.vue";
 import { storeToRefs } from "pinia";
@@ -120,22 +121,9 @@ const speciesSortFieldName = computed<string>(() =>
 );
 
 function buildFilterParams(): URLSearchParams {
-    const params = new URLSearchParams({
-        page: String(currentPage.value),
-        pageSize: String(PAGE_SIZE),
-    });
-    for (const id of filtersStore.speciesIds) params.append("speciesIds", String(id));
-    for (const id of filtersStore.datasetsIds) params.append("datasetsIds", String(id));
-    for (const id of filtersStore.areaIds) params.append("areaIds", String(id));
-    for (const id of filtersStore.basisOfRecordIds) params.append("basisOfRecordIds", String(id));
-    for (const id of filtersStore.initialDataImportIds) params.append("initialDataImportIds", String(id));
-    if (filtersStore.startDate) params.set("startDate", filtersStore.startDate);
-    if (filtersStore.endDate) params.set("endDate", filtersStore.endDate);
-    if (filtersStore.status) params.set("status", filtersStore.status);
-    params.set("verifiedFilter", filtersStore.verifiedFilter);
-    params.set("areaFilterMode", filtersStore.areaFilterMode);
-    if (filtersStore.approachingDistanceKm !== null)
-        params.set("approachingDistanceKm", String(filtersStore.approachingDistanceKm));
+    const params = filtersToParams(filtersStore);
+    params.set("page", String(currentPage.value));
+    params.set("pageSize", String(PAGE_SIZE));
     params.set("orderBy", sortField.value);
     params.set("orderDir", sortOrder.value === 1 ? "asc" : "desc");
     return params;

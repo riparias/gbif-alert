@@ -6,6 +6,7 @@ import { scaleBand, scaleLinear } from "d3-scale";
 import { max } from "d3-array";
 import { axisLeft, axisBottom, format, select } from "d3";
 import { useFiltersStore } from "../stores/filters";
+import { filtersToParams } from "../utils/filterParams";
 
 const { t } = useI18n();
 const filtersStore = useFiltersStore();
@@ -36,23 +37,7 @@ const rawData = ref<HistogramEntry[]>([]);
 const loading = ref(false);
 
 function buildFilterParams(): URLSearchParams {
-    const params = new URLSearchParams();
-    for (const id of filtersStore.speciesIds) params.append("speciesIds", String(id));
-    for (const id of filtersStore.datasetsIds) params.append("datasetsIds", String(id));
-    for (const id of filtersStore.areaIds) params.append("areaIds", String(id));
-    for (const id of filtersStore.basisOfRecordIds) params.append("basisOfRecordIds", String(id));
-    for (const id of filtersStore.initialDataImportIds) params.append("initialDataImportIds", String(id));
-    if (filtersStore.status) params.set("status", filtersStore.status);
-    params.set("verifiedFilter", filtersStore.verifiedFilter);
-    params.set("areaFilterMode", filtersStore.areaFilterMode);
-    if (filtersStore.approachingDistanceKm !== null) {
-        params.set("approachingDistanceKm", String(filtersStore.approachingDistanceKm));
-    }
-    if (!props.fullRange) {
-        if (filtersStore.startDate) params.set("startDate", filtersStore.startDate);
-        if (filtersStore.endDate) params.set("endDate", filtersStore.endDate);
-    }
-    return params;
+    return filtersToParams(filtersStore, { includeDateRange: !props.fullRange });
 }
 
 async function loadHistogram() {

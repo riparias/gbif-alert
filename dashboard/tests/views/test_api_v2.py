@@ -1787,3 +1787,66 @@ def test_delete_account_success(client):
     resp = client.delete("/api/v2/account/")
     assert resp.status_code == 204
     assert not User.objects.filter(username="todelete").exists()
+
+
+# ---------------------------------------------------------------------------
+# POST /api/v2/observations/mark-as-seen/ (bulk mark)
+# ---------------------------------------------------------------------------
+
+
+def test_mark_all_as_seen_anonymous_returns_401(client, observations_data):
+    """Anonymous users may not bulk-mark observations."""
+    resp = client.post("/api/v2/observations/mark-as-seen/")
+    assert resp.status_code == 401
+
+
+def test_mark_all_as_seen_authenticated_returns_queued(
+    client, observations_data, monkeypatch
+):
+    """An authenticated POST enqueues the job and returns queued=true."""
+    from dashboard.views import jobs
+
+    calls = []
+
+    def fake_delay(queryset, user):
+        calls.append({"count": queryset.count(), "user_id": user.pk})
+
+    monkeypatch.setattr(jobs.mark_many_observations_as_seen, "delay", fake_delay)
+
+    user = observations_data["user"]
+    client.force_login(user)
+    resp = client.post("/api/v2/observations/mark-as-seen/")
+
+    assert resp.status_code == 200
+    assert resp.json() == {"queued": True}
+    assert len(calls) == 1
+    assert calls[0]["count"] == 2  # both observations in the fixture
+    assert calls[0]["user_id"] == user.pk
+
+
+def test_mark_all_as_seen_respects_species_filter(
+    client, observations_data, monkeypatch
+):
+    """A species filter narrows the queryset that gets handed to the job."""
+    from dashboard.views import jobs
+
+    captured: dict = {}
+
+    def fake_delay(queryset, user):
+        captured["ids"] = sorted(queryset.values_list("pk", flat=True))
+
+    monkeypatch.setattr(jobs.mark_many_observations_as_seen, "delay", fake_delay)
+
+    user = observations_data["user"]
+    species = observations_data["species"]
+    target_obs = observations_data["obs"]
+    other_obs = observations_data["obs_other_species"]
+
+    client.force_login(user)
+    resp = client.post(
+        f"/api/v2/observations/mark-as-seen/?speciesIds={species.pk}"
+    )
+
+    assert resp.status_code == 200
+    assert captured["ids"] == [target_obs.pk]
+    assert other_obs.pk not in captured["ids"]
