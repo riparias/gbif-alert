@@ -553,6 +553,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
     auth=django_auth,
 )
 def observation_add_comment(request: HttpRequest, stable_id: str, payload: CommentIn):
+    user = cast(User, request.user)
     try:
         obs = Observation.objects.get(stable_id=stable_id)
     except Observation.DoesNotExist:
@@ -564,13 +565,13 @@ def observation_add_comment(request: HttpRequest, stable_id: str, payload: Comme
 
     comment = ObservationComment.objects.create(
         observation=obs,
-        author=request.user,
+        author=user,
         text=text,
     )
 
     return {
         "id": comment.pk,
-        "authorUsername": request.user.username,
+        "authorUsername": user.username,
         "createdAt": comment.created_at,
         "text": comment.text,
         "deletedBecauseAuthorDeleted": False,

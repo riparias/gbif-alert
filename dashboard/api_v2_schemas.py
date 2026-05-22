@@ -170,18 +170,6 @@ class AlertOut(Schema):
     lastEmailSentOn: datetime.datetime | None
 
 
-class AlertValidationErrorOut(Schema):
-    errors: dict[str, list[str]]
-
-
-class AreaCreateError(Schema):
-    detail: str
-
-
-class AreaDeleteError(Schema):
-    detail: str
-
-
 class AreaFromDrawingIn(Schema):
     name: str
     geojson: dict  # GeoJSON FeatureCollection, EPSG:4326
@@ -215,14 +203,6 @@ class PasswordChangeIn(Schema):
     old_password: str
     new_password1: str
     new_password2: str
-
-
-class AuthErrorOut(Schema):
-    detail: str
-
-
-class AuthValidationErrorOut(Schema):
-    errors: dict[str, list[str]]
 
 
 class ProfileOut(Schema):
