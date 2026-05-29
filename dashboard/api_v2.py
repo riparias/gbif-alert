@@ -23,19 +23,15 @@ from dashboard.api_v2_schemas import (
     AlertIn,
     AlertNotificationFrequencyOut,
     AlertOut,
-    AlertValidationErrorOut,
-    AreaCreateError,
-    AreaDeleteError,
     AreaFromDrawingIn,
     AreaOut,
     AreaPatchIn,
-    AuthErrorOut,
-    AuthValidationErrorOut,
     BasisOfRecordOut,
     CommentIn,
     CommentOut,
     DataImportOut,
     DatasetOut,
+    DetailErrorOut,
     FiltersQuery,
     HistogramEntryOut,
     ObservationDetailOut,
@@ -47,6 +43,7 @@ from dashboard.api_v2_schemas import (
     SignInOut,
     SignUpIn,
     SpeciesOut,
+    ValidationErrorOut,
 )
 from dashboard.forms import SignUpForm, _days_to_value_unit, _value_unit_to_days
 from dashboard.geo_utils import file_to_wkt_multipolygon, geojson_to_multipolygon
@@ -149,7 +146,7 @@ def area_geojson(request: HttpRequest, area_id: int):
 
 @api_v2.post(
     "/areas/",
-    response={201: AreaOut, 422: AreaCreateError},
+    response={201: AreaOut, 422: DetailErrorOut},
     auth=django_auth,
 )
 def area_create(
@@ -184,7 +181,7 @@ def area_create(
 
 @api_v2.post(
     "/areas/from-drawing/",
-    response={201: AreaOut, 422: AreaCreateError},
+    response={201: AreaOut, 422: DetailErrorOut},
     auth=django_auth,
 )
 def area_create_from_drawing(request: HttpRequest, payload: AreaFromDrawingIn):
@@ -211,7 +208,7 @@ def area_create_from_drawing(request: HttpRequest, payload: AreaFromDrawingIn):
 
 @api_v2.patch(
     "/areas/{area_id}/",
-    response={200: AreaOut, 422: AreaCreateError},
+    response={200: AreaOut, 422: DetailErrorOut},
     auth=django_auth,
 )
 def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
@@ -239,7 +236,7 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
 
 @api_v2.delete(
     "/areas/{area_id}/",
-    response={204: None, 409: AreaDeleteError},
+    response={204: None, 409: DetailErrorOut},
     auth=django_auth,
 )
 def area_delete_endpoint(request: HttpRequest, area_id: int):
@@ -550,11 +547,13 @@ def observation_detail(request: HttpRequest, stable_id: str):
     }
 
 
-@api_v2.post("/observations/{stable_id}/comments/", response=CommentOut)
+@api_v2.post(
+    "/observations/{stable_id}/comments/",
+    response=CommentOut,
+    auth=django_auth,
+)
 def observation_add_comment(request: HttpRequest, stable_id: str, payload: CommentIn):
-    if not request.user.is_authenticated:
-        raise HttpError(403, _("Authentication required"))
-
+    user = cast(User, request.user)
     try:
         obs = Observation.objects.get(stable_id=stable_id)
     except Observation.DoesNotExist:
@@ -566,13 +565,13 @@ def observation_add_comment(request: HttpRequest, stable_id: str, payload: Comme
 
     comment = ObservationComment.objects.create(
         observation=obs,
-        author=request.user,
+        author=user,
         text=text,
     )
 
     return {
         "id": comment.pk,
-        "authorUsername": request.user.username,
+        "authorUsername": user.username,
         "createdAt": comment.created_at,
         "text": comment.text,
         "deletedBecauseAuthorDeleted": False,
@@ -594,11 +593,12 @@ def page_fragment(request: HttpRequest, identifier: str):
     return {"html": html}
 
 
-@api_v2.post("/observations/{stable_id}/mark-unseen/", response={200: dict, 403: dict})
+@api_v2.post(
+    "/observations/{stable_id}/mark-unseen/",
+    response={200: dict, 403: dict},
+    auth=django_auth,
+)
 def observation_mark_unseen(request: HttpRequest, stable_id: str):
-    if not request.user.is_authenticated:
-        raise HttpError(403, _("Authentication required"))
-
     try:
         obs = Observation.objects.get(stable_id=stable_id)
     except Observation.DoesNotExist:
@@ -724,14 +724,14 @@ def alerts_list(request: HttpRequest):
 
 
 @api_v2.post(
-    "/alerts/", response={201: AlertOut, 422: AlertValidationErrorOut}, auth=django_auth
+    "/alerts/", response={201: AlertOut, 422: ValidationErrorOut}, auth=django_auth
 )
 def alert_create(request: HttpRequest, payload: AlertIn):
     """Create a new alert for the authenticated user."""
     alert = Alert(user=cast(User, request.user))
     errors = _save_alert(alert, payload)
     if errors:
-        return 422, {"errors": errors}
+        return 422, {"detail": "Validation failed", "errors": errors}
     return 201, _alert_to_out(alert)
 
 
@@ -750,7 +750,7 @@ def alert_detail(request: HttpRequest, alert_id: int):
 
 @api_v2.put(
     "/alerts/{alert_id}/",
-    response={200: AlertOut, 422: AlertValidationErrorOut},
+    response={200: AlertOut, 422: ValidationErrorOut},
     auth=django_auth,
 )
 def alert_update(request: HttpRequest, alert_id: int, payload: AlertIn):
@@ -764,7 +764,7 @@ def alert_update(request: HttpRequest, alert_id: int, payload: AlertIn):
     )
     errors = _save_alert(alert, payload)
     if errors:
-        return 422, {"errors": errors}
+        return 422, {"detail": "Validation failed", "errors": errors}
     return 200, _alert_to_out(alert)
 
 
@@ -788,7 +788,7 @@ def alert_as_filters_v2(request: HttpRequest, alert_id: int):
 
 @api_v2.post(
     "/auth/signin/",
-    response={200: SignInOut, 401: AuthErrorOut},
+    response={200: SignInOut, 401: DetailErrorOut},
     auth=None,
 )
 def auth_signin(request: HttpRequest, payload: SignInIn):
@@ -802,7 +802,7 @@ def auth_signin(request: HttpRequest, payload: SignInIn):
 
 @api_v2.post(
     "/auth/signup/",
-    response={201: SignInOut, 422: AuthValidationErrorOut},
+    response={201: SignInOut, 422: ValidationErrorOut},
     auth=None,
 )
 def auth_signup(request: HttpRequest, payload: SignUpIn):
@@ -822,7 +822,7 @@ def auth_signup(request: HttpRequest, payload: SignUpIn):
         errors: dict[str, list[str]] = {
             field: [str(msg) for msg in msgs] for field, msgs in form.errors.items()
         }
-        return 422, {"errors": errors}
+        return 422, {"detail": "Validation failed", "errors": errors}
     user = form.save()
     login(request, user)
     return 201, {"username": user.get_username()}
@@ -830,7 +830,7 @@ def auth_signup(request: HttpRequest, payload: SignUpIn):
 
 @api_v2.post(
     "/auth/password-change/",
-    response={204: None, 422: AuthValidationErrorOut},
+    response={204: None, 422: ValidationErrorOut},
     auth=django_auth,
 )
 def auth_password_change(request: HttpRequest, payload: PasswordChangeIn):
@@ -838,11 +838,13 @@ def auth_password_change(request: HttpRequest, payload: PasswordChangeIn):
     user = cast(User, request.user)
     if not user.check_password(payload.old_password):
         return 422, {
-            "errors": {"old_password": [str(_("The old password is incorrect."))]}
+            "detail": "Validation failed",
+            "errors": {"old_password": [str(_("The old password is incorrect."))]},
         }
     if payload.new_password1 != payload.new_password2:
         return 422, {
-            "errors": {"new_password2": [str(_("The two passwords do not match."))]}
+            "detail": "Validation failed",
+            "errors": {"new_password2": [str(_("The two passwords do not match."))]},
         }
     user.set_password(payload.new_password1)
     user.save()
@@ -884,7 +886,7 @@ def profile_get(request: HttpRequest):
 
 @api_v2.put(
     "/profile/",
-    response={200: ProfileOut, 422: AuthValidationErrorOut},
+    response={200: ProfileOut, 422: ValidationErrorOut},
     auth=django_auth,
 )
 def profile_put(request: HttpRequest, payload: ProfileIn):
@@ -893,11 +895,12 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
     # Validate unique email (excluding self)
     if User.objects.filter(email=payload.email).exclude(pk=user.pk).exists():
         return 422, {
-            "errors": {"email": [str(_("This email address is already in use."))]}
+            "detail": "Validation failed",
+            "errors": {"email": [str(_("This email address is already in use."))]},
         }
     valid_units = ("days", "weeks", "months", "years")
     if payload.delayUnit not in valid_units:
-        return 422, {"errors": {"delayUnit": ["Invalid unit."]}}
+        return 422, {"detail": "Validation failed", "errors": {"delayUnit": ["Invalid unit."]}}
     user.first_name = payload.firstName
     user.last_name = payload.lastName
     user.email = payload.email

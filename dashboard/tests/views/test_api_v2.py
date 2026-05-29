@@ -980,6 +980,35 @@ def test_comments_empty_list_when_none(client, observation_detail_data):
     assert response.json()["comments"] == []
 
 
+def test_observation_add_comment_anonymous_returns_401(client, observation_detail_data):
+    """Anonymous users may not post comments. They get 401, not 403."""
+    obs = observation_detail_data["obs"]
+    resp = client.post(
+        f"/api/v2/observations/{obs.stable_id}/comments/",
+        data={"text": "Anonymous attempt"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 401
+
+
+def test_observation_mark_unseen_anonymous_returns_401(client, observation_detail_data):
+    """Anonymous users get 401 from mark-unseen, not 403."""
+    obs = observation_detail_data["obs"]
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-unseen/")
+    assert resp.status_code == 401
+
+
+def test_observation_mark_unseen_no_matching_alert_returns_403(
+    client, observation_detail_data
+):
+    """Authenticated user with no matching alert cannot mark unseen: 403."""
+    user = observation_detail_data["user"]
+    obs = observation_detail_data["obs"]
+    client.force_login(user)
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-unseen/")
+    assert resp.status_code == 403
+
+
 # ---------------------------------------------------------------------------
 # ApiV2ObservationsMunicipalityVerifiedSortTests fixtures
 # ---------------------------------------------------------------------------
@@ -1151,7 +1180,9 @@ def test_alert_create_no_species_returns_422(client, alert_data):
     payload = json.dumps({"name": "Bad alert", "speciesIds": []})
     response = client.post("/api/v2/alerts/", payload, content_type="application/json")
     assert response.status_code == 422
-    assert "species" in response.json()["errors"]
+    data = response.json()
+    assert data["detail"] == "Validation failed"
+    assert "species" in data["errors"]
 
 
 def test_alert_create_requires_auth(client, alert_data):
@@ -1287,6 +1318,7 @@ def test_alert_create_duplicate_name_returns_422(client, alert_data):
     response = client.post("/api/v2/alerts/", payload, content_type="application/json")
     assert response.status_code == 422
     data = response.json()
+    assert data["detail"] == "Validation failed"
     assert "errors" in data
 
 
@@ -1304,7 +1336,9 @@ def test_alert_create_approaching_mode_without_area_returns_422(client, alert_da
     )
     response = client.post("/api/v2/alerts/", payload, content_type="application/json")
     assert response.status_code == 422
-    assert "area_filter_mode" in response.json()["errors"]
+    data = response.json()
+    assert data["detail"] == "Validation failed"
+    assert "area_filter_mode" in data["errors"]
 
 
 # ---------------------------------------------------------------------------
@@ -1579,6 +1613,7 @@ def test_signup_duplicate_username(client, auth_data):
         content_type="application/json",
     )
     assert resp.status_code == 422
+    assert resp.json()["detail"] == "Validation failed"
     assert "username" in resp.json()["errors"]
 
 
@@ -1595,6 +1630,7 @@ def test_signup_password_mismatch(client):
         content_type="application/json",
     )
     assert resp.status_code == 422
+    assert resp.json()["detail"] == "Validation failed"
     assert "errors" in resp.json()
 
 
@@ -1629,6 +1665,7 @@ def test_password_change_wrong_old_password(client, auth_data):
         content_type="application/json",
     )
     assert resp.status_code == 422
+    assert resp.json()["detail"] == "Validation failed"
     assert "old_password" in resp.json()["errors"]
 
 
@@ -1658,6 +1695,7 @@ def test_password_change_mismatch(client, auth_data):
         content_type="application/json",
     )
     assert resp.status_code == 422
+    assert resp.json()["detail"] == "Validation failed"
     assert "new_password2" in resp.json()["errors"]
 
 
@@ -1753,6 +1791,7 @@ def test_profile_put_duplicate_email(client, auth_data):
         content_type="application/json",
     )
     assert resp.status_code == 422
+    assert resp.json()["detail"] == "Validation failed"
     assert "email" in resp.json()["errors"]
 
 
@@ -1772,6 +1811,7 @@ def test_profile_put_invalid_delay_unit(client, auth_data):
         content_type="application/json",
     )
     assert resp.status_code == 422
+    assert resp.json()["detail"] == "Validation failed"
     assert "delayUnit" in resp.json()["errors"]
 
 
@@ -1850,3 +1890,30 @@ def test_mark_all_as_seen_respects_species_filter(
     assert resp.status_code == 200
     assert captured["ids"] == [target_obs.pk]
     assert other_obs.pk not in captured["ids"]
+
+
+# ---------------------------------------------------------------------------
+# Shared error schemas (PR1)
+# ---------------------------------------------------------------------------
+
+
+def test_detail_error_out_schema_shape():
+    """DetailErrorOut wraps a single human-readable string."""
+    from dashboard.api_v2_schemas import DetailErrorOut
+
+    obj = DetailErrorOut(detail="Something went wrong")
+    assert obj.detail == "Something went wrong"
+
+
+def test_validation_error_out_schema_shape():
+    """ValidationErrorOut carries a top-level detail and a per-field errors map."""
+    from dashboard.api_v2_schemas import ValidationErrorOut
+
+    obj = ValidationErrorOut(
+        detail="Validation failed",
+        errors={"speciesIds": ["At least one species must be selected"]},
+    )
+    assert obj.detail == "Validation failed"
+    assert obj.errors == {
+        "speciesIds": ["At least one species must be selected"]
+    }

@@ -170,18 +170,6 @@ class AlertOut(Schema):
     lastEmailSentOn: datetime.datetime | None
 
 
-class AlertValidationErrorOut(Schema):
-    errors: dict[str, list[str]]
-
-
-class AreaCreateError(Schema):
-    detail: str
-
-
-class AreaDeleteError(Schema):
-    detail: str
-
-
 class AreaFromDrawingIn(Schema):
     name: str
     geojson: dict  # GeoJSON FeatureCollection, EPSG:4326
@@ -217,14 +205,6 @@ class PasswordChangeIn(Schema):
     new_password2: str
 
 
-class AuthErrorOut(Schema):
-    detail: str
-
-
-class AuthValidationErrorOut(Schema):
-    errors: dict[str, list[str]]
-
-
 class ProfileOut(Schema):
     username: str
     firstName: str
@@ -242,3 +222,28 @@ class ProfileIn(Schema):
     language: str
     delayValue: int
     delayUnit: str
+
+
+class DetailErrorOut(Schema):
+    """Single-message error envelope.
+
+    Used for all 4xx responses that do not carry per-field validation details.
+    Equivalent in shape to django-ninja's default error body, made explicit so
+    every endpoint declares it in its `response={...}` map and it appears in
+    the OpenAPI schema.
+    """
+
+    detail: str
+
+
+class ValidationErrorOut(Schema):
+    """Field-validation error envelope.
+
+    Used for 422 responses that carry per-field error messages. The top-level
+    `detail` lets clients display a generic message when they don't iterate
+    per-field; `errors` is a map of field name to a list of validation
+    messages for that field.
+    """
+
+    detail: str
+    errors: dict[str, list[str]]

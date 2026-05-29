@@ -584,8 +584,16 @@ export interface components {
             /** Tags */
             tags: string[];
         };
-        /** AreaCreateError */
-        AreaCreateError: {
+        /**
+         * DetailErrorOut
+         * @description Single-message error envelope.
+         *
+         *     Used for all 4xx responses that do not carry per-field validation details.
+         *     Equivalent in shape to django-ninja's default error body, made explicit so
+         *     every endpoint declares it in its `response={...}` map and it appears in
+         *     the OpenAPI schema.
+         */
+        DetailErrorOut: {
             /** Detail */
             detail: string;
         };
@@ -606,11 +614,6 @@ export interface components {
             geojson?: {
                 [key: string]: unknown;
             } | null;
-        };
-        /** AreaDeleteError */
-        AreaDeleteError: {
-            /** Detail */
-            detail: string;
         };
         /** BasisOfRecordOut */
         BasisOfRecordOut: {
@@ -860,8 +863,18 @@ export interface components {
             /** Vernacularname */
             vernacularName: string;
         };
-        /** AlertValidationErrorOut */
-        AlertValidationErrorOut: {
+        /**
+         * ValidationErrorOut
+         * @description Field-validation error envelope.
+         *
+         *     Used for 422 responses that carry per-field error messages. The top-level
+         *     `detail` lets clients display a generic message when they don't iterate
+         *     per-field; `errors` is a map of field name to a list of validation
+         *     messages for that field.
+         */
+        ValidationErrorOut: {
+            /** Detail */
+            detail: string;
             /** Errors */
             errors: {
                 [key: string]: string[];
@@ -902,24 +915,12 @@ export interface components {
             /** Username */
             username: string;
         };
-        /** AuthErrorOut */
-        AuthErrorOut: {
-            /** Detail */
-            detail: string;
-        };
         /** SignInIn */
         SignInIn: {
             /** Username */
             username: string;
             /** Password */
             password: string;
-        };
-        /** AuthValidationErrorOut */
-        AuthValidationErrorOut: {
-            /** Errors */
-            errors: {
-                [key: string]: string[];
-            };
         };
         /** SignUpIn */
         SignUpIn: {
@@ -1090,7 +1091,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AreaCreateError"];
+                    "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
         };
@@ -1147,7 +1148,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AreaCreateError"];
+                    "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
         };
@@ -1176,7 +1177,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AreaDeleteError"];
+                    "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
         };
@@ -1211,7 +1212,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AreaCreateError"];
+                    "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
         };
@@ -1555,7 +1556,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AlertValidationErrorOut"];
+                    "application/json": components["schemas"]["ValidationErrorOut"];
                 };
             };
         };
@@ -1612,7 +1613,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AlertValidationErrorOut"];
+                    "application/json": components["schemas"]["ValidationErrorOut"];
                 };
             };
         };
@@ -1689,7 +1690,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuthErrorOut"];
+                    "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
         };
@@ -1722,7 +1723,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuthValidationErrorOut"];
+                    "application/json": components["schemas"]["ValidationErrorOut"];
                 };
             };
         };
@@ -1753,7 +1754,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuthValidationErrorOut"];
+                    "application/json": components["schemas"]["ValidationErrorOut"];
                 };
             };
         };
@@ -1824,7 +1825,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuthValidationErrorOut"];
+                    "application/json": components["schemas"]["ValidationErrorOut"];
                 };
             };
         };
