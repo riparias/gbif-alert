@@ -18,6 +18,7 @@ from dashboard.models import (
     ObservationUnseen,
     Species,
 )
+from page_fragments.models import PageFragment
 
 pytestmark = pytest.mark.django_db
 
@@ -1268,29 +1269,13 @@ def test_alert_delete_wrong_user_returns_404(client, alert_data):
     assert Alert.objects.filter(pk=alert.pk).exists()
 
 
-# --- GET /api/v2/alerts/{alert_id}/as-filters/ ---
-
-
-def test_alert_as_filters_returns_dashboard_filter_shape(client, alert_data):
-    alert = alert_data["alert"]
-    sp1 = alert_data["sp1"]
-    client.login(username="alertuser", password="12345")
-    response = client.get(f"/api/v2/alerts/{alert.pk}/as-filters/")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["speciesIds"] == [sp1.pk]
-    assert data["status"] == "unseen"
-    assert "verifiedFilter" in data
-    assert "areaFilterMode" in data
-
-
 # --- GET /api/v2/alerts/suggest-name/ ---
 
 
 def test_suggest_name_returns_first_available(client, alert_data):
     # "My alert #1" is taken; next should be "My alert #2"
     client.login(username="alertuser", password="12345")
-    response = client.get("/api/v2/alerts/suggest-name/")
+    response = client.get("/api/v2/spa/alerts/suggest-name/")
     assert response.status_code == 200
     assert response.json()["name"] == "My alert #2"
 
@@ -1705,12 +1690,12 @@ def test_password_change_mismatch(client, auth_data):
 def test_news_mark_visited_authenticated(client, auth_data):
     user = auth_data["user"]
     client.force_login(user)
-    resp = client.post("/api/v2/news/mark-visited/", content_type="application/json")
+    resp = client.post("/api/v2/spa/news/mark-visited/", content_type="application/json")
     assert resp.status_code == 204
 
 
 def test_news_mark_visited_anonymous(client):
-    resp = client.post("/api/v2/news/mark-visited/", content_type="application/json")
+    resp = client.post("/api/v2/spa/news/mark-visited/", content_type="application/json")
     assert resp.status_code == 204
 
 
@@ -1944,3 +1929,56 @@ def test_spa_openapi_schema_is_served_and_marked_internal(client):
     assert resp.status_code == 200
     schema = resp.json()
     assert "not part of the public API contract" in schema["info"]["description"]
+
+
+def test_page_fragment_returns_html_under_spa_namespace(client):
+    """page-fragments is served under /api/v2/spa/ and returns rendered HTML."""
+    # Set all three language fields so the result is locale-independent
+    # (get_content_in falls back to other languages when a field is empty).
+    PageFragment.objects.create(
+        identifier="welcome_text",
+        content_en="# Hello",
+        content_nl="# Hello",
+        content_fr="# Hello",
+    )
+    resp = client.get("/api/v2/spa/page-fragments/welcome_text/")
+    assert resp.status_code == 200
+    assert "Hello" in resp.json()["html"]
+
+
+def test_page_fragment_missing_returns_empty_html_under_spa_namespace(client):
+    """A missing fragment yields {"html": ""} rather than a 404."""
+    resp = client.get("/api/v2/spa/page-fragments/does_not_exist/")
+    assert resp.status_code == 200
+    assert resp.json()["html"] == ""
+
+
+def test_relocated_endpoints_gone_from_public_namespace(client, alert_data):
+    """The four in-scope endpoints (3 relocated, 1 deleted) no longer answer under /api/v2/.
+
+    suggest-name returns 422 (not 404) because Ninja matches the path against
+    the existing /alerts/{alert_id}/ route with "suggest-name" as a non-integer
+    param - this is expected Ninja validation behaviour, not a successful response.
+    """
+    alert = alert_data["alert"]
+    client.login(username="alertuser", password="12345")
+
+    # suggest-name is gone; Ninja returns 422 (param type mismatch on {alert_id})
+    # rather than 404 because /alerts/{alert_id}/ still exists. Assert a 4xx
+    # client error (not == 422) so the test survives a future route change, while
+    # still failing on a 2xx (endpoint accidentally re-added) or a 5xx server error.
+    suggest_status = client.get("/api/v2/alerts/suggest-name/").status_code
+    assert 400 <= suggest_status < 500, (
+        f"suggest-name should return a client error on the public namespace "
+        f"(got {suggest_status})"
+    )
+
+    # as-filters was deleted (dead code), so it is gone from the public surface too.
+    assert client.get(f"/api/v2/alerts/{alert.pk}/as-filters/").status_code == 404
+    assert (
+        client.post(
+            "/api/v2/news/mark-visited/", content_type="application/json"
+        ).status_code
+        == 404
+    )
+    assert client.get("/api/v2/page-fragments/welcome_text/").status_code == 404

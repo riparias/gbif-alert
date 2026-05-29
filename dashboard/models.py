@@ -1201,26 +1201,6 @@ class Alert(models.Model):
         return ", ".join(self.species.order_by("name").values_list("name", flat=True))
 
     @property
-    def as_dashboard_filters(self) -> dict[str, Any]:
-        """The alert represented as a dict
-
-        Once converted to JSON, this dict is suitable for Observation filtering in the frontend
-        (see DashboardFilters TypeScript interface).
-        """
-        return {
-            "speciesIds": [s.pk for s in self.species.all()],
-            "datasetsIds": [d.pk for d in self.datasets.all()],
-            "basisOfRecordIds": [b.pk for b in self.basis_of_record_filters.all()],
-            "areaIds": [a.pk for a in self.areas.all()],
-            "startDate": None,
-            "endDate": None,
-            "status": "unseen",
-            "verifiedFilter": self.verified_filter,
-            "areaFilterMode": self.area_filter_mode,
-            "approachingDistanceKm": self.approaching_distance_km,
-        }
-
-    @property
     def as_dict(self) -> dict[str, Any]:
         return {
             "id": self.pk,

@@ -607,7 +607,7 @@ def observation_add_comment(request: HttpRequest, stable_id: str, payload: Comme
     }
 
 
-@api_v2.get("/page-fragments/{identifier}/", response=dict)
+@api_v2_spa.get("/page-fragments/{identifier}/", response=dict)
 def page_fragment(request: HttpRequest, identifier: str):
     """Return the rendered HTML for a page fragment in the current request language.
 
@@ -719,7 +719,7 @@ def _save_alert(alert: Alert, payload: AlertIn) -> dict[str, list[str]]:
 # routes so they are not captured as alert IDs.
 
 
-@api_v2.get("/alerts/suggest-name/", response=dict, auth=django_auth)
+@api_v2_spa.get("/alerts/suggest-name/", response=dict, auth=django_auth)
 def alert_suggest_name(request: HttpRequest):
     """Suggest the next available 'My alert #N' name for the current user."""
     user = cast(User, request.user)
@@ -805,13 +805,6 @@ def alert_delete(request: HttpRequest, alert_id: int):
     return 204, None
 
 
-@api_v2.get("/alerts/{alert_id}/as-filters/", response=dict, auth=django_auth)
-def alert_as_filters_v2(request: HttpRequest, alert_id: int):
-    """Return the alert's filters in DashboardFilters shape for pre-loading the index page."""
-    alert = get_object_or_404(Alert, id=alert_id, user=request.user)
-    return alert.as_dashboard_filters
-
-
 # ---- Auth endpoints ----
 
 
@@ -881,7 +874,7 @@ def auth_password_change(request: HttpRequest, payload: PasswordChangeIn):
     return 204, None
 
 
-@api_v2.post(
+@api_v2_spa.post(
     "/news/mark-visited/",
     response={204: None},
     auth=None,
