@@ -1917,3 +1917,22 @@ def test_validation_error_out_schema_shape():
     assert obj.errors == {
         "speciesIds": ["At least one species must be selected"]
     }
+
+
+# ---------------------------------------------------------------------------
+# SPA-only namespace (PR3)
+# ---------------------------------------------------------------------------
+
+
+def test_api_v2_spa_instance_exists_and_is_marked_internal():
+    """The SPA helper API is a separate NinjaAPI marked as non-public."""
+    from ninja import NinjaAPI
+
+    from dashboard.api_v2 import api_v2, api_v2_spa
+
+    assert isinstance(api_v2_spa, NinjaAPI)
+    # Distinct namespace so django-ninja does not raise at startup.
+    assert api_v2_spa.urls_namespace == "api-v2-spa"
+    assert api_v2.urls_namespace != api_v2_spa.urls_namespace
+    # Description warns consumers it is not part of the public contract.
+    assert "not part of the public API contract" in api_v2_spa.description

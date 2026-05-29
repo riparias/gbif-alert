@@ -94,6 +94,35 @@ api_v2 = NinjaAPI(
     },
 )
 
+# Internal SPA helper API - a second Ninja instance mounted at /api/v2/spa/.
+# These endpoints exist only to serve the single-page application; they are NOT
+# part of the public API contract and may change or disappear between releases.
+# Keeping them on a separate instance keeps the public /api/v2/ OpenAPI docs
+# limited to endpoints we are willing to commit to.
+api_v2_spa = NinjaAPI(
+    urls_namespace="api-v2-spa",
+    title="GBIF Alert SPA helper API",
+    version=human_readable_git_version_number(),
+    description=(
+        "Internal helper endpoints for the GBIF Alert single-page application. "
+        "These are not part of the public API contract and may change between "
+        "releases. For the public API see `/api/v2/docs`.\n\n"
+        "Source: https://github.com/riparias/gbif-alert"
+    ),
+    openapi_extra={
+        "info": {
+            "contact": {
+                "name": "GBIF Alert maintainers",
+                "url": "https://github.com/riparias/gbif-alert",
+            },
+            "license": {
+                "name": "MIT",
+                "url": "https://opensource.org/licenses/MIT",
+            },
+        }
+    },
+)
+
 
 @api_v2.get("/species/", response=list[SpeciesOut])
 def species_list(request: HttpRequest):
