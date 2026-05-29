@@ -10,12 +10,12 @@ const loading = ref(true);
 
 onMounted(async () => {
     // Fire and forget - mark news as visited without blocking the UI
-    fetch("/api/v2/news/mark-visited/", {
+    fetch("/api/v2/spa/news/mark-visited/", {
         method: "POST",
         headers: { "X-CSRFToken": getCsrf() },
     });
 
-    const resp = await fetch("/api/v2/page-fragments/news_page_content/");
+    const resp = await fetch("/api/v2/spa/page-fragments/news_page_content/");
     if (resp.ok) {
         const data = await resp.json();
         html.value = data.html;

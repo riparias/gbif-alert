@@ -271,29 +271,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v2/page-fragments/{identifier}/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Page Fragment
-         * @description Return the rendered HTML for a page fragment in the current request language.
-         *
-         *     Returns {"html": ""} if the fragment does not exist, so callers never need
-         *     to handle 404 - a missing fragment simply shows nothing.
-         */
-        get: operations["dashboard_api_v2_page_fragment"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v2/observations/{stable_id}/mark-unseen/": {
         parameters: {
             query?: never;
@@ -305,26 +282,6 @@ export interface paths {
         put?: never;
         /** Observation Mark Unseen */
         post: operations["dashboard_api_v2_observation_mark_unseen"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v2/alerts/suggest-name/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Alert Suggest Name
-         * @description Suggest the next available 'My alert #N' name for the current user.
-         */
-        get: operations["dashboard_api_v2_alert_suggest_name"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -403,26 +360,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v2/alerts/{alert_id}/as-filters/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Alert As Filters V2
-         * @description Return the alert's filters in DashboardFilters shape for pre-loading the index page.
-         */
-        get: operations["dashboard_api_v2_alert_as_filters_v2"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v2/auth/signin/": {
         parameters: {
             query?: never;
@@ -477,26 +414,6 @@ export interface paths {
          * @description Change password. Returns 204 on success, 422 with field errors on failure.
          */
         post: operations["dashboard_api_v2_auth_password_change"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v2/news/mark-visited/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * News Mark Visited
-         * @description Mark news as visited for the current user. No-op for anonymous users.
-         */
-        post: operations["dashboard_api_v2_news_mark_visited"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1407,30 +1324,6 @@ export interface operations {
             };
         };
     };
-    dashboard_api_v2_page_fragment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                identifier: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
     dashboard_api_v2_observation_mark_unseen: {
         parameters: {
             query?: never;
@@ -1455,28 +1348,6 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    dashboard_api_v2_alert_suggest_name: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1638,30 +1509,6 @@ export interface operations {
             };
         };
     };
-    dashboard_api_v2_alert_as_filters_v2: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                alert_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
     dashboard_api_v2_auth_signin: {
         parameters: {
             query?: never;
@@ -1756,24 +1603,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ValidationErrorOut"];
                 };
-            };
-        };
-    };
-    dashboard_api_v2_news_mark_visited: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
