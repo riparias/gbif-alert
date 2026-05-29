@@ -1936,3 +1936,11 @@ def test_api_v2_spa_instance_exists_and_is_marked_internal():
     assert api_v2.urls_namespace != api_v2_spa.urls_namespace
     # Description warns consumers it is not part of the public contract.
     assert "not part of the public API contract" in api_v2_spa.description
+
+
+def test_spa_openapi_schema_is_served_and_marked_internal(client):
+    """The SPA helper API serves its own OpenAPI schema at /api/v2/spa/."""
+    resp = client.get("/api/v2/spa/openapi.json")
+    assert resp.status_code == 200
+    schema = resp.json()
+    assert "not part of the public API contract" in schema["info"]["description"]

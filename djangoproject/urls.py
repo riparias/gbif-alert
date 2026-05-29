@@ -17,11 +17,12 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import path, include, re_path, reverse_lazy
 
-from dashboard.api_v2 import api_v2
+from dashboard.api_v2 import api_v2, api_v2_spa
 from dashboard.views.healthz import healthz
 from dashboard.views.pages import spa_shell
 
 urlpatterns = [
+    path("api/v2/spa/", api_v2_spa.urls),
     path("api/v2/", api_v2.urls),
     path("", include("dashboard.urls")),
     # User accounts
