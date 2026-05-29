@@ -26,7 +26,7 @@ const unseenFallback = computed(() => isAuthenticated && !route.query.status);
 
 const welcomeHtml = ref("");
 onMounted(async () => {
-    const resp = await fetch("/api/v2/page-fragments/welcome_text/");
+    const resp = await fetch("/api/v2/spa/page-fragments/welcome_text/");
     if (resp.ok) {
         const data = await resp.json();
         welcomeHtml.value = data.html;

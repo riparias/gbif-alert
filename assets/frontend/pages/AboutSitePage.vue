@@ -8,7 +8,7 @@ const html = ref<string | null>(null);
 const loading = ref(true);
 
 onMounted(async () => {
-    const resp = await fetch("/api/v2/page-fragments/about_this_site_page_content/");
+    const resp = await fetch("/api/v2/spa/page-fragments/about_this_site_page_content/");
     if (resp.ok) {
         const data = await resp.json();
         html.value = data.html;

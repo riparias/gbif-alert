@@ -115,7 +115,7 @@ async function loadAlertData() {
 }
 
 async function suggestName() {
-    const res = await fetch("/api/v2/alerts/suggest-name/");
+    const res = await fetch("/api/v2/spa/alerts/suggest-name/");
     if (!res.ok) return;
     name.value = (await res.json()).name;
 }
