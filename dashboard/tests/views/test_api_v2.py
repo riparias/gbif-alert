@@ -1269,7 +1269,7 @@ def test_alert_delete_wrong_user_returns_404(client, alert_data):
     assert Alert.objects.filter(pk=alert.pk).exists()
 
 
-# --- GET /api/v2/alerts/suggest-name/ ---
+# --- GET /api/v2/spa/alerts/suggest-name/ ---
 
 
 def test_suggest_name_returns_first_available(client, alert_data):
