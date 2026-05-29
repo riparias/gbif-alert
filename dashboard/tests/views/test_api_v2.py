@@ -1982,3 +1982,40 @@ def test_relocated_endpoints_gone_from_public_namespace(client, alert_data):
         == 404
     )
     assert client.get("/api/v2/page-fragments/welcome_text/").status_code == 404
+
+
+def test_public_schema_excludes_relocated_endpoints(client):
+    """The public /api/v2/ OpenAPI paths no longer mention the in-scope endpoints.
+
+    django-ninja renders the full mount prefix into the path keys, so they look
+    like /api/v2/alerts/. The anchor assertion below guards against a future
+    ninja change to that format silently making the exclusion checks vacuous.
+    """
+    resp = client.get("/api/v2/openapi.json")
+    assert resp.status_code == 200
+    public_paths = set(resp.json()["paths"].keys())
+
+    # Anchor: a known public endpoint must be present in the expected key format.
+    assert "/api/v2/alerts/" in public_paths
+
+    assert "/api/v2/alerts/suggest-name/" not in public_paths
+    assert "/api/v2/alerts/{alert_id}/as-filters/" not in public_paths  # deleted entirely
+    assert "/api/v2/news/mark-visited/" not in public_paths
+    assert "/api/v2/page-fragments/{identifier}/" not in public_paths
+
+
+def test_spa_schema_includes_relocated_endpoints(client):
+    """The SPA schema is where the three relocated endpoints now live.
+
+    django-ninja renders the full mount prefix into the SPA schema's path keys,
+    so each path starts with /api/v2/spa/.
+    """
+    resp = client.get("/api/v2/spa/openapi.json")
+    assert resp.status_code == 200
+    spa_paths = set(resp.json()["paths"].keys())
+
+    assert "/api/v2/spa/alerts/suggest-name/" in spa_paths
+    assert "/api/v2/spa/news/mark-visited/" in spa_paths
+    assert "/api/v2/spa/page-fragments/{identifier}/" in spa_paths
+    # as-filters was deleted, not relocated - it must NOT reappear here.
+    assert "/api/v2/spa/alerts/{alert_id}/as-filters/" not in spa_paths
