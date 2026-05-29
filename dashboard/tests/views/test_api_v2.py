@@ -2067,3 +2067,24 @@ def test_geojson_feature_collection_schema_shape():
     assert fc.features[0].geometry["type"] == "Polygon"
     # crs must survive a round-trip dump (it is easy to accidentally drop).
     assert "crs" in fc.model_dump()
+
+
+def test_area_geojson_response_is_unchanged_after_typing(client, area_endpoints_data):
+    """Typing the response with a Schema must not drop keys (crs, feature id).
+
+    The endpoint output must remain byte-identical to Django's raw geojson
+    serializer output.
+    """
+    from django.core.serializers import serialize
+
+    area = area_endpoints_data["area"]
+    client.login(username="owner", password="pass")
+
+    resp = client.get(f"/api/v2/areas/{area.pk}/geojson/")
+    assert resp.status_code == 200
+
+    expected = json.loads(serialize("geojson", [area], srid=4326))
+    assert resp.json() == expected
+    # Guard the specific members a naive schema would have dropped.
+    assert "crs" in resp.json()
+    assert "id" in resp.json()["features"][0]

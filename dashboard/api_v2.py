@@ -21,6 +21,7 @@ from pydantic import Field
 
 from dashboard.api_v2_schemas import (
     AlertIn,
+    AlertNameSuggestionOut,
     AlertNotificationFrequencyOut,
     AlertOut,
     AreaFromDrawingIn,
@@ -33,12 +34,16 @@ from dashboard.api_v2_schemas import (
     DatasetOut,
     DetailErrorOut,
     FiltersQuery,
+    GeoJSONFeatureCollectionOut,
     HistogramEntryOut,
     ObservationDetailOut,
     ObservationsPageOut,
+    OkOut,
+    PageFragmentOut,
     PasswordChangeIn,
     ProfileIn,
     ProfileOut,
+    QueuedOut,
     SignInIn,
     SignInOut,
     SignUpIn,
@@ -159,7 +164,7 @@ def areas_list(request: HttpRequest):
     ]
 
 
-@api_v2.get("/areas/{area_id}/geojson/", response=dict)
+@api_v2.get("/areas/{area_id}/geojson/", response=GeoJSONFeatureCollectionOut)
 def area_geojson(request: HttpRequest, area_id: int):
     """Return GeoJSON (FeatureCollection, EPSG:4326) for a single area.
 
@@ -480,7 +485,7 @@ def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
 
 @api_v2.post(
     "/observations/mark-as-seen/",
-    response={200: dict},
+    response={200: QueuedOut},
     auth=django_auth,
 )
 def observations_mark_all_as_seen(
@@ -624,7 +629,7 @@ def page_fragment(request: HttpRequest, identifier: str):
 
 @api_v2.post(
     "/observations/{stable_id}/mark-unseen/",
-    response={200: dict, 403: dict},
+    response={200: OkOut, 403: DetailErrorOut},
     auth=django_auth,
 )
 def observation_mark_unseen(request: HttpRequest, stable_id: str):
