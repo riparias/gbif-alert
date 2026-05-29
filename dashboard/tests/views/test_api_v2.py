@@ -2019,3 +2019,51 @@ def test_spa_schema_includes_relocated_endpoints(client):
     assert "/api/v2/spa/page-fragments/{identifier}/" in spa_paths
     # as-filters was deleted, not relocated - it must NOT reappear here.
     assert "/api/v2/spa/alerts/{alert_id}/as-filters/" not in spa_paths
+
+
+# ---------------------------------------------------------------------------
+# Typed response schemas (PR2)
+# ---------------------------------------------------------------------------
+
+
+def test_simple_dict_out_schemas_shapes():
+    """The small status/value schemas carry exactly one typed field each."""
+    from dashboard.api_v2_schemas import (
+        AlertNameSuggestionOut,
+        OkOut,
+        PageFragmentOut,
+        QueuedOut,
+    )
+
+    assert QueuedOut(queued=True).queued is True
+    assert OkOut(ok=True).ok is True
+    assert PageFragmentOut(html="<p>hi</p>").html == "<p>hi</p>"
+    assert AlertNameSuggestionOut(name="My alert #1").name == "My alert #1"
+
+
+def test_geojson_feature_collection_schema_shape():
+    """The FeatureCollection schema nests features and preserves the crs member."""
+    from dashboard.api_v2_schemas import (
+        GeoJSONFeatureCollectionOut,
+        GeoJSONFeatureOut,
+    )
+
+    fc = GeoJSONFeatureCollectionOut(
+        type="FeatureCollection",
+        crs={"type": "name", "properties": {"name": "EPSG:4326"}},
+        features=[
+            GeoJSONFeatureOut(
+                type="Feature",
+                id=1,
+                properties={"pk": "1"},
+                geometry={
+                    "type": "Polygon",
+                    "coordinates": [[[0, 0], [0, 1], [1, 1], [0, 0]]],
+                },
+            )
+        ],
+    )
+    assert fc.type == "FeatureCollection"
+    assert fc.features[0].geometry["type"] == "Polygon"
+    # crs must survive a round-trip dump (it is easy to accidentally drop).
+    assert "crs" in fc.model_dump()
