@@ -612,7 +612,7 @@ def observation_add_comment(request: HttpRequest, stable_id: str, payload: Comme
     }
 
 
-@api_v2_spa.get("/page-fragments/{identifier}/", response=dict)
+@api_v2_spa.get("/page-fragments/{identifier}/", response=PageFragmentOut)
 def page_fragment(request: HttpRequest, identifier: str):
     """Return the rendered HTML for a page fragment in the current request language.
 
@@ -724,7 +724,7 @@ def _save_alert(alert: Alert, payload: AlertIn) -> dict[str, list[str]]:
 # routes so they are not captured as alert IDs.
 
 
-@api_v2_spa.get("/alerts/suggest-name/", response=dict, auth=django_auth)
+@api_v2_spa.get("/alerts/suggest-name/", response=AlertNameSuggestionOut, auth=django_auth)
 def alert_suggest_name(request: HttpRequest):
     """Suggest the next available 'My alert #N' name for the current user."""
     user = cast(User, request.user)
