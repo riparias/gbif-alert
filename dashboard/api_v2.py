@@ -488,9 +488,7 @@ def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
     response={200: QueuedOut},
     auth=django_auth,
 )
-def observations_mark_all_as_seen(
-    request: HttpRequest, filters: Query[FiltersQuery]
-):
+def observations_mark_all_as_seen(request: HttpRequest, filters: Query[FiltersQuery]):
     """Bulk-mark all observations matching the current filters as seen by
     the requesting user. Runs asynchronously via django-rq."""
     user = cast(User, request.user)
@@ -724,7 +722,9 @@ def _save_alert(alert: Alert, payload: AlertIn) -> dict[str, list[str]]:
 # routes so they are not captured as alert IDs.
 
 
-@api_v2_spa.get("/alerts/suggest-name/", response=AlertNameSuggestionOut, auth=django_auth)
+@api_v2_spa.get(
+    "/alerts/suggest-name/", response=AlertNameSuggestionOut, auth=django_auth
+)
 def alert_suggest_name(request: HttpRequest):
     """Suggest the next available 'My alert #N' name for the current user."""
     user = cast(User, request.user)
@@ -927,7 +927,10 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
         }
     valid_units = ("days", "weeks", "months", "years")
     if payload.delayUnit not in valid_units:
-        return 422, {"detail": "Validation failed", "errors": {"delayUnit": ["Invalid unit."]}}
+        return 422, {
+            "detail": "Validation failed",
+            "errors": {"delayUnit": ["Invalid unit."]},
+        }
     user.first_name = payload.firstName
     user.last_name = payload.lastName
     user.email = payload.email

@@ -1690,12 +1690,16 @@ def test_password_change_mismatch(client, auth_data):
 def test_news_mark_visited_authenticated(client, auth_data):
     user = auth_data["user"]
     client.force_login(user)
-    resp = client.post("/api/v2/spa/news/mark-visited/", content_type="application/json")
+    resp = client.post(
+        "/api/v2/spa/news/mark-visited/", content_type="application/json"
+    )
     assert resp.status_code == 204
 
 
 def test_news_mark_visited_anonymous(client):
-    resp = client.post("/api/v2/spa/news/mark-visited/", content_type="application/json")
+    resp = client.post(
+        "/api/v2/spa/news/mark-visited/", content_type="application/json"
+    )
     assert resp.status_code == 204
 
 
@@ -1868,9 +1872,7 @@ def test_mark_all_as_seen_respects_species_filter(
     other_obs = observations_data["obs_other_species"]
 
     client.force_login(user)
-    resp = client.post(
-        f"/api/v2/observations/mark-as-seen/?speciesIds={species.pk}"
-    )
+    resp = client.post(f"/api/v2/observations/mark-as-seen/?speciesIds={species.pk}")
 
     assert resp.status_code == 200
     assert captured["ids"] == [target_obs.pk]
@@ -1899,9 +1901,7 @@ def test_validation_error_out_schema_shape():
         errors={"speciesIds": ["At least one species must be selected"]},
     )
     assert obj.detail == "Validation failed"
-    assert obj.errors == {
-        "speciesIds": ["At least one species must be selected"]
-    }
+    assert obj.errors == {"speciesIds": ["At least one species must be selected"]}
 
 
 # ---------------------------------------------------------------------------
@@ -1999,7 +1999,9 @@ def test_public_schema_excludes_relocated_endpoints(client):
     assert "/api/v2/alerts/" in public_paths
 
     assert "/api/v2/alerts/suggest-name/" not in public_paths
-    assert "/api/v2/alerts/{alert_id}/as-filters/" not in public_paths  # deleted entirely
+    assert (
+        "/api/v2/alerts/{alert_id}/as-filters/" not in public_paths
+    )  # deleted entirely
     assert "/api/v2/news/mark-visited/" not in public_paths
     assert "/api/v2/page-fragments/{identifier}/" not in public_paths
 
