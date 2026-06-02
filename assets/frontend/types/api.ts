@@ -898,15 +898,15 @@ export interface components {
             /** Username */
             username: string;
             /**
-             * First Name
+             * Firstname
              * @default
              */
-            first_name: string;
+            firstName: string;
             /**
-             * Last Name
+             * Lastname
              * @default
              */
-            last_name: string;
+            lastName: string;
             /** Email */
             email: string;
             /** Language */
@@ -918,12 +918,12 @@ export interface components {
         };
         /** PasswordChangeIn */
         PasswordChangeIn: {
-            /** Old Password */
-            old_password: string;
-            /** New Password1 */
-            new_password1: string;
-            /** New Password2 */
-            new_password2: string;
+            /** Oldpassword */
+            oldPassword: string;
+            /** Newpassword1 */
+            newPassword1: string;
+            /** Newpassword2 */
+            newPassword2: string;
         };
         /** ProfileOut */
         ProfileOut: {

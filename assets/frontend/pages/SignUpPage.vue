@@ -33,8 +33,8 @@ async function submit() {
         },
         body: JSON.stringify({
             username: username.value,
-            first_name: firstName.value,
-            last_name: lastName.value,
+            firstName: firstName.value,
+            lastName: lastName.value,
             email: email.value,
             language: language.value,
             password1: password1.value,
@@ -74,7 +74,7 @@ async function submit() {
                     <span style="font-weight: 400; color: var(--p-text-muted-color);">({{ t("message.optional") }})</span>
                 </label>
                 <InputText id="su-firstname" v-model="firstName" class="w-full" autocomplete="given-name" />
-                <small v-if="fieldError('first_name')" style="color: var(--p-red-500);">{{ fieldError("first_name") }}</small>
+                <small v-if="fieldError('firstName')" style="color: var(--p-red-500);">{{ fieldError("firstName") }}</small>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 0.375rem;">
@@ -83,7 +83,7 @@ async function submit() {
                     <span style="font-weight: 400; color: var(--p-text-muted-color);">({{ t("message.optional") }})</span>
                 </label>
                 <InputText id="su-lastname" v-model="lastName" class="w-full" autocomplete="family-name" />
-                <small v-if="fieldError('last_name')" style="color: var(--p-red-500);">{{ fieldError("last_name") }}</small>
+                <small v-if="fieldError('lastName')" style="color: var(--p-red-500);">{{ fieldError("lastName") }}</small>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 0.375rem;">

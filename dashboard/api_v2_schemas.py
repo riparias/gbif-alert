@@ -191,8 +191,8 @@ class SignInOut(Schema):
 
 class SignUpIn(Schema):
     username: str
-    first_name: str = ""
-    last_name: str = ""
+    firstName: str = ""
+    lastName: str = ""
     email: str
     language: str
     password1: str
@@ -200,9 +200,9 @@ class SignUpIn(Schema):
 
 
 class PasswordChangeIn(Schema):
-    old_password: str
-    new_password1: str
-    new_password2: str
+    oldPassword: str
+    newPassword1: str
+    newPassword2: str
 
 
 class ProfileOut(Schema):
