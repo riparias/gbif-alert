@@ -1171,6 +1171,9 @@ def test_alerts_list_returns_own_alerts(client, alert_data):
     assert data[0]["name"] == "My alert #1"
     assert "speciesIds" in data[0]
     assert "unseenCount" in data[0]
+    # N10: timestamp follows the createdAt/*Timestamp convention.
+    assert "lastEmailSentAt" in data[0]
+    assert "lastEmailSentOn" not in data[0]
 
 
 def test_alerts_list_does_not_include_other_users_alerts(client, alert_data):

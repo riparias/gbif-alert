@@ -167,7 +167,7 @@ class AlertOut(Schema):
     basisOfRecordList: str
     verifiedFilterDisplay: str
     emailNotificationsFrequencyDisplay: str
-    lastEmailSentOn: datetime.datetime | None
+    lastEmailSentAt: datetime.datetime | None
 
 
 class AreaFromDrawingIn(Schema):

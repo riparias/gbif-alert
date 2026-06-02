@@ -824,8 +824,8 @@ export interface components {
             verifiedFilterDisplay: string;
             /** Emailnotificationsfrequencydisplay */
             emailNotificationsFrequencyDisplay: string;
-            /** Lastemailsenton */
-            lastEmailSentOn: string | null;
+            /** Lastemailsentat */
+            lastEmailSentAt: string | null;
         };
         /** AlertSpeciesOut */
         AlertSpeciesOut: {

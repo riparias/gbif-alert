@@ -673,7 +673,7 @@ def _alert_to_out(alert: Alert) -> dict:
         "basisOfRecordList": alert.basis_of_record_list,
         "verifiedFilterDisplay": alert.verified_filter_display,
         "emailNotificationsFrequencyDisplay": alert.get_email_notifications_frequency_display(),
-        "lastEmailSentOn": alert.last_email_sent_on,
+        "lastEmailSentAt": alert.last_email_sent_on,
     }
 
 

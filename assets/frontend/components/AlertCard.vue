@@ -122,7 +122,7 @@ function confirmDelete() {
                 <span>
                     {{ alert.emailNotificationsFrequencyDisplay }}
                     &middot;
-                    <span class="muted">{{ t("message.lastEmailSentOn") }} {{ formatDate(alert.lastEmailSentOn) }}</span>
+                    <span class="muted">{{ t("message.lastEmailSentAt") }} {{ formatDate(alert.lastEmailSentAt) }}</span>
                 </span>
             </div>
         </template>
