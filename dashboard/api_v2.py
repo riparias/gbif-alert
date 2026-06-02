@@ -367,7 +367,7 @@ def observations_list(
 
     qs = Observation.objects.filtered_from_my_params(
         species_ids=filters.speciesIds,
-        datasets_ids=filters.datasetsIds,
+        datasets_ids=filters.datasetIds,
         basis_of_record_ids=filters.basisOfRecordIds,
         start_date=filters.startDate,
         end_date=filters.endDate,
@@ -457,7 +457,7 @@ def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
 
     qs = Observation.objects.filtered_from_my_params(
         species_ids=filters.speciesIds,
-        datasets_ids=filters.datasetsIds,
+        datasets_ids=filters.datasetIds,
         basis_of_record_ids=filters.basisOfRecordIds,
         start_date=filters.startDate,
         end_date=filters.endDate,
@@ -494,7 +494,7 @@ def observations_mark_all_as_seen(request: HttpRequest, filters: Query[FiltersQu
     user = cast(User, request.user)
     qs = Observation.objects.filtered_from_my_params(
         species_ids=filters.speciesIds,
-        datasets_ids=filters.datasetsIds,
+        datasets_ids=filters.datasetIds,
         basis_of_record_ids=filters.basisOfRecordIds,
         start_date=filters.startDate,
         end_date=filters.endDate,

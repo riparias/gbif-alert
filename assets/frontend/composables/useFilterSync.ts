@@ -34,7 +34,7 @@ function buildQuery(
 ): QueryRecord {
     const q: QueryRecord = {};
     if (store.speciesIds.length) q.speciesIds = store.speciesIds.map(String);
-    if (store.datasetsIds.length) q.datasetsIds = store.datasetsIds.map(String);
+    if (store.datasetIds.length) q.datasetIds = store.datasetIds.map(String);
     if (store.basisOfRecordIds.length) q.basisOfRecordIds = store.basisOfRecordIds.map(String);
     if (store.areaIds.length) q.areaIds = store.areaIds.map(String);
     if (store.initialDataImportIds.length)
@@ -90,7 +90,7 @@ export function useFilterSync(isAuthenticated: boolean = true): void {
             const areaMode = getString(query, "areaFilterMode");
 
             store.speciesIds = getIntArray(query, "speciesIds");
-            store.datasetsIds = getIntArray(query, "datasetsIds");
+            store.datasetIds = getIntArray(query, "datasetIds");
             store.basisOfRecordIds = getIntArray(query, "basisOfRecordIds");
             store.areaIds = getIntArray(query, "areaIds");
             store.initialDataImportIds = getIntArray(query, "initialDataImportIds");

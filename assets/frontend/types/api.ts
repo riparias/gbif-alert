@@ -603,8 +603,8 @@ export interface components {
         FiltersQuery: {
             /** Speciesids */
             speciesIds?: number[];
-            /** Datasetsids */
-            datasetsIds?: number[];
+            /** Datasetids */
+            datasetIds?: number[];
             /** Basisofrecordids */
             basisOfRecordIds?: number[];
             /** Startdate */
@@ -1230,7 +1230,7 @@ export interface operations {
         parameters: {
             query?: {
                 speciesIds?: number[];
-                datasetsIds?: number[];
+                datasetIds?: number[];
                 basisOfRecordIds?: number[];
                 startDate?: string | null;
                 endDate?: string | null;
@@ -1266,7 +1266,7 @@ export interface operations {
         parameters: {
             query?: {
                 speciesIds?: number[];
-                datasetsIds?: number[];
+                datasetIds?: number[];
                 basisOfRecordIds?: number[];
                 startDate?: string | null;
                 endDate?: string | null;
@@ -1298,7 +1298,7 @@ export interface operations {
         parameters: {
             query?: {
                 speciesIds?: number[];
-                datasetsIds?: number[];
+                datasetIds?: number[];
                 basisOfRecordIds?: number[];
                 startDate?: string | null;
                 endDate?: string | null;

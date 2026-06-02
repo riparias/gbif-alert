@@ -43,7 +43,7 @@ class DataImportOut(Schema):
 
 class FiltersQuery(Schema):
     speciesIds: list[int] = Field(default_factory=list)
-    datasetsIds: list[int] = Field(default_factory=list)
+    datasetIds: list[int] = Field(default_factory=list)
     basisOfRecordIds: list[int] = Field(default_factory=list)
     startDate: datetime.date | None = None
     endDate: datetime.date | None = None

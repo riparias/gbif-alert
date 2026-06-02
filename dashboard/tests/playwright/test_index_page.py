@@ -167,7 +167,7 @@ def test_species_filter_narrows_results(page: Page, live_server):
 
 @pytest.mark.django_db(transaction=True)
 def test_dataset_filter_narrows_results(page: Page, live_server):
-    """Adding a datasetsIds filter to the URL reduces the observation count."""
+    """Adding a datasetIds filter to the URL reduces the observation count."""
     basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
     sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
     ds1 = Dataset.objects.create(name="Dataset A", gbif_dataset_key="key-a")
@@ -177,7 +177,7 @@ def test_dataset_filter_narrows_results(page: Page, live_server):
     _make_observation(gbif_id=3, occurrence_id="3", species=sp, basis=basis, dataset=ds2)
 
     # Filtered to ds1: 2 observations
-    page.goto(live_server.url + f"/?status=all&datasetsIds={ds1.pk}")
+    page.goto(live_server.url + f"/?status=all&datasetIds={ds1.pk}")
     page.wait_for_load_state("networkidle")
     expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
 

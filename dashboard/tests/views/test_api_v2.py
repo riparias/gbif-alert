@@ -474,6 +474,28 @@ def test_species_filter(client, observations_data):
     assert data["items"][0]["id"] == obs.pk
 
 
+def test_observations_filter_by_dataset_ids(client, observations_data):
+    """The v2 observations list filters on the renamed `datasetIds` query param."""
+    dataset = observations_data["dataset"]
+    # Both observations belong to this single dataset.
+    matching = client.get(
+        reverse("api-v2:observations_list"), {"datasetIds": dataset.pk}
+    )
+    assert matching.json()["count"] == 2
+    # A non-existent dataset id matches nothing.
+    none = client.get(reverse("api-v2:observations_list"), {"datasetIds": 999999})
+    assert none.json()["count"] == 0
+
+
+def test_observations_old_datasets_ids_param_is_ignored(client, observations_data):
+    """The old misspelled `datasetsIds` param no longer filters (Ninja drops unknown params)."""
+    all_count = client.get(reverse("api-v2:observations_list")).json()["count"]
+    # The old name is unknown after the rename -> silently ignored, so the count
+    # is unchanged rather than filtered down to a single dataset.
+    resp = client.get(reverse("api-v2:observations_list"), {"datasetsIds": 999999})
+    assert resp.json()["count"] == all_count
+
+
 # ---------------------------------------------------------------------------
 # ApiV2HistogramTests fixtures
 # ---------------------------------------------------------------------------

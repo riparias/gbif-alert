@@ -69,7 +69,7 @@ const LAYER_SWITCH_ZOOM = 13;
 function buildLegacyParams(): string {
     const p = new URLSearchParams();
     for (const id of store.speciesIds) p.append("speciesIds[]", String(id));
-    for (const id of store.datasetsIds) p.append("datasetsIds[]", String(id));
+    for (const id of store.datasetIds) p.append("datasetsIds[]", String(id));
     for (const id of store.areaIds) p.append("areaIds[]", String(id));
     for (const id of store.basisOfRecordIds) p.append("basisOfRecordIds[]", String(id));
     for (const id of store.initialDataImportIds) p.append("initialDataImportIds[]", String(id));

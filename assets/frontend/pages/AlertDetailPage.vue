@@ -43,7 +43,7 @@ onMounted(async () => {
         document.title = `${alert.value.name} - ${navConfig.siteName}`;
         filtersStore.$patch({
             speciesIds: alert.value.speciesIds,
-            datasetsIds: alert.value.datasetIds,
+            datasetIds: alert.value.datasetIds,
             basisOfRecordIds: alert.value.basisOfRecordIds,
             areaIds: alert.value.areaIds,
             verifiedFilter: alert.value.verifiedFilter as "all" | "verified" | "unverified",
