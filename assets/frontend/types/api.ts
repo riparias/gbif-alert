@@ -514,6 +514,44 @@ export interface components {
             /** Detail */
             detail: string;
         };
+        /**
+         * GeoJSONFeatureCollectionOut
+         * @description A GeoJSON FeatureCollection (EPSG:4326) from Django's geojson serializer.
+         *
+         *     Declares the exact members Django emits (`type`, `crs`, `features`) so that
+         *     typing the response does not drop the `crs` member from the wire format.
+         */
+        GeoJSONFeatureCollectionOut: {
+            /** Type */
+            type: string;
+            /** Crs */
+            crs: {
+                [key: string]: unknown;
+            };
+            /** Features */
+            features: components["schemas"]["GeoJSONFeatureOut"][];
+        };
+        /**
+         * GeoJSONFeatureOut
+         * @description A single GeoJSON Feature as produced by Django's geojson serializer.
+         *
+         *     `geometry` and `properties` are passed through untyped - the schema
+         *     documents the Feature envelope without constraining the geometry internals.
+         */
+        GeoJSONFeatureOut: {
+            /** Type */
+            type: string;
+            /** Id */
+            id: number;
+            /** Properties */
+            properties: {
+                [key: string]: unknown;
+            };
+            /** Geometry */
+            geometry: {
+                [key: string]: unknown;
+            } | null;
+        };
         /** AreaFromDrawingIn */
         AreaFromDrawingIn: {
             /** Name */
@@ -646,6 +684,14 @@ export interface components {
             /** Count */
             count: number;
         };
+        /**
+         * QueuedOut
+         * @description Acknowledgement that a bulk operation was queued for async processing.
+         */
+        QueuedOut: {
+            /** Queued */
+            queued: boolean;
+        };
         /** CommentOut */
         CommentOut: {
             /** Id */
@@ -720,6 +766,14 @@ export interface components {
         CommentIn: {
             /** Text */
             text: string;
+        };
+        /**
+         * OkOut
+         * @description Simple boolean acknowledgement response.
+         */
+        OkOut: {
+            /** Ok */
+            ok: boolean;
         };
         /** AlertNotificationFrequencyOut */
         AlertNotificationFrequencyOut: {
@@ -1030,9 +1084,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["GeoJSONFeatureCollectionOut"];
                 };
             };
         };
@@ -1269,9 +1321,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["QueuedOut"];
                 };
             };
         };
@@ -1341,9 +1391,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["OkOut"];
                 };
             };
             /** @description Forbidden */
@@ -1352,9 +1400,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
         };

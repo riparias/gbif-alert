@@ -247,3 +247,52 @@ class ValidationErrorOut(Schema):
 
     detail: str
     errors: dict[str, list[str]]
+
+
+class QueuedOut(Schema):
+    """Acknowledgement that a bulk operation was queued for async processing."""
+
+    queued: bool
+
+
+class OkOut(Schema):
+    """Simple boolean acknowledgement response."""
+
+    ok: bool
+
+
+class PageFragmentOut(Schema):
+    """Rendered HTML for a page fragment (internal SPA helper endpoint)."""
+
+    html: str
+
+
+class AlertNameSuggestionOut(Schema):
+    """A suggested, not-yet-used alert name (internal SPA helper endpoint)."""
+
+    name: str
+
+
+class GeoJSONFeatureOut(Schema):
+    """A single GeoJSON Feature as produced by Django's geojson serializer.
+
+    `geometry` and `properties` are passed through untyped - the schema
+    documents the Feature envelope without constraining the geometry internals.
+    """
+
+    type: str
+    id: int
+    properties: dict
+    geometry: dict | None
+
+
+class GeoJSONFeatureCollectionOut(Schema):
+    """A GeoJSON FeatureCollection (EPSG:4326) from Django's geojson serializer.
+
+    Declares the exact members Django emits (`type`, `crs`, `features`) so that
+    typing the response does not drop the `crs` member from the wire format.
+    """
+
+    type: str
+    crs: dict
+    features: list[GeoJSONFeatureOut]

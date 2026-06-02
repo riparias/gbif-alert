@@ -1690,12 +1690,16 @@ def test_password_change_mismatch(client, auth_data):
 def test_news_mark_visited_authenticated(client, auth_data):
     user = auth_data["user"]
     client.force_login(user)
-    resp = client.post("/api/v2/spa/news/mark-visited/", content_type="application/json")
+    resp = client.post(
+        "/api/v2/spa/news/mark-visited/", content_type="application/json"
+    )
     assert resp.status_code == 204
 
 
 def test_news_mark_visited_anonymous(client):
-    resp = client.post("/api/v2/spa/news/mark-visited/", content_type="application/json")
+    resp = client.post(
+        "/api/v2/spa/news/mark-visited/", content_type="application/json"
+    )
     assert resp.status_code == 204
 
 
@@ -1868,9 +1872,7 @@ def test_mark_all_as_seen_respects_species_filter(
     other_obs = observations_data["obs_other_species"]
 
     client.force_login(user)
-    resp = client.post(
-        f"/api/v2/observations/mark-as-seen/?speciesIds={species.pk}"
-    )
+    resp = client.post(f"/api/v2/observations/mark-as-seen/?speciesIds={species.pk}")
 
     assert resp.status_code == 200
     assert captured["ids"] == [target_obs.pk]
@@ -1899,9 +1901,7 @@ def test_validation_error_out_schema_shape():
         errors={"speciesIds": ["At least one species must be selected"]},
     )
     assert obj.detail == "Validation failed"
-    assert obj.errors == {
-        "speciesIds": ["At least one species must be selected"]
-    }
+    assert obj.errors == {"speciesIds": ["At least one species must be selected"]}
 
 
 # ---------------------------------------------------------------------------
@@ -1999,7 +1999,9 @@ def test_public_schema_excludes_relocated_endpoints(client):
     assert "/api/v2/alerts/" in public_paths
 
     assert "/api/v2/alerts/suggest-name/" not in public_paths
-    assert "/api/v2/alerts/{alert_id}/as-filters/" not in public_paths  # deleted entirely
+    assert (
+        "/api/v2/alerts/{alert_id}/as-filters/" not in public_paths
+    )  # deleted entirely
     assert "/api/v2/news/mark-visited/" not in public_paths
     assert "/api/v2/page-fragments/{identifier}/" not in public_paths
 
@@ -2019,3 +2021,72 @@ def test_spa_schema_includes_relocated_endpoints(client):
     assert "/api/v2/spa/page-fragments/{identifier}/" in spa_paths
     # as-filters was deleted, not relocated - it must NOT reappear here.
     assert "/api/v2/spa/alerts/{alert_id}/as-filters/" not in spa_paths
+
+
+# ---------------------------------------------------------------------------
+# Typed response schemas (PR2)
+# ---------------------------------------------------------------------------
+
+
+def test_simple_dict_out_schemas_shapes():
+    """The small status/value schemas carry exactly one typed field each."""
+    from dashboard.api_v2_schemas import (
+        AlertNameSuggestionOut,
+        OkOut,
+        PageFragmentOut,
+        QueuedOut,
+    )
+
+    assert QueuedOut(queued=True).queued is True
+    assert OkOut(ok=True).ok is True
+    assert PageFragmentOut(html="<p>hi</p>").html == "<p>hi</p>"
+    assert AlertNameSuggestionOut(name="My alert #1").name == "My alert #1"
+
+
+def test_geojson_feature_collection_schema_shape():
+    """The FeatureCollection schema nests features and preserves the crs member."""
+    from dashboard.api_v2_schemas import (
+        GeoJSONFeatureCollectionOut,
+        GeoJSONFeatureOut,
+    )
+
+    fc = GeoJSONFeatureCollectionOut(
+        type="FeatureCollection",
+        crs={"type": "name", "properties": {"name": "EPSG:4326"}},
+        features=[
+            GeoJSONFeatureOut(
+                type="Feature",
+                id=1,
+                properties={"pk": "1"},
+                geometry={
+                    "type": "Polygon",
+                    "coordinates": [[[0, 0], [0, 1], [1, 1], [0, 0]]],
+                },
+            )
+        ],
+    )
+    assert fc.type == "FeatureCollection"
+    assert fc.features[0].geometry["type"] == "Polygon"
+    # crs must survive a round-trip dump (it is easy to accidentally drop).
+    assert "crs" in fc.model_dump()
+
+
+def test_area_geojson_response_is_unchanged_after_typing(client, area_endpoints_data):
+    """Typing the response with a Schema must not drop keys (crs, feature id).
+
+    The endpoint output must remain byte-identical to Django's raw geojson
+    serializer output.
+    """
+    from django.core.serializers import serialize
+
+    area = area_endpoints_data["area"]
+    client.login(username="owner", password="pass")
+
+    resp = client.get(f"/api/v2/areas/{area.pk}/geojson/")
+    assert resp.status_code == 200
+
+    expected = json.loads(serialize("geojson", [area], srid=4326))
+    assert resp.json() == expected
+    # Guard the specific members a naive schema would have dropped.
+    assert "crs" in resp.json()
+    assert "id" in resp.json()["features"][0]

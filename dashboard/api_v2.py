@@ -21,6 +21,7 @@ from pydantic import Field
 
 from dashboard.api_v2_schemas import (
     AlertIn,
+    AlertNameSuggestionOut,
     AlertNotificationFrequencyOut,
     AlertOut,
     AreaFromDrawingIn,
@@ -33,12 +34,16 @@ from dashboard.api_v2_schemas import (
     DatasetOut,
     DetailErrorOut,
     FiltersQuery,
+    GeoJSONFeatureCollectionOut,
     HistogramEntryOut,
     ObservationDetailOut,
     ObservationsPageOut,
+    OkOut,
+    PageFragmentOut,
     PasswordChangeIn,
     ProfileIn,
     ProfileOut,
+    QueuedOut,
     SignInIn,
     SignInOut,
     SignUpIn,
@@ -159,7 +164,7 @@ def areas_list(request: HttpRequest):
     ]
 
 
-@api_v2.get("/areas/{area_id}/geojson/", response=dict)
+@api_v2.get("/areas/{area_id}/geojson/", response=GeoJSONFeatureCollectionOut)
 def area_geojson(request: HttpRequest, area_id: int):
     """Return GeoJSON (FeatureCollection, EPSG:4326) for a single area.
 
@@ -480,12 +485,10 @@ def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
 
 @api_v2.post(
     "/observations/mark-as-seen/",
-    response={200: dict},
+    response={200: QueuedOut},
     auth=django_auth,
 )
-def observations_mark_all_as_seen(
-    request: HttpRequest, filters: Query[FiltersQuery]
-):
+def observations_mark_all_as_seen(request: HttpRequest, filters: Query[FiltersQuery]):
     """Bulk-mark all observations matching the current filters as seen by
     the requesting user. Runs asynchronously via django-rq."""
     user = cast(User, request.user)
@@ -607,7 +610,7 @@ def observation_add_comment(request: HttpRequest, stable_id: str, payload: Comme
     }
 
 
-@api_v2_spa.get("/page-fragments/{identifier}/", response=dict)
+@api_v2_spa.get("/page-fragments/{identifier}/", response=PageFragmentOut)
 def page_fragment(request: HttpRequest, identifier: str):
     """Return the rendered HTML for a page fragment in the current request language.
 
@@ -624,7 +627,7 @@ def page_fragment(request: HttpRequest, identifier: str):
 
 @api_v2.post(
     "/observations/{stable_id}/mark-unseen/",
-    response={200: dict, 403: dict},
+    response={200: OkOut, 403: DetailErrorOut},
     auth=django_auth,
 )
 def observation_mark_unseen(request: HttpRequest, stable_id: str):
@@ -719,7 +722,9 @@ def _save_alert(alert: Alert, payload: AlertIn) -> dict[str, list[str]]:
 # routes so they are not captured as alert IDs.
 
 
-@api_v2_spa.get("/alerts/suggest-name/", response=dict, auth=django_auth)
+@api_v2_spa.get(
+    "/alerts/suggest-name/", response=AlertNameSuggestionOut, auth=django_auth
+)
 def alert_suggest_name(request: HttpRequest):
     """Suggest the next available 'My alert #N' name for the current user."""
     user = cast(User, request.user)
@@ -922,7 +927,10 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
         }
     valid_units = ("days", "weeks", "months", "years")
     if payload.delayUnit not in valid_units:
-        return 422, {"detail": "Validation failed", "errors": {"delayUnit": ["Invalid unit."]}}
+        return 422, {
+            "detail": "Validation failed",
+            "errors": {"delayUnit": ["Invalid unit."]},
+        }
     user.first_name = payload.firstName
     user.last_name = payload.lastName
     user.email = payload.email
