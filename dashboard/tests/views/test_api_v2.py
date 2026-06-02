@@ -474,6 +474,17 @@ def test_species_filter(client, observations_data):
     assert data["items"][0]["id"] == obs.pk
 
 
+def test_gbif_id_type_split_is_documented(client):
+    """The OpenAPI schema explains the gbifTaxonKey(int)/gbifId(str) split (N9)."""
+    schema = client.get("/api/v2/openapi.json").json()
+    props = schema["components"]["schemas"]
+    assert "intrinsic" in props["ObservationOut"]["properties"]["gbifId"]["description"]
+    assert "intrinsic" in props["SpeciesOut"]["properties"]["gbifTaxonKey"]["description"]
+    # Types are unchanged: gbifTaxonKey stays integer, gbifId stays string.
+    assert props["SpeciesOut"]["properties"]["gbifTaxonKey"]["type"] == "integer"
+    assert props["ObservationOut"]["properties"]["gbifId"]["type"] == "string"
+
+
 def test_observations_filter_by_dataset_ids(client, observations_data):
     """The v2 observations list filters on the renamed `datasetIds` query param."""
     dataset = observations_data["dataset"]
