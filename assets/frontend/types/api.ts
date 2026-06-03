@@ -186,9 +186,10 @@ export interface paths {
          * List observations
          * @description Return a paginated, filtered, and sorted page of observations.
          *
-         *     Pagination is controlled by `page` (1-based) and `pageSize` (capped at 100).
+         *     Pagination is controlled by `page` (1-based) and `pageSize` (must be 1-100).
          *     Sorting is controlled by `orderBy` and `orderDir`. A secondary sort on `-pk`
          *     is always appended to guarantee stable pagination when the primary field has ties.
+         *     Invalid `orderBy`, `orderDir`, `page`, or `pageSize` values return 400.
          */
         get: operations["dashboard_api_v2_observations_list"];
         put?: never;
@@ -1267,6 +1268,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ObservationsPageOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
         };

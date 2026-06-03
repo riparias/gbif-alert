@@ -334,8 +334,16 @@ _LOCALISED_SORT_FIELDS = {"vernacularName"}
 # column. Mirrors the pattern in dashboard/views/maps.py.
 _VERNACULAR_LANG_CODES = {code[:2] for code, _name in settings.LANGUAGES}
 
+# Every orderBy value the list endpoint accepts. Unknown values are rejected
+# with 400 rather than silently coerced to date (audit M8).
+_ACCEPTED_ORDER_BY = set(_SIMPLE_SORT_FIELD_MAP) | _LOCALISED_SORT_FIELDS
 
-@api_v2.get("/observations/", response=ObservationsPageOut, summary="List observations")
+
+@api_v2.get(
+    "/observations/",
+    response={200: ObservationsPageOut, 400: DetailErrorOut},
+    summary="List observations",
+)
 def observations_list(
     request: HttpRequest,
     filters: Query[FiltersQuery],
@@ -344,24 +352,34 @@ def observations_list(
     orderBy: Annotated[
         str,
         Field(
-            description="Field to sort by. Accepted: date, scientificName, vernacularName, datasetName, municipality, verified. Unknown values fall back to date."
+            description="Field to sort by. Accepted: date, scientificName, vernacularName, datasetName, municipality, verified. An unknown value returns 400."
         ),
     ] = "date",
     orderDir: Annotated[
         str,
         Field(
-            description="Sort direction: asc or desc. Any value other than asc is treated as desc."
+            description="Sort direction: asc or desc. Any other value returns 400."
         ),
     ] = "desc",
 ):
     """Return a paginated, filtered, and sorted page of observations.
 
-    Pagination is controlled by `page` (1-based) and `pageSize` (capped at 100).
+    Pagination is controlled by `page` (1-based) and `pageSize` (must be 1-100).
     Sorting is controlled by `orderBy` and `orderDir`. A secondary sort on `-pk`
     is always appended to guarantee stable pagination when the primary field has ties.
+    Invalid `orderBy`, `orderDir`, `page`, or `pageSize` values return 400.
     """
-    pageSize = min(max(pageSize, 1), 100)
-    page = max(page, 1)
+    if orderBy not in _ACCEPTED_ORDER_BY:
+        accepted = ", ".join(sorted(_ACCEPTED_ORDER_BY))
+        return 400, {
+            "detail": f"Invalid orderBy '{orderBy}'. Accepted values: {accepted}."
+        }
+    if orderDir not in ("asc", "desc"):
+        return 400, {"detail": "Invalid orderDir. Accepted values: asc, desc."}
+    if not 1 <= pageSize <= 100:
+        return 400, {"detail": "Invalid pageSize. Must be between 1 and 100."}
+    if page < 1:
+        return 400, {"detail": "Invalid page. Must be 1 or greater."}
 
     user = request.user if request.user.is_authenticated else None
 
@@ -443,7 +461,7 @@ def observations_list(
         for obs in obs_page
     ]
 
-    return {
+    return 200, {
         "count": total,
         "speciesCount": aggregates["species_count"],
         "datasetsCount": aggregates["datasets_count"],

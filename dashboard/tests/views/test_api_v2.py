@@ -459,6 +459,28 @@ def test_pagination_second_page(client, observations_data):
     assert id_p1 != id_p2
 
 
+def test_page_size_over_max_returns_400(client, observations_data):
+    resp = client.get(reverse("api-v2:observations_list"), {"pageSize": 101})
+    assert resp.status_code == 400
+    assert "pageSize" in resp.json()["detail"]
+
+
+def test_page_size_below_one_returns_400(client, observations_data):
+    resp = client.get(reverse("api-v2:observations_list"), {"pageSize": 0})
+    assert resp.status_code == 400
+
+
+def test_page_below_one_returns_400(client, observations_data):
+    resp = client.get(reverse("api-v2:observations_list"), {"page": 0})
+    assert resp.status_code == 400
+
+
+def test_page_size_at_max_is_accepted(client, observations_data):
+    """The boundary value 100 is still valid (no off-by-one)."""
+    resp = client.get(reverse("api-v2:observations_list"), {"pageSize": 100})
+    assert resp.status_code == 200
+
+
 # --- Filter wiring ---
 
 
@@ -836,25 +858,25 @@ def test_order_by_dataset_name_descending(client, sorting_data):
 # --- robustness ---
 
 
-def test_unknown_order_by_falls_back_to_date(client, sorting_data):
-    """An unrecognised orderBy value must not crash - falls back to date sort."""
-    obs_alpha = sorting_data["obs_alpha"]
-    obs_zeta = sorting_data["obs_zeta"]
+def test_unknown_order_by_returns_400(client, sorting_data):
+    """An unrecognised orderBy is rejected with 400 listing the accepted values (M8)."""
     response = client.get(
         reverse("api-v2:observations_list"), {"orderBy": "nonExistentField"}
     )
-    assert response.status_code == 200
-    # Default date-desc order: obs_zeta (newer) before obs_alpha (older)
-    ids = [item["id"] for item in response.json()["items"]]
-    assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
+    assert response.status_code == 400
+    detail = response.json()["detail"]
+    assert "orderBy" in detail
+    assert "date" in detail  # the accepted values are listed
 
 
-def test_unknown_order_dir_treated_as_desc(client, sorting_data):
-    """Any orderDir value other than 'asc' must be treated as descending."""
-    obs_alpha = sorting_data["obs_alpha"]
-    obs_zeta = sorting_data["obs_zeta"]
-    ids = _sorting_ids(client, orderBy="date", orderDir="INVALID")
-    assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
+def test_unknown_order_dir_returns_400(client, sorting_data):
+    """An orderDir other than asc/desc is rejected with 400 (M8)."""
+    response = client.get(
+        reverse("api-v2:observations_list"),
+        {"orderBy": "date", "orderDir": "INVALID"},
+    )
+    assert response.status_code == 400
+    assert "orderDir" in response.json()["detail"]
 
 
 # ---------------------------------------------------------------------------
