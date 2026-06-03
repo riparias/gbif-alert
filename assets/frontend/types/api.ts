@@ -272,6 +272,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/observations/{stable_id}/mark-as-seen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Observation Mark As Seen
+         * @description Mark a single observation as seen by the requesting user.
+         *
+         *     Replaces the implicit side effect that the detail GET used to perform, so
+         *     that GET stays safe/idempotent (audit M11).
+         */
+        post: operations["dashboard_api_v2_observation_mark_as_seen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/observations/{stable_id}/mark-unseen/": {
         parameters: {
             query?: never;
@@ -1398,6 +1421,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_observation_mark_as_seen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stable_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OkOut"];
                 };
             };
         };

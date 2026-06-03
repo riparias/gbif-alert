@@ -53,9 +53,9 @@ function closeDrawer() {
     const q = { ...route.query };
     delete q.obs;
     router.replace({ query: q });
-    // Opening the drawer auto-marks the observation as seen server-side, and
-    // the drawer can also mark it as unseen, so any close potentially changed
-    // status. Notify watchers (table, sidebar counts, histogram, map, alert).
+    // The drawer marks the observation as seen on open (via an explicit POST),
+    // and can also mark it as unseen, so any close potentially changed status.
+    // Notify watchers (table, sidebar counts, histogram, map, alert).
     resultsStore.bumpStatusEpoch();
 }
 

@@ -1079,6 +1079,48 @@ def test_observation_mark_unseen_no_matching_alert_returns_403(
     assert resp.status_code == 403
 
 
+# --- M11: GET side-effect removal + single mark-as-seen ---
+
+
+def test_get_detail_does_not_mark_as_seen(client, observation_detail_data):
+    """A GET on the detail endpoint must not mutate per-user seen state (M11)."""
+    obs = observation_detail_data["obs"]
+    user = observation_detail_data["user"]
+    ObservationUnseen.objects.create(observation=obs, user=user)
+    client.force_login(user)
+    resp = client.get(f"/api/v2/observations/{obs.stable_id}/")
+    assert resp.status_code == 200
+    # The unseen marker is still there - the GET did not mark it seen.
+    assert ObservationUnseen.objects.filter(observation=obs, user=user).exists()
+    assert resp.json()["seenByCurrentUser"] is False
+
+
+def test_mark_as_seen_single_anonymous_returns_401(client, observation_detail_data):
+    obs = observation_detail_data["obs"]
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-seen/")
+    assert resp.status_code == 401
+
+
+def test_mark_as_seen_single_marks_observation_seen(client, observation_detail_data):
+    obs = observation_detail_data["obs"]
+    user = observation_detail_data["user"]
+    ObservationUnseen.objects.create(observation=obs, user=user)
+    client.force_login(user)
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-seen/")
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True}
+    assert not ObservationUnseen.objects.filter(observation=obs, user=user).exists()
+
+
+def test_mark_as_seen_single_unknown_stable_id_returns_404(
+    client, observation_detail_data
+):
+    user = observation_detail_data["user"]
+    client.force_login(user)
+    resp = client.post("/api/v2/observations/does-not-exist/mark-as-seen/")
+    assert resp.status_code == 404
+
+
 # ---------------------------------------------------------------------------
 # ApiV2ObservationsMunicipalityVerifiedSortTests fixtures
 # ---------------------------------------------------------------------------

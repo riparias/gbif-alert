@@ -44,6 +44,15 @@ async function load() {
             return;
         }
         obs.value = await resp.json();
+        if (isAuthenticated) {
+            // The detail GET no longer marks the observation as seen (the API is
+            // side-effect free); do it explicitly so the table/sidebar reflect it
+            // when the drawer closes. Best-effort: seen state isn't load-critical.
+            await fetch(`/api/v2/observations/${props.stableId}/mark-as-seen/`, {
+                method: "POST",
+                headers: { "X-CSRFToken": getCsrf() },
+            }).catch(() => { /* non-fatal */ });
+        }
     } finally {
         loading.value = false;
     }

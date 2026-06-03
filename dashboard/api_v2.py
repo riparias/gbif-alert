@@ -539,14 +539,14 @@ def observation_detail(request: HttpRequest, stable_id: str):
 
     user = request.user if request.user.is_authenticated else None
 
-    obs.mark_as_seen_by(request.user)
-
     seen_by_current_user: bool | None = None
     can_be_marked_unseen = False
     if user is not None:
         seen_by_current_user = obs.already_seen_by(user)
-        if seen_by_current_user:
-            can_be_marked_unseen = user.obs_match_alerts(obs)
+        # canBeMarkedUnseen is a capability flag: the drawer marks the obs seen
+        # on open, so it no longer depends on the obs already being seen at GET
+        # time (audit M11). GET itself no longer mutates seen state.
+        can_be_marked_unseen = user.obs_match_alerts(obs)
 
     admin_url: str | None = None
     if request.user.is_authenticated and request.user.is_superuser:
@@ -642,6 +642,26 @@ def page_fragment(request: HttpRequest, identifier: str):
     except PageFragment.DoesNotExist:
         html = ""
     return {"html": html}
+
+
+@api_v2.post(
+    "/observations/{stable_id}/mark-as-seen/",
+    response={200: OkOut},
+    auth=django_auth,
+)
+def observation_mark_as_seen(request: HttpRequest, stable_id: str):
+    """Mark a single observation as seen by the requesting user.
+
+    Replaces the implicit side effect that the detail GET used to perform, so
+    that GET stays safe/idempotent (audit M11).
+    """
+    try:
+        obs = Observation.objects.get(stable_id=stable_id)
+    except Observation.DoesNotExist:
+        raise HttpError(404, "Observation not found")
+
+    obs.mark_as_seen_by(cast(User, request.user))
+    return 200, {"ok": True}
 
 
 @api_v2.post(
