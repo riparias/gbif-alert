@@ -428,6 +428,13 @@ def test_alert_detail_drawer_refreshes_list_and_sidebar(page: Page, live_server)
 
     # Open the drawer by clicking the species cell in the row.
     page.get_by_role("cell", name=re.compile("Procambarus fallax", re.I)).first.click()
+    # Wait for the drawer to actually open and its detail content to render before
+    # closing. networkidle alone is unreliable here: the page is already idle from
+    # load, so it resolves before the drawer fires its detail GET + mark-as-seen
+    # POST, and an immediate Escape would race (and cancel) those requests.
+    drawer = page.locator('[data-pc-name="drawer"]')
+    expect(drawer).to_be_visible()
+    expect(drawer.get_by_text("Procambarus fallax").first).to_be_visible()
     page.wait_for_load_state("networkidle")
 
     # Close the drawer (Escape works for PrimeVue Drawer).

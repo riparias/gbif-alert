@@ -334,8 +334,16 @@ _LOCALISED_SORT_FIELDS = {"vernacularName"}
 # column. Mirrors the pattern in dashboard/views/maps.py.
 _VERNACULAR_LANG_CODES = {code[:2] for code, _name in settings.LANGUAGES}
 
+# Every orderBy value the list endpoint accepts. Unknown values are rejected
+# with 400 rather than silently coerced to date (audit M8).
+_ACCEPTED_ORDER_BY = set(_SIMPLE_SORT_FIELD_MAP) | _LOCALISED_SORT_FIELDS
 
-@api_v2.get("/observations/", response=ObservationsPageOut, summary="List observations")
+
+@api_v2.get(
+    "/observations/",
+    response={200: ObservationsPageOut, 400: DetailErrorOut},
+    summary="List observations",
+)
 def observations_list(
     request: HttpRequest,
     filters: Query[FiltersQuery],
@@ -344,24 +352,34 @@ def observations_list(
     orderBy: Annotated[
         str,
         Field(
-            description="Field to sort by. Accepted: date, scientificName, vernacularName, datasetName, municipality, verified. Unknown values fall back to date."
+            description="Field to sort by. Accepted: date, scientificName, vernacularName, datasetName, municipality, verified. An unknown value returns 400."
         ),
     ] = "date",
     orderDir: Annotated[
         str,
         Field(
-            description="Sort direction: asc or desc. Any value other than asc is treated as desc."
+            description="Sort direction: asc or desc. Any other value returns 400."
         ),
     ] = "desc",
 ):
     """Return a paginated, filtered, and sorted page of observations.
 
-    Pagination is controlled by `page` (1-based) and `pageSize` (capped at 100).
+    Pagination is controlled by `page` (1-based) and `pageSize` (must be 1-100).
     Sorting is controlled by `orderBy` and `orderDir`. A secondary sort on `-pk`
     is always appended to guarantee stable pagination when the primary field has ties.
+    Invalid `orderBy`, `orderDir`, `page`, or `pageSize` values return 400.
     """
-    pageSize = min(max(pageSize, 1), 100)
-    page = max(page, 1)
+    if orderBy not in _ACCEPTED_ORDER_BY:
+        accepted = ", ".join(sorted(_ACCEPTED_ORDER_BY))
+        return 400, {
+            "detail": f"Invalid orderBy '{orderBy}'. Accepted values: {accepted}."
+        }
+    if orderDir not in ("asc", "desc"):
+        return 400, {"detail": "Invalid orderDir. Accepted values: asc, desc."}
+    if not 1 <= pageSize <= 100:
+        return 400, {"detail": "Invalid pageSize. Must be between 1 and 100."}
+    if page < 1:
+        return 400, {"detail": "Invalid page. Must be 1 or greater."}
 
     user = request.user if request.user.is_authenticated else None
 
@@ -443,7 +461,7 @@ def observations_list(
         for obs in obs_page
     ]
 
-    return {
+    return 200, {
         "count": total,
         "speciesCount": aggregates["species_count"],
         "datasetsCount": aggregates["datasets_count"],
@@ -521,14 +539,14 @@ def observation_detail(request: HttpRequest, stable_id: str):
 
     user = request.user if request.user.is_authenticated else None
 
-    obs.mark_as_seen_by(request.user)
-
     seen_by_current_user: bool | None = None
     can_be_marked_unseen = False
     if user is not None:
         seen_by_current_user = obs.already_seen_by(user)
-        if seen_by_current_user:
-            can_be_marked_unseen = user.obs_match_alerts(obs)
+        # canBeMarkedUnseen is a capability flag: the drawer marks the obs seen
+        # on open, so it no longer depends on the obs already being seen at GET
+        # time (audit M11). GET itself no longer mutates seen state.
+        can_be_marked_unseen = user.obs_match_alerts(obs)
 
     admin_url: str | None = None
     if request.user.is_authenticated and request.user.is_superuser:
@@ -581,7 +599,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
 
 @api_v2.post(
     "/observations/{stable_id}/comments/",
-    response=CommentOut,
+    response={200: CommentOut, 422: DetailErrorOut},
     auth=django_auth,
 )
 def observation_add_comment(request: HttpRequest, stable_id: str, payload: CommentIn):
@@ -593,7 +611,8 @@ def observation_add_comment(request: HttpRequest, stable_id: str, payload: Comme
 
     text = payload.text.strip()
     if not text:
-        raise HttpError(400, "Comment text cannot be empty")
+        # Well-formed body but semantically invalid -> 422 (audit N3).
+        return 422, {"detail": "Comment text cannot be empty"}
 
     comment = ObservationComment.objects.create(
         observation=obs,
@@ -601,7 +620,7 @@ def observation_add_comment(request: HttpRequest, stable_id: str, payload: Comme
         text=text,
     )
 
-    return {
+    return 200, {
         "id": comment.pk,
         "authorUsername": user.username,
         "createdAt": comment.created_at,
@@ -623,6 +642,26 @@ def page_fragment(request: HttpRequest, identifier: str):
     except PageFragment.DoesNotExist:
         html = ""
     return {"html": html}
+
+
+@api_v2.post(
+    "/observations/{stable_id}/mark-as-seen/",
+    response={200: OkOut},
+    auth=django_auth,
+)
+def observation_mark_as_seen(request: HttpRequest, stable_id: str):
+    """Mark a single observation as seen by the requesting user.
+
+    Replaces the implicit side effect that the detail GET used to perform, so
+    that GET stays safe/idempotent (audit M11).
+    """
+    try:
+        obs = Observation.objects.get(stable_id=stable_id)
+    except Observation.DoesNotExist:
+        raise HttpError(404, "Observation not found")
+
+    obs.mark_as_seen_by(cast(User, request.user))
+    return 200, {"ok": True}
 
 
 @api_v2.post(

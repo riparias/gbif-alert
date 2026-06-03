@@ -459,6 +459,28 @@ def test_pagination_second_page(client, observations_data):
     assert id_p1 != id_p2
 
 
+def test_page_size_over_max_returns_400(client, observations_data):
+    resp = client.get(reverse("api-v2:observations_list"), {"pageSize": 101})
+    assert resp.status_code == 400
+    assert "pageSize" in resp.json()["detail"]
+
+
+def test_page_size_below_one_returns_400(client, observations_data):
+    resp = client.get(reverse("api-v2:observations_list"), {"pageSize": 0})
+    assert resp.status_code == 400
+
+
+def test_page_below_one_returns_400(client, observations_data):
+    resp = client.get(reverse("api-v2:observations_list"), {"page": 0})
+    assert resp.status_code == 400
+
+
+def test_page_size_at_max_is_accepted(client, observations_data):
+    """The boundary value 100 is still valid (no off-by-one)."""
+    resp = client.get(reverse("api-v2:observations_list"), {"pageSize": 100})
+    assert resp.status_code == 200
+
+
 # --- Filter wiring ---
 
 
@@ -836,25 +858,25 @@ def test_order_by_dataset_name_descending(client, sorting_data):
 # --- robustness ---
 
 
-def test_unknown_order_by_falls_back_to_date(client, sorting_data):
-    """An unrecognised orderBy value must not crash - falls back to date sort."""
-    obs_alpha = sorting_data["obs_alpha"]
-    obs_zeta = sorting_data["obs_zeta"]
+def test_unknown_order_by_returns_400(client, sorting_data):
+    """An unrecognised orderBy is rejected with 400 listing the accepted values (M8)."""
     response = client.get(
         reverse("api-v2:observations_list"), {"orderBy": "nonExistentField"}
     )
-    assert response.status_code == 200
-    # Default date-desc order: obs_zeta (newer) before obs_alpha (older)
-    ids = [item["id"] for item in response.json()["items"]]
-    assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
+    assert response.status_code == 400
+    detail = response.json()["detail"]
+    assert "orderBy" in detail
+    assert "date" in detail  # the accepted values are listed
 
 
-def test_unknown_order_dir_treated_as_desc(client, sorting_data):
-    """Any orderDir value other than 'asc' must be treated as descending."""
-    obs_alpha = sorting_data["obs_alpha"]
-    obs_zeta = sorting_data["obs_zeta"]
-    ids = _sorting_ids(client, orderBy="date", orderDir="INVALID")
-    assert ids.index(obs_zeta.pk) < ids.index(obs_alpha.pk)
+def test_unknown_order_dir_returns_400(client, sorting_data):
+    """An orderDir other than asc/desc is rejected with 400 (M8)."""
+    response = client.get(
+        reverse("api-v2:observations_list"),
+        {"orderBy": "date", "orderDir": "INVALID"},
+    )
+    assert response.status_code == 400
+    assert "orderDir" in response.json()["detail"]
 
 
 # ---------------------------------------------------------------------------
@@ -1025,6 +1047,20 @@ def test_observation_add_comment_anonymous_returns_401(client, observation_detai
     assert resp.status_code == 401
 
 
+def test_add_comment_empty_text_returns_422(client, observation_detail_data):
+    """Empty (whitespace-only) comment text is semantically invalid: 422 (N3)."""
+    obs = observation_detail_data["obs"]
+    user = observation_detail_data["user"]
+    client.force_login(user)
+    resp = client.post(
+        f"/api/v2/observations/{obs.stable_id}/comments/",
+        data={"text": "   "},
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "detail" in resp.json()
+
+
 def test_observation_mark_unseen_anonymous_returns_401(client, observation_detail_data):
     """Anonymous users get 401 from mark-unseen, not 403."""
     obs = observation_detail_data["obs"]
@@ -1041,6 +1077,48 @@ def test_observation_mark_unseen_no_matching_alert_returns_403(
     client.force_login(user)
     resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-unseen/")
     assert resp.status_code == 403
+
+
+# --- M11: GET side-effect removal + single mark-as-seen ---
+
+
+def test_get_detail_does_not_mark_as_seen(client, observation_detail_data):
+    """A GET on the detail endpoint must not mutate per-user seen state (M11)."""
+    obs = observation_detail_data["obs"]
+    user = observation_detail_data["user"]
+    ObservationUnseen.objects.create(observation=obs, user=user)
+    client.force_login(user)
+    resp = client.get(f"/api/v2/observations/{obs.stable_id}/")
+    assert resp.status_code == 200
+    # The unseen marker is still there - the GET did not mark it seen.
+    assert ObservationUnseen.objects.filter(observation=obs, user=user).exists()
+    assert resp.json()["seenByCurrentUser"] is False
+
+
+def test_mark_as_seen_single_anonymous_returns_401(client, observation_detail_data):
+    obs = observation_detail_data["obs"]
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-seen/")
+    assert resp.status_code == 401
+
+
+def test_mark_as_seen_single_marks_observation_seen(client, observation_detail_data):
+    obs = observation_detail_data["obs"]
+    user = observation_detail_data["user"]
+    ObservationUnseen.objects.create(observation=obs, user=user)
+    client.force_login(user)
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-seen/")
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True}
+    assert not ObservationUnseen.objects.filter(observation=obs, user=user).exists()
+
+
+def test_mark_as_seen_single_unknown_stable_id_returns_404(
+    client, observation_detail_data
+):
+    user = observation_detail_data["user"]
+    client.force_login(user)
+    resp = client.post("/api/v2/observations/does-not-exist/mark-as-seen/")
+    assert resp.status_code == 404
 
 
 # ---------------------------------------------------------------------------
