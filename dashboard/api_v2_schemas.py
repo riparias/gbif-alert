@@ -8,7 +8,14 @@ class SpeciesOut(Schema):
     id: int
     scientificName: str
     vernacularName: str
-    gbifTaxonKey: int
+    gbifTaxonKey: int = Field(
+        description=(
+            "GBIF taxon key. Numeric in GBIF's data model, so returned as an "
+            "integer. Distinct from `gbifId` (an occurrence identifier) which "
+            "GBIF models as a string - the int/str split is intrinsic to GBIF, "
+            "not an inconsistency in this API."
+        )
+    )
     tags: list[str]
 
 
@@ -43,7 +50,7 @@ class DataImportOut(Schema):
 
 class FiltersQuery(Schema):
     speciesIds: list[int] = Field(default_factory=list)
-    datasetsIds: list[int] = Field(default_factory=list)
+    datasetIds: list[int] = Field(default_factory=list)
     basisOfRecordIds: list[int] = Field(default_factory=list)
     startDate: datetime.date | None = None
     endDate: datetime.date | None = None
@@ -58,7 +65,13 @@ class FiltersQuery(Schema):
 class ObservationOut(Schema):
     id: int
     stableId: str
-    gbifId: str
+    gbifId: str = Field(
+        description=(
+            "GBIF occurrence identifier. A string in GBIF's data model (unlike "
+            "the numeric `gbifTaxonKey` on species), and returned as a string "
+            "for fidelity to GBIF. The int/str split is intrinsic, not a bug."
+        )
+    )
     lat: float | None
     lon: float | None
     scientificName: str
@@ -100,7 +113,13 @@ class CommentIn(Schema):
 class ObservationDetailOut(Schema):
     id: int
     stableId: str
-    gbifId: str
+    gbifId: str = Field(
+        description=(
+            "GBIF occurrence identifier. A string in GBIF's data model (unlike "
+            "the numeric `gbifTaxonKey` on species), and returned as a string "
+            "for fidelity to GBIF. The int/str split is intrinsic, not a bug."
+        )
+    )
     lat: float | None
     lon: float | None
     scientificName: str
@@ -167,7 +186,7 @@ class AlertOut(Schema):
     basisOfRecordList: str
     verifiedFilterDisplay: str
     emailNotificationsFrequencyDisplay: str
-    lastEmailSentOn: datetime.datetime | None
+    lastEmailSentAt: datetime.datetime | None
 
 
 class AreaFromDrawingIn(Schema):
@@ -191,8 +210,8 @@ class SignInOut(Schema):
 
 class SignUpIn(Schema):
     username: str
-    first_name: str = ""
-    last_name: str = ""
+    firstName: str = ""
+    lastName: str = ""
     email: str
     language: str
     password1: str
@@ -200,9 +219,9 @@ class SignUpIn(Schema):
 
 
 class PasswordChangeIn(Schema):
-    old_password: str
-    new_password1: str
-    new_password2: str
+    oldPassword: str
+    newPassword1: str
+    newPassword2: str
 
 
 class ProfileOut(Schema):

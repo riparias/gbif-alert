@@ -56,9 +56,9 @@ const selectedSpeciesIds = computed({
 });
 
 const selectedDatasetIds = computed({
-    get: () => filtersStore.datasetsIds,
+    get: () => filtersStore.datasetIds,
     set: (val: number[]) => {
-        filtersStore.datasetsIds = val;
+        filtersStore.datasetIds = val;
     },
 });
 

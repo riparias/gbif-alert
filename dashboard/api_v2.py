@@ -367,7 +367,7 @@ def observations_list(
 
     qs = Observation.objects.filtered_from_my_params(
         species_ids=filters.speciesIds,
-        datasets_ids=filters.datasetsIds,
+        datasets_ids=filters.datasetIds,
         basis_of_record_ids=filters.basisOfRecordIds,
         start_date=filters.startDate,
         end_date=filters.endDate,
@@ -457,7 +457,7 @@ def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
 
     qs = Observation.objects.filtered_from_my_params(
         species_ids=filters.speciesIds,
-        datasets_ids=filters.datasetsIds,
+        datasets_ids=filters.datasetIds,
         basis_of_record_ids=filters.basisOfRecordIds,
         start_date=filters.startDate,
         end_date=filters.endDate,
@@ -494,7 +494,7 @@ def observations_mark_all_as_seen(request: HttpRequest, filters: Query[FiltersQu
     user = cast(User, request.user)
     qs = Observation.objects.filtered_from_my_params(
         species_ids=filters.speciesIds,
-        datasets_ids=filters.datasetsIds,
+        datasets_ids=filters.datasetIds,
         basis_of_record_ids=filters.basisOfRecordIds,
         start_date=filters.startDate,
         end_date=filters.endDate,
@@ -673,7 +673,7 @@ def _alert_to_out(alert: Alert) -> dict:
         "basisOfRecordList": alert.basis_of_record_list,
         "verifiedFilterDisplay": alert.verified_filter_display,
         "emailNotificationsFrequencyDisplay": alert.get_email_notifications_frequency_display(),
-        "lastEmailSentOn": alert.last_email_sent_on,
+        "lastEmailSentAt": alert.last_email_sent_on,
     }
 
 
@@ -837,8 +837,8 @@ def auth_signup(request: HttpRequest, payload: SignUpIn):
     form = SignUpForm(
         data={
             "username": payload.username,
-            "first_name": payload.first_name,
-            "last_name": payload.last_name,
+            "first_name": payload.firstName,
+            "last_name": payload.lastName,
             "email": payload.email,
             "language": payload.language,
             "password1": payload.password1,
@@ -846,8 +846,12 @@ def auth_signup(request: HttpRequest, payload: SignUpIn):
         }
     )
     if not form.is_valid():
+        # Django form field names are snake_case; remap the two renamed fields
+        # back to the API's camelCase names so the request and error shapes agree.
+        key_map = {"first_name": "firstName", "last_name": "lastName"}
         errors: dict[str, list[str]] = {
-            field: [str(msg) for msg in msgs] for field, msgs in form.errors.items()
+            key_map.get(field, field): [str(msg) for msg in msgs]
+            for field, msgs in form.errors.items()
         }
         return 422, {"detail": "Validation failed", "errors": errors}
     user = form.save()
@@ -863,17 +867,17 @@ def auth_signup(request: HttpRequest, payload: SignUpIn):
 def auth_password_change(request: HttpRequest, payload: PasswordChangeIn):
     """Change password. Returns 204 on success, 422 with field errors on failure."""
     user = cast(User, request.user)
-    if not user.check_password(payload.old_password):
+    if not user.check_password(payload.oldPassword):
         return 422, {
             "detail": "Validation failed",
-            "errors": {"old_password": [str(_("The old password is incorrect."))]},
+            "errors": {"oldPassword": [str(_("The old password is incorrect."))]},
         }
-    if payload.new_password1 != payload.new_password2:
+    if payload.newPassword1 != payload.newPassword2:
         return 422, {
             "detail": "Validation failed",
-            "errors": {"new_password2": [str(_("The two passwords do not match."))]},
+            "errors": {"newPassword2": [str(_("The two passwords do not match."))]},
         }
-    user.set_password(payload.new_password1)
+    user.set_password(payload.newPassword1)
     user.save()
     update_session_auth_hash(request, user)
     return 204, None

@@ -18,7 +18,7 @@ export function filtersToParams(
 ): URLSearchParams {
     const params = new URLSearchParams();
     for (const id of filtersStore.speciesIds) params.append("speciesIds", String(id));
-    for (const id of filtersStore.datasetsIds) params.append("datasetsIds", String(id));
+    for (const id of filtersStore.datasetIds) params.append("datasetIds", String(id));
     for (const id of filtersStore.areaIds) params.append("areaIds", String(id));
     for (const id of filtersStore.basisOfRecordIds)
         params.append("basisOfRecordIds", String(id));

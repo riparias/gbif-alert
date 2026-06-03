@@ -474,6 +474,39 @@ def test_species_filter(client, observations_data):
     assert data["items"][0]["id"] == obs.pk
 
 
+def test_gbif_id_type_split_is_documented(client):
+    """The OpenAPI schema explains the gbifTaxonKey(int)/gbifId(str) split (N9)."""
+    schema = client.get("/api/v2/openapi.json").json()
+    props = schema["components"]["schemas"]
+    assert "intrinsic" in props["ObservationOut"]["properties"]["gbifId"]["description"]
+    assert "intrinsic" in props["SpeciesOut"]["properties"]["gbifTaxonKey"]["description"]
+    # Types are unchanged: gbifTaxonKey stays integer, gbifId stays string.
+    assert props["SpeciesOut"]["properties"]["gbifTaxonKey"]["type"] == "integer"
+    assert props["ObservationOut"]["properties"]["gbifId"]["type"] == "string"
+
+
+def test_observations_filter_by_dataset_ids(client, observations_data):
+    """The v2 observations list filters on the renamed `datasetIds` query param."""
+    dataset = observations_data["dataset"]
+    # Both observations belong to this single dataset.
+    matching = client.get(
+        reverse("api-v2:observations_list"), {"datasetIds": dataset.pk}
+    )
+    assert matching.json()["count"] == 2
+    # A non-existent dataset id matches nothing.
+    none = client.get(reverse("api-v2:observations_list"), {"datasetIds": 999999})
+    assert none.json()["count"] == 0
+
+
+def test_observations_old_datasets_ids_param_is_ignored(client, observations_data):
+    """The old misspelled `datasetsIds` param no longer filters (Ninja drops unknown params)."""
+    all_count = client.get(reverse("api-v2:observations_list")).json()["count"]
+    # The old name is unknown after the rename -> silently ignored, so the count
+    # is unchanged rather than filtered down to a single dataset.
+    resp = client.get(reverse("api-v2:observations_list"), {"datasetsIds": 999999})
+    assert resp.json()["count"] == all_count
+
+
 # ---------------------------------------------------------------------------
 # ApiV2HistogramTests fixtures
 # ---------------------------------------------------------------------------
@@ -1149,6 +1182,9 @@ def test_alerts_list_returns_own_alerts(client, alert_data):
     assert data[0]["name"] == "My alert #1"
     assert "speciesIds" in data[0]
     assert "unseenCount" in data[0]
+    # N10: timestamp follows the createdAt/*Timestamp convention.
+    assert "lastEmailSentAt" in data[0]
+    assert "lastEmailSentOn" not in data[0]
 
 
 def test_alerts_list_does_not_include_other_users_alerts(client, alert_data):
@@ -1619,6 +1655,50 @@ def test_signup_password_mismatch(client):
     assert "errors" in resp.json()
 
 
+def test_signup_camelcase_names_persisted(client):
+    """Signup accepts firstName/lastName and persists them to the user."""
+    User = get_user_model()
+    resp = client.post(
+        "/api/v2/auth/signup/",
+        data={
+            "username": "cameluser",
+            "firstName": "Ada",
+            "lastName": "Lovelace",
+            "email": "ada@example.com",
+            "language": "en",
+            "password1": "Secure1234!",
+            "password2": "Secure1234!",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    u = User.objects.get(username="cameluser")
+    assert u.first_name == "Ada"
+    assert u.last_name == "Lovelace"
+
+
+def test_signup_validation_errors_use_camelcase_keys(client, auth_data):
+    """A signup failure returns error keys in the API's camelCase names, not Django's."""
+    # Duplicate username forces a form error; ensure no snake_case name leaks.
+    resp = client.post(
+        "/api/v2/auth/signup/",
+        data={
+            "username": "testuser",  # already exists (auth_data fixture)
+            "firstName": "X",
+            "lastName": "Y",
+            "email": "x@example.com",
+            "language": "en",
+            "password1": "Secure1234!",
+            "password2": "Secure1234!",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    keys = resp.json()["errors"].keys()
+    assert "first_name" not in keys
+    assert "last_name" not in keys
+
+
 # --- password-change ---
 
 
@@ -1628,9 +1708,9 @@ def test_password_change_success(client, auth_data):
     resp = client.post(
         "/api/v2/auth/password-change/",
         data={
-            "old_password": "correctpassword",
-            "new_password1": "NewSecure5678!",
-            "new_password2": "NewSecure5678!",
+            "oldPassword": "correctpassword",
+            "newPassword1": "NewSecure5678!",
+            "newPassword2": "NewSecure5678!",
         },
         content_type="application/json",
     )
@@ -1643,24 +1723,24 @@ def test_password_change_wrong_old_password(client, auth_data):
     resp = client.post(
         "/api/v2/auth/password-change/",
         data={
-            "old_password": "wrong",
-            "new_password1": "NewSecure5678!",
-            "new_password2": "NewSecure5678!",
+            "oldPassword": "wrong",
+            "newPassword1": "NewSecure5678!",
+            "newPassword2": "NewSecure5678!",
         },
         content_type="application/json",
     )
     assert resp.status_code == 422
     assert resp.json()["detail"] == "Validation failed"
-    assert "old_password" in resp.json()["errors"]
+    assert "oldPassword" in resp.json()["errors"]
 
 
 def test_password_change_unauthenticated(client):
     resp = client.post(
         "/api/v2/auth/password-change/",
         data={
-            "old_password": "x",
-            "new_password1": "y",
-            "new_password2": "y",
+            "oldPassword": "x",
+            "newPassword1": "y",
+            "newPassword2": "y",
         },
         content_type="application/json",
     )
@@ -1673,15 +1753,15 @@ def test_password_change_mismatch(client, auth_data):
     resp = client.post(
         "/api/v2/auth/password-change/",
         data={
-            "old_password": "correctpassword",
-            "new_password1": "NewSecure5678!",
-            "new_password2": "DifferentPassword!",
+            "oldPassword": "correctpassword",
+            "newPassword1": "NewSecure5678!",
+            "newPassword2": "DifferentPassword!",
         },
         content_type="application/json",
     )
     assert resp.status_code == 422
     assert resp.json()["detail"] == "Validation failed"
-    assert "new_password2" in resp.json()["errors"]
+    assert "newPassword2" in resp.json()["errors"]
 
 
 # --- news/mark-visited ---

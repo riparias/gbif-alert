@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 
 export const useFiltersStore = defineStore("filters", () => {
     const speciesIds = ref<number[]>([]);
-    const datasetsIds = ref<number[]>([]);
+    const datasetIds = ref<number[]>([]);
     const basisOfRecordIds = ref<number[]>([]);
     const areaIds = ref<number[]>([]);
     const initialDataImportIds = ref<number[]>([]);
@@ -19,7 +19,7 @@ export const useFiltersStore = defineStore("filters", () => {
 
     function $reset() {
         speciesIds.value = [];
-        datasetsIds.value = [];
+        datasetIds.value = [];
         basisOfRecordIds.value = [];
         areaIds.value = [];
         initialDataImportIds.value = [];
@@ -33,7 +33,7 @@ export const useFiltersStore = defineStore("filters", () => {
 
     return {
         speciesIds,
-        datasetsIds,
+        datasetIds,
         basisOfRecordIds,
         areaIds,
         initialDataImportIds,

@@ -44,14 +44,14 @@ const chips = computed<Chip[]>(() => {
     }
 
     // Datasets
-    for (const id of filtersStore.datasetsIds) {
+    for (const id of filtersStore.datasetIds) {
         const ds = optionsStore.datasets.find((d) => d.id === id);
         result.push({
             kind: "text",
             key: `dataset-${id}`,
             label: ds ? ds.name : `Dataset #${id}`,
             clear: () => {
-                filtersStore.datasetsIds = filtersStore.datasetsIds.filter((i) => i !== id);
+                filtersStore.datasetIds = filtersStore.datasetIds.filter((i) => i !== id);
             },
         });
     }
@@ -134,7 +134,7 @@ const hasChips = computed(() => chips.value.length > 0);
 
 function clearAll() {
     filtersStore.speciesIds = [];
-    filtersStore.datasetsIds = [];
+    filtersStore.datasetIds = [];
     filtersStore.areaIds = [];
     filtersStore.basisOfRecordIds = [];
     filtersStore.startDate = null;

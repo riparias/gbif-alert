@@ -40,9 +40,9 @@ async function submit() {
             "X-CSRFToken": getCsrf(),
         },
         body: JSON.stringify({
-            old_password: oldPassword.value,
-            new_password1: newPassword1.value,
-            new_password2: newPassword2.value,
+            oldPassword: oldPassword.value,
+            newPassword1: newPassword1.value,
+            newPassword2: newPassword2.value,
         }),
     });
     loading.value = false;
@@ -64,19 +64,19 @@ async function submit() {
             <div style="display: flex; flex-direction: column; gap: 0.375rem;">
                 <label for="cp-old" style="font-weight: 500;">{{ t("message.oldPassword") }}</label>
                 <InputText id="cp-old" v-model="oldPassword" type="password" class="w-full" autocomplete="current-password" />
-                <small v-if="fieldError('old_password')" style="color: var(--p-red-500);">{{ fieldError("old_password") }}</small>
+                <small v-if="fieldError('oldPassword')" style="color: var(--p-red-500);">{{ fieldError("oldPassword") }}</small>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 0.375rem;">
                 <label for="cp-new1" style="font-weight: 500;">{{ t("message.newPassword") }}</label>
                 <InputText id="cp-new1" v-model="newPassword1" type="password" class="w-full" autocomplete="new-password" />
-                <small v-if="fieldError('new_password1')" style="color: var(--p-red-500);">{{ fieldError("new_password1") }}</small>
+                <small v-if="fieldError('newPassword1')" style="color: var(--p-red-500);">{{ fieldError("newPassword1") }}</small>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 0.375rem;">
                 <label for="cp-new2" style="font-weight: 500;">{{ t("message.confirmNewPassword") }}</label>
                 <InputText id="cp-new2" v-model="newPassword2" type="password" class="w-full" autocomplete="new-password" @keyup.enter="submit" />
-                <small v-if="fieldError('new_password2')" style="color: var(--p-red-500);">{{ fieldError("new_password2") }}</small>
+                <small v-if="fieldError('newPassword2')" style="color: var(--p-red-500);">{{ fieldError("newPassword2") }}</small>
             </div>
 
             <Button :label="t('message.changePassword')" :loading="loading" class="w-full" @click="submit" />

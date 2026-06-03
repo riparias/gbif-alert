@@ -476,7 +476,10 @@ export interface components {
             scientificName: string;
             /** Vernacularname */
             vernacularName: string;
-            /** Gbiftaxonkey */
+            /**
+             * Gbiftaxonkey
+             * @description GBIF taxon key. Numeric in GBIF's data model, so returned as an integer. Distinct from `gbifId` (an occurrence identifier) which GBIF models as a string - the int/str split is intrinsic to GBIF, not an inconsistency in this API.
+             */
             gbifTaxonKey: number;
             /** Tags */
             tags: string[];
@@ -603,8 +606,8 @@ export interface components {
         FiltersQuery: {
             /** Speciesids */
             speciesIds?: number[];
-            /** Datasetsids */
-            datasetsIds?: number[];
+            /** Datasetids */
+            datasetIds?: number[];
             /** Basisofrecordids */
             basisOfRecordIds?: number[];
             /** Startdate */
@@ -636,7 +639,10 @@ export interface components {
             id: number;
             /** Stableid */
             stableId: string;
-            /** Gbifid */
+            /**
+             * Gbifid
+             * @description GBIF occurrence identifier. A string in GBIF's data model (unlike the numeric `gbifTaxonKey` on species), and returned as a string for fidelity to GBIF. The int/str split is intrinsic, not a bug.
+             */
             gbifId: string;
             /** Lat */
             lat: number | null;
@@ -714,7 +720,10 @@ export interface components {
             id: number;
             /** Stableid */
             stableId: string;
-            /** Gbifid */
+            /**
+             * Gbifid
+             * @description GBIF occurrence identifier. A string in GBIF's data model (unlike the numeric `gbifTaxonKey` on species), and returned as a string for fidelity to GBIF. The int/str split is intrinsic, not a bug.
+             */
             gbifId: string;
             /** Lat */
             lat: number | null;
@@ -824,8 +833,8 @@ export interface components {
             verifiedFilterDisplay: string;
             /** Emailnotificationsfrequencydisplay */
             emailNotificationsFrequencyDisplay: string;
-            /** Lastemailsenton */
-            lastEmailSentOn: string | null;
+            /** Lastemailsentat */
+            lastEmailSentAt: string | null;
         };
         /** AlertSpeciesOut */
         AlertSpeciesOut: {
@@ -898,15 +907,15 @@ export interface components {
             /** Username */
             username: string;
             /**
-             * First Name
+             * Firstname
              * @default
              */
-            first_name: string;
+            firstName: string;
             /**
-             * Last Name
+             * Lastname
              * @default
              */
-            last_name: string;
+            lastName: string;
             /** Email */
             email: string;
             /** Language */
@@ -918,12 +927,12 @@ export interface components {
         };
         /** PasswordChangeIn */
         PasswordChangeIn: {
-            /** Old Password */
-            old_password: string;
-            /** New Password1 */
-            new_password1: string;
-            /** New Password2 */
-            new_password2: string;
+            /** Oldpassword */
+            oldPassword: string;
+            /** Newpassword1 */
+            newPassword1: string;
+            /** Newpassword2 */
+            newPassword2: string;
         };
         /** ProfileOut */
         ProfileOut: {
@@ -1230,7 +1239,7 @@ export interface operations {
         parameters: {
             query?: {
                 speciesIds?: number[];
-                datasetsIds?: number[];
+                datasetIds?: number[];
                 basisOfRecordIds?: number[];
                 startDate?: string | null;
                 endDate?: string | null;
@@ -1266,7 +1275,7 @@ export interface operations {
         parameters: {
             query?: {
                 speciesIds?: number[];
-                datasetsIds?: number[];
+                datasetIds?: number[];
                 basisOfRecordIds?: number[];
                 startDate?: string | null;
                 endDate?: string | null;
@@ -1298,7 +1307,7 @@ export interface operations {
         parameters: {
             query?: {
                 speciesIds?: number[];
-                datasetsIds?: number[];
+                datasetIds?: number[];
                 basisOfRecordIds?: number[];
                 startDate?: string | null;
                 endDate?: string | null;
