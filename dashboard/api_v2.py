@@ -599,7 +599,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
 
 @api_v2.post(
     "/observations/{stable_id}/comments/",
-    response=CommentOut,
+    response={200: CommentOut, 422: DetailErrorOut},
     auth=django_auth,
 )
 def observation_add_comment(request: HttpRequest, stable_id: str, payload: CommentIn):
@@ -611,7 +611,8 @@ def observation_add_comment(request: HttpRequest, stable_id: str, payload: Comme
 
     text = payload.text.strip()
     if not text:
-        raise HttpError(400, "Comment text cannot be empty")
+        # Well-formed body but semantically invalid -> 422 (audit N3).
+        return 422, {"detail": "Comment text cannot be empty"}
 
     comment = ObservationComment.objects.create(
         observation=obs,
@@ -619,7 +620,7 @@ def observation_add_comment(request: HttpRequest, stable_id: str, payload: Comme
         text=text,
     )
 
-    return {
+    return 200, {
         "id": comment.pk,
         "authorUsername": user.username,
         "createdAt": comment.created_at,

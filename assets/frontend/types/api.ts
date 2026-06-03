@@ -1391,6 +1391,15 @@ export interface operations {
                     "application/json": components["schemas"]["CommentOut"];
                 };
             };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
         };
     };
     dashboard_api_v2_observation_mark_unseen: {

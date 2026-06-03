@@ -1047,6 +1047,20 @@ def test_observation_add_comment_anonymous_returns_401(client, observation_detai
     assert resp.status_code == 401
 
 
+def test_add_comment_empty_text_returns_422(client, observation_detail_data):
+    """Empty (whitespace-only) comment text is semantically invalid: 422 (N3)."""
+    obs = observation_detail_data["obs"]
+    user = observation_detail_data["user"]
+    client.force_login(user)
+    resp = client.post(
+        f"/api/v2/observations/{obs.stable_id}/comments/",
+        data={"text": "   "},
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "detail" in resp.json()
+
+
 def test_observation_mark_unseen_anonymous_returns_401(client, observation_detail_data):
     """Anonymous users get 401 from mark-unseen, not 403."""
     obs = observation_detail_data["obs"]
