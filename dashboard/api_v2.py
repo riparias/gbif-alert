@@ -287,7 +287,7 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
     response={204: None, 409: DetailErrorOut},
     auth=django_auth,
 )
-def area_delete_endpoint(request: HttpRequest, area_id: int):
+def area_delete(request: HttpRequest, area_id: int):
     """Delete a user-owned area.
 
     Returns 404 if the area does not exist or belongs to another user.

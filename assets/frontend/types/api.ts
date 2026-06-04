@@ -122,13 +122,13 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Area Delete Endpoint
+         * Area Delete
          * @description Delete a user-owned area.
          *
          *     Returns 404 if the area does not exist or belongs to another user.
          *     Returns 409 with a detail message if any alerts reference this area.
          */
-        delete: operations["dashboard_api_v2_area_delete_endpoint"];
+        delete: operations["dashboard_api_v2_area_delete"];
         options?: never;
         head?: never;
         /**
@@ -1163,7 +1163,7 @@ export interface operations {
             };
         };
     };
-    dashboard_api_v2_area_delete_endpoint: {
+    dashboard_api_v2_area_delete: {
         parameters: {
             query?: never;
             header?: never;
