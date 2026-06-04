@@ -9,6 +9,7 @@ import type { components } from "../types/api";
 import { useFiltersStore } from "../stores/filters";
 import { useResultsStore } from "../stores/results";
 import { getNavConfig } from "../utils/navConfig";
+import { useDisplayLabels } from "../composables/useDisplayLabels";
 
 type AlertOut = components["schemas"]["AlertOut"];
 
@@ -17,6 +18,7 @@ const route = useRoute();
 const router = useRouter();
 const filtersStore = useFiltersStore();
 const resultsStore = useResultsStore();
+const { ensureAlertLabelsLoaded } = useDisplayLabels();
 
 const alertId = Number(route.params.alertId);
 
@@ -37,6 +39,8 @@ async function fetchAlert(): Promise<void> {
 
 onMounted(async () => {
     alertLoading.value = true;
+    // The sidebar resolves dataset/area/basis ids -> names locally now (N5).
+    ensureAlertLabelsLoaded();
     try {
         await fetchAlert();
         if (!alert.value) return;

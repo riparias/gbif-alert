@@ -853,22 +853,6 @@ export interface components {
             unseenCount: number;
             /** Speciesdetails */
             speciesDetails: components["schemas"]["AlertSpeciesOut"][];
-            /** Specieslist */
-            speciesList: string;
-            /** Areadescription */
-            areaDescription: string;
-            /** Areanames */
-            areaNames: string[];
-            /** Datasetnames */
-            datasetNames: string[];
-            /** Datasetslist */
-            datasetsList: string;
-            /** Basisofrecordlist */
-            basisOfRecordList: string;
-            /** Verifiedfilterdisplay */
-            verifiedFilterDisplay: string;
-            /** Emailnotificationsfrequencydisplay */
-            emailNotificationsFrequencyDisplay: string;
             /** Lastemailsentat */
             lastEmailSentAt: string | null;
         };
@@ -876,8 +860,12 @@ export interface components {
         AlertSpeciesOut: {
             /** Scientificname */
             scientificName: string;
-            /** Vernacularname */
-            vernacularName: string;
+            /** Vernacularnameen */
+            vernacularNameEn: string;
+            /** Vernacularnamenl */
+            vernacularNameNl: string;
+            /** Vernacularnamefr */
+            vernacularNameFr: string;
         };
         /**
          * ValidationErrorOut
