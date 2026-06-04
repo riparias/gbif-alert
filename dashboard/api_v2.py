@@ -129,15 +129,27 @@ api_v2_spa = NinjaAPI(
 )
 
 
+def _vernacular_names(species: Species) -> dict[str, str]:
+    """The species' vernacular name in all three languages, as flat fields (N6).
+
+    django-modeltranslation creates the per-language columns at runtime, so they
+    are invisible to the static type checker - hence the localized ignores here,
+    kept in one place rather than scattered across every builder.
+    """
+    return {
+        "vernacularNameEn": species.vernacular_name_en or "",  # type: ignore[attr-defined]
+        "vernacularNameNl": species.vernacular_name_nl or "",  # type: ignore[attr-defined]
+        "vernacularNameFr": species.vernacular_name_fr or "",  # type: ignore[attr-defined]
+    }
+
+
 @api_v2.get("/species/", response=list[SpeciesOut])
 def species_list(request: HttpRequest):
     return [
         {
             "id": s.pk,
             "scientificName": s.name,
-            "vernacularNameEn": s.vernacular_name_en or "",
-            "vernacularNameNl": s.vernacular_name_nl or "",
-            "vernacularNameFr": s.vernacular_name_fr or "",
+            **_vernacular_names(s),
             "gbifTaxonKey": s.gbif_taxon_key,
             "tags": [t.name for t in s.tags.all()],
         }
@@ -449,9 +461,7 @@ def observations_list(
             "lat": obs.lat,
             "lon": obs.lon,
             "scientificName": obs.species.name,
-            "vernacularNameEn": obs.species.vernacular_name_en or "",
-            "vernacularNameNl": obs.species.vernacular_name_nl or "",
-            "vernacularNameFr": obs.species.vernacular_name_fr or "",
+            **_vernacular_names(obs.species),
             "datasetName": obs.source_dataset.name,
             "date": obs.date,
             "municipality": obs.municipality,
@@ -580,9 +590,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
         "lat": lat,
         "lon": lon,
         "scientificName": obs.species.name,
-        "vernacularNameEn": obs.species.vernacular_name_en or "",
-        "vernacularNameNl": obs.species.vernacular_name_nl or "",
-        "vernacularNameFr": obs.species.vernacular_name_fr or "",
+        **_vernacular_names(obs.species),
         "datasetName": obs.source_dataset.name,
         "datasetGbifKey": obs.source_dataset.gbif_dataset_key,
         "date": obs.date,
