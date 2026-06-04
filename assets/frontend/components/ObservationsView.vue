@@ -20,6 +20,8 @@ import TabPanel from "primevue/tabpanel";
 import { useFiltersStore } from "../stores/filters";
 import { useResultsStore } from "../stores/results";
 import { filtersToParams } from "../utils/filterParams";
+import { pickVernacular } from "../utils/vernacular";
+import { useDisplayLabels } from "../composables/useDisplayLabels";
 import type { components } from "../types/api";
 import SpeciesName from "./SpeciesName.vue";
 import { storeToRefs } from "pinia";
@@ -33,7 +35,8 @@ const props = defineProps<{
 
 const resultsStore = useResultsStore();
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
+const { ensureBasisOfRecordLoaded, basisOfRecordName } = useDisplayLabels();
 const filtersStore = useFiltersStore();
 const router = useRouter();
 const route = useRoute();
@@ -196,6 +199,9 @@ watch(speciesNameMode, () => {
 onUnmounted(() => reloadOnFilterChange.cancel());
 
 onMounted(async () => {
+    // The table/drawer render the basis-of-record name from its id; ensure the
+    // option list is available (the alert detail page has no FilterSidebar).
+    ensureBasisOfRecordLoaded();
     await loadObservations();
     // props.unseenFallback is evaluated once at mount; the fallback is first-load-only
     // behaviour, not something that re-runs when filters change.
@@ -288,7 +294,7 @@ onMounted(async () => {
                             <template #body="{ data }">
                                 <SpeciesName
                                     :scientific-name="data.scientificName"
-                                    :vernacular-name="data.vernacularName"
+                                    :vernacular-name="pickVernacular(data, locale)"
                                 />
                             </template>
                         </Column>
@@ -311,7 +317,7 @@ onMounted(async () => {
                         </Column>
                         <Column v-if="visibleColumns.has('basisOfRecord')" :header="t('message.basisOfRecord')">
                             <template #body="{ data }">
-                                <span class="cell-text" :title="data.basisOfRecord">{{ data.basisOfRecord }}</span>
+                                <span class="cell-text" :title="basisOfRecordName(data.basisOfRecordId)">{{ basisOfRecordName(data.basisOfRecordId) }}</span>
                             </template>
                         </Column>
                         <Column v-if="visibleColumns.has('gbifId')" :header="t('message.gbifId')">

@@ -9,6 +9,8 @@ import SpeciesName from "./SpeciesName.vue";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
 import { getNavConfig } from "../utils/navConfig";
+import { pickVernacular } from "../utils/vernacular";
+import { useDisplayLabels } from "../composables/useDisplayLabels";
 
 type ObservationDetail = components["schemas"]["ObservationDetailOut"];
 type Comment = components["schemas"]["CommentOut"];
@@ -16,7 +18,8 @@ type Comment = components["schemas"]["CommentOut"];
 const props = defineProps<{ stableId: string }>();
 const emit = defineEmits<{ close: [] }>();
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
+const { ensureBasisOfRecordLoaded, basisOfRecordName } = useDisplayLabels();
 
 const obs = ref<ObservationDetail | null>(null);
 const loading = ref(true);
@@ -44,6 +47,9 @@ async function load() {
             return;
         }
         obs.value = await resp.json();
+        // Resolve the basis-of-record name from its id (idempotent; covers the
+        // deep-link case where the drawer mounts before the table's load).
+        ensureBasisOfRecordLoaded();
         if (isAuthenticated) {
             // The detail GET no longer marks the observation as seen (the API is
             // side-effect free); do it explicitly so the table/sidebar reflect it
@@ -128,7 +134,7 @@ onMounted(load);
                     <h2>
                         <SpeciesName
                             :scientific-name="obs.scientificName"
-                            :vernacular-name="obs.vernacularName"
+                            :vernacular-name="pickVernacular(obs, locale)"
                         />
                         &mdash; {{ obs.date }}
                     </h2>
@@ -174,7 +180,7 @@ onMounted(load);
                             <dd>
                                 <SpeciesName
                                     :scientific-name="obs.scientificName"
-                                    :vernacular-name="obs.vernacularName"
+                                    :vernacular-name="pickVernacular(obs, locale)"
                                 />
                             </dd>
 
@@ -200,7 +206,7 @@ onMounted(load);
                             </dd>
 
                             <dt>{{ t("message.basisOfRecord") }}</dt>
-                            <dd>{{ obs.basisOfRecord }}</dd>
+                            <dd>{{ basisOfRecordName(obs.basisOfRecordId) }}</dd>
 
                             <dt>{{ t("message.date") }}</dt>
                             <dd>{{ obs.date }}</dd>

@@ -498,8 +498,12 @@ export interface components {
             id: number;
             /** Scientificname */
             scientificName: string;
-            /** Vernacularname */
-            vernacularName: string;
+            /** Vernacularnameen */
+            vernacularNameEn: string;
+            /** Vernacularnamenl */
+            vernacularNameNl: string;
+            /** Vernacularnamefr */
+            vernacularNameFr: string;
             /**
              * Gbiftaxonkey
              * @description GBIF taxon key. Numeric in GBIF's data model, so returned as an integer. Distinct from `gbifId` (an occurrence identifier) which GBIF models as a string - the int/str split is intrinsic to GBIF, not an inconsistency in this API.
@@ -674,8 +678,12 @@ export interface components {
             lon: number | null;
             /** Scientificname */
             scientificName: string;
-            /** Vernacularname */
-            vernacularName: string;
+            /** Vernacularnameen */
+            vernacularNameEn: string;
+            /** Vernacularnamenl */
+            vernacularNameNl: string;
+            /** Vernacularnamefr */
+            vernacularNameFr: string;
             /** Datasetname */
             datasetName: string;
             /**
@@ -689,8 +697,8 @@ export interface components {
             verified: boolean;
             /** Identificationverificationstatus */
             identificationVerificationStatus: string;
-            /** Basisofrecord */
-            basisOfRecord: string;
+            /** Basisofrecordid */
+            basisOfRecordId: number;
             /** Seenbycurrentuser */
             seenByCurrentUser?: boolean | null;
         };
@@ -755,8 +763,12 @@ export interface components {
             lon: number | null;
             /** Scientificname */
             scientificName: string;
-            /** Vernacularname */
-            vernacularName: string;
+            /** Vernacularnameen */
+            vernacularNameEn: string;
+            /** Vernacularnamenl */
+            vernacularNameNl: string;
+            /** Vernacularnamefr */
+            vernacularNameFr: string;
             /** Datasetname */
             datasetName: string;
             /** Datasetgbifkey */
@@ -780,8 +792,8 @@ export interface components {
             identificationVerificationStatus: string;
             /** Verified */
             verified: boolean;
-            /** Basisofrecord */
-            basisOfRecord: string;
+            /** Basisofrecordid */
+            basisOfRecordId: number;
             /** Coordinateuncertaintyinmeters */
             coordinateUncertaintyInMeters: number | null;
             /** Initialdataimport */

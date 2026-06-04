@@ -7,6 +7,7 @@ import InputText from "primevue/inputtext";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import type { components } from "../types/api";
+import { pickVernacular } from "../utils/vernacular";
 
 type SpeciesOut = components["schemas"]["SpeciesOut"];
 
@@ -19,7 +20,7 @@ const emit = defineEmits<{
     "update:modelValue": [ids: number[]];
 }>();
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const visible = ref(false);
 const search = ref("");
@@ -39,8 +40,18 @@ const allTags = computed(() => {
     return [...s].sort();
 });
 
+// Each row carries a `vernacularName` resolved for the active locale, so the
+// search filter and the sortable vernacularName column keep working after N6
+// replaced the single field with vernacularNameEn/Nl/Fr.
+const rows = computed(() =>
+    props.options.map((sp) => ({
+        ...sp,
+        vernacularName: pickVernacular(sp, locale.value),
+    }))
+);
+
 const filtered = computed(() => {
-    let list = props.options;
+    let list = rows.value;
     const q = search.value.trim().toLowerCase();
     if (q) {
         list = list.filter(

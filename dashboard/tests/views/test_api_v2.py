@@ -106,9 +106,31 @@ def test_species_list_camel_case_keys(client, filter_lists_data):
 
     assert entry["id"] == species.pk
     assert entry["scientificName"] == "Procambarus fallax"
-    assert entry["vernacularName"] == "marbled crayfish"
+    # N6: three flat vernacular fields. The fixture sets vernacular_name (active
+    # locale = en in tests), so only the English column is populated.
+    assert entry["vernacularNameEn"] == "marbled crayfish"
+    assert entry["vernacularNameNl"] == ""
+    assert entry["vernacularNameFr"] == ""
+    assert "vernacularName" not in entry
     assert entry["gbifTaxonKey"] == 8879526
     assert sorted(entry["tags"]) == sorted(["invasive", "crustacean"])
+
+
+def test_species_list_returns_three_vernacular_languages(client):
+    """SpeciesOut exposes vernacularNameEn/Nl/Fr instead of a locale-dependent field (N6)."""
+    sp = Species.objects.create(
+        name="Testus trilingua",
+        gbif_taxon_key=42424242,
+        vernacular_name_en="english name",
+        vernacular_name_nl="nl naam",
+        vernacular_name_fr="nom fr",
+    )
+    data = client.get(reverse("api-v2:species_list")).json()
+    row = next(r for r in data if r["id"] == sp.pk)
+    assert row["vernacularNameEn"] == "english name"
+    assert row["vernacularNameNl"] == "nl naam"
+    assert row["vernacularNameFr"] == "nom fr"
+    assert "vernacularName" not in row
 
 
 def test_species_list_empty_tags(client, filter_lists_data):
@@ -348,13 +370,15 @@ def test_observations_list_camel_case_keys(client, observations_data):
         "lat",
         "lon",
         "scientificName",
-        "vernacularName",
+        "vernacularNameEn",
+        "vernacularNameNl",
+        "vernacularNameFr",
         "datasetName",
         "date",
         "municipality",
         "verified",
         "identificationVerificationStatus",
-        "basisOfRecord",
+        "basisOfRecordId",
     ):
         assert key in item, f"Missing key: {key}"
 
@@ -367,7 +391,18 @@ def test_observations_list_new_fields(client, observations_data):
     assert item["municipality"] == ""
     assert item["verified"] is False
     assert item["identificationVerificationStatus"] == ""
-    assert item["basisOfRecord"] == "HUMAN_OBSERVATION"
+    # N7: basis-of-record is an id joining to /basis-of-record/, not a label.
+    assert item["basisOfRecordId"] == observations_data["basis_of_record"].pk
+    assert "basisOfRecord" not in item
+
+
+def test_observation_detail_basis_of_record_is_id(client, observation_detail_data):
+    """ObservationDetailOut returns basisOfRecordId, not a label string (N7)."""
+    obs = observation_detail_data["obs"]
+    bor = observation_detail_data["basis_of_record"]
+    data = client.get(f"/api/v2/observations/{obs.stable_id}/").json()
+    assert data["basisOfRecordId"] == bor.pk
+    assert "basisOfRecord" not in data
 
 
 def test_observations_list_field_values(client, observations_data):
@@ -376,7 +411,7 @@ def test_observations_list_field_values(client, observations_data):
     response = client.get(reverse("api-v2:observations_list"))
     item = next(i for i in response.json()["items"] if i["id"] == obs.pk)
     assert item["scientificName"] == "Procambarus fallax"
-    assert item["vernacularName"] == "marbled crayfish"
+    assert item["vernacularNameEn"] == "marbled crayfish"
     assert item["datasetName"] == "Test dataset"
     assert item["date"] == "2024-03-10"
     assert item["gbifId"] == "123"
@@ -957,11 +992,13 @@ def test_detail_camel_case_keys(client, observation_detail_data):
         "lat",
         "lon",
         "scientificName",
-        "vernacularName",
+        "vernacularNameEn",
+        "vernacularNameNl",
+        "vernacularNameFr",
         "datasetName",
         "datasetGbifKey",
         "date",
-        "basisOfRecord",
+        "basisOfRecordId",
         "seenByCurrentUser",
         "canBeMarkedUnseen",
         "comments",
@@ -975,7 +1012,7 @@ def test_detail_field_values(client, observation_detail_data):
     data = response.json()
     assert data["stableId"] == obs.stable_id
     assert data["scientificName"] == "Harmonia axyridis"
-    assert data["vernacularName"] == "harlequin ladybird"
+    assert data["vernacularNameEn"] == "harlequin ladybird"
     assert data["datasetName"] == "Detail dataset"
     assert data["date"] == "2024-05-01"
 

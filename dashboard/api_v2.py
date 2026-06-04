@@ -129,13 +129,27 @@ api_v2_spa = NinjaAPI(
 )
 
 
+def _vernacular_names(species: Species) -> dict[str, str]:
+    """The species' vernacular name in all three languages, as flat fields (N6).
+
+    django-modeltranslation creates the per-language columns at runtime, so they
+    are invisible to the static type checker - hence the localized ignores here,
+    kept in one place rather than scattered across every builder.
+    """
+    return {
+        "vernacularNameEn": species.vernacular_name_en or "",  # type: ignore[attr-defined]
+        "vernacularNameNl": species.vernacular_name_nl or "",  # type: ignore[attr-defined]
+        "vernacularNameFr": species.vernacular_name_fr or "",  # type: ignore[attr-defined]
+    }
+
+
 @api_v2.get("/species/", response=list[SpeciesOut])
 def species_list(request: HttpRequest):
     return [
         {
             "id": s.pk,
             "scientificName": s.name,
-            "vernacularName": s.vernacular_name,
+            **_vernacular_names(s),
             "gbifTaxonKey": s.gbif_taxon_key,
             "tags": [t.name for t in s.tags.all()],
         }
@@ -447,13 +461,13 @@ def observations_list(
             "lat": obs.lat,
             "lon": obs.lon,
             "scientificName": obs.species.name,
-            "vernacularName": obs.species.vernacular_name,
+            **_vernacular_names(obs.species),
             "datasetName": obs.source_dataset.name,
             "date": obs.date,
             "municipality": obs.municipality,
             "verified": obs.verified,
             "identificationVerificationStatus": obs.identification_verification_status,
-            "basisOfRecord": str(obs.basis_of_record),
+            "basisOfRecordId": obs.basis_of_record_id,
             "seenByCurrentUser": (obs.pk not in unseen_ids)
             if user is not None
             else None,
@@ -576,7 +590,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
         "lat": lat,
         "lon": lon,
         "scientificName": obs.species.name,
-        "vernacularName": obs.species.vernacular_name,
+        **_vernacular_names(obs.species),
         "datasetName": obs.source_dataset.name,
         "datasetGbifKey": obs.source_dataset.gbif_dataset_key,
         "date": obs.date,
@@ -587,7 +601,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
         "references": obs.references,
         "identificationVerificationStatus": obs.identification_verification_status,
         "verified": obs.verified,
-        "basisOfRecord": str(obs.basis_of_record),
+        "basisOfRecordId": obs.basis_of_record_id,
         "coordinateUncertaintyInMeters": obs.coordinate_uncertainty_in_meters,
         "initialDataImport": str(obs.initial_data_import),
         "seenByCurrentUser": seen_by_current_user,
