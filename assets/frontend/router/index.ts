@@ -19,6 +19,7 @@ export const routes: RouteRecordRaw[] = [
     { path: "/accounts/password-change/", component: () => import("../pages/PasswordChangePage.vue") },
     { path: "/about-site", component: () => import("../pages/AboutSitePage.vue") },
     { path: "/about-data", component: () => import("../pages/AboutDataPage.vue") },
+    { path: "/api-docs", component: () => import("../pages/ApiDocsPage.vue") },
     { path: "/whats-new", component: () => import("../pages/NewsPage.vue") },
     { path: "/profile", component: () => import("../pages/UserProfilePage.vue") },
     { path: "/:pathMatch(.*)*", component: NotFoundPage },
