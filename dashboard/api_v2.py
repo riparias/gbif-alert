@@ -716,16 +716,6 @@ def _alert_to_out(alert: Alert) -> dict:
             {"scientificName": s.name, **_vernacular_names(s)}
             for s in alert.species.all()
         ],
-        "speciesList": alert.species_list,
-        "areaDescription": alert.area_description,
-        "areaNames": list(alert.areas.order_by("name").values_list("name", flat=True)),
-        "datasetNames": list(
-            alert.datasets.order_by("name").values_list("name", flat=True)
-        ),
-        "datasetsList": alert.datasets_list,
-        "basisOfRecordList": alert.basis_of_record_list,
-        "verifiedFilterDisplay": alert.verified_filter_display,
-        "emailNotificationsFrequencyDisplay": alert.get_email_notifications_frequency_display(),
         "lastEmailSentAt": alert.last_email_sent_on,
     }
 

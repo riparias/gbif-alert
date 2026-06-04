@@ -6,11 +6,13 @@ import Button from "primevue/button";
 import AlertCard from "../components/AlertCard.vue";
 import type { components } from "../types/api";
 import { getNavConfig } from "../utils/navConfig";
+import { useDisplayLabels } from "../composables/useDisplayLabels";
 
 type AlertOut = components["schemas"]["AlertOut"];
 
 const { t } = useI18n();
 const router = useRouter();
+const { ensureAlertLabelsLoaded } = useDisplayLabels();
 
 const alerts = ref<AlertOut[]>([]);
 const loading = ref(false);
@@ -29,7 +31,11 @@ async function loadAlerts() {
 const navConfig = getNavConfig();
 document.title = `${t("message.navMyAlerts")} - ${navConfig.siteName}`;
 
-onMounted(loadAlerts);
+onMounted(() => {
+    // The cards resolve dataset/area/basis/frequency ids -> names locally now (N5).
+    ensureAlertLabelsLoaded();
+    loadAlerts();
+});
 </script>
 
 <template>

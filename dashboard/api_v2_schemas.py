@@ -186,14 +186,6 @@ class AlertOut(Schema):
     approachingDistanceKm: float | None
     unseenCount: int
     speciesDetails: list[AlertSpeciesOut]
-    speciesList: str
-    areaDescription: str
-    areaNames: list[str]
-    datasetNames: list[str]
-    datasetsList: str
-    basisOfRecordList: str
-    verifiedFilterDisplay: str
-    emailNotificationsFrequencyDisplay: str
     lastEmailSentAt: datetime.datetime | None
 
 

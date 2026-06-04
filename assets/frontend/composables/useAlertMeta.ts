@@ -1,6 +1,7 @@
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { components } from "../types/api";
+import { useDisplayLabels } from "./useDisplayLabels";
 
 type AlertOut = components["schemas"]["AlertOut"];
 
@@ -8,6 +9,7 @@ const SPECIES_COLLAPSE_THRESHOLD = 4;
 
 export function useAlertMeta(alert: () => AlertOut) {
     const { t } = useI18n();
+    const { areaName } = useDisplayLabels();
 
     const speciesExpanded = ref(false);
 
@@ -22,7 +24,8 @@ export function useAlertMeta(alert: () => AlertOut) {
     );
 
     const areaDescription = computed(() => {
-        const names = alert().areaNames;
+        // areaNames was dropped from AlertOut (N5); derive from areaIds.
+        const names = alert().areaIds.map((id) => areaName(id)).filter(Boolean);
         if (names.length === 0) return "";
         const quoted = names.map((n) => `'${n}'`);
         const areas =

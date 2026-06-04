@@ -11,6 +11,7 @@ import SpeciesName from "./SpeciesName.vue";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
 import { useAlertMeta } from "../composables/useAlertMeta";
+import { useDisplayLabels } from "../composables/useDisplayLabels";
 import { pickVernacular } from "../utils/vernacular";
 
 type AlertOut = components["schemas"]["AlertOut"];
@@ -19,6 +20,7 @@ const props = defineProps<{ alert: AlertOut }>();
 const emit = defineEmits<{ deleted: [] }>();
 
 const { t, locale } = useI18n();
+const { datasetName, frequencyLabel } = useDisplayLabels();
 const router = useRouter();
 const confirm = useConfirm();
 const toast = useToast();
@@ -104,13 +106,13 @@ function confirmDelete() {
             </div>
 
             <!-- Datasets (only when filtered) -->
-            <div v-if="alert.datasetNames.length > 0" class="section chips-row">
+            <div v-if="alert.datasetIds.length > 0" class="section chips-row">
                 <i class="pi pi-database meta-icon" />
                 <div class="chips">
                     <Tag
-                        v-for="name in alert.datasetNames"
-                        :key="name"
-                        :value="name"
+                        v-for="id in alert.datasetIds"
+                        :key="id"
+                        :value="datasetName(id)"
                         severity="secondary"
                         class="dataset-chip"
                     />
@@ -121,7 +123,7 @@ function confirmDelete() {
             <div class="section meta-row">
                 <i class="pi pi-bell meta-icon" />
                 <span>
-                    {{ alert.emailNotificationsFrequencyDisplay }}
+                    {{ frequencyLabel(alert.emailNotificationsFrequency) }}
                     &middot;
                     <span class="muted">{{ t("message.lastEmailSentAt") }} {{ formatDate(alert.lastEmailSentAt) }}</span>
                 </span>

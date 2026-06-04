@@ -9,6 +9,7 @@ import Tag from "primevue/tag";
 import SpeciesName from "./SpeciesName.vue";
 import ObservationStatusToggle from "./ObservationStatusToggle.vue";
 import { useAlertMeta } from "../composables/useAlertMeta";
+import { useDisplayLabels } from "../composables/useDisplayLabels";
 import { pickVernacular } from "../utils/vernacular";
 import { useResultsStore } from "../stores/results";
 import { useFiltersStore } from "../stores/filters";
@@ -33,6 +34,7 @@ const filtersStore = useFiltersStore();
 
 const { speciesExpanded, tooManySpecies, visibleSpecies, areaDescription, SPECIES_COLLAPSE_THRESHOLD } =
     useAlertMeta(() => props.alert);
+const { datasetName, basisOfRecordName } = useDisplayLabels();
 
 function confirmMarkAllAsViewed() {
     confirm.require({
@@ -135,13 +137,13 @@ const formattedDatasetsCount = computed(() =>
         </div>
 
         <!-- DATASETS section (hidden when no datasets configured) -->
-        <div v-if="alert.datasetNames.length > 0" class="sidebar-section">
+        <div v-if="alert.datasetIds.length > 0" class="sidebar-section">
             <div class="sidebar-section-heading"><i class="pi pi-database" />{{ t("message.dataset") }}</div>
             <div class="chips">
                 <Tag
-                    v-for="name in alert.datasetNames"
-                    :key="name"
-                    :value="name"
+                    v-for="id in alert.datasetIds"
+                    :key="id"
+                    :value="datasetName(id)"
                     severity="secondary"
                     class="dataset-chip"
                 />
@@ -149,11 +151,11 @@ const formattedDatasetsCount = computed(() =>
         </div>
 
         <!-- BASIS OF RECORD section (hidden when all) -->
-        <div v-if="alert.basisOfRecordList" class="sidebar-section">
+        <div v-if="alert.basisOfRecordIds.length > 0" class="sidebar-section">
             <div class="sidebar-section-heading"><i class="pi pi-tag" />{{ t("message.basisOfRecord") }}</div>
             <div class="meta-row">
                 <i class="pi pi-tag meta-icon" />
-                <span>{{ alert.basisOfRecordList }}</span>
+                <span>{{ alert.basisOfRecordIds.map(basisOfRecordName).join(", ") }}</span>
             </div>
         </div>
 

@@ -1356,8 +1356,21 @@ def test_alert_detail_returns_correct_fields(client, alert_data):
     data = response.json()
     assert data["name"] == "My alert #1"
     assert data["speciesIds"] == [sp1.pk]
-    assert "speciesList" in data
-    assert "emailNotificationsFrequencyDisplay" in data
+    # N5: AlertOut carries raw ids/enums, not pre-formatted display strings.
+    for dropped in (
+        "speciesList",
+        "datasetsList",
+        "basisOfRecordList",
+        "verifiedFilterDisplay",
+        "emailNotificationsFrequencyDisplay",
+        "areaDescription",
+        "datasetNames",
+        "areaNames",
+    ):
+        assert dropped not in data, f"{dropped} should have been dropped from AlertOut"
+    assert data["datasetIds"] == []
+    assert "emailNotificationsFrequency" in data
+    assert "speciesDetails" in data
 
 
 def test_alert_species_details_have_three_vernacular_languages(client, alert_data):
