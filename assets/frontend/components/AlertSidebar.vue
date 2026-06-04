@@ -14,7 +14,7 @@ import { pickVernacular } from "../utils/vernacular";
 import { useResultsStore } from "../stores/results";
 import { useFiltersStore } from "../stores/filters";
 import { getCsrf } from "../utils/csrf";
-import { filtersToParams } from "../utils/filterParams";
+import { filtersToBody } from "../utils/filterParams";
 import type { components } from "../types/api";
 import { getNavConfig } from "../utils/navConfig";
 
@@ -43,13 +43,14 @@ function confirmMarkAllAsViewed() {
         acceptLabel: t("message.yesImSure"),
         rejectLabel: t("message.cancel"),
         accept: async () => {
-            const resp = await fetch(
-                `/api/v2/observations/mark-as-seen/?${filtersToParams(filtersStore)}`,
-                {
-                    method: "POST",
-                    headers: { "X-CSRFToken": getCsrf() },
-                }
-            );
+            const resp = await fetch("/api/v2/observations/mark-as-seen/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrf(),
+                },
+                body: JSON.stringify(filtersToBody(filtersStore)),
+            });
             if (!resp.ok) return;
             toast.add({
                 severity: "success",

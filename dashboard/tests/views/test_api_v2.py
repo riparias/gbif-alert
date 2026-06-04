@@ -1101,7 +1101,7 @@ def test_add_comment_empty_text_returns_422(client, observation_detail_data):
 def test_observation_mark_unseen_anonymous_returns_401(client, observation_detail_data):
     """Anonymous users get 401 from mark-unseen, not 403."""
     obs = observation_detail_data["obs"]
-    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-unseen/")
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-unseen/")
     assert resp.status_code == 401
 
 
@@ -1112,7 +1112,7 @@ def test_observation_mark_unseen_no_matching_alert_returns_403(
     user = observation_detail_data["user"]
     obs = observation_detail_data["obs"]
     client.force_login(user)
-    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-unseen/")
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-unseen/")
     assert resp.status_code == 403
 
 
@@ -2063,13 +2063,36 @@ def test_mark_all_as_seen_authenticated_returns_queued(
 
     user = observations_data["user"]
     client.force_login(user)
-    resp = client.post("/api/v2/observations/mark-as-seen/")
+    resp = client.post(
+        "/api/v2/observations/mark-as-seen/", data={}, content_type="application/json"
+    )
 
     assert resp.status_code == 200
-    assert resp.json() == {"queued": True}
+    # count = matching observations currently UNSEEN by the user (N2). The fixture
+    # creates no ObservationUnseen rows, so nothing is newly-marked here.
+    assert resp.json() == {"queued": True, "count": 0}
     assert len(calls) == 1
-    assert calls[0]["count"] == 2  # both observations in the fixture
+    assert calls[0]["count"] == 2  # the job still receives both matching observations
     assert calls[0]["user_id"] == user.pk
+
+
+def test_mark_all_as_seen_returns_count_of_unseen(client, observations_data, monkeypatch):
+    """count reports how many matching observations were unseen (N2)."""
+    from dashboard.views import jobs
+
+    monkeypatch.setattr(jobs.mark_many_observations_as_seen, "delay", lambda qs, u: None)
+
+    user = observations_data["user"]
+    for o in (observations_data["obs"], observations_data["obs_other_species"]):
+        ObservationUnseen.objects.create(observation=o, user=user)
+    client.force_login(user)
+    resp = client.post(
+        "/api/v2/observations/mark-as-seen/",
+        data={"status": "all"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"queued": True, "count": 2}
 
 
 def test_mark_all_as_seen_respects_species_filter(
@@ -2091,7 +2114,11 @@ def test_mark_all_as_seen_respects_species_filter(
     other_obs = observations_data["obs_other_species"]
 
     client.force_login(user)
-    resp = client.post(f"/api/v2/observations/mark-as-seen/?speciesIds={species.pk}")
+    resp = client.post(
+        "/api/v2/observations/mark-as-seen/",
+        data={"speciesIds": [species.pk]},
+        content_type="application/json",
+    )
 
     assert resp.status_code == 200
     assert captured["ids"] == [target_obs.pk]
@@ -2256,7 +2283,7 @@ def test_simple_dict_out_schemas_shapes():
         QueuedOut,
     )
 
-    assert QueuedOut(queued=True).queued is True
+    assert QueuedOut(queued=True, count=0).queued is True
     assert OkOut(ok=True).ok is True
     assert PageFragmentOut(html="<p>hi</p>").html == "<p>hi</p>"
     assert AlertNameSuggestionOut(name="My alert #1").name == "My alert #1"

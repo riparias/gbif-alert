@@ -1,6 +1,8 @@
 import type { useFiltersStore } from "../stores/filters";
+import type { components } from "../types/api";
 
 type FiltersStore = ReturnType<typeof useFiltersStore>;
+type FiltersQuery = components["schemas"]["FiltersQuery"];
 
 /**
  * Serialize the current filters store into URLSearchParams suitable for the
@@ -38,4 +40,25 @@ export function filtersToParams(
         );
     }
     return params;
+}
+
+/**
+ * Serialize the filters store into a FiltersQuery JSON body, for the mutating
+ * POST endpoints that take their filters in the request body (e.g. bulk
+ * mark-as-seen - audit N4).
+ */
+export function filtersToBody(filtersStore: FiltersStore): FiltersQuery {
+    return {
+        speciesIds: filtersStore.speciesIds,
+        datasetIds: filtersStore.datasetIds,
+        basisOfRecordIds: filtersStore.basisOfRecordIds,
+        areaIds: filtersStore.areaIds,
+        initialDataImportIds: filtersStore.initialDataImportIds,
+        startDate: filtersStore.startDate,
+        endDate: filtersStore.endDate,
+        status: filtersStore.status,
+        verifiedFilter: filtersStore.verifiedFilter,
+        areaFilterMode: filtersStore.areaFilterMode,
+        approachingDistanceKm: filtersStore.approachingDistanceKm,
+    };
 }

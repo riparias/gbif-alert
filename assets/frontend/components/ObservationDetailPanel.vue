@@ -89,7 +89,7 @@ async function submitComment() {
 async function markUnseen() {
     markingUnseen.value = true;
     try {
-        const resp = await fetch(`/api/v2/observations/${props.stableId}/mark-unseen/`, {
+        const resp = await fetch(`/api/v2/observations/${props.stableId}/mark-as-unseen/`, {
             method: "POST",
             headers: { "X-CSRFToken": getCsrf() },
         });
