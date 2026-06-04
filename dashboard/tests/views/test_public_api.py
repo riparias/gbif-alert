@@ -971,3 +971,20 @@ def test_species_list_cors_enabled(public_api_data, client):
         reverse("dashboard:public-api:species-list-json"), {}, **request_headers
     )
     assert response.headers["Access-Control-Allow-Origin"] == "*"
+
+
+@pytest.mark.parametrize(
+    "name, query",
+    [
+        ("species-list-json", ""),
+        ("filtered-observations-counter", ""),
+        ("filtered-observations-data-page", "?limit=10&page_number=1"),
+        ("species-per-polygon-json", "?p=POLYGON((4 50,5 50,5 51,4 51,4 50))"),
+    ],
+)
+def test_legacy_endpoints_are_deprecated(public_api_data, client, name, query):
+    """Each legacy /api JSON endpoint signals deprecation + a successor link."""
+    resp = client.get(f"{reverse(f'dashboard:public-api:{name}')}{query}")
+    assert resp.status_code == 200
+    assert resp.headers.get("Deprecation") == "true"
+    assert 'rel="successor-version"' in resp.headers.get("Link", "")

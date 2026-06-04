@@ -8,6 +8,7 @@ from gisserver.types import XsdElement, XsdTypes  # type: ignore
 from gisserver.views import WFSView  # type: ignore
 
 from dashboard.models import Species, DATA_SRID, Observation
+from dashboard.views.deprecation import deprecated_endpoint
 from dashboard.views.helpers import (
     model_to_json_list,
     filtered_observations_from_request,
@@ -15,6 +16,7 @@ from dashboard.views.helpers import (
 )
 
 
+@deprecated_endpoint(successor="/api/v2/observations/counter/")
 def filtered_observations_counter_json(request: HttpRequest) -> JsonResponse:
     """Count the observations according to the filters received
 
@@ -27,6 +29,7 @@ def filtered_observations_counter_json(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"count": qs.count()})
 
 
+@deprecated_endpoint(successor="/api/v2/observations/")
 def filtered_observations_data_page_json(request: HttpRequest) -> JsonResponse:
     """Main endpoint to get paginated observations (data tables, ...)
 
@@ -121,6 +124,7 @@ def filtered_observations_data_page_json(request: HttpRequest) -> JsonResponse:
     )
 
 
+@deprecated_endpoint(successor="/api/v2/species/")
 def species_list_json(_) -> JsonResponse:
     """A list of all species known to the system, in JSON format
 
@@ -129,6 +133,7 @@ def species_list_json(_) -> JsonResponse:
     return model_to_json_list(Species)
 
 
+@deprecated_endpoint(successor="/api/v2/species/per-polygon/")
 def species_per_polygon_json(request: HttpRequest) -> JsonResponse:
     """An object with species details and observations counter, for each species that occurs in the given polygon
 

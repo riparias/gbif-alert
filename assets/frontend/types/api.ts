@@ -21,6 +21,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/species/per-polygon/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Species Per Polygon
+         * @description Species occurring within the given polygon, each with its observation count.
+         *
+         *     The polygon is a GeoJSON FeatureCollection in EPSG:4326, sent in the request
+         *     body. (The legacy endpoint took WKT in the query string - audit N1.)
+         */
+        post: operations["dashboard_api_v2_species_per_polygon"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/datasets/": {
         parameters: {
             query?: never;
@@ -209,6 +232,30 @@ export interface paths {
         };
         /** Observations Histogram */
         get: operations["dashboard_api_v2_observations_histogram"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/observations/counter/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Observations Counter
+         * @description Return only the count of observations matching the filters - a lightweight
+         *     alternative to the full list when the consumer just needs the number.
+         *
+         *     Defined before observation_detail so the literal `/observations/counter/`
+         *     path is matched ahead of `/observations/{stable_id}/`.
+         */
+        get: operations["dashboard_api_v2_observations_counter"];
         put?: never;
         post?: never;
         delete?: never;
@@ -515,6 +562,48 @@ export interface components {
             /** Tags */
             tags: string[];
         };
+        /** SpeciesPerPolygonOut */
+        SpeciesPerPolygonOut: {
+            /** Id */
+            id: number;
+            /** Scientificname */
+            scientificName: string;
+            /** Vernacularnameen */
+            vernacularNameEn: string;
+            /** Vernacularnamenl */
+            vernacularNameNl: string;
+            /** Vernacularnamefr */
+            vernacularNameFr: string;
+            /**
+             * Gbiftaxonkey
+             * @description GBIF taxon key. Numeric in GBIF's data model, so returned as an integer. Distinct from `gbifId` (an occurrence identifier) which GBIF models as a string - the int/str split is intrinsic to GBIF, not an inconsistency in this API.
+             */
+            gbifTaxonKey: number;
+            /** Tags */
+            tags: string[];
+            /** Observationcountinpolygon */
+            observationCountInPolygon: number;
+        };
+        /**
+         * DetailErrorOut
+         * @description Single-message error envelope.
+         *
+         *     Used for all 4xx responses that do not carry per-field validation details.
+         *     Equivalent in shape to django-ninja's default error body, made explicit so
+         *     every endpoint declares it in its `response={...}` map and it appears in
+         *     the OpenAPI schema.
+         */
+        DetailErrorOut: {
+            /** Detail */
+            detail: string;
+        };
+        /** SpeciesPerPolygonIn */
+        SpeciesPerPolygonIn: {
+            /** Geojson */
+            geojson: {
+                [key: string]: unknown;
+            };
+        };
         /** DatasetOut */
         DatasetOut: {
             /** Id */
@@ -534,19 +623,6 @@ export interface components {
             isUserSpecific: boolean;
             /** Tags */
             tags: string[];
-        };
-        /**
-         * DetailErrorOut
-         * @description Single-message error envelope.
-         *
-         *     Used for all 4xx responses that do not carry per-field validation details.
-         *     Equivalent in shape to django-ninja's default error body, made explicit so
-         *     every endpoint declares it in its `response={...}` map and it appears in
-         *     the OpenAPI schema.
-         */
-        DetailErrorOut: {
-            /** Detail */
-            detail: string;
         };
         /**
          * GeoJSONFeatureCollectionOut
@@ -722,6 +798,14 @@ export interface components {
             year: number;
             /** Month */
             month: number;
+            /** Count */
+            count: number;
+        };
+        /**
+         * CountOut
+         * @description The number of observations matching a filter set.
+         */
+        CountOut: {
             /** Count */
             count: number;
         };
@@ -1023,6 +1107,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SpeciesOut"][];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_species_per_polygon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpeciesPerPolygonIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpeciesPerPolygonOut"][];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
         };
@@ -1340,6 +1457,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HistogramEntryOut"][];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_observations_counter: {
+        parameters: {
+            query?: {
+                speciesIds?: number[];
+                datasetIds?: number[];
+                basisOfRecordIds?: number[];
+                startDate?: string | null;
+                endDate?: string | null;
+                areaIds?: number[];
+                status?: string | null;
+                initialDataImportIds?: number[];
+                verifiedFilter?: string;
+                areaFilterMode?: string;
+                approachingDistanceKm?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountOut"];
                 };
             };
         };

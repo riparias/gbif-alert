@@ -21,6 +21,14 @@ class SpeciesOut(Schema):
     tags: list[str]
 
 
+class SpeciesPerPolygonIn(Schema):
+    geojson: dict  # GeoJSON FeatureCollection (EPSG:4326), Polygon/MultiPolygon features
+
+
+class SpeciesPerPolygonOut(SpeciesOut):
+    observationCountInPolygon: int
+
+
 class DatasetOut(Schema):
     id: int
     gbifKey: str
@@ -94,6 +102,12 @@ class ObservationsPageOut(Schema):
     speciesCount: int
     datasetsCount: int
     items: list[ObservationOut]
+
+
+class CountOut(Schema):
+    """The number of observations matching a filter set."""
+
+    count: int
 
 
 class HistogramEntryOut(Schema):

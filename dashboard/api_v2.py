@@ -5,7 +5,11 @@ from typing import Annotated, cast
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
-from django.contrib.gis.geos import GEOSGeometry, MultiPolygon as GEOSMultiPolygon
+from django.contrib.gis.geos import (
+    GEOSException,
+    GEOSGeometry,
+    MultiPolygon as GEOSMultiPolygon,
+)
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers import serialize
 from django.db.models import Count, F, Value
@@ -30,6 +34,7 @@ from dashboard.api_v2_schemas import (
     BasisOfRecordOut,
     CommentIn,
     CommentOut,
+    CountOut,
     DataImportOut,
     DatasetOut,
     DetailErrorOut,
@@ -48,6 +53,8 @@ from dashboard.api_v2_schemas import (
     SignInOut,
     SignUpIn,
     SpeciesOut,
+    SpeciesPerPolygonIn,
+    SpeciesPerPolygonOut,
     ValidationErrorOut,
 )
 from dashboard.forms import SignUpForm, _days_to_value_unit, _value_unit_to_days
@@ -154,6 +161,40 @@ def species_list(request: HttpRequest):
             "tags": [t.name for t in s.tags.all()],
         }
         for s in Species.objects.prefetch_related("tags").all()
+    ]
+
+
+@api_v2.post(
+    "/species/per-polygon/",
+    response={200: list[SpeciesPerPolygonOut], 422: DetailErrorOut},
+)
+def species_per_polygon(request: HttpRequest, payload: SpeciesPerPolygonIn):
+    """Species occurring within the given polygon, each with its observation count.
+
+    The polygon is a GeoJSON FeatureCollection in EPSG:4326, sent in the request
+    body. (The legacy endpoint took WKT in the query string - audit N1.)
+    """
+    try:
+        # Returns a geometry already projected to DATA_SRID (matches location).
+        mpoly = geojson_to_multipolygon(payload.geojson)
+    except (ValueError, KeyError, TypeError, GEOSException) as exc:
+        return 422, {"detail": f"Invalid GeoJSON: {exc}"}
+
+    qs = (
+        Species.objects.filter(observation__location__within=mpoly)
+        .annotate(num_observations=Count("observation"))
+        .prefetch_related("tags")
+    )
+    return 200, [
+        {
+            "id": s.pk,
+            "scientificName": s.name,
+            **_vernacular_names(s),
+            "gbifTaxonKey": s.gbif_taxon_key,
+            "tags": [t.name for t in s.tags.all()],
+            "observationCountInPolygon": s.num_observations,
+        }
+        for s in qs
     ]
 
 
@@ -513,6 +554,32 @@ def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
         {"year": row["month"].year, "month": row["month"].month, "count": row["total"]}
         for row in rows
     ]
+
+
+@api_v2.get("/observations/counter/", response=CountOut)
+def observations_counter(request: HttpRequest, filters: Query[FiltersQuery]):
+    """Return only the count of observations matching the filters - a lightweight
+    alternative to the full list when the consumer just needs the number.
+
+    Defined before observation_detail so the literal `/observations/counter/`
+    path is matched ahead of `/observations/{stable_id}/`.
+    """
+    user = request.user if request.user.is_authenticated else None
+    qs = Observation.objects.filtered_from_my_params(
+        species_ids=filters.speciesIds,
+        datasets_ids=filters.datasetIds,
+        basis_of_record_ids=filters.basisOfRecordIds,
+        start_date=filters.startDate,
+        end_date=filters.endDate,
+        areas_ids=filters.areaIds,
+        status_for_user=filters.status,
+        initial_data_import_ids=filters.initialDataImportIds,
+        user=user,
+        verified_filter=filters.verifiedFilter,
+        area_filter_mode=filters.areaFilterMode,
+        approaching_distance_km=filters.approachingDistanceKm,
+    )
+    return {"count": qs.count()}
 
 
 @api_v2.post(
