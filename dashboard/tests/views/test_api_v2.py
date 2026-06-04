@@ -141,6 +141,48 @@ def test_species_list_empty_tags(client, filter_lists_data):
     assert entry["tags"] == []
 
 
+def test_species_per_polygon_returns_species_with_count(client, observations_data):
+    """POST /species/per-polygon/ returns species in the polygon with their count (N1)."""
+    # A FeatureCollection with a box around the fixture observation at
+    # (4.35, 50.85) in EPSG:4326 (same GeoJSON shape as areas/from-drawing).
+    geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {},
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [[4.0, 50.5], [5.0, 50.5], [5.0, 51.0], [4.0, 51.0], [4.0, 50.5]]
+                    ],
+                },
+            }
+        ],
+    }
+    resp = client.post(
+        "/api/v2/species/per-polygon/",
+        data={"geojson": geojson},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    rows = resp.json()
+    sp = next(r for r in rows if r["id"] == observations_data["species"].pk)
+    assert sp["observationCountInPolygon"] == 1
+    assert "vernacularNameEn" in sp  # 3-lang shape (PR6a)
+    # The other species' observation has no location -> not in any polygon.
+    assert all(r["id"] != observations_data["other_species"].pk for r in rows)
+
+
+def test_species_per_polygon_invalid_geojson_returns_422(client):
+    resp = client.post(
+        "/api/v2/species/per-polygon/",
+        data={"geojson": {"type": "Nonsense"}},
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+
+
 # --- /api/v2/datasets/ ---
 
 

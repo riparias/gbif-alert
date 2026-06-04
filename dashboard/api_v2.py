@@ -5,7 +5,11 @@ from typing import Annotated, cast
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
-from django.contrib.gis.geos import GEOSGeometry, MultiPolygon as GEOSMultiPolygon
+from django.contrib.gis.geos import (
+    GEOSException,
+    GEOSGeometry,
+    MultiPolygon as GEOSMultiPolygon,
+)
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers import serialize
 from django.db.models import Count, F, Value
@@ -49,6 +53,8 @@ from dashboard.api_v2_schemas import (
     SignInOut,
     SignUpIn,
     SpeciesOut,
+    SpeciesPerPolygonIn,
+    SpeciesPerPolygonOut,
     ValidationErrorOut,
 )
 from dashboard.forms import SignUpForm, _days_to_value_unit, _value_unit_to_days
@@ -155,6 +161,40 @@ def species_list(request: HttpRequest):
             "tags": [t.name for t in s.tags.all()],
         }
         for s in Species.objects.prefetch_related("tags").all()
+    ]
+
+
+@api_v2.post(
+    "/species/per-polygon/",
+    response={200: list[SpeciesPerPolygonOut], 422: DetailErrorOut},
+)
+def species_per_polygon(request: HttpRequest, payload: SpeciesPerPolygonIn):
+    """Species occurring within the given polygon, each with its observation count.
+
+    The polygon is a GeoJSON FeatureCollection in EPSG:4326, sent in the request
+    body. (The legacy endpoint took WKT in the query string - audit N1.)
+    """
+    try:
+        # Returns a geometry already projected to DATA_SRID (matches location).
+        mpoly = geojson_to_multipolygon(payload.geojson)
+    except (ValueError, KeyError, TypeError, GEOSException) as exc:
+        return 422, {"detail": f"Invalid GeoJSON: {exc}"}
+
+    qs = (
+        Species.objects.filter(observation__location__within=mpoly)
+        .annotate(num_observations=Count("observation"))
+        .prefetch_related("tags")
+    )
+    return 200, [
+        {
+            "id": s.pk,
+            "scientificName": s.name,
+            **_vernacular_names(s),
+            "gbifTaxonKey": s.gbif_taxon_key,
+            "tags": [t.name for t in s.tags.all()],
+            "observationCountInPolygon": s.num_observations,
+        }
+        for s in qs
     ]
 
 
