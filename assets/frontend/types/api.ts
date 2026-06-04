@@ -295,7 +295,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v2/observations/{stable_id}/mark-unseen/": {
+    "/api/v2/observations/{stable_id}/mark-as-unseen/": {
         parameters: {
             query?: never;
             header?: never;
@@ -304,8 +304,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Observation Mark Unseen */
-        post: operations["dashboard_api_v2_observation_mark_unseen"];
+        /** Observation Mark As Unseen */
+        post: operations["dashboard_api_v2_observation_mark_as_unseen"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1447,7 +1447,7 @@ export interface operations {
             };
         };
     };
-    dashboard_api_v2_observation_mark_unseen: {
+    dashboard_api_v2_observation_mark_as_unseen: {
         parameters: {
             query?: never;
             header?: never;

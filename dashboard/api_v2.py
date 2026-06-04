@@ -679,11 +679,11 @@ def observation_mark_as_seen(request: HttpRequest, stable_id: str):
 
 
 @api_v2.post(
-    "/observations/{stable_id}/mark-unseen/",
+    "/observations/{stable_id}/mark-as-unseen/",
     response={200: OkOut, 403: DetailErrorOut},
     auth=django_auth,
 )
-def observation_mark_unseen(request: HttpRequest, stable_id: str):
+def observation_mark_as_unseen(request: HttpRequest, stable_id: str):
     try:
         obs = Observation.objects.get(stable_id=stable_id)
     except Observation.DoesNotExist:
