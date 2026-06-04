@@ -19,6 +19,26 @@ def test_about_site_page_renders(page: Page, live_server):
 
 
 @pytest.mark.django_db(transaction=True)
+def test_api_docs_page_renders(page: Page, live_server):
+    """The /api-docs hub shows its heading and links to the v2 docs + WFS."""
+    page.goto(live_server.url + "/api-docs")
+    page.wait_for_load_state("networkidle")
+    expect(page.get_by_role("heading", name="API", exact=False)).to_be_visible()
+    expect(page.get_by_text("Open the API v2 docs", exact=False)).to_be_visible()
+    # The v2 docs and WFS links are present.
+    assert page.locator('a[href="/api/v2/docs"]').count() == 1
+    assert page.locator('a[href="/api/wfs/observations"]').count() == 1
+
+
+@pytest.mark.django_db(transaction=True)
+def test_api_root_redirects_to_landing_page(page: Page, live_server):
+    """Visiting bare /api/ lands the user on /api-docs."""
+    page.goto(live_server.url + "/api/")
+    page.wait_for_load_state("networkidle")
+    expect(page).to_have_url(live_server.url + "/api-docs")
+
+
+@pytest.mark.django_db(transaction=True)
 def test_about_data_page_renders(page: Page, live_server):
     """About data page shows a data import entry."""
     DataImport.objects.create(
