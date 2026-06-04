@@ -520,9 +520,13 @@ def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
     response={200: QueuedOut},
     auth=django_auth,
 )
-def observations_mark_all_as_seen(request: HttpRequest, filters: Query[FiltersQuery]):
-    """Bulk-mark all observations matching the current filters as seen by
-    the requesting user. Runs asynchronously via django-rq."""
+def observations_mark_all_as_seen(request: HttpRequest, filters: FiltersQuery):
+    """Bulk-mark all observations matching the given filters as seen by the
+    requesting user. Runs asynchronously via django-rq.
+
+    Filters are read from the JSON request body (a mutating POST carries its
+    payload in the body, not the query string - audit N4).
+    """
     user = cast(User, request.user)
     qs = Observation.objects.filtered_from_my_params(
         species_ids=filters.speciesIds,
@@ -538,8 +542,11 @@ def observations_mark_all_as_seen(request: HttpRequest, filters: Query[FiltersQu
         area_filter_mode=filters.areaFilterMode,
         approaching_distance_km=filters.approachingDistanceKm,
     )
+    # N2: report how many matching observations are currently unseen by the user
+    # (the rows the job will actually flip), so the consumer knows what happened.
+    count = qs.filter(observationunseen__user=user).distinct().count()
     background_jobs.mark_many_observations_as_seen.delay(qs, user)
-    return 200, {"queued": True}
+    return 200, {"queued": True, "count": count}
 
 
 @api_v2.get("/observations/{stable_id}/", response=ObservationDetailOut)

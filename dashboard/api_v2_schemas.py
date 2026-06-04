@@ -269,9 +269,14 @@ class ValidationErrorOut(Schema):
 
 
 class QueuedOut(Schema):
-    """Acknowledgement that a bulk operation was queued for async processing."""
+    """Acknowledgement that a bulk operation was queued for async processing.
+
+    `count` is the number of rows the operation will affect (e.g. matching
+    observations currently unseen by the user, for bulk mark-as-seen).
+    """
 
     queued: bool
+    count: int
 
 
 class OkOut(Schema):

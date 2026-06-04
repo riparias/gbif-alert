@@ -228,8 +228,11 @@ export interface paths {
         put?: never;
         /**
          * Observations Mark All As Seen
-         * @description Bulk-mark all observations matching the current filters as seen by
-         *     the requesting user. Runs asynchronously via django-rq.
+         * @description Bulk-mark all observations matching the given filters as seen by the
+         *     requesting user. Runs asynchronously via django-rq.
+         *
+         *     Filters are read from the JSON request body (a mutating POST carries its
+         *     payload in the body, not the query string - audit N4).
          */
         post: operations["dashboard_api_v2_observations_mark_all_as_seen"];
         delete?: never;
@@ -725,10 +728,15 @@ export interface components {
         /**
          * QueuedOut
          * @description Acknowledgement that a bulk operation was queued for async processing.
+         *
+         *     `count` is the number of rows the operation will affect (e.g. matching
+         *     observations currently unseen by the user, for bulk mark-as-seen).
          */
         QueuedOut: {
             /** Queued */
             queued: boolean;
+            /** Count */
+            count: number;
         };
         /** CommentOut */
         CommentOut: {
@@ -1338,24 +1346,16 @@ export interface operations {
     };
     dashboard_api_v2_observations_mark_all_as_seen: {
         parameters: {
-            query?: {
-                speciesIds?: number[];
-                datasetIds?: number[];
-                basisOfRecordIds?: number[];
-                startDate?: string | null;
-                endDate?: string | null;
-                areaIds?: number[];
-                status?: string | null;
-                initialDataImportIds?: number[];
-                verifiedFilter?: string;
-                areaFilterMode?: string;
-                approachingDistanceKm?: number | null;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FiltersQuery"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
