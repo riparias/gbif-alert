@@ -4,8 +4,9 @@ import { useI18n } from "vue-i18n";
 import { useFiltersStore } from "../stores/filters";
 import { useFilterOptionsStore } from "../stores/filterOptions";
 import SpeciesName from "./SpeciesName.vue";
+import { pickVernacular } from "../utils/vernacular";
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const filtersStore = useFiltersStore();
 const optionsStore = useFilterOptionsStore();
 
@@ -35,7 +36,7 @@ const chips = computed<Chip[]>(() => {
             kind: "species",
             key: `species-${id}`,
             scientificName: sp ? sp.scientificName : "",
-            vernacularName: sp ? sp.vernacularName : "",
+            vernacularName: sp ? pickVernacular(sp, locale.value) : "",
             fallbackLabel: `Species #${id}`,
             clear: () => {
                 filtersStore.speciesIds = filtersStore.speciesIds.filter((i) => i !== id);

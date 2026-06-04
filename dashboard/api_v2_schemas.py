@@ -7,7 +7,9 @@ from pydantic import Field
 class SpeciesOut(Schema):
     id: int
     scientificName: str
-    vernacularName: str
+    vernacularNameEn: str
+    vernacularNameNl: str
+    vernacularNameFr: str
     gbifTaxonKey: int = Field(
         description=(
             "GBIF taxon key. Numeric in GBIF's data model, so returned as an "
@@ -75,7 +77,9 @@ class ObservationOut(Schema):
     lat: float | None
     lon: float | None
     scientificName: str
-    vernacularName: str
+    vernacularNameEn: str
+    vernacularNameNl: str
+    vernacularNameFr: str
     datasetName: str
     date: datetime.date
     municipality: str
@@ -123,7 +127,9 @@ class ObservationDetailOut(Schema):
     lat: float | None
     lon: float | None
     scientificName: str
-    vernacularName: str
+    vernacularNameEn: str
+    vernacularNameNl: str
+    vernacularNameFr: str
     datasetName: str
     datasetGbifKey: str
     date: datetime.date

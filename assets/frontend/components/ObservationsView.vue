@@ -20,6 +20,7 @@ import TabPanel from "primevue/tabpanel";
 import { useFiltersStore } from "../stores/filters";
 import { useResultsStore } from "../stores/results";
 import { filtersToParams } from "../utils/filterParams";
+import { pickVernacular } from "../utils/vernacular";
 import type { components } from "../types/api";
 import SpeciesName from "./SpeciesName.vue";
 import { storeToRefs } from "pinia";
@@ -33,7 +34,7 @@ const props = defineProps<{
 
 const resultsStore = useResultsStore();
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const filtersStore = useFiltersStore();
 const router = useRouter();
 const route = useRoute();
@@ -288,7 +289,7 @@ onMounted(async () => {
                             <template #body="{ data }">
                                 <SpeciesName
                                     :scientific-name="data.scientificName"
-                                    :vernacular-name="data.vernacularName"
+                                    :vernacular-name="pickVernacular(data, locale)"
                                 />
                             </template>
                         </Column>

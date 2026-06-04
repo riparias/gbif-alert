@@ -9,6 +9,7 @@ import SpeciesName from "./SpeciesName.vue";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
 import { getNavConfig } from "../utils/navConfig";
+import { pickVernacular } from "../utils/vernacular";
 
 type ObservationDetail = components["schemas"]["ObservationDetailOut"];
 type Comment = components["schemas"]["CommentOut"];
@@ -16,7 +17,7 @@ type Comment = components["schemas"]["CommentOut"];
 const props = defineProps<{ stableId: string }>();
 const emit = defineEmits<{ close: [] }>();
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const obs = ref<ObservationDetail | null>(null);
 const loading = ref(true);
@@ -128,7 +129,7 @@ onMounted(load);
                     <h2>
                         <SpeciesName
                             :scientific-name="obs.scientificName"
-                            :vernacular-name="obs.vernacularName"
+                            :vernacular-name="pickVernacular(obs, locale)"
                         />
                         &mdash; {{ obs.date }}
                     </h2>
@@ -174,7 +175,7 @@ onMounted(load);
                             <dd>
                                 <SpeciesName
                                     :scientific-name="obs.scientificName"
-                                    :vernacular-name="obs.vernacularName"
+                                    :vernacular-name="pickVernacular(obs, locale)"
                                 />
                             </dd>
 
