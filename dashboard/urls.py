@@ -1,4 +1,5 @@
 from django.urls import path, include
+from django.views.generic import RedirectView
 
 from . import views
 
@@ -48,6 +49,9 @@ maps_api_urls = [
 ]
 
 public_api_urls = [
+    # Bare /api/ is a discovery entry point: send visitors to the in-app
+    # landing page (/api/v2/ is matched earlier in djangoproject/urls.py).
+    path("", RedirectView.as_view(url="/api-docs", permanent=False), name="api-root"),
     path("species", views.species_list_json, name="species-list-json"),
     path(
         "species-per-polygon",

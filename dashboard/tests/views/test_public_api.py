@@ -973,6 +973,18 @@ def test_species_list_cors_enabled(public_api_data, client):
     assert response.headers["Access-Control-Allow-Origin"] == "*"
 
 
+def test_api_root_redirects_to_landing_page(client):
+    """Bare /api/ redirects to the in-app API landing page."""
+    resp = client.get("/api/")
+    assert resp.status_code == 302
+    assert resp.headers["Location"] == "/api-docs"
+
+
+def test_api_v2_still_resolves(client):
+    """The /api/ redirect must not shadow the v2 API mounted at /api/v2/."""
+    assert client.get("/api/v2/species/").status_code == 200
+
+
 @pytest.mark.parametrize(
     "name, query",
     [
