@@ -9,6 +9,7 @@ import Tag from "primevue/tag";
 import SpeciesName from "./SpeciesName.vue";
 import ObservationStatusToggle from "./ObservationStatusToggle.vue";
 import { useAlertMeta } from "../composables/useAlertMeta";
+import { pickVernacular } from "../utils/vernacular";
 import { useResultsStore } from "../stores/results";
 import { useFiltersStore } from "../stores/filters";
 import { getCsrf } from "../utils/csrf";
@@ -22,7 +23,7 @@ const props = defineProps<{
     alert: AlertOut;
 }>();
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const router = useRouter();
 const isAuthenticated: boolean = getNavConfig().user.isAuthenticated;
 const confirm = useConfirm();
@@ -104,7 +105,7 @@ const formattedDatasetsCount = computed(() =>
                 <li v-for="sp in visibleSpecies" :key="sp.scientificName">
                     <SpeciesName
                         :scientific-name="sp.scientificName"
-                        :vernacular-name="sp.vernacularName ?? ''"
+                        :vernacular-name="pickVernacular(sp, locale)"
                     />
                 </li>
             </ul>

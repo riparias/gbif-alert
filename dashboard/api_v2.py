@@ -713,7 +713,7 @@ def _alert_to_out(alert: Alert) -> dict:
         "approachingDistanceKm": alert.approaching_distance_km,
         "unseenCount": alert.unseen_observations().count(),
         "speciesDetails": [
-            {"scientificName": s.name, "vernacularName": s.vernacular_name}
+            {"scientificName": s.name, **_vernacular_names(s)}
             for s in alert.species.all()
         ],
         "speciesList": alert.species_list,

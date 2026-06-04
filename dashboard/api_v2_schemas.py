@@ -168,7 +168,9 @@ class AlertIn(Schema):
 
 class AlertSpeciesOut(Schema):
     scientificName: str
-    vernacularName: str
+    vernacularNameEn: str
+    vernacularNameNl: str
+    vernacularNameFr: str
 
 
 class AlertOut(Schema):

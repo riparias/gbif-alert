@@ -11,13 +11,14 @@ import SpeciesName from "./SpeciesName.vue";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
 import { useAlertMeta } from "../composables/useAlertMeta";
+import { pickVernacular } from "../utils/vernacular";
 
 type AlertOut = components["schemas"]["AlertOut"];
 
 const props = defineProps<{ alert: AlertOut }>();
 const emit = defineEmits<{ deleted: [] }>();
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const router = useRouter();
 const confirm = useConfirm();
 const toast = useToast();
@@ -76,7 +77,7 @@ function confirmDelete() {
                     <li v-for="sp in visibleSpecies" :key="sp.scientificName">
                         <SpeciesName
                             :scientific-name="sp.scientificName"
-                            :vernacular-name="sp.vernacularName ?? ''"
+                            :vernacular-name="pickVernacular(sp, locale)"
                         />
                     </li>
                 </ul>

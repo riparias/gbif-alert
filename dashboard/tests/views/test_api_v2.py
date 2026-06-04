@@ -1360,6 +1360,17 @@ def test_alert_detail_returns_correct_fields(client, alert_data):
     assert "emailNotificationsFrequencyDisplay" in data
 
 
+def test_alert_species_details_have_three_vernacular_languages(client, alert_data):
+    """AlertOut.speciesDetails carries vernacularNameEn/Nl/Fr (N6 follow-up)."""
+    alert = alert_data["alert"]
+    client.login(username="alertuser", password="12345")
+    sd = client.get(f"/api/v2/alerts/{alert.pk}/").json()["speciesDetails"][0]
+    assert "vernacularNameEn" in sd
+    assert "vernacularNameNl" in sd
+    assert "vernacularNameFr" in sd
+    assert "vernacularName" not in sd
+
+
 def test_alert_detail_wrong_user_returns_404(client, alert_data):
     alert = alert_data["alert"]
     client.login(username="otheruser", password="12345")

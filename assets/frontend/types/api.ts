@@ -876,8 +876,12 @@ export interface components {
         AlertSpeciesOut: {
             /** Scientificname */
             scientificName: string;
-            /** Vernacularname */
-            vernacularName: string;
+            /** Vernacularnameen */
+            vernacularNameEn: string;
+            /** Vernacularnamenl */
+            vernacularNameNl: string;
+            /** Vernacularnamefr */
+            vernacularNameFr: string;
         };
         /**
          * ValidationErrorOut
