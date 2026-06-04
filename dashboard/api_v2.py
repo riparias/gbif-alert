@@ -457,7 +457,7 @@ def observations_list(
             "municipality": obs.municipality,
             "verified": obs.verified,
             "identificationVerificationStatus": obs.identification_verification_status,
-            "basisOfRecord": str(obs.basis_of_record),
+            "basisOfRecordId": obs.basis_of_record_id,
             "seenByCurrentUser": (obs.pk not in unseen_ids)
             if user is not None
             else None,
@@ -593,7 +593,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
         "references": obs.references,
         "identificationVerificationStatus": obs.identification_verification_status,
         "verified": obs.verified,
-        "basisOfRecord": str(obs.basis_of_record),
+        "basisOfRecordId": obs.basis_of_record_id,
         "coordinateUncertaintyInMeters": obs.coordinate_uncertainty_in_meters,
         "initialDataImport": str(obs.initial_data_import),
         "seenByCurrentUser": seen_by_current_user,

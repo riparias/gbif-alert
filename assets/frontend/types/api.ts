@@ -697,8 +697,8 @@ export interface components {
             verified: boolean;
             /** Identificationverificationstatus */
             identificationVerificationStatus: string;
-            /** Basisofrecord */
-            basisOfRecord: string;
+            /** Basisofrecordid */
+            basisOfRecordId: number;
             /** Seenbycurrentuser */
             seenByCurrentUser?: boolean | null;
         };
@@ -792,8 +792,8 @@ export interface components {
             identificationVerificationStatus: string;
             /** Verified */
             verified: boolean;
-            /** Basisofrecord */
-            basisOfRecord: string;
+            /** Basisofrecordid */
+            basisOfRecordId: number;
             /** Coordinateuncertaintyinmeters */
             coordinateUncertaintyInMeters: number | null;
             /** Initialdataimport */

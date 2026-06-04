@@ -378,7 +378,7 @@ def test_observations_list_camel_case_keys(client, observations_data):
         "municipality",
         "verified",
         "identificationVerificationStatus",
-        "basisOfRecord",
+        "basisOfRecordId",
     ):
         assert key in item, f"Missing key: {key}"
 
@@ -391,7 +391,18 @@ def test_observations_list_new_fields(client, observations_data):
     assert item["municipality"] == ""
     assert item["verified"] is False
     assert item["identificationVerificationStatus"] == ""
-    assert item["basisOfRecord"] == "HUMAN_OBSERVATION"
+    # N7: basis-of-record is an id joining to /basis-of-record/, not a label.
+    assert item["basisOfRecordId"] == observations_data["basis_of_record"].pk
+    assert "basisOfRecord" not in item
+
+
+def test_observation_detail_basis_of_record_is_id(client, observation_detail_data):
+    """ObservationDetailOut returns basisOfRecordId, not a label string (N7)."""
+    obs = observation_detail_data["obs"]
+    bor = observation_detail_data["basis_of_record"]
+    data = client.get(f"/api/v2/observations/{obs.stable_id}/").json()
+    assert data["basisOfRecordId"] == bor.pk
+    assert "basisOfRecord" not in data
 
 
 def test_observations_list_field_values(client, observations_data):
@@ -987,7 +998,7 @@ def test_detail_camel_case_keys(client, observation_detail_data):
         "datasetName",
         "datasetGbifKey",
         "date",
-        "basisOfRecord",
+        "basisOfRecordId",
         "seenByCurrentUser",
         "canBeMarkedUnseen",
         "comments",
