@@ -1,9 +1,10 @@
 """Public-facing API views"""
+from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.paginator import Paginator
 from django.db.models import Count
 from django.http import JsonResponse, HttpRequest
-from gisserver.features import FeatureType, field  # type: ignore
+from gisserver.features import FeatureType, ServiceDescription, field  # type: ignore
 from gisserver.types import XsdElement, XsdTypes  # type: ignore
 from gisserver.views import WFSView  # type: ignore
 
@@ -225,6 +226,22 @@ class CustomXsdElementDataSetGBIFKey(XSDElementForceStringType):
 
 
 class ObservationsWFSView(WFSView):
+    def get_service_description(self, service: str) -> ServiceDescription:
+        # Without this, django-gisserver advertises the service as "Unnamed" in
+        # GetCapabilities. Derive the title from the deployment's SITE_NAME, with
+        # a sensible fallback when it is not configured.
+        site_name = settings.GBIF_ALERT.get("SITE_NAME") or "GBIF Alert"
+        return ServiceDescription(
+            title=f"{site_name} - observations",
+            abstract=(
+                "Species observations served as an OGC Web Feature Service (WFS), "
+                "for use in desktop GIS such as QGIS. Powered by GBIF Alert."
+            ),
+            keywords=["observations", "biodiversity", "species", "GBIF"],
+            provider_name=site_name,
+            provider_site="https://github.com/riparias/gbif-alert",
+        )
+
     feature_types = [
         FeatureType(
             Observation.objects.all(),

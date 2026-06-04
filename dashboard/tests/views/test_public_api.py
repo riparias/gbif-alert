@@ -158,6 +158,29 @@ def public_api_data():
     }
 
 
+def _wfs_capabilities(client) -> str:
+    base_url = reverse("dashboard:public-api:wfs-observations")
+    resp = client.get(f"{base_url}?SERVICE=WFS&REQUEST=GetCapabilities&VERSION=2.0.0")
+    assert resp.status_code == 200
+    return resp.content.decode()
+
+
+def test_wfs_capabilities_uses_site_name_in_title(client, settings):
+    """The WFS GetCapabilities title is derived from SITE_NAME (not 'Unnamed')."""
+    settings.GBIF_ALERT = {**settings.GBIF_ALERT, "SITE_NAME": "Test Portal"}
+    body = _wfs_capabilities(client)
+    assert "Unnamed" not in body
+    assert "Test Portal - observations" in body
+
+
+def test_wfs_capabilities_title_falls_back_without_site_name(client, settings):
+    """With no SITE_NAME configured, the title falls back to 'GBIF Alert'."""
+    settings.GBIF_ALERT = {**settings.GBIF_ALERT, "SITE_NAME": ""}
+    body = _wfs_capabilities(client)
+    assert "Unnamed" not in body
+    assert "GBIF Alert - observations" in body
+
+
 def test_observations_json_view_data(public_api_data, client):
     """If the user is authenticated, there is data about which observations were already seen by that user"""
     client.login(username="frusciante1", password="12345")
