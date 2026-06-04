@@ -217,6 +217,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/observations/counter/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Observations Counter
+         * @description Return only the count of observations matching the filters - a lightweight
+         *     alternative to the full list when the consumer just needs the number.
+         *
+         *     Defined before observation_detail so the literal `/observations/counter/`
+         *     path is matched ahead of `/observations/{stable_id}/`.
+         */
+        get: operations["dashboard_api_v2_observations_counter"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/observations/mark-as-seen/": {
         parameters: {
             query?: never;
@@ -722,6 +746,14 @@ export interface components {
             year: number;
             /** Month */
             month: number;
+            /** Count */
+            count: number;
+        };
+        /**
+         * CountOut
+         * @description The number of observations matching a filter set.
+         */
+        CountOut: {
             /** Count */
             count: number;
         };
@@ -1340,6 +1372,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HistogramEntryOut"][];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_observations_counter: {
+        parameters: {
+            query?: {
+                speciesIds?: number[];
+                datasetIds?: number[];
+                basisOfRecordIds?: number[];
+                startDate?: string | null;
+                endDate?: string | null;
+                areaIds?: number[];
+                status?: string | null;
+                initialDataImportIds?: number[];
+                verifiedFilter?: string;
+                areaFilterMode?: string;
+                approachingDistanceKm?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountOut"];
                 };
             };
         };

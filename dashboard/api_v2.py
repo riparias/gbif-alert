@@ -30,6 +30,7 @@ from dashboard.api_v2_schemas import (
     BasisOfRecordOut,
     CommentIn,
     CommentOut,
+    CountOut,
     DataImportOut,
     DatasetOut,
     DetailErrorOut,
@@ -513,6 +514,32 @@ def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
         {"year": row["month"].year, "month": row["month"].month, "count": row["total"]}
         for row in rows
     ]
+
+
+@api_v2.get("/observations/counter/", response=CountOut)
+def observations_counter(request: HttpRequest, filters: Query[FiltersQuery]):
+    """Return only the count of observations matching the filters - a lightweight
+    alternative to the full list when the consumer just needs the number.
+
+    Defined before observation_detail so the literal `/observations/counter/`
+    path is matched ahead of `/observations/{stable_id}/`.
+    """
+    user = request.user if request.user.is_authenticated else None
+    qs = Observation.objects.filtered_from_my_params(
+        species_ids=filters.speciesIds,
+        datasets_ids=filters.datasetIds,
+        basis_of_record_ids=filters.basisOfRecordIds,
+        start_date=filters.startDate,
+        end_date=filters.endDate,
+        areas_ids=filters.areaIds,
+        status_for_user=filters.status,
+        initial_data_import_ids=filters.initialDataImportIds,
+        user=user,
+        verified_filter=filters.verifiedFilter,
+        area_filter_mode=filters.areaFilterMode,
+        approaching_distance_km=filters.approachingDistanceKm,
+    )
+    return {"count": qs.count()}
 
 
 @api_v2.post(

@@ -96,6 +96,12 @@ class ObservationsPageOut(Schema):
     items: list[ObservationOut]
 
 
+class CountOut(Schema):
+    """The number of observations matching a filter set."""
+
+    count: int
+
+
 class HistogramEntryOut(Schema):
     year: int
     month: int

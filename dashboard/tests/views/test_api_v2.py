@@ -516,6 +516,28 @@ def test_page_size_at_max_is_accepted(client, observations_data):
     assert resp.status_code == 200
 
 
+def test_observations_counter_matches_list_count(client, observations_data):
+    """GET /observations/counter/ returns the same count as the full list (M7)."""
+    total = client.get(reverse("api-v2:observations_list")).json()["count"]
+    resp = client.get("/api/v2/observations/counter/")
+    assert resp.status_code == 200
+    assert resp.json() == {"count": total}
+
+
+def test_observations_counter_respects_filters(client, observations_data):
+    sp = observations_data["species"]
+    resp = client.get("/api/v2/observations/counter/", {"speciesIds": sp.pk})
+    assert resp.status_code == 200
+    assert resp.json()["count"] == 1
+
+
+def test_counter_route_not_shadowed_by_detail(client, observations_data):
+    """/observations/counter/ resolves to the counter, not observation_detail('counter')."""
+    resp = client.get("/api/v2/observations/counter/")
+    assert resp.status_code == 200
+    assert "count" in resp.json()
+
+
 # --- Filter wiring ---
 
 
