@@ -42,6 +42,13 @@ onMounted(async () => {
         </Card>
 
         <Card class="api-card">
+            <template #title>{{ t("message.apiAuthTitle") }}</template>
+            <template #content>
+                <p>{{ t("message.apiAuthDesc") }}</p>
+            </template>
+        </Card>
+
+        <Card class="api-card">
             <template #title>{{ t("message.apiWfsTitle") }}</template>
             <template #content>
                 <p>{{ t("message.apiWfsDesc") }}</p>

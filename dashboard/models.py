@@ -1343,7 +1343,7 @@ class ApiToken(models.Model):
 
     Attributes
     ----------
-    user : WebsiteUser
+    user : User
         The owner; the token authenticates as this user.
     name : str
         A user-provided label to tell tokens apart.
@@ -1376,7 +1376,7 @@ class ApiToken(models.Model):
         return hashlib.sha256(raw.encode()).hexdigest()
 
     @classmethod
-    def create_for(cls, user: "WebsiteUser", name: str = "") -> tuple["ApiToken", str]:
+    def create_for(cls, user: "User", name: str = "") -> tuple["ApiToken", str]:
         """Create a token for `user` and return (instance, raw_token).
 
         The raw token is only available here; afterwards only its hash is stored.
