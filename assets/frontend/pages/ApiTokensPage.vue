@@ -120,13 +120,13 @@ function formatDate(iso: string | null): string {
                 </small>
                 <div class="copy-row">
                     <InputText :value="createdToken" readonly class="w-full" data-testid="created-token-value" />
-                    <Button icon="pi pi-copy" :label="t('message.copy')" size="small" @click="copyText(createdToken)" />
+                    <Button icon="pi pi-copy" :label="t('message.copyToken')" size="small" @click="copyText(createdToken)" />
                 </div>
 
                 <p class="usage-hint">{{ t("message.apiTokenUsageHint") }}</p>
                 <div class="copy-row">
                     <pre class="sample-curl" data-testid="sample-curl">{{ sampleCurl }}</pre>
-                    <Button icon="pi pi-copy" :label="t('message.copy')" size="small" @click="copyText(sampleCurl)" />
+                    <Button icon="pi pi-copy" :label="t('message.copyCommand')" size="small" @click="copyText(sampleCurl)" />
                 </div>
             </div>
 
