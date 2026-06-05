@@ -101,7 +101,7 @@ function formatDate(iso: string | null): string {
 </script>
 
 <template>
-    <div class="page-content--narrow">
+    <div class="page-content--wide">
         <h1 style="margin-bottom: 0.5rem;">{{ t("message.apiTokensTitle") }}</h1>
         <p style="color: var(--p-text-muted-color); margin-bottom: 0.5rem;">
             {{ t("message.apiTokensIntro") }}
