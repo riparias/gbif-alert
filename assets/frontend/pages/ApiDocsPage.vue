@@ -75,6 +75,13 @@ onMounted(async () => {
             </template>
         </Card>
 
+        <Card class="api-card">
+            <template #title>{{ t("message.apiStabilityTitle") }}</template>
+            <template #content>
+                <p>{{ t("message.apiStabilityDesc") }}</p>
+            </template>
+        </Card>
+
         <p class="api-internal-note">{{ t("message.apiInternalNote") }}</p>
     </div>
 </template>

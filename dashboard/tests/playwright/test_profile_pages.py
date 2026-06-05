@@ -28,6 +28,9 @@ def test_api_docs_page_renders(page: Page, live_server):
     # The v2 docs and WFS links are present.
     assert page.locator('a[href="/api/v2/docs"]').count() == 1
     assert page.locator('a[href="/api/wfs/observations"]').count() == 1
+    # The stability/deprecation policy card and the legacy sunset date are shown.
+    expect(page.get_by_text("Stability and deprecation", exact=False)).to_be_visible()
+    expect(page.get_by_text("30 June 2027", exact=False)).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)

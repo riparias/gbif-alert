@@ -1018,8 +1018,9 @@ def test_api_v2_still_resolves(client):
     ],
 )
 def test_legacy_endpoints_are_deprecated(public_api_data, client, name, query):
-    """Each legacy /api JSON endpoint signals deprecation + a successor link."""
+    """Each legacy /api JSON endpoint signals deprecation, a successor + a sunset."""
     resp = client.get(f"{reverse(f'dashboard:public-api:{name}')}{query}")
     assert resp.status_code == 200
     assert resp.headers.get("Deprecation") == "true"
     assert 'rel="successor-version"' in resp.headers.get("Link", "")
+    assert resp.headers.get("Sunset") == "Wed, 30 Jun 2027 00:00:00 GMT"
