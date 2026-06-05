@@ -10,9 +10,6 @@ import Select from "primevue/select";
 import ProgressSpinner from "primevue/progressspinner";
 import { getCsrf } from "../utils/csrf";
 import { getNavConfig } from "../utils/navConfig";
-import type { components } from "../types/api";
-
-type ApiTokenOut = components["schemas"]["ApiTokenOut"];
 
 const { t } = useI18n();
 const router = useRouter();
@@ -28,74 +25,7 @@ onMounted(async () => {
         return;
     }
     await loadProfile();
-    await loadTokens();
 });
-
-// --- API tokens ---
-
-const tokens = ref<ApiTokenOut[]>([]);
-const newTokenName = ref("");
-const creatingToken = ref(false);
-// The raw value of a just-created token, shown once.
-const createdToken = ref<string | null>(null);
-
-async function loadTokens() {
-    const resp = await fetch("/api/v2/api-tokens/");
-    if (resp.ok) tokens.value = await resp.json();
-}
-
-async function createToken() {
-    creatingToken.value = true;
-    createdToken.value = null;
-    try {
-        const resp = await fetch("/api/v2/api-tokens/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-CSRFToken": getCsrf() },
-            body: JSON.stringify({ name: newTokenName.value.trim() }),
-        });
-        if (resp.ok) {
-            const data = await resp.json();
-            createdToken.value = data.token; // shown once
-            newTokenName.value = "";
-            await loadTokens();
-        }
-    } finally {
-        creatingToken.value = false;
-    }
-}
-
-function requestRevokeToken(token: ApiTokenOut) {
-    confirm.require({
-        message: t("message.confirmRevokeToken"),
-        header: token.name || token.prefix,
-        icon: "pi pi-exclamation-triangle",
-        acceptLabel: t("message.yesImSure"),
-        rejectLabel: t("message.cancel"),
-        accept: () => revokeToken(token.id),
-    });
-}
-
-async function revokeToken(id: number) {
-    const resp = await fetch(`/api/v2/api-tokens/${id}/`, {
-        method: "DELETE",
-        headers: { "X-CSRFToken": getCsrf() },
-    });
-    if (resp.status === 204) {
-        await loadTokens();
-        toast.add({ severity: "success", summary: t("message.apiTokenRevoked"), life: 3000 });
-    }
-}
-
-async function copyCreatedToken() {
-    if (createdToken.value) {
-        await navigator.clipboard?.writeText(createdToken.value).catch(() => {});
-        toast.add({ severity: "success", summary: t("message.apiTokenCopied"), life: 2000 });
-    }
-}
-
-function formatDate(iso: string | null): string {
-    return iso ? new Date(iso).toLocaleDateString() : t("message.never");
-}
 
 const loading = ref(true);
 const saving = ref(false);
@@ -256,63 +186,6 @@ async function deleteAccount() {
                 </div>
 
                 <Button :label="t('message.saveProfile')" :loading="saving" class="w-full" @click="save" />
-
-                <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--p-surface-200);" />
-
-                <!-- API tokens -->
-                <section class="api-tokens">
-                    <h2 style="font-size: 1.1rem; margin-bottom: 0.25rem;">{{ t("message.apiTokensTitle") }}</h2>
-                    <p style="color: var(--p-text-muted-color); font-size: 0.875rem; margin-bottom: 0.75rem;">
-                        {{ t("message.apiTokensIntro") }}
-                    </p>
-
-                    <!-- Just-created token, shown once -->
-                    <div v-if="createdToken" class="created-token">
-                        <small style="color: var(--p-orange-600); font-weight: 500;">{{ t("message.apiTokenCreatedWarning") }}</small>
-                        <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
-                            <InputText :value="createdToken" readonly class="w-full" data-testid="created-token-value" />
-                            <Button icon="pi pi-copy" :label="t('message.copy')" size="small" @click="copyCreatedToken" />
-                        </div>
-                    </div>
-
-                    <!-- Existing tokens -->
-                    <ul v-if="tokens.length" class="token-list">
-                        <li v-for="tk in tokens" :key="tk.id" class="token-row">
-                            <div>
-                                <span style="font-weight: 500;">{{ tk.name || tk.prefix }}</span>
-                                <code style="margin-left: 0.4rem; color: var(--p-text-muted-color);">{{ tk.prefix }}&hellip;</code>
-                                <br />
-                                <small style="color: var(--p-text-muted-color);">
-                                    {{ t("message.apiTokenLastUsed") }} {{ formatDate(tk.lastUsedAt) }}
-                                </small>
-                            </div>
-                            <Button
-                                :label="t('message.revoke')"
-                                severity="danger"
-                                text
-                                size="small"
-                                @click="requestRevokeToken(tk)"
-                            />
-                        </li>
-                    </ul>
-                    <p v-else style="color: var(--p-text-muted-color); font-size: 0.875rem;">{{ t("message.noApiTokens") }}</p>
-
-                    <!-- Create -->
-                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                        <InputText
-                            v-model="newTokenName"
-                            :placeholder="t('message.apiTokenNamePlaceholder')"
-                            class="w-full"
-                        />
-                        <Button
-                            :label="t('message.createApiToken')"
-                            icon="pi pi-plus"
-                            size="small"
-                            :loading="creatingToken"
-                            @click="createToken"
-                        />
-                    </div>
-                </section>
 
                 <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--p-surface-200);" />
 

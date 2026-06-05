@@ -103,12 +103,12 @@ def test_profile_save_succeeds(page: Page, live_server):
 
 @pytest.mark.django_db(transaction=True)
 def test_api_token_create_and_revoke_via_ui(page: Page, live_server):
-    """Profile page: create a token (raw value shown once) then revoke it."""
+    """Dedicated /api-tokens page: create (raw value + sample curl shown once) then revoke."""
     User = get_user_model()
     User.objects.create_user(username="toktester", password="pass1234", email="tt@t.com")
 
     login(page, live_server.url, "toktester", "pass1234")
-    page.goto(live_server.url + "/profile")
+    page.goto(live_server.url + "/api-tokens")
     page.wait_for_load_state("networkidle")
 
     expect(page.get_by_role("heading", name="API tokens")).to_be_visible()
@@ -121,8 +121,17 @@ def test_api_token_create_and_revoke_via_ui(page: Page, live_server):
     # The raw token is shown once, and the token appears in the list.
     created = page.locator("[data-testid='created-token-value']")
     expect(created).to_be_visible()
-    assert created.input_value()  # non-empty raw token
+    raw = created.input_value()
+    assert raw  # non-empty raw token
     expect(page.get_by_text("my script")).to_be_visible()
+
+    # A ready-to-run sample curl is shown, embedding the new token + the alerts endpoint.
+    sample = page.locator("[data-testid='sample-curl']")
+    expect(sample).to_be_visible()
+    sample_text = sample.inner_text()
+    assert raw in sample_text
+    assert "/api/v2/alerts/" in sample_text
+    assert "Authorization: Bearer" in sample_text
 
     # Revoke it.
     page.get_by_role("button", name="Revoke").click()
