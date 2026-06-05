@@ -38,13 +38,9 @@ onMounted(async () => {
                 <a href="/api/v2/docs">
                     <Button :label="t('message.apiV2DocsLink')" icon="pi pi-book" size="small" />
                 </a>
-            </template>
-        </Card>
-
-        <Card class="api-card">
-            <template #title>{{ t("message.apiAuthTitle") }}</template>
-            <template #content>
-                <p>{{ t("message.apiAuthDesc") }}</p>
+                <p class="auth-note">
+                    <strong>{{ t("message.apiAuthTitle") }}:</strong> {{ t("message.apiAuthDesc") }}
+                </p>
             </template>
         </Card>
 
@@ -60,6 +56,9 @@ onMounted(async () => {
                         severity="secondary"
                     />
                 </a>
+                <p class="auth-note">
+                    <strong>{{ t("message.apiAuthTitle") }}:</strong> {{ t("message.apiWfsAuthNote") }}
+                </p>
             </template>
         </Card>
 
@@ -67,6 +66,9 @@ onMounted(async () => {
             <template #title>{{ t("message.apiLegacyTitle") }}</template>
             <template #content>
                 <p>{{ t("message.apiLegacyDesc") }}</p>
+                <p class="auth-note">
+                    <strong>{{ t("message.apiAuthTitle") }}:</strong> {{ t("message.apiLegacyAuthNote") }}
+                </p>
             </template>
         </Card>
 
@@ -77,6 +79,12 @@ onMounted(async () => {
 <style scoped>
 .api-card {
     margin-top: 1rem;
+}
+
+.auth-note {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--p-text-muted-color);
 }
 
 .api-version {
