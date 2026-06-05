@@ -103,8 +103,10 @@ function formatDate(iso: string | null): string {
 <template>
     <div class="page-content--narrow">
         <h1 style="margin-bottom: 0.5rem;">{{ t("message.apiTokensTitle") }}</h1>
-        <p style="color: var(--p-text-muted-color); margin-bottom: 1.25rem;">
+        <p style="color: var(--p-text-muted-color); margin-bottom: 0.5rem;">
             {{ t("message.apiTokensIntro") }}
+        </p>
+        <p style="margin-bottom: 1.25rem;">
             <router-link to="/api-docs">{{ t("message.apiTokenSeeDocs") }}</router-link>
         </p>
 
