@@ -15,6 +15,7 @@ from .models import (
     ObservationComment,
     Area,
     Alert,
+    ApiToken,
     ObservationUnseen,
 )
 
@@ -134,3 +135,27 @@ class ObservationCommentAdmin(admin.ModelAdmin):
     list_display = ("author", "observation")
     list_filter = ["author"]
     raw_id_fields = ("observation",)
+
+
+@admin.register(ApiToken)
+class ApiTokenAdmin(admin.ModelAdmin):
+    """Read-only view of personal access tokens, with revocation (delete).
+
+    Tokens cannot be created or edited here: the raw value is only shown once at
+    creation through the API/SPA, so an admin-created token would be unusable.
+    Deleting a token revokes it.
+    """
+
+    list_display = ("name", "user", "prefix", "created_at", "last_used_at")
+    list_filter = ("created_at", "last_used_at")
+    search_fields = ("name", "prefix", "user__username", "user__email")
+    readonly_fields = ("user", "name", "prefix", "token_hash", "created_at", "last_used_at")
+    ordering = ("-created_at",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    # Deletion stays enabled: that is how a token is revoked.
