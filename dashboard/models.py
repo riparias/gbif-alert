@@ -2,6 +2,7 @@ import datetime
 import hashlib
 import logging
 import os
+import secrets
 import smtplib
 import time
 from typing import Any, Self
@@ -1331,3 +1332,57 @@ class Alert(models.Model):
         self.last_email_sent_on = timezone.now()
         self.save(update_fields=["last_email_sent_on"])
         return True
+
+
+class ApiToken(models.Model):
+    """A personal access token that authenticates API requests as its owner.
+
+    Only a hash of the token is stored; the raw value is returned once at
+    creation and is never recoverable afterwards. A token grants the same
+    access as its owning user (it is not scoped).
+
+    Attributes
+    ----------
+    user : WebsiteUser
+        The owner; the token authenticates as this user.
+    name : str
+        A user-provided label to tell tokens apart.
+    token_hash : str
+        SHA-256 hex digest of the raw token; the lookup key.
+    prefix : str
+        The first characters of the raw token, kept for display only.
+    created_at : datetime.datetime
+    last_used_at : datetime.datetime or None
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="api_tokens"
+    )
+    name = models.CharField(max_length=100, blank=True)
+    token_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    prefix = models.CharField(max_length=12)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.prefix}... ({self.user})"
+
+    @staticmethod
+    def hash_token(raw: str) -> str:
+        """Return the SHA-256 hex digest used as the stored lookup key."""
+        return hashlib.sha256(raw.encode()).hexdigest()
+
+    @classmethod
+    def create_for(cls, user: "WebsiteUser", name: str = "") -> tuple["ApiToken", str]:
+        """Create a token for `user` and return (instance, raw_token).
+
+        The raw token is only available here; afterwards only its hash is stored.
+        """
+        raw = secrets.token_urlsafe(32)
+        token = cls.objects.create(
+            user=user, name=name, token_hash=cls.hash_token(raw), prefix=raw[:8]
+        )
+        return token, raw
