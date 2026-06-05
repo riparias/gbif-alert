@@ -131,6 +131,7 @@ function formatDate(iso: string | null): string {
             </div>
 
             <!-- Existing tokens -->
+            <h2 class="section-title">{{ t("message.apiTokensExistingTitle") }}</h2>
             <ul v-if="tokens.length" class="token-list">
                 <li v-for="tk in tokens" :key="tk.id" class="token-row">
                     <div>
@@ -153,6 +154,7 @@ function formatDate(iso: string | null): string {
             <p v-else class="muted">{{ t("message.noApiTokens") }}</p>
 
             <!-- Create -->
+            <h2 class="section-title">{{ t("message.apiTokensCreateTitle") }}</h2>
             <div class="copy-row" style="margin-top: 0.75rem;">
                 <InputText
                     v-model="newTokenName"
@@ -179,6 +181,13 @@ function formatDate(iso: string | null): string {
     padding: 0.75rem;
     margin-bottom: 1.25rem;
     background: var(--p-surface-50);
+}
+
+.section-title {
+    font-size: 1.1rem;
+    margin: 1.75rem 0 0.5rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--p-surface-200);
 }
 
 .copy-row {
