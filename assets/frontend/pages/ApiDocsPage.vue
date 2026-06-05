@@ -3,6 +3,7 @@ import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import Card from "primevue/card";
 import Button from "primevue/button";
+import Tag from "primevue/tag";
 
 const { t } = useI18n();
 const version = ref<string | null>(null);
@@ -28,10 +29,13 @@ onMounted(async () => {
 
         <Card class="api-card">
             <template #title>
-                {{ t("message.apiV2Title") }}
-                <span v-if="version" class="api-version">
-                    {{ t("message.apiVersionLabel") }} {{ version }}
-                </span>
+                <div class="card-title">
+                    <Tag :value="t('message.apiBadgeApi')" severity="info" class="card-badge" />
+                    {{ t("message.apiV2Title") }}
+                    <span v-if="version" class="api-version">
+                        {{ t("message.apiVersionLabel") }} {{ version }}
+                    </span>
+                </div>
             </template>
             <template #content>
                 <p>{{ t("message.apiV2Desc") }}</p>
@@ -48,7 +52,12 @@ onMounted(async () => {
         </Card>
 
         <Card class="api-card">
-            <template #title>{{ t("message.apiWfsTitle") }}</template>
+            <template #title>
+                <div class="card-title">
+                    <Tag :value="t('message.apiBadgeApi')" severity="info" class="card-badge" />
+                    {{ t("message.apiWfsTitle") }}
+                </div>
+            </template>
             <template #content>
                 <p>{{ t("message.apiWfsDesc") }}</p>
                 <a href="/api/wfs/observations">
@@ -66,7 +75,12 @@ onMounted(async () => {
         </Card>
 
         <Card class="api-card">
-            <template #title>{{ t("message.apiLegacyTitle") }}</template>
+            <template #title>
+                <div class="card-title">
+                    <Tag :value="t('message.apiBadgeApi')" severity="info" class="card-badge" />
+                    {{ t("message.apiLegacyTitle") }}
+                </div>
+            </template>
             <template #content>
                 <p>{{ t("message.apiLegacyDesc") }}</p>
                 <p class="auth-note">
@@ -75,8 +89,18 @@ onMounted(async () => {
             </template>
         </Card>
 
-        <Card class="api-card">
-            <template #title>{{ t("message.apiStabilityTitle") }}</template>
+        <Card class="api-card api-card--info">
+            <template #title>
+                <div class="card-title">
+                    <Tag
+                        :value="t('message.apiBadgeInfo')"
+                        icon="pi pi-info-circle"
+                        severity="secondary"
+                        class="card-badge"
+                    />
+                    {{ t("message.apiStabilityTitle") }}
+                </div>
+            </template>
             <template #content>
                 <p>{{ t("message.apiStabilityDesc") }}</p>
             </template>
@@ -89,6 +113,23 @@ onMounted(async () => {
 <style scoped>
 .api-card {
     margin-top: 1rem;
+}
+
+/* The deprecation/stability card is informational, not an API: set it apart
+   with a tinted background and a muted left border. */
+.api-card--info {
+    background: var(--p-surface-100);
+    border-left: 3px solid var(--p-surface-300);
+}
+
+.card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.card-badge {
+    flex: none;
 }
 
 .auth-note {

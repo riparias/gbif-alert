@@ -27,6 +27,8 @@ def test_api_docs_page_renders(page: Page, live_server):
     expect(page.get_by_text("Open the API v2 docs", exact=False)).to_be_visible()
     # v2 is announced as the stable, supported public API.
     expect(page.get_by_text("API v2 (stable)", exact=False)).to_be_visible()
+    # Each API card carries an "API" badge; the policy card is set apart.
+    assert page.get_by_text("API", exact=True).count() >= 3
     # The v2 docs and WFS links are present.
     assert page.locator('a[href="/api/v2/docs"]').count() == 1
     assert page.locator('a[href="/api/wfs/observations"]').count() == 1
