@@ -334,3 +334,23 @@ class GeoJSONFeatureCollectionOut(Schema):
     type: str
     crs: dict
     features: list[GeoJSONFeatureOut]
+
+
+class ApiTokenOut(Schema):
+    """A personal access token, without its secret value."""
+
+    id: int
+    name: str
+    prefix: str
+    createdAt: datetime.datetime
+    lastUsedAt: datetime.datetime | None
+
+
+class ApiTokenCreateIn(Schema):
+    name: str = ""
+
+
+class ApiTokenCreatedOut(ApiTokenOut):
+    """Returned once on creation - carries the raw token, shown only this time."""
+
+    token: str

@@ -2472,3 +2472,67 @@ def test_token_last_used_at_is_updated(client, observation_detail_data):
     )
     token.refresh_from_db()
     assert token.last_used_at is not None
+
+
+# --- token management endpoints ---
+
+
+def test_api_token_create_returns_raw_once_then_authenticates(client, auth_data):
+    user = auth_data["user"]
+    client.force_login(user)
+    resp = client.post(
+        "/api/v2/api-tokens/",
+        data={"name": "my laptop"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["name"] == "my laptop"
+    assert "token" in body and body["token"]  # raw token returned once
+    assert body["prefix"] and body["token"].startswith(body["prefix"])
+    # The returned raw token actually authenticates.
+    raw = body["token"]
+    me = client.get("/api/v2/profile/", HTTP_AUTHORIZATION=f"Bearer {raw}")
+    assert me.status_code == 200
+
+
+def test_api_token_list_never_exposes_the_key(client, auth_data):
+    user = auth_data["user"]
+    ApiToken.create_for(user, "a")
+    client.force_login(user)
+    resp = client.get("/api/v2/api-tokens/")
+    assert resp.status_code == 200
+    rows = resp.json()
+    assert len(rows) == 1
+    assert "token" not in rows[0]
+    assert set(rows[0]) == {"id", "name", "prefix", "createdAt", "lastUsedAt"}
+
+
+def test_api_token_list_requires_auth(client):
+    assert client.get("/api/v2/api-tokens/").status_code == 401
+
+
+def test_api_token_delete_revokes(client, observation_detail_data):
+    user = observation_detail_data["user"]
+    obs = observation_detail_data["obs"]
+    token, raw = ApiToken.create_for(user, "t")
+    client.force_login(user)
+    resp = client.delete(f"/api/v2/api-tokens/{token.pk}/")
+    assert resp.status_code == 204
+    # The revoked token no longer authenticates.
+    after = client.post(
+        f"/api/v2/observations/{obs.stable_id}/mark-as-seen/",
+        HTTP_AUTHORIZATION=f"Bearer {raw}",
+    )
+    assert after.status_code == 401
+
+
+def test_api_token_cannot_delete_another_users_token(client, auth_data):
+    User = get_user_model()
+    owner = auth_data["user"]
+    other = User.objects.create_user(username="other2", password="x", email="o2@e.com")
+    token, _ = ApiToken.create_for(owner, "t")
+    client.force_login(other)
+    resp = client.delete(f"/api/v2/api-tokens/{token.pk}/")
+    assert resp.status_code == 404
+    assert ApiToken.objects.filter(pk=token.pk).exists()

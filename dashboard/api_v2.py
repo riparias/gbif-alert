@@ -28,6 +28,9 @@ from dashboard.api_v2_schemas import (
     AlertNameSuggestionOut,
     AlertNotificationFrequencyOut,
     AlertOut,
+    ApiTokenCreateIn,
+    ApiTokenCreatedOut,
+    ApiTokenOut,
     AreaFromDrawingIn,
     AreaOut,
     AreaPatchIn,
@@ -64,6 +67,7 @@ from dashboard.utils import human_readable_git_version_number
 from dashboard.views import jobs as background_jobs
 from dashboard.models import (
     Alert,
+    ApiToken,
     Area,
     BasisOfRecord,
     DataImport,
@@ -1083,4 +1087,44 @@ def account_delete(request: HttpRequest):
     user = request.user
     user.delete()
     logout(request)
+    return 204, None
+
+
+# --- API tokens (personal access tokens) ---
+# Managed from the logged-in SPA, so these are session-only (you cannot mint or
+# revoke tokens using a token).
+
+
+def _api_token_to_out(token: ApiToken) -> dict:
+    return {
+        "id": token.pk,
+        "name": token.name,
+        "prefix": token.prefix,
+        "createdAt": token.created_at,
+        "lastUsedAt": token.last_used_at,
+    }
+
+
+@api_v2.get("/api-tokens/", response=list[ApiTokenOut], auth=django_auth)
+def api_tokens_list(request: HttpRequest):
+    """List the current user's API tokens (never the secret value)."""
+    user = cast(User, request.user)
+    return [_api_token_to_out(t) for t in user.api_tokens.all()]
+
+
+@api_v2.post("/api-tokens/", response={201: ApiTokenCreatedOut}, auth=django_auth)
+def api_token_create(request: HttpRequest, payload: ApiTokenCreateIn):
+    """Create a token and return its raw value once (never retrievable again)."""
+    user = cast(User, request.user)
+    token, raw = ApiToken.create_for(user, name=payload.name)
+    return 201, {**_api_token_to_out(token), "token": raw}
+
+
+@api_v2.delete("/api-tokens/{token_id}/", response={204: None}, auth=django_auth)
+def api_token_delete(request: HttpRequest, token_id: int):
+    """Revoke one of the current user's tokens."""
+    user = cast(User, request.user)
+    deleted, _ = ApiToken.objects.filter(pk=token_id, user=user).delete()
+    if not deleted:
+        raise HttpError(404, "Token not found")
     return 204, None
