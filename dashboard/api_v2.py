@@ -1112,11 +1112,18 @@ def api_tokens_list(request: HttpRequest):
     return [_api_token_to_out(t) for t in user.api_tokens.all()]
 
 
-@api_v2.post("/api-tokens/", response={201: ApiTokenCreatedOut}, auth=django_auth)
+@api_v2.post(
+    "/api-tokens/",
+    response={201: ApiTokenCreatedOut, 422: DetailErrorOut},
+    auth=django_auth,
+)
 def api_token_create(request: HttpRequest, payload: ApiTokenCreateIn):
     """Create a token and return its raw value once (never retrievable again)."""
     user = cast(User, request.user)
-    token, raw = ApiToken.create_for(user, name=payload.name)
+    name = payload.name.strip()
+    if not name:
+        return 422, {"detail": "A token name is required."}
+    token, raw = ApiToken.create_for(user, name=name)
     return 201, {**_api_token_to_out(token), "token": raw}
 
 

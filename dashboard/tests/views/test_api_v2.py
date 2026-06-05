@@ -2496,6 +2496,21 @@ def test_api_token_create_returns_raw_once_then_authenticates(client, auth_data)
     assert me.status_code == 200
 
 
+def test_api_token_create_requires_a_name(client, auth_data):
+    """A token name is mandatory: empty/whitespace/missing -> 422."""
+    client.force_login(auth_data["user"])
+    for bad in ("", "   "):
+        resp = client.post(
+            "/api/v2/api-tokens/",
+            data={"name": bad},
+            content_type="application/json",
+        )
+        assert resp.status_code == 422, bad
+    # A missing name field is also rejected (schema-required).
+    resp = client.post("/api/v2/api-tokens/", data={}, content_type="application/json")
+    assert resp.status_code == 422
+
+
 def test_api_token_list_never_exposes_the_key(client, auth_data):
     user = auth_data["user"]
     ApiToken.create_for(user, "a")

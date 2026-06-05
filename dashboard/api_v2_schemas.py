@@ -347,7 +347,7 @@ class ApiTokenOut(Schema):
 
 
 class ApiTokenCreateIn(Schema):
-    name: str = ""
+    name: str
 
 
 class ApiTokenCreatedOut(ApiTokenOut):

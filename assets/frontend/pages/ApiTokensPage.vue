@@ -164,6 +164,7 @@ function formatDate(iso: string | null): string {
                     icon="pi pi-plus"
                     size="small"
                     :loading="creatingToken"
+                    :disabled="!newTokenName.trim()"
                     @click="createToken"
                 />
             </div>

@@ -1168,10 +1168,7 @@ export interface components {
         };
         /** ApiTokenCreateIn */
         ApiTokenCreateIn: {
-            /**
-             * Name
-             * @default
-             */
+            /** Name */
             name: string;
         };
     };
@@ -2077,6 +2074,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiTokenCreatedOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
         };
