@@ -105,6 +105,7 @@ function formatDate(iso: string | null): string {
         <h1 style="margin-bottom: 0.5rem;">{{ t("message.apiTokensTitle") }}</h1>
         <p style="color: var(--p-text-muted-color); margin-bottom: 1.25rem;">
             {{ t("message.apiTokensIntro") }}
+            <router-link to="/api-docs">{{ t("message.apiTokenSeeDocs") }}</router-link>
         </p>
 
         <ProgressSpinner v-if="loading" />
@@ -125,9 +126,6 @@ function formatDate(iso: string | null): string {
                     <pre class="sample-curl" data-testid="sample-curl">{{ sampleCurl }}</pre>
                     <Button icon="pi pi-copy" :label="t('message.copy')" size="small" @click="copyText(sampleCurl)" />
                 </div>
-                <p>
-                    <router-link to="/api-docs">{{ t("message.apiTokenSeeDocs") }}</router-link>
-                </p>
             </div>
 
             <!-- Existing tokens -->
