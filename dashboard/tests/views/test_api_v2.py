@@ -9,6 +9,7 @@ from django.urls import reverse
 
 from dashboard.models import (
     Alert,
+    ApiToken,
     Area,
     BasisOfRecord,
     DataImport,
@@ -2400,3 +2401,74 @@ def test_area_geojson_response_is_unchanged_after_typing(client, area_endpoints_
     # Guard the specific members a naive schema would have dropped.
     assert "crs" in resp.json()
     assert "id" in resp.json()["features"][0]
+
+
+# ---------------------------------------------------------------------------
+# API token authentication (B1)
+# ---------------------------------------------------------------------------
+
+
+def test_token_write_works_without_csrf(observation_detail_data):
+    """A Bearer-token write succeeds even under strict CSRF (token path skips CSRF)."""
+    from django.test import Client
+
+    user = observation_detail_data["user"]
+    obs = observation_detail_data["obs"]
+    _, raw = ApiToken.create_for(user, "test")
+    csrf_client = Client(enforce_csrf_checks=True)
+    resp = csrf_client.post(
+        f"/api/v2/observations/{obs.stable_id}/mark-as-seen/",
+        HTTP_AUTHORIZATION=f"Bearer {raw}",
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True}
+
+
+def test_session_write_still_requires_csrf(observation_detail_data):
+    """A cookie-auth write with no CSRF token is still rejected (session stays protected)."""
+    from django.test import Client
+
+    user = observation_detail_data["user"]
+    obs = observation_detail_data["obs"]
+    csrf_client = Client(enforce_csrf_checks=True)
+    csrf_client.force_login(user)
+    resp = csrf_client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-seen/")
+    assert resp.status_code == 403
+
+
+def test_invalid_token_returns_401(client, observation_detail_data):
+    """A present-but-invalid bearer token returns 401, not a confusing CSRF 403."""
+    obs = observation_detail_data["obs"]
+    resp = client.post(
+        f"/api/v2/observations/{obs.stable_id}/mark-as-seen/",
+        HTTP_AUTHORIZATION="Bearer not-a-real-token",
+    )
+    assert resp.status_code == 401
+
+
+def test_token_acts_as_its_owner(client, alert_data):
+    """A token authenticates as its owning user (acts-as-user, not scoped)."""
+    user = alert_data["user"]
+    sp1 = alert_data["sp1"]
+    _, raw = ApiToken.create_for(user, "t")
+    resp = client.post(
+        "/api/v2/alerts/",
+        data={"name": "Via token", "speciesIds": [sp1.pk]},
+        content_type="application/json",
+        HTTP_AUTHORIZATION=f"Bearer {raw}",
+    )
+    assert resp.status_code == 201
+    assert Alert.objects.get(name="Via token").user == user
+
+
+def test_token_last_used_at_is_updated(client, observation_detail_data):
+    obs = observation_detail_data["obs"]
+    user = observation_detail_data["user"]
+    token, raw = ApiToken.create_for(user, "t")
+    assert token.last_used_at is None
+    client.post(
+        f"/api/v2/observations/{obs.stable_id}/mark-as-seen/",
+        HTTP_AUTHORIZATION=f"Bearer {raw}",
+    )
+    token.refresh_from_db()
+    assert token.last_used_at is not None
