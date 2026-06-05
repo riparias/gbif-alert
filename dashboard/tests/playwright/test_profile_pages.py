@@ -25,6 +25,8 @@ def test_api_docs_page_renders(page: Page, live_server):
     page.wait_for_load_state("networkidle")
     expect(page.get_by_role("heading", name="API", exact=False)).to_be_visible()
     expect(page.get_by_text("Open the API v2 docs", exact=False)).to_be_visible()
+    # v2 is announced as the stable, supported public API.
+    expect(page.get_by_text("API v2 (stable)", exact=False)).to_be_visible()
     # The v2 docs and WFS links are present.
     assert page.locator('a[href="/api/v2/docs"]').count() == 1
     assert page.locator('a[href="/api/wfs/observations"]').count() == 1
