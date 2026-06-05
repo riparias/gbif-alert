@@ -187,6 +187,13 @@ function formatDate(iso: string | null): string {
     margin-top: 0.25rem;
 }
 
+/* Let the text field grow to fill the row (the page-level w-full utility is not
+   available here, so the input would otherwise stay at its default width). */
+.copy-row :deep(.p-inputtext) {
+    flex: 1;
+    min-width: 0;
+}
+
 .usage-hint {
     margin: 0.75rem 0 0.25rem;
     font-size: 0.875rem;
