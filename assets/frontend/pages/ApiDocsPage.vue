@@ -41,6 +41,9 @@ onMounted(async () => {
                 <p class="auth-note">
                     <strong>{{ t("message.apiAuthTitle") }}:</strong> {{ t("message.apiAuthDesc") }}
                 </p>
+                <p class="auth-note">
+                    <strong>{{ t("message.apiRateLimitTitle") }}:</strong> {{ t("message.apiRateLimitDesc") }}
+                </p>
             </template>
         </Card>
 
