@@ -21,6 +21,7 @@ from ninja import File, Form, NinjaAPI, Query
 from ninja.files import UploadedFile
 from ninja.errors import HttpError
 from ninja.security import django_auth
+from ninja.throttling import AnonRateThrottle, AuthRateThrottle
 from pydantic import Field
 
 from dashboard.api_v2_schemas import (
@@ -81,20 +82,24 @@ from dashboard.models import (
 from markdownx.utils import markdownify  # type: ignore
 from page_fragments.models import PageFragment
 
-# Internal API v2 - powered by Django Ninja.
-# This replaces the old internal-api/ endpoints incrementally (Phase 2+).
-# The public api/ endpoints are left unchanged.
+# Rate limits for the public API: anonymous per IP, authenticated (session or
+# token) per user. Module-level so tests can adjust them. Rates come from
+# settings (env-overridable). api_v2_spa is internal and stays unthrottled.
+api_v2_anon_throttle = AnonRateThrottle(settings.API_V2_THROTTLE_ANON)
+api_v2_auth_throttle = AuthRateThrottle(settings.API_V2_THROTTLE_AUTH)
+
+# Public API v2 - powered by Django Ninja. The supported HTTP API for
+# programmatic access; it also powers the web app. (The /api/v2/spa/ instance
+# defined below is internal-only and not part of the public contract.)
 api_v2 = NinjaAPI(
     urls_namespace="api-v2",
     title="GBIF Alert API",
+    throttle=[api_v2_anon_throttle, api_v2_auth_throttle],
     version=human_readable_git_version_number(),
     description=(
-        "HTTP API powering the GBIF Alert single-page application. We are "
-        "considering exposing this as a stable public API for external "
-        "integrations; until that decision is made, endpoints, payloads, "
-        "and error shapes may change between releases. For currently-stable "
-        "external access, see the JSON endpoints under `/api/` and the OGC "
-        "WFS service at `/api/wfs/observations/`.\n\n"
+        "HTTP API for programmatic access to GBIF Alert data. It also powers the "
+        "GBIF Alert web app. An OGC WFS service is available at "
+        "`/api/wfs/observations/`.\n\n"
         "Source: https://github.com/riparias/gbif-alert"
     ),
     openapi_extra={

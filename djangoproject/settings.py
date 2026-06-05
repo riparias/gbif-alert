@@ -340,6 +340,12 @@ STORAGES = {
     },
 }
 
+# Public API v2 rate limits (django-ninja throttling). Anonymous requests are
+# limited per IP, authenticated (session or token) per user. Override per
+# deployment via the environment. Map tiles under /internal-api/ are separate.
+API_V2_THROTTLE_ANON = os.environ.get("API_V2_THROTTLE_ANON", "60/min")
+API_V2_THROTTLE_AUTH = os.environ.get("API_V2_THROTTLE_AUTH", "600/min")
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
