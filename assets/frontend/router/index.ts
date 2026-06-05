@@ -22,5 +22,6 @@ export const routes: RouteRecordRaw[] = [
     { path: "/api-docs", component: () => import("../pages/ApiDocsPage.vue") },
     { path: "/whats-new", component: () => import("../pages/NewsPage.vue") },
     { path: "/profile", component: () => import("../pages/UserProfilePage.vue") },
+    { path: "/api-tokens", component: () => import("../pages/ApiTokensPage.vue") },
     { path: "/:pathMatch(.*)*", component: NotFoundPage },
 ];

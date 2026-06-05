@@ -9,6 +9,7 @@ from django.urls import reverse
 
 from dashboard.models import (
     Alert,
+    ApiToken,
     Area,
     BasisOfRecord,
     DataImport,
@@ -2400,3 +2401,153 @@ def test_area_geojson_response_is_unchanged_after_typing(client, area_endpoints_
     # Guard the specific members a naive schema would have dropped.
     assert "crs" in resp.json()
     assert "id" in resp.json()["features"][0]
+
+
+# ---------------------------------------------------------------------------
+# API token authentication (B1)
+# ---------------------------------------------------------------------------
+
+
+def test_token_write_works_without_csrf(observation_detail_data):
+    """A Bearer-token write succeeds even under strict CSRF (token path skips CSRF)."""
+    from django.test import Client
+
+    user = observation_detail_data["user"]
+    obs = observation_detail_data["obs"]
+    _, raw = ApiToken.create_for(user, "test")
+    csrf_client = Client(enforce_csrf_checks=True)
+    resp = csrf_client.post(
+        f"/api/v2/observations/{obs.stable_id}/mark-as-seen/",
+        HTTP_AUTHORIZATION=f"Bearer {raw}",
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True}
+
+
+def test_session_write_still_requires_csrf(observation_detail_data):
+    """A cookie-auth write with no CSRF token is still rejected (session stays protected)."""
+    from django.test import Client
+
+    user = observation_detail_data["user"]
+    obs = observation_detail_data["obs"]
+    csrf_client = Client(enforce_csrf_checks=True)
+    csrf_client.force_login(user)
+    resp = csrf_client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-seen/")
+    assert resp.status_code == 403
+
+
+def test_invalid_token_returns_401(client, observation_detail_data):
+    """A present-but-invalid bearer token returns 401, not a confusing CSRF 403."""
+    obs = observation_detail_data["obs"]
+    resp = client.post(
+        f"/api/v2/observations/{obs.stable_id}/mark-as-seen/",
+        HTTP_AUTHORIZATION="Bearer not-a-real-token",
+    )
+    assert resp.status_code == 401
+
+
+def test_token_acts_as_its_owner(client, alert_data):
+    """A token authenticates as its owning user (acts-as-user, not scoped)."""
+    user = alert_data["user"]
+    sp1 = alert_data["sp1"]
+    _, raw = ApiToken.create_for(user, "t")
+    resp = client.post(
+        "/api/v2/alerts/",
+        data={"name": "Via token", "speciesIds": [sp1.pk]},
+        content_type="application/json",
+        HTTP_AUTHORIZATION=f"Bearer {raw}",
+    )
+    assert resp.status_code == 201
+    assert Alert.objects.get(name="Via token").user == user
+
+
+def test_token_last_used_at_is_updated(client, observation_detail_data):
+    obs = observation_detail_data["obs"]
+    user = observation_detail_data["user"]
+    token, raw = ApiToken.create_for(user, "t")
+    assert token.last_used_at is None
+    client.post(
+        f"/api/v2/observations/{obs.stable_id}/mark-as-seen/",
+        HTTP_AUTHORIZATION=f"Bearer {raw}",
+    )
+    token.refresh_from_db()
+    assert token.last_used_at is not None
+
+
+# --- token management endpoints ---
+
+
+def test_api_token_create_returns_raw_once_then_authenticates(client, auth_data):
+    user = auth_data["user"]
+    client.force_login(user)
+    resp = client.post(
+        "/api/v2/api-tokens/",
+        data={"name": "my laptop"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["name"] == "my laptop"
+    assert "token" in body and body["token"]  # raw token returned once
+    assert body["prefix"] and body["token"].startswith(body["prefix"])
+    # The returned raw token actually authenticates.
+    raw = body["token"]
+    me = client.get("/api/v2/profile/", HTTP_AUTHORIZATION=f"Bearer {raw}")
+    assert me.status_code == 200
+
+
+def test_api_token_create_requires_a_name(client, auth_data):
+    """A token name is mandatory: empty/whitespace/missing -> 422."""
+    client.force_login(auth_data["user"])
+    for bad in ("", "   "):
+        resp = client.post(
+            "/api/v2/api-tokens/",
+            data={"name": bad},
+            content_type="application/json",
+        )
+        assert resp.status_code == 422, bad
+    # A missing name field is also rejected (schema-required).
+    resp = client.post("/api/v2/api-tokens/", data={}, content_type="application/json")
+    assert resp.status_code == 422
+
+
+def test_api_token_list_never_exposes_the_key(client, auth_data):
+    user = auth_data["user"]
+    ApiToken.create_for(user, "a")
+    client.force_login(user)
+    resp = client.get("/api/v2/api-tokens/")
+    assert resp.status_code == 200
+    rows = resp.json()
+    assert len(rows) == 1
+    assert "token" not in rows[0]
+    assert set(rows[0]) == {"id", "name", "prefix", "createdAt", "lastUsedAt"}
+
+
+def test_api_token_list_requires_auth(client):
+    assert client.get("/api/v2/api-tokens/").status_code == 401
+
+
+def test_api_token_delete_revokes(client, observation_detail_data):
+    user = observation_detail_data["user"]
+    obs = observation_detail_data["obs"]
+    token, raw = ApiToken.create_for(user, "t")
+    client.force_login(user)
+    resp = client.delete(f"/api/v2/api-tokens/{token.pk}/")
+    assert resp.status_code == 204
+    # The revoked token no longer authenticates.
+    after = client.post(
+        f"/api/v2/observations/{obs.stable_id}/mark-as-seen/",
+        HTTP_AUTHORIZATION=f"Bearer {raw}",
+    )
+    assert after.status_code == 401
+
+
+def test_api_token_cannot_delete_another_users_token(client, auth_data):
+    User = get_user_model()
+    owner = auth_data["user"]
+    other = User.objects.create_user(username="other2", password="x", email="o2@e.com")
+    token, _ = ApiToken.create_for(owner, "t")
+    client.force_login(other)
+    resp = client.delete(f"/api/v2/api-tokens/{token.pk}/")
+    assert resp.status_code == 404
+    assert ApiToken.objects.filter(pk=token.pk).exists()

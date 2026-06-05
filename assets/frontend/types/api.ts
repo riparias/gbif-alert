@@ -538,6 +538,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/api-tokens/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Tokens List
+         * @description List the current user's API tokens (never the secret value).
+         */
+        get: operations["dashboard_api_v2_api_tokens_list"];
+        put?: never;
+        /**
+         * Api Token Create
+         * @description Create a token and return its raw value once (never retrievable again).
+         */
+        post: operations["dashboard_api_v2_api_token_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/api-tokens/{token_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Api Token Delete
+         * @description Revoke one of the current user's tokens.
+         */
+        delete: operations["dashboard_api_v2_api_token_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1081,6 +1125,51 @@ export interface components {
             delayValue: number;
             /** Delayunit */
             delayUnit: string;
+        };
+        /**
+         * ApiTokenOut
+         * @description A personal access token, without its secret value.
+         */
+        ApiTokenOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Prefix */
+            prefix: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Lastusedat */
+            lastUsedAt: string | null;
+        };
+        /**
+         * ApiTokenCreatedOut
+         * @description Returned once on creation - carries the raw token, shown only this time.
+         */
+        ApiTokenCreatedOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Prefix */
+            prefix: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Lastusedat */
+            lastUsedAt: string | null;
+            /** Token */
+            token: string;
+        };
+        /** ApiTokenCreateIn */
+        ApiTokenCreateIn: {
+            /** Name */
+            name: string;
         };
     };
     responses: never;
@@ -1932,6 +2021,79 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    dashboard_api_v2_api_tokens_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiTokenOut"][];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_api_token_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiTokenCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiTokenCreatedOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_api_token_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token_id: number;
+            };
             cookie?: never;
         };
         requestBody?: never;

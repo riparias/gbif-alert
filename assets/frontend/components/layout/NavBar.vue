@@ -125,6 +125,11 @@ const userMenuItems = computed((): NavItem[] => {
             url: config.urls.profile,
         },
         {
+            label: t("message.navApiTokens"),
+            icon: "pi pi-key",
+            url: "/api-tokens",
+        },
+        {
             label: t("message.navChangePassword"),
             icon: "pi pi-cog",
             url: config.urls.passwordChange,

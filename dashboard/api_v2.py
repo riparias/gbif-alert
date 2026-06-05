@@ -28,6 +28,9 @@ from dashboard.api_v2_schemas import (
     AlertNameSuggestionOut,
     AlertNotificationFrequencyOut,
     AlertOut,
+    ApiTokenCreateIn,
+    ApiTokenCreatedOut,
+    ApiTokenOut,
     AreaFromDrawingIn,
     AreaOut,
     AreaPatchIn,
@@ -57,12 +60,14 @@ from dashboard.api_v2_schemas import (
     SpeciesPerPolygonOut,
     ValidationErrorOut,
 )
+from dashboard.api_v2_auth import ApiTokenAuth
 from dashboard.forms import SignUpForm, _days_to_value_unit, _value_unit_to_days
 from dashboard.geo_utils import file_to_wkt_multipolygon, geojson_to_multipolygon
 from dashboard.utils import human_readable_git_version_number
 from dashboard.views import jobs as background_jobs
 from dashboard.models import (
     Alert,
+    ApiToken,
     Area,
     BasisOfRecord,
     DataImport,
@@ -236,7 +241,7 @@ def area_geojson(request: HttpRequest, area_id: int):
 @api_v2.post(
     "/areas/",
     response={201: AreaOut, 422: DetailErrorOut},
-    auth=django_auth,
+    auth=[ApiTokenAuth(), django_auth],
 )
 def area_create(
     request: HttpRequest,
@@ -271,7 +276,7 @@ def area_create(
 @api_v2.post(
     "/areas/from-drawing/",
     response={201: AreaOut, 422: DetailErrorOut},
-    auth=django_auth,
+    auth=[ApiTokenAuth(), django_auth],
 )
 def area_create_from_drawing(request: HttpRequest, payload: AreaFromDrawingIn):
     """Create a new user-specific area from a GeoJSON FeatureCollection.
@@ -298,7 +303,7 @@ def area_create_from_drawing(request: HttpRequest, payload: AreaFromDrawingIn):
 @api_v2.patch(
     "/areas/{area_id}/",
     response={200: AreaOut, 422: DetailErrorOut},
-    auth=django_auth,
+    auth=[ApiTokenAuth(), django_auth],
 )
 def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
     """Update the name and/or geometry of a user-owned area.
@@ -326,7 +331,7 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
 @api_v2.delete(
     "/areas/{area_id}/",
     response={204: None, 409: DetailErrorOut},
-    auth=django_auth,
+    auth=[ApiTokenAuth(), django_auth],
 )
 def area_delete(request: HttpRequest, area_id: int):
     """Delete a user-owned area.
@@ -585,7 +590,7 @@ def observations_counter(request: HttpRequest, filters: Query[FiltersQuery]):
 @api_v2.post(
     "/observations/mark-as-seen/",
     response={200: QueuedOut},
-    auth=django_auth,
+    auth=[ApiTokenAuth(), django_auth],
 )
 def observations_mark_all_as_seen(request: HttpRequest, filters: FiltersQuery):
     """Bulk-mark all observations matching the given filters as seen by the
@@ -688,7 +693,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
 @api_v2.post(
     "/observations/{stable_id}/comments/",
     response={200: CommentOut, 422: DetailErrorOut},
-    auth=django_auth,
+    auth=[ApiTokenAuth(), django_auth],
 )
 def observation_add_comment(request: HttpRequest, stable_id: str, payload: CommentIn):
     user = cast(User, request.user)
@@ -735,7 +740,7 @@ def page_fragment(request: HttpRequest, identifier: str):
 @api_v2.post(
     "/observations/{stable_id}/mark-as-seen/",
     response={200: OkOut},
-    auth=django_auth,
+    auth=[ApiTokenAuth(), django_auth],
 )
 def observation_mark_as_seen(request: HttpRequest, stable_id: str):
     """Mark a single observation as seen by the requesting user.
@@ -755,7 +760,7 @@ def observation_mark_as_seen(request: HttpRequest, stable_id: str):
 @api_v2.post(
     "/observations/{stable_id}/mark-as-unseen/",
     response={200: OkOut, 403: DetailErrorOut},
-    auth=django_auth,
+    auth=[ApiTokenAuth(), django_auth],
 )
 def observation_mark_as_unseen(request: HttpRequest, stable_id: str):
     try:
@@ -862,7 +867,7 @@ def alert_notification_frequencies(request: HttpRequest):
     return [{"id": k, "label": str(v)} for k, v in Alert.EMAIL_NOTIFICATION_CHOICES]
 
 
-@api_v2.get("/alerts/", response=list[AlertOut], auth=django_auth)
+@api_v2.get("/alerts/", response=list[AlertOut], auth=[ApiTokenAuth(), django_auth])
 def alerts_list(request: HttpRequest):
     """Return all alerts belonging to the authenticated user."""
     user = cast(User, request.user)
@@ -875,7 +880,7 @@ def alerts_list(request: HttpRequest):
 
 
 @api_v2.post(
-    "/alerts/", response={201: AlertOut, 422: ValidationErrorOut}, auth=django_auth
+    "/alerts/", response={201: AlertOut, 422: ValidationErrorOut}, auth=[ApiTokenAuth(), django_auth]
 )
 def alert_create(request: HttpRequest, payload: AlertIn):
     """Create a new alert for the authenticated user."""
@@ -886,7 +891,7 @@ def alert_create(request: HttpRequest, payload: AlertIn):
     return 201, _alert_to_out(alert)
 
 
-@api_v2.get("/alerts/{alert_id}/", response=AlertOut, auth=django_auth)
+@api_v2.get("/alerts/{alert_id}/", response=AlertOut, auth=[ApiTokenAuth(), django_auth])
 def alert_detail(request: HttpRequest, alert_id: int):
     """Return one alert. 404 if it does not belong to the current user."""
     alert = get_object_or_404(
@@ -902,7 +907,7 @@ def alert_detail(request: HttpRequest, alert_id: int):
 @api_v2.put(
     "/alerts/{alert_id}/",
     response={200: AlertOut, 422: ValidationErrorOut},
-    auth=django_auth,
+    auth=[ApiTokenAuth(), django_auth],
 )
 def alert_update(request: HttpRequest, alert_id: int, payload: AlertIn):
     """Update an existing alert. 404 if it does not belong to the current user."""
@@ -919,7 +924,7 @@ def alert_update(request: HttpRequest, alert_id: int, payload: AlertIn):
     return 200, _alert_to_out(alert)
 
 
-@api_v2.delete("/alerts/{alert_id}/", response={204: None}, auth=django_auth)
+@api_v2.delete("/alerts/{alert_id}/", response={204: None}, auth=[ApiTokenAuth(), django_auth])
 def alert_delete(request: HttpRequest, alert_id: int):
     """Delete an alert. 404 if it does not belong to the current user."""
     alert = get_object_or_404(Alert, id=alert_id, user=request.user)
@@ -979,7 +984,7 @@ def auth_signup(request: HttpRequest, payload: SignUpIn):
 @api_v2.post(
     "/auth/password-change/",
     response={204: None, 422: ValidationErrorOut},
-    auth=django_auth,
+    auth=[ApiTokenAuth(), django_auth],
 )
 def auth_password_change(request: HttpRequest, payload: PasswordChangeIn):
     """Change password. Returns 204 on success, 422 with field errors on failure."""
@@ -1015,7 +1020,7 @@ def news_mark_visited(request: HttpRequest):
 @api_v2.get(
     "/profile/",
     response=ProfileOut,
-    auth=django_auth,
+    auth=[ApiTokenAuth(), django_auth],
 )
 def profile_get(request: HttpRequest):
     """Return the current user's editable profile fields."""
@@ -1035,7 +1040,7 @@ def profile_get(request: HttpRequest):
 @api_v2.put(
     "/profile/",
     response={200: ProfileOut, 422: ValidationErrorOut},
-    auth=django_auth,
+    auth=[ApiTokenAuth(), django_auth],
 )
 def profile_put(request: HttpRequest, payload: ProfileIn):
     """Save profile changes. Returns 422 with field errors on duplicate email."""
@@ -1075,11 +1080,58 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
 @api_v2.delete(
     "/account/",
     response={204: None},
-    auth=django_auth,
+    auth=[ApiTokenAuth(), django_auth],
 )
 def account_delete(request: HttpRequest):
     """Delete the current user account and log out."""
     user = request.user
     user.delete()
     logout(request)
+    return 204, None
+
+
+# --- API tokens (personal access tokens) ---
+# Managed from the logged-in SPA, so these are session-only (you cannot mint or
+# revoke tokens using a token).
+
+
+def _api_token_to_out(token: ApiToken) -> dict:
+    return {
+        "id": token.pk,
+        "name": token.name,
+        "prefix": token.prefix,
+        "createdAt": token.created_at,
+        "lastUsedAt": token.last_used_at,
+    }
+
+
+@api_v2.get("/api-tokens/", response=list[ApiTokenOut], auth=django_auth)
+def api_tokens_list(request: HttpRequest):
+    """List the current user's API tokens (never the secret value)."""
+    user = cast(User, request.user)
+    return [_api_token_to_out(t) for t in user.api_tokens.all()]
+
+
+@api_v2.post(
+    "/api-tokens/",
+    response={201: ApiTokenCreatedOut, 422: DetailErrorOut},
+    auth=django_auth,
+)
+def api_token_create(request: HttpRequest, payload: ApiTokenCreateIn):
+    """Create a token and return its raw value once (never retrievable again)."""
+    user = cast(User, request.user)
+    name = payload.name.strip()
+    if not name:
+        return 422, {"detail": "A token name is required."}
+    token, raw = ApiToken.create_for(user, name=name)
+    return 201, {**_api_token_to_out(token), "token": raw}
+
+
+@api_v2.delete("/api-tokens/{token_id}/", response={204: None}, auth=django_auth)
+def api_token_delete(request: HttpRequest, token_id: int):
+    """Revoke one of the current user's tokens."""
+    user = cast(User, request.user)
+    deleted, _ = ApiToken.objects.filter(pk=token_id, user=user).delete()
+    if not deleted:
+        raise HttpError(404, "Token not found")
     return 204, None
