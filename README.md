@@ -29,3 +29,11 @@ See [INSTALL.md](INSTALL.md) for more information.
 - LIFE RIPARIAS Early Alert: [production](https://alert.riparias.be) / [development](https://dev-alert.riparias.be) (Targets riparian invasive species in Belgium)
 - [GBIF Alert demo instance](https://gbif-alert-demo.thebinaryforest.net/) (Always in sync with the `devel` branch of this repository)
 - The Belgian Biodiversity Platform uses GBIF alert under the hood as an API for the ManaIAS project. 
+
+## API
+
+GBIF Alert exposes a stable, supported public HTTP API (API v2) for programmatic access to its data.
+
+Each instance documents its own API: visit `/api-docs` on any instance for an overview, with the interactive reference at `/api/v2/docs` and an OGC WFS service at `/api/wfs/observations/`. For example, on the LIFE RIPARIAS instance: https://alert.riparias.be/api-docs
+
+The older `/api/*` JSON endpoints are deprecated in favour of API v2 and will be removed on 30 June 2027.

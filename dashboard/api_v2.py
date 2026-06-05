@@ -97,9 +97,9 @@ api_v2 = NinjaAPI(
     throttle=[api_v2_anon_throttle, api_v2_auth_throttle],
     version=human_readable_git_version_number(),
     description=(
-        "HTTP API for programmatic access to GBIF Alert data. It also powers the "
-        "GBIF Alert web app. An OGC WFS service is available at "
-        "`/api/wfs/observations/`.\n\n"
+        "GBIF Alert's stable, supported public HTTP API for programmatic access "
+        "to its data. It also powers the GBIF Alert web app. An OGC WFS service "
+        "is available at `/api/wfs/observations/`.\n\n"
         "Source: https://github.com/riparias/gbif-alert"
     ),
     openapi_extra={
