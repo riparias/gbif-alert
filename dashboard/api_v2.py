@@ -21,6 +21,7 @@ from ninja import File, Form, NinjaAPI, Query
 from ninja.files import UploadedFile
 from ninja.errors import HttpError
 from ninja.security import django_auth
+from ninja.throttling import AnonRateThrottle, AuthRateThrottle
 from pydantic import Field
 
 from dashboard.api_v2_schemas import (
@@ -81,12 +82,19 @@ from dashboard.models import (
 from markdownx.utils import markdownify  # type: ignore
 from page_fragments.models import PageFragment
 
+# Rate limits for the public API: anonymous per IP, authenticated (session or
+# token) per user. Module-level so tests can adjust them. Rates come from
+# settings (env-overridable). api_v2_spa is internal and stays unthrottled.
+api_v2_anon_throttle = AnonRateThrottle(settings.API_V2_THROTTLE_ANON)
+api_v2_auth_throttle = AuthRateThrottle(settings.API_V2_THROTTLE_AUTH)
+
 # Internal API v2 - powered by Django Ninja.
 # This replaces the old internal-api/ endpoints incrementally (Phase 2+).
 # The public api/ endpoints are left unchanged.
 api_v2 = NinjaAPI(
     urls_namespace="api-v2",
     title="GBIF Alert API",
+    throttle=[api_v2_anon_throttle, api_v2_auth_throttle],
     version=human_readable_git_version_number(),
     description=(
         "HTTP API powering the GBIF Alert single-page application. We are "
