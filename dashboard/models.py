@@ -677,12 +677,6 @@ class Observation(models.Model):
     class OtherIdenticalObservationIsNewer(Exception):
         pass
 
-    def get_admin_url(self) -> str:
-        return reverse(
-            "admin:%s_%s_change" % (self._meta.app_label, self._meta.model_name),
-            args=(self.id,),
-        )
-
     def mark_as_seen_by(self, user: WebsiteUser) -> None:
         """
         Mark the observation as "seen" by a given user.

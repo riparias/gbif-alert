@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Card from "primevue/card";
 import Button from "primevue/button";
@@ -34,6 +34,23 @@ const commentError = ref<string | null>(null);
 const markingUnseen = ref(false);
 
 const isAuthenticated: boolean = getNavConfig().user.isAuthenticated;
+
+// The public API no longer exposes a Django admin URL; superusers rebuild it
+// here from the observation id (the API used to leak this staff-only link).
+const adminUrl = computed(() => {
+    const nc = getNavConfig();
+    return nc.user.isSuperuser && obs.value
+        ? `${nc.urls.admin}dashboard/observation/${obs.value.id}/change/`
+        : null;
+});
+
+// initialDataImport is now a structured object; reproduce the old
+// "Data import #N (date)" label for display.
+const initialDataImportLabel = computed(() => {
+    if (!obs.value) return "";
+    const di = obs.value.initialDataImport;
+    return `${di.name} (${new Date(di.startTimestamp).toLocaleDateString(locale.value)})`;
+});
 
 async function load() {
     notFound.value = false;
@@ -141,8 +158,8 @@ onMounted(load);
                 </div>
                 <div class="detail-header-actions">
                     <a
-                        v-if="obs.adminUrl"
-                        :href="obs.adminUrl"
+                        v-if="adminUrl"
+                        :href="adminUrl"
                         class="p-button p-button-danger p-button-sm"
                     >
                         {{ t("message.showInAdmin") }}
@@ -227,7 +244,7 @@ onMounted(load);
                             </template>
 
                             <dt>{{ t("message.firstImportedDuring") }}</dt>
-                            <dd>{{ obs.initialDataImport }}</dd>
+                            <dd>{{ initialDataImportLabel }}</dd>
                         </dl>
 
                     </template>
