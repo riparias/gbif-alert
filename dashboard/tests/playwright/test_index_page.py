@@ -335,7 +335,7 @@ def test_filter_state_preserved_when_drawer_closed(page: Page, live_server):
 def test_authenticated_user_sees_unseen_by_default(page: Page, live_server):
     """An authenticated user with unseen observations sees only those by default.
 
-    The Pinia filters store initialises status='unseen'. If the user has unseen
+    The Pinia filters store initialises status='notViewed'. If the user has unseen
     observations the smart-default code does not override it, so only the unseen
     subset is shown.
     """
@@ -362,7 +362,7 @@ def test_authenticated_user_sees_unseen_by_default(page: Page, live_server):
 @pytest.mark.django_db(transaction=True)
 def test_smart_status_default_falls_back_to_all(page: Page, live_server):
     """When an authenticated user has no unseen observations the status filter
-    falls back silently from 'unseen' to 'all', showing all observations.
+    falls back silently from 'notViewed' to 'all', showing all observations.
 
     The smart-default logic in IndexPage.vue detects 0 results with the initial
     'unseen' filter and re-fetches with status=null (all) so the user is never
@@ -389,7 +389,7 @@ def test_anonymous_user_sees_no_unseen_filter_badge(page: Page, live_server):
     """An anonymous user visiting the index page must not see an 'Unseen' active
     filter badge.
 
-    Before the fix, the Pinia store initialised status='unseen' unconditionally,
+    Before the fix, the Pinia store initialised status='notViewed' unconditionally,
     so the ActiveFilterChips component would show an 'Unseen' badge for every
     visitor regardless of whether they were logged in - which makes no sense for
     anonymous users who have no seen/unseen tracking at all.
@@ -407,9 +407,9 @@ def test_anonymous_user_sees_no_unseen_filter_badge(page: Page, live_server):
 
 @pytest.mark.django_db(transaction=True)
 def test_anonymous_user_sees_all_observations_by_default(page: Page, live_server):
-    """An anonymous user on the index page sees all observations, not just 'unseen'.
+    """An anonymous user on the index page sees all observations, not just 'notViewed'.
 
-    The default status filter for anonymous users must be null (all), not 'unseen'.
+    The default status filter for anonymous users must be null (all), not 'notViewed'.
     """
     basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
     sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)

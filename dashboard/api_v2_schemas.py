@@ -65,7 +65,7 @@ class FiltersQuery(Schema):
     startDate: datetime.date | None = None
     endDate: datetime.date | None = None
     areaIds: list[int] = Field(default_factory=list)
-    status: str | None = None
+    status: str | None = None  # API values: "viewed" / "notViewed" (mapped to internal seen/unseen)
     initialDataImportIds: list[int] = Field(default_factory=list)
     verifiedFilter: str = "all"
     areaFilterMode: str = "inside"
@@ -94,7 +94,7 @@ class ObservationOut(Schema):
     verified: bool
     identificationVerificationStatus: str  # empty string when not provided by GBIF
     basisOfRecordId: int
-    seenByCurrentUser: bool | None = None
+    viewedByCurrentUser: bool | None = None
 
 
 class ObservationsPageOut(Schema):
@@ -165,11 +165,11 @@ class ObservationDetailOut(Schema):
     basisOfRecordId: int
     coordinateUncertaintyInMeters: float | None
     initialDataImport: InitialDataImportOut
-    seenByCurrentUser: bool | None
-    canBeMarkedUnseen: bool = Field(
+    viewedByCurrentUser: bool | None
+    canBeMarkedNotViewed: bool = Field(
         description=(
             "Per-user capability flag: true when this observation matches one of "
-            "the caller's alerts and can therefore be marked unseen. False for "
+            "the caller's alerts and can therefore be marked not viewed. False for "
             "anonymous callers and observations outside the caller's alerts."
         )
     )
@@ -211,7 +211,7 @@ class AlertOut(Schema):
     verifiedFilter: str
     areaFilterMode: str
     approachingDistanceKm: float | None
-    unseenCount: int
+    notViewedCount: int
     speciesDetails: list[AlertSpeciesOut]
     lastEmailSentAt: datetime.datetime | None
 

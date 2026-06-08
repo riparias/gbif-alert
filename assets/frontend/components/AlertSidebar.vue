@@ -43,7 +43,7 @@ function confirmMarkAllAsViewed() {
         acceptLabel: t("message.yesImSure"),
         rejectLabel: t("message.cancel"),
         accept: async () => {
-            const resp = await fetch("/api/v2/observations/mark-as-seen/", {
+            const resp = await fetch("/api/v2/observations/mark-as-viewed/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -175,7 +175,7 @@ const formattedDatasetsCount = computed(() =>
                 <label>{{ t("message.observationStatus") }}</label>
                 <ObservationStatusToggle />
                 <Button
-                    v-if="alert.unseenCount > 0 && filtersStore.status !== 'seen'"
+                    v-if="alert.notViewedCount > 0 && filtersStore.status !== 'viewed'"
                     :label="t('message.markAllAsViewed')"
                     icon="pi pi-check"
                     size="small"

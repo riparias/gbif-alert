@@ -380,7 +380,7 @@ def test_alert_detail_mark_all_button_hidden_when_no_unseen(page: Page, live_ser
     user = User.objects.create_user(username="u13", password="pass", email="u13@t.com")
     sp = _make_species("Procambarus fallax", 8879526)
     alert = _make_alert(user, "Alert without unseen", sp)
-    # No matching unseen observation created -> unseenCount == 0.
+    # No matching unseen observation created -> notViewedCount == 0.
 
     login(page, live_server.url, "u13", "pass")
     page.goto(live_server.url + f"/alert/{alert.pk}")
@@ -392,7 +392,7 @@ def test_alert_detail_mark_all_button_hidden_when_no_unseen(page: Page, live_ser
 @pytest.mark.django_db(transaction=True)
 def test_alert_detail_drawer_refreshes_list_and_sidebar(page: Page, live_server):
     """Opening then closing the drawer drops the now-seen observation from the
-    status=unseen view and hides the bulk button (unseenCount becomes 0)."""
+    status=notViewed view and hides the bulk button (notViewedCount becomes 0)."""
     User = get_user_model()
     user = User.objects.create_user(username="u14", password="pass", email="u14@t.com")
     sp = _make_species("Procambarus fallax", 8879526)
@@ -430,7 +430,7 @@ def test_alert_detail_drawer_refreshes_list_and_sidebar(page: Page, live_server)
     page.get_by_role("cell", name=re.compile("Procambarus fallax", re.I)).first.click()
     # Wait for the drawer to actually open and its detail content to render before
     # closing. networkidle alone is unreliable here: the page is already idle from
-    # load, so it resolves before the drawer fires its detail GET + mark-as-seen
+    # load, so it resolves before the drawer fires its detail GET + mark-as-viewed
     # POST, and an immediate Escape would race (and cancel) those requests.
     drawer = page.locator('[data-pc-name="drawer"]')
     expect(drawer).to_be_visible()
@@ -441,6 +441,6 @@ def test_alert_detail_drawer_refreshes_list_and_sidebar(page: Page, live_server)
     page.keyboard.press("Escape")
     page.wait_for_load_state("networkidle")
 
-    # The (now-seen) observation no longer matches the status=unseen filter:
-    # the row is gone and the bulk button disappears (unseenCount == 0).
+    # The (now-seen) observation no longer matches the status=notViewed filter:
+    # the row is gone and the bulk button disappears (notViewedCount == 0).
     expect(page.get_by_role("button", name="Mark all as viewed")).to_have_count(0)

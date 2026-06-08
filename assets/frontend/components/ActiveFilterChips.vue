@@ -119,7 +119,7 @@ const chips = computed<Chip[]>(() => {
 
     // Observation status
     if (filtersStore.status !== null) {
-        const label = filtersStore.status === "unseen" ? t("message.unseen") : t("message.seen");
+        const label = filtersStore.status === "notViewed" ? t("message.unseen") : t("message.seen");
         result.push({
             kind: "text",
             key: "status",

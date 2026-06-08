@@ -55,14 +55,14 @@ onMounted(async () => {
             approachingDistanceKm: alert.value.approachingDistanceKm,
             startDate: null,
             endDate: null,
-            status: "unseen",
+            status: "notViewed",
         });
     } finally {
         alertLoading.value = false;
     }
 });
 
-// Re-fetch the alert (for unseenCount, which gates the sidebar bulk action)
+// Re-fetch the alert (for notViewedCount, which gates the sidebar bulk action)
 // whenever a consumer reports an observation status change.
 watch(() => resultsStore.statusEpoch, fetchAlert);
 

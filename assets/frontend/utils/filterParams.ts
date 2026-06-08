@@ -6,7 +6,7 @@ type FiltersQuery = components["schemas"]["FiltersQuery"];
 
 /**
  * Serialize the current filters store into URLSearchParams suitable for the
- * api/v2 observation endpoints (list, histogram, mark-as-seen).
+ * api/v2 observation endpoints (list, histogram, mark-as-viewed).
  *
  * Callers add their own extras (page, pageSize, orderBy, etc.) onto the
  * returned object.
@@ -45,7 +45,7 @@ export function filtersToParams(
 /**
  * Serialize the filters store into a FiltersQuery JSON body, for the mutating
  * POST endpoints that take their filters in the request body (e.g. bulk
- * mark-as-seen - audit N4).
+ * mark-as-viewed - audit N4).
  */
 export function filtersToBody(filtersStore: FiltersStore): FiltersQuery {
     return {

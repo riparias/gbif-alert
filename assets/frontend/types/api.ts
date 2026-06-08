@@ -264,7 +264,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v2/observations/mark-as-seen/": {
+    "/api/v2/observations/mark-as-viewed/": {
         parameters: {
             query?: never;
             header?: never;
@@ -322,7 +322,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v2/observations/{stable_id}/mark-as-seen/": {
+    "/api/v2/observations/{stable_id}/mark-as-viewed/": {
         parameters: {
             query?: never;
             header?: never;
@@ -345,7 +345,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v2/observations/{stable_id}/mark-as-unseen/": {
+    "/api/v2/observations/{stable_id}/mark-as-not-viewed/": {
         parameters: {
             query?: never;
             header?: never;
@@ -822,8 +822,8 @@ export interface components {
             identificationVerificationStatus: string;
             /** Basisofrecordid */
             basisOfRecordId: number;
-            /** Seenbycurrentuser */
-            seenByCurrentUser?: boolean | null;
+            /** Viewedbycurrentuser */
+            viewedByCurrentUser?: boolean | null;
         };
         /** ObservationsPageOut */
         ObservationsPageOut: {
@@ -948,13 +948,13 @@ export interface components {
             /** Coordinateuncertaintyinmeters */
             coordinateUncertaintyInMeters: number | null;
             initialDataImport: components["schemas"]["InitialDataImportOut"];
-            /** Seenbycurrentuser */
-            seenByCurrentUser: boolean | null;
+            /** Viewedbycurrentuser */
+            viewedByCurrentUser: boolean | null;
             /**
-             * Canbemarkedunseen
-             * @description Per-user capability flag: true when this observation matches one of the caller's alerts and can therefore be marked unseen. False for anonymous callers and observations outside the caller's alerts.
+             * Canbemarkednotviewed
+             * @description Per-user capability flag: true when this observation matches one of the caller's alerts and can therefore be marked not viewed. False for anonymous callers and observations outside the caller's alerts.
              */
-            canBeMarkedUnseen: boolean;
+            canBeMarkedNotViewed: boolean;
             /** Comments */
             comments: components["schemas"]["CommentOut"][];
         };
@@ -1000,8 +1000,8 @@ export interface components {
             areaFilterMode: string;
             /** Approachingdistancekm */
             approachingDistanceKm: number | null;
-            /** Unseencount */
-            unseenCount: number;
+            /** Notviewedcount */
+            notViewedCount: number;
             /** Speciesdetails */
             speciesDetails: components["schemas"]["AlertSpeciesOut"][];
             /** Lastemailsentat */

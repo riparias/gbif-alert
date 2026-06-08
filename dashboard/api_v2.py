@@ -156,6 +156,15 @@ ERR_401 = {401: DetailErrorOut}  # missing or invalid credentials
 ERR_403 = {403: DetailErrorOut}  # session write without a valid CSRF token
 ERR_404 = {404: DetailErrorOut}  # object not found, or not owned by the user
 
+# The public API speaks "viewed"/"notViewed"; the internal observation filtering
+# still uses "seen"/"unseen". Map the consumer-facing status value to the internal
+# one at the API boundary. Unknown/None values mean "no status filter".
+_API_STATUS_TO_INTERNAL = {"viewed": "seen", "notViewed": "unseen"}
+
+
+def _internal_status(api_status: str | None) -> str | None:
+    return _API_STATUS_TO_INTERNAL.get(api_status) if api_status else None
+
 
 def _vernacular_names(species: Species) -> dict[str, str]:
     """The species' vernacular name in all three languages, as flat fields (N6).
@@ -469,7 +478,7 @@ def observations_list(
         start_date=filters.startDate,
         end_date=filters.endDate,
         areas_ids=filters.areaIds,
-        status_for_user=filters.status,
+        status_for_user=_internal_status(filters.status),
         initial_data_import_ids=filters.initialDataImportIds,
         user=user,
         verified_filter=filters.verifiedFilter,
@@ -533,7 +542,7 @@ def observations_list(
             "verified": obs.verified,
             "identificationVerificationStatus": obs.identification_verification_status,
             "basisOfRecordId": obs.basis_of_record_id,
-            "seenByCurrentUser": (obs.pk not in unseen_ids)
+            "viewedByCurrentUser": (obs.pk not in unseen_ids)
             if user is not None
             else None,
         }
@@ -559,7 +568,7 @@ def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
         start_date=filters.startDate,
         end_date=filters.endDate,
         areas_ids=filters.areaIds,
-        status_for_user=filters.status,
+        status_for_user=_internal_status(filters.status),
         initial_data_import_ids=filters.initialDataImportIds,
         user=user,
         verified_filter=filters.verifiedFilter,
@@ -596,7 +605,7 @@ def observations_counter(request: HttpRequest, filters: Query[FiltersQuery]):
         start_date=filters.startDate,
         end_date=filters.endDate,
         areas_ids=filters.areaIds,
-        status_for_user=filters.status,
+        status_for_user=_internal_status(filters.status),
         initial_data_import_ids=filters.initialDataImportIds,
         user=user,
         verified_filter=filters.verifiedFilter,
@@ -607,7 +616,7 @@ def observations_counter(request: HttpRequest, filters: Query[FiltersQuery]):
 
 
 @api_v2.post(
-    "/observations/mark-as-seen/",
+    "/observations/mark-as-viewed/",
     response={200: QueuedOut, **ERR_401, **ERR_403},
     auth=[ApiTokenAuth(), django_auth],
 )
@@ -626,7 +635,7 @@ def observations_mark_all_as_seen(request: HttpRequest, filters: FiltersQuery):
         start_date=filters.startDate,
         end_date=filters.endDate,
         areas_ids=filters.areaIds,
-        status_for_user=filters.status,
+        status_for_user=_internal_status(filters.status),
         initial_data_import_ids=filters.initialDataImportIds,
         user=user,
         verified_filter=filters.verifiedFilter,
@@ -658,7 +667,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
     can_be_marked_unseen = False
     if user is not None:
         seen_by_current_user = obs.already_seen_by(user)
-        # canBeMarkedUnseen is a capability flag: the drawer marks the obs seen
+        # canBeMarkedNotViewed is a capability flag: the drawer marks the obs seen
         # on open, so it no longer depends on the obs already being seen at GET
         # time (audit M11). GET itself no longer mutates seen state.
         can_be_marked_unseen = user.obs_match_alerts(obs)
@@ -701,8 +710,8 @@ def observation_detail(request: HttpRequest, stable_id: str):
         "basisOfRecordId": obs.basis_of_record_id,
         "coordinateUncertaintyInMeters": obs.coordinate_uncertainty_in_meters,
         "initialDataImport": obs.initial_data_import.as_dict,
-        "seenByCurrentUser": seen_by_current_user,
-        "canBeMarkedUnseen": can_be_marked_unseen,
+        "viewedByCurrentUser": seen_by_current_user,
+        "canBeMarkedNotViewed": can_be_marked_unseen,
         "comments": comments,
     }
 
@@ -755,7 +764,7 @@ def page_fragment(request: HttpRequest, identifier: str):
 
 
 @api_v2.post(
-    "/observations/{stable_id}/mark-as-seen/",
+    "/observations/{stable_id}/mark-as-viewed/",
     response={200: OkOut, **ERR_401, **ERR_403, **ERR_404},
     auth=[ApiTokenAuth(), django_auth],
 )
@@ -775,7 +784,7 @@ def observation_mark_as_seen(request: HttpRequest, stable_id: str):
 
 
 @api_v2.post(
-    "/observations/{stable_id}/mark-as-unseen/",
+    "/observations/{stable_id}/mark-as-not-viewed/",
     response={200: OkOut, **ERR_401, **ERR_403, **ERR_404},
     auth=[ApiTokenAuth(), django_auth],
 )
@@ -807,7 +816,7 @@ def _alert_to_out(alert: Alert) -> dict:
         "verifiedFilter": alert.verified_filter,
         "areaFilterMode": alert.area_filter_mode,
         "approachingDistanceKm": alert.approaching_distance_km,
-        "unseenCount": alert.unseen_observations().count(),
+        "notViewedCount": alert.unseen_observations().count(),
         "speciesDetails": [
             {"scientificName": s.name, **_vernacular_names(s)}
             for s in alert.species.all()

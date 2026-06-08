@@ -472,15 +472,15 @@ def test_observations_list_null_location(client, observations_data):
     assert item["lon"] is None
 
 
-# --- seenByCurrentUser ---
+# --- viewedByCurrentUser ---
 
 
 def test_seen_by_current_user_is_null_for_anonymous(client, observations_data):
-    """Anonymous users get null for seenByCurrentUser."""
+    """Anonymous users get null for viewedByCurrentUser."""
     obs = observations_data["obs"]
     response = client.get(reverse("api-v2:observations_list"))
     item = next(i for i in response.json()["items"] if i["id"] == obs.pk)
-    assert item["seenByCurrentUser"] is None
+    assert item["viewedByCurrentUser"] is None
 
 
 def test_seen_by_current_user_true_when_no_unseen_record(client, observations_data):
@@ -489,7 +489,7 @@ def test_seen_by_current_user_true_when_no_unseen_record(client, observations_da
     client.login(username="obs_user", password="12345")
     response = client.get(reverse("api-v2:observations_list"))
     item = next(i for i in response.json()["items"] if i["id"] == obs.pk)
-    assert item["seenByCurrentUser"]
+    assert item["viewedByCurrentUser"]
 
 
 def test_seen_by_current_user_false_when_unseen_record_exists(
@@ -502,7 +502,22 @@ def test_seen_by_current_user_false_when_unseen_record_exists(
     client.login(username="obs_user", password="12345")
     response = client.get(reverse("api-v2:observations_list"))
     item = next(i for i in response.json()["items"] if i["id"] == obs.pk)
-    assert not item["seenByCurrentUser"]
+    assert not item["viewedByCurrentUser"]
+
+
+def test_status_filter_uses_viewed_vocabulary(client, observations_data):
+    """The status filter accepts viewed/notViewed (mapped to internal seen/unseen)."""
+    obs = observations_data["obs"]
+    user = observations_data["user"]
+    ObservationUnseen.objects.create(observation=obs, user=user)  # obs is now "not viewed"
+    client.login(username="obs_user", password="12345")
+    url = reverse("api-v2:observations_list")
+
+    not_viewed = {i["id"] for i in client.get(url, {"status": "notViewed"}).json()["items"]}
+    assert obs.pk in not_viewed
+
+    viewed = {i["id"] for i in client.get(url, {"status": "viewed"}).json()["items"]}
+    assert obs.pk not in viewed
 
 
 # --- Pagination ---
@@ -1064,8 +1079,8 @@ def test_detail_camel_case_keys(client, observation_detail_data):
         "datasetGbifKey",
         "date",
         "basisOfRecordId",
-        "seenByCurrentUser",
-        "canBeMarkedUnseen",
+        "viewedByCurrentUser",
+        "canBeMarkedNotViewed",
         "comments",
     ):
         assert key in data, f"Missing key: {key}"
@@ -1104,13 +1119,13 @@ def test_detail_omits_admin_url_even_for_superuser(client, observation_detail_da
     assert "adminUrl" not in data
 
 
-# --- canBeMarkedUnseen ---
+# --- canBeMarkedNotViewed ---
 
 
 def test_can_be_marked_unseen_false_for_anonymous(client, observation_detail_data):
     obs = observation_detail_data["obs"]
     response = client.get(f"/api/v2/observations/{obs.stable_id}/")
-    assert not response.json()["canBeMarkedUnseen"]
+    assert not response.json()["canBeMarkedNotViewed"]
 
 
 def test_can_be_marked_unseen_false_when_no_matching_alert(
@@ -1121,7 +1136,7 @@ def test_can_be_marked_unseen_false_when_no_matching_alert(
     user = observation_detail_data["user"]
     client.force_login(user)
     response = client.get(f"/api/v2/observations/{obs.stable_id}/")
-    assert not response.json()["canBeMarkedUnseen"]
+    assert not response.json()["canBeMarkedNotViewed"]
 
 
 def test_can_be_marked_unseen_true_when_alert_matches(client, observation_detail_data):
@@ -1134,7 +1149,7 @@ def test_can_be_marked_unseen_true_when_alert_matches(client, observation_detail
     )
     alert.species.add(obs.species)
     response = client.get(f"/api/v2/observations/{obs.stable_id}/")
-    assert response.json()["canBeMarkedUnseen"]
+    assert response.json()["canBeMarkedNotViewed"]
 
 
 # --- comments ---
@@ -1188,7 +1203,7 @@ def test_add_comment_empty_text_returns_422(client, observation_detail_data):
 def test_observation_mark_unseen_anonymous_returns_401(client, observation_detail_data):
     """Anonymous users get 401 from mark-unseen, not 403."""
     obs = observation_detail_data["obs"]
-    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-unseen/")
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-not-viewed/")
     assert resp.status_code == 401
 
 
@@ -1199,11 +1214,11 @@ def test_observation_mark_unseen_no_matching_alert_returns_403(
     user = observation_detail_data["user"]
     obs = observation_detail_data["obs"]
     client.force_login(user)
-    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-unseen/")
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-not-viewed/")
     assert resp.status_code == 403
 
 
-# --- M11: GET side-effect removal + single mark-as-seen ---
+# --- M11: GET side-effect removal + single mark-as-viewed ---
 
 
 def test_get_detail_does_not_mark_as_seen(client, observation_detail_data):
@@ -1216,12 +1231,12 @@ def test_get_detail_does_not_mark_as_seen(client, observation_detail_data):
     assert resp.status_code == 200
     # The unseen marker is still there - the GET did not mark it seen.
     assert ObservationUnseen.objects.filter(observation=obs, user=user).exists()
-    assert resp.json()["seenByCurrentUser"] is False
+    assert resp.json()["viewedByCurrentUser"] is False
 
 
 def test_mark_as_seen_single_anonymous_returns_401(client, observation_detail_data):
     obs = observation_detail_data["obs"]
-    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-seen/")
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-viewed/")
     assert resp.status_code == 401
 
 
@@ -1230,7 +1245,7 @@ def test_mark_as_seen_single_marks_observation_seen(client, observation_detail_d
     user = observation_detail_data["user"]
     ObservationUnseen.objects.create(observation=obs, user=user)
     client.force_login(user)
-    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-seen/")
+    resp = client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-viewed/")
     assert resp.status_code == 200
     assert resp.json() == {"ok": True}
     assert not ObservationUnseen.objects.filter(observation=obs, user=user).exists()
@@ -1241,7 +1256,7 @@ def test_mark_as_seen_single_unknown_stable_id_returns_404(
 ):
     user = observation_detail_data["user"]
     client.force_login(user)
-    resp = client.post("/api/v2/observations/does-not-exist/mark-as-seen/")
+    resp = client.post("/api/v2/observations/does-not-exist/mark-as-viewed/")
     assert resp.status_code == 404
 
 
@@ -1383,7 +1398,7 @@ def test_alerts_list_returns_own_alerts(client, alert_data):
     assert len(data) == 1
     assert data[0]["name"] == "My alert #1"
     assert "speciesIds" in data[0]
-    assert "unseenCount" in data[0]
+    assert "notViewedCount" in data[0]
     # N10: timestamp follows the createdAt/*Timestamp convention.
     assert "lastEmailSentAt" in data[0]
     assert "lastEmailSentOn" not in data[0]
@@ -2125,13 +2140,13 @@ def test_delete_account_success(client):
 
 
 # ---------------------------------------------------------------------------
-# POST /api/v2/observations/mark-as-seen/ (bulk mark)
+# POST /api/v2/observations/mark-as-viewed/ (bulk mark)
 # ---------------------------------------------------------------------------
 
 
 def test_mark_all_as_seen_anonymous_returns_401(client, observations_data):
     """Anonymous users may not bulk-mark observations."""
-    resp = client.post("/api/v2/observations/mark-as-seen/")
+    resp = client.post("/api/v2/observations/mark-as-viewed/")
     assert resp.status_code == 401
 
 
@@ -2151,7 +2166,7 @@ def test_mark_all_as_seen_authenticated_returns_queued(
     user = observations_data["user"]
     client.force_login(user)
     resp = client.post(
-        "/api/v2/observations/mark-as-seen/", data={}, content_type="application/json"
+        "/api/v2/observations/mark-as-viewed/", data={}, content_type="application/json"
     )
 
     assert resp.status_code == 200
@@ -2174,7 +2189,7 @@ def test_mark_all_as_seen_returns_count_of_unseen(client, observations_data, mon
         ObservationUnseen.objects.create(observation=o, user=user)
     client.force_login(user)
     resp = client.post(
-        "/api/v2/observations/mark-as-seen/",
+        "/api/v2/observations/mark-as-viewed/",
         data={"status": "all"},
         content_type="application/json",
     )
@@ -2202,7 +2217,7 @@ def test_mark_all_as_seen_respects_species_filter(
 
     client.force_login(user)
     resp = client.post(
-        "/api/v2/observations/mark-as-seen/",
+        "/api/v2/observations/mark-as-viewed/",
         data={"speciesIds": [species.pk]},
         content_type="application/json",
     )
@@ -2439,7 +2454,7 @@ def test_token_write_works_without_csrf(observation_detail_data):
     _, raw = ApiToken.create_for(user, "test")
     csrf_client = Client(enforce_csrf_checks=True)
     resp = csrf_client.post(
-        f"/api/v2/observations/{obs.stable_id}/mark-as-seen/",
+        f"/api/v2/observations/{obs.stable_id}/mark-as-viewed/",
         HTTP_AUTHORIZATION=f"Bearer {raw}",
     )
     assert resp.status_code == 200
@@ -2454,7 +2469,7 @@ def test_session_write_still_requires_csrf(observation_detail_data):
     obs = observation_detail_data["obs"]
     csrf_client = Client(enforce_csrf_checks=True)
     csrf_client.force_login(user)
-    resp = csrf_client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-seen/")
+    resp = csrf_client.post(f"/api/v2/observations/{obs.stable_id}/mark-as-viewed/")
     assert resp.status_code == 403
 
 
@@ -2462,7 +2477,7 @@ def test_invalid_token_returns_401(client, observation_detail_data):
     """A present-but-invalid bearer token returns 401, not a confusing CSRF 403."""
     obs = observation_detail_data["obs"]
     resp = client.post(
-        f"/api/v2/observations/{obs.stable_id}/mark-as-seen/",
+        f"/api/v2/observations/{obs.stable_id}/mark-as-viewed/",
         HTTP_AUTHORIZATION="Bearer not-a-real-token",
     )
     assert resp.status_code == 401
@@ -2489,7 +2504,7 @@ def test_token_last_used_at_is_updated(client, observation_detail_data):
     token, raw = ApiToken.create_for(user, "t")
     assert token.last_used_at is None
     client.post(
-        f"/api/v2/observations/{obs.stable_id}/mark-as-seen/",
+        f"/api/v2/observations/{obs.stable_id}/mark-as-viewed/",
         HTTP_AUTHORIZATION=f"Bearer {raw}",
     )
     token.refresh_from_db()
@@ -2558,7 +2573,7 @@ def test_api_token_delete_revokes(client, observation_detail_data):
     assert resp.status_code == 204
     # The revoked token no longer authenticates.
     after = client.post(
-        f"/api/v2/observations/{obs.stable_id}/mark-as-seen/",
+        f"/api/v2/observations/{obs.stable_id}/mark-as-viewed/",
         HTTP_AUTHORIZATION=f"Bearer {raw}",
     )
     assert after.status_code == 401
@@ -2591,11 +2606,11 @@ ERROR_RESPONSE_EXPECTATIONS = [
     ("/areas/from-drawing/", "post", {401, 403}),
     ("/areas/{area_id}/", "patch", {401, 403, 404}),
     ("/areas/{area_id}/", "delete", {401, 403, 404}),
-    ("/observations/mark-as-seen/", "post", {401, 403}),
+    ("/observations/mark-as-viewed/", "post", {401, 403}),
     ("/observations/{stable_id}/", "get", {404}),
     ("/observations/{stable_id}/comments/", "post", {401, 403, 404}),
-    ("/observations/{stable_id}/mark-as-seen/", "post", {401, 403, 404}),
-    ("/observations/{stable_id}/mark-as-unseen/", "post", {401, 403, 404}),
+    ("/observations/{stable_id}/mark-as-viewed/", "post", {401, 403, 404}),
+    ("/observations/{stable_id}/mark-as-not-viewed/", "post", {401, 403, 404}),
     ("/alerts/", "get", {401}),
     ("/alerts/", "post", {401, 403}),
     ("/alerts/{alert_id}/", "get", {401, 404}),

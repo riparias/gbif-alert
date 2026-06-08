@@ -71,7 +71,7 @@ async function load() {
             // The detail GET no longer marks the observation as seen (the API is
             // side-effect free); do it explicitly so the table/sidebar reflect it
             // when the drawer closes. Best-effort: seen state isn't load-critical.
-            await fetch(`/api/v2/observations/${props.stableId}/mark-as-seen/`, {
+            await fetch(`/api/v2/observations/${props.stableId}/mark-as-viewed/`, {
                 method: "POST",
                 headers: { "X-CSRFToken": getCsrf() },
             }).catch(() => { /* non-fatal */ });
@@ -106,7 +106,7 @@ async function submitComment() {
 async function markUnseen() {
     markingUnseen.value = true;
     try {
-        const resp = await fetch(`/api/v2/observations/${props.stableId}/mark-as-unseen/`, {
+        const resp = await fetch(`/api/v2/observations/${props.stableId}/mark-as-not-viewed/`, {
             method: "POST",
             headers: { "X-CSRFToken": getCsrf() },
         });
@@ -168,7 +168,7 @@ onMounted(load);
             </div>
 
             <!-- Mark unseen -->
-            <div v-if="obs.canBeMarkedUnseen" class="mark-unseen-row">
+            <div v-if="obs.canBeMarkedNotViewed" class="mark-unseen-row">
                 <Button
                     severity="warn"
                     size="small"
