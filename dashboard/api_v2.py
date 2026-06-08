@@ -145,6 +145,17 @@ api_v2_spa = NinjaAPI(
     },
 )
 
+# Implicit error responses that django-ninja produces without us returning them
+# explicitly. They all share the DetailErrorOut shape ({"detail": "..."}), the
+# same body ninja renders for auth failures, CSRF failures and not-found errors.
+# We merge these into the relevant `response=` maps (via `**ERR_401` etc.) so
+# they appear in the public OpenAPI schema. This is purely declarative: ninja
+# renders exception-driven responses through its own handlers, so adding these
+# keys does not change runtime behaviour.
+ERR_401 = {401: DetailErrorOut}  # missing or invalid credentials
+ERR_403 = {403: DetailErrorOut}  # session write without a valid CSRF token
+ERR_404 = {404: DetailErrorOut}  # object not found, or not owned by the user
+
 
 def _vernacular_names(species: Species) -> dict[str, str]:
     """The species' vernacular name in all three languages, as flat fields (N6).
@@ -229,7 +240,10 @@ def areas_list(request: HttpRequest):
     ]
 
 
-@api_v2.get("/areas/{area_id}/geojson/", response=GeoJSONFeatureCollectionOut)
+@api_v2.get(
+    "/areas/{area_id}/geojson/",
+    response={200: GeoJSONFeatureCollectionOut, **ERR_403, **ERR_404},
+)
 def area_geojson(request: HttpRequest, area_id: int):
     """Return GeoJSON (FeatureCollection, EPSG:4326) for a single area.
 
@@ -245,7 +259,7 @@ def area_geojson(request: HttpRequest, area_id: int):
 
 @api_v2.post(
     "/areas/",
-    response={201: AreaOut, 422: DetailErrorOut},
+    response={201: AreaOut, 422: DetailErrorOut, **ERR_401, **ERR_403},
     auth=[ApiTokenAuth(), django_auth],
 )
 def area_create(
@@ -280,7 +294,7 @@ def area_create(
 
 @api_v2.post(
     "/areas/from-drawing/",
-    response={201: AreaOut, 422: DetailErrorOut},
+    response={201: AreaOut, 422: DetailErrorOut, **ERR_401, **ERR_403},
     auth=[ApiTokenAuth(), django_auth],
 )
 def area_create_from_drawing(request: HttpRequest, payload: AreaFromDrawingIn):
@@ -307,7 +321,7 @@ def area_create_from_drawing(request: HttpRequest, payload: AreaFromDrawingIn):
 
 @api_v2.patch(
     "/areas/{area_id}/",
-    response={200: AreaOut, 422: DetailErrorOut},
+    response={200: AreaOut, 422: DetailErrorOut, **ERR_401, **ERR_403, **ERR_404},
     auth=[ApiTokenAuth(), django_auth],
 )
 def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
@@ -335,7 +349,7 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
 
 @api_v2.delete(
     "/areas/{area_id}/",
-    response={204: None, 409: DetailErrorOut},
+    response={204: None, 409: DetailErrorOut, **ERR_401, **ERR_403, **ERR_404},
     auth=[ApiTokenAuth(), django_auth],
 )
 def area_delete(request: HttpRequest, area_id: int):
@@ -594,7 +608,7 @@ def observations_counter(request: HttpRequest, filters: Query[FiltersQuery]):
 
 @api_v2.post(
     "/observations/mark-as-seen/",
-    response={200: QueuedOut},
+    response={200: QueuedOut, **ERR_401, **ERR_403},
     auth=[ApiTokenAuth(), django_auth],
 )
 def observations_mark_all_as_seen(request: HttpRequest, filters: FiltersQuery):
@@ -626,7 +640,10 @@ def observations_mark_all_as_seen(request: HttpRequest, filters: FiltersQuery):
     return 200, {"queued": True, "count": count}
 
 
-@api_v2.get("/observations/{stable_id}/", response=ObservationDetailOut)
+@api_v2.get(
+    "/observations/{stable_id}/",
+    response={200: ObservationDetailOut, **ERR_404},
+)
 def observation_detail(request: HttpRequest, stable_id: str):
     try:
         obs = Observation.objects.select_related(
@@ -697,7 +714,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
 
 @api_v2.post(
     "/observations/{stable_id}/comments/",
-    response={200: CommentOut, 422: DetailErrorOut},
+    response={200: CommentOut, 422: DetailErrorOut, **ERR_401, **ERR_403, **ERR_404},
     auth=[ApiTokenAuth(), django_auth],
 )
 def observation_add_comment(request: HttpRequest, stable_id: str, payload: CommentIn):
@@ -744,7 +761,7 @@ def page_fragment(request: HttpRequest, identifier: str):
 
 @api_v2.post(
     "/observations/{stable_id}/mark-as-seen/",
-    response={200: OkOut},
+    response={200: OkOut, **ERR_401, **ERR_403, **ERR_404},
     auth=[ApiTokenAuth(), django_auth],
 )
 def observation_mark_as_seen(request: HttpRequest, stable_id: str):
@@ -764,7 +781,7 @@ def observation_mark_as_seen(request: HttpRequest, stable_id: str):
 
 @api_v2.post(
     "/observations/{stable_id}/mark-as-unseen/",
-    response={200: OkOut, 403: DetailErrorOut},
+    response={200: OkOut, **ERR_401, **ERR_403, **ERR_404},
     auth=[ApiTokenAuth(), django_auth],
 )
 def observation_mark_as_unseen(request: HttpRequest, stable_id: str):
@@ -872,7 +889,11 @@ def alert_notification_frequencies(request: HttpRequest):
     return [{"id": k, "label": str(v)} for k, v in Alert.EMAIL_NOTIFICATION_CHOICES]
 
 
-@api_v2.get("/alerts/", response=list[AlertOut], auth=[ApiTokenAuth(), django_auth])
+@api_v2.get(
+    "/alerts/",
+    response={200: list[AlertOut], **ERR_401},
+    auth=[ApiTokenAuth(), django_auth],
+)
 def alerts_list(request: HttpRequest):
     """Return all alerts belonging to the authenticated user."""
     user = cast(User, request.user)
@@ -885,7 +906,9 @@ def alerts_list(request: HttpRequest):
 
 
 @api_v2.post(
-    "/alerts/", response={201: AlertOut, 422: ValidationErrorOut}, auth=[ApiTokenAuth(), django_auth]
+    "/alerts/",
+    response={201: AlertOut, 422: ValidationErrorOut, **ERR_401, **ERR_403},
+    auth=[ApiTokenAuth(), django_auth],
 )
 def alert_create(request: HttpRequest, payload: AlertIn):
     """Create a new alert for the authenticated user."""
@@ -896,7 +919,11 @@ def alert_create(request: HttpRequest, payload: AlertIn):
     return 201, _alert_to_out(alert)
 
 
-@api_v2.get("/alerts/{alert_id}/", response=AlertOut, auth=[ApiTokenAuth(), django_auth])
+@api_v2.get(
+    "/alerts/{alert_id}/",
+    response={200: AlertOut, **ERR_401, **ERR_404},
+    auth=[ApiTokenAuth(), django_auth],
+)
 def alert_detail(request: HttpRequest, alert_id: int):
     """Return one alert. 404 if it does not belong to the current user."""
     alert = get_object_or_404(
@@ -911,7 +938,7 @@ def alert_detail(request: HttpRequest, alert_id: int):
 
 @api_v2.put(
     "/alerts/{alert_id}/",
-    response={200: AlertOut, 422: ValidationErrorOut},
+    response={200: AlertOut, 422: ValidationErrorOut, **ERR_401, **ERR_403, **ERR_404},
     auth=[ApiTokenAuth(), django_auth],
 )
 def alert_update(request: HttpRequest, alert_id: int, payload: AlertIn):
@@ -929,7 +956,11 @@ def alert_update(request: HttpRequest, alert_id: int, payload: AlertIn):
     return 200, _alert_to_out(alert)
 
 
-@api_v2.delete("/alerts/{alert_id}/", response={204: None}, auth=[ApiTokenAuth(), django_auth])
+@api_v2.delete(
+    "/alerts/{alert_id}/",
+    response={204: None, **ERR_401, **ERR_403, **ERR_404},
+    auth=[ApiTokenAuth(), django_auth],
+)
 def alert_delete(request: HttpRequest, alert_id: int):
     """Delete an alert. 404 if it does not belong to the current user."""
     alert = get_object_or_404(Alert, id=alert_id, user=request.user)
@@ -988,7 +1019,7 @@ def auth_signup(request: HttpRequest, payload: SignUpIn):
 
 @api_v2.post(
     "/auth/password-change/",
-    response={204: None, 422: ValidationErrorOut},
+    response={204: None, 422: ValidationErrorOut, **ERR_401, **ERR_403},
     auth=[ApiTokenAuth(), django_auth],
 )
 def auth_password_change(request: HttpRequest, payload: PasswordChangeIn):
@@ -1024,7 +1055,7 @@ def news_mark_visited(request: HttpRequest):
 
 @api_v2.get(
     "/profile/",
-    response=ProfileOut,
+    response={200: ProfileOut, **ERR_401},
     auth=[ApiTokenAuth(), django_auth],
 )
 def profile_get(request: HttpRequest):
@@ -1044,7 +1075,7 @@ def profile_get(request: HttpRequest):
 
 @api_v2.put(
     "/profile/",
-    response={200: ProfileOut, 422: ValidationErrorOut},
+    response={200: ProfileOut, 422: ValidationErrorOut, **ERR_401, **ERR_403},
     auth=[ApiTokenAuth(), django_auth],
 )
 def profile_put(request: HttpRequest, payload: ProfileIn):
@@ -1084,7 +1115,7 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
 
 @api_v2.delete(
     "/account/",
-    response={204: None},
+    response={204: None, **ERR_401, **ERR_403},
     auth=[ApiTokenAuth(), django_auth],
 )
 def account_delete(request: HttpRequest):
@@ -1110,7 +1141,11 @@ def _api_token_to_out(token: ApiToken) -> dict:
     }
 
 
-@api_v2.get("/api-tokens/", response=list[ApiTokenOut], auth=django_auth)
+@api_v2.get(
+    "/api-tokens/",
+    response={200: list[ApiTokenOut], **ERR_401},
+    auth=django_auth,
+)
 def api_tokens_list(request: HttpRequest):
     """List the current user's API tokens (never the secret value)."""
     user = cast(User, request.user)
@@ -1119,7 +1154,7 @@ def api_tokens_list(request: HttpRequest):
 
 @api_v2.post(
     "/api-tokens/",
-    response={201: ApiTokenCreatedOut, 422: DetailErrorOut},
+    response={201: ApiTokenCreatedOut, 422: DetailErrorOut, **ERR_401, **ERR_403},
     auth=django_auth,
 )
 def api_token_create(request: HttpRequest, payload: ApiTokenCreateIn):
@@ -1132,7 +1167,11 @@ def api_token_create(request: HttpRequest, payload: ApiTokenCreateIn):
     return 201, {**_api_token_to_out(token), "token": raw}
 
 
-@api_v2.delete("/api-tokens/{token_id}/", response={204: None}, auth=django_auth)
+@api_v2.delete(
+    "/api-tokens/{token_id}/",
+    response={204: None, **ERR_401, **ERR_403, **ERR_404},
+    auth=django_auth,
+)
 def api_token_delete(request: HttpRequest, token_id: int):
     """Revoke one of the current user's tokens."""
     user = cast(User, request.user)

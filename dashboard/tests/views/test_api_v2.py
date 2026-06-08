@@ -2551,3 +2551,57 @@ def test_api_token_cannot_delete_another_users_token(client, auth_data):
     resp = client.delete(f"/api/v2/api-tokens/{token.pk}/")
     assert resp.status_code == 404
     assert ApiToken.objects.filter(pk=token.pk).exists()
+
+
+# --- OpenAPI error-response completeness ---
+#
+# The view code can return implicit error responses (401 on auth failure, 403 on
+# a session write missing its CSRF token, 404 on a missing/not-owned object). We
+# declare these in each endpoint's `response=` map so the public OpenAPI schema
+# is honest about them. The runtime behaviours are exercised by the tests above;
+# these guard that the *schema* keeps advertising them. Status keys are ints, and
+# every one of these error responses uses the DetailErrorOut envelope.
+#
+# Paths are relative to the API root (no /api/v2 prefix), matching the schema.
+ERROR_RESPONSE_EXPECTATIONS = [
+    ("/areas/{area_id}/geojson/", "get", {403, 404}),
+    ("/areas/", "post", {401, 403}),
+    ("/areas/from-drawing/", "post", {401, 403}),
+    ("/areas/{area_id}/", "patch", {401, 403, 404}),
+    ("/areas/{area_id}/", "delete", {401, 403, 404}),
+    ("/observations/mark-as-seen/", "post", {401, 403}),
+    ("/observations/{stable_id}/", "get", {404}),
+    ("/observations/{stable_id}/comments/", "post", {401, 403, 404}),
+    ("/observations/{stable_id}/mark-as-seen/", "post", {401, 403, 404}),
+    ("/observations/{stable_id}/mark-as-unseen/", "post", {401, 403, 404}),
+    ("/alerts/", "get", {401}),
+    ("/alerts/", "post", {401, 403}),
+    ("/alerts/{alert_id}/", "get", {401, 404}),
+    ("/alerts/{alert_id}/", "put", {401, 403, 404}),
+    ("/alerts/{alert_id}/", "delete", {401, 403, 404}),
+    ("/auth/password-change/", "post", {401, 403}),
+    ("/profile/", "get", {401}),
+    ("/profile/", "put", {401, 403}),
+    ("/account/", "delete", {401, 403}),
+    ("/api-tokens/", "get", {401}),
+    ("/api-tokens/", "post", {401, 403}),
+    ("/api-tokens/{token_id}/", "delete", {401, 403, 404}),
+]
+
+
+@pytest.mark.parametrize("path, method, expected_codes", ERROR_RESPONSE_EXPECTATIONS)
+def test_openapi_declares_error_responses(path, method, expected_codes):
+    """Each endpoint's OpenAPI entry advertises its error responses as DetailErrorOut."""
+    from dashboard.api_v2 import api_v2
+
+    schema = api_v2.get_openapi_schema()
+    responses = schema["paths"][f"/api/v2{path}"][method]["responses"]
+    declared = set(responses.keys())
+    assert expected_codes <= declared, (
+        f"{method.upper()} {path} missing {expected_codes - declared} in OpenAPI"
+    )
+    for code in expected_codes:
+        ref = responses[code]["content"]["application/json"]["schema"]["$ref"]
+        assert ref.endswith("/DetailErrorOut"), (
+            f"{method.upper()} {path} response {code} should be DetailErrorOut, got {ref}"
+        )
