@@ -128,6 +128,14 @@ class CommentIn(Schema):
     text: str
 
 
+class InitialDataImportOut(Schema):
+    """The data import that first brought an observation into the system."""
+
+    id: int
+    name: str
+    startTimestamp: datetime.datetime
+
+
 class ObservationDetailOut(Schema):
     id: int
     stableId: str
@@ -156,10 +164,15 @@ class ObservationDetailOut(Schema):
     verified: bool
     basisOfRecordId: int
     coordinateUncertaintyInMeters: float | None
-    initialDataImport: str
+    initialDataImport: InitialDataImportOut
     seenByCurrentUser: bool | None
-    canBeMarkedUnseen: bool
-    adminUrl: str | None
+    canBeMarkedUnseen: bool = Field(
+        description=(
+            "Per-user capability flag: true when this observation matches one of "
+            "the caller's alerts and can therefore be marked unseen. False for "
+            "anonymous callers and observations outside the caller's alerts."
+        )
+    )
     comments: list[CommentOut]
 
 

@@ -1082,6 +1082,28 @@ def test_detail_field_values(client, observation_detail_data):
     assert data["date"] == "2024-05-01"
 
 
+def test_detail_initial_data_import_is_object(client, observation_detail_data):
+    """initialDataImport is a structured object, not an opaque string repr."""
+    obs = observation_detail_data["obs"]
+    di = observation_detail_data["di"]
+    data = client.get(f"/api/v2/observations/{obs.stable_id}/").json()
+    assert data["initialDataImport"] == {
+        "id": di.pk,
+        "name": f"Data import #{di.pk}",
+        "startTimestamp": "2024-01-01T00:00:00Z",
+    }
+
+
+def test_detail_omits_admin_url_even_for_superuser(client, observation_detail_data):
+    """The staff-only admin URL is no longer exposed on the public endpoint."""
+    User = get_user_model()
+    User.objects.create_superuser("super", "super@example.com", "pw")
+    client.login(username="super", password="pw")
+    obs = observation_detail_data["obs"]
+    data = client.get(f"/api/v2/observations/{obs.stable_id}/").json()
+    assert "adminUrl" not in data
+
+
 # --- canBeMarkedUnseen ---
 
 

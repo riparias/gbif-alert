@@ -663,10 +663,6 @@ def observation_detail(request: HttpRequest, stable_id: str):
         # time (audit M11). GET itself no longer mutates seen state.
         can_be_marked_unseen = user.obs_match_alerts(obs)
 
-    admin_url: str | None = None
-    if request.user.is_authenticated and request.user.is_superuser:
-        admin_url = obs.get_admin_url()
-
     lon, lat = obs.lonlat_4326_tuple
 
     comments = [
@@ -704,10 +700,9 @@ def observation_detail(request: HttpRequest, stable_id: str):
         "verified": obs.verified,
         "basisOfRecordId": obs.basis_of_record_id,
         "coordinateUncertaintyInMeters": obs.coordinate_uncertainty_in_meters,
-        "initialDataImport": str(obs.initial_data_import),
+        "initialDataImport": obs.initial_data_import.as_dict,
         "seenByCurrentUser": seen_by_current_user,
         "canBeMarkedUnseen": can_be_marked_unseen,
-        "adminUrl": admin_url,
         "comments": comments,
     }
 

@@ -882,6 +882,21 @@ export interface components {
             /** Deletedbecauseauthordeleted */
             deletedBecauseAuthorDeleted: boolean;
         };
+        /**
+         * InitialDataImportOut
+         * @description The data import that first brought an observation into the system.
+         */
+        InitialDataImportOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /**
+             * Starttimestamp
+             * Format: date-time
+             */
+            startTimestamp: string;
+        };
         /** ObservationDetailOut */
         ObservationDetailOut: {
             /** Id */
@@ -932,14 +947,14 @@ export interface components {
             basisOfRecordId: number;
             /** Coordinateuncertaintyinmeters */
             coordinateUncertaintyInMeters: number | null;
-            /** Initialdataimport */
-            initialDataImport: string;
+            initialDataImport: components["schemas"]["InitialDataImportOut"];
             /** Seenbycurrentuser */
             seenByCurrentUser: boolean | null;
-            /** Canbemarkedunseen */
+            /**
+             * Canbemarkedunseen
+             * @description Per-user capability flag: true when this observation matches one of the caller's alerts and can therefore be marked unseen. False for anonymous callers and observations outside the caller's alerts.
+             */
             canBeMarkedUnseen: boolean;
-            /** Adminurl */
-            adminUrl: string | null;
             /** Comments */
             comments: components["schemas"]["CommentOut"][];
         };
