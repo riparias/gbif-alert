@@ -21,7 +21,7 @@ from dashboard.views.helpers import (
 def filtered_observations_counter_json(request: HttpRequest) -> JsonResponse:
     """Count the observations according to the filters received
 
-    See `internal_api.py`'s docstring for the observations filtering.
+    See dashboard/views/helpers.py (filtered_observations_from_request) for the observations filtering.
 
     parameters:
     - filters: same format than other endpoints: getting observations, map tiles, ...
