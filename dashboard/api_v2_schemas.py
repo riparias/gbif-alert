@@ -1,7 +1,22 @@
 import datetime
+from typing import Literal
 
 from ninja import Schema
 from pydantic import Field
+
+# Closed-choice value sets, exposed as enums in the OpenAPI schema (and validated
+# by ninja on input). Keep in sync with the corresponding model constants
+# (dashboard.models.Alert.* etc.). `language` is intentionally NOT a Literal: it
+# comes from settings.LANGUAGES, which is configurable per instance.
+VerifiedFilter = Literal["all", "verified", "unverified"]
+AreaFilterMode = Literal["inside", "approaching", "both"]
+EmailNotificationFrequency = Literal["N", "D", "W", "M"]
+ObservationStatus = Literal["all", "viewed", "notViewed"]  # "all" / absent = no filter
+DelayUnit = Literal["days", "weeks", "months", "years"]
+
+# `language` is not a fixed enum (instance-configurable via settings.LANGUAGES),
+# so it stays a plain string with a description rather than a Literal.
+_LANGUAGE_DESC = "A language code enabled on this site (see settings.LANGUAGES, e.g. en/fr/nl)."
 
 
 class SpeciesOut(Schema):
@@ -65,10 +80,10 @@ class FiltersQuery(Schema):
     startDate: datetime.date | None = None
     endDate: datetime.date | None = None
     areaIds: list[int] = Field(default_factory=list)
-    status: str | None = None  # API values: "viewed" / "notViewed" (mapped to internal seen/unseen)
+    status: ObservationStatus | None = None  # mapped to internal seen/unseen
     initialDataImportIds: list[int] = Field(default_factory=list)
-    verifiedFilter: str = "all"
-    areaFilterMode: str = "inside"
+    verifiedFilter: VerifiedFilter = "all"
+    areaFilterMode: AreaFilterMode = "inside"
     approachingDistanceKm: float | None = None
 
 
@@ -177,7 +192,7 @@ class ObservationDetailOut(Schema):
 
 
 class AlertNotificationFrequencyOut(Schema):
-    id: str
+    id: EmailNotificationFrequency
     label: str
 
 
@@ -187,9 +202,9 @@ class AlertIn(Schema):
     datasetIds: list[int] = Field(default_factory=list)
     basisOfRecordIds: list[int] = Field(default_factory=list)
     areaIds: list[int] = Field(default_factory=list)
-    emailNotificationsFrequency: str = "W"
-    verifiedFilter: str = "all"
-    areaFilterMode: str = "inside"
+    emailNotificationsFrequency: EmailNotificationFrequency = "W"
+    verifiedFilter: VerifiedFilter = "all"
+    areaFilterMode: AreaFilterMode = "inside"
     approachingDistanceKm: float | None = None
 
 
@@ -207,9 +222,9 @@ class AlertOut(Schema):
     datasetIds: list[int]
     basisOfRecordIds: list[int]
     areaIds: list[int]
-    emailNotificationsFrequency: str
-    verifiedFilter: str
-    areaFilterMode: str
+    emailNotificationsFrequency: EmailNotificationFrequency
+    verifiedFilter: VerifiedFilter
+    areaFilterMode: AreaFilterMode
     approachingDistanceKm: float | None
     notViewedCount: int
     speciesDetails: list[AlertSpeciesOut]
@@ -240,7 +255,7 @@ class SignUpIn(Schema):
     firstName: str = ""
     lastName: str = ""
     email: str
-    language: str
+    language: str = Field(description=_LANGUAGE_DESC)
     password1: str
     password2: str
 
@@ -256,18 +271,21 @@ class ProfileOut(Schema):
     firstName: str
     lastName: str
     email: str
-    language: str
+    language: str = Field(description=_LANGUAGE_DESC)
     delayValue: int
-    delayUnit: str
+    delayUnit: DelayUnit
 
 
 class ProfileIn(Schema):
     firstName: str
     lastName: str
     email: str
-    language: str
+    language: str = Field(description=_LANGUAGE_DESC)
     delayValue: int
-    delayUnit: str
+    # Kept as a plain string (not DelayUnit) so the view's own validation runs and
+    # returns the curated ValidationErrorOut shape; a Literal would pre-empt it
+    # with ninja's generic 422. Allowed values match DelayUnit.
+    delayUnit: str = Field(description="One of: days, weeks, months, years.")
 
 
 class DetailErrorOut(Schema):
