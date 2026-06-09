@@ -9,6 +9,11 @@ import pytest
 # This flag disables that guard - safe in a test context.
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "1"
 
+# Tests must use the built Vite bundle, never the dev server. Force the env-driven
+# default off (the _force_vite_built_bundle fixture also overrides any
+# local_settings hardcode after settings load).
+os.environ["DJANGO_VITE_DEV_MODE"] = "False"
+
 
 def pytest_sessionstart(session):
     """Build the Vite bundle before any test runs.
@@ -21,6 +26,24 @@ def pytest_sessionstart(session):
         check=True,
         cwd=Path(__file__).parent,
     )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _force_vite_built_bundle():
+    """Force django-vite dev_mode off so Playwright uses the built bundle.
+
+    With dev_mode on (a developer running `npm run vite-dev` may set
+    DJANGO_VITE_DEV_MODE=true or hardcode it in local_settings.py), django-vite
+    emits dev-server <script> URLs that 404 in tests - the SPA never mounts and
+    every page times out. Override the final setting (after local_settings has
+    loaded) and reset django-vite's cached singleton so the built bundle from
+    pytest_sessionstart is actually served.
+    """
+    from django.conf import settings
+    from django_vite.core.asset_loader import DjangoViteAssetLoader
+
+    settings.DJANGO_VITE["default"]["dev_mode"] = False
+    DjangoViteAssetLoader._instance = None  # rebuild lazily with dev_mode off
 
 
 @pytest.fixture(autouse=True)

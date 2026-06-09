@@ -329,7 +329,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 DJANGO_VITE = {
     "default": {
-        "dev_mode": False,  # override to True in local_settings.py when running the Vite dev server
+        # Set DJANGO_VITE_DEV_MODE=true in your .env when running the Vite dev
+        # server (`npm run vite-dev`). Defaults to False so the built bundle is
+        # used in production and in tests. (The test suite also force-disables
+        # dev_mode in conftest.py, so a stray True can't break Playwright.)
+        "dev_mode": os.environ.get("DJANGO_VITE_DEV_MODE", "False").lower() == "true",
         "dev_server_port": 5274,
         "manifest_path": BASE_DIR / "static_global" / "vite" / ".vite" / "manifest.json",
         # Vite outputs to static_global/vite/, so assets are served at /static/vite/...
