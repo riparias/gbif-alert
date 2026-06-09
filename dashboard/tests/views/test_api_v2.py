@@ -565,6 +565,30 @@ def test_pagination_second_page(client, observations_data):
     assert id_p1 != id_p2
 
 
+def test_pagination_metadata(client, observations_data):
+    """The response echoes page/pageSize/totalPages and has-next/previous flags."""
+    # 2 observations, pageSize 1 -> 2 pages.
+    p1 = client.get(reverse("api-v2:observations_list"), {"pageSize": 1, "page": 1}).json()
+    assert (p1["page"], p1["pageSize"], p1["totalPages"]) == (1, 1, 2)
+    assert p1["hasNextPage"] is True
+    assert p1["hasPreviousPage"] is False
+
+    p2 = client.get(reverse("api-v2:observations_list"), {"pageSize": 1, "page": 2}).json()
+    assert (p2["page"], p2["totalPages"]) == (2, 2)
+    assert p2["hasNextPage"] is False
+    assert p2["hasPreviousPage"] is True
+
+
+def test_pagination_metadata_no_results(client, observations_data):
+    """With no matches, totalPages is 0 and there is no next page."""
+    data = client.get(
+        reverse("api-v2:observations_list"), {"speciesIds": 999999}
+    ).json()
+    assert data["count"] == 0
+    assert data["totalPages"] == 0
+    assert data["hasNextPage"] is False
+
+
 def test_page_size_over_max_returns_400(client, observations_data):
     resp = client.get(reverse("api-v2:observations_list"), {"pageSize": 101})
     assert resp.status_code == 400

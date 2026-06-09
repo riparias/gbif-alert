@@ -837,6 +837,16 @@ export interface components {
             speciesCount: number;
             /** Datasetscount */
             datasetsCount: number;
+            /** Page */
+            page: number;
+            /** Pagesize */
+            pageSize: number;
+            /** Totalpages */
+            totalPages: number;
+            /** Hasnextpage */
+            hasNextPage: boolean;
+            /** Haspreviouspage */
+            hasPreviousPage: boolean;
             /** Items */
             items: components["schemas"]["ObservationOut"][];
         };

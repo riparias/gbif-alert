@@ -114,9 +114,14 @@ class ObservationOut(Schema):
 
 
 class ObservationsPageOut(Schema):
-    count: int
+    count: int  # total matching observations across all pages
     speciesCount: int
     datasetsCount: int
+    page: int
+    pageSize: int
+    totalPages: int
+    hasNextPage: bool
+    hasPreviousPage: bool
     items: list[ObservationOut]
 
 
