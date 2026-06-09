@@ -652,8 +652,8 @@ export interface components {
         DatasetOut: {
             /** Id */
             id: number;
-            /** Gbifkey */
-            gbifKey: string;
+            /** Gbifdatasetkey */
+            gbifDatasetKey: string;
             /** Name */
             name: string;
         };
@@ -738,12 +738,12 @@ export interface components {
             /** Name */
             name: string;
             /**
-             * Starttimestamp
+             * Startedat
              * Format: date-time
              */
-            startTimestamp: string;
-            /** Endtimestamp */
-            endTimestamp: string | null;
+            startedAt: string;
+            /** Endedat */
+            endedAt: string | null;
             /** Importedcount */
             importedCount: number;
             /** Newobservationscount */
@@ -824,6 +824,8 @@ export interface components {
             identificationVerificationStatus: string;
             /** Basisofrecordid */
             basisOfRecordId: number;
+            /** Basisofrecordname */
+            basisOfRecordName: string;
             /** Viewedbycurrentuser */
             viewedByCurrentUser?: boolean | null;
         };
@@ -894,10 +896,10 @@ export interface components {
             /** Name */
             name: string;
             /**
-             * Starttimestamp
+             * Startedat
              * Format: date-time
              */
-            startTimestamp: string;
+            startedAt: string;
         };
         /** ObservationDetailOut */
         ObservationDetailOut: {
@@ -924,8 +926,8 @@ export interface components {
             vernacularNameFr: string;
             /** Datasetname */
             datasetName: string;
-            /** Datasetgbifkey */
-            datasetGbifKey: string;
+            /** Gbifdatasetkey */
+            gbifDatasetKey: string;
             /**
              * Date
              * Format: date
@@ -947,6 +949,8 @@ export interface components {
             verified: boolean;
             /** Basisofrecordid */
             basisOfRecordId: number;
+            /** Basisofrecordname */
+            basisOfRecordName: string;
             /** Coordinateuncertaintyinmeters */
             coordinateUncertaintyInMeters: number | null;
             initialDataImport: components["schemas"]["InitialDataImportOut"];

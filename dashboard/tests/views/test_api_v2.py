@@ -193,12 +193,12 @@ def test_datasets_list_status(client):
 
 
 def test_datasets_list_gbif_key_resolver(client, filter_lists_data):
-    """gbifKey must be taken from Dataset.gbif_dataset_key, not a non-existent field."""
+    """gbifDatasetKey must be taken from Dataset.gbif_dataset_key, not a non-existent field."""
     dataset = filter_lists_data["dataset"]
     response = client.get(reverse("api-v2:datasets_list"))
     entry = next(d for d in response.json() if d["id"] == dataset.pk)
 
-    assert entry["gbifKey"] == "4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+    assert entry["gbifDatasetKey"] == "4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
     assert entry["name"] == "Test dataset"
 
 
@@ -278,11 +278,11 @@ def test_data_imports_list_computed_name(client, filter_lists_data):
 
 
 def test_data_imports_list_start_timestamp(client, filter_lists_data):
-    """startTimestamp is present and formatted as an ISO datetime string."""
+    """startedAt is present and formatted as an ISO datetime string."""
     di = filter_lists_data["di"]
     response = client.get(reverse("api-v2:data_imports_list"))
     entry = next(d for d in response.json() if d["id"] == di.pk)
-    assert entry["startTimestamp"] == "2024-03-15T10:00:00Z"
+    assert entry["startedAt"] == "2024-03-15T10:00:00Z"
 
 
 # ---------------------------------------------------------------------------
@@ -422,6 +422,7 @@ def test_observations_list_camel_case_keys(client, observations_data):
         "verified",
         "identificationVerificationStatus",
         "basisOfRecordId",
+        "basisOfRecordName",
     ):
         assert key in item, f"Missing key: {key}"
 
@@ -434,17 +435,20 @@ def test_observations_list_new_fields(client, observations_data):
     assert item["municipality"] == ""
     assert item["verified"] is False
     assert item["identificationVerificationStatus"] == ""
-    # N7: basis-of-record is an id joining to /basis-of-record/, not a label.
+    # basis-of-record is exposed as both an id (joins to /basis-of-record/) and a
+    # denormalized name, consistent with datasetName.
     assert item["basisOfRecordId"] == observations_data["basis_of_record"].pk
+    assert item["basisOfRecordName"] == observations_data["basis_of_record"].name
     assert "basisOfRecord" not in item
 
 
-def test_observation_detail_basis_of_record_is_id(client, observation_detail_data):
-    """ObservationDetailOut returns basisOfRecordId, not a label string (N7)."""
+def test_observation_detail_basis_of_record_id_and_name(client, observation_detail_data):
+    """ObservationDetailOut returns both basisOfRecordId and basisOfRecordName."""
     obs = observation_detail_data["obs"]
     bor = observation_detail_data["basis_of_record"]
     data = client.get(f"/api/v2/observations/{obs.stable_id}/").json()
     assert data["basisOfRecordId"] == bor.pk
+    assert data["basisOfRecordName"] == bor.name
     assert "basisOfRecord" not in data
 
 
@@ -1085,9 +1089,10 @@ def test_detail_camel_case_keys(client, observation_detail_data):
         "vernacularNameNl",
         "vernacularNameFr",
         "datasetName",
-        "datasetGbifKey",
+        "gbifDatasetKey",
         "date",
         "basisOfRecordId",
+        "basisOfRecordName",
         "viewedByCurrentUser",
         "canBeMarkedNotViewed",
         "comments",
@@ -1114,7 +1119,7 @@ def test_detail_initial_data_import_is_object(client, observation_detail_data):
     assert data["initialDataImport"] == {
         "id": di.pk,
         "name": f"Data import #{di.pk}",
-        "startTimestamp": "2024-01-01T00:00:00Z",
+        "startedAt": "2024-01-01T00:00:00Z",
     }
 
 

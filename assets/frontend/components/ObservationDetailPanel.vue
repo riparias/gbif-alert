@@ -49,7 +49,7 @@ const adminUrl = computed(() => {
 const initialDataImportLabel = computed(() => {
     if (!obs.value) return "";
     const di = obs.value.initialDataImport;
-    return `${di.name} (${new Date(di.startTimestamp).toLocaleDateString(locale.value)})`;
+    return `${di.name} (${new Date(di.startedAt).toLocaleDateString(locale.value)})`;
 });
 
 async function load() {
@@ -206,7 +206,7 @@ onMounted(load);
 
                             <dt>{{ t("message.sourceDataset") }}</dt>
                             <dd>
-                                <a :href="gbifDatasetUrl(obs.datasetGbifKey)" target="_blank">
+                                <a :href="gbifDatasetUrl(obs.gbifDatasetKey)" target="_blank">
                                     {{ obs.datasetName }}
                                 </a>
                             </dd>

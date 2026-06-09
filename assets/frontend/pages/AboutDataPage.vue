@@ -7,8 +7,8 @@ import ProgressSpinner from "primevue/progressspinner";
 interface DataImport {
     id: number;
     name: string;
-    startTimestamp: string;
-    endTimestamp: string | null;
+    startedAt: string;
+    endedAt: string | null;
     importedCount: number;
     newObservationsCount: number;
     skippedCount: number;
@@ -72,9 +72,9 @@ function gbifDownloadUrl(downloadId: string): string {
                 <dl style="display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1.5rem; margin: 0;">
                     <dt style="font-weight: 600;">{{ t("message.dateTimeRange") }}</dt>
                     <dd style="margin: 0;">
-                        {{ formatDateTime(imports[0].startTimestamp) }}
-                        <template v-if="imports[0].endTimestamp">
-                            &ndash; {{ formatDateTime(imports[0].endTimestamp) }}
+                        {{ formatDateTime(imports[0].startedAt) }}
+                        <template v-if="imports[0].endedAt">
+                            &ndash; {{ formatDateTime(imports[0].endedAt) }}
                         </template>
                     </dd>
 
@@ -106,7 +106,7 @@ function gbifDownloadUrl(downloadId: string): string {
                         style="padding: 0.5rem 0.75rem; border: 1px solid var(--p-surface-200); border-radius: 6px;"
                     >
                         <strong>{{ imp.name }}</strong>
-                        &ndash; {{ formatDateTime(imp.startTimestamp) }}
+                        &ndash; {{ formatDateTime(imp.startedAt) }}
                         &ndash; {{ t("message.importedObservations") }}: {{ imp.importedCount.toLocaleString(locale) }}
                     </li>
                 </ul>

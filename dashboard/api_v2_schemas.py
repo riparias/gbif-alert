@@ -46,7 +46,7 @@ class SpeciesPerPolygonOut(SpeciesOut):
 
 class DatasetOut(Schema):
     id: int
-    gbifKey: str
+    gbifDatasetKey: str
     name: str
 
 
@@ -65,8 +65,8 @@ class BasisOfRecordOut(Schema):
 class DataImportOut(Schema):
     id: int
     name: str
-    startTimestamp: datetime.datetime
-    endTimestamp: datetime.datetime | None
+    startedAt: datetime.datetime
+    endedAt: datetime.datetime | None
     importedCount: int
     newObservationsCount: int
     skippedCount: int
@@ -109,6 +109,7 @@ class ObservationOut(Schema):
     verified: bool
     identificationVerificationStatus: str  # empty string when not provided by GBIF
     basisOfRecordId: int
+    basisOfRecordName: str
     viewedByCurrentUser: bool | None = None
 
 
@@ -148,7 +149,7 @@ class InitialDataImportOut(Schema):
 
     id: int
     name: str
-    startTimestamp: datetime.datetime
+    startedAt: datetime.datetime
 
 
 class ObservationDetailOut(Schema):
@@ -168,7 +169,7 @@ class ObservationDetailOut(Schema):
     vernacularNameNl: str
     vernacularNameFr: str
     datasetName: str
-    datasetGbifKey: str
+    gbifDatasetKey: str
     date: datetime.date
     individualCount: int | None
     locality: str
@@ -178,6 +179,7 @@ class ObservationDetailOut(Schema):
     identificationVerificationStatus: str  # empty string when not provided by GBIF
     verified: bool
     basisOfRecordId: int
+    basisOfRecordName: str
     coordinateUncertaintyInMeters: float | None
     initialDataImport: InitialDataImportOut
     viewedByCurrentUser: bool | None
