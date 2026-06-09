@@ -498,7 +498,7 @@ def run_import(
         )
         for dataset in empty_datasets:
             _log_with_time(stdout, f"Deleting (no longer used) dataset {dataset}")
-            alerts_referencing_dataset = dataset.alert_set.all()  # Prefetched
+            alerts_referencing_dataset = dataset.alert_set.all()  # type: ignore[attr-defined]  # Prefetched; annotate() drops the model type
             if alerts_referencing_dataset:
                 for alert in alerts_referencing_dataset:
                     _log_with_time(
@@ -518,7 +518,7 @@ def run_import(
             _log_with_time(
                 stdout, f"Deleting (no longer used) basis of record {bor}"
             )
-            alerts_referencing_bor = bor.alert_set.all()  # Prefetched
+            alerts_referencing_bor = bor.alert_set.all()  # type: ignore[attr-defined]  # Prefetched; annotate() drops the model type
             if alerts_referencing_bor:
                 for alert in alerts_referencing_bor:
                     _log_with_time(

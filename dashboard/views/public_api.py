@@ -101,8 +101,10 @@ def filtered_observations_data_page_json(request: HttpRequest) -> JsonResponse:
     page_number = extract_int_request(request, "page_number")
 
     observations = filtered_observations_from_request(request)
-    if order is not None:
-        observations = observations.order_by(order)
+    # Always impose a deterministic order: paginating an unordered queryset can
+    # return inconsistent pages (rows in arbitrary order). Default to ascending
+    # id when the caller does not request a specific order.
+    observations = observations.order_by(order or "id")
 
     paginator = Paginator(observations, limit)
 

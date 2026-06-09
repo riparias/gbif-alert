@@ -5,7 +5,7 @@ import os
 import secrets
 import smtplib
 import time
-from typing import Any, Self
+from typing import Any, Self, cast
 
 import html2text
 from django.conf import settings
@@ -173,8 +173,10 @@ class Dataset(models.Model):
             "name": self.name,
         }
 
-    def save(self, force_insert=False, force_update=False, *args, **kwargs) -> None:
-        super().save(force_insert, force_update, *args, **kwargs)
+    def save(self, *args, **kwargs) -> None:
+        # Django 5.1 made save()'s force_insert/force_update keyword-only; just
+        # pass everything through (this override only adds post-save logic).
+        super().save(*args, **kwargs)
 
         if self.gbif_dataset_key != self.__original_gbif_dataset_key:
             # We updated the gbif dataset key, so all related observations should have a new stable_id
@@ -890,7 +892,13 @@ class ObservationComment(models.Model):
 
 class MyAreaManager(models.Manager["Area"]):
     def owned_by(self, user: WebsiteUser) -> QuerySet["Area"]:
-        return super(MyAreaManager, self).get_queryset().filter(owner=user)
+        # owned_by is only meaningful for an authenticated user; the FK lookup
+        # rejects AnonymousUser, so narrow the WebsiteUser union to User.
+        return (
+            super(MyAreaManager, self)
+            .get_queryset()
+            .filter(owner=cast("User", user))
+        )
 
     def public(self) -> QuerySet["Area"]:
         return super(MyAreaManager, self).get_queryset().filter(owner=None)
@@ -1072,7 +1080,7 @@ class Alert(models.Model):
             "Ctrl or Command key and click the items."
         ),
     )
-    datasets = models.ManyToManyField(
+    datasets = models.ManyToManyField(  # type: ignore[var-annotated]  # django-stubs 5.2 can't infer the M2M descriptor
         Dataset,
         verbose_name=_("datasets"),
         blank=True,
@@ -1081,7 +1089,7 @@ class Alert(models.Model):
             "Ctrl or Command key and click the items."
         ),
     )
-    basis_of_record_filters = models.ManyToManyField(
+    basis_of_record_filters = models.ManyToManyField(  # type: ignore[var-annotated]  # django-stubs 5.2 can't infer the M2M descriptor
         BasisOfRecord,
         verbose_name=_("basis of record"),
         blank=True,
@@ -1090,7 +1098,7 @@ class Alert(models.Model):
             "Ctrl or Command key and click the items."
         ),
     )
-    areas = models.ManyToManyField(
+    areas = models.ManyToManyField(  # type: ignore[var-annotated]  # django-stubs 5.2 can't infer the M2M descriptor
         Area,
         blank=True,
         verbose_name=_("areas"),

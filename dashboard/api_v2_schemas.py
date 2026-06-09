@@ -365,12 +365,12 @@ class GeoJSONFeatureOut(Schema):
 class GeoJSONFeatureCollectionOut(Schema):
     """A GeoJSON FeatureCollection (EPSG:4326) from Django's geojson serializer.
 
-    Declares the exact members Django emits (`type`, `crs`, `features`) so that
-    typing the response does not drop the `crs` member from the wire format.
+    Coordinates are WGS84 (EPSG:4326). Django's geojson serializer dropped the
+    non-standard `crs` member in 5.0 (per RFC 7946), so the wire format is just
+    `type` + `features`.
     """
 
     type: str
-    crs: dict
     features: list[GeoJSONFeatureOut]
 
 

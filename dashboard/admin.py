@@ -67,7 +67,7 @@ class SpeciesResource(resources.ModelResource):
 
 
 @admin.register(Species)
-class SpeciesAdmin(ImportExportModelAdmin, TranslationAdmin):
+class SpeciesAdmin(ImportExportModelAdmin, TranslationAdmin):  # type: ignore[misc]  # import-export mixin MRO vs ModelAdmin
     resource_class = SpeciesResource
     list_display = ("name", "vernacular_name", "gbif_taxon_key", "tag_list")
     search_fields = ["name", "vernacular_name", "gbif_taxon_key"]
