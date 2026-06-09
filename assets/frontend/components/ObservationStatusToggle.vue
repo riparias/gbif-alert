@@ -9,15 +9,15 @@ const filtersStore = useFiltersStore();
 
 const statusOptions = [
     { value: "all", label: t("message.all") },
-    { value: "seen", label: t("message.seen") },
-    { value: "unseen", label: t("message.unseen") },
+    { value: "viewed", label: t("message.seen") },
+    { value: "notViewed", label: t("message.unseen") },
 ];
 
 // SelectButton requires non-null values, so we map null <-> "all" at the boundary.
 const selectedStatus = computed({
     get: () => filtersStore.status ?? "all",
     set: (val: string) => {
-        filtersStore.status = val === "all" ? null : (val as "seen" | "unseen");
+        filtersStore.status = val === "all" ? null : (val as "viewed" | "notViewed");
     },
 });
 </script>

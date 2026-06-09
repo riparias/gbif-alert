@@ -42,15 +42,15 @@ function buildQuery(
     if (store.startDate) q.startDate = store.startDate;
     if (store.endDate) q.endDate = store.endDate;
     if (isAuthenticated) {
-        // For auth users "unseen" is the default - omit it for a clean URL.
+        // For auth users "notViewed" is the default - omit it for a clean URL.
         // null means "all" - write explicitly so the user can bookmark/share it.
         if (store.status === null) q.status = "all";
-        else if (store.status === "seen") q.status = "seen";
+        else if (store.status === "viewed") q.status = "viewed";
     } else {
         // For anonymous users null (all) is the default - omit it.
-        // Explicit "seen" or "unseen" choices are written to the URL.
-        if (store.status === "seen") q.status = "seen";
-        else if (store.status === "unseen") q.status = "unseen";
+        // Explicit "viewed" or "notViewed" choices are written to the URL.
+        if (store.status === "viewed") q.status = "viewed";
+        else if (store.status === "notViewed") q.status = "notViewed";
     }
     if (store.verifiedFilter !== "all") q.verifiedFilter = store.verifiedFilter;
     if (store.areaFilterMode !== "inside") q.areaFilterMode = store.areaFilterMode;
@@ -96,14 +96,22 @@ export function useFilterSync(isAuthenticated: boolean = true): void {
             store.initialDataImportIds = getIntArray(query, "initialDataImportIds");
             store.startDate = getString(query, "startDate");
             store.endDate = getString(query, "endDate");
-            // Auth users: "unseen" is the default (no param); "all" in the URL means null.
-            // Anonymous users: null (all) is the default (no param); "unseen" must be explicit.
+            // Auth users: "notViewed" is the default (no param); "all" in the URL means null.
+            // Anonymous users: null (all) is the default (no param); "notViewed" must be explicit.
             if (isAuthenticated) {
                 store.status =
-                    status === "seen" ? "seen" : status === "all" ? null : "unseen";
+                    status === "viewed"
+                        ? "viewed"
+                        : status === "all"
+                          ? null
+                          : "notViewed";
             } else {
                 store.status =
-                    status === "seen" ? "seen" : status === "unseen" ? "unseen" : null;
+                    status === "viewed"
+                        ? "viewed"
+                        : status === "notViewed"
+                          ? "notViewed"
+                          : null;
             }
             store.verifiedFilter =
                 verified === "verified" || verified === "unverified" ? verified : "all";

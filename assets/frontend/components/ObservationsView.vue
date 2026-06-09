@@ -111,7 +111,7 @@ const columnPopover = ref();
 // --- Observation fetching ---
 
 const observations = ref<ObservationOut[]>([]);
-const hasSeen = computed(() => observations.value.some((o) => o.seenByCurrentUser !== null));
+const hasSeen = computed(() => observations.value.some((o) => o.viewedByCurrentUser !== null));
 const totalRecords = ref(0);
 const loading = ref(false);
 const currentPage = ref(1);
@@ -205,7 +205,7 @@ onMounted(async () => {
     await loadObservations();
     // props.unseenFallback is evaluated once at mount; the fallback is first-load-only
     // behaviour, not something that re-runs when filters change.
-    if (props.unseenFallback && totalRecords.value === 0 && filtersStore.status === "unseen") {
+    if (props.unseenFallback && totalRecords.value === 0 && filtersStore.status === "notViewed") {
         filtersStore.status = null;
         reloadOnFilterChange.cancel();
         await loadObservations();
@@ -327,8 +327,8 @@ onMounted(async () => {
                         </Column>
                         <Column v-if="visibleColumns.has('seen') && hasSeen" :header="t('message.seen')">
                             <template #body="{ data }">
-                                <span v-if="data.seenByCurrentUser === true">&#10003;</span>
-                                <span v-else-if="data.seenByCurrentUser === false">&bull;</span>
+                                <span v-if="data.viewedByCurrentUser === true">&#10003;</span>
+                                <span v-else-if="data.viewedByCurrentUser === false">&bull;</span>
                             </template>
                         </Column>
                     </DataTable>

@@ -11,7 +11,7 @@ export const useFiltersStore = defineStore("filters", () => {
     const startDate = ref<string | null>(null);
     const endDate = ref<string | null>(null);
 
-    const status = ref<"seen" | "unseen" | null>(null);
+    const status = ref<"viewed" | "notViewed" | null>(null);
     const verifiedFilter = ref<"all" | "verified" | "unverified">("all");
 
     const areaFilterMode = ref<"inside" | "approaching" | "both">("inside");

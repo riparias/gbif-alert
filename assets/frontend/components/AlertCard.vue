@@ -64,8 +64,8 @@ function confirmDelete() {
                     {{ alert.name }}
                 </span>
                 <Badge
-                    v-if="alert.unseenCount > 0"
-                    :value="alert.unseenCount"
+                    v-if="alert.notViewedCount > 0"
+                    :value="alert.notViewedCount"
                     severity="danger"
                     class="unseen-badge"
                 />
