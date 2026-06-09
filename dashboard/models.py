@@ -239,7 +239,7 @@ class DataImport(models.Model):
         return {  # To be consumed on the frontend: we use JS naming conventions
             "id": self.pk,
             "name": f"Data import #{self.pk}",
-            "startTimestamp": self.start,
+            "startedAt": self.start,
         }
 
 

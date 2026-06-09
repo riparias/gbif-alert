@@ -231,7 +231,7 @@ def species_per_polygon(request: HttpRequest, payload: SpeciesPerPolygonIn):
 @api_v2.get("/datasets/", response=list[DatasetOut])
 def datasets_list(request: HttpRequest):
     return [
-        {"id": d.pk, "gbifKey": d.gbif_dataset_key, "name": d.name}
+        {"id": d.pk, "gbifDatasetKey": d.gbif_dataset_key, "name": d.name}
         for d in Dataset.objects.all()
     ]
 
@@ -395,8 +395,8 @@ def data_imports_list(request: HttpRequest):
         {
             "id": di.pk,
             "name": f"Data import #{di.pk}",
-            "startTimestamp": di.start,
-            "endTimestamp": di.end,
+            "startedAt": di.start,
+            "endedAt": di.end,
             "importedCount": di.imported_observations_counter,
             "newObservationsCount": di.new_observations_count,
             "skippedCount": di.skipped_observations_counter,
@@ -542,6 +542,7 @@ def observations_list(
             "verified": obs.verified,
             "identificationVerificationStatus": obs.identification_verification_status,
             "basisOfRecordId": obs.basis_of_record_id,
+            "basisOfRecordName": obs.basis_of_record.name,
             "viewedByCurrentUser": (obs.pk not in unseen_ids)
             if user is not None
             else None,
@@ -698,7 +699,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
         "scientificName": obs.species.name,
         **_vernacular_names(obs.species),
         "datasetName": obs.source_dataset.name,
-        "datasetGbifKey": obs.source_dataset.gbif_dataset_key,
+        "gbifDatasetKey": obs.source_dataset.gbif_dataset_key,
         "date": obs.date,
         "individualCount": obs.individual_count,
         "locality": obs.locality,
@@ -708,6 +709,7 @@ def observation_detail(request: HttpRequest, stable_id: str):
         "identificationVerificationStatus": obs.identification_verification_status,
         "verified": obs.verified,
         "basisOfRecordId": obs.basis_of_record_id,
+        "basisOfRecordName": obs.basis_of_record.name,
         "coordinateUncertaintyInMeters": obs.coordinate_uncertainty_in_meters,
         "initialDataImport": obs.initial_data_import.as_dict,
         "viewedByCurrentUser": seen_by_current_user,

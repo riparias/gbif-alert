@@ -118,12 +118,12 @@ function onUnselectAll() {
             <Column :header="t('message.gbifDatasetKey')">
                 <template #body="{ data }">
                     <a
-                        v-if="data.gbifKey"
-                        :href="`https://www.gbif.org/dataset/${data.gbifKey}`"
+                        v-if="data.gbifDatasetKey"
+                        :href="`https://www.gbif.org/dataset/${data.gbifDatasetKey}`"
                         target="_blank"
                         rel="noopener noreferrer"
                         class="gbif-link"
-                    >{{ data.gbifKey }}</a>
+                    >{{ data.gbifDatasetKey }}</a>
                 </template>
             </Column>
         </DataTable>
