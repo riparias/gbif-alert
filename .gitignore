@@ -57,9 +57,10 @@ coverage.xml
 
 # Django stuff:
 *.log
-# Ignore only the manual-deploy settings file (with secrets).
-# The repo-root `local_settings.py` is the Docker bind-mount target
-# (a committed empty stub) and must stay tracked.
+# Operator/dev escape-hatch settings (may contain secrets / local paths).
+# settings.py imports this on top of the env-driven config if present; create
+# it from djangoproject/local_settings.template.py when you need a Python
+# override (e.g. PREDICATE_BUILDER, or local GDAL paths during dev).
 djangoproject/local_settings.py
 db.sqlite3
 db.sqlite3-journal

@@ -54,21 +54,19 @@ The Docker Compose stack is production-only. For local development, use the manu
    mkdir gbif-alert-deploy && cd gbif-alert-deploy
    ```
 
-2. Download the three artefacts from the release tag (replace `v1.10.0` with the version you want):
+2. Download the two artefacts from the release tag (replace `v1.10.0` with the version you want):
    ```
    curl -O https://raw.githubusercontent.com/riparias/gbif-alert/v1.10.0/docker-compose.yml
    curl -O https://raw.githubusercontent.com/riparias/gbif-alert/v1.10.0/.env.example
-   curl -O https://raw.githubusercontent.com/riparias/gbif-alert/v1.10.0/local_settings.py.example
    ```
 
-3. Copy the templates and edit:
+3. Copy the env template and edit:
    ```
    cp .env.example .env
-   cp local_settings.py.example local_settings.py
    $EDITOR .env
    ```
 
-   Set at minimum: `SECRET_KEY`, `DATABASE_URL`, `SITE_BASE_URL`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`, `SITE_NAME`. See `.env.example` for the full contract. `local_settings.py` should normally stay empty unless you need a custom callable like `PREDICATE_BUILDER`.
+   Set at minimum: `SECRET_KEY`, `DATABASE_URL`, `SITE_BASE_URL`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`, `SITE_NAME`. See `.env.example` for the full contract. The Docker stack is **entirely env-driven** - you do not need a `local_settings.py`. (For a Python-only override like a custom `PREDICATE_BUILDER`, see the Custom predicate note below.)
 
 4. Bring up the stack:
    - With external Postgres:
@@ -95,7 +93,12 @@ All operationally-significant settings live in `.env`. Highlights:
 - **Map default view**: `MAP_INITIAL_ZOOM`, `MAP_INITIAL_LAT`, `MAP_INITIAL_LON`.
 - **Languages**: `ENABLED_LANGUAGES` (comma-separated subset of `en,fr,nl`).
 - **GBIF download filter**: `GBIF_DOWNLOAD_USERNAME`, `GBIF_DOWNLOAD_PASSWORD`, `GBIF_DOWNLOAD_COUNTRY`, `GBIF_DOWNLOAD_YEAR_MIN`. The default predicate builder uses these to construct the download filter.
-- **Custom predicate**: for filters not expressible via `GBIF_DOWNLOAD_*`, edit `local_settings.py` to override `GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"]`. See `local_settings.py.example` for a worked example.
+- **Custom predicate**: for filters not expressible via `GBIF_DOWNLOAD_*`, you need a Python override of `GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"]` (a callable can't be an env var). Copy `djangoproject/local_settings.template.py` to a `local_settings.py`, edit it, and bind-mount it into the container by adding to the `gbif-alert` service in `docker-compose.yml`:
+  ```yaml
+      volumes:
+        - ./local_settings.py:/app/djangoproject/local_settings.py:ro
+  ```
+  `settings.py` imports it on top of the env-driven config. (Manual deploys instead drop the file at `djangoproject/local_settings.py` directly.)
 
 After editing `.env`, restart the stack:
 
@@ -182,3 +185,11 @@ You'll need to install Python, PostgreSQL, PostGIS and Redis (or Valkey) on your
 - RQ worker: `$ poetry run python manage.py rqworker default`.
 - Cron: schedule `python manage.py import_observations` and `python manage.py send_alert_notifications_email` periodically.
 - Process supervision (systemd, supervisord, etc.) and env-var loading mechanism are deployment-specific; settings can be provided via a project-root `.env` file or any other mechanism that populates the process environment.
+
+### Upgrading from a legacy manual deploy
+
+Older installs ran `DJANGO_SETTINGS_MODULE=djangoproject.local_settings`, where `local_settings.py` was the full config module (it did `from .settings import *` and loaded its own `djangoproject/.env`). The entry point is now always **`djangoproject.settings`** (the `wsgi`/`asgi`/`manage.py` default). To migrate:
+
+- Stop setting `DJANGO_SETTINGS_MODULE` (or set it explicitly to `djangoproject.settings`).
+- Move operational config into the **project-root `.env`** (the only `.env` loaded) or real environment variables - including any Redis credentials in `CACHE_URL`/`RQ_REDIS_URL` (`redis://:PASSWORD@host:6379/0`).
+- Keep only Python overrides (e.g. `PREDICATE_BUILDER`, local GDAL paths) in `djangoproject/local_settings.py`, regenerated from `djangoproject/local_settings.template.py` - it is an override layer, **not** an entry point, and must not call `load_dotenv`.

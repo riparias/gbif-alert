@@ -20,6 +20,9 @@ from dotenv import load_dotenv
 
 # Load .env from the project root if it exists. No-op if env vars are
 # already set (compose, systemd EnvironmentFile, shell exports, etc.).
+# This is the ONLY .env this project loads: local_settings.py must NOT load
+# its own .env (a second, later load would race the env-driven config below -
+# e.g. CACHES is built before it and would miss a late CACHE_URL).
 load_dotenv(BASE_DIR / ".env")
 
 # ---------------------------------------------------------------------------
@@ -37,6 +40,14 @@ load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "")
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+
+# GeoDjango finds GDAL/GEOS automatically on Linux/Docker. On macOS (Homebrew)
+# the libraries usually need explicit paths - set them via env (or in
+# local_settings.py) so local dev runs under the default settings module too.
+if _gdal := os.environ.get("GDAL_LIBRARY_PATH"):
+    GDAL_LIBRARY_PATH = _gdal
+if _geos := os.environ.get("GEOS_LIBRARY_PATH"):
+    GEOS_LIBRARY_PATH = _geos
 # `ALLOWED_HOSTS` carries two kinds of entries:
 #   1. Hosts the operator declared via `DJANGO_ALLOWED_HOSTS` (what the
 #      validation at the end of this module cares about).
@@ -505,10 +516,14 @@ ZOOM_LEVEL_FOR_MIN_MAX_QUERY = 8
 # `local_settings.py` may define or override any setting. This is the escape
 # hatch used by both the manual deploy (host file) and the Docker bind-mount.
 # It is imported AFTER all env-driven settings, so its values take precedence.
+# It is an OVERRIDE LAYER, not an entry point: the settings module is always
+# `djangoproject.settings` (wsgi/asgi/manage/Docker all agree), and this import
+# pulls in local_settings.py on top. local_settings.py should therefore contain
+# only overrides - no `from .settings import *`, no `load_dotenv`.
 #
-# Skipped when the entry point is one of the legacy `local_settings_*.py`
-# modules (they do `from .settings import *` and would form a circular import
-# if we tried to import them back here).
+# The guard below is belt-and-suspenders: if someone still points
+# DJANGO_SETTINGS_MODULE directly at a local_settings module (the old style),
+# skip the re-import to avoid a circular import.
 # ---------------------------------------------------------------------------
 
 _settings_module = os.environ.get("DJANGO_SETTINGS_MODULE", "")
