@@ -77,6 +77,8 @@ _ENV_VARS_READ_BY_SETTINGS = (
     "GBIF_DOWNLOAD_PASSWORD",
     "GBIF_DOWNLOAD_COUNTRY",
     "GBIF_DOWNLOAD_YEAR_MIN",
+    "GDAL_LIBRARY_PATH",
+    "GEOS_LIBRARY_PATH",
     "DJANGO_SETTINGS_MODULE",
 )
 
@@ -334,6 +336,47 @@ def test_cache_url_overrides_rq_redis_url(clean_env):
     clean_env.setenv("CACHE_URL", "redis://valkey:6379/1")
     settings = _import_settings()
     assert settings.CACHES["default"]["LOCATION"] == "redis://valkey:6379/1"
+
+
+def _minimal_env(clean_env):
+    clean_env.setenv("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
+    clean_env.setenv("SECRET_KEY", "x")
+    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "example.org")
+    clean_env.setenv("SITE_BASE_URL", "http://localhost")
+    clean_env.setenv("DATABASE_URL", "postgis://u:p@h:5432/d")
+
+
+def test_gdal_geos_paths_set_from_env(clean_env):
+    """GDAL/GEOS library paths are read from env (for macOS/Homebrew dev)."""
+    _minimal_env(clean_env)
+    clean_env.setenv("GDAL_LIBRARY_PATH", "/opt/homebrew/lib/libgdal.dylib")
+    clean_env.setenv("GEOS_LIBRARY_PATH", "/opt/homebrew/lib/libgeos_c.dylib")
+    settings = _import_settings()
+    assert settings.GDAL_LIBRARY_PATH == "/opt/homebrew/lib/libgdal.dylib"
+    assert settings.GEOS_LIBRARY_PATH == "/opt/homebrew/lib/libgeos_c.dylib"
+
+
+def test_gdal_geos_paths_absent_when_unset(clean_env):
+    """When the env vars are unset, the settings stay undefined (Linux/Docker autodetect)."""
+    _minimal_env(clean_env)
+    settings = _import_settings()
+    assert not hasattr(settings, "GDAL_LIBRARY_PATH")
+    assert not hasattr(settings, "GEOS_LIBRARY_PATH")
+
+
+def test_entry_points_default_to_settings_module():
+    """wsgi/asgi must default DJANGO_SETTINGS_MODULE to djangoproject.settings.
+
+    local_settings is an override layer imported BY settings.py, never an entry
+    point - so no entry point may default to it (that was the legacy footgun).
+    """
+    from pathlib import Path
+
+    pkg = Path(__file__).resolve().parents[2] / "djangoproject"
+    for name in ("wsgi.py", "asgi.py"):
+        source = (pkg / name).read_text()
+        assert 'setdefault("DJANGO_SETTINGS_MODULE", "djangoproject.settings")' in source, name
+        assert "djangoproject.local_settings" not in source, name
 
 
 def test_maintenance_mode_uses_cache_backend(clean_env):
