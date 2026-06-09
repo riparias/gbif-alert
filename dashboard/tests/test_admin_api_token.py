@@ -1,6 +1,5 @@
 import pytest
 from django.contrib.admin.sites import site
-from django.test import override_settings
 
 from dashboard.admin import ApiTokenAdmin
 from dashboard.models import ApiToken
@@ -15,16 +14,8 @@ def test_api_token_admin_is_read_only():
     assert ma.has_change_permission(None) is False
 
 
-# Render the admin with plain static storage: CI has no collectstatic manifest,
-# so the manifest-based ViteAwareStaticStorage would fail on admin/css/base.css.
-@override_settings(
-    STORAGES={
-        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-        "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
-        },
-    }
-)
+# Static storage: the session-wide _plain_static_storage fixture (conftest.py)
+# renders admin HTML without a collectstatic manifest.
 def test_api_token_admin_changelist_and_revoke(client, django_user_model):
     """A superuser can view tokens and revoke (delete) them; adding is blocked."""
     admin = django_user_model.objects.create_superuser("adm", "adm@e.com", "pw")
