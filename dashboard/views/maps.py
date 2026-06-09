@@ -306,5 +306,7 @@ def _mvt_query_data(sql_template: str, sql_params: dict):
     Only for queries that returns a binary MVT (i.e. starts with "ST_AsMVT")"""
     with _execute_jinjasql(sql_template, sql_params) as cursor:
         if cursor.rowcount != 0:
-            return cursor.fetchone()[0].tobytes()
+            # psycopg2 returns a bytea column as a memoryview, psycopg3 as bytes.
+            # bytes() normalises both to a bytes object.
+            return bytes(cursor.fetchone()[0])
         return ""
