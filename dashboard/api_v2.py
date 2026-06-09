@@ -550,10 +550,16 @@ def observations_list(
         for obs in obs_page
     ]
 
+    total_pages = (total + pageSize - 1) // pageSize  # 0 when there are no results
     return 200, {
         "count": total,
         "speciesCount": aggregates["species_count"],
         "datasetsCount": aggregates["datasets_count"],
+        "page": page,
+        "pageSize": pageSize,
+        "totalPages": total_pages,
+        "hasNextPage": page < total_pages,
+        "hasPreviousPage": page > 1,
         "items": items,
     }
 
