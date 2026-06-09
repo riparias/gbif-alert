@@ -54,7 +54,7 @@ class ObservationUnseenInline(admin.TabularInline):
 
 
 @admin.register(Observation)
-class ObservationAdmin(admin.OSMGeoAdmin):
+class ObservationAdmin(admin.GISModelAdmin):
     list_display = ("stable_id", "date", "species", "source_dataset")
     list_filter = ["data_import", "species"]
     search_fields = ["stable_id"]
@@ -92,7 +92,7 @@ class BasisOfRecordAdmin(admin.ModelAdmin):
 
 
 @admin.register(Area)
-class AreaAdmin(admin.OSMGeoAdmin):
+class AreaAdmin(admin.GISModelAdmin):
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related("tags")
 
