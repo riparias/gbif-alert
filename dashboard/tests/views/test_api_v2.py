@@ -520,6 +520,15 @@ def test_status_filter_uses_viewed_vocabulary(client, observations_data):
     assert obs.pk not in viewed
 
 
+def test_invalid_enum_filter_values_are_rejected(client, observations_data):
+    """Closed-choice filters are now Literal-typed, so junk values are rejected."""
+    url = reverse("api-v2:observations_list")
+    assert client.get(url, {"status": "bogus"}).status_code == 422
+    assert client.get(url, {"verifiedFilter": "bogus"}).status_code == 422
+    # A valid value still works.
+    assert client.get(url, {"verifiedFilter": "verified"}).status_code == 200
+
+
 # --- Pagination ---
 
 

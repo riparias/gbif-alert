@@ -768,19 +768,21 @@ export interface components {
             /** Areaids */
             areaIds?: number[];
             /** Status */
-            status?: string | null;
+            status?: ("all" | "viewed" | "notViewed") | null;
             /** Initialdataimportids */
             initialDataImportIds?: number[];
             /**
              * Verifiedfilter
              * @default all
+             * @enum {string}
              */
-            verifiedFilter: string;
+            verifiedFilter: "all" | "verified" | "unverified";
             /**
              * Areafiltermode
              * @default inside
+             * @enum {string}
              */
-            areaFilterMode: string;
+            areaFilterMode: "inside" | "approaching" | "both";
             /** Approachingdistancekm */
             approachingDistanceKm?: number | null;
         };
@@ -973,8 +975,11 @@ export interface components {
         };
         /** AlertNotificationFrequencyOut */
         AlertNotificationFrequencyOut: {
-            /** Id */
-            id: string;
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "N" | "D" | "W" | "M";
             /** Label */
             label: string;
         };
@@ -992,12 +997,21 @@ export interface components {
             basisOfRecordIds: number[];
             /** Areaids */
             areaIds: number[];
-            /** Emailnotificationsfrequency */
-            emailNotificationsFrequency: string;
-            /** Verifiedfilter */
-            verifiedFilter: string;
-            /** Areafiltermode */
-            areaFilterMode: string;
+            /**
+             * Emailnotificationsfrequency
+             * @enum {string}
+             */
+            emailNotificationsFrequency: "N" | "D" | "W" | "M";
+            /**
+             * Verifiedfilter
+             * @enum {string}
+             */
+            verifiedFilter: "all" | "verified" | "unverified";
+            /**
+             * Areafiltermode
+             * @enum {string}
+             */
+            areaFilterMode: "inside" | "approaching" | "both";
             /** Approachingdistancekm */
             approachingDistanceKm: number | null;
             /** Notviewedcount */
@@ -1050,18 +1064,21 @@ export interface components {
             /**
              * Emailnotificationsfrequency
              * @default W
+             * @enum {string}
              */
-            emailNotificationsFrequency: string;
+            emailNotificationsFrequency: "N" | "D" | "W" | "M";
             /**
              * Verifiedfilter
              * @default all
+             * @enum {string}
              */
-            verifiedFilter: string;
+            verifiedFilter: "all" | "verified" | "unverified";
             /**
              * Areafiltermode
              * @default inside
+             * @enum {string}
              */
-            areaFilterMode: string;
+            areaFilterMode: "inside" | "approaching" | "both";
             /** Approachingdistancekm */
             approachingDistanceKm?: number | null;
         };
@@ -1093,7 +1110,10 @@ export interface components {
             lastName: string;
             /** Email */
             email: string;
-            /** Language */
+            /**
+             * Language
+             * @description A language code enabled on this site (see settings.LANGUAGES, e.g. en/fr/nl).
+             */
             language: string;
             /** Password1 */
             password1: string;
@@ -1119,12 +1139,18 @@ export interface components {
             lastName: string;
             /** Email */
             email: string;
-            /** Language */
+            /**
+             * Language
+             * @description A language code enabled on this site (see settings.LANGUAGES, e.g. en/fr/nl).
+             */
             language: string;
             /** Delayvalue */
             delayValue: number;
-            /** Delayunit */
-            delayUnit: string;
+            /**
+             * Delayunit
+             * @enum {string}
+             */
+            delayUnit: "days" | "weeks" | "months" | "years";
         };
         /** ProfileIn */
         ProfileIn: {
@@ -1134,11 +1160,17 @@ export interface components {
             lastName: string;
             /** Email */
             email: string;
-            /** Language */
+            /**
+             * Language
+             * @description A language code enabled on this site (see settings.LANGUAGES, e.g. en/fr/nl).
+             */
             language: string;
             /** Delayvalue */
             delayValue: number;
-            /** Delayunit */
+            /**
+             * Delayunit
+             * @description One of: days, weeks, months, years.
+             */
             delayUnit: string;
         };
         /**
@@ -1605,10 +1637,10 @@ export interface operations {
                 startDate?: string | null;
                 endDate?: string | null;
                 areaIds?: number[];
-                status?: string | null;
+                status?: ("all" | "viewed" | "notViewed") | null;
                 initialDataImportIds?: number[];
-                verifiedFilter?: string;
-                areaFilterMode?: string;
+                verifiedFilter?: "all" | "verified" | "unverified";
+                areaFilterMode?: "inside" | "approaching" | "both";
                 approachingDistanceKm?: number | null;
                 page?: number;
                 pageSize?: number;
@@ -1650,10 +1682,10 @@ export interface operations {
                 startDate?: string | null;
                 endDate?: string | null;
                 areaIds?: number[];
-                status?: string | null;
+                status?: ("all" | "viewed" | "notViewed") | null;
                 initialDataImportIds?: number[];
-                verifiedFilter?: string;
-                areaFilterMode?: string;
+                verifiedFilter?: "all" | "verified" | "unverified";
+                areaFilterMode?: "inside" | "approaching" | "both";
                 approachingDistanceKm?: number | null;
             };
             header?: never;
@@ -1682,10 +1714,10 @@ export interface operations {
                 startDate?: string | null;
                 endDate?: string | null;
                 areaIds?: number[];
-                status?: string | null;
+                status?: ("all" | "viewed" | "notViewed") | null;
                 initialDataImportIds?: number[];
-                verifiedFilter?: string;
-                areaFilterMode?: string;
+                verifiedFilter?: "all" | "verified" | "unverified";
+                areaFilterMode?: "inside" | "approaching" | "both";
                 approachingDistanceKm?: number | null;
             };
             header?: never;
