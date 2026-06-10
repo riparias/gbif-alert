@@ -92,7 +92,17 @@ import dj_database_url
 # env vars - useful for the manual deploy that pre-dates this refactor.
 if database_url := os.environ.get("DATABASE_URL"):
     DATABASES = {
-        "default": dj_database_url.parse(database_url, conn_max_age=600),
+        # gbif-alert always requires PostGIS, so force the spatial engine
+        # regardless of the URL scheme. Managed-Postgres providers hand out
+        # `postgres://` / `postgresql://` URLs, which dj_database_url would
+        # otherwise map to the non-spatial backend - selecting any geometry
+        # column then crashes ("DatabaseOperations has no attribute 'select'").
+        # `postgis://` already resolves correctly; this makes the rest safe too.
+        "default": dj_database_url.parse(
+            database_url,
+            conn_max_age=600,
+            engine="django.contrib.gis.db.backends.postgis",
+        ),
     }
 
 from urllib.parse import urlparse
