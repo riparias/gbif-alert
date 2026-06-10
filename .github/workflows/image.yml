@@ -58,4 +58,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Dokploy redeploy (demo)
-        run: curl -fsS --retry 3 -X POST "${{ secrets.DOKPLOY_DEMO_DEPLOY_WEBHOOK }}"
+        # Dokploy's auto-deploy webhook expects a GitHub-style push payload
+        # and only deploys when the ref matches the branch the demo service
+        # tracks (devel). A bodyless call is answered with a 301 +
+        # {"message":"Branch Not Match"} and deploys nothing - and since 301
+        # is not an HTTP error, we must assert 200 explicitly or a rejection
+        # would pass as success.
+        run: |
+          code=$(curl -sS --retry 3 -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: push" \
+            -d '{"ref":"refs/heads/devel"}' \
+            -o /tmp/dokploy-resp.json -w '%{http_code}' \
+            "${{ secrets.DOKPLOY_DEMO_DEPLOY_WEBHOOK }}")
+          echo "Dokploy responded $code:"; cat /tmp/dokploy-resp.json; echo
+          test "$code" = "200"
