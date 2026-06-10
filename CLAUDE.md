@@ -127,8 +127,8 @@ The app provides an OGC Web Feature Service endpoint at `/api/wfs/observations` 
 - Feature branches → merge to `devel` → auto-deploys to demo server → merge to `main` → manual production deploy via `deploy_main.sh`
 - CI runs Django tests + mypy on every push (GitHub Actions)
 
-## Version Bumping
-Version number must be updated in three places: `pyproject.toml`, `package.json`, and `docker-compose.yml` (3 services: gbif-alert, rqworker, nginx).
+## Versioning
+The footer version is stamped into the Docker image at build time (`release.yml` uses the git tag; `image.yml` uses `git describe`), so no manual `VERSION` edit is needed - see CONTRIBUTING.md "How to release a new version". Bumping `pyproject.toml` / `package.json` is optional metadata only.
 
 ## Code Style
 - Python: `black` formatting, imports at top of file (stdlib → third-party → local), avoid local imports unless circular dependency
