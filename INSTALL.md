@@ -12,7 +12,7 @@ You can customize:
 only [occurrences of the 5 invasive alien fishes in New Zealand](https://www.gbif.org/occurrence/search?country=NZ&taxon_key=2367196&taxon_key=2350580&taxon_key=2362635&taxon_key=2340989&taxon_key=8215487). Those are the **only** occurrences that GBIF Alert 
 will periodically download from GBIF and will import in its database.
 - Your end-users will be able to filter those occurrences further to match their specific needs.
-- The available languages in the interface: currently English and French are supported, other languages will be added soon.
+- The available languages in the interface: English, French and Dutch are currently supported.
 - Website texts, e.g. the introduction on the home page, the footer content and the "about this site" page.
 - Some visual elements such as the navbar color.
 
