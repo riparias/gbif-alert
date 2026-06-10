@@ -99,19 +99,11 @@ services:
       ofelia.job-exec.send-notifications.schedule: "${SEND_NOTIFICATIONS_SCHEDULE:-0 0 14 * * *}"
       ofelia.job-exec.send-notifications.command: "python manage.py send_alert_notifications_email"
       ofelia.job-exec.send-notifications.no-overlap: "true"
-      # Traefik routing (Dokploy and any other Traefik-fronted host).
-      # Non-Traefik deploys (plain docker compose, ECS) ignore these
-      # labels entirely - they sit as inert metadata. Set
-      # `PUBLIC_DOMAIN` in the env when behind Traefik.
-      #
-      # Router/service name is hardcoded because compose does not
-      # interpolate `${VAR}` in label keys. Running multiple instances
-      # behind the same Traefik would conflict on the router name.
-      traefik.enable: "true"
-      traefik.http.routers.gbif-alert.rule: "Host(`${PUBLIC_DOMAIN:-}`)"
-      traefik.http.routers.gbif-alert.entrypoints: "websecure"
-      traefik.http.routers.gbif-alert.tls.certresolver: "${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
-      traefik.http.services.gbif-alert.loadbalancer.server.port: "8000"
+      # Routing and TLS are the operator's responsibility, supplied per
+      # platform rather than baked in here (the app exposes 8000; see
+      # the `ports`/GBIF_ALERT_BIND knob above). This keeps the file
+      # portable and lets multiple instances share one host without
+      # clashing on a hardcoded router name. See INSTALL.md.
 
   rqworker:
     image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}

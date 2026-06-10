@@ -45,7 +45,7 @@ The Docker Compose stack is production-only. For local development, use the manu
 - A Postgres + PostGIS database. You can either:
   - **Bring your own** (recommended for production: managed Postgres on Dokploy, RDS, etc.). PostGIS extension required.
   - **Use the bundled `db` service** (good for testing or hobbyist self-hosting). Backups are your responsibility.
-- An external reverse proxy in front of the stack (Dokploy/Traefik, ALB, Nginx, ...) handling TLS and routing. The `gbif-alert` container exposes port 8000 and serves static files via WhiteNoise; no nginx in compose.
+- An external reverse proxy in front of the stack (Dokploy/Traefik, ALB, Nginx, ...) handling TLS and routing. The `gbif-alert` container exposes port 8000 and serves static files via WhiteNoise; no nginx in compose. The compose file ships **no routing or TLS config of its own** - you wire the proxy to the app yourself (see *Reverse proxy, TLS, and multiple instances* below).
 
 ### Initial deploy
 
@@ -84,6 +84,24 @@ The Docker Compose stack is production-only. For local development, use the manu
    ```
 
 6. Visit your site (via the reverse proxy you set up in front of port 8000) and log in to the admin (`/admin`).
+
+### Reverse proxy, TLS, and multiple instances
+
+The stack ships **no routing or TLS config** - that is the operator's job, and how you wire it depends on your platform. The app listens on container port 8000; expose it one of two ways:
+
+- **Published host port** (most portable): `GBIF_ALERT_BIND` publishes the app on the host (default `127.0.0.1:8000`). Point a host-level proxy (Nginx, Caddy) at that address for TLS and routing.
+- **Docker network** (Dokploy, self-managed Traefik): the proxy reaches the `gbif-alert` container over a shared Docker network on port 8000. The `GBIF_ALERT_BIND` host port is then unused for routing, but the compose still publishes it - keep it unique on a shared host (see below).
+
+Per platform:
+
+- **Dokploy**: add your domain in the service's **Domains** tab (host = your domain, container port = 8000). Dokploy generates the Traefik labels for you, with a router name unique to the service - so multiple instances coexist on one host. There is no `PUBLIC_DOMAIN` or Traefik env var to set; the compose file has none.
+- **Self-managed Traefik (no Dokploy)**: add your own Traefik labels to the `gbif-alert` service (or a compose override), giving the router/service a name unique per instance.
+- **Plain Nginx / Caddy / ALB**: front the published `GBIF_ALERT_BIND` address with your proxy config.
+
+**Running several instances on one host**, each needs:
+
+1. A **unique** `GBIF_ALERT_BIND` host port - e.g. `127.0.0.1:8001`, `127.0.0.1:8002`. A host port can only be bound by one container; reusing `127.0.0.1:8000` fails with `port is already allocated`.
+2. Its own domain in whatever proxy you use. Dokploy's Domains tab keeps router names unique automatically; with hand-written Traefik labels you must make the router/service names unique yourself.
 
 ### Customising your instance
 
