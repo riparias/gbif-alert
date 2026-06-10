@@ -23,7 +23,7 @@ RUN npm run vite-build
 # Stage 2: final runtime image
 # ============================================================================
 
-FROM python:3.11-slim AS app
+FROM python:3.13-slim AS app
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
