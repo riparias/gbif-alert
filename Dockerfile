@@ -46,7 +46,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # uv binary from the official distroless image (pinned).
-COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
 
 # Python deps in a cache-friendly layer (invalidates only when
 # pyproject.toml or uv.lock changes). --no-install-project: the app is
