@@ -49,3 +49,13 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Redeploy the demo instance once a fresh `devel` image is in the
+  # registry. Fires only after `build` pushes it - never on PRs or `main`.
+  deploy-demo:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/devel'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Dokploy redeploy (demo)
+        run: curl -fsS --retry 3 -X POST "${{ secrets.DOKPLOY_DEMO_DEPLOY_WEBHOOK }}"
