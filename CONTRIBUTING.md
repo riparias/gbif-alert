@@ -3,11 +3,11 @@
 ## Technological backbone
 - [Python](https://www.python.org/) 3.11+, [(Geo)Django](https://www.djangoproject.com/) 4.2 [PostgreSQL](https://www.postgresql.org/), [PostGIS](https://postgis.net/) 3.1+, [Redis](https://redis.io/),  [TypeScript](https://www.typescriptlang.org/) and [Vue.js v3](https://vuejs.org/)
 - UI components: [PrimeVue](https://primevue.org/) v4
-- [Poetry](https://python-poetry.org/) is used to manage dependencies (use `poetry add`, `poetry install`, ... instead of pip). PyCharm also has a Poetry plugin available.
+- [uv](https://docs.astral.sh/uv/) is used to manage dependencies (use `uv add`, `uv sync`, ... instead of pip).
 
 ## Dev environment configuration
 - Python>=3.11, PostGIS>=3.1, Redis (or Valkey) and `npm` are required
-- Use [Poetry](https://python-poetry.org/) to create an isolated virtualenv and install dependencies (`poetry install`)
+- Use [uv](https://docs.astral.sh/uv/) to create an isolated virtualenv and install dependencies (`uv sync`)
 - Configure the app via environment variables. Copy `.env.example` at the project root to `.env` and fill in the values:
    ```
    cp .env.example .env
@@ -87,10 +87,10 @@ For small, non-risky changes, steps 1-3 can be avoided by committing directly to
 
 We try to frequently update dependencies. Process is:
 
-- Backend: `$ poetry update`
+- Backend: `$ uv lock --upgrade`
 - Frontend: `$ npm-check -u`
 - Run unit tests (+ a few manual checks?)
-- Commit changes (should include `package.json`, `package-lock.json` and `poetry lock`)
+- Commit changes (should include `package.json`, `package-lock.json` and `uv.lock`)
 
 ## Database diagram
 

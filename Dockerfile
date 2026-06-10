@@ -27,11 +27,10 @@ FROM python:3.13-slim AS app
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    POETRY_VERSION=1.8.3 \
-    POETRY_VIRTUALENVS_CREATE=false \
-    DJANGO_SETTINGS_MODULE=djangoproject.settings
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    DJANGO_SETTINGS_MODULE=djangoproject.settings \
+    PATH="/app/.venv/bin:$PATH"
 
 # Runtime system deps:
 #  - libgdal-dev: GeoDjango bindings link against it; the runtime needs
@@ -46,11 +45,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Python deps in a separate layer (cache-friendly: only invalidates when
-# pyproject.toml or poetry.lock changes).
-RUN pip install "poetry==${POETRY_VERSION}"
-COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-root --only main
+# uv binary from the official distroless image (pinned).
+COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
+
+# Python deps in a cache-friendly layer (invalidates only when
+# pyproject.toml or uv.lock changes). --no-install-project: the app is
+# package-mode=false. --no-dev: runtime image excludes dev deps.
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-install-project --no-dev
 
 # Application source.
 COPY . .
@@ -65,13 +68,13 @@ RUN SECRET_KEY=build-only \
     DJANGO_ALLOWED_HOSTS=localhost \
     SITE_BASE_URL=http://localhost \
     SITE_NAME=build \
-    poetry run python manage.py collectstatic --noinput && \
+    python manage.py collectstatic --noinput && \
     SECRET_KEY=build-only \
     DATABASE_URL=sqlite:///tmp/build.sqlite3 \
     DJANGO_ALLOWED_HOSTS=localhost \
     SITE_BASE_URL=http://localhost \
     SITE_NAME=build \
-    poetry run python manage.py compilemessages
+    python manage.py compilemessages
 
 # Non-root user.
 RUN groupadd --system app && \

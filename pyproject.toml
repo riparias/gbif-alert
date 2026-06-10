@@ -1,47 +1,60 @@
-[tool.poetry]
+[project]
 name = "gbif-alert"
 version = "1.9.0"
 description = "A GBIF-based early alert system"
-authors = ["Nicolas Noé <nicolas@niconoe.eu>"]
-package-mode = false
+authors = [{ name = "Nicolas Noé", email = "nicolas@niconoe.eu" }]
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "Django>=5.2,<6",
+    "dj-database-url>=2.2.0,<3",
+    "psycopg[binary]>=3.2,<4",
+    "requests>=2.26.0,<3",
+    "gbif-blocking-occurrence-download>=0.1.0,<0.2",
+    "python-dwca-reader>=0.16.4,<0.17",
+    "jinjasql>=0.1.8,<0.2",
+    "django-maintenance-mode>=0.22.0,<0.23",
+    "django-import-export>=4.4.0,<5",
+    "django-cors-headers>=4.2.0,<5",
+    "django-markdownx>=4.0.2,<5",
+    "django-rq>=4.0,<5",
+    "html2text==2024.2.25",
+    # Pinned only for JinjaSQL, which tends to pull an incompatible 3.1.x.
+    # Drop once JinjaSQL is updated (https://github.com/sripathikrishnan/jinjasql/issues/50).
+    "Jinja2==3.0.3",
+    "django-taggit>=6.0,<7",
+    "django-modeltranslation>=0.20.0,<0.21",
+    "python-dotenv>=1.0.0,<2",
+    "django-gisserver>=2.0,<3",
+    "setuptools",
+    "django-vite>=3.1.0,<4",
+    "django-ninja>=1.6.2,<2",
+    "whitenoise>=6.7.0,<7",
+    "gunicorn>=25.0.3,<26",
+]
 
-[tool.poetry.dependencies]
-python = "^3.12"
-Django = "^5.2"
-dj-database-url = "^2.2.0"
-psycopg = {extras = ["binary"], version = "^3.2"}
-requests = "^2.26.0"
-gbif-blocking-occurrence-download = "^0.1.0"
-python-dwca-reader = "^0.16.4"
-jinjasql = "^0.1.8"
-django-maintenance-mode = "^0.22.0"
-django-import-export = "^4.4.0"
-django-cors-headers = "^4.2.0"
-django-markdownx = "^4.0.2"
-django-rq = "^4.0"
-html2text = "2024.2.25"
-Jinja2 = "3.0.3" # just needed for JinjaSQL, but it currently has a tendency to download an incompatible version (3.1.1). I hope we'll be able to remove that fake dependency once JinjaSQL gets updated (https://github.com/sripathikrishnan/jinjasql/issues/50)
-django-taggit = "^6.0"
-django-modeltranslation = "^0.20.0"
-python-dotenv = "^1.0.0"
-django-gisserver = "^2.0"
-setuptools = "*"
-django-vite = "^3.1.0"
-django-ninja = "^1.6.2"
-whitenoise = "^6.7.0"
-gunicorn = "^25.0.3"
-[tool.poetry.group.dev.dependencies]
-mypy = "^1.14"
-django-stubs = "^5.2.0"
-types-requests = "^2.28.11.15"
-black = "^23.1.0"
-mapbox-vector-tile = "^2.0.1"
-requests-mock = "^1.10.0"
-tblib = "^1.7.0"
-pytest = "^9.0.2"
-pytest-django = "^4.12.0"
-pytest-env = "^1.1.0"
-pytest-playwright = "^0.7.2"
+[dependency-groups]
+dev = [
+    "mypy>=1.14,<2",
+    "django-stubs>=5.2.0,<6",
+    "types-requests>=2.28.11.15,<3",
+    "black>=23.1.0,<24",
+    "mapbox-vector-tile>=2.0.1,<3",
+    "requests-mock>=1.10.0,<2",
+    "tblib>=1.7.0,<2",
+    "pytest>=9.0.2,<10",
+    "pytest-django>=4.12.0,<5",
+    "pytest-env>=1.1.0,<2",
+    "pytest-playwright>=0.7.2,<0.8",
+]
+
+[tool.uv]
+package = false
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "djangoproject.settings"
@@ -67,7 +80,3 @@ env = [
     "D:GBIF_DOWNLOAD_COUNTRY=BE",
     "D:GBIF_DOWNLOAD_YEAR_MIN=2000",
 ]
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
