@@ -13,6 +13,7 @@
 - **Compose topology**: the custom nginx image and `static_volume` are removed. The app now serves static files via WhiteNoise. Operators need an external reverse proxy (Dokploy/Traefik, ALB, etc.) for TLS and public routing.
 - **Redis -> Valkey**: the in-compose broker is now Valkey (BSD-3-Clause). Same RESP protocol, drop-in for rq. The service name in compose changed from `redis` to `valkey`.
 - **Migrations** are now applied by a one-shot `migrate` service rather than at every container startup. Safer for multi-replica deployments.
+- **Bundled-db Postgres 15 -> 17**: the optional `bundled-db` compose profile now uses `postgis/postgis:17-3.5` (matching the version the test suite runs against), up from `15-3.3`. Existing bundled-db deployments must run `pg_upgrade` or a dump/restore before upgrading. Deployments using managed/external Postgres are unaffected.
 
 **Added:**
 
@@ -21,6 +22,7 @@
 - `bundled-db` compose profile so the postgis service is opt-in (production deploys typically use managed Postgres).
 - GitHub Actions workflows: build on every push to `main`/`devel`, publish versioned tags on `v*`.
 - `.env.example` documents the full env-var contract.
+- HTTPS hardening settings (`SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SECURE_SSL_REDIRECT`, `SECURE_HSTS_SECONDS`, plus the `INCLUDE_SUBDOMAINS`/`PRELOAD` toggles): secure-by-default when `DEBUG=False`, env-overridable, with the internal `/healthz` healthcheck exempted from the HTTPS redirect. See `.env.example`.
 
 **Changed:**
 

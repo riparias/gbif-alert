@@ -3,6 +3,8 @@ name = "gbif-alert"
 version = "1.9.0"
 description = "A GBIF-based early alert system"
 authors = [{ name = "Nicolas Noé", email = "nicolas@niconoe.eu" }]
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 classifiers = [
     "Programming Language :: Python :: 3",

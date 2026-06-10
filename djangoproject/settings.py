@@ -83,6 +83,50 @@ CSRF_TRUSTED_ORIGINS = [
 # different proxy in front, verify it does the same before trusting this.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# ---------------------------------------------------------------------------
+# HTTPS hardening.
+#
+# These only bite when the public site is served over HTTPS, which is the
+# supported production topology (DEBUG=False behind a TLS-terminating reverse
+# proxy). Each defaults to the secure value in production and a dev-friendly
+# value when DEBUG=True (runserver speaks plain HTTP), and each is
+# env-overridable for unusual setups - so the same image deploys cleanly on
+# Dokploy, AWS, bare compose, etc. without per-platform tweaks.
+_prod_https = not DEBUG
+
+# Secure-only cookies: the browser sends them over HTTPS only.
+SESSION_COOKIE_SECURE = (
+    os.environ.get("SESSION_COOKIE_SECURE", str(_prod_https)).lower() == "true"
+)
+CSRF_COOKIE_SECURE = (
+    os.environ.get("CSRF_COOKIE_SECURE", str(_prod_https)).lower() == "true"
+)
+
+# Redirect plain HTTP to HTTPS. Most reverse proxies already do this, so this
+# is belt-and-suspenders; operators whose proxy handles it can set
+# SECURE_SSL_REDIRECT=False to drop the extra hop. The internal compose
+# healthcheck hits http://localhost:8000/healthz directly (no proxy, no
+# X-Forwarded-Proto header), so it must be exempt - otherwise it gets 301'd to
+# https on a plain-HTTP port and the container is marked unhealthy.
+SECURE_SSL_REDIRECT = (
+    os.environ.get("SECURE_SSL_REDIRECT", str(_prod_https)).lower() == "true"
+)
+SECURE_REDIRECT_EXEMPT = [r"^healthz$"]
+
+# HTTP Strict Transport Security. Sticky and slow to undo (browsers cache it),
+# so the default is a conservative 1 hour with no includeSubDomains/preload.
+# Raise SECURE_HSTS_SECONDS once you are confident, and only enable
+# includeSubDomains/preload deliberately. Set SECURE_HSTS_SECONDS=0 to disable.
+SECURE_HSTS_SECONDS = int(
+    os.environ.get("SECURE_HSTS_SECONDS", "3600" if _prod_https else "0")
+)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = (
+    os.environ.get("SECURE_HSTS_INCLUDE_SUBDOMAINS", "False").lower() == "true"
+)
+SECURE_HSTS_PRELOAD = (
+    os.environ.get("SECURE_HSTS_PRELOAD", "False").lower() == "true"
+)
+
 SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "")
 
 import dj_database_url
