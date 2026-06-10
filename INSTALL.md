@@ -94,14 +94,41 @@ The stack ships **no routing or TLS config** - that is the operator's job, and h
 
 Per platform:
 
-- **Dokploy**: add your domain in the service's **Domains** tab (host = your domain, container port = 8000). Dokploy generates the Traefik labels for you, with a router name unique to the service - so multiple instances coexist on one host. There is no `PUBLIC_DOMAIN` or Traefik env var to set; the compose file has none.
-- **Self-managed Traefik (no Dokploy)**: add your own Traefik labels to the `gbif-alert` service (or a compose override), giving the router/service a name unique per instance.
+- **Dokploy (Compose stacks)**: Dokploy's **Domains** tab does *not* wire routing for compose services - it injects no Traefik labels and no dynamic config (it manages domains only for Application-type services). Supply the routing yourself as a Traefik file-provider config: Dokploy's Traefik watches `/etc/dokploy/traefik/dynamic/`, so drop one file there per instance (see the example below). Point it at the `gbif-alert` container by its name on the `dokploy-network` - get it with `docker ps --format '{{.Names}}' | grep -- '-gbif-alert-'`. Use that full name, not the bare `gbif-alert` alias, which is ambiguous when several instances share the network.
+- **Self-managed Traefik (no Dokploy)**: same file-provider pattern, or add your own Traefik labels to the `gbif-alert` service with a router/service name unique per instance.
 - **Plain Nginx / Caddy / ALB**: front the published `GBIF_ALERT_BIND` address with your proxy config.
+
+Example Traefik dynamic config (file provider) for one instance. The unique router/service names (`gbif-alert-<instance>-*`) are what let multiple instances share one Traefik without clashing:
+
+```yaml
+# /etc/dokploy/traefik/dynamic/gbif-alert-myinstance.yml
+http:
+  routers:
+    gbif-alert-myinstance-web:
+      rule: Host(`alerts.example.org`)
+      service: gbif-alert-myinstance
+      middlewares: [redirect-to-https]   # Dokploy ships this middleware; omit it elsewhere
+      entryPoints: [web]
+    gbif-alert-myinstance-websecure:
+      rule: Host(`alerts.example.org`)
+      service: gbif-alert-myinstance
+      entryPoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+  services:
+    gbif-alert-myinstance:
+      loadBalancer:
+        servers:
+          - url: http://<container-name>:8000
+        passHostHeader: true
+```
+
+Traefik hot-reloads the file (no restart needed). `passHostHeader: true` forwards the real Host to Django, so the domain must be in that instance's `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`. The file lives outside Dokploy's own management: it survives app redeploys, but update `url:` if you ever recreate the project (the container name's hash changes). Verify with `curl -I https://your.domain` - a `200`/`server: gunicorn` means Django is reached; a bare `404 page not found` is Traefik with no matching router (the file did not load - check for a mangled `Host()` rule or YAML errors).
 
 **Running several instances on one host**, each needs:
 
-1. A **unique** `GBIF_ALERT_BIND` host port - e.g. `127.0.0.1:8001`, `127.0.0.1:8002`. A host port can only be bound by one container; reusing `127.0.0.1:8000` fails with `port is already allocated`.
-2. Its own domain in whatever proxy you use. Dokploy's Domains tab keeps router names unique automatically; with hand-written Traefik labels you must make the router/service names unique yourself.
+1. A **unique** `GBIF_ALERT_BIND` host port - e.g. `127.0.0.1:8001`, `127.0.0.1:8002`. A host port can only be bound by one container; reusing `127.0.0.1:8000` fails with `port is already allocated`. Routing reaches the container over the Docker network, so this bind only needs to avoid the clash.
+2. Its own dynamic-config file with **unique** router/service names and its own domain.
 
 ### Customising your instance
 
