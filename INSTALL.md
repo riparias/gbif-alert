@@ -209,7 +209,7 @@ You'll need to install Python, PostgreSQL, PostGIS and Redis (or Valkey) on your
 ### One-time setup
 
 1. Create the database and install the PostGIS extension.
-2. Create a Python virtual environment and install dependencies: `$ poetry install`.
+2. Create a Python virtual environment and install dependencies: `$ uv sync`.
 3. Copy `.env.example` to `.env` (at the project root) and edit:
    ```
    cp .env.example .env
@@ -217,17 +217,17 @@ You'll need to install Python, PostgreSQL, PostGIS and Redis (or Valkey) on your
    ```
    Set at least `SECRET_KEY`, `DATABASE_URL`, `SITE_BASE_URL`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`, and `SITE_NAME`. See `.env.example` for the full contract and `EMAIL_*` / `GBIF_DOWNLOAD_*` / `MAP_INITIAL_*` settings you'll want for production.
 4. (Optional) For settings that cannot be expressed as env vars (e.g. a custom `PREDICATE_BUILDER` callable), copy `djangoproject/local_settings.template.py` to `djangoproject/local_settings.py` and edit. This file is gitignored.
-5. Generate the database schema: `$ poetry run python manage.py migrate`.
+5. Generate the database schema: `$ uv run python manage.py migrate`.
 6. Install frontend dependencies: `$ npm install`.
 7. Generate static assets: `$ npm run vite-build`.
-8. Compile translations: `$ poetry run python manage.py compilemessages`.
-9. Collect static files: `$ poetry run python manage.py collectstatic --no-input`.
+8. Compile translations: `$ uv run python manage.py compilemessages`.
+9. Collect static files: `$ uv run python manage.py collectstatic --no-input`.
 
 ### Running
 
-- Web server: `$ poetry run gunicorn djangoproject.wsgi`. Place an Nginx reverse proxy in front for TLS and (optionally) static-file serving.
+- Web server: `$ uv run gunicorn djangoproject.wsgi`. Place an Nginx reverse proxy in front for TLS and (optionally) static-file serving.
   - Static files can be served either by Nginx directly (point it at `STATIC_ROOT`) for slightly better performance, or by Gunicorn itself: WhiteNoise is registered in the app and will serve the contents of `STATIC_ROOT`. If you let WhiteNoise handle static files, the Nginx config can be simplified to a pure reverse proxy (no `location /static/ { ... }` block needed). Either approach works.
-- RQ worker: `$ poetry run python manage.py rqworker default`.
+- RQ worker: `$ uv run python manage.py rqworker default`.
 - Cron: schedule `python manage.py import_observations` and `python manage.py send_alert_notifications_email` periodically.
 - Process supervision (systemd, supervisord, etc.) and env-var loading mechanism are deployment-specific; settings can be provided via a project-root `.env` file or any other mechanism that populates the process environment.
 

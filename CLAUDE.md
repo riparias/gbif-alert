@@ -10,7 +10,7 @@ GBIF Alert is a Django-based early alert system for invasive species using GBIF 
 
 - **Backend:** Python 3.11+, Django 4.2 (GeoDjango), PostgreSQL/PostGIS 3.1+, Redis (django-rq)
 - **Frontend:** TypeScript, Vue.js 3, PrimeVue (Aura preset), Vue Router, Pinia, OpenLayers (maps), D3.js (charts)
-- **Build tools:** Poetry (Python), npm + Vite (frontend)
+- **Build tools:** uv (Python), npm + Vite (frontend)
 
 ## Commands
 
@@ -22,23 +22,23 @@ export DJANGO_SETTINGS_MODULE=djangoproject.local_settings
 
 ### Setup
 ```bash
-poetry install          # Install Python dependencies
+uv sync                 # Install Python dependencies
 npm install             # Install frontend dependencies
 ```
 
 ### Development
 ```bash
-npm run vite-dev                             # Start Vite dev server (HMR)
-poetry run python manage.py runserver        # Start Django dev server
-poetry run python manage.py rqworker default # Start Redis queue worker
+npm run vite-dev                           # Start Vite dev server (HMR)
+uv run python manage.py runserver        # Start Django dev server
+uv run python manage.py rqworker default # Start Redis queue worker
 ```
 
 ### Testing & Type Checking
 ```bash
-poetry run python manage.py test                        # Run all Django tests
-poetry run python manage.py test dashboard.tests.models # Run specific test module
-poetry run python manage.py test dashboard.tests.commands.test_import_observations # Import tests
-poetry run mypy .                                       # Type checking
+uv run python manage.py test                        # Run all Django tests
+uv run python manage.py test dashboard.tests.models # Run specific test module
+uv run python manage.py test dashboard.tests.commands.test_import_observations # Import tests
+uv run mypy .                                       # Type checking
 ```
 
 ### Code Formatting
@@ -49,17 +49,17 @@ prettier      # Format JS/TS/Vue code (configure editor for format-on-save)
 
 ### Translations
 ```bash
-poetry run python manage.py makemessages --ignore="node_modules/*" -l fr -l nl  # Update PO files
-poetry run python manage.py compilemessages                                      # Compile MO files
+uv run python manage.py makemessages --ignore="node_modules/*" -l fr -l nl  # Update PO files
+uv run python manage.py compilemessages                                      # Compile MO files
 ```
 
 ### Key Management Commands
 ```bash
-poetry run python manage.py import_observations              # Import GBIF occurrence data
-poetry run python manage.py send_alert_notifications_email   # Send notification emails
-poetry run python manage.py refresh_materialized_views       # Refresh DB materialized views
-poetry run python manage.py migrate_new_seen_unseen          # Update seen/unseen status
-poetry run python manage.py load_area <source_file>          # Import geographic area
+uv run python manage.py import_observations              # Import GBIF occurrence data
+uv run python manage.py send_alert_notifications_email   # Send notification emails
+uv run python manage.py refresh_materialized_views       # Refresh DB materialized views
+uv run python manage.py migrate_new_seen_unseen          # Update seen/unseen status
+uv run python manage.py load_area <source_file>          # Import geographic area
 ```
 
 ### Production Build
