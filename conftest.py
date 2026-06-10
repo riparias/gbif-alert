@@ -46,6 +46,31 @@ def _force_vite_built_bundle():
     DjangoViteAssetLoader._instance = None  # rebuild lazily with dev_mode off
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _plain_static_storage():
+    """Use non-manifest static storage for the whole test session.
+
+    STORAGES["staticfiles"] is the manifest-based ViteAwareStaticStorage (for
+    prod cache-busting). Tests never run collectstatic, so {% static %} lookups
+    for non-vite assets (e.g. the SPA shell's css/early_alert.css) raise
+    "Missing staticfiles manifest entry" - which under Django 5.x hard-fails and
+    500s the page, breaking every Playwright test at login(). Plain
+    StaticFilesStorage needs no manifest. (Generalises the per-test override that
+    test_admin_api_token previously needed for the same reason.)
+    """
+    from django.conf import settings
+    from django.test import override_settings
+
+    storages = {
+        **settings.STORAGES,
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        },
+    }
+    with override_settings(STORAGES=storages):
+        yield
+
+
 @pytest.fixture(autouse=True)
 def _relax_api_v2_throttling(monkeypatch):
     """Keep API rate limiting from firing across the shared-cache test suite.

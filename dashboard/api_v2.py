@@ -190,7 +190,7 @@ def species_list(request: HttpRequest):
             "gbifTaxonKey": s.gbif_taxon_key,
             "tags": [t.name for t in s.tags.all()],
         }
-        for s in Species.objects.prefetch_related("tags").all()
+        for s in Species.objects.prefetch_related("tags")  # type: ignore[misc]  # taggit manager not resolvable by django-stubs.all()
     ]
 
 
@@ -213,7 +213,7 @@ def species_per_polygon(request: HttpRequest, payload: SpeciesPerPolygonIn):
     qs = (
         Species.objects.filter(observation__location__within=mpoly)
         .annotate(num_observations=Count("observation"))
-        .prefetch_related("tags")
+        .prefetch_related("tags")  # type: ignore[misc]  # taggit manager not resolvable by django-stubs
     )
     return 200, [
         {
@@ -245,7 +245,7 @@ def areas_list(request: HttpRequest):
             "isUserSpecific": a.is_user_specific,
             "tags": [t.name for t in a.tags.all()],
         }
-        for a in Area.objects.available_to(request.user).prefetch_related("tags")
+        for a in Area.objects.available_to(request.user).prefetch_related("tags")  # type: ignore[misc]  # taggit manager not resolvable by django-stubs
     ]
 
 

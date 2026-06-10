@@ -2430,7 +2430,7 @@ def test_simple_dict_out_schemas_shapes():
 
 
 def test_geojson_feature_collection_schema_shape():
-    """The FeatureCollection schema nests features and preserves the crs member."""
+    """The FeatureCollection schema nests features (type + features, no crs)."""
     from dashboard.api_v2_schemas import (
         GeoJSONFeatureCollectionOut,
         GeoJSONFeatureOut,
@@ -2438,7 +2438,6 @@ def test_geojson_feature_collection_schema_shape():
 
     fc = GeoJSONFeatureCollectionOut(
         type="FeatureCollection",
-        crs={"type": "name", "properties": {"name": "EPSG:4326"}},
         features=[
             GeoJSONFeatureOut(
                 type="Feature",
@@ -2453,12 +2452,12 @@ def test_geojson_feature_collection_schema_shape():
     )
     assert fc.type == "FeatureCollection"
     assert fc.features[0].geometry["type"] == "Polygon"
-    # crs must survive a round-trip dump (it is easy to accidentally drop).
-    assert "crs" in fc.model_dump()
+    # Django 5.x dropped the non-standard crs member (RFC 7946).
+    assert "crs" not in fc.model_dump()
 
 
 def test_area_geojson_response_is_unchanged_after_typing(client, area_endpoints_data):
-    """Typing the response with a Schema must not drop keys (crs, feature id).
+    """Typing the response with a Schema must not drop keys (e.g. the feature id).
 
     The endpoint output must remain byte-identical to Django's raw geojson
     serializer output.
@@ -2473,8 +2472,7 @@ def test_area_geojson_response_is_unchanged_after_typing(client, area_endpoints_
 
     expected = json.loads(serialize("geojson", [area], srid=4326))
     assert resp.json() == expected
-    # Guard the specific members a naive schema would have dropped.
-    assert "crs" in resp.json()
+    # Guard the feature id, which a naive schema would drop.
     assert "id" in resp.json()["features"][0]
 
 
