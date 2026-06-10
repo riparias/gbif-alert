@@ -66,7 +66,7 @@ The Docker Compose stack is production-only. For local development, use the manu
    $EDITOR .env
    ```
 
-   Set at minimum: `SECRET_KEY`, `DATABASE_URL`, `SITE_BASE_URL`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`, `SITE_NAME`. See `.env.example` for the full contract. The Docker stack is **entirely env-driven** - you do not need a `local_settings.py`. (For a Python-only override like a custom `PREDICATE_BUILDER`, see the Custom predicate note below.)
+   Set at minimum: `SECRET_KEY`, `DATABASE_URL`, `SITE_BASE_URL`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`, `SITE_NAME`, and `GBIF_ALERT_TAG` (the image tag to pull - e.g. `devel` or a release like `1.11.0`; required, no default). See `.env.example` for the full contract. The Docker stack is **entirely env-driven** - you do not need a `local_settings.py`. (For a Python-only override like a custom `PREDICATE_BUILDER`, see the Custom predicate note below.)
 
 4. Bring up the stack:
    - With external Postgres:
@@ -126,7 +126,7 @@ docker compose exec gbif-alert python manage.py send_alert_notifications_email
 
 ### Upgrades
 
-1. Bump `GBIF_ALERT_TAG` in your `.env` (e.g. `1.10.0` -> `1.11.0`). The compose file reads this var via `image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:-1.10.0}`, so you do not edit the committed compose file itself.
+1. Bump `GBIF_ALERT_TAG` in your `.env` (e.g. `1.10.0` -> `1.11.0`). The compose file reads this var via `image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?...}`, so you do not edit the committed compose file itself. The var is required (no baked-in default): an unset or empty value aborts the deploy with a hint instead of silently pulling a stale tag.
 2. Pull the new image and recreate:
    ```
    docker compose pull

@@ -43,7 +43,7 @@ x-app-env: &app-env
 services:
 
   migrate:
-    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:-1.10.0}
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}
     # Always check the registry on `docker compose up`. Without this, moving
     # tags like `devel` are never re-pulled because the image reference
     # string is unchanged - the local cached layer is silently reused.
@@ -58,7 +58,7 @@ services:
     restart: "no"
 
   gbif-alert:
-    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:-1.10.0}
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}
     pull_policy: always
     # Dockerfile CMD reads ${GUNICORN_WORKERS:-3} at runtime.
     environment:
@@ -114,7 +114,7 @@ services:
       traefik.http.services.gbif-alert.loadbalancer.server.port: "8000"
 
   rqworker:
-    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:-1.10.0}
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}
     pull_policy: always
     command: python manage.py rqworker default
     environment: *app-env
