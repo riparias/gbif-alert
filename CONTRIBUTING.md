@@ -230,24 +230,28 @@ If the cache is misconfigured or unreachable in production, `CacheBackend` logs 
 
 ## How to release a new version
 
-- Make sure all tests pass and mypy doesn't report any error
-- Update CHANGELOG.md
-- Update version number in `pyproject.toml`, `package.json`, `docker-compose.yml` (! 3 services: gbif-alert, rqworker and nginx) and `VERSION` (used to display the version in the footer - se the exact tag name with a 'v' here for correct footer link!)
-- ! The version number currently also appears in INSTALL.md
-- Commit, merge to main, push to GitHub
-- Create a new tag (e.g. `v1.1.0`) and push it:
-```
-$ git tag v1.1.0
-$ git push origin --tags
-```
-- Create a new Docker image and push it to Docker Hub (so end-users can reference it from docker-compose.yml):
-- (We also build a new version of the nginx image - even if unchanged - so the version number of the two images stay in sync)
-```
-$ docker build . -t niconoe/gbif-alert:1.1.0
-$ docker build ./nginx -t niconoe/gbif-alert-nginx:1.1.0
-$ docker push niconoe/gbif-alert:1.1.0
-$ docker push niconoe/gbif-alert-nginx:1.1.0
-```
+Releases are built and published automatically by `.github/workflows/release.yml`
+when a `v*` tag is pushed: the image is pushed to GHCR
+(`ghcr.io/riparias/gbif-alert`) and stamped with the tag, which the footer
+displays. No manual `VERSION` file edit is needed.
+
+1. Make sure all tests pass and `mypy` reports no errors.
+2. Update `CHANGELOG.md`.
+3. (Optional) Bump the version in `pyproject.toml` and `package.json` for
+   metadata consistency. These are no longer load-bearing for the footer.
+4. Commit, merge to `main`, push.
+5. Tag and push:
+   ```
+   $ git tag v1.1.0
+   $ git push origin v1.1.0
+   ```
+   This triggers `release.yml`, which builds and pushes
+   `ghcr.io/riparias/gbif-alert:1.1.0` (and `:latest`), stamped with the tag.
+6. Bump `GBIF_ALERT_TAG` on each instance (see INSTALL.md "Upgrades") to roll
+   the new image out.
+
+The footer version is auto-stamped: release images show the tag (`v1.1.0`);
+`devel`/`main` images show a `git describe` string (e.g. `v1.0.0-42-gabc123`).
 
 ## How to link to a GBIF alert instance with specific filters
 

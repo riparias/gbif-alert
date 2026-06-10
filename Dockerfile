@@ -76,6 +76,14 @@ RUN SECRET_KEY=build-only \
     SITE_NAME=build \
     python manage.py compilemessages
 
+# Stamp the build version. Read at runtime by the footer via
+# dashboard.utils.human_readable_git_version_number(). Empty (a plain local
+# build with no --build-arg) writes an empty file, which the resolver treats
+# as absent and falls through - no regression. CI passes the real value:
+# release.yml -> the tag, image.yml -> `git describe --always --tags`.
+ARG VERSION=""
+RUN printf '%s' "$VERSION" > VERSION
+
 # Non-root user.
 RUN groupadd --system app && \
     useradd --system --gid app --home-dir /app --shell /usr/sbin/nologin app && \
