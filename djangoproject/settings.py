@@ -436,8 +436,10 @@ LOGGING = {
     },
     "handlers": {
         "console": {
-            "level": "INFO",
-            "filters": ["require_debug_true"],
+            # Always active (no require_debug_true filter) so 500 tracebacks
+            # reach stdout/stderr in production - container runtimes (Dokploy,
+            # etc.) capture them. Verbosity is tunable via DJANGO_LOG_LEVEL.
+            "level": os.environ.get("DJANGO_LOG_LEVEL", "INFO"),
             "class": "logging.StreamHandler",
         },
         "django.server": {
@@ -455,7 +457,7 @@ LOGGING = {
     "loggers": {
         "django": {
             "handlers": ["console", "mail_admins"],
-            "level": "INFO",
+            "level": os.environ.get("DJANGO_LOG_LEVEL", "INFO"),
         },
         "django.server": {
             "handlers": ["django.server"],
