@@ -17,16 +17,12 @@ dependencies = [
     "requests>=2.26.0,<3",
     "gbif-blocking-occurrence-download>=0.1.0,<0.2",
     "python-dwca-reader>=0.16.4,<0.17",
-    "jinjasql>=0.1.8,<0.2",
     "django-maintenance-mode>=0.22.0,<0.23",
     "django-import-export>=4.4.0,<5",
     "django-cors-headers>=4.2.0,<5",
     "django-markdownx>=4.0.2,<5",
     "django-rq>=4.0,<5",
     "html2text==2024.2.25",
-    # Pinned only for JinjaSQL, which tends to pull an incompatible 3.1.x.
-    # Drop once JinjaSQL is updated (https://github.com/sripathikrishnan/jinjasql/issues/50).
-    "Jinja2==3.0.3",
     "django-taggit>=6.0,<7",
     "django-modeltranslation>=0.20.0,<0.21",
     "python-dotenv>=1.0.0,<2",

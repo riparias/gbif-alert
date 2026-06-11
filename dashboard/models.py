@@ -454,7 +454,7 @@ class ObservationManager(models.Manager["Observation"]):
         approaching_distance_km: float | None = None,
     ) -> QuerySet["Observation"]:
         # !! IMPORTANT !! Make sure the observation filtering here is equivalent to what's done in
-        # views.maps.JINJASQL_FRAGMENT_FILTER_OBSERVATIONS. Otherwise, observations returned on the map and on other
+        # views.maps._build_where_clause / _build_joins. Otherwise, observations returned on the map and on other
         # components (table, ...) will be inconsistent.
         # !! If adding new filters, make sure they are documented where the API exposes them: the
         # FiltersQuery schema in dashboard/api_v2_schemas.py (which drives the v2 OpenAPI docs) and
