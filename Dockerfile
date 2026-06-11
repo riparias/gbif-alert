@@ -4,7 +4,7 @@
 # Stage 1: frontend build
 # ============================================================================
 
-FROM node:20-bookworm-slim AS frontend
+FROM node:22-bookworm-slim AS frontend
 WORKDIR /build
 
 # Install npm deps (separate layer for cache-friendliness).
