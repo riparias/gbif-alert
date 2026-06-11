@@ -232,9 +232,10 @@ displays. No manual `VERSION` file edit is needed.
 
 1. Make sure all tests pass and `mypy` reports no errors.
 2. Update `CHANGELOG.md`.
-3. (Optional) Bump the version in `pyproject.toml` for metadata consistency.
-   It is no longer load-bearing for the footer (`package.json` no longer
-   carries a version).
+3. Bump the version in `pyproject.toml` to match the tag (e.g. `2.0.0rc1`
+   for tag `v2.0.0-rc1` - note PEP 440 drops the hyphen). Keeps package
+   metadata in sync with the release; not load-bearing for the footer,
+   which reads the git tag.
 4. Commit, merge to `main`, push.
 5. Tag and push:
    ```
@@ -253,18 +254,18 @@ The footer version is auto-stamped: release images show the tag (`v1.1.0`);
 
 The index page (`/`) reads filters from URL query parameters. All parameters are optional and can be combined.
 
-| Parameter               | Type                            | Example                          |
-|-------------------------|---------------------------------|----------------------------------|
-| `speciesIds`            | integer (repeatable)            | `speciesIds=2&speciesIds=14`     |
-| `datasetsIds`           | integer (repeatable)            | `datasetsIds=5`                  |
-| `basisOfRecordIds`      | integer (repeatable)            | `basisOfRecordIds=1`             |
-| `areaIds`               | integer (repeatable)            | `areaIds=1`                      |
-| `initialDataImportIds`  | integer (repeatable)            | `initialDataImportIds=3`         |
-| `startDate` / `endDate` | date string                     | `startDate=2024-01-01`           |
-| `status`                | `seen` / `unseen` / `all`       | `status=all`                     |
-| `verifiedFilter`        | `verified` / `unverified` / `all` | `verifiedFilter=verified`      |
-| `areaFilterMode`        | `inside` / `approaching` / `both` | `areaFilterMode=approaching`   |
-| `approachingDistanceKm` | float                           | `approachingDistanceKm=5.0`      |
+| Parameter               | Type                              | Example                      |
+|-------------------------|-----------------------------------|------------------------------|
+| `speciesIds`            | integer (repeatable)              | `speciesIds=2&speciesIds=14` |
+| `datasetsIds`           | integer (repeatable)              | `datasetsIds=5`              |
+| `basisOfRecordIds`      | integer (repeatable)              | `basisOfRecordIds=1`         |
+| `areaIds`               | integer (repeatable)              | `areaIds=1`                  |
+| `initialDataImportIds`  | integer (repeatable)              | `initialDataImportIds=3`     |
+| `startDate` / `endDate` | date string                       | `startDate=2024-01-01`       |
+| `status`                | `seen` / `unseen` / `all`         | `status=all`                 |
+| `verifiedFilter`        | `verified` / `unverified` / `all` | `verifiedFilter=verified`    |
+| `areaFilterMode`        | `inside` / `approaching` / `both` | `areaFilterMode=approaching` |
+| `approachingDistanceKm` | float                             | `approachingDistanceKm=5.0`  |
 
 Examples:
 
