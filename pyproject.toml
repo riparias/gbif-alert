@@ -3,6 +3,8 @@ name = "gbif-alert"
 version = "1.9.0"
 description = "A GBIF-based early alert system"
 authors = [{ name = "Nicolas Noé", email = "nicolas@niconoe.eu" }]
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -79,4 +81,13 @@ env = [
     "D:ENABLED_LANGUAGES=en,fr",
     "D:GBIF_DOWNLOAD_COUNTRY=BE",
     "D:GBIF_DOWNLOAD_YEAR_MIN=2000",
+    # The suite runs with DEBUG=False (production-like) but over plain HTTP, so
+    # the production HTTPS hardening must be disabled here - otherwise
+    # SECURE_SSL_REDIRECT 301-redirects every test request to https, and the
+    # secure-cookie flags stop the Playwright browser from sending the
+    # session/CSRF cookies over http.
+    "D:SECURE_SSL_REDIRECT=False",
+    "D:SESSION_COOKIE_SECURE=False",
+    "D:CSRF_COOKIE_SECURE=False",
+    "D:SECURE_HSTS_SECONDS=0",
 ]

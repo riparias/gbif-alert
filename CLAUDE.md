@@ -124,11 +124,11 @@ The app provides an OGC Web Feature Service endpoint at `/api/wfs/observations` 
 
 ## Branching & Deployment
 - Never commit directly to `main`
-- Feature branches → merge to `devel` → auto-deploys to demo server → merge to `main` → manual production deploy via `deploy_main.sh`
+- Feature branches → merge to `devel` (auto-builds + redeploys the demo from the GHCR image) → merge to `main` → tag `v*` to publish a release image; production rolls forward by bumping `GBIF_ALERT_TAG` (see INSTALL.md "Upgrades")
 - CI runs Django tests + mypy on every push (GitHub Actions)
 
 ## Versioning
-The footer version is stamped into the Docker image at build time (`release.yml` uses the git tag; `image.yml` uses `git describe`), so no manual `VERSION` edit is needed - see CONTRIBUTING.md "How to release a new version". Bumping `pyproject.toml` / `package.json` is optional metadata only.
+The footer version is stamped into the Docker image at build time (`release.yml` uses the git tag; `image.yml` uses `git describe`), so no manual `VERSION` edit is needed - see CONTRIBUTING.md "How to release a new version". Bumping `pyproject.toml` is optional metadata only (`package.json` no longer carries a version).
 
 ## Code Style
 - Python: `black` formatting, imports at top of file (stdlib → third-party → local), avoid local imports unless circular dependency

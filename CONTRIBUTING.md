@@ -79,7 +79,7 @@ The current workflow is:
 3) `devel` is pushed to GitHub: the updated version can be tested on the development server and shared with stakeholders.
 4) after everything is confirmed ok, the `devel` branch is merged to `main`
 5) `main` is pushed to GitHub
-6) code is (currently) manually deployed in production via the `deploy_main.sh` script
+6) a release is published by tagging `v*` (see "How to release a new version" below); production rolls forward by bumping `GBIF_ALERT_TAG` to the new image (see INSTALL.md "Upgrades")
 
 For small, non-risky changes, steps 1-3 can be avoided by committing directly to the `devel` branch.
 
@@ -237,8 +237,9 @@ displays. No manual `VERSION` file edit is needed.
 
 1. Make sure all tests pass and `mypy` reports no errors.
 2. Update `CHANGELOG.md`.
-3. (Optional) Bump the version in `pyproject.toml` and `package.json` for
-   metadata consistency. These are no longer load-bearing for the footer.
+3. (Optional) Bump the version in `pyproject.toml` for metadata consistency.
+   It is no longer load-bearing for the footer (`package.json` no longer
+   carries a version).
 4. Commit, merge to `main`, push.
 5. Tag and push:
    ```

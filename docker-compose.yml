@@ -144,7 +144,10 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgis/postgis:15-3.3
+    # Kept in sync with the Postgres/PostGIS version the CI suite tests against
+    # (.github/workflows/django_tests.yml). Bumping the major version of an
+    # existing bundled-db deployment requires a dump/restore or pg_upgrade.
+    image: postgis/postgis:17-3.5
     profiles: ["bundled-db"]
     networks: [default]
     # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB are required ONLY when
