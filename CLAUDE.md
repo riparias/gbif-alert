@@ -15,10 +15,13 @@ GBIF Alert is a Django-based early alert system for invasive species using GBIF 
 ## Commands
 
 ### Django Settings
-To run `manage.py` commands (makemigrations, migrate, test, etc.), set the Django settings module:
-```bash
-export DJANGO_SETTINGS_MODULE=djangoproject.local_settings
-```
+The settings module is always `djangoproject.settings` (the `manage.py`/`wsgi`/`asgi`
+default) - just run `python manage.py <command>`, no `DJANGO_SETTINGS_MODULE` override
+needed. It loads `.env` from the project root, reads env vars (see `.env.example`), then
+imports an optional `djangoproject/local_settings.py` as an escape hatch on top.
+
+On macOS, GeoDjango needs explicit library paths - set `GDAL_LIBRARY_PATH` and
+`GEOS_LIBRARY_PATH` in `.env` (or `local_settings.py`).
 
 ### Setup
 ```bash
@@ -77,10 +80,10 @@ npm run generate-types  # Exports OpenAPI schema, writes assets/frontend/types/a
 ### Django Apps
 - **`dashboard/`** — Main app containing all core logic: models, views, templates, management commands, and tests
 - **`page_fragments/`** — Small app for admin-editable page content blocks (uses `templatetags` for rendering)
-- **`djangoproject/`** — Django project settings; instance-specific configuration goes in `local_settings.py` (copied from `local_settings.template.py`)
+- **`djangoproject/`** — Django project settings (`settings.py`), env-driven with an optional `local_settings.py` escape hatch (template: `local_settings.template.py`)
 
 ### Configuration System
-Each GBIF Alert instance is configured via `local_settings.py` which contains a `GBIF_ALERT` dict with site name, colors, enabled languages, GBIF download credentials, and a `PREDICATE_BUILDER` function that defines the GBIF search query. This is how different instances target different species/regions.
+Each GBIF Alert instance is configured via environment variables (see `.env.example`): `settings.py` builds the `GBIF_ALERT` dict (site name, palette, enabled languages, GBIF download credentials, map defaults) from them. Settings that can't be expressed as env vars - notably the `PREDICATE_BUILDER` callable that defines the GBIF search query - go in an optional `local_settings.py`, imported on top of the env-driven config. This is how different instances target different species/regions.
 
 ### Frontend-Backend Integration
 Single-page application: all pages are served by the `spa_shell` Django view, which injects a `gbif-alert-nav-config` JSON block (site name, enabled languages, auth state) and loads the Vite bundle. Vue Router (history mode) handles client-side routing. Pinia manages shared state (active filters). A Django catch-all pattern in `djangoproject/urls.py` forwards unmatched paths to the SPA shell.

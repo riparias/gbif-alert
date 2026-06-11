@@ -7,6 +7,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    # astral-sh/setup-uv has no Node 24 release yet (checkout@v5 / build-push@v6
+    # are already Node 24), so force the one remaining Node 20 JS action onto
+    # Node 24 to clear the runner's deprecation warning. Remove once setup-uv
+    # ships a Node 24 build, or after 2026-06-16 when Node 24 is the runner default.
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     strategy:
@@ -34,9 +38,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set up uv
-      uses: astral-sh/setup-uv@v4
+      uses: astral-sh/setup-uv@v6
       with:
         enable-cache: true
     - name: Install additional libraries
