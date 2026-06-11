@@ -1,40 +1,63 @@
-# Current (unreleased)
+# 2.0.0-rc1 (2026-06-11)
 
-- Fully revamped user interface!
-- (experimental) New filter options for areas: inside/approaching/both (https://github.com/riparias/gbif-alert/issues/300)
-- Vernacular name of species is now shown in the map popup (https://github.com/riparias/gbif-alert/issues/165)
+GBIF Alert 2.0 is a major release: a brand-new user interface, a modern
+public API, and a fully reworked Docker/deployment stack.
 
-## Configuration and deployment
+## A new user interface
 
-**Breaking changes:**
+- The web app is now a single-page application (Vite + PrimeVue + Vue Router
+  + Pinia), faster and more responsive than the old template-based UI.
+- Sortable observations table, redesigned area cards, and advanced filters in
+  modals.
+- Switch between scientific and vernacular species names everywhere, from a
+  navbar toggle. Vernacular names now also appear in the map popup (#165).
 
-- **Docker image registry**: images are now published to GHCR (`ghcr.io/riparias/gbif-alert`) instead of Docker Hub (`niconoe/gbif-alert`). The Docker Hub repository is no longer maintained. Update your `docker-compose.yml` `image:` references.
-- **Configuration model**: settings are now driven by environment variables with an optional `local_settings.py` escape hatch. The previous bind-mount-a-Python-file pattern (`local_settings_docker.py`) is gone. See `INSTALL.md` for the new deploy flow and `.env.example` for the variable contract.
-- **Compose topology**: the custom nginx image and `static_volume` are removed. The app now serves static files via WhiteNoise. Operators need an external reverse proxy (Dokploy/Traefik, ALB, etc.) for TLS and public routing.
-- **Redis -> Valkey**: the in-compose broker is now Valkey (BSD-3-Clause). Same RESP protocol, drop-in for rq. The service name in compose changed from `redis` to `valkey`.
-- **Migrations** are now applied by a one-shot `migrate` service rather than at every container startup. Safer for multi-replica deployments.
-- **Bundled-db Postgres 15 -> 17**: the optional `bundled-db` compose profile now uses `postgis/postgis:17-3.5` (matching the version the test suite runs against), up from `15-3.3`. Existing bundled-db deployments must run `pg_upgrade` or a dump/restore before upgrading. Deployments using managed/external Postgres are unaffected.
+## New filtering
 
-**Added:**
+- Filter observations by proximity to your areas: inside, approaching, or both,
+  with a configurable distance (default 5 km) (#300).
 
-- `/healthz` liveness endpoint (returns `{"status": "ok"}`).
-- ofelia scheduler in compose runs `import_observations` and `send_alert_notifications_email` on operator-configurable cron schedules.
-- `bundled-db` compose profile so the postgis service is opt-in (production deploys typically use managed Postgres).
-- GitHub Actions workflows: build on every push to `main`/`devel`, publish versioned tags on `v*`.
-- `.env.example` documents the full env-var contract.
-- HTTPS hardening settings (`SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SECURE_SSL_REDIRECT`, `SECURE_HSTS_SECONDS`, plus the `INCLUDE_SUBDOMAINS`/`PRELOAD` toggles): secure-by-default when `DEBUG=False`, env-overridable, with the internal `/healthz` healthcheck exempted from the HTTPS redirect. See `.env.example`.
+## A new public API (v2)
 
-**Changed:**
+- Modern REST API under `/api/v2` (Django Ninja) with an OpenAPI schema and a
+  self-service `/api-docs` hub.
+- Personal API tokens, created and revoked from `/api-tokens`, with Bearer-token
+  auth on write endpoints and rate limiting.
+- The legacy `/api/*` endpoints are deprecated and carry a published Sunset date.
 
-- Multi-stage Dockerfile: Node frontend build is in a separate stage; final image has no Node, smaller size.
-- `compilemessages` and `collectstatic` run at image build time (immutable image, faster startup).
-- gunicorn worker count is configurable via `GUNICORN_WORKERS` env var.
-- All compose services have `restart: unless-stopped` (except `migrate` which is one-shot).
+## A new Docker and deployment setup
 
-**Removed:**
+- Images are now published to GHCR (`ghcr.io/riparias/gbif-alert`); Docker Hub
+  is no longer maintained.
+- Configuration is driven by environment variables (`.env` / `DATABASE_URL`),
+  replacing the old bind-mounted Python settings file.
+- Static files are served by WhiteNoise - the bundled nginx image is gone; bring
+  your own reverse proxy for TLS and routing.
+- Rewritten six-service compose stack: Valkey (replacing Redis), a one-shot
+  `migrate` service, an ofelia scheduler for imports/notifications, an opt-in
+  `bundled-db` profile, and a `/healthz` liveness endpoint.
 
-- Custom `niconoe/gbif-alert-nginx` image.
-- `nginx/` directory, `docker-entrypoint.sh`, `djangoproject/local_settings_docker.template.py`, `djangoproject/local_settings_docker_base.py`, `djangoproject/local_settings_ci.py`, `NAVBAR_BACKGROUND_COLOR`, `NAVBAR_LIGHT_TEXT` settings (dead code in the new SPA).
+## Under the hood
+
+- Django 5.2 LTS (from 4.2), Python 3.13, psycopg3.
+- Dependency management migrated from Poetry to uv.
+- Large refactor of the observation-import pipeline with a substantially
+  expanded test suite, plus assorted internal cleanup.
+
+## Breaking changes (for operators upgrading)
+
+- **Image registry**: update `image:` references from `niconoe/gbif-alert` to
+  `ghcr.io/riparias/gbif-alert`.
+- **Configuration**: settings are now env-var driven with an optional
+  `local_settings.py` escape hatch; the `local_settings_docker.py` bind-mount
+  pattern is gone. See `INSTALL.md` and `.env.example`.
+- **Reverse proxy required**: the custom nginx image and `static_volume` are
+  removed; provide your own proxy (Dokploy/Traefik, ALB, ...) for TLS.
+- **Redis -> Valkey**: the compose broker service is renamed `redis` -> `valkey`
+  (drop-in, same RESP protocol).
+- **Bundled Postgres 15 -> 17**: the `bundled-db` profile now uses
+  `postgis/postgis:17-3.5`; existing bundled-db deployments need a `pg_upgrade`
+  or dump/restore. Managed/external Postgres is unaffected.
 
 # 1.9.0 (2026-03-06)
 

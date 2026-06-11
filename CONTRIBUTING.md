@@ -236,18 +236,25 @@ displays. No manual `VERSION` file edit is needed.
    for tag `v2.0.0-rc1` - note PEP 440 drops the hyphen). Keeps package
    metadata in sync with the release; not load-bearing for the footer,
    which reads the git tag.
-4. Commit, merge to `main`, push.
-5. Tag and push:
+4. Commit and push.
+   - **Stable release** (e.g. `v2.0.0`): merge `devel` to `main`, then push.
+   - **Pre-release / release candidate** (e.g. `v2.0.0-rc1`): stay on `devel`
+     and do *not* merge to `main`. A candidate is promoted to `main` only once
+     the final stable version is cut.
+5. Tag and push (the tag can sit on either branch - `release.yml` triggers on
+   the tag, not the branch):
    ```
-   $ git tag v1.1.0
-   $ git push origin v1.1.0
+   $ git tag v2.0.0
+   $ git push origin v2.0.0
    ```
    This triggers `release.yml`, which builds and pushes
-   `ghcr.io/riparias/gbif-alert:1.1.0` (and `:latest`), stamped with the tag.
+   `ghcr.io/riparias/gbif-alert:2.0.0` stamped with the tag. A stable tag also
+   moves `:latest` and the floating `:2.0` tag; a pre-release tag
+   (`v2.0.0-rc1`) publishes only `:2.0.0-rc1` and leaves `:latest` untouched.
 6. Bump `GBIF_ALERT_TAG` on each instance (see INSTALL.md "Upgrades") to roll
    the new image out.
 
-The footer version is auto-stamped: release images show the tag (`v1.1.0`);
+The footer version is auto-stamped: release images show the tag (`v2.0.0`);
 `devel`/`main` images show a `git describe` string (e.g. `v1.0.0-42-gabc123`).
 
 ## How to link to a GBIF alert instance with specific filters
