@@ -1,12 +1,12 @@
 # Development setup and notes
 
 ## Technological backbone
-- [Python](https://www.python.org/) 3.12+, [(Geo)Django](https://www.djangoproject.com/) 5.2, [PostgreSQL](https://www.postgresql.org/), [PostGIS](https://postgis.net/) 3.1+, [Redis](https://redis.io/) (or [Valkey](https://valkey.io/)), [TypeScript](https://www.typescriptlang.org/) and [Vue.js v3](https://vuejs.org/)
+- [Python](https://www.python.org/) 3.13+, [(Geo)Django](https://www.djangoproject.com/) 5.2, [PostgreSQL](https://www.postgresql.org/), [PostGIS](https://postgis.net/) 3.1+, [Redis](https://redis.io/) (or [Valkey](https://valkey.io/)), [TypeScript](https://www.typescriptlang.org/) and [Vue.js v3](https://vuejs.org/)
 - UI components: [PrimeVue](https://primevue.org/) v4
 - [uv](https://docs.astral.sh/uv/) is used to manage dependencies (use `uv add`, `uv sync`, ... instead of pip).
 
 ## Dev environment configuration
-- Python>=3.12, PostGIS>=3.1, Redis (or Valkey) and `npm` are required
+- Python>=3.13, PostGIS>=3.1, Redis (or Valkey) and `npm` are required
 - Use [uv](https://docs.astral.sh/uv/) to create an isolated virtualenv and install dependencies (`uv sync`)
 - Configure the app via environment variables. Copy `.env.example` at the project root to `.env` and fill in the values:
    ```
