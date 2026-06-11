@@ -103,7 +103,7 @@ This is the most critical and performance-sensitive process. It:
 4. Deletes observations from previous imports to avoid duplicates
 5. Runs in maintenance mode (site unavailable during import)
 
-Optimizations are documented in `IMPORT_OBSERVATIONS_OPTIMIZATION.md`. Batch database operations to avoid N+1 queries.
+This pipeline is performance-sensitive: batch database operations to avoid N+1 queries.
 
 ### Observation Identity
 Observations are identified across imports by `stable_id` — a SHA1 hash of `occurrence_id` + `dataset_key`. When an observation is re-imported, comments and seen/unseen status are migrated from the old record to the new one via `replaced_observation`.

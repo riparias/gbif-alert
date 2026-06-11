@@ -92,11 +92,6 @@ We try to frequently update dependencies. Process is:
 - Run unit tests (+ a few manual checks?)
 - Commit changes (should include `package.json`, `package-lock.json` and `uv.lock`)
 
-## Database diagram
-
-Last update: 01 aug 2023.
-![tables diagram](./table-diagram.png)
-
 ## Frontend-backend integration
 
 The frontend is a Vue 3 single-page application managed by Vite. All pages are served
@@ -111,7 +106,7 @@ Frontend source lives in `./assets/frontend/`. The main entry point is `main.ts`
 ### API v2 (Django Ninja)
 
 The new API lives at `/api/v2/` and is built with [Django Ninja](https://django-ninja.dev/).
-It is being introduced incrementally as part of the frontend migration (see `FRONTEND_MIGRATION_PLAN.md`).
+It is being introduced incrementally as part of the frontend migration.
 
 Django Ninja auto-generates interactive API documentation from the endpoint definitions and
 response schemas. While the dev server is running, these are available at:
@@ -226,7 +221,7 @@ If the cache is misconfigured or unreachable in production, `CacheBackend` logs 
 - Compile the PO files to MO with `$ python manage.py compilemessages`
 
 ### How to update translations: Vue
-- Update the `messages` object in assets/ts/translations.ts. Please keep the keys in alphabetical order.
+- Update the `messages` object in assets/frontend/translations.ts. Please keep the keys in alphabetical order.
 
 ## How to release a new version
 

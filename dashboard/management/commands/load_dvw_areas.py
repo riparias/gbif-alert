@@ -2,7 +2,7 @@
 
 This script should be refactored (merged) with load_dvw_areas.py, the logic is the same.
 
-See task description at: https://github.com/riparias/early-alert-webapp/issues/8
+See task description at: https://github.com/riparias/gbif-alert/issues/8
 """
 import os
 

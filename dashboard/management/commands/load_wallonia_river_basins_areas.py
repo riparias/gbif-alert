@@ -3,7 +3,7 @@
 The usual load_area.py script cannot be used because the specifities of the data make it unsuitable for the usual
 LayerMapping helper.
 
-See task description at: https://github.com/riparias/early-alert-webapp/issues/10
+See task description at: https://github.com/riparias/gbif-alert/issues/10
 """
 
 import os
