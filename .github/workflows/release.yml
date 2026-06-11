@@ -7,7 +7,6 @@ on:
 permissions:
   contents: read
   packages: write
-  # id-token: write   # uncomment when ECS auto-deploy via OIDC is wired up
 
 env:
   REGISTRY: ghcr.io
@@ -37,7 +36,13 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest
+          # `latest=auto` (metadata-action default, made explicit): `latest`
+          # moves only for a non-prerelease semver tag. So `v2.0.0-rc1`
+          # publishes `2.0.0-rc1` without repointing `latest` - and
+          # metadata-action also skips the `{{major}}.{{minor}}` floating tag
+          # for prereleases. Stable tags (`v2.0.0`) still update both.
+          flavor: |
+            latest=auto
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -50,16 +55,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      # Future: ECS auto-redeploy. Uncomment + populate AWS_DEPLOY_ROLE_ARN
-      # secret + flip the id-token: write permission above when ECS exists.
-      #
-      # - uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-      #     aws-region: eu-west-1
-      # - run: |
-      #     aws ecs update-service \
-      #       --cluster gbif-alert-prod \
-      #       --service gbif-alert-web \
-      #       --force-new-deployment
