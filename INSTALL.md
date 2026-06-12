@@ -14,7 +14,8 @@ will periodically download from GBIF and will import in its database.
 - Your end-users will be able to filter those occurrences further to match their specific needs.
 - The available languages in the interface: English, French and Dutch are currently supported.
 - Website texts, e.g. the introduction on the home page, the footer content and the "about this site" page.
-- Some visual elements such as the navbar color.
+- The primary color theme of the interface, via the `PRIMEVUE_PRIMARY_PALETTE`
+  setting (e.g. `indigo`, `emerald`, `blue`, `rose`; see `.env.example`).
 
 ## Dependencies
 
@@ -78,12 +79,21 @@ The Docker Compose stack is production-only. For local development, use the manu
      docker compose --profile bundled-db up -d
      ```
 
-5. Create the first superuser:
+5. Confirm the stack came up cleanly before continuing:
+   ```
+   docker compose ps            # wait until `gbif-alert` shows "healthy" (~30s)
+   docker compose logs gbif-alert   # check for a clean gunicorn startup
+   ```
+   The `gbif-alert` container has a `/healthz` healthcheck; if it never reaches
+   "healthy", the logs will show why (usually a bad `DATABASE_URL` or a missing
+   required env var).
+
+6. Create the first superuser:
    ```
    docker compose exec gbif-alert python manage.py createsuperuser
    ```
 
-6. Visit your site (via the reverse proxy you set up in front of port 8000) and log in to the admin (`/admin`).
+7. Visit your site (via the reverse proxy you set up in front of port 8000) and log in to the admin (`/admin`).
 
 ### Reverse proxy, TLS, and multiple instances
 
@@ -129,6 +139,25 @@ Traefik hot-reloads the file (no restart needed). `passHostHeader: true` forward
 
 1. A **unique** `GBIF_ALERT_BIND` host port - e.g. `127.0.0.1:8001`, `127.0.0.1:8002`. A host port can only be bound by one container; reusing `127.0.0.1:8000` fails with `port is already allocated`. Routing reaches the container over the Docker network, so this bind only needs to avoid the clash.
 2. Its own dynamic-config file with **unique** router/service names and its own domain.
+
+### Dokploy
+
+Dokploy is one supported target, but nothing in the base stack assumes it. Two
+Dokploy-specific points:
+
+- **Managed Postgres**: a Dokploy-managed Postgres runs as a container on
+  Dokploy's `dokploy-network`. To let the app resolve it by container name,
+  deploy with the external-network overlay so the `shared` network becomes
+  `dokploy-network`:
+  ```
+  docker compose -f docker-compose.yml -f docker-compose.shared-external.yml up -d
+  ```
+  Then point `DATABASE_URL` at that container. A Postgres reachable by host:port
+  instead (RDS, a separate server) needs no overlay - the base stack reaches it
+  over normal egress.
+- **Routing**: Dokploy's Domains tab does not route Compose services. Wire it
+  with a Traefik file-provider config as described under *Reverse proxy, TLS,
+  and multiple instances* above.
 
 ### Customising your instance
 

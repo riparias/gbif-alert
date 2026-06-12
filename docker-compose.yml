@@ -172,18 +172,17 @@ services:
 #
 # - `default` (private): inter-stack communication for valkey, scheduler,
 #   bundled `db`. Isolated; not exposed to other apps on the host.
-# - `shared` (external): bridge to host-managed services like a Dokploy /
-#   externally-managed Postgres. Only the app-side services (migrate,
-#   gbif-alert, rqworker) need access. Defaults to `dokploy-network`
-#   because Dokploy creates that automatically. Operators on other
-#   platforms either run `docker network create dokploy-network` once,
-#   or override `SHARED_NETWORK_NAME` in `.env` to point at their own
-#   external network.
+# - `shared`: an extra bridge the app-side services (migrate, gbif-alert,
+#   rqworker) attach to. By default it is a normal Compose-managed network,
+#   so a bare `docker compose up` works with no host prerequisites.
+#
+#   To instead reach a Postgres that lives as a sibling container on a
+#   pre-existing EXTERNAL network (e.g. Dokploy's `dokploy-network`, or your
+#   own managed-DB bridge), overlay `docker-compose.shared-external.yml`,
+#   which redefines `shared` as that external network. See INSTALL.md.
 networks:
   default:
   shared:
-    name: ${SHARED_NETWORK_NAME:-dokploy-network}
-    external: true
 
 volumes:
   valkey_data:
