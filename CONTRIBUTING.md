@@ -230,34 +230,59 @@ when a `v*` tag is pushed: the image is pushed to GHCR
 (`ghcr.io/riparias/gbif-alert`) and stamped with the tag, which the footer
 displays. No manual `VERSION` file edit is needed.
 
+The recommended flow uses `scripts/prepare-release.sh`, which handles the
+mechanical, error-prone parts (version normalization, the `pyproject.toml` +
+`uv.lock` bump, and a `CHANGELOG.md`/tag sanity check) and then prints the git
+commands for you to run. It never commits, tags, or pushes - you do.
+
+### Releasing
+
 1. Make sure all tests pass and `mypy` reports no errors.
-2. Update `CHANGELOG.md`.
-3. Bump the version in `pyproject.toml` to match the tag (e.g. `2.0.0rc1`
-   for tag `v2.0.0-rc1` - note PEP 440 drops the hyphen). Keeps package
-   metadata in sync with the release; not load-bearing for the footer,
-   which reads the git tag. Then run `uv lock` to refresh `uv.lock` (it pins
-   the project version too), and commit both files - otherwise the Docker
-   build's `uv sync --frozen` fails on the mismatch.
-4. Commit and push.
-   - **Stable release** (e.g. `v2.0.0`): merge `devel` to `main`, then push.
-   - **Pre-release / release candidate** (e.g. `v2.0.0-rc1`): stay on `devel`
-     and do *not* merge to `main`. A candidate is promoted to `main` only once
-     the final stable version is cut.
-5. Tag and push (the tag can sit on either branch - `release.yml` triggers on
-   the tag, not the branch):
+2. Write the `CHANGELOG.md` entry for the new version. The script checks that a
+   matching top entry exists, but does not write it for you.
+3. Run the helper with the version you are releasing (any of `2.0.0-rc1`,
+   `2.0.0rc1`, `v2.0.0-rc1`):
    ```
-   $ git tag v2.0.0
-   $ git push origin v2.0.0
+   $ ./scripts/prepare-release.sh 2.0.0-rc1
    ```
-   This triggers `release.yml`, which builds and pushes
-   `ghcr.io/riparias/gbif-alert:2.0.0` stamped with the tag. A stable tag also
-   moves `:latest` and the floating `:2.0` tag; a pre-release tag
-   (`v2.0.0-rc1`) publishes only `:2.0.0-rc1` and leaves `:latest` untouched.
-6. Bump `GBIF_ALERT_TAG` on each instance (see INSTALL.md "Upgrades") to roll
+   It bumps `pyproject.toml` + `uv.lock`, verifies they are in sync, and prints
+   the exact `git add` / `commit` / `tag` / `push` commands.
+4. Run those printed commands, minding the branch rule:
+   - **Stable release** (`v2.0.0`): merge `devel` to `main` *before* tagging.
+   - **Pre-release / RC** (`v2.0.0-rc1`): stay on `devel`; do *not* merge to
+     `main` (a candidate is promoted to `main` only once the final version is
+     cut). The tag can sit on either branch - `release.yml` triggers on the
+     tag, not the branch.
+5. Bump `GBIF_ALERT_TAG` on each instance (see INSTALL.md "Upgrades") to roll
    the new image out.
 
-The footer version is auto-stamped: release images show the tag (`v2.0.0`);
-`devel`/`main` images show a `git describe` string (e.g. `v1.0.0-42-gabc123`).
+Pushing the tag triggers `release.yml`, which builds and pushes
+`ghcr.io/riparias/gbif-alert:<version>` stamped with the tag. A stable tag also
+moves `:latest` and the floating `:2.0` tag; a pre-release tag (`v2.0.0-rc1`)
+publishes only `:2.0.0-rc1` and leaves `:latest` untouched. The footer version
+is auto-stamped: release images show the tag (`v2.0.0`); `devel`/`main` images
+show a `git describe` string (e.g. `v1.0.0-42-gabc123`).
+
+### What the helper does (releasing by hand)
+
+`prepare-release.sh` just wraps the steps below; run them directly if you prefer
+a manual release or want to understand the moving parts. The version has two
+forms that must agree: the **git tag** is SemVer (`v2.0.0-rc1`, *with* the
+hyphen) and the **`pyproject.toml`** version is PEP 440 (`2.0.0rc1`, *no*
+hyphen).
+
+1. Set the `pyproject.toml` version to the PEP 440 form and refresh the lock in
+   one step: `uv version 2.0.0rc1` (this updates both `pyproject.toml` and
+   `uv.lock`). The version is not load-bearing for the footer, which reads the
+   git tag, but `uv.lock` pins it too - skip the lock refresh and the Docker
+   build's `uv sync --frozen` fails on the mismatch.
+2. Commit `CHANGELOG.md`, `pyproject.toml`, and `uv.lock`.
+3. Tag with the SemVer form and push the branch and the tag:
+   ```
+   $ git tag v2.0.0-rc1
+   $ git push origin devel        # or main, for a stable release
+   $ git push origin v2.0.0-rc1
+   ```
 
 ## How to link to a GBIF alert instance with specific filters
 
