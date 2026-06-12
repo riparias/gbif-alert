@@ -1,3 +1,11 @@
+# 2.0.0-rc2 (2026-06-12)
+
+- Fix: the base `docker-compose.yml` no longer requires an external
+  `dokploy-network`, so a bare `docker compose up` works on any host with no
+  pre-created network. Reaching a Postgres that lives as a sibling container on
+  an existing external network (e.g. a Dokploy-managed Postgres) is now opt-in
+  via the `docker-compose.shared-external.yml` overlay. See `INSTALL.md`.
+
 # 2.0.0-rc1 (2026-06-11)
 
 GBIF Alert 2.0 is a major release: a brand-new user interface, a modern
