@@ -235,7 +235,9 @@ displays. No manual `VERSION` file edit is needed.
 3. Bump the version in `pyproject.toml` to match the tag (e.g. `2.0.0rc1`
    for tag `v2.0.0-rc1` - note PEP 440 drops the hyphen). Keeps package
    metadata in sync with the release; not load-bearing for the footer,
-   which reads the git tag.
+   which reads the git tag. Then run `uv lock` to refresh `uv.lock` (it pins
+   the project version too), and commit both files - otherwise the Docker
+   build's `uv sync --frozen` fails on the mismatch.
 4. Commit and push.
    - **Stable release** (e.g. `v2.0.0`): merge `devel` to `main`, then push.
    - **Pre-release / release candidate** (e.g. `v2.0.0-rc1`): stay on `devel`
