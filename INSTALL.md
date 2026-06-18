@@ -104,11 +104,37 @@ The stack ships **no routing or TLS config** - that is the operator's job, and h
 
 Per platform:
 
-- **Dokploy (Compose stacks)**: Dokploy's **Domains** tab does *not* wire routing for compose services - it injects no Traefik labels and no dynamic config (it manages domains only for Application-type services). Supply the routing yourself as a Traefik file-provider config: Dokploy's Traefik watches `/etc/dokploy/traefik/dynamic/`, so drop one file there per instance (see the example below). Point it at the `gbif-alert` container by its name on the `dokploy-network` - get it with `docker ps --format '{{.Names}}' | grep -- '-gbif-alert-'`. Use that full name, not the bare `gbif-alert` alias, which is ambiguous when several instances share the network.
-- **Self-managed Traefik (no Dokploy)**: same file-provider pattern, or add your own Traefik labels to the `gbif-alert` service with a router/service name unique per instance.
-- **Plain Nginx / Caddy / ALB**: front the published `GBIF_ALERT_BIND` address with your proxy config.
+- **Dokploy (Compose stacks)**: recent Dokploy with an up-to-date Traefik routes
+  Compose services automatically. Set the domain in the service's **Domains** tab
+  (enable Let's Encrypt, point it at container port `8000`); Dokploy injects the
+  Traefik labels (`traefik.enable`, `Host()` routers, `web`+`websecure`
+  entrypoints) into the deployed compose and attaches the container to
+  `dokploy-network`. No manual file-provider config is needed. Two things to get
+  right, or Traefik returns a **404** (it drops the router for any unhealthy
+  container):
+  - The container must be **healthy** - so put the domain *and* `localhost` in
+    `DJANGO_ALLOWED_HOSTS` (the `/healthz` check hits `localhost`), and the domain
+    in `DJANGO_CSRF_TRUSTED_ORIGINS`.
+  - The app and what it talks to (Traefik, a sibling-container Postgres) must
+    share `dokploy-network`. Intermittent `Temporary failure in name resolution`
+    means the container is on `dokploy-network` *and* a compose bridge at once -
+    pin it to `dokploy-network`.
+- **Self-managed Traefik, or older Dokploy that does not inject labels**: add
+  Traefik labels to the `gbif-alert` service, or hand-write a file-provider
+  config (legacy example below). Use router/service names unique per instance.
+- **Plain Nginx / Caddy / ALB**: front the published `GBIF_ALERT_BIND` address
+  with your proxy config for TLS and routing.
 
-Example Traefik dynamic config (file provider) for one instance. The unique router/service names (`gbif-alert-<instance>-*`) are what let multiple instances share one Traefik without clashing:
+**Running several instances on one host**: each needs its own domain and a
+**unique** `GBIF_ALERT_BIND` host port (e.g. `127.0.0.1:8001`, `127.0.0.1:8002`).
+A host port can only be bound by one container; reusing `127.0.0.1:8000` fails
+with `port is already allocated`. Routing reaches the container over the Docker
+network, so this bind only needs to avoid the clash.
+
+**Legacy fallback - manual Traefik file-provider config** (only if your Traefik
+does *not* inject labels for Compose services, e.g. older Dokploy). Dokploy's
+Traefik watches `/etc/dokploy/traefik/dynamic/`; drop one file there per instance
+with unique router/service names:
 
 ```yaml
 # /etc/dokploy/traefik/dynamic/gbif-alert-myinstance.yml
@@ -133,31 +159,29 @@ http:
         passHostHeader: true
 ```
 
-Traefik hot-reloads the file (no restart needed). `passHostHeader: true` forwards the real Host to Django, so the domain must be in that instance's `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`. The file lives outside Dokploy's own management: it survives app redeploys, but update `url:` if you ever recreate the project (the container name's hash changes). Verify with `curl -I https://your.domain` - a `200`/`server: gunicorn` means Django is reached; a bare `404 page not found` is Traefik with no matching router (the file did not load - check for a mangled `Host()` rule or YAML errors).
-
-**Running several instances on one host**, each needs:
-
-1. A **unique** `GBIF_ALERT_BIND` host port - e.g. `127.0.0.1:8001`, `127.0.0.1:8002`. A host port can only be bound by one container; reusing `127.0.0.1:8000` fails with `port is already allocated`. Routing reaches the container over the Docker network, so this bind only needs to avoid the clash.
-2. Its own dynamic-config file with **unique** router/service names and its own domain.
+Point `url:` at the `gbif-alert` container's full name on `dokploy-network`
+(`docker ps --format '{{.Names}}' | grep -- '-gbif-alert-'`). Traefik hot-reloads
+the file; update `url:` if you recreate the project (the container name's hash
+changes). A bare `404 page not found` means no matching router loaded (file not
+loaded / mangled `Host()` rule).
 
 ### Dokploy
 
-Dokploy is one supported target, but nothing in the base stack assumes it. Two
-Dokploy-specific points:
+Dokploy is one supported target, but nothing in the base stack assumes it.
 
-- **Managed Postgres**: a Dokploy-managed Postgres runs as a container on
-  Dokploy's `dokploy-network`. To let the app resolve it by container name,
-  deploy with the external-network overlay so the `shared` network becomes
-  `dokploy-network`:
+- **Routing**: recent Dokploy routes the Compose service automatically from the
+  **Domains** tab and attaches the container to `dokploy-network` - see the
+  Dokploy notes under *Reverse proxy, TLS, and multiple instances* above. No
+  manual Traefik config.
+- **Database**: simplest is a Postgres reachable by host:port (a managed DB, RDS,
+  or a separate server) - just set `DATABASE_URL`; no overlay needed. If instead
+  your Postgres is a sibling **container** reachable only by name on
+  `dokploy-network`, use the overlay so *all* app services (including `migrate`
+  and `rqworker`, which Dokploy does not auto-attach when only the web service
+  gets a domain) join that network:
   ```
   docker compose -f docker-compose.yml -f docker-compose.shared-external.yml up -d
   ```
-  Then point `DATABASE_URL` at that container. A Postgres reachable by host:port
-  instead (RDS, a separate server) needs no overlay - the base stack reaches it
-  over normal egress.
-- **Routing**: Dokploy's Domains tab does not route Compose services. Wire it
-  with a Traefik file-provider config as described under *Reverse proxy, TLS,
-  and multiple instances* above.
 
 ### Customising your instance
 
