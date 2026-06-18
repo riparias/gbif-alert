@@ -1,3 +1,10 @@
+# 2.0.0-rc4 (2026-06-18)
+
+- Fix: the `/healthz` liveness probe now stays `200` while maintenance mode is
+  on. Previously maintenance mode returned `503` for `/healthz` too, which
+  failed the container healthcheck, caused the reverse proxy to drop the route,
+  and showed users a 404 instead of the maintenance page.
+
 # 2.0.0-rc3 (2026-06-18)
 
 - Docker/Dokploy deployment fixes (refines the rc2 network change):
