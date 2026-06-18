@@ -1,3 +1,19 @@
+# 2.0.0-rc3 (2026-06-18)
+
+- Docker/Dokploy deployment fixes (refines the rc2 network change):
+  - The stack now runs on a single network, so no service is multi-homed -
+    which on Docker Swarm / Dokploy overlay networks caused intermittent
+    `Temporary failure in name resolution` (e.g. `migrate` failing to reach the
+    database).
+  - New `docker-compose.dokploy.yml`: a single self-contained file to point
+    Dokploy's Compose Path at. It puts every service - web *and* workers - on
+    the external `dokploy-network`, so `migrate`/`rqworker` can reach a managed
+    Postgres. Replaces the rc2 `docker-compose.shared-external.yml` overlay,
+    which Dokploy could not apply.
+- Docs: on recent Dokploy the Domains tab routes Compose services automatically
+  (no manual Traefik file-provider config needed); added Ofelia scheduler
+  operational notes. See `INSTALL.md`.
+
 # 2.0.0-rc2 (2026-06-12)
 
 - Fix: the base `docker-compose.yml` no longer requires an external
