@@ -1,24 +1,141 @@
 # Dokploy deployment for gbif-alert.
 #
-# Dokploy's Compose Path field takes a SINGLE file, so this one pulls in the
-# full stack via `include` (processed inside Docker Compose - no second `-f`)
-# and only overrides the network: every service is single-homed on Dokploy's
-# external `dokploy-network`.
+# Standalone on purpose: Dokploy's Compose Path takes a SINGLE file and its
+# parser does not resolve `include`/`extends` or a second `-f` (it reads this
+# file's top-level `services:` directly to attach domains). So the stack is
+# inlined here rather than shared with docker-compose.yml.
 #
-# Why: Dokploy auto-attaches `dokploy-network` only to the web service that
-# gets a domain, not to `migrate`/`rqworker` - so on the plain stack those
-# cannot reach a managed Postgres (which lives on `dokploy-network`). Putting
-# the whole stack on `dokploy-network` (and nothing else - no second bridge)
-# fixes that and avoids the multi-homed-container DNS flakiness.
+# Differences from docker-compose.yml:
+# - Every service is single-homed on the external `dokploy-network` (Dokploy
+#   only auto-attaches the domain'd web service; migrate/rqworker need it too to
+#   reach a managed Postgres - a sibling container on that network).
+# - No bundled `db` and no host `ports:` publish - use a managed/external
+#   Postgres via DATABASE_URL, and let Dokploy's Domains tab route to port 8000
+#   over `dokploy-network`.
 #
-# Usage: in the Dokploy Compose service, set the Compose Path to
-#   docker-compose.dokploy.yml
-# Use a managed/external Postgres via DATABASE_URL (do not enable the
-# bundled-db profile here). See INSTALL.md.
-include:
-  - docker-compose.yml
+# KEEP THE SERVICE DEFINITIONS BELOW IN SYNC WITH docker-compose.yml.
+#
+# All configuration via env vars - see .env.example for the contract.
 
+x-app-env: &app-env
+  SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+  DEBUG: ${DEBUG:-False}
+  DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+  DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?DJANGO_ALLOWED_HOSTS is required}
+  SITE_BASE_URL: ${SITE_BASE_URL:?SITE_BASE_URL is required}
+  SITE_NAME: ${SITE_NAME:?SITE_NAME is required}
+  RQ_REDIS_URL: ${RQ_REDIS_URL:-redis://valkey:6379/0}
+  EMAIL_HOST: ${EMAIL_HOST:-localhost}
+  EMAIL_PORT: ${EMAIL_PORT:-25}
+  EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+  EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+  EMAIL_USE_TLS: ${EMAIL_USE_TLS:-False}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
+  SERVER_EMAIL: ${SERVER_EMAIL:-}
+  ADMINS: ${ADMINS:-}
+  GBIF_DOWNLOAD_USERNAME: ${GBIF_DOWNLOAD_USERNAME:-}
+  GBIF_DOWNLOAD_PASSWORD: ${GBIF_DOWNLOAD_PASSWORD:-}
+  GBIF_DOWNLOAD_COUNTRY: ${GBIF_DOWNLOAD_COUNTRY:-}
+  GBIF_DOWNLOAD_YEAR_MIN: ${GBIF_DOWNLOAD_YEAR_MIN:-}
+  ENABLED_LANGUAGES: ${ENABLED_LANGUAGES:-en,fr,nl}
+  PRIMEVUE_PRIMARY_PALETTE: ${PRIMEVUE_PRIMARY_PALETTE:-indigo}
+  MAP_INITIAL_ZOOM: ${MAP_INITIAL_ZOOM:-2}
+  MAP_INITIAL_LAT: ${MAP_INITIAL_LAT:-0}
+  MAP_INITIAL_LON: ${MAP_INITIAL_LON:-0}
+  TIME_ZONE: ${TIME_ZONE:-Europe/Brussels}
+
+services:
+
+  migrate:
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}
+    pull_policy: always
+    command: python manage.py migrate --noinput
+    environment: *app-env
+    restart: "no"
+
+  gbif-alert:
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}
+    pull_policy: always
+    # Dockerfile CMD reads ${GUNICORN_WORKERS:-3} at runtime.
+    environment:
+      <<: *app-env
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+    # No host `ports:` here - Dokploy's Traefik routes to this port over
+    # dokploy-network (set it in the Domains tab).
+    expose:
+      - "8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz').read()"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    init: true
+    labels:
+      # ofelia (in-stack scheduler) - see the `scheduler` service.
+      ofelia.enabled: "true"
+      # Ofelia's cron parser (robfig/cron v1) expects SIX fields with the
+      # leading one being seconds: "second minute hour day month dayofweek".
+      ofelia.job-exec.import-observations.schedule: "${IMPORT_OBSERVATIONS_SCHEDULE:-0 0 2 * * *}"
+      ofelia.job-exec.import-observations.command: "python manage.py import_observations"
+      ofelia.job-exec.import-observations.no-overlap: "true"
+      ofelia.job-exec.send-notifications.schedule: "${SEND_NOTIFICATIONS_SCHEDULE:-0 0 14 * * *}"
+      ofelia.job-exec.send-notifications.command: "python manage.py send_alert_notifications_email"
+      ofelia.job-exec.send-notifications.no-overlap: "true"
+
+  rqworker:
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}
+    pull_policy: always
+    command: python manage.py rqworker default
+    environment: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_started
+    restart: unless-stopped
+    init: true
+
+  scheduler:
+    image: mcuadros/ofelia:0.3
+    command: daemon --docker -f label=com.docker.compose.project=${COMPOSE_PROJECT_NAME:-gbif-alert}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      gbif-alert:
+        condition: service_healthy
+    restart: unless-stopped
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    command: valkey-server --appendonly yes
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+# Single network: the external dokploy-network, shared by every service so the
+# whole stack (web + workers) can reach a managed Postgres on it, with no second
+# bridge to trigger multi-homed-container DNS failures. Dokploy creates this
+# network; it must already exist.
 networks:
   default:
     name: dokploy-network
     external: true
+
+volumes:
+  valkey_data:
