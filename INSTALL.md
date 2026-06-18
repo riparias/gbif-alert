@@ -115,10 +115,11 @@ Per platform:
   - The container must be **healthy** - so put the domain *and* `localhost` in
     `DJANGO_ALLOWED_HOSTS` (the `/healthz` check hits `localhost`), and the domain
     in `DJANGO_CSRF_TRUSTED_ORIGINS`.
-  - The app and what it talks to (Traefik, a sibling-container Postgres) must
-    share `dokploy-network`. Intermittent `Temporary failure in name resolution`
-    means the container is on `dokploy-network` *and* a compose bridge at once -
-    pin it to `dokploy-network`.
+  - The app and what it talks to (Traefik, a managed Postgres) must share
+    `dokploy-network`. `docker-compose.dokploy.yml` puts every service there and
+    nowhere else, which avoids this; intermittent `Temporary failure in name
+    resolution` is the symptom of a container multi-homed on `dokploy-network`
+    *and* a compose bridge at once - pin it to `dokploy-network` only.
 - **Self-managed Traefik, or older Dokploy that does not inject labels**: add
   Traefik labels to the `gbif-alert` service, or hand-write a file-provider
   config (legacy example below). Use router/service names unique per instance.
@@ -168,20 +169,21 @@ loaded / mangled `Host()` rule).
 ### Dokploy
 
 Dokploy is one supported target, but nothing in the base stack assumes it.
+Dokploy's Compose Path field takes a **single** file (it cannot apply a second
+`-f` overlay), so deploy with the dedicated **`docker-compose.dokploy.yml`**: in
+the Compose service, set the **Compose Path** to that file. It includes the full
+stack and puts every service single-homed on the external `dokploy-network`.
 
-- **Routing**: recent Dokploy routes the Compose service automatically from the
-  **Domains** tab and attaches the container to `dokploy-network` - see the
-  Dokploy notes under *Reverse proxy, TLS, and multiple instances* above. No
-  manual Traefik config.
-- **Database**: simplest is a Postgres reachable by host:port (a managed DB, RDS,
-  or a separate server) - just set `DATABASE_URL`; no overlay needed. If instead
-  your Postgres is a sibling **container** reachable only by name on
-  `dokploy-network`, use the overlay so *all* app services (including `migrate`
-  and `rqworker`, which Dokploy does not auto-attach when only the web service
-  gets a domain) join that network:
-  ```
-  docker compose -f docker-compose.yml -f docker-compose.shared-external.yml up -d
-  ```
+- **Routing**: the **Domains** tab routes the service automatically (labels
+  injected, container attached to `dokploy-network`) - see the Dokploy notes
+  under *Reverse proxy, TLS, and multiple instances* above. No manual Traefik
+  config.
+- **Database**: use a managed/external Postgres via `DATABASE_URL` (do not enable
+  the bundled-db profile on Dokploy). Because `docker-compose.dokploy.yml` puts
+  *all* services - including `migrate` and `rqworker`, which Dokploy does **not**
+  auto-attach (only the domain'd web service is) - on `dokploy-network`, they can
+  reach a Dokploy-managed Postgres (a sibling container on that network) by name.
+  A Postgres reachable by host:port works too.
 
 ### Customising your instance
 

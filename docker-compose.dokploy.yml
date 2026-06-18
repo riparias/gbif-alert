@@ -1,0 +1,24 @@
+# Dokploy deployment for gbif-alert.
+#
+# Dokploy's Compose Path field takes a SINGLE file, so this one pulls in the
+# full stack via `include` (processed inside Docker Compose - no second `-f`)
+# and only overrides the network: every service is single-homed on Dokploy's
+# external `dokploy-network`.
+#
+# Why: Dokploy auto-attaches `dokploy-network` only to the web service that
+# gets a domain, not to `migrate`/`rqworker` - so on the plain stack those
+# cannot reach a managed Postgres (which lives on `dokploy-network`). Putting
+# the whole stack on `dokploy-network` (and nothing else - no second bridge)
+# fixes that and avoids the multi-homed-container DNS flakiness.
+#
+# Usage: in the Dokploy Compose service, set the Compose Path to
+#   docker-compose.dokploy.yml
+# Use a managed/external Postgres via DATABASE_URL (do not enable the
+# bundled-db profile here). See INSTALL.md.
+include:
+  - docker-compose.yml
+
+networks:
+  default:
+    name: dokploy-network
+    external: true

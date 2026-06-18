@@ -3,6 +3,7 @@
 # Usage:
 #   docker compose up -d                          # external Postgres (set DATABASE_URL)
 #   docker compose --profile bundled-db up -d     # postgis service in compose
+#   (on Dokploy, point the Compose Path at docker-compose.dokploy.yml instead)
 #
 # All configuration via env vars - see .env.example for the contract.
 
@@ -50,7 +51,6 @@ services:
     pull_policy: always
     command: python manage.py migrate --noinput
     environment: *app-env
-    networks: [default, shared]
     depends_on:
       db:
         condition: service_healthy
@@ -64,7 +64,6 @@ services:
     environment:
       <<: *app-env
       GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
-    networks: [default, shared]
     expose:
       - "8000"
     ports:
@@ -110,7 +109,6 @@ services:
     pull_policy: always
     command: python manage.py rqworker default
     environment: *app-env
-    networks: [default, shared]
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -122,7 +120,6 @@ services:
   scheduler:
     image: mcuadros/ofelia:0.3
     command: daemon --docker -f label=com.docker.compose.project=${COMPOSE_PROJECT_NAME:-gbif-alert}
-    networks: [default]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
@@ -133,7 +130,6 @@ services:
   valkey:
     image: valkey/valkey:8-alpine
     command: valkey-server --appendonly yes
-    networks: [default]
     volumes:
       - valkey_data:/data
     healthcheck:
@@ -149,7 +145,6 @@ services:
     # existing bundled-db deployment requires a dump/restore or pg_upgrade.
     image: postgis/postgis:17-3.5
     profiles: ["bundled-db"]
-    networks: [default]
     # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB are required ONLY when
     # the bundled-db profile is enabled. Compose interpolates env vars for
     # every service regardless of profile, so we use empty defaults here
@@ -168,21 +163,15 @@ services:
       retries: 5
     restart: unless-stopped
 
-# Networks
+# Network
 #
-# - `default` (private): inter-stack communication for valkey, scheduler,
-#   bundled `db`. Isolated; not exposed to other apps on the host.
-# - `shared`: an extra bridge the app-side services (migrate, gbif-alert,
-#   rqworker) attach to. By default it is a normal Compose-managed network,
-#   so a bare `docker compose up` works with no host prerequisites.
-#
-#   To instead reach a Postgres that lives as a sibling container on a
-#   pre-existing EXTERNAL network (e.g. Dokploy's `dokploy-network`, or your
-#   own managed-DB bridge), overlay `docker-compose.shared-external.yml`,
-#   which redefines `shared` as that external network. See INSTALL.md.
-networks:
-  default:
-  shared:
+# Every service shares the implicit `default` network, kept deliberately
+# simple. A bare `docker compose up` creates it as a private bridge. The base
+# file leaves `default` undeclared so the Dokploy file can define it: on
+# Dokploy, point the Compose Path at `docker-compose.dokploy.yml`, which makes
+# `default` the external `dokploy-network` so every service is single-homed
+# there (Dokploy needs all services - not just the web one - on
+# `dokploy-network` to reach a managed Postgres). See INSTALL.md.
 
 volumes:
   valkey_data:
