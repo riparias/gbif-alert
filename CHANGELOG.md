@@ -1,35 +1,4 @@
-# 2.0.0-rc4 (2026-06-18)
-
-- Fix: the `/healthz` liveness probe now stays `200` while maintenance mode is
-  on. Previously maintenance mode returned `503` for `/healthz` too, which
-  failed the container healthcheck, caused the reverse proxy to drop the route,
-  and showed users a 404 instead of the maintenance page.
-
-# 2.0.0-rc3 (2026-06-18)
-
-- Docker/Dokploy deployment fixes (refines the rc2 network change):
-  - The stack now runs on a single network, so no service is multi-homed -
-    which on Docker Swarm / Dokploy overlay networks caused intermittent
-    `Temporary failure in name resolution` (e.g. `migrate` failing to reach the
-    database).
-  - New `docker-compose.dokploy.yml`: a single self-contained file to point
-    Dokploy's Compose Path at. It puts every service - web *and* workers - on
-    the external `dokploy-network`, so `migrate`/`rqworker` can reach a managed
-    Postgres. Replaces the rc2 `docker-compose.shared-external.yml` overlay,
-    which Dokploy could not apply.
-- Docs: on recent Dokploy the Domains tab routes Compose services automatically
-  (no manual Traefik file-provider config needed); added Ofelia scheduler
-  operational notes. See `INSTALL.md`.
-
-# 2.0.0-rc2 (2026-06-12)
-
-- Fix: the base `docker-compose.yml` no longer requires an external
-  `dokploy-network`, so a bare `docker compose up` works on any host with no
-  pre-created network. Reaching a Postgres that lives as a sibling container on
-  an existing external network (e.g. a Dokploy-managed Postgres) is now opt-in
-  via the `docker-compose.shared-external.yml` overlay. See `INSTALL.md`.
-
-# 2.0.0-rc1 (2026-06-11)
+# 2.0.0 (2026-06-18)
 
 GBIF Alert 2.0 is a major release: a brand-new user interface, a modern
 public API, and a fully reworked Docker/deployment stack.
@@ -64,9 +33,13 @@ public API, and a fully reworked Docker/deployment stack.
   replacing the old bind-mounted Python settings file.
 - Static files are served by WhiteNoise - the bundled nginx image is gone; bring
   your own reverse proxy for TLS and routing.
-- Rewritten six-service compose stack: Valkey (replacing Redis), a one-shot
-  `migrate` service, an ofelia scheduler for imports/notifications, an opt-in
-  `bundled-db` profile, and a `/healthz` liveness endpoint.
+- Rewritten compose stack on a single network: Valkey (replacing Redis), a
+  one-shot `migrate` service, an ofelia scheduler for imports/notifications, an
+  opt-in `bundled-db` profile, and a `/healthz` liveness endpoint. A bare
+  `docker compose up` works with no host prerequisites.
+- Dokploy: a dedicated `docker-compose.dokploy.yml` (single file, every service
+  on the external `dokploy-network`); on recent Dokploy the Domains tab routes
+  the service automatically (no manual Traefik config). See `INSTALL.md`.
 
 ## Under the hood
 
