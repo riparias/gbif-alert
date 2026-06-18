@@ -217,6 +217,18 @@ These cron expressions are evaluated in the `scheduler` container's timezone, wh
 
 **Cron format note:** Ofelia uses a SIX-field cron expression where the leading field is *seconds* (`second minute hour day month dayofweek`), not the standard five-field Unix cron. A five-field expression like `0 2 * * *` is silently misinterpreted as "every hour at HH:02:00" rather than "daily at 02:00". When overriding the defaults, always include the leading `0` for seconds.
 
+**Applying a schedule change:** the schedule is a label on the `gbif-alert`
+container. Changing `IMPORT_OBSERVATIONS_SCHEDULE` / `SEND_NOTIFICATIONS_SCHEDULE`
+and redeploying updates the label, but Ofelia does not reload it on its own -
+restart the scheduler afterwards (`docker compose restart scheduler`) for the
+new schedule to take effect.
+
+**Where scheduled output goes:** Ofelia runs each job via `docker exec`, so the
+command's output goes to the scheduler, not to `docker compose logs gbif-alert`
+(which shows only gunicorn). To debug a scheduled command, run it ad-hoc (below)
+to see its output directly, or check `docker compose logs scheduler`, which
+records each run's exit status.
+
 To run a job ad-hoc (outside the schedule):
 
 ```
