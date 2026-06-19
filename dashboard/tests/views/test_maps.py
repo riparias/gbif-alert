@@ -103,7 +103,7 @@ def test_min_max_status_area_combinations(maps_data, client):
         reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
         data={
             "zoom": 8,
-            "status": "seen",
+            "status": "viewed",
             "areaIds[]": maps_data["public_area_andenne"].pk,
         },
     )
@@ -364,7 +364,7 @@ def test_min_max_per_hexagon_with_verified_filter(maps_data, client):
 
 
 def test_min_max_in_hexagon_with_status_filter_invalid_value(maps_data, client):
-    """status is not seen nor unseen, therefore is ignored and everything is included"""
+    """status is not viewed nor notViewed, therefore is ignored and everything is included"""
     client.login(username="frusciante", password="12345")
     response = client.get(
         reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
@@ -395,7 +395,7 @@ def test_min_max_in_hexagon_with_status_filter(maps_data, client):
         reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
         data={
             "zoom": 8,
-            "status": "unseen",
+            "status": "notViewed",
         },
     )
     assert response.json()["min"] == 1
@@ -424,7 +424,7 @@ def test_min_max_in_hexagon_with_status_filter_anonymous(maps_data, client):
         reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
         data={
             "zoom": 8,
-            "status": "unseen",
+            "status": "notViewed",
         },
     )
     assert response.json()["min"] == 1
@@ -898,7 +898,7 @@ def test_tiles_end_date_filter(maps_data, client):
 
 
 def test_tiles_combined_filters(maps_data, client):
-    # Test a combination of filters per status (seen/unseen) and species
+    # Test a combination of filters per status (viewed/notViewed) and species
     client.login(username="frusciante", password="12345")
 
     # Case 1: Large-scale view: a single hex over Wallonia
@@ -908,14 +908,14 @@ def test_tiles_combined_filters(maps_data, client):
     )
 
     # First, all seen observations for the user => only the one in Lillois
-    url_with_params = f"{base_url}?status=seen"
+    url_with_params = f"{base_url}?status=viewed"
     response = client.get(url_with_params)
     decoded_tile = mapbox_vector_tile.decode(response.content)
     assert len(decoded_tile["default"]["features"]) == 1
     assert decoded_tile["default"]["features"][0]["properties"]["gbif_id"] == "2"
 
     # All unseen observations => only the one in Andenne
-    url_with_params = f"{base_url}?status=unseen"
+    url_with_params = f"{base_url}?status=notViewed"
     response = client.get(url_with_params)
     decoded_tile = mapbox_vector_tile.decode(response.content)
     assert len(decoded_tile["default"]["features"]) == 1
@@ -923,7 +923,7 @@ def test_tiles_combined_filters(maps_data, client):
 
     # Same, but we add some species filtering that doesn't filter anything out
     url_with_params = (
-        f"{base_url}?status=unseen&speciesIds[]={maps_data['first_species'].pk}"
+        f"{base_url}?status=notViewed&speciesIds[]={maps_data['first_species'].pk}"
     )
     response = client.get(url_with_params)
     decoded_tile = mapbox_vector_tile.decode(response.content)
@@ -932,11 +932,35 @@ def test_tiles_combined_filters(maps_data, client):
 
     # Finally, we remove the observation by applying another species filter
     url_with_params = (
-        f"{base_url}?status=unseen&speciesIds[]={maps_data['second_species'].pk}"
+        f"{base_url}?status=notViewed&speciesIds[]={maps_data['second_species'].pk}"
     )
     response = client.get(url_with_params)
     decoded_tile = mapbox_vector_tile.decode(response.content)
     assert decoded_tile == {}
+
+
+def test_tiles_status_filter_frontend_vocabulary(maps_data, client):
+    """Regression test: the frontend map sends the external status vocabulary
+    ("viewed"/"notViewed"), not the internal one ("seen"/"unseen"). The tile
+    endpoints must translate it; otherwise the status filter is silently
+    dropped and every observation shows on the map regardless of its status.
+
+    See the map/table consistency note at the top of dashboard/views/maps.py.
+    """
+    client.login(username="frusciante", password="12345")
+    base_url = reverse(_SINGLE_OBS_URL, kwargs={"zoom": 2, "x": 2, "y": 1})
+
+    # "viewed" => only the seen observation (Lillois, gbif_id=2)
+    response = client.get(f"{base_url}?status=viewed")
+    decoded_tile = mapbox_vector_tile.decode(response.content)
+    assert len(decoded_tile["default"]["features"]) == 1
+    assert decoded_tile["default"]["features"][0]["properties"]["gbif_id"] == "2"
+
+    # "notViewed" => only the unseen observation (Andenne, gbif_id=1)
+    response = client.get(f"{base_url}?status=notViewed")
+    decoded_tile = mapbox_vector_tile.decode(response.content)
+    assert len(decoded_tile["default"]["features"]) == 1
+    assert decoded_tile["default"]["features"][0]["properties"]["gbif_id"] == "1"
 
 
 def test_tiles_initial_data_import_filter(maps_data, client):
@@ -1128,7 +1152,7 @@ def test_aggregated_tiles_status_filter_anonymous(maps_data, client):
         _AGGREGATED_URL,
         kwargs={"zoom": 2, "x": 2, "y": 1},
     )
-    url_with_params = f"{base_url}?status=seen"
+    url_with_params = f"{base_url}?status=viewed"
     response = client.get(url_with_params)
     decoded_tile = mapbox_vector_tile.decode(response.content)
     assert len(decoded_tile["default"]["features"]) == 1  # it has a single feature
@@ -1137,7 +1161,7 @@ def test_aggregated_tiles_status_filter_anonymous(maps_data, client):
 
 
 def test_aggregated_tiles_status_filter_invalid_filter_value(maps_data, client):
-    """Similar to test_tiles_status_filter_case1() but with a filter that's not seen | unseen => filter is ignored
+    """Similar to test_tiles_status_filter_case1() but with a filter that's not viewed | notViewed => filter is ignored
     and everything is included"""
     # Case 1: Large-scale view: a single hex over Wallonia, but count = 1
     client.login(username="frusciante", password="12345")
@@ -1160,7 +1184,7 @@ def test_aggregated_tiles_status_filter_case1(maps_data, client):
         _AGGREGATED_URL,
         kwargs={"zoom": 2, "x": 2, "y": 1},
     )
-    url_with_params = f"{base_url}?status=seen"
+    url_with_params = f"{base_url}?status=viewed"
     response = client.get(url_with_params)
     decoded_tile = mapbox_vector_tile.decode(response.content)
     assert len(decoded_tile["default"]["features"]) == 1  # it has a single feature
@@ -1175,7 +1199,7 @@ def test_aggregated_tiles_status_filter_case2(maps_data, client):
         _AGGREGATED_URL,
         kwargs={"zoom": 2, "x": 2, "y": 1},
     )
-    url_with_params = f"{base_url}?status=unseen"
+    url_with_params = f"{base_url}?status=notViewed"
     response = client.get(url_with_params)
     decoded_tile = mapbox_vector_tile.decode(response.content)
 
@@ -1190,7 +1214,7 @@ def test_aggregated_tiles_status_filter_case2(maps_data, client):
         _AGGREGATED_URL,
         kwargs={"zoom": 10, "x": 526, "y": 345},
     )
-    url_with_params = f"{base_url}?status=unseen"
+    url_with_params = f"{base_url}?status=notViewed"
     response = client.get(url_with_params)
     decoded_tile = mapbox_vector_tile.decode(response.content)
     assert len(decoded_tile["default"]["features"]) == 1  # it has a single feature
@@ -1201,7 +1225,7 @@ def test_aggregated_tiles_status_filter_case2(maps_data, client):
         _AGGREGATED_URL,
         kwargs={"zoom": 14, "x": 8390, "y": 5510},
     )
-    url_with_params = f"{base_url}?status=unseen"
+    url_with_params = f"{base_url}?status=notViewed"
     response = client.get(url_with_params)
     decoded_tile = mapbox_vector_tile.decode(response.content)
     assert decoded_tile == {}

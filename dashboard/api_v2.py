@@ -66,6 +66,7 @@ from dashboard.forms import SignUpForm, _days_to_value_unit, _value_unit_to_days
 from dashboard.geo_utils import file_to_wkt_multipolygon, geojson_to_multipolygon
 from dashboard.utils import human_readable_git_version_number
 from dashboard.views import jobs as background_jobs
+from dashboard.views.helpers import api_status_to_internal
 from dashboard.models import (
     Alert,
     ApiToken,
@@ -155,15 +156,6 @@ api_v2_spa = NinjaAPI(
 ERR_401 = {401: DetailErrorOut}  # missing or invalid credentials
 ERR_403 = {403: DetailErrorOut}  # session write without a valid CSRF token
 ERR_404 = {404: DetailErrorOut}  # object not found, or not owned by the user
-
-# The public API speaks "viewed"/"notViewed"; the internal observation filtering
-# still uses "seen"/"unseen". Map the consumer-facing status value to the internal
-# one at the API boundary. Unknown/None values mean "no status filter".
-_API_STATUS_TO_INTERNAL = {"viewed": "seen", "notViewed": "unseen"}
-
-
-def _internal_status(api_status: str | None) -> str | None:
-    return _API_STATUS_TO_INTERNAL.get(api_status) if api_status else None
 
 
 def _vernacular_names(species: Species) -> dict[str, str]:
@@ -478,7 +470,7 @@ def observations_list(
         start_date=filters.startDate,
         end_date=filters.endDate,
         areas_ids=filters.areaIds,
-        status_for_user=_internal_status(filters.status),
+        status_for_user=api_status_to_internal(filters.status),
         initial_data_import_ids=filters.initialDataImportIds,
         user=user,
         verified_filter=filters.verifiedFilter,
@@ -575,7 +567,7 @@ def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
         start_date=filters.startDate,
         end_date=filters.endDate,
         areas_ids=filters.areaIds,
-        status_for_user=_internal_status(filters.status),
+        status_for_user=api_status_to_internal(filters.status),
         initial_data_import_ids=filters.initialDataImportIds,
         user=user,
         verified_filter=filters.verifiedFilter,
@@ -612,7 +604,7 @@ def observations_counter(request: HttpRequest, filters: Query[FiltersQuery]):
         start_date=filters.startDate,
         end_date=filters.endDate,
         areas_ids=filters.areaIds,
-        status_for_user=_internal_status(filters.status),
+        status_for_user=api_status_to_internal(filters.status),
         initial_data_import_ids=filters.initialDataImportIds,
         user=user,
         verified_filter=filters.verifiedFilter,
@@ -642,7 +634,7 @@ def observations_mark_all_as_seen(request: HttpRequest, filters: FiltersQuery):
         start_date=filters.startDate,
         end_date=filters.endDate,
         areas_ids=filters.areaIds,
-        status_for_user=_internal_status(filters.status),
+        status_for_user=api_status_to_internal(filters.status),
         initial_data_import_ids=filters.initialDataImportIds,
         user=user,
         verified_filter=filters.verifiedFilter,

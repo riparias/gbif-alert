@@ -16,6 +16,21 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
+# The external surface (public/v2 API and the Vue frontend) speaks
+# "viewed"/"notViewed"; the internal observation filtering uses "seen"/"unseen".
+# Translate the external value to the internal one at each request boundary.
+# Unknown/None values mean "no status filter". This is the single source of
+# truth for the mapping; keep every boundary (api_v2, map tile endpoints) using
+# it so the vocabularies cannot drift apart.
+STATUS_API_TO_INTERNAL = {"viewed": "seen", "notViewed": "unseen"}
+
+
+def api_status_to_internal(api_status: str | None) -> str | None:
+    """Map an external status value ("viewed"/"notViewed") to the internal
+    "seen"/"unseen". Returns None for None or any unrecognized value."""
+    return STATUS_API_TO_INTERNAL.get(api_status) if api_status else None
+
+
 # This class is only defined to make Mypy happy
 # see https://github.com/typeddjango/django-stubs#how-can-i-create-a-httprequest-thats-guaranteed-to-have-an-authenticated-user
 class AuthenticatedHttpRequest(HttpRequest):

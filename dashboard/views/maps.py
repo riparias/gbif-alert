@@ -12,7 +12,11 @@ from dashboard.models import (
 )
 from django.contrib.gis.db.models.aggregates import Union as AggregateUnion
 from dashboard.utils import readable_string
-from dashboard.views.helpers import filters_from_request, extract_int_request
+from dashboard.views.helpers import (
+    filters_from_request,
+    extract_int_request,
+    api_status_to_internal,
+)
 from django.conf import settings
 from django.utils.translation import get_language
 
@@ -213,8 +217,12 @@ def _build_filter_params(request: HttpRequest) -> dict:
         "precomputed_area_ewkb": precomputed_area_ewkb,
     }
 
-    if status_for_user and request.user.is_authenticated:
-        params["status"] = status_for_user
+    # The frontend sends the external vocabulary ("viewed"/"notViewed");
+    # _build_where_clause expects the internal one ("seen"/"unseen"), so
+    # translate here. Unrecognized values become None -> no status filter.
+    internal_status = api_status_to_internal(status_for_user)
+    if internal_status and request.user.is_authenticated:
+        params["status"] = internal_status
         params["user_id"] = request.user.pk
 
     if start_date is not None:
