@@ -174,16 +174,22 @@ Dokploy's Compose Path field takes a **single** file (it cannot apply a second
 the Compose service, set the **Compose Path** to that file. It includes the full
 stack and puts every service single-homed on the external `dokploy-network`.
 
-- **Routing**: the **Domains** tab routes the service automatically (labels
-  injected, container attached to `dokploy-network`) - see the Dokploy notes
-  under *Reverse proxy, TLS, and multiple instances* above. No manual Traefik
-  config.
+- **Routing**: in the **Domains** tab, add your domain with **Service Name
+  `gbif-alert`** and **port `8000`** (enable Let's Encrypt). Dokploy then injects
+  the Traefik labels automatically - no manual config. The Service Name must be
+  exactly the compose service (`gbif-alert`); a blank or wrong one leaves the
+  service unrouted (a 404 with healthy containers). See the Dokploy notes under
+  *Reverse proxy, TLS, and multiple instances* above for the other 404 gotchas
+  (`DJANGO_ALLOWED_HOSTS` must include the domain *and* `localhost`).
 - **Database**: use a managed/external Postgres via `DATABASE_URL` (do not enable
   the bundled-db profile on Dokploy). Because `docker-compose.dokploy.yml` puts
   *all* services - including `migrate` and `rqworker`, which Dokploy does **not**
   auto-attach (only the domain'd web service is) - on `dokploy-network`, they can
   reach a Dokploy-managed Postgres (a sibling container on that network) by name.
   A Postgres reachable by host:port works too.
+- **`GBIF_ALERT_BIND` is unused on Dokploy** - this file publishes no host port;
+  Traefik routes to container port 8000 over `dokploy-network`. Don't set it (it
+  only affects the host-published port in the base `docker-compose.yml`).
 
 ### Customising your instance
 
