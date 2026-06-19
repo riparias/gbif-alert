@@ -1,3 +1,13 @@
+# 2.0.2 (2026-06-19)
+
+- Fix: the observations map now honors the "viewed / not viewed" status filter.
+  The map tile endpoints received the frontend's "viewed"/"notViewed" status
+  values but only recognized the internal "seen"/"unseen", so the filter was
+  silently dropped: the map showed every observation regardless of status while
+  the counter, histogram, and table updated correctly. The status vocabulary
+  mapping now lives in a single place shared by the v2 API and the map tile
+  endpoints, so they cannot drift apart again.
+
 # 2.0.1 (2026-06-19)
 
 - Fix: the compose files now declare service `labels:` in list form so Dokploy's
