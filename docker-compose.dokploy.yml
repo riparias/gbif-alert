@@ -81,17 +81,20 @@ services:
       start_period: 30s
     restart: unless-stopped
     init: true
+    # List form (not a map) is REQUIRED on Dokploy: its Domains tab only injects
+    # the Traefik routing labels when a service's `labels:` is a YAML list (the
+    # injector checks Array.isArray); a map is silently skipped, leaving the
+    # service unrouted (404). Ofelia reads either form identically.
     labels:
-      # ofelia (in-stack scheduler) - see the `scheduler` service.
-      ofelia.enabled: "true"
+      - "ofelia.enabled=true"
       # Ofelia's cron parser (robfig/cron v1) expects SIX fields with the
       # leading one being seconds: "second minute hour day month dayofweek".
-      ofelia.job-exec.import-observations.schedule: "${IMPORT_OBSERVATIONS_SCHEDULE:-0 0 2 * * *}"
-      ofelia.job-exec.import-observations.command: "python manage.py import_observations"
-      ofelia.job-exec.import-observations.no-overlap: "true"
-      ofelia.job-exec.send-notifications.schedule: "${SEND_NOTIFICATIONS_SCHEDULE:-0 0 14 * * *}"
-      ofelia.job-exec.send-notifications.command: "python manage.py send_alert_notifications_email"
-      ofelia.job-exec.send-notifications.no-overlap: "true"
+      - "ofelia.job-exec.import-observations.schedule=${IMPORT_OBSERVATIONS_SCHEDULE:-0 0 2 * * *}"
+      - "ofelia.job-exec.import-observations.command=python manage.py import_observations"
+      - "ofelia.job-exec.import-observations.no-overlap=true"
+      - "ofelia.job-exec.send-notifications.schedule=${SEND_NOTIFICATIONS_SCHEDULE:-0 0 14 * * *}"
+      - "ofelia.job-exec.send-notifications.command=python manage.py send_alert_notifications_email"
+      - "ofelia.job-exec.send-notifications.no-overlap=true"
 
   rqworker:
     image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}

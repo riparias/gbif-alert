@@ -85,19 +85,22 @@ services:
       start_period: 30s
     restart: unless-stopped
     init: true
+    # List form (not a map): kept in sync with docker-compose.dokploy.yml, where
+    # list form is required for Dokploy's Domains tab to inject Traefik labels
+    # (its injector only handles a label list, not a map). Ofelia reads either
+    # form identically.
     labels:
-      # ofelia (in-stack scheduler) - see the `scheduler` service.
-      ofelia.enabled: "true"
+      - "ofelia.enabled=true"
       # Ofelia's cron parser (robfig/cron v1) expects SIX fields with the
       # leading one being seconds: "second minute hour day month dayofweek".
       # A 5-field expression silently shifts left and runs hourly. So
       # "0 0 2 * * *" = 02:00:00 daily, NOT "0 2 * * *".
-      ofelia.job-exec.import-observations.schedule: "${IMPORT_OBSERVATIONS_SCHEDULE:-0 0 2 * * *}"
-      ofelia.job-exec.import-observations.command: "python manage.py import_observations"
-      ofelia.job-exec.import-observations.no-overlap: "true"
-      ofelia.job-exec.send-notifications.schedule: "${SEND_NOTIFICATIONS_SCHEDULE:-0 0 14 * * *}"
-      ofelia.job-exec.send-notifications.command: "python manage.py send_alert_notifications_email"
-      ofelia.job-exec.send-notifications.no-overlap: "true"
+      - "ofelia.job-exec.import-observations.schedule=${IMPORT_OBSERVATIONS_SCHEDULE:-0 0 2 * * *}"
+      - "ofelia.job-exec.import-observations.command=python manage.py import_observations"
+      - "ofelia.job-exec.import-observations.no-overlap=true"
+      - "ofelia.job-exec.send-notifications.schedule=${SEND_NOTIFICATIONS_SCHEDULE:-0 0 14 * * *}"
+      - "ofelia.job-exec.send-notifications.command=python manage.py send_alert_notifications_email"
+      - "ofelia.job-exec.send-notifications.no-overlap=true"
       # Routing and TLS are the operator's responsibility, supplied per
       # platform rather than baked in here (the app exposes 8000; see
       # the `ports`/GBIF_ALERT_BIND knob above). This keeps the file
