@@ -1,3 +1,11 @@
+# 2.0.1 (2026-06-19)
+
+- Fix: the compose files now declare service `labels:` in list form so Dokploy's
+  Domains tab injects its Traefik routing labels (it silently skips map-form
+  labels). A Compose deployment now routes via the Domains tab with no manual
+  Traefik file-provider config. Application code is unchanged - the image is
+  identical to 2.0.0.
+
 # 2.0.0 (2026-06-18)
 
 GBIF Alert 2.0 is a major release: a brand-new user interface, a modern
