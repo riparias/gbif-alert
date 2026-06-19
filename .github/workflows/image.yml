@@ -41,10 +41,13 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # Branch + sha tags only. `:latest` is owned SOLELY by release.yml
+          # (moved on stable version tags). Tagging it here too raced with
+          # release.yml on releases, and would move `:latest` off the released
+          # version on any non-release push to the default branch.
           tags: |
             type=ref,event=branch
             type=sha,prefix=sha-
-            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
         uses: docker/build-push-action@v6
