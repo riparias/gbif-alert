@@ -5,6 +5,7 @@ import logging
 import os
 import tempfile
 import time
+import traceback
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
@@ -270,11 +271,20 @@ def send_successful_import_email():
     )
 
 
-def send_error_import_email():
+def send_error_import_email(exception: BaseException | None = None):
+    body = "An error occurred during the observation data import."
+    if exception is not None:
+        body += "\n\nThe import was rolled back. Exception traceback:\n\n" + "".join(
+            traceback.format_exception(
+                type(exception), exception, exception.__traceback__
+            )
+        )
+    # fail_silently=False so a delivery problem is surfaced (the caller logs it
+    # and still re-raises the original import error) rather than swallowed.
     mail_admins(
         "ERROR during observation data import",
-        "Please have a look at the application",
-        fail_silently=True,
+        body,
+        fail_silently=False,
     )
 
 
@@ -394,154 +404,167 @@ def run_import(
     a fresh iterable. This preserves streaming for multi-million-row imports:
     no row is held in memory across passes.
 
-    On exception inside the transaction, the transaction rolls back and
-    maintenance mode is left ON (callers that want it cleared must do so
-    themselves). On successful commit, maintenance mode is cleared and an
-    admin email is sent.
+    Maintenance mode is enabled for the duration of the import and always
+    cleared on exit, whether the import succeeds or fails. On failure the
+    transaction rolls back (leaving the database unchanged) and an admin email
+    with the exception traceback is sent before the error is re-raised; on
+    success an admin email is sent.
     """
-    transaction_success: list[bool] = [False]
-
-    def _mark_success() -> None:
-        transaction_success[0] = True
-
     _log_with_time(
         stdout,
         "Real import is starting. We'll use a transaction and put the website in maintenance mode",
     )
 
     set_maintenance_mode(True)
-    with transaction.atomic():
-        transaction.on_commit(_mark_success)
-
-        current_data_import = DataImport.objects.create(
-            start=timezone.now(), gbif_predicate=gbif_predicate
-        )
-        _log_with_time(
-            stdout, f"Created a new DataImport object: #{current_data_import.pk}"
-        )
-
-        # Pass 1: discover datasets + basis-of-record values
-        _log_with_time(
-            stdout, "3. Pre-importing all datasets and basis of record values"
-        )
-        _log_with_time(
-            stdout,
-            "3.1 Scanning rows to get the dataset keys and basis of record values",
-        )
-        datasets_referenced, bor_values_referenced = (
-            discover_datasets_and_basis_of_record(raw_rows_factory())
-        )
-
-        _log_with_time(stdout, "3.3 Creating/updating the Dataset objects")
-        hash_table_datasets: dict[str, Dataset] = {}
-        for dataset_key, dataset_name in datasets_referenced.items():
-            _log_with_time(stdout, f"Creating/updating dataset {dataset_key}")
-            dataset, _ = Dataset.objects.update_or_create(
-                gbif_dataset_key=dataset_key,
-                defaults={"name": dataset_name},
+    try:
+        with transaction.atomic():
+            current_data_import = DataImport.objects.create(
+                start=timezone.now(), gbif_predicate=gbif_predicate
             )
-            hash_table_datasets[dataset_key] = dataset
-
-        _log_with_time(stdout, "3.4 Creating/getting the BasisOfRecord objects")
-        hash_table_basis_of_record: dict[str, BasisOfRecord] = {}
-        for bor_value in bor_values_referenced:
-            bor, _ = BasisOfRecord.objects.get_or_create(name=bor_value)
-            hash_table_basis_of_record[bor_value] = bor
-
-        _log_with_time(stdout, "4. Creating a hash table of species")
-        hash_table_species: dict[int, Species] = {
-            species.gbif_taxon_key: species for species in Species.objects.all()
-        }
-
-        _log_with_time(stdout, "5. Building verification status hash")
-        hash_table_verification_status = load_verification_status_hash()
-
-        if gbif_download_id is not None:
-            current_data_import.set_gbif_download_id(gbif_download_id)
-
-        # Pass 2: build and insert observations
-        _log_with_time(stdout, "Importing all rows")
-        current_data_import.skipped_observations_counter = _import_all_observations(
-            raw_rows_factory(),
-            current_data_import,
-            hash_table_datasets=hash_table_datasets,
-            hash_table_species=hash_table_species,
-            hash_table_basis_of_record=hash_table_basis_of_record,
-            hash_table_verification_status=hash_table_verification_status,
-            stdout=stdout,
-        )
-
-        _log_with_time(stdout, "All observations imported")
-
-        _log_with_time(stdout, "Migrating unseen observations")
-        migrate_unseen_observations(current_data_import)
-
-        _log_with_time(
-            stdout, "now deleting observations linked to previous data imports..."
-        )
-        Observation.objects.exclude(data_import=current_data_import).delete()
-        _log_with_time(stdout, "Previous observations deleted")
-
-        _log_with_time(
-            stdout,
-            "We'll now create or refresh the materialized views. This can take a while.",
-        )
-        create_or_refresh_materialized_views(
-            zoom_levels=[settings.ZOOM_LEVEL_FOR_MIN_MAX_QUERY]
-        )
-
-        # Remove unused Dataset entries (and edit related alerts)
-        empty_datasets = (
-            Dataset.objects.annotate(obs_count=Count("observation"))
-            .filter(obs_count=0)
-            .prefetch_related("alert_set")
-        )
-        for dataset in empty_datasets:
-            _log_with_time(stdout, f"Deleting (no longer used) dataset {dataset}")
-            alerts_referencing_dataset = dataset.alert_set.all()  # type: ignore[attr-defined]  # Prefetched; annotate() drops the model type
-            if alerts_referencing_dataset:
-                for alert in alerts_referencing_dataset:
-                    _log_with_time(
-                        stdout,
-                        f"We'll first need to un-reference this dataset from alert #{alert}",
-                    )
-                    alert.datasets.remove(dataset)
-            dataset.delete()
-
-        # Remove unused BasisOfRecord entries (and edit related alerts)
-        empty_basis_of_records = (
-            BasisOfRecord.objects.annotate(obs_count=Count("observation"))
-            .filter(obs_count=0)
-            .prefetch_related("alert_set")
-        )
-        for bor in empty_basis_of_records:
             _log_with_time(
-                stdout, f"Deleting (no longer used) basis of record {bor}"
+                stdout, f"Created a new DataImport object: #{current_data_import.pk}"
             )
-            alerts_referencing_bor = bor.alert_set.all()  # type: ignore[attr-defined]  # Prefetched; annotate() drops the model type
-            if alerts_referencing_bor:
-                for alert in alerts_referencing_bor:
-                    _log_with_time(
-                        stdout,
-                        f"We'll first need to un-reference this basis of record from alert #{alert}",
-                    )
-                    alert.basis_of_record_filters.remove(bor)
-            bor.delete()
 
-        _log_with_time(stdout, "Updating the DataImport object")
-        current_data_import.complete()
-        _log_with_time(stdout, "Committing the transaction")
+            # Pass 1: discover datasets + basis-of-record values
+            _log_with_time(
+                stdout, "3. Pre-importing all datasets and basis of record values"
+            )
+            _log_with_time(
+                stdout,
+                "3.1 Scanning rows to get the dataset keys and basis of record values",
+            )
+            datasets_referenced, bor_values_referenced = (
+                discover_datasets_and_basis_of_record(raw_rows_factory())
+            )
 
-    _log_with_time(stdout, "Transaction committed")
-    _log_with_time(stdout, "Leaving maintenance mode.")
-    set_maintenance_mode(False)
+            _log_with_time(stdout, "3.3 Creating/updating the Dataset objects")
+            hash_table_datasets: dict[str, Dataset] = {}
+            for dataset_key, dataset_name in datasets_referenced.items():
+                _log_with_time(stdout, f"Creating/updating dataset {dataset_key}")
+                dataset, _ = Dataset.objects.update_or_create(
+                    gbif_dataset_key=dataset_key,
+                    defaults={"name": dataset_name},
+                )
+                hash_table_datasets[dataset_key] = dataset
 
-    _log_with_time(stdout, "Sending email report")
-    if transaction_success[0]:
-        send_successful_import_email()
-    else:
-        send_error_import_email()
+            _log_with_time(stdout, "3.4 Creating/getting the BasisOfRecord objects")
+            hash_table_basis_of_record: dict[str, BasisOfRecord] = {}
+            for bor_value in bor_values_referenced:
+                bor, _ = BasisOfRecord.objects.get_or_create(name=bor_value)
+                hash_table_basis_of_record[bor_value] = bor
 
+            _log_with_time(stdout, "4. Creating a hash table of species")
+            hash_table_species: dict[int, Species] = {
+                species.gbif_taxon_key: species for species in Species.objects.all()
+            }
+
+            _log_with_time(stdout, "5. Building verification status hash")
+            hash_table_verification_status = load_verification_status_hash()
+
+            if gbif_download_id is not None:
+                current_data_import.set_gbif_download_id(gbif_download_id)
+
+            # Pass 2: build and insert observations
+            _log_with_time(stdout, "Importing all rows")
+            current_data_import.skipped_observations_counter = _import_all_observations(
+                raw_rows_factory(),
+                current_data_import,
+                hash_table_datasets=hash_table_datasets,
+                hash_table_species=hash_table_species,
+                hash_table_basis_of_record=hash_table_basis_of_record,
+                hash_table_verification_status=hash_table_verification_status,
+                stdout=stdout,
+            )
+
+            _log_with_time(stdout, "All observations imported")
+
+            _log_with_time(stdout, "Migrating unseen observations")
+            migrate_unseen_observations(current_data_import)
+
+            _log_with_time(
+                stdout, "now deleting observations linked to previous data imports..."
+            )
+            Observation.objects.exclude(data_import=current_data_import).delete()
+            _log_with_time(stdout, "Previous observations deleted")
+
+            _log_with_time(
+                stdout,
+                "We'll now create or refresh the materialized views. This can take a while.",
+            )
+            create_or_refresh_materialized_views(
+                zoom_levels=[settings.ZOOM_LEVEL_FOR_MIN_MAX_QUERY]
+            )
+
+            # Remove unused Dataset entries (and edit related alerts)
+            empty_datasets = (
+                Dataset.objects.annotate(obs_count=Count("observation"))
+                .filter(obs_count=0)
+                .prefetch_related("alert_set")
+            )
+            for dataset in empty_datasets:
+                _log_with_time(stdout, f"Deleting (no longer used) dataset {dataset}")
+                alerts_referencing_dataset = dataset.alert_set.all()  # type: ignore[attr-defined]  # Prefetched; annotate() drops the model type
+                if alerts_referencing_dataset:
+                    for alert in alerts_referencing_dataset:
+                        _log_with_time(
+                            stdout,
+                            f"We'll first need to un-reference this dataset from alert #{alert}",
+                        )
+                        alert.datasets.remove(dataset)
+                dataset.delete()
+
+            # Remove unused BasisOfRecord entries (and edit related alerts)
+            empty_basis_of_records = (
+                BasisOfRecord.objects.annotate(obs_count=Count("observation"))
+                .filter(obs_count=0)
+                .prefetch_related("alert_set")
+            )
+            for bor in empty_basis_of_records:
+                _log_with_time(
+                    stdout, f"Deleting (no longer used) basis of record {bor}"
+                )
+                alerts_referencing_bor = bor.alert_set.all()  # type: ignore[attr-defined]  # Prefetched; annotate() drops the model type
+                if alerts_referencing_bor:
+                    for alert in alerts_referencing_bor:
+                        _log_with_time(
+                            stdout,
+                            f"We'll first need to un-reference this basis of record from alert #{alert}",
+                        )
+                        alert.basis_of_record_filters.remove(bor)
+                bor.delete()
+
+            _log_with_time(stdout, "Updating the DataImport object")
+            current_data_import.complete()
+            _log_with_time(stdout, "Committing the transaction")
+
+        _log_with_time(stdout, "Transaction committed")
+    except Exception as exc:
+        # The import failed and the transaction rolled back, so the database is
+        # unchanged. Notify the admins with the traceback before re-raising:
+        # the failure must be visible (no silent failures) and the scheduled
+        # job must exit non-zero. Guard the email send so a mail problem can
+        # neither mask the original error nor skip the maintenance reset below.
+        _log_with_time(stdout, f"Import failed ({exc!r}); notifying admins.")
+        try:
+            send_error_import_email(exc)
+        except Exception as mail_exc:
+            _log_with_time(
+                stdout, f"Could not send the import-error email: {mail_exc!r}"
+            )
+        raise
+    finally:
+        # Always leave maintenance mode, even if the import raised. The work
+        # above runs in a single transaction that rolls back on failure, so a
+        # failed import leaves the database unchanged - there is no
+        # half-imported state to protect by staying in maintenance. Leaving it
+        # ON on failure would only turn a transient import error into a site
+        # outage needing manual recovery (observed in production: a crashing
+        # import stranded the site in maintenance mode).
+        _log_with_time(stdout, "Leaving maintenance mode.")
+        set_maintenance_mode(False)
+
+    _log_with_time(stdout, "Sending success report")
+    send_successful_import_email()
     return current_data_import
 
 
