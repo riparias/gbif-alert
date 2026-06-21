@@ -422,3 +422,50 @@ def test_admins_parsed_from_env_string(clean_env):
     settings = _import_settings()
     assert ("Alice", "a@example.com") in settings.ADMINS
     assert ("Bob", "b@example.com") in settings.ADMINS
+
+
+def test_admins_bare_email_parsed(clean_env):
+    """A bare email (no `Name <...>` wrapper) is accepted, with the email
+    used as both the name and the address."""
+    _minimal_env(clean_env)
+    clean_env.setenv("ADMINS", "ops@example.com")
+    settings = _import_settings()
+    assert ("ops@example.com", "ops@example.com") in settings.ADMINS
+
+
+def test_admins_python_literal_raises_improperly_configured(clean_env):
+    """Pasting a Python list literal (the form used in `local_settings.py`)
+    into the `ADMINS` env var must fail loudly at startup.
+
+    `ADMINS` is an environment-variable string, not Python code: a literal
+    like `[("Nicolas Noe", "nicolas@niconoe.eu")]` gets split on commas into
+    fragments such as `[` and `]` that are not valid addresses. Previously
+    these were silently kept and only blew up days later inside
+    `mail_admins()` during a data import (`Invalid address "["`). The
+    settings module must reject them at boot instead.
+    """
+    _minimal_env(clean_env)
+    clean_env.setenv(
+        "ADMINS", '[("Nicolas Noe", "nicolas@niconoe.eu")]'
+    )
+    with pytest.raises(ImproperlyConfigured) as exc_info:
+        _import_settings()
+    # The message must name the offending input and the expected format so the
+    # operator can fix the env var without reading the source.
+    assert "ADMINS" in str(exc_info.value)
+
+
+def test_admins_invalid_email_raises_improperly_configured(clean_env):
+    """Any entry whose address is not a valid email aborts startup."""
+    _minimal_env(clean_env)
+    clean_env.setenv("ADMINS", "Alice <not-an-email>")
+    with pytest.raises(ImproperlyConfigured):
+        _import_settings()
+
+
+def test_admins_unset_is_empty_list(clean_env):
+    """An unset `ADMINS` is valid and yields an empty list (no error emails,
+    but the app boots fine)."""
+    _minimal_env(clean_env)
+    settings = _import_settings()
+    assert settings.ADMINS == []
