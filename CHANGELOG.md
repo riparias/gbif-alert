@@ -1,3 +1,15 @@
+# 2.0.4 (2026-06-22)
+
+- Fix: running more than one gbif-alert stack on a single Docker host (sharing
+  `dokploy-network`) no longer cross-contaminates them. Each stack defines a service
+  named `valkey`, and on a shared network Docker resolves the bare name to every
+  stack's Valkey at random, mixing the Django cache, the RQ job queue, and
+  maintenance-mode state across sites - the visible symptom being intermittent
+  maintenance-mode 503s on one site while another was importing. A new optional
+  `VALKEY_HOST` variable (default `valkey`) now drives both the Redis URL and the
+  Valkey network alias, so each deployment talks only to its own Valkey. Set it to a
+  unique value per co-located stack; a single-stack host needs no change (#361).
+
 # 2.0.3 (2026-06-22)
 
 - New: optional Amazon SES email backend. Set `EMAIL_BACKEND=django_ses.SESBackend`
