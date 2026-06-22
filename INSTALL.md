@@ -198,6 +198,7 @@ All operationally-significant settings live in `.env`. Highlights:
 - **Branding**: `SITE_NAME`, `PRIMEVUE_PRIMARY_PALETTE`.
 - **Map default view**: `MAP_INITIAL_ZOOM`, `MAP_INITIAL_LAT`, `MAP_INITIAL_LON`.
 - **Languages**: `ENABLED_LANGUAGES` (comma-separated subset of `en,fr,nl`).
+- **Email**: SMTP by default (`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`). To send through **Amazon SES with an IAM role** instead of SMTP credentials, set `EMAIL_BACKEND=django_ses.SESBackend` and `AWS_SES_REGION_NAME` (e.g. `eu-west-1`); the credentials are then taken from the ambient AWS role (ECS task role / EC2 instance role), so no SMTP user/password is stored. `DEFAULT_FROM_EMAIL` must be a verified SES identity.
 - **GBIF download filter**: `GBIF_DOWNLOAD_USERNAME`, `GBIF_DOWNLOAD_PASSWORD`, `GBIF_DOWNLOAD_COUNTRY`, `GBIF_DOWNLOAD_YEAR_MIN`. The default predicate builder uses these to construct the download filter.
 - **Custom predicate**: for filters not expressible via `GBIF_DOWNLOAD_*`, you need a Python override of `GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"]` (a callable can't be an env var). Copy `djangoproject/local_settings.template.py` to a `local_settings.py`, edit it, and bind-mount it into the container by adding to the `gbif-alert` service in `docker-compose.yml`:
   ```yaml

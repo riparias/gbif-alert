@@ -22,6 +22,7 @@ dependencies = [
     "django-cors-headers>=4.2.0,<5",
     "django-markdownx>=4.0.2,<5",
     "django-rq>=4.0,<5",
+    "django-ses>=4.1.0,<5",
     "html2text==2024.2.25",
     "django-taggit>=6.0,<7",
     "django-modeltranslation>=0.20.0,<0.21",
