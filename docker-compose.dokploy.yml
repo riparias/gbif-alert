@@ -24,7 +24,11 @@ x-app-env: &app-env
   DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?DJANGO_ALLOWED_HOSTS is required}
   SITE_BASE_URL: ${SITE_BASE_URL:?SITE_BASE_URL is required}
   SITE_NAME: ${SITE_NAME:?SITE_NAME is required}
-  RQ_REDIS_URL: ${RQ_REDIS_URL:-redis://valkey:6379/0}
+  # VALKEY_HOST defaults to the service name `valkey`. On a host running MORE THAN
+  # ONE gbif-alert stack on the shared dokploy-network, set VALKEY_HOST to a unique
+  # value per stack (e.g. demo-valkey) so each app talks only to its own Valkey - the
+  # bare `valkey` alias otherwise resolves to every stack's Valkey at random. See INSTALL.md.
+  RQ_REDIS_URL: ${RQ_REDIS_URL:-redis://${VALKEY_HOST:-valkey}:6379/0}
   EMAIL_HOST: ${EMAIL_HOST:-localhost}
   EMAIL_PORT: ${EMAIL_PORT:-25}
   EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
@@ -130,6 +134,13 @@ services:
       timeout: 3s
       retries: 5
     restart: unless-stopped
+    networks:
+      # Unique per-stack alias so co-located stacks don't collide on `valkey`.
+      # Compose still auto-adds the bare `valkey` alias; it just goes unused once
+      # every app resolves the unique VALKEY_HOST instead.
+      default:
+        aliases:
+          - ${VALKEY_HOST:-valkey}
 
 # Single network: the external dokploy-network, shared by every service so the
 # whole stack (web + workers) can reach a managed Postgres on it, with no second
