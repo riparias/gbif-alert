@@ -160,20 +160,39 @@ SERVER_EMAIL = os.environ.get("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
 EMAIL_SUBJECT_PREFIX = os.environ.get("EMAIL_SUBJECT_PREFIX", "[gbif-alert] ")
 
 # ADMINS is parsed from a single env var of the form "Name1 <a@b>, Name2 <c@d>"
+# (or bare emails). It is an environment-variable STRING, not Python code -
+# pasting a list literal like `[("Name", "a@b")]` (the form used in
+# local_settings.py) splits on commas into fragments such as "[" and "]" that
+# are not valid addresses. Rather than silently keeping that garbage - which
+# only blows up days later inside mail_admins() during a data import
+# (`Invalid address "["`) - validate each entry and fail fast at startup.
 _admins_raw = os.environ.get("ADMINS", "")
 ADMINS: list[tuple[str, str]] = []
 if _admins_raw:
     import re
+    from django.core.exceptions import ImproperlyConfigured, ValidationError
+    from django.core.validators import validate_email
+
     for entry in _admins_raw.split(","):
         entry = entry.strip()
         if not entry:
             continue
         match = re.match(r"^(.*?)\s*<(.+?)>$", entry)
         if match:
-            ADMINS.append((match.group(1).strip(), match.group(2).strip()))
+            name, email = match.group(1).strip(), match.group(2).strip()
         else:
             # Bare email: name = email
-            ADMINS.append((entry, entry))
+            name, email = entry, entry
+        try:
+            validate_email(email)
+        except ValidationError:
+            raise ImproperlyConfigured(
+                f"Invalid ADMINS entry: {entry!r}. ADMINS must be a comma-"
+                f'separated string of the form "Name <a@b.c>, Name2 <d@e.f>" '
+                f"(or bare emails). It is an environment-variable string, not a "
+                f"Python list literal."
+            )
+        ADMINS.append((name, email))
 
 # ---------------------------------------------------------------------------
 # GBIF_ALERT settings (per-deployment branding, behaviour, and GBIF download
