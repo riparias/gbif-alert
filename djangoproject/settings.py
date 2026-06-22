@@ -147,9 +147,14 @@ CACHES = {
     }
 }
 
-# Email backend defaults to SMTP. Override via local_settings.py if you need
-# the console backend for dev or LocMemEmailBackend for tests.
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# Email backend defaults to SMTP. Set EMAIL_BACKEND to switch backends without a
+# local_settings.py - e.g. "django_ses.SESBackend" to send through Amazon SES
+# with the ambient AWS credentials (an IAM role on ECS/EC2, or the usual boto3
+# credential chain - no access keys stored), or a console/LocMem backend for dev
+# and tests. local_settings.py can still override any of this.
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
+)
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "localhost")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "25"))
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
@@ -158,6 +163,19 @@ EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "False").lower() == "true"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "")
 SERVER_EMAIL = os.environ.get("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
 EMAIL_SUBJECT_PREFIX = os.environ.get("EMAIL_SUBJECT_PREFIX", "[gbif-alert] ")
+
+# Amazon SES (only consulted when EMAIL_BACKEND=django_ses.SESBackend). The
+# credentials come from the ambient boto3 chain - on ECS/EC2 that is the
+# task/instance IAM role, so nothing is stored here. AWS_SES_REGION_NAME is
+# required for SES; the endpoint is derived from it unless overridden, and
+# USE_SES_V2 selects the SESv2 API. When EMAIL_BACKEND stays on SMTP these are
+# inert.
+AWS_SES_REGION_NAME = os.environ.get("AWS_SES_REGION_NAME", "")
+if AWS_SES_REGION_NAME:
+    AWS_SES_REGION_ENDPOINT = os.environ.get(
+        "AWS_SES_REGION_ENDPOINT", f"email.{AWS_SES_REGION_NAME}.amazonaws.com"
+    )
+USE_SES_V2 = os.environ.get("USE_SES_V2", "True").lower() == "true"
 
 # ADMINS is parsed from a single env var of the form "Name1 <a@b>, Name2 <c@d>"
 _admins_raw = os.environ.get("ADMINS", "")
