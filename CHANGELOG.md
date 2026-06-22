@@ -1,3 +1,24 @@
+# 2.0.3 (2026-06-22)
+
+- New: optional Amazon SES email backend. Set `EMAIL_BACKEND=django_ses.SESBackend`
+  and `AWS_SES_REGION_NAME` to send notification and admin error mail through SES
+  using the ambient AWS credentials (an ECS task / EC2 instance IAM role - no SMTP
+  user, password, or access keys stored). The default stays SMTP and is unchanged;
+  the new SES settings are inert unless that backend is explicitly selected.
+  `DEFAULT_FROM_EMAIL` must be a verified SES identity (#360).
+
+- Fix: a malformed `ADMINS` environment variable now fails fast at startup with a
+  clear error naming the offending entry, instead of being silently kept as a
+  garbage address that only crashed days later inside `mail_admins()` during a
+  data import. `ADMINS` is an env-var string ("Name <a@b>, Name2 <c@d>"), not a
+  Python list literal, and is now validated as such (#358).
+
+- Fix: a failing observation import no longer strands the site in maintenance
+  mode. Maintenance is now always cleared (safe, because the import runs in a
+  single transaction that rolls back on failure), and admins are emailed the
+  exception traceback before the job exits non-zero - previously a crashing
+  import left maintenance ON and sent no notification (#359).
+
 # 2.0.2 (2026-06-19)
 
 - Fix: the observations map now honors the "viewed / not viewed" status filter.
