@@ -20,7 +20,10 @@ from dwca.darwincore.utils import qualname as qn  # type: ignore
 from dwca.read import DwCAReader  # type: ignore
 from dwca.rows import CoreRow  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
-from maintenance_mode.core import set_maintenance_mode  # type: ignore
+from dashboard.maintenance import (
+    disable_maintenance_for_import,
+    enable_maintenance_for_import,
+)
 
 from dashboard.models import (
     Species,
@@ -415,7 +418,7 @@ def run_import(
         "Real import is starting. We'll use a transaction and put the website in maintenance mode",
     )
 
-    set_maintenance_mode(True)
+    enable_maintenance_for_import()
     try:
         with transaction.atomic():
             current_data_import = DataImport.objects.create(
@@ -561,7 +564,7 @@ def run_import(
         # outage needing manual recovery (observed in production: a crashing
         # import stranded the site in maintenance mode).
         _log_with_time(stdout, "Leaving maintenance mode.")
-        set_maintenance_mode(False)
+        disable_maintenance_for_import()
 
     _log_with_time(stdout, "Sending success report")
     send_successful_import_email()

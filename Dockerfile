@@ -95,7 +95,14 @@ EXPOSE 8000
 # Shell-form CMD so ${GUNICORN_WORKERS:-3} is expanded at runtime. tini
 # (provided by `init: true` in compose, or `--init` for `docker run`) is
 # PID 1 for clean signal handling.
-CMD gunicorn djangoproject.wsgi \
+#
+# Self-heal any maintenance flag stranded by an interrupted import (e.g. a
+# redeploy that SIGKILLed the import) before serving. Non-fatal (`;`, the command
+# always exits 0) so a transient cache hiccup never blocks startup. Only the web
+# service uses this default CMD; rqworker/migrate override `command:`. `exec`
+# keeps gunicorn as the signalled process under tini.
+CMD python manage.py clear_stale_import_maintenance; \
+    exec gunicorn djangoproject.wsgi \
         --bind 0.0.0.0:8000 \
         --workers ${GUNICORN_WORKERS:-3} \
         --access-logfile - \
