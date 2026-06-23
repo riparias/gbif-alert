@@ -2,6 +2,7 @@ import datetime
 import hashlib
 import logging
 import os
+import resource
 import secrets
 import smtplib
 import time
@@ -509,89 +510,122 @@ class ObservationManager(models.Manager["Observation"]):
         return qs
 
 
+def _log_peak_rss(logger: logging.Logger, label: str) -> None:
+    """Log the process peak resident-set size (high-water mark).
+
+    ru_maxrss is the peak RSS since the process started, so it only ever grows;
+    logging it after each step shows which step pushed memory usage higher. The
+    unit is platform-dependent: kilobytes on Linux, bytes on macOS.
+    """
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    logger.info(
+        f"migrate_unseen_observations: peak RSS after {label}: {peak} "
+        "(ru_maxrss; KB on Linux, bytes on macOS)"
+    )
+
+
+# How many rows to pull from the DB per round-trip when streaming with
+# .iterator(). Large enough to keep the query count low, small enough that a
+# single chunk never dominates memory.
+_MIGRATE_CHUNK_SIZE = 10000
+
+
 def migrate_unseen_observations(current_data_import: "DataImport") -> None:
     """Migrate unseen observations to new observations or delete them if they are no longer relevant."""
     logger = logging.getLogger(__name__)
 
     logger.info("migrate_unseen_observations: Starting...")
+    _log_peak_rss(logger, "start")
     step_start = time.time()
 
-    unseen_observations = ObservationUnseen.objects.select_related(
-        "observation", "observation__data_import", "user"
-    ).all()
+    base_qs = ObservationUnseen.objects.all()
 
-    if not unseen_observations.exists():
+    if not base_qs.exists():
         logger.info(
             "migrate_unseen_observations: No unseen observations, returning early"
         )
         return
 
-    # Step 1: Load all unseen observations into memory
-    logger.info("migrate_unseen_observations: Step 1 - Loading unseen observations...")
-    unseen_list = list(unseen_observations)
-    logger.info(
-        f"migrate_unseen_observations: Loaded {len(unseen_list)} unseen observations in {time.time() - step_start:.2f}s"
-    )
-
-    # Step 2: Collect all unique stable_ids
-    step_start = time.time()
-    logger.info("migrate_unseen_observations: Step 2 - Collecting stable_ids...")
+    # Step 1: Collect the unique stable_ids of all currently-unseen observations.
+    # We fetch only the stable_id column (no model hydration) and stream the rows
+    # with .iterator() so that even millions of unseen rows do not all live in
+    # memory at once. .distinct() lets the DB collapse duplicates before transfer.
+    logger.info("migrate_unseen_observations: Step 1 - Collecting stable_ids...")
     stable_ids = set()
-    for unseen in unseen_list:
-        stable_ids.add(unseen.observation.stable_id)
+    for stable_id in (
+        base_qs.values_list("observation__stable_id", flat=True)
+        .distinct()
+        .iterator(chunk_size=_MIGRATE_CHUNK_SIZE)
+    ):
+        stable_ids.add(stable_id)
     logger.info(
         f"migrate_unseen_observations: Collected {len(stable_ids)} unique stable_ids in {time.time() - step_start:.2f}s"
     )
+    _log_peak_rss(logger, "step 1 (stable_ids)")
 
-    # Step 3: Find the new observations for these stable_ids in the current import
+    # Step 2: Find the new observations for these stable_ids in the current import.
+    # We keep only the scalar columns the logic needs (id + date), keyed by
+    # stable_id - not the full Observation objects (which carry a geometry and
+    # several TextFields). Bounded by the number of unique stable_ids.
     step_start = time.time()
-    logger.info("migrate_unseen_observations: Step 3 - Querying new observations...")
-    new_observations = Observation.objects.filter(
-        stable_id__in=stable_ids,
-        data_import=current_data_import,
-    )
-    new_obs_by_stable_id = {obs.stable_id: obs for obs in new_observations}
+    logger.info("migrate_unseen_observations: Step 2 - Querying new observations...")
+    new_obs_by_stable_id: dict[str, tuple[int, datetime.date]] = {
+        stable_id: (obs_id, obs_date)
+        for stable_id, obs_id, obs_date in Observation.objects.filter(
+            stable_id__in=stable_ids,
+            data_import=current_data_import,
+        )
+        .values_list("stable_id", "id", "date")
+        .iterator(chunk_size=_MIGRATE_CHUNK_SIZE)
+    }
     logger.info(
         f"migrate_unseen_observations: Found {len(new_obs_by_stable_id)} matching observations in {time.time() - step_start:.2f}s"
     )
+    _log_peak_rss(logger, "step 2 (new observations)")
 
-    # Step 4: Process unseen observations using the pre-fetched data
+    # Step 3: Decide, for each unseen row, whether to migrate it to the new
+    # observation or delete it. A second streamed pass fetches only the three
+    # scalars the decision needs (pk, stable_id, the user's delay) - no joins to
+    # hydrate. to_delete holds bare pks; to_update holds lightweight model
+    # instances carrying just pk + observation_id for bulk_update.
     step_start = time.time()
     logger.info(
-        "migrate_unseen_observations: Step 4 - Processing unseen observations..."
+        "migrate_unseen_observations: Step 3 - Processing unseen observations..."
     )
-    to_delete = []
-    to_update = []
+    to_delete: list[int] = []
+    to_update: list["ObservationUnseen"] = []
     today = timezone.now().date()
 
-    for i, unseen in enumerate(unseen_list):
-        if i > 0 and i % 10000 == 0:
+    for i, (pk, stable_id, delay_days) in enumerate(
+        base_qs.values_list(
+            "pk", "observation__stable_id", "user__notification_delay_days"
+        ).iterator(chunk_size=_MIGRATE_CHUNK_SIZE)
+    ):
+        if i > 0 and i % _MIGRATE_CHUNK_SIZE == 0:
             logger.info(
-                f"migrate_unseen_observations: Processed {i}/{len(unseen_list)} unseen observations..."
+                f"migrate_unseen_observations: Processed {i} unseen observations..."
             )
 
-        new_obs = new_obs_by_stable_id.get(unseen.observation.stable_id)
+        new_obs = new_obs_by_stable_id.get(stable_id)
 
         if new_obs:
+            new_obs_id, new_obs_date = new_obs
             # Check date threshold (cheap check, no DB query)
-            threshold_date = today - datetime.timedelta(
-                days=unseen.user.notification_delay_days
-            )
-            if new_obs.date < threshold_date:
+            threshold_date = today - datetime.timedelta(days=delay_days)
+            if new_obs_date < threshold_date:
                 # Too old, delete
-                to_delete.append(unseen.pk)
+                to_delete.append(pk)
             else:
-                # Still recent enough - update to point to the new observation
+                # Still recent enough - update to point to the new observation.
                 # Note: We skip obs_match_alerts() check here because:
                 # 1. The observation was already in ObservationUnseen, so it matched before
                 # 2. obs_match_alerts() is extremely slow (multiple DB queries per call)
                 # 3. Even if the observation no longer matches (rare), keeping it as
                 #    unseen is a conservative/safe behavior
-                unseen.observation = new_obs
-                to_update.append(unseen)
+                to_update.append(ObservationUnseen(pk=pk, observation_id=new_obs_id))
         else:
             # No corresponding observation in new import - delete
-            to_delete.append(unseen.pk)
+            to_delete.append(pk)
 
     logger.info(
         f"migrate_unseen_observations: Processing done in {time.time() - step_start:.2f}s"
@@ -599,12 +633,13 @@ def migrate_unseen_observations(current_data_import: "DataImport") -> None:
     logger.info(
         f"migrate_unseen_observations: to_update={len(to_update)}, to_delete={len(to_delete)}"
     )
+    _log_peak_rss(logger, "step 3 (decisions)")
 
-    # Step 5: Apply changes
+    # Step 4: Apply changes
     step_start = time.time()
     if to_delete:
         logger.info(
-            f"migrate_unseen_observations: Step 5a - Deleting {len(to_delete)} unseen observations..."
+            f"migrate_unseen_observations: Step 4a - Deleting {len(to_delete)} unseen observations..."
         )
         ObservationUnseen.objects.filter(pk__in=to_delete).delete()
         logger.info(
@@ -614,13 +649,16 @@ def migrate_unseen_observations(current_data_import: "DataImport") -> None:
     step_start = time.time()
     if to_update:
         logger.info(
-            f"migrate_unseen_observations: Step 5b - Updating {len(to_update)} unseen observations..."
+            f"migrate_unseen_observations: Step 4b - Updating {len(to_update)} unseen observations..."
         )
-        ObservationUnseen.objects.bulk_update(to_update, ["observation"])
+        ObservationUnseen.objects.bulk_update(
+            to_update, ["observation"], batch_size=_MIGRATE_CHUNK_SIZE
+        )
         logger.info(
             f"migrate_unseen_observations: Update done in {time.time() - step_start:.2f}s"
         )
 
+    _log_peak_rss(logger, "complete")
     logger.info("migrate_unseen_observations: Complete")
 
 
