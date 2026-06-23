@@ -7,6 +7,7 @@ from maintenance_mode.core import (  # type: ignore
 
 from dashboard.maintenance import (
     MAINTENANCE_IMPORT_MARKER,
+    clear_stale_import_maintenance,
     disable_maintenance_for_import,
     enable_maintenance_for_import,
 )
@@ -39,3 +40,41 @@ def test_disable_clears_maintenance_and_marker():
     disable_maintenance_for_import()
     assert get_maintenance_mode() is False
     assert cache.get(MAINTENANCE_IMPORT_MARKER) is None
+
+
+@override_settings(**CACHE_OVERRIDE)
+def test_clear_stale_clears_import_set_maintenance():
+    cache.clear()
+    enable_maintenance_for_import()  # maintenance ON + marker
+    clear_stale_import_maintenance()
+    assert get_maintenance_mode() is False
+    assert cache.get(MAINTENANCE_IMPORT_MARKER) is None
+
+
+@override_settings(**CACHE_OVERRIDE)
+def test_clear_stale_leaves_manual_maintenance():
+    cache.clear()
+    set_maintenance_mode(True)  # manual: no marker
+    clear_stale_import_maintenance()
+    assert get_maintenance_mode() is True  # left untouched
+
+
+@override_settings(**CACHE_OVERRIDE)
+def test_clear_stale_drops_orphan_marker_when_off():
+    cache.clear()
+    cache.set(MAINTENANCE_IMPORT_MARKER, True, None)  # orphan marker, maintenance off
+    clear_stale_import_maintenance()
+    assert get_maintenance_mode() is False
+    assert cache.get(MAINTENANCE_IMPORT_MARKER) is None
+
+
+@override_settings(**CACHE_OVERRIDE)
+def test_clear_stale_swallows_cache_errors(monkeypatch):
+    cache.clear()
+    set_maintenance_mode(True)
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("cache down")
+
+    monkeypatch.setattr("dashboard.maintenance.get_maintenance_mode", boom)
+    clear_stale_import_maintenance()  # must not raise

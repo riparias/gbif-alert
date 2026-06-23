@@ -39,3 +39,32 @@ def disable_maintenance_for_import() -> None:
     """Disable maintenance mode and drop the import marker."""
     set_maintenance_mode(False)
     cache.delete(MAINTENANCE_IMPORT_MARKER)
+
+
+def clear_stale_import_maintenance() -> None:
+    """Clear maintenance left stranded by a killed import; leave manual windows alone.
+
+    - maintenance ON + marker present -> killed import; clear both.
+    - maintenance ON + no marker      -> manually enabled; leave it.
+    - maintenance OFF                 -> drop any leftover marker; do nothing else.
+
+    Wrapped so a cache error at boot logs a warning instead of blocking startup.
+    """
+    try:
+        if get_maintenance_mode():
+            if cache.get(MAINTENANCE_IMPORT_MARKER):
+                set_maintenance_mode(False)
+                cache.delete(MAINTENANCE_IMPORT_MARKER)
+                logger.warning(
+                    "Cleared stranded import-set maintenance mode on startup."
+                )
+            else:
+                logger.info(
+                    "Maintenance mode is on but not import-set; leaving it untouched."
+                )
+        else:
+            cache.delete(MAINTENANCE_IMPORT_MARKER)
+    except Exception as exc:  # noqa: BLE001 - boot must not be blocked by a cache hiccup
+        logger.warning(
+            "clear_stale_import_maintenance skipped due to error: %r", exc
+        )
