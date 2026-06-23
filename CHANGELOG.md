@@ -1,3 +1,13 @@
+# 2.0.5 (2026-06-23)
+
+- Fix: an `import_observations` run interrupted mid-flight (e.g. a redeploy that
+  SIGKILLs the import) no longer strands the site in maintenance mode. The import
+  enables maintenance for its whole duration and previously relied on a `finally`
+  to clear it, which does not run on SIGKILL. The import now tags its maintenance
+  with a marker, and the web container clears import-set maintenance on startup -
+  self-healing even on a hard kill - while leaving a manually enabled maintenance
+  window untouched (#362).
+
 # 2.0.4 (2026-06-22)
 
 - Fix: running more than one gbif-alert stack on a single Docker host (sharing
