@@ -1,10 +1,14 @@
 """Import-set maintenance-mode tagging and self-heal.
 
-`import_observations` puts the site in maintenance mode while it rebuilds the
-materialized views inside its transaction. The import runs via ofelia job-exec
-inside the web container; a redeploy SIGKILLs it mid-flight, and the command's
-`finally` clears maintenance only on a Python exception, not on SIGKILL - so an
-interrupted import can strand the site in maintenance mode.
+`import_observations` puts the site in maintenance mode for the whole import run:
+it replaces all observations and rebuilds the `hexa_*` materialized views inside
+one transaction. (The non-concurrent MV rebuild in particular holds an ACCESS
+EXCLUSIVE lock that would otherwise block map-tile reads, which is what makes
+maintenance necessary; but the flag is on for the entire run, not just that step.)
+The import runs via ofelia job-exec inside the web container; a redeploy SIGKILLs
+it mid-flight, and the command's `finally` clears maintenance only on a Python
+exception, not on SIGKILL - so an interrupted import can strand the site in
+maintenance mode.
 
 To recover without cancelling a manually enabled maintenance window, the import
 tags its maintenance with a marker cache key. On web-container startup,
