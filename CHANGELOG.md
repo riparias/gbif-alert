@@ -1,3 +1,14 @@
+# 2.0.6 (2026-06-23)
+
+- Fix: `import_observations` could be OOM-killed (exit 137) during the "migrating
+  unseen observations" step on instances with a large number of unseen
+  observations. `migrate_unseen_observations()` loaded every `ObservationUnseen`
+  row into memory with fully-hydrated related objects (each `Observation` carries
+  a geometry and several text fields), rebuilding the same observation once per
+  user it was unseen for. It now streams the rows and fetches only the scalar
+  columns the logic needs, keeping peak memory bounded. Behavior is unchanged.
+  Per-step peak-RSS logging was added so the memory profile can be measured.
+
 # 2.0.5 (2026-06-23)
 
 - Fix: an `import_observations` run interrupted mid-flight (e.g. a redeploy that
