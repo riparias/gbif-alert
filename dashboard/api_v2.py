@@ -219,6 +219,11 @@ def species_per_polygon(request: HttpRequest, payload: SpeciesPerPolygonIn):
             **_vernacular_names(s),
             "gbifTaxonKey": s.gbif_taxon_key,
             "tags": [t.name for t in s.tags.all()],
+            "imageUrl": s.image_url,
+            "imageSourceUrl": s.image_source_url,
+            "imageAttribution": s.image_attribution,
+            "imageLicense": s.image_license,
+            "imageSourceType": s.image_source_type,
             "observationCountInPolygon": s.num_observations,
         }
         for s in qs
