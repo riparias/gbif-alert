@@ -122,6 +122,23 @@ class Species(models.Model):  # type: ignore
 
     tags = TaggableManager(blank=True)
 
+    class ImageSourceType(models.TextChoices):
+        MANUAL = "manual", "Manual"
+        WIKIPEDIA = "wikipedia", "Wikipedia/Wikimedia"
+        GBIF = "gbif", "GBIF occurrence media"
+
+    # Optional single representative picture, referenced by URL (no media files
+    # are stored by the app). image_url is a DIRECT IMAGE FILE; image_source_url
+    # is the human page to credit/link back to. image_source_type records
+    # provenance so the auto-populate command never overwrites manual curation.
+    image_url = models.URLField(blank=True)
+    image_source_url = models.URLField(blank=True)
+    image_attribution = models.CharField(max_length=255, blank=True)
+    image_license = models.CharField(max_length=100, blank=True)
+    image_source_type = models.CharField(
+        max_length=20, blank=True, choices=ImageSourceType.choices
+    )
+
     class Meta:
         verbose_name_plural = "species"
         ordering = ["name"]
@@ -135,6 +152,10 @@ class Species(models.Model):  # type: ignore
             name = name + f" ({self.vernacular_name})"
 
         return name
+
+    @property
+    def has_image(self) -> bool:
+        return bool(self.image_url)
 
     @property
     def as_dict(self) -> dict[str, Any]:
