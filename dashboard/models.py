@@ -166,6 +166,11 @@ class Species(models.Model):  # type: ignore
             "vernacularName": self.vernacular_name,
             "gbifTaxonKey": self.gbif_taxon_key,
             "tags": [tag.name for tag in self.tags.all()],
+            "imageUrl": self.image_url,
+            "imageSourceUrl": self.image_source_url,
+            "imageAttribution": self.image_attribution,
+            "imageLicense": self.image_license,
+            "imageSourceType": self.image_source_type,
         }
 
 

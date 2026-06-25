@@ -23,3 +23,22 @@ def test_species_has_image_true_when_url_set():
     )
     assert sp.has_image is True
     assert sp.image_source_type == "wikipedia"
+
+
+@pytest.mark.django_db
+def test_species_as_dict_includes_image_fields():
+    sp = Species.objects.create(
+        name="Testus specius",
+        gbif_taxon_key=999003,
+        image_url="https://example.org/x.jpg",
+        image_source_url="https://en.wikipedia.org/wiki/Testus",
+        image_attribution="Jane Doe",
+        image_license="CC BY-SA 4.0",
+        image_source_type=Species.ImageSourceType.WIKIPEDIA,
+    )
+    d = sp.as_dict
+    assert d["imageUrl"] == "https://example.org/x.jpg"
+    assert d["imageSourceUrl"] == "https://en.wikipedia.org/wiki/Testus"
+    assert d["imageAttribution"] == "Jane Doe"
+    assert d["imageLicense"] == "CC BY-SA 4.0"
+    assert d["imageSourceType"] == "wikipedia"
