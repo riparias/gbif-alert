@@ -181,6 +181,11 @@ def species_list(request: HttpRequest):
             **_vernacular_names(s),
             "gbifTaxonKey": s.gbif_taxon_key,
             "tags": [t.name for t in s.tags.all()],
+            "imageUrl": s.image_url,
+            "imageSourceUrl": s.image_source_url,
+            "imageAttribution": s.image_attribution,
+            "imageLicense": s.image_license,
+            "imageSourceType": s.image_source_type,
         }
         for s in Species.objects.prefetch_related("tags")  # type: ignore[misc]  # taggit manager not resolvable by django-stubs.all()
     ]

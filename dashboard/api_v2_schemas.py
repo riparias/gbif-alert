@@ -34,6 +34,11 @@ class SpeciesOut(Schema):
         )
     )
     tags: list[str]
+    imageUrl: str
+    imageSourceUrl: str
+    imageAttribution: str
+    imageLicense: str
+    imageSourceType: str
 
 
 class SpeciesPerPolygonIn(Schema):
