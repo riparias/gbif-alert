@@ -1,3 +1,13 @@
+# Unreleased
+
+- Fix: switching pages from the main navigation menu no longer triggers a
+  full-page reload (a visible "blink"/flash). The navbar links pointed at routes
+  that the Vue SPA already handles, but rendered them as plain anchors, so every
+  click did a Django round-trip that re-bootstrapped the entire app. Ordinary
+  left-clicks on internal links now navigate client-side via Vue Router, while
+  genuinely external Django routes (admin, sign-out) and modifier/middle clicks
+  still do a real navigation.
+
 # 2.0.6 (2026-06-23)
 
 - Fix: `import_observations` could be OOM-killed (exit 137) during the "migrating

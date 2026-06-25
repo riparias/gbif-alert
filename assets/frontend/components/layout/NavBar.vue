@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import Menubar from "primevue/menubar";
 import Button from "primevue/button";
 import Select from "primevue/select";
@@ -23,7 +23,41 @@ interface NavItem extends MenuItem {
 
 const config = getNavConfig();
 const route = useRoute();
+const router = useRouter();
 const { t } = useI18n();
+
+// --- Client-side navigation ---
+//
+// Every nav link keeps a real `href` so middle-click / Cmd-click / "open in
+// new tab" and accessibility behave normally. For ordinary left-clicks we
+// intercept and let Vue Router swap the page in place (no full reload, no
+// blink) - but only when the target actually resolves to an SPA route.
+// Genuinely external Django pages (/admin/, sign-out) resolve to the named
+// "not-found" catch-all, so they fall through to a normal full navigation.
+
+function isInternal(url: string | undefined): boolean {
+    return url !== undefined && router.resolve(url).name !== "not-found";
+}
+
+function onNavClick(event: MouseEvent, url: string | undefined): void {
+    // Mirror what <router-link> does: never hijack a click the user meant to
+    // open in a new tab/window, nor one already handled.
+    if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+    ) {
+        return;
+    }
+
+    if (isInternal(url)) {
+        event.preventDefault();
+        router.push(url as string);
+    }
+}
 
 const preferences = usePreferencesStore();
 const { speciesNameMode } = storeToRefs(preferences);
@@ -174,7 +208,11 @@ function toggleUserMenu(event: Event) {
     <div class="gbif-navbar-wrapper">
         <Menubar :model="navItems">
             <template #start>
-                <a :href="config.urls.index" class="gbif-navbar-brand">
+                <a
+                    :href="config.urls.index"
+                    class="gbif-navbar-brand"
+                    @click="onNavClick($event, config.urls.index)"
+                >
                     <i class="pi pi-megaphone" />
                     {{ config.siteName }}
                 </a>
@@ -192,6 +230,7 @@ function toggleUserMenu(event: Event) {
                         'gbif-nav-link',
                         { 'gbif-nav-active': isActive((item as NavItem).url ?? '') },
                     ]"
+                    @click="onNavClick($event, (item as NavItem).url)"
                 >
                     <i v-if="item.icon" :class="item.icon"  />
                     <span>{{ item.label }}</span>
@@ -241,7 +280,12 @@ function toggleUserMenu(event: Event) {
                         />
                         <Menu ref="userMenuRef" :model="userMenuItems" popup>
                             <template #item="{ item, props }">
-                                <a v-bind="props.action" :href="(item as NavItem).url" class="gbif-user-menu-item">
+                                <a
+                                    v-bind="props.action"
+                                    :href="(item as NavItem).url"
+                                    class="gbif-user-menu-item"
+                                    @click="onNavClick($event, (item as NavItem).url)"
+                                >
                                     <i v-if="item.icon" :class="item.icon" />
                                     <span>{{ item.label }}</span>
                                     <span v-if="(item as NavItem).showDot" class="gbif-nav-dot gbif-nav-dot--menu" />
@@ -258,6 +302,7 @@ function toggleUserMenu(event: Event) {
                             size="small"
                             as="a"
                             :href="config.urls.signin"
+                            @click="onNavClick($event, config.urls.signin)"
                         />
                         <Button
                             :label="t('message.navSignUp')"
@@ -266,6 +311,7 @@ function toggleUserMenu(event: Event) {
                             outlined
                             as="a"
                             :href="config.urls.signup"
+                            @click="onNavClick($event, config.urls.signup)"
                         />
                     </template>
                 </div>

@@ -180,3 +180,50 @@ def test_superuser_can_access_admin_directly(page: Page, live_server):
 
     expect(page).to_have_url(live_server.url + "/admin/")
     expect(page).to_have_title("Site administration | Django site admin")
+
+
+@pytest.mark.django_db(transaction=True)
+def test_navbar_internal_link_navigates_without_reload(page: Page, live_server):
+    """Clicking a main-menu item routes client-side instead of reloading.
+
+    Regression test for the page "blink": the navbar links used to be plain
+    anchors that triggered a full Django round-trip (re-bootstrapping the whole
+    Vue app) on every click. They now navigate via Vue Router.
+
+    We detect a full reload by stamping a marker on the window object before
+    clicking - a real document navigation wipes the JS context and the marker
+    disappears, while client-side routing preserves it.
+    """
+    page.goto(live_server.url + "/")
+    expect(page.locator('[data-pc-name="menubar"]')).to_be_visible()
+
+    # Stamp the current document so we can tell whether it survives the click.
+    page.evaluate("window.__noReloadMarker = 'spa'")
+
+    page.get_by_role("menuitem", name="About this site").click()
+
+    # The route changed client-side...
+    expect(page).to_have_url(live_server.url + "/about-site")
+    # ...and the original document was never torn down (no full reload/blink).
+    assert page.evaluate("window.__noReloadMarker") == "spa"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_navbar_signout_does_full_navigation(page: Page, live_server):
+    """Sign out is a genuine Django route with no SPA equivalent, so it must
+    still do a real full-page navigation (the click guard must NOT hijack it).
+    """
+    User = get_user_model()
+    User.objects.create_user(username="testuser", password="testpass123")
+    login(page, live_server.url, "testuser", "testpass123")
+    page.goto(live_server.url + "/")
+
+    page.evaluate("window.__noReloadMarker = 'spa'")
+
+    page.get_by_role("button", name="testuser").click()
+    page.get_by_role("menuitem", name="Sign out").click()
+    page.wait_for_load_state("networkidle")
+
+    # A real navigation happened: the marker is gone because the JS context
+    # was rebuilt by the full page load that Django's sign-out triggers.
+    assert page.evaluate("window.__noReloadMarker") is None
