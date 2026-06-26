@@ -54,30 +54,40 @@ class Command(BaseCommand):
 
         filled = 0
         for species in qs:
-            resolved = resolve_species_image(species.name, species.gbif_taxon_key)
-            if resolved is None:
-                self.stdout.write(f"  no image: {species.name}")
+            # Isolate each species: a single failure (e.g. an unexpectedly long
+            # value, a transient DB error, or an unforeseen parse issue) must log
+            # and continue, never abort the whole run.
+            try:
+                resolved = resolve_species_image(
+                    species.name, species.gbif_taxon_key
+                )
+                if resolved is None:
+                    self.stdout.write(f"  no image: {species.name}")
+                    continue
+                self.stdout.write(
+                    f"  {species.name} <- {resolved.source_type}: {resolved.image_url}"
+                )
+                if dry_run:
+                    filled += 1
+                    continue
+                species.image_url = resolved.image_url
+                species.image_source_url = resolved.source_url
+                species.image_attribution = resolved.attribution
+                species.image_license = resolved.license
+                species.image_source_type = resolved.source_type
+                species.save(
+                    update_fields=[
+                        "image_url",
+                        "image_source_url",
+                        "image_attribution",
+                        "image_license",
+                        "image_source_type",
+                    ]
+                )
+                filled += 1
+            except Exception as exc:  # noqa: BLE001 - one bad species must not abort the run
+                self.stderr.write(f"  skipped {species.name}: {exc}")
                 continue
-            self.stdout.write(
-                f"  {species.name} <- {resolved.source_type}: {resolved.image_url}"
-            )
-            filled += 1
-            if dry_run:
-                continue
-            species.image_url = resolved.image_url
-            species.image_source_url = resolved.source_url
-            species.image_attribution = resolved.attribution
-            species.image_license = resolved.license
-            species.image_source_type = resolved.source_type
-            species.save(
-                update_fields=[
-                    "image_url",
-                    "image_source_url",
-                    "image_attribution",
-                    "image_license",
-                    "image_source_type",
-                ]
-            )
 
         self.stdout.write(
             self.style.SUCCESS(

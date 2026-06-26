@@ -42,3 +42,21 @@ def test_species_as_dict_includes_image_fields():
     assert d["imageAttribution"] == "Jane Doe"
     assert d["imageLicense"] == "CC BY-SA 4.0"
     assert d["imageSourceType"] == "wikipedia"
+
+
+@pytest.mark.django_db
+def test_species_image_url_accepts_long_url():
+    # Real Wikimedia thumbnail URLs routinely exceed Django's default URLField
+    # length of 200 (e.g. the Pallas's squirrel thumbnail is 216 chars). The
+    # field must store them without truncation.
+    long_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/" + "a" * 300 + ".jpg"
+    assert len(long_url) > 200
+    sp = Species.objects.create(
+        name="Longus urlus",
+        gbif_taxon_key=999004,
+        image_url=long_url,
+        image_source_url=long_url,
+    )
+    sp.refresh_from_db()
+    assert sp.image_url == long_url
+    assert sp.image_source_url == long_url

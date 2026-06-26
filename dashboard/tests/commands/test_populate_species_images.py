@@ -141,3 +141,30 @@ def test_invalid_species_flag_raises_command_error():
             "not-a-number",
             stdout=StringIO(),
         )
+
+
+@pytest.mark.django_db
+def test_command_isolates_per_species_failure():
+    # A failure on one species must not abort the run: the others still get
+    # processed. Species are processed in name order, so "Aardvark" (which
+    # raises) comes before "Bobcat" (which succeeds).
+    a = Species.objects.create(name="Aardvark testus", gbif_taxon_key=999050)
+    b = Species.objects.create(name="Bobcat testus", gbif_taxon_key=999051)
+
+    def side_effect(name, gbif_taxon_key):
+        if gbif_taxon_key == 999050:
+            raise RuntimeError("boom")
+        return _wiki_result()
+
+    err = StringIO()
+    with mock.patch(
+        "dashboard.management.commands.populate_species_images.resolve_species_image",
+        side_effect=side_effect,
+    ):
+        call_command("populate_species_images", stdout=StringIO(), stderr=err)
+
+    a.refresh_from_db()
+    b.refresh_from_db()
+    assert a.image_url == ""  # the failing species is left untouched
+    assert b.image_url == "https://example.org/x.jpg"  # the run continued
+    assert "skipped Aardvark testus" in err.getvalue()
