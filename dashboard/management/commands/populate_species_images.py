@@ -3,7 +3,7 @@
 Wikipedia/Wikimedia first, GBIF occurrence media as fallback. Never touches a
 species whose image was set manually in the admin (image_source_type="manual").
 """
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Q
 
 from dashboard.models import Species
@@ -39,16 +39,17 @@ class Command(BaseCommand):
         if not refresh:
             qs = qs.filter(image_url="")
 
-        if options["species"]:
+        if options["species"] is not None:
             value = options["species"]
-            if value.isdigit():
-                int_val = int(value)
-                qs = qs.filter(Q(pk=int_val) | Q(gbif_taxon_key=int_val))
-            else:
-                qs = qs.none()
+            if not value.isdigit():
+                raise CommandError(
+                    f"--species value {value!r} must be a digit (pk or gbif_taxon_key)"
+                )
+            int_val = int(value)
+            qs = qs.filter(Q(pk=int_val) | Q(gbif_taxon_key=int_val))
 
         qs = qs.order_by("name")
-        if options["limit"]:
+        if options["limit"] is not None:
             qs = qs[: options["limit"]]
 
         filled = 0
@@ -60,6 +61,7 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"  {species.name} <- {resolved.source_type}: {resolved.image_url}"
             )
+            filled += 1
             if dry_run:
                 continue
             species.image_url = resolved.image_url
@@ -76,7 +78,6 @@ class Command(BaseCommand):
                     "image_source_type",
                 ]
             )
-            filled += 1
 
         self.stdout.write(
             self.style.SUCCESS(
