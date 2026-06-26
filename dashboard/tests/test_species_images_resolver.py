@@ -15,6 +15,9 @@ def _wiki_summary_payload():
     return {
         "title": "Vulpes vulpes",
         "content_urls": {"desktop": {"page": "https://en.wikipedia.org/wiki/Red_fox"}},
+        "thumbnail": {
+            "source": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Vulpes_vulpes.jpg/320px-Vulpes_vulpes.jpg"
+        },
         "originalimage": {
             "source": "https://upload.wikimedia.org/wikipedia/commons/3/30/Vulpes_vulpes.jpg"
         },
@@ -46,16 +49,34 @@ def test_resolve_wikipedia_image_happy_path():
         m.get(COMMONS_API, json=_commons_extmetadata_payload())
         result = resolve_wikipedia_image("Vulpes vulpes")
     assert result is not None
-    assert result.image_url.endswith("Vulpes_vulpes.jpg")
+    # The sized thumbnail is preferred over the full-resolution original.
+    assert result.image_url.endswith("320px-Vulpes_vulpes.jpg")
     assert result.source_url == "https://en.wikipedia.org/wiki/Red_fox"
+    # Credit is still resolved correctly: the "320px-" prefix is stripped when
+    # deriving the Commons File: title, so attribution/license are found.
     assert result.attribution == "Jane Doe"  # HTML stripped
     assert result.license == "CC BY-SA 4.0"
     assert result.source_type == "wikipedia"
 
 
+def test_resolve_wikipedia_image_falls_back_to_original_without_thumbnail():
+    payload = _wiki_summary_payload()
+    del payload["thumbnail"]
+    with requests_mock_module.Mocker() as m:
+        m.get(WIKI_SUMMARY, json=payload)
+        m.get(COMMONS_API, json=_commons_extmetadata_payload())
+        result = resolve_wikipedia_image("Vulpes vulpes")
+    assert result is not None
+    # No thumbnail offered -> the full-resolution original is used.
+    assert result.image_url == (
+        "https://upload.wikimedia.org/wikipedia/commons/3/30/Vulpes_vulpes.jpg"
+    )
+    assert result.attribution == "Jane Doe"
+
+
 def test_resolve_wikipedia_image_no_image_returns_none():
     with requests_mock_module.Mocker() as m:
-        m.get(WIKI_SUMMARY, json={"title": "Vulpes vulpes"})  # no originalimage
+        m.get(WIKI_SUMMARY, json={"title": "Vulpes vulpes"})  # no image at all
         assert resolve_wikipedia_image("Vulpes vulpes") is None
 
 

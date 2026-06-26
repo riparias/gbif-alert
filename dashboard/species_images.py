@@ -26,6 +26,9 @@ _COMMONS_API = "https://commons.wikimedia.org/w/api.php"
 _GBIF_OCCURRENCE_SEARCH = "https://api.gbif.org/v1/occurrence/search"
 
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
+# Wikimedia thumbnail filenames are "<width>px-<original name>" (e.g.
+# "320px-Vulpes_vulpes.jpg"); the Commons File: title uses the original name.
+_THUMB_PREFIX_RE = re.compile(r"^\d+px-(.+)$")
 
 
 @dataclasses.dataclass
@@ -72,7 +75,13 @@ def resolve_wikipedia_image(scientific_name: str) -> ResolvedImage | None:
     except (requests.RequestException, ValueError):
         return None
 
-    image_url = (data.get("originalimage") or {}).get("source")
+    # Prefer the summary's sized thumbnail over the full-resolution original:
+    # originals can be several MB / thousands of px, which is wasteful when we
+    # only ever display a small image (tooltip <= 200px, admin thumbnail 40px).
+    # Fall back to the original when no thumbnail is offered.
+    thumbnail = (data.get("thumbnail") or {}).get("source")
+    original = (data.get("originalimage") or {}).get("source")
+    image_url = thumbnail or original
     if not image_url:
         return None
 
@@ -89,9 +98,21 @@ def resolve_wikipedia_image(scientific_name: str) -> ResolvedImage | None:
     )
 
 
+def _commons_filename(image_url: str) -> str:
+    """Derive the canonical Commons File: name from an image URL.
+
+    Works for both a full-resolution original URL and a sized thumbnail URL
+    (the latter has a ``<width>px-`` prefix that must be stripped so the Commons
+    extmetadata lookup targets the real file).
+    """
+    name = unquote(image_url.rsplit("/", 1)[-1])
+    match = _THUMB_PREFIX_RE.match(name)
+    return match.group(1) if match else name
+
+
 def _wikimedia_credit(image_url: str) -> tuple[str, str]:
     """Fetch Commons extmetadata (author + license) for an image file URL."""
-    filename = unquote(image_url.rsplit("/", 1)[-1])
+    filename = _commons_filename(image_url)
     try:
         resp = requests.get(
             _COMMONS_API,
