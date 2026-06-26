@@ -25,6 +25,10 @@
    ```
 - For settings that cannot be expressed as env vars (e.g. a custom `PREDICATE_BUILDER` callable), copy `djangoproject/local_settings.template.py` to `djangoproject/local_settings.py` and edit. This file is gitignored and imported as an escape hatch after the env-driven settings.
 - Django is pointed at `djangoproject.settings` (the canonical entry point - it loads `.env`, then reads env vars, then imports `local_settings.py` as the escape hatch).
+- **Large LFS data:** the repo excludes one large LFS file from download by default via `.lfsconfig` - `source_data/public_areas/belgian_municipalities/adminvector_4326.gpkg` (209 MB of instance-specific data). After cloning you get a small pointer in its place, and clones/CI/deploys no longer burn LFS bandwidth on it. If you actually need the file, fetch it on demand:
+   ```
+   git lfs pull --include=source_data/public_areas/belgian_municipalities/adminvector_4326.gpkg --exclude=
+   ```
 
 ## Testing / typing
 This project provides the following tools to ensure the application and code stays in a decent state:

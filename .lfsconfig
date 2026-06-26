@@ -1,0 +1,15 @@
+# The Belgian-municipalities admin-boundaries file
+# (source_data/public_areas/belgian_municipalities/adminvector_4326.gpkg, 209 MB)
+# is instance-specific data, already loaded into the RIPARIAS database and not
+# needed to run, test, or deploy the engine. Excluding it from LFS smudge means
+# clones (including the deploy clone) and CI leave a small pointer instead of
+# downloading it, so it no longer burns LFS bandwidth quota.
+#
+# The file stays tracked in git history; this only stops it being *retrieved*.
+# To fetch it on demand (e.g. seeding a fresh instance's municipalities):
+#   git lfs pull --include=source_data/public_areas/belgian_municipalities/adminvector_4326.gpkg --exclude=
+#
+# Follow-up to remove/move this instance-specific data out of the engine repo
+# (and reclaim LFS storage): issue #364.
+[lfs]
+	fetchexclude = source_data/public_areas/belgian_municipalities/adminvector_4326.gpkg

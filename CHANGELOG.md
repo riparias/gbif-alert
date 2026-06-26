@@ -1,5 +1,10 @@
 # Unreleased
 
+- Dev/infra: clones and CI no longer download the 209 MB Belgian-municipalities
+  LFS file by default (`.lfsconfig` `fetchexclude`), which was burning GitHub LFS
+  bandwidth on deploy. The file is instance-specific and already loaded on the
+  RIPARIAS database; fetch it on demand with
+  `git lfs pull --include=source_data/public_areas/belgian_municipalities/adminvector_4326.gpkg --exclude=`.
 - Fix: switching pages from the main navigation menu no longer triggers a
   full-page reload (a visible "blink"/flash). The navbar links pointed at routes
   that the Vue SPA already handles, but rendered them as plain anchors, so every
