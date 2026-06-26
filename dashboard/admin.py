@@ -70,7 +70,7 @@ class SpeciesResource(resources.ModelResource):
 @admin.register(Species)
 class SpeciesAdmin(ImportExportModelAdmin, TranslationAdmin):  # type: ignore[misc]  # import-export mixin MRO vs ModelAdmin
     resource_class = SpeciesResource
-    list_display = ("name", "vernacular_name", "gbif_taxon_key", "tag_list")
+    list_display = ("image_thumb", "name", "vernacular_name", "gbif_taxon_key", "tag_list")
     search_fields = ["name", "vernacular_name", "gbif_taxon_key"]
     readonly_fields = ("image_preview", "image_source_type")
     fieldsets = (
@@ -83,6 +83,21 @@ class SpeciesAdmin(ImportExportModelAdmin, TranslationAdmin):  # type: ignore[mi
 
     def tag_list(self, obj):
         return ", ".join(o.name for o in obj.tags.all())
+
+    def image_thumb(self, obj):
+        """Small lazy-loaded thumbnail for the changelist.
+
+        loading="lazy" means only rows scrolled into view fetch their image, so
+        a paginated list of species stays light in the browser (the Django
+        response itself only emits img tags - it never fetches the images).
+        """
+        if obj.image_url:
+            return format_html(
+                '<img src="{}" loading="lazy" style="height:40px" />', obj.image_url
+            )
+        return "-"
+
+    image_thumb.short_description = "Image"  # type: ignore[attr-defined]
 
     def image_preview(self, obj):
         """Return an HTML img tag for the species image URL, or '-' if unset."""
