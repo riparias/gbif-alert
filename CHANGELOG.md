@@ -1,4 +1,4 @@
-# Unreleased
+# 2.0.7 (2026-06-26)
 
 - Dev/infra: clones and CI no longer download the 209 MB Belgian-municipalities
   LFS file by default (`.lfsconfig` `fetchexclude`), which was burning GitHub LFS
