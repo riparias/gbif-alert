@@ -92,8 +92,12 @@ class SpeciesAdmin(ImportExportModelAdmin, TranslationAdmin):  # type: ignore[mi
         response itself only emits img tags - it never fetches the images).
         """
         if obj.image_url:
+            # Fixed box + object-fit:cover gives a uniform column regardless of
+            # each source image's aspect ratio.
             return format_html(
-                '<img src="{}" loading="lazy" style="height:40px" />', obj.image_url
+                '<img src="{}" loading="lazy" '
+                'style="width:48px;height:48px;object-fit:cover;border-radius:3px" />',
+                obj.image_url,
             )
         return "-"
 

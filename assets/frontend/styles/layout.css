@@ -62,10 +62,22 @@
 /* Species name tooltip image + credit
  * These must be global because PrimeVue renders tooltips outside the
  * component tree (appended to <body>), so scoped styles do not reach them. */
+
+/* Give the tooltip enough room for the image: PrimeVue's default tooltip
+ * max-width is narrower than our image, which made the image overflow the
+ * rounded box. This only raises the ceiling - short text tooltips still size
+ * to their own content. */
+.p-tooltip .p-tooltip-text {
+    max-width: 232px;
+}
+
 .species-tooltip-img {
-    max-width: 200px;
-    max-height: 150px;
+    /* max-width:100% keeps the image within the tooltip box regardless of the
+     * source image's width, so it can never overflow the rounded background. */
     display: block;
+    max-width: 100%;
+    max-height: 160px;
+    height: auto;
     margin-bottom: 0.35rem;
     border-radius: 4px;
 }

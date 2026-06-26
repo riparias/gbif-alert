@@ -1,4 +1,7 @@
 import datetime
+import struct
+import zlib
+
 import pytest
 from django.contrib.gis.geos import Point
 from django.utils import timezone
@@ -8,19 +11,34 @@ from dashboard.models import (
     BasisOfRecord, DataImport, Dataset, Observation, Species,
 )
 
-# A minimal 1x1 transparent PNG (67 bytes) used to serve the stub image URL
-# so that the <img> does not trigger its onerror handler during tests.
-_TINY_PNG = bytes([
-    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-    0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
-    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-    0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
-    0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41,
-    0x54, 0x78, 0x9c, 0x62, 0x00, 0x01, 0x00, 0x00,
-    0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00,
-    0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
-    0x42, 0x60, 0x82,
-])
+
+def _solid_png(width: int, height: int, rgb=(60, 140, 60)) -> bytes:
+    """Build a valid solid-color RGB PNG of the given size (no Pillow needed).
+
+    A genuinely wide image is required to exercise the tooltip's overflow
+    handling - a 1x1 stub would never reach the CSS size limits.
+    """
+    def chunk(typ: bytes, data: bytes) -> bytes:
+        body = typ + data
+        return (
+            struct.pack(">I", len(data))
+            + body
+            + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
+        )
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    row = b"\x00" + bytes(rgb) * width
+    idat = zlib.compress(row * height)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", idat)
+        + chunk(b"IEND", b"")
+    )
+
+
+# A wide image so the tooltip image is rendered at a real, non-trivial size.
+_WIDE_PNG = _solid_png(400, 260)
 
 
 @pytest.mark.django_db(transaction=True)
@@ -45,7 +63,7 @@ def test_species_tooltip_shows_image(page: Page, live_server):
     page.route(
         "https://example.org/fox.jpg",
         lambda route: route.fulfill(
-            status=200, content_type="image/png", body=_TINY_PNG
+            status=200, content_type="image/png", body=_WIDE_PNG
         ),
     )
 
@@ -59,5 +77,14 @@ def test_species_tooltip_shows_image(page: Page, live_server):
     name = page.locator(".species-name", has_text="Vulpes vulpes").first
     name.hover()
     # PrimeVue renders the tooltip with our injected <img>.
-    expect(page.locator('.p-tooltip img[src="https://example.org/fox.jpg"]')
-           ).to_be_visible()
+    img = page.locator('.p-tooltip img[src="https://example.org/fox.jpg"]')
+    expect(img).to_be_visible()
+
+    # Regression: the image must stay inside the tooltip's rounded box (it used
+    # to overflow because the image was wider than PrimeVue's tooltip box).
+    box = page.locator(".p-tooltip-text").first
+    box_bb = box.bounding_box()
+    img_bb = img.bounding_box()
+    assert box_bb is not None and img_bb is not None
+    assert img_bb["x"] >= box_bb["x"] - 1
+    assert img_bb["x"] + img_bb["width"] <= box_bb["x"] + box_bb["width"] + 1

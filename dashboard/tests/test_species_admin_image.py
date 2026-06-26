@@ -56,3 +56,5 @@ def test_species_admin_changelist_shows_lazy_thumbnail(client):
     # The thumbnail is rendered lazily so the changelist stays light in the browser.
     assert 'src="https://example.org/thumb.jpg"' in html
     assert 'loading="lazy"' in html
+    # A fixed box + object-fit:cover keeps the column uniform across aspect ratios.
+    assert "object-fit:cover" in html
