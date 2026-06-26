@@ -605,6 +605,16 @@ export interface components {
             gbifTaxonKey: number;
             /** Tags */
             tags: string[];
+            /** Imageurl */
+            imageUrl: string;
+            /** Imagesourceurl */
+            imageSourceUrl: string;
+            /** Imageattribution */
+            imageAttribution: string;
+            /** Imagelicense */
+            imageLicense: string;
+            /** Imagesourcetype */
+            imageSourceType: string;
         };
         /** SpeciesPerPolygonOut */
         SpeciesPerPolygonOut: {
@@ -625,6 +635,16 @@ export interface components {
             gbifTaxonKey: number;
             /** Tags */
             tags: string[];
+            /** Imageurl */
+            imageUrl: string;
+            /** Imagesourceurl */
+            imageSourceUrl: string;
+            /** Imageattribution */
+            imageAttribution: string;
+            /** Imagelicense */
+            imageLicense: string;
+            /** Imagesourcetype */
+            imageSourceType: string;
             /** Observationcountinpolygon */
             observationCountInPolygon: number;
         };
@@ -1280,7 +1300,7 @@ export interface operations {
                     "application/json": components["schemas"]["SpeciesPerPolygonOut"][];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -1379,7 +1399,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -1470,7 +1490,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -1588,7 +1608,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -1872,7 +1892,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2070,7 +2090,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2172,7 +2192,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2285,7 +2305,7 @@ export interface operations {
                     "application/json": components["schemas"]["SignInOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2334,7 +2354,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2414,7 +2434,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2530,7 +2550,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;

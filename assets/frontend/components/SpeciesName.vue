@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import Tooltip from "primevue/tooltip";
 import { usePreferencesStore } from "../stores/preferences";
+import { useFilterOptionsStore } from "../stores/filterOptions";
 import { getNavConfig } from "../utils/navConfig";
 
 defineOptions({ directives: { tooltip: Tooltip } });
@@ -13,6 +14,7 @@ const props = defineProps<{
 }>();
 
 const preferences = usePreferencesStore();
+const filterOptions = useFilterOptionsStore();
 const { t } = useI18n();
 
 const navConfig = getNavConfig();
@@ -44,10 +46,48 @@ function escapeHtml(s: string): string {
         .replace(/'/g, "&#39;");
 }
 
+// Look up the matched species from the filter options store and return image
+// fields when available; null otherwise.
+const speciesImage = computed(() => {
+    const match = filterOptions.species.find(
+        (s) => s.scientificName === props.scientificName,
+    );
+    if (!match || !match.imageUrl) return null;
+    return {
+        url: match.imageUrl,
+        attribution: match.imageAttribution,
+        license: match.imageLicense,
+    };
+});
+
+// Build the image + credit HTML to prepend to the tooltip, or "" when there
+// is no image. All interpolated values are HTML-escaped.
+function imageTooltipHtml(): string {
+    const img = speciesImage.value;
+    if (!img) return "";
+    const credit =
+        img.attribution || img.license
+            ? `<div class="species-tooltip-credit">${escapeHtml(
+                  t("message.speciesImageCredit", {
+                      attribution: img.attribution || "?",
+                      license: img.license || "?",
+                  }),
+              )}</div>`
+            : "";
+    // onerror hides a dead hotlink instead of showing a broken-image icon.
+    return (
+        `<img src="${escapeHtml(img.url)}" class="species-tooltip-img" ` +
+        `onerror="this.style.display='none'" />${credit}`
+    );
+}
+
 // PrimeVue's v-tooltip accepts an object with `escape: false` to render HTML.
 // We use it only to italicise the scientific name; all interpolated values are
 // HTML-escaped first.
-const tooltipBinding = computed(() => {
+
+// baseTooltip() returns the tooltip binding for the current variant, with
+// no image included. This preserves the original behavior byte-for-byte.
+function baseTooltip(): { value: string; escape: boolean } {
     if (variant.value === "scientific") {
         return props.vernacularName
             ? { value: props.vernacularName, escape: true }
@@ -66,6 +106,16 @@ const tooltipBinding = computed(() => {
         value: t("message.noVernacularAvailable", { language: activeLanguageNameLocal.value }),
         escape: true,
     };
+}
+
+const tooltipBinding = computed(() => {
+    const imageHtml = imageTooltipHtml();
+    const base = baseTooltip();
+    if (!imageHtml) return base;
+    // With an image we must render HTML; escape the base text ourselves.
+    const baseValue =
+        base.escape === false ? base.value : escapeHtml(String(base.value));
+    return { value: `${imageHtml}<div>${baseValue}</div>`, escape: false };
 });
 </script>
 

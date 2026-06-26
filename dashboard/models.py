@@ -122,6 +122,26 @@ class Species(models.Model):  # type: ignore
 
     tags = TaggableManager(blank=True)
 
+    class ImageSourceType(models.TextChoices):
+        MANUAL = "manual", "Manual"
+        WIKIPEDIA = "wikipedia", "Wikipedia/Wikimedia"
+        GBIF = "gbif", "GBIF occurrence media"
+
+    # Optional single representative picture, referenced by URL (no media files
+    # are stored by the app). image_url is a DIRECT IMAGE FILE; image_source_url
+    # is the human page to credit/link back to. image_source_type records
+    # provenance so the auto-populate command never overwrites manual curation.
+    #
+    # URLs use max_length=2048 (the conventional max URL length): real Wikimedia
+    # thumbnail and GBIF media URLs routinely exceed Django's default of 200.
+    image_url = models.URLField(max_length=2048, blank=True)
+    image_source_url = models.URLField(max_length=2048, blank=True)
+    image_attribution = models.CharField(max_length=500, blank=True)
+    image_license = models.CharField(max_length=100, blank=True)
+    image_source_type = models.CharField(
+        max_length=20, blank=True, choices=ImageSourceType.choices
+    )
+
     class Meta:
         verbose_name_plural = "species"
         ordering = ["name"]
@@ -137,6 +157,10 @@ class Species(models.Model):  # type: ignore
         return name
 
     @property
+    def has_image(self) -> bool:
+        return bool(self.image_url)
+
+    @property
     def as_dict(self) -> dict[str, Any]:
         # ! keep the return value in sync with the frontend's SpeciesInformation interface
         return {  # To be consumed on the frontend: we use JS naming conventions
@@ -145,6 +169,11 @@ class Species(models.Model):  # type: ignore
             "vernacularName": self.vernacular_name,
             "gbifTaxonKey": self.gbif_taxon_key,
             "tags": [tag.name for tag in self.tags.all()],
+            "imageUrl": self.image_url,
+            "imageSourceUrl": self.image_source_url,
+            "imageAttribution": self.image_attribution,
+            "imageLicense": self.image_license,
+            "imageSourceType": self.image_source_type,
         }
 
 
