@@ -7,6 +7,12 @@
   left-clicks on internal links now navigate client-side via Vue Router, while
   genuinely external Django routes (admin, sign-out) and modifier/middle clicks
   still do a real navigation.
+- Feature: species can now have an optional representative picture, referenced by
+  URL (no media files stored). Editable in the admin, with a `populate_species_images`
+  management command that auto-fills from Wikipedia/Wikimedia (GBIF occurrence media
+  as fallback) and never overwrites manually curated images. The picture and its
+  credit are shown in the species-name hover tooltip, and the image fields are
+  exposed on the public `/species/` API.
 
 # 2.0.6 (2026-06-23)
 
