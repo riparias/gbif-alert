@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.gis import admin
+from django.utils.html import format_html
 from import_export import resources  # type: ignore
 from import_export.admin import ImportExportModelAdmin  # type: ignore
 from modeltranslation.admin import TranslationAdmin  # type: ignore
@@ -71,9 +72,34 @@ class SpeciesAdmin(ImportExportModelAdmin, TranslationAdmin):  # type: ignore[mi
     resource_class = SpeciesResource
     list_display = ("name", "vernacular_name", "gbif_taxon_key", "tag_list")
     search_fields = ["name", "vernacular_name", "gbif_taxon_key"]
+    readonly_fields = ("image_preview", "image_source_type")
+    fieldsets = (
+        (None, {"fields": ("name", "vernacular_name", "gbif_taxon_key", "tags")}),
+        ("Image", {"fields": (
+            "image_url", "image_source_url", "image_attribution",
+            "image_license", "image_source_type", "image_preview",
+        )}),
+    )
 
     def tag_list(self, obj):
         return ", ".join(o.name for o in obj.tags.all())
+
+    def image_preview(self, obj):
+        """Return an HTML img tag for the species image URL, or '-' if unset."""
+        if obj.image_url:
+            return format_html('<img src="{}" style="max-height:80px" />', obj.image_url)
+        return "-"
+
+    image_preview.short_description = "Preview"  # type: ignore[attr-defined]
+
+    def save_model(self, request, obj, form, change):
+        # A hand-edited image URL becomes "manual" so the auto-populate command
+        # never overwrites it; clearing the URL resets provenance.
+        if "image_url" in form.changed_data:
+            obj.image_source_type = (
+                Species.ImageSourceType.MANUAL if obj.image_url else ""
+            )
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(DataImport)
