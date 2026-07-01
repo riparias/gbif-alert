@@ -3,10 +3,11 @@
 <!-- badges: start -->
 [![Django CI](https://github.com/riparias/gbif-alert/actions/workflows/django_tests.yml/badge.svg)](https://github.com/riparias/gbif-alert/actions/workflows/django_tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Automatic deployment - demo server](https://github.com/riparias/gbif-alert/actions/workflows/deploy_demo.yml/badge.svg?branch=devel)](https://github.com/riparias/gbif-alert/actions/workflows/deploy_demo.yml)
 <!-- badges: end -->
 
 GBIF Alert is a [GBIF](https://www.gbif.org)-based early alert system for invasive species.
+
+Visit the project website at [www.gbif-alert.org](https://www.gbif-alert.org) for an overview, or try the [official demo instance](https://demo.gbif-alert.org).
 
 🎉 **GBIF Alert has been awarded the first prize of the [GBIF Ebbe Nielsen Challenge 2023](https://www.gbif.org/fr/news/EQgUzZ4YA75BSeLs1naI9/)!** 🎉 
 
@@ -27,7 +28,7 @@ See [INSTALL.md](INSTALL.md) for more information.
 ## GBIF Alert instances in the wild
 
 - LIFE RIPARIAS Early Alert: [production](https://alert.riparias.be) / [development](https://dev-alert.riparias.be) (Targets riparian invasive species in Belgium)
-- [GBIF Alert demo instance](https://gbif-alert-demo.thebinaryforest.net/) (Always in sync with the `devel` branch of this repository)
+- [GBIF Alert demo instance](https://demo.gbif-alert.org) (Always in sync with the `devel` branch of this repository)
 - The Belgian Biodiversity Platform uses GBIF alert under the hood as an API for the ManaIAS project. 
 
 ## API
