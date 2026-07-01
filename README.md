@@ -9,7 +9,13 @@ GBIF Alert is a [GBIF](https://www.gbif.org)-based early alert system for invasi
 
 Visit the project website at [www.gbif-alert.org](https://www.gbif-alert.org) for an overview, or try the [official demo instance](https://demo.gbif-alert.org).
 
-🎉 **GBIF Alert has been awarded the first prize of the [GBIF Ebbe Nielsen Challenge 2023](https://www.gbif.org/fr/news/EQgUzZ4YA75BSeLs1naI9/)!** 🎉 
+## News
+
+- **GBIF Alert 2.0 is here!** A major release: a brand-new single-page UI, new
+  proximity filtering (observations inside or *approaching* your areas), a modern
+  public API (v2), and a fully reworked Docker/deployment stack. See the
+  [changelog](CHANGELOG.md).
+- 🎉 **GBIF Alert was awarded the first prize of the [GBIF Ebbe Nielsen Challenge 2023](https://www.gbif.org/fr/news/EQgUzZ4YA75BSeLs1naI9/)!** 🎉
 
 It is a reusable website engine powered by [Django](https://www.djangoproject.com/) available under the [MIT license](LICENSE).
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
@@ -35,6 +41,6 @@ See [INSTALL.md](INSTALL.md) for more information.
 
 GBIF Alert exposes a stable, supported public HTTP API (API v2) for programmatic access to its data.
 
-Each instance documents its own API: visit `/api-docs` on any instance for an overview, with the interactive reference at `/api/v2/docs` and an OGC WFS service at `/api/wfs/observations/`. For example, on the LIFE RIPARIAS instance: https://alert.riparias.be/api-docs
+Each instance documents its own API: visit `/api-docs` on any instance for an overview, with the interactive reference at `/api/v2/docs` and an OGC WFS service at `/api/wfs/observations/`. For example, on the demo instance: https://demo.gbif-alert.org/api-docs
 
 The older `/api/*` JSON endpoints are deprecated in favour of API v2 and will be removed on 30 June 2027.
