@@ -1211,6 +1211,71 @@ class ObservationFilterSet(models.Model):
                 )
 
 
+class AlertTemplate(ObservationFilterSet):
+    """An operator-published preset that users copy into their own alerts.
+
+    A template shares :class:`ObservationFilterSet`'s filter fields. It carries
+    no user/notification state: copying a template creates an independent
+    :class:`Alert`. ``name`` and ``description`` are translatable (en/fr/nl) via
+    django-modeltranslation.
+
+    Attributes
+    ----------
+    name : str
+        Operator-facing display name (translatable).
+    description : str
+        Optional short explanation shown to users (translatable).
+    created_by : User or None
+        The operator who published the template (audit only).
+    created_at : datetime
+        Creation timestamp.
+    updated_at : datetime
+        Last-modification timestamp.
+    display_order : int
+        Ascending sort key for operator curation.
+    """
+
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="published_alert_templates",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    display_order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["display_order", "name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+    @classmethod
+    def create_from_alert(cls, alert: "Alert", created_by) -> "AlertTemplate":
+        """Snapshot ``alert``'s filters into a new live template.
+
+        The name is seeded from the alert's name in the current language; the
+        operator fills the other-language name/description afterwards in the
+        admin.
+        """
+        template = cls.objects.create(
+            name=alert.name,
+            created_by=created_by,
+            area_filter_mode=alert.area_filter_mode,
+            approaching_distance_km=alert.approaching_distance_km,
+            verified_filter=alert.verified_filter,
+        )
+        template.species.set(alert.species.all())
+        template.datasets.set(alert.datasets.all())
+        template.basis_of_record_filters.set(alert.basis_of_record_filters.all())
+        template.areas.set(alert.areas.all())
+        return template
+
+
 class Alert(ObservationFilterSet):
     """The per-user configured alerts
 
@@ -1252,6 +1317,15 @@ class Alert(ObservationFilterSet):
     )
 
     last_email_sent_on = models.DateTimeField(blank=True, null=True, default=None)
+
+    created_from_template = models.ForeignKey(
+        "AlertTemplate",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_alerts",
+        help_text="The template this alert was copied from, if any (traceability only).",
+    )
 
     class Meta:
         unique_together = [("user", "name")]
