@@ -267,6 +267,10 @@ class AlertTemplateOut(Schema):
     speciesDetails: list[AlertSpeciesOut]
 
 
+class AlertTemplatePublishedOut(Schema):
+    id: int
+
+
 class AreaFromDrawingIn(Schema):
     name: str
     geojson: dict  # GeoJSON FeatureCollection, EPSG:4326

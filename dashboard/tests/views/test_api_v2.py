@@ -2772,3 +2772,33 @@ def test_from_template_unknown_template_returns_404(client, template_data):
         "/api/v2/alerts/from-template/", payload, content_type="application/json"
     )
     assert response.status_code == 404
+
+
+# --- POST /api/v2/spa/alerts/{id}/publish-as-template/ ---
+
+
+def test_publish_as_template_forbidden_for_non_superuser(client, alert_data):
+    alert = alert_data["alert"]
+    client.login(username="alertuser", password="12345")  # not a superuser
+    response = client.post(f"/api/v2/spa/alerts/{alert.pk}/publish-as-template/")
+    assert response.status_code == 403
+
+
+def test_publish_as_template_creates_template_for_superuser(client, alert_data):
+    from dashboard.models import AlertTemplate
+
+    User = get_user_model()
+    op = User.objects.create_superuser(username="root", password="12345", email="r@e.com")
+    alert = alert_data["alert"]  # owned by alertuser; a superuser may promote any alert
+    client.login(username="root", password="12345")
+    response = client.post(f"/api/v2/spa/alerts/{alert.pk}/publish-as-template/")
+    assert response.status_code == 201
+    tpl = AlertTemplate.objects.get(pk=response.json()["id"])
+    assert tpl.created_by == op
+    assert set(tpl.species.all()) == set(alert.species.all())
+
+
+def test_publish_as_template_requires_auth(client, alert_data):
+    alert = alert_data["alert"]
+    response = client.post(f"/api/v2/spa/alerts/{alert.pk}/publish-as-template/")
+    assert response.status_code == 401

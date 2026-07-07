@@ -31,6 +31,7 @@ from dashboard.api_v2_schemas import (
     AlertNotificationFrequencyOut,
     AlertOut,
     AlertTemplateOut,
+    AlertTemplatePublishedOut,
     ApiTokenCreateIn,
     ApiTokenCreatedOut,
     ApiTokenOut,
@@ -1050,6 +1051,26 @@ def alert_delete(request: HttpRequest, alert_id: int):
     alert = get_object_or_404(Alert, id=alert_id, user=request.user)
     alert.delete()
     return 204, None
+
+
+@api_v2_spa.post(
+    "/alerts/{alert_id}/publish-as-template/",
+    response={201: AlertTemplatePublishedOut, **ERR_401, **ERR_403, **ERR_404},
+    auth=django_auth,
+)
+def alert_publish_as_template(request: HttpRequest, alert_id: int):
+    """Promote an existing alert to a live template. Operators (superusers) only."""
+    user = cast(User, request.user)
+    if not user.is_superuser:
+        raise HttpError(403, "Only operators can publish templates.")
+    alert = get_object_or_404(
+        Alert.objects.prefetch_related(
+            "species", "datasets", "areas", "basis_of_record_filters"
+        ),
+        id=alert_id,
+    )
+    template = AlertTemplate.create_from_alert(alert, created_by=user)
+    return 201, {"id": template.pk}
 
 
 # ---- Auth endpoints ----
