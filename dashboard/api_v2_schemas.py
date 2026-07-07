@@ -220,6 +220,12 @@ class AlertIn(Schema):
     approachingDistanceKm: float | None = None
 
 
+class AlertFromTemplateIn(Schema):
+    templateId: int
+    name: str
+    emailNotificationsFrequency: EmailNotificationFrequency = "W"
+
+
 class AlertSpeciesOut(Schema):
     scientificName: str
     vernacularNameEn: str

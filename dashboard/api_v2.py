@@ -27,6 +27,7 @@ from pydantic import Field
 from dashboard.api_v2_schemas import (
     AlertIn,
     AlertNameSuggestionOut,
+    AlertFromTemplateIn,
     AlertNotificationFrequencyOut,
     AlertOut,
     AlertTemplateOut,
@@ -966,6 +967,37 @@ def alert_create(request: HttpRequest, payload: AlertIn):
     """Create a new alert for the authenticated user."""
     alert = Alert(user=cast(User, request.user))
     errors = _save_alert(alert, payload)
+    if errors:
+        return 422, {"detail": "Validation failed", "errors": errors}
+    return 201, _alert_to_out(alert)
+
+
+@api_v2.post(
+    "/alerts/from-template/",
+    response={201: AlertOut, 422: ValidationErrorOut, **ERR_401, **ERR_403, **ERR_404},
+    auth=[ApiTokenAuth(), django_auth],
+)
+def alert_create_from_template(request: HttpRequest, payload: AlertFromTemplateIn):
+    """Create a new alert for the current user by copying a template's filters."""
+    template = get_object_or_404(
+        AlertTemplate.objects.prefetch_related(
+            "species", "datasets", "areas", "basis_of_record_filters"
+        ),
+        id=payload.templateId,
+    )
+    alert = Alert(user=cast(User, request.user), created_from_template=template)
+    alert_in = AlertIn(
+        name=payload.name,
+        speciesIds=[s.pk for s in template.species.all()],
+        datasetIds=[d.pk for d in template.datasets.all()],
+        basisOfRecordIds=[b.pk for b in template.basis_of_record_filters.all()],
+        areaIds=[a.pk for a in template.areas.all()],
+        emailNotificationsFrequency=payload.emailNotificationsFrequency,
+        verifiedFilter=template.verified_filter,
+        areaFilterMode=template.area_filter_mode,
+        approachingDistanceKm=template.approaching_distance_km,
+    )
+    errors = _save_alert(alert, alert_in)
     if errors:
         return 422, {"detail": "Validation failed", "errors": errors}
     return 201, _alert_to_out(alert)

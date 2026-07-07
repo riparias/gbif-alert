@@ -2719,3 +2719,56 @@ def test_templates_list_returns_flat_language_fields(client, template_data):
     # alert-only fields are absent
     assert "emailNotificationsFrequency" not in row
     assert "notViewedCount" not in row
+
+
+# --- POST /api/v2/alerts/from-template/ ---
+
+
+def test_from_template_creates_independent_alert(client, template_data):
+    op = template_data["op"]
+    tpl = template_data["template"]
+    client.login(username="op", password="12345")
+    payload = json.dumps(
+        {"templateId": tpl.pk, "name": "My copy", "emailNotificationsFrequency": "D"}
+    )
+    response = client.post(
+        "/api/v2/alerts/from-template/", payload, content_type="application/json"
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "My copy"
+    assert data["emailNotificationsFrequency"] == "D"
+    assert data["speciesIds"] == [template_data["sp"].pk]
+    created = Alert.objects.get(pk=data["id"])
+    assert created.user == op
+    assert created.created_from_template == tpl
+
+
+def test_from_template_duplicate_name_returns_422(client, template_data):
+    tpl = template_data["template"]
+    client.login(username="op", password="12345")
+    # "seed" already exists as an alert name for this user (from the fixture)
+    payload = json.dumps({"templateId": tpl.pk, "name": "seed"})
+    response = client.post(
+        "/api/v2/alerts/from-template/", payload, content_type="application/json"
+    )
+    assert response.status_code == 422
+    assert "Validation failed" == response.json()["detail"]
+
+
+def test_from_template_requires_auth(client, template_data):
+    tpl = template_data["template"]
+    payload = json.dumps({"templateId": tpl.pk, "name": "x"})
+    response = client.post(
+        "/api/v2/alerts/from-template/", payload, content_type="application/json"
+    )
+    assert response.status_code == 401
+
+
+def test_from_template_unknown_template_returns_404(client, template_data):
+    client.login(username="op", password="12345")
+    payload = json.dumps({"templateId": 999999, "name": "x"})
+    response = client.post(
+        "/api/v2/alerts/from-template/", payload, content_type="application/json"
+    )
+    assert response.status_code == 404
