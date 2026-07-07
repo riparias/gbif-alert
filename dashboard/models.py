@@ -1086,20 +1086,31 @@ class ObservationUnseen(models.Model):
         ]
 
 
-class Alert(models.Model):
-    """The per-user configured alerts
+class ObservationFilterSet(models.Model):
+    """Abstract base holding the observation-filter fields shared by concrete
+    filter-owning models (:class:`Alert`, :class:`AlertTemplate`).
 
-    An alert is user specific.
-    Datasets is an optional filter. If left blank, all source datasets will be taken into account.
-    Area is an optional filter. If left blank, data is not filtered by location (which might be more than the selection of all areas)
-    We choose to not extend this logic to species. By keeping this list explicit, we allow site administrators
-    to add new species and areas without having to worry about silently editing user alerts.
+    Concrete subclasses add their own ownership/notification fields. The M2M
+    reverse accessors are auto-namespaced per concrete model (``alert_set``,
+    ``alerttemplate_set``), so no ``related_name`` is needed here.
+
+    Attributes
+    ----------
+    species : ManyToManyField
+        Species the filter matches (at least one is required at the API layer).
+    datasets : ManyToManyField
+        Optional dataset filter; empty means "all datasets".
+    basis_of_record_filters : ManyToManyField
+        Optional basis-of-record filter; empty means "all".
+    areas : ManyToManyField
+        Optional geographic filter; empty means "no location filtering".
+    area_filter_mode : str
+        One of ``AREA_FILTER_MODE_CHOICES``.
+    approaching_distance_km : float or None
+        Buffer distance (0-50 km) used by the "approaching"/"both" modes.
+    verified_filter : str
+        One of ``VERIFIED_FILTER_CHOICES``.
     """
-
-    NO_EMAILS = "N"
-    DAILY_EMAILS = "D"
-    WEEKLY_EMAILS = "W"
-    MONTHLY_EMAILS = "M"
 
     VERIFIED_FILTER_ALL = "all"
     VERIFIED_FILTER_VERIFIED_ONLY = "verified"
@@ -1121,23 +1132,6 @@ class Alert(models.Model):
         (AREA_FILTER_BOTH, "Inside or close to the area"),
     ]
 
-    EMAIL_NOTIFICATION_CHOICES = [
-        (NO_EMAILS, _("No emails")),
-        (DAILY_EMAILS, _("Daily")),
-        (WEEKLY_EMAILS, _("Weekly")),
-        (MONTHLY_EMAILS, _("Monthly")),
-    ]
-
-    EMAIL_NOTIFICATION_DELTAS = (
-        {  # After how much time should we be ready to send a new email
-            DAILY_EMAILS: datetime.timedelta(hours=22),
-            WEEKLY_EMAILS: datetime.timedelta(days=6, hours=22),
-            MONTHLY_EMAILS: datetime.timedelta(weeks=4),
-        }
-    )
-
-    name = models.CharField(verbose_name=_("name"), max_length=255)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     species = models.ManyToManyField(
         Species,
         verbose_name=_("species"),
@@ -1187,23 +1181,14 @@ class Alert(models.Model):
         help_text="Required when area_filter_mode is 'approaching' or 'both'. Distance in km (max 50).",
     )
 
-    email_notifications_frequency = models.CharField(
-        max_length=3,
-        choices=EMAIL_NOTIFICATION_CHOICES,
-        default=WEEKLY_EMAILS,
-        verbose_name=_("email notifications frequency"),
-    )
-
     verified_filter = models.CharField(
         max_length=10,
         choices=VERIFIED_FILTER_CHOICES,
         default=VERIFIED_FILTER_ALL,
     )
 
-    last_email_sent_on = models.DateTimeField(blank=True, null=True, default=None)
-
     class Meta:
-        unique_together = [("user", "name")]
+        abstract = True
 
     def clean(self) -> None:
         if self.area_filter_mode in (self.AREA_FILTER_APPROACHING, self.AREA_FILTER_BOTH):
@@ -1224,6 +1209,52 @@ class Alert(models.Model):
                 raise ValidationError(
                     {"approaching_distance_km": "This field must be empty when the area filter mode is 'inside'."}
                 )
+
+
+class Alert(ObservationFilterSet):
+    """The per-user configured alerts
+
+    An alert is user specific.
+    Datasets is an optional filter. If left blank, all source datasets will be taken into account.
+    Area is an optional filter. If left blank, data is not filtered by location (which might be more than the selection of all areas)
+    We choose to not extend this logic to species. By keeping this list explicit, we allow site administrators
+    to add new species and areas without having to worry about silently editing user alerts.
+    """
+
+    NO_EMAILS = "N"
+    DAILY_EMAILS = "D"
+    WEEKLY_EMAILS = "W"
+    MONTHLY_EMAILS = "M"
+
+    EMAIL_NOTIFICATION_CHOICES = [
+        (NO_EMAILS, _("No emails")),
+        (DAILY_EMAILS, _("Daily")),
+        (WEEKLY_EMAILS, _("Weekly")),
+        (MONTHLY_EMAILS, _("Monthly")),
+    ]
+
+    EMAIL_NOTIFICATION_DELTAS = (
+        {  # After how much time should we be ready to send a new email
+            DAILY_EMAILS: datetime.timedelta(hours=22),
+            WEEKLY_EMAILS: datetime.timedelta(days=6, hours=22),
+            MONTHLY_EMAILS: datetime.timedelta(weeks=4),
+        }
+    )
+
+    name = models.CharField(verbose_name=_("name"), max_length=255)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    email_notifications_frequency = models.CharField(
+        max_length=3,
+        choices=EMAIL_NOTIFICATION_CHOICES,
+        default=WEEKLY_EMAILS,
+        verbose_name=_("email notifications frequency"),
+    )
+
+    last_email_sent_on = models.DateTimeField(blank=True, null=True, default=None)
+
+    class Meta:
+        unique_together = [("user", "name")]
 
     def get_absolute_url(self) -> str:
         return reverse("dashboard:pages:alert-details", kwargs={"alert_id": self.id})
