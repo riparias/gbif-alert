@@ -406,6 +406,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/alert-templates/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Alert Templates List
+         * @description Return all published alert templates, operator-ordered.
+         */
+        get: operations["dashboard_api_v2_alert_templates_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v2/alerts/from-template/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Alert Create From Template
+         * @description Create a new alert for the current user by copying a template's filters.
+         */
+        post: operations["dashboard_api_v2_alert_create_from_template"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/alerts/{alert_id}/": {
         parameters: {
             query?: never;
@@ -1112,6 +1152,58 @@ export interface components {
             areaFilterMode: "inside" | "approaching" | "both";
             /** Approachingdistancekm */
             approachingDistanceKm?: number | null;
+        };
+        /** AlertTemplateOut */
+        AlertTemplateOut: {
+            /** Id */
+            id: number;
+            /** Nameen */
+            nameEn: string;
+            /** Namefr */
+            nameFr: string;
+            /** Namenl */
+            nameNl: string;
+            /** Descriptionen */
+            descriptionEn: string;
+            /** Descriptionfr */
+            descriptionFr: string;
+            /** Descriptionnl */
+            descriptionNl: string;
+            /** Speciesids */
+            speciesIds: number[];
+            /** Datasetids */
+            datasetIds: number[];
+            /** Basisofrecordids */
+            basisOfRecordIds: number[];
+            /** Areaids */
+            areaIds: number[];
+            /**
+             * Verifiedfilter
+             * @enum {string}
+             */
+            verifiedFilter: "all" | "verified" | "unverified";
+            /**
+             * Areafiltermode
+             * @enum {string}
+             */
+            areaFilterMode: "inside" | "approaching" | "both";
+            /** Approachingdistancekm */
+            approachingDistanceKm: number | null;
+            /** Speciesdetails */
+            speciesDetails: components["schemas"]["AlertSpeciesOut"][];
+        };
+        /** AlertFromTemplateIn */
+        AlertFromTemplateIn: {
+            /** Templateid */
+            templateId: number;
+            /** Name */
+            name: string;
+            /**
+             * Emailnotificationsfrequency
+             * @default W
+             * @enum {string}
+             */
+            emailNotificationsFrequency: "N" | "D" | "W" | "M";
         };
         /** SignInOut */
         SignInOut: {
@@ -2083,6 +2175,95 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationErrorOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_alert_templates_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertTemplateOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_alert_create_from_template: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertFromTemplateIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
