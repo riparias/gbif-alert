@@ -63,3 +63,13 @@ def test_deleting_template_nulls_alert_pointer(promote_data):
     a.refresh_from_db()
     assert a.created_from_template is None
     assert Alert.objects.filter(pk=a.pk).exists()
+
+
+@pytest.mark.django_db
+def test_notification_command_does_not_see_templates(promote_data):
+    from django.core.management import call_command
+    AlertTemplate.create_from_alert(promote_data["alert"], created_by=promote_data["operator"])
+    # Should run without touching templates and without error.
+    call_command("send_alert_notifications_email")
+    # Templates are not Alerts, so the command's Alert.objects.all() cannot include them.
+    assert AlertTemplate.objects.count() == 1
