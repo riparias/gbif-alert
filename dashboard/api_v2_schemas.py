@@ -243,6 +243,24 @@ class AlertOut(Schema):
     lastEmailSentAt: datetime.datetime | None
 
 
+class AlertTemplateOut(Schema):
+    id: int
+    nameEn: str
+    nameFr: str
+    nameNl: str
+    descriptionEn: str
+    descriptionFr: str
+    descriptionNl: str
+    speciesIds: list[int]
+    datasetIds: list[int]
+    basisOfRecordIds: list[int]
+    areaIds: list[int]
+    verifiedFilter: VerifiedFilter
+    areaFilterMode: AreaFilterMode
+    approachingDistanceKm: float | None
+    speciesDetails: list[AlertSpeciesOut]
+
+
 class AreaFromDrawingIn(Schema):
     name: str
     geojson: dict  # GeoJSON FeatureCollection, EPSG:4326

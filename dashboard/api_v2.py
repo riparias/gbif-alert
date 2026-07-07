@@ -29,6 +29,7 @@ from dashboard.api_v2_schemas import (
     AlertNameSuggestionOut,
     AlertNotificationFrequencyOut,
     AlertOut,
+    AlertTemplateOut,
     ApiTokenCreateIn,
     ApiTokenCreatedOut,
     ApiTokenOut,
@@ -69,6 +70,7 @@ from dashboard.views import jobs as background_jobs
 from dashboard.views.helpers import api_status_to_internal
 from dashboard.models import (
     Alert,
+    AlertTemplate,
     ApiToken,
     Area,
     BasisOfRecord,
@@ -835,6 +837,29 @@ def _alert_to_out(alert: Alert) -> dict:
     }
 
 
+def _alert_template_to_out(template: "AlertTemplate") -> dict:
+    return {
+        "id": template.pk,
+        "nameEn": template.name_en or "",  # type: ignore[attr-defined]
+        "nameFr": template.name_fr or "",  # type: ignore[attr-defined]
+        "nameNl": template.name_nl or "",  # type: ignore[attr-defined]
+        "descriptionEn": template.description_en or "",  # type: ignore[attr-defined]
+        "descriptionFr": template.description_fr or "",  # type: ignore[attr-defined]
+        "descriptionNl": template.description_nl or "",  # type: ignore[attr-defined]
+        "speciesIds": [s.pk for s in template.species.all()],
+        "datasetIds": [d.pk for d in template.datasets.all()],
+        "basisOfRecordIds": [b.pk for b in template.basis_of_record_filters.all()],
+        "areaIds": [a.pk for a in template.areas.all()],
+        "verifiedFilter": template.verified_filter,
+        "areaFilterMode": template.area_filter_mode,
+        "approachingDistanceKm": template.approaching_distance_km,
+        "speciesDetails": [
+            {"scientificName": s.name, **_vernacular_names(s)}
+            for s in template.species.all()
+        ],
+    }
+
+
 def _save_alert(alert: Alert, payload: AlertIn) -> dict[str, list[str]]:
     """Apply payload to alert instance, validate, save if valid.
 
@@ -917,6 +942,19 @@ def alerts_list(request: HttpRequest):
         .order_by("id")
     )
     return [_alert_to_out(a) for a in alerts]
+
+
+@api_v2.get(
+    "/alert-templates/",
+    response={200: list[AlertTemplateOut], **ERR_401},
+    auth=[ApiTokenAuth(), django_auth],
+)
+def alert_templates_list(request: HttpRequest):
+    """Return all published alert templates, operator-ordered."""
+    templates = AlertTemplate.objects.prefetch_related(
+        "species", "datasets", "areas", "basis_of_record_filters"
+    ).all()  # Meta.ordering applies (display_order, name)
+    return [_alert_template_to_out(t) for t in templates]
 
 
 @api_v2.post(

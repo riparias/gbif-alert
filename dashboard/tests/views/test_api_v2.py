@@ -2678,3 +2678,44 @@ def test_openapi_declares_error_responses(path, method, expected_codes):
         assert ref.endswith("/DetailErrorOut"), (
             f"{method.upper()} {path} response {code} should be DetailErrorOut, got {ref}"
         )
+
+
+# --- /api/v2/alert-templates/ ---
+
+
+@pytest.fixture()
+def template_data():
+    from dashboard.models import AlertTemplate
+    User = get_user_model()
+    op = User.objects.create_user(username="op", password="12345", email="op@e.com")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    alert = Alert.objects.create(name="seed", user=op, email_notifications_frequency="N")
+    alert.species.add(sp)
+    tpl = AlertTemplate.create_from_alert(alert, created_by=op)
+    tpl.name_en = "Amphibians near X"
+    tpl.name_fr = "Amphibiens pres de X"
+    tpl.name_nl = "Amfibieen bij X"
+    tpl.description_en = "All amphibians within 50 km"
+    tpl.save()
+    return {"op": op, "sp": sp, "template": tpl}
+
+
+def test_templates_list_requires_auth(client):
+    response = client.get("/api/v2/alert-templates/")
+    assert response.status_code == 401
+
+
+def test_templates_list_returns_flat_language_fields(client, template_data):
+    client.login(username="op", password="12345")
+    response = client.get("/api/v2/alert-templates/")
+    assert response.status_code == 200
+    row = response.json()[0]
+    assert row["nameEn"] == "Amphibians near X"
+    assert row["nameFr"] == "Amphibiens pres de X"
+    assert row["nameNl"] == "Amfibieen bij X"
+    assert row["descriptionEn"] == "All amphibians within 50 km"
+    assert row["speciesIds"] == [template_data["sp"].pk]
+    assert "speciesDetails" in row
+    # alert-only fields are absent
+    assert "emailNotificationsFrequency" not in row
+    assert "notViewedCount" not in row
