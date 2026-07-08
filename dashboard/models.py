@@ -51,7 +51,7 @@ def get_translator(lang: str = "en"):
         return trans.gettext
 
 
-class User(AbstractUser):
+class User(AbstractUser):  # type: ignore[django-manager-missing]
     last_visit_news_page = models.DateTimeField(null=True, blank=True)
     language = models.CharField(
         max_length=10, choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE
@@ -1234,6 +1234,8 @@ class AlertTemplate(ObservationFilterSet):
     display_order : int
         Ascending sort key for operator curation.
     """
+
+    objects = models.Manager()  # type: ignore[django-manager-missing]
 
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)

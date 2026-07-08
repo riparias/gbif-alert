@@ -35,6 +35,7 @@ from dashboard.api_v2_schemas import (
     ApiTokenCreateIn,
     ApiTokenCreatedOut,
     ApiTokenOut,
+    AreaFilterMode,
     AreaFromDrawingIn,
     AreaOut,
     AreaPatchIn,
@@ -63,6 +64,7 @@ from dashboard.api_v2_schemas import (
     SpeciesPerPolygonIn,
     SpeciesPerPolygonOut,
     ValidationErrorOut,
+    VerifiedFilter,
 )
 from dashboard.api_v2_auth import ApiTokenAuth
 from dashboard.forms import SignUpForm, _days_to_value_unit, _value_unit_to_days
@@ -980,7 +982,7 @@ def alert_create(request: HttpRequest, payload: AlertIn):
 )
 def alert_create_from_template(request: HttpRequest, payload: AlertFromTemplateIn):
     """Create a new alert for the current user by copying a template's filters."""
-    template = get_object_or_404(
+    template: AlertTemplate = get_object_or_404(
         AlertTemplate.objects.prefetch_related(
             "species", "datasets", "areas", "basis_of_record_filters"
         ),
@@ -994,8 +996,8 @@ def alert_create_from_template(request: HttpRequest, payload: AlertFromTemplateI
         basisOfRecordIds=[b.pk for b in template.basis_of_record_filters.all()],
         areaIds=[a.pk for a in template.areas.all()],
         emailNotificationsFrequency=payload.emailNotificationsFrequency,
-        verifiedFilter=template.verified_filter,
-        areaFilterMode=template.area_filter_mode,
+        verifiedFilter=cast(VerifiedFilter, template.verified_filter),
+        areaFilterMode=cast(AreaFilterMode, template.area_filter_mode),
         approachingDistanceKm=template.approaching_distance_km,
     )
     errors = _save_alert(alert, alert_in)

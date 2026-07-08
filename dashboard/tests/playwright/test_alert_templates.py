@@ -16,7 +16,7 @@ def test_user_creates_alert_from_template(page: Page, live_server):
     seed = Alert.objects.create(name="seed", user=op, email_notifications_frequency="N")
     seed.species.add(sp)
     tpl = AlertTemplate.create_from_alert(seed, created_by=op)
-    tpl.name_en = "Amphibians near X"
+    tpl.name_en = "Amphibians near X"  # type: ignore[attr-defined]
     tpl.save()
 
     User.objects.create_user(username="jane", password="pass", email="jane@e.com")
