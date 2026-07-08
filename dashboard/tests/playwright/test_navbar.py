@@ -209,21 +209,21 @@ def test_navbar_internal_link_navigates_without_reload(page: Page, live_server):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_navbar_signout_does_full_navigation(page: Page, live_server):
-    """Sign out is a genuine Django route with no SPA equivalent, so it must
-    still do a real full-page navigation (the click guard must NOT hijack it).
+def test_navbar_signout_logs_user_out(page: Page, live_server):
+    """Clicking 'Sign out' ends the session and returns to the anonymous state.
+
+    Regression test: sign-out used to be a plain GET anchor pointing at Django's
+    LogoutView, which returns 405 Method Not Allowed under Django 5+, so the
+    click silently failed to log the user out. It now POSTs to
+    /api/v2/auth/signout/ and redirects home, leaving the navbar anonymous.
     """
     User = get_user_model()
     User.objects.create_user(username="testuser", password="testpass123")
     login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/")
 
-    page.evaluate("window.__noReloadMarker = 'spa'")
-
     page.get_by_role("button", name="testuser").click()
     page.get_by_role("menuitem", name="Sign out").click()
-    page.wait_for_load_state("networkidle")
 
-    # A real navigation happened: the marker is gone because the JS context
-    # was rebuilt by the full page load that Django's sign-out triggers.
-    assert page.evaluate("window.__noReloadMarker") is None
+    # The session is gone: the navbar returns to its anonymous state.
+    expect(page.get_by_role("link", name="Sign in")).to_be_visible()

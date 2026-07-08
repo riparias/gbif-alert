@@ -24,7 +24,6 @@ interface NavUrls {
     profile: string;
     passwordChange: string;
     myCustomAreas: string;
-    signout: string;
     signin: string;
     signup: string;
     admin: string;

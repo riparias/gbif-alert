@@ -454,6 +454,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/auth/signout/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Auth Signout
+         * @description End the current session. Returns 204.
+         */
+        post: operations["dashboard_api_v2_auth_signout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/auth/signup/": {
         parameters: {
             query?: never;
@@ -1300,7 +1320,7 @@ export interface operations {
                     "application/json": components["schemas"]["SpeciesPerPolygonOut"][];
                 };
             };
-            /** @description Unprocessable Content */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -1399,7 +1419,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Content */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -1490,7 +1510,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Content */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -1608,7 +1628,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Content */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -1892,7 +1912,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Content */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2090,7 +2110,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Content */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2192,7 +2212,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Content */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2283,6 +2303,42 @@ export interface operations {
             };
         };
     };
+    dashboard_api_v2_auth_signout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+        };
+    };
     dashboard_api_v2_auth_signup: {
         parameters: {
             query?: never;
@@ -2305,7 +2361,7 @@ export interface operations {
                     "application/json": components["schemas"]["SignInOut"];
                 };
             };
-            /** @description Unprocessable Content */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2354,7 +2410,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Content */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2434,7 +2490,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Content */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2550,7 +2606,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Content */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
