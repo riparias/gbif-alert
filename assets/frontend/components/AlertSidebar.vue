@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useConfirm } from "primevue/useconfirm";
@@ -27,10 +27,12 @@ const props = defineProps<{
 const { t, locale } = useI18n();
 const router = useRouter();
 const isAuthenticated: boolean = getNavConfig().user.isAuthenticated;
+const isSuperuser: boolean = getNavConfig().user.isSuperuser;
 const confirm = useConfirm();
 const toast = useToast();
 const resultsStore = useResultsStore();
 const filtersStore = useFiltersStore();
+const publishing = ref(false);
 
 const { speciesExpanded, tooManySpecies, visibleSpecies, areaDescription, SPECIES_COLLAPSE_THRESHOLD } =
     useAlertMeta(() => props.alert);
@@ -75,6 +77,23 @@ function confirmDelete() {
             router.push("/my-alerts");
         },
     });
+}
+
+async function publishAsTemplate() {
+    publishing.value = true;
+    try {
+        const res = await fetch(`/api/v2/spa/alerts/${props.alert.id}/publish-as-template/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": getCsrf() },
+        });
+        toast.add({
+            severity: res.status === 201 ? "success" : "error",
+            summary: res.status === 201 ? t("message.templatePublished") : t("message.templatePublishFailed"),
+            life: 5000,
+        });
+    } finally {
+        publishing.value = false;
+    }
 }
 
 const formattedCount = computed(() =>
@@ -222,6 +241,17 @@ const formattedDatasetsCount = computed(() =>
                 outlined
                 class="action-btn"
                 @click="confirmDelete"
+            />
+            <Button
+                v-if="isSuperuser"
+                :label="t('message.publishAsTemplate')"
+                icon="pi pi-megaphone"
+                size="small"
+                severity="help"
+                outlined
+                class="action-btn"
+                :loading="publishing"
+                @click="publishAsTemplate"
             />
         </div>
     </div>
