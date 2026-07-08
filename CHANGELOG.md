@@ -1,4 +1,4 @@
-# Unreleased
+# 2.0.8 (2026-07-08)
 
 - Fix: signing out from the navbar user menu returned a 405 error instead of
   logging the user out. Sign-out was a plain GET link to Django's `LogoutView`,
