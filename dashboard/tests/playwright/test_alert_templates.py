@@ -53,3 +53,23 @@ def test_publish_button_visible_only_to_superuser(page: Page, live_server):
     page.goto(live_server.url + f"/alert/{alert.pk}")
     page.wait_for_load_state("networkidle")
     expect(page.get_by_role("button", name="Publish as template", exact=False)).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_publish_button_hidden_for_non_superuser(page: Page, live_server):
+    User = get_user_model()
+    jane = User.objects.create_user(username="jane", password="pass", email="jane@e.com")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    alert = Alert.objects.create(name="jane's alert", user=jane, email_notifications_frequency="N")
+    alert.species.add(sp)
+
+    login(page, live_server.url, "jane", "pass")
+    page.goto(live_server.url + f"/alert/{alert.pk}")
+    page.wait_for_load_state("networkidle")
+
+    # Sanity check: the page actually rendered for this user (sidebar actions are
+    # only shown to authenticated users), so the absence of the publish button below
+    # is a real assertion about the superuser gate, not a false negative from a
+    # failed page load.
+    expect(page.get_by_role("button", name="Edit this alert", exact=False)).to_be_visible()
+    expect(page.get_by_role("button", name="Publish as template", exact=False)).to_have_count(0)
