@@ -10,20 +10,23 @@ import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
 import InputNumber from "primevue/inputnumber";
 import Message from "primevue/message";
+import Dialog from "primevue/dialog";
 import SpeciesFilterModal from "../components/SpeciesFilterModal.vue";
 import AreaFilterModal from "../components/AreaFilterModal.vue";
 import DatasetFilterModal from "../components/DatasetFilterModal.vue";
 import { getNavConfig } from "../utils/navConfig";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
+import { pickByLocale } from "../utils/templateLabel";
 
 type SpeciesOut = components["schemas"]["SpeciesOut"];
 type DatasetOut = components["schemas"]["DatasetOut"];
 type AreaOut = components["schemas"]["AreaOut"];
 type BasisOfRecordOut = components["schemas"]["BasisOfRecordOut"];
 type AlertNotificationFrequencyOut = components["schemas"]["AlertNotificationFrequencyOut"];
+type AlertTemplateOut = components["schemas"]["AlertTemplateOut"];
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -38,6 +41,15 @@ const datasetOptions = ref<DatasetOut[]>([]);
 const areaOptions = ref<AreaOut[]>([]);
 const basisOfRecordOptions = ref<BasisOfRecordOut[]>([]);
 const frequencyOptions = ref<AlertNotificationFrequencyOut[]>([]);
+
+// Alert templates (create mode only)
+const templates = ref<AlertTemplateOut[]>([]);
+const templateDialogVisible = ref(false);
+const selectedTemplate = ref<AlertTemplateOut | null>(null);
+const newAlertName = ref("");
+const newAlertFrequency = ref("W");
+const creatingFromTemplate = ref(false);
+const templateError = ref("");
 
 // Form fields
 const name = ref("");
@@ -99,6 +111,66 @@ async function loadOptions() {
     frequencyOptions.value = frequencies;
 }
 
+async function loadTemplates() {
+    const res = await fetch("/api/v2/alert-templates/");
+    if (res.ok) templates.value = await res.json();
+}
+
+function templateName(tpl: AlertTemplateOut): string {
+    return pickByLocale(tpl.nameEn, tpl.nameFr, tpl.nameNl, locale.value);
+}
+
+function templateDescription(tpl: AlertTemplateOut): string {
+    return pickByLocale(tpl.descriptionEn, tpl.descriptionFr, tpl.descriptionNl, locale.value);
+}
+
+async function openTemplateDialog(tpl: AlertTemplateOut) {
+    selectedTemplate.value = tpl;
+    templateError.value = "";
+    newAlertFrequency.value = "W";
+    // Suggest a default name from the backend.
+    const res = await fetch("/api/v2/spa/alerts/suggest-name/");
+    newAlertName.value = res.ok ? (await res.json()).name : templateName(tpl);
+    templateDialogVisible.value = true;
+}
+
+async function confirmCreateFromTemplate() {
+    if (!selectedTemplate.value) return;
+    creatingFromTemplate.value = true;
+    templateError.value = "";
+    try {
+        const res = await fetch("/api/v2/alerts/from-template/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrf(),
+            },
+            body: JSON.stringify({
+                templateId: selectedTemplate.value.id,
+                name: newAlertName.value,
+                emailNotificationsFrequency: newAlertFrequency.value,
+            }),
+        });
+        if (res.status === 201) {
+            const data = await res.json();
+            toast.add({
+                severity: "success",
+                summary: t("message.alertSuccessfullySaved"),
+                life: 3000,
+            });
+            router.push(`/alert/${data.id}`);
+        } else {
+            const data = await res.json();
+            const errs = data.errors ?? {};
+            templateError.value = errs.name
+                ? errs.name.join(", ")
+                : t("message.templatePublishFailed");
+        }
+    } finally {
+        creatingFromTemplate.value = false;
+    }
+}
+
 async function loadAlertData() {
     const res = await fetch(`/api/v2/alerts/${alertId}/`);
     if (!res.ok) return;
@@ -130,6 +202,7 @@ onMounted(async () => {
     } else {
         document.title = `${t("message.createAlert")} - ${navConfig.siteName}`;
         await suggestName();
+        await loadTemplates();
     }
 });
 
@@ -190,6 +263,63 @@ async function save() {
                 @click="router.push('/my-alerts')"
             />
         </div>
+
+        <Card v-if="!isEditMode && templates.length" class="templates-card">
+            <template #title>{{ t("message.startFromTemplate") }}</template>
+            <template #content>
+                <div class="template-list">
+                    <div v-for="tpl in templates" :key="tpl.id" class="template-item">
+                        <div class="template-text">
+                            <strong>{{ templateName(tpl) }}</strong>
+                            <p v-if="templateDescription(tpl)">{{ templateDescription(tpl) }}</p>
+                            <small>
+                                {{ tpl.speciesDetails.map((s) => s.scientificName).join(", ") }}
+                            </small>
+                        </div>
+                        <Button
+                            :label="t('message.useThisTemplate')"
+                            icon="pi pi-copy"
+                            size="small"
+                            @click="openTemplateDialog(tpl)"
+                        />
+                    </div>
+                </div>
+            </template>
+        </Card>
+
+        <Dialog
+            v-model:visible="templateDialogVisible"
+            modal
+            :header="t('message.createAlertFromTemplate')"
+            :style="{ width: '28rem' }"
+        >
+            <div class="form-field">
+                <label for="tpl-name">{{ t("message.alertName") }} *</label>
+                <InputText id="tpl-name" v-model="newAlertName" class="w-full" />
+                <Message v-if="templateError" severity="error" :closable="false" size="small">
+                    {{ templateError }}
+                </Message>
+            </div>
+            <div class="form-field">
+                <label for="tpl-freq">{{ t("message.alertNotificationsFrequency") }}</label>
+                <Select
+                    id="tpl-freq"
+                    v-model="newAlertFrequency"
+                    :options="frequencyOptions"
+                    option-label="label"
+                    option-value="id"
+                    class="w-full"
+                />
+            </div>
+            <template #footer>
+                <Button :label="t('message.cancel')" text @click="templateDialogVisible = false" />
+                <Button
+                    :label="t('message.useThisTemplate')"
+                    :loading="creatingFromTemplate"
+                    @click="confirmCreateFromTemplate"
+                />
+            </template>
+        </Dialog>
 
         <Card>
             <template #content>
@@ -367,5 +497,32 @@ async function save() {
 
 .w-full {
     width: 100%;
+}
+
+.templates-card {
+    margin-bottom: 1.25rem;
+}
+
+.template-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.template-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.template-text p {
+    margin: 0.125rem 0 0;
+    font-size: 0.875rem;
+    color: var(--p-text-muted-color);
+}
+
+.template-text small {
+    color: var(--p-text-muted-color);
 }
 </style>
