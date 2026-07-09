@@ -25,10 +25,16 @@ def test_user_creates_alert_from_template(page: Page, live_server):
     page.wait_for_load_state("networkidle")
 
     expect(page.get_by_text("Amphibians near X", exact=False)).to_be_visible()
+
+    # Scope to the card so we don't hit the confirm dialog's button of the same name.
+    card = page.locator(".template-card").filter(has_text="Amphibians near X")
+
+    # Reveal the collapsed details and check a species is listed there.
+    card.get_by_role("button", name="Details", exact=False).click()
+    expect(card.get_by_text("Procambarus fallax", exact=False)).to_be_visible()
+
     # Open the dialog from the template card's "Use this template" button.
-    page.locator(".template-item").get_by_role(
-        "button", name="Use this template", exact=False
-    ).click()
+    card.get_by_role("button", name="Use this template", exact=False).click()
 
     # Confirm dialog -> accept the suggested name. Scope to the PrimeVue dialog
     # itself so we don't hit the card button again (both share the same label).

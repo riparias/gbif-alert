@@ -14,6 +14,7 @@ import Dialog from "primevue/dialog";
 import SpeciesFilterModal from "../components/SpeciesFilterModal.vue";
 import AreaFilterModal from "../components/AreaFilterModal.vue";
 import DatasetFilterModal from "../components/DatasetFilterModal.vue";
+import TemplateCard from "../components/TemplateCard.vue";
 import { getNavConfig } from "../utils/navConfig";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
@@ -118,10 +119,6 @@ async function loadTemplates() {
 
 function templateName(tpl: AlertTemplateOut): string {
     return pickByLocale(tpl.nameEn, tpl.nameFr, tpl.nameNl, locale.value);
-}
-
-function templateDescription(tpl: AlertTemplateOut): string {
-    return pickByLocale(tpl.descriptionEn, tpl.descriptionFr, tpl.descriptionNl, locale.value);
 }
 
 async function openTemplateDialog(tpl: AlertTemplateOut) {
@@ -264,28 +261,19 @@ async function save() {
             />
         </div>
 
-        <Card v-if="!isEditMode && templates.length" class="templates-card">
-            <template #title>{{ t("message.startFromTemplate") }}</template>
-            <template #content>
-                <div class="template-list">
-                    <div v-for="tpl in templates" :key="tpl.id" class="template-item">
-                        <div class="template-text">
-                            <strong>{{ templateName(tpl) }}</strong>
-                            <p v-if="templateDescription(tpl)">{{ templateDescription(tpl) }}</p>
-                            <small>
-                                {{ tpl.speciesDetails.map((s) => s.scientificName).join(", ") }}
-                            </small>
-                        </div>
-                        <Button
-                            :label="t('message.useThisTemplate')"
-                            icon="pi pi-copy"
-                            size="small"
-                            @click="openTemplateDialog(tpl)"
-                        />
-                    </div>
-                </div>
-            </template>
-        </Card>
+        <template v-if="!isEditMode && templates.length">
+            <h2 class="section-heading">{{ t("message.fromTemplateSectionTitle") }}</h2>
+            <div class="template-grid">
+                <TemplateCard
+                    v-for="tpl in templates"
+                    :key="tpl.id"
+                    :template="tpl"
+                    @use="openTemplateDialog(tpl)"
+                />
+            </div>
+
+            <h2 class="section-heading">{{ t("message.configureManually") }}</h2>
+        </template>
 
         <Dialog
             v-model:visible="templateDialogVisible"
@@ -499,30 +487,15 @@ async function save() {
     width: 100%;
 }
 
-.templates-card {
-    margin-bottom: 1.25rem;
+.section-heading {
+    font-size: 1.05rem;
+    margin: 0 0 0.75rem;
 }
 
-.template-list {
-    display: flex;
-    flex-direction: column;
+.template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1rem;
-}
-
-.template-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-}
-
-.template-text p {
-    margin: 0.125rem 0 0;
-    font-size: 0.875rem;
-    color: var(--p-text-muted-color);
-}
-
-.template-text small {
-    color: var(--p-text-muted-color);
+    margin-bottom: 1.75rem;
 }
 </style>
