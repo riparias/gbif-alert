@@ -184,6 +184,141 @@ def test_species_per_polygon_invalid_geojson_returns_422(client):
     assert resp.status_code == 422
 
 
+# --- POST /api/v2/species/ (create, superuser only) ---
+
+
+@pytest.fixture()
+def superuser():
+    User = get_user_model()
+    return User.objects.create_superuser("boss", "boss@example.com", "pw")
+
+
+def test_species_create_as_superuser_session_returns_201(client, superuser):
+    """A superuser can create a species; the response is the created SpeciesOut."""
+    client.force_login(superuser)
+    resp = client.post(
+        "/api/v2/species/",
+        data={"scientificName": "Vespa velutina", "gbifTaxonKey": 1311527},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["scientificName"] == "Vespa velutina"
+    assert body["gbifTaxonKey"] == 1311527
+    created = Species.objects.get(gbif_taxon_key=1311527)
+    assert created.name == "Vespa velutina"
+    assert body["id"] == created.pk
+
+
+def test_species_create_as_superuser_via_token_returns_201(client, superuser):
+    """A superuser's bearer token can also create a species."""
+    _, raw = ApiToken.create_for(superuser, "script")
+    resp = client.post(
+        "/api/v2/species/",
+        data={"scientificName": "Xenopus laevis", "gbifTaxonKey": 5217334},
+        content_type="application/json",
+        HTTP_AUTHORIZATION=f"Bearer {raw}",
+    )
+    assert resp.status_code == 201
+    assert Species.objects.filter(gbif_taxon_key=5217334).exists()
+
+
+def test_species_create_full_parity_fields_are_stored(client, superuser):
+    """All admin-parity fields are persisted; imageSourceType is derived MANUAL."""
+    client.force_login(superuser)
+    resp = client.post(
+        "/api/v2/species/",
+        data={
+            "scientificName": "Lithobates catesbeianus",
+            "gbifTaxonKey": 2427091,
+            "vernacularNameEn": "American bullfrog",
+            "vernacularNameFr": "ouaouaron",
+            "vernacularNameNl": "brulkikker",
+            "tags": ["invasive", "amphibian"],
+            "imageUrl": "https://example.org/frog.jpg",
+            "imageSourceUrl": "https://example.org/frog-page",
+            "imageAttribution": "A. Photographer",
+            "imageLicense": "CC BY 4.0",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    sp = Species.objects.get(gbif_taxon_key=2427091)
+    assert sp.vernacular_name_en == "American bullfrog"
+    assert sp.vernacular_name_fr == "ouaouaron"
+    assert sp.vernacular_name_nl == "brulkikker"
+    assert sorted(t.name for t in sp.tags.all()) == ["amphibian", "invasive"]
+    assert sp.image_url == "https://example.org/frog.jpg"
+    assert sp.image_source_url == "https://example.org/frog-page"
+    assert sp.image_attribution == "A. Photographer"
+    assert sp.image_license == "CC BY 4.0"
+    # Derived server-side, mirroring SpeciesAdmin.save_model.
+    assert sp.image_source_type == Species.ImageSourceType.MANUAL
+
+
+def test_species_create_without_image_leaves_source_type_empty(client, superuser):
+    """No imageUrl -> imageSourceType stays empty (not MANUAL)."""
+    client.force_login(superuser)
+    resp = client.post(
+        "/api/v2/species/",
+        data={"scientificName": "Corbicula fluminea", "gbifTaxonKey": 2287100},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    sp = Species.objects.get(gbif_taxon_key=2287100)
+    assert sp.image_source_type == ""
+
+
+def test_species_create_as_regular_user_returns_403(client, filter_lists_data):
+    """An authenticated non-superuser cannot create a species."""
+    client.force_login(filter_lists_data["other_user"])
+    resp = client.post(
+        "/api/v2/species/",
+        data={"scientificName": "Nope species", "gbifTaxonKey": 99990001},
+        content_type="application/json",
+    )
+    assert resp.status_code == 403
+    assert not Species.objects.filter(gbif_taxon_key=99990001).exists()
+
+
+def test_species_create_anonymous_returns_401(client):
+    """An anonymous request cannot create a species."""
+    resp = client.post(
+        "/api/v2/species/",
+        data={"scientificName": "Nope species", "gbifTaxonKey": 99990002},
+        content_type="application/json",
+    )
+    assert resp.status_code == 401
+    assert not Species.objects.filter(gbif_taxon_key=99990002).exists()
+
+
+def test_species_create_duplicate_taxon_key_returns_422(client, superuser):
+    """A gbifTaxonKey that already exists is rejected with a per-field error."""
+    Species.objects.create(name="Existing", gbif_taxon_key=7654321)
+    client.force_login(superuser)
+    resp = client.post(
+        "/api/v2/species/",
+        data={"scientificName": "Duplicate", "gbifTaxonKey": 7654321},
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "gbifTaxonKey" in resp.json()["errors"]
+    assert Species.objects.filter(gbif_taxon_key=7654321).count() == 1
+
+
+def test_species_create_blank_scientific_name_returns_422(client, superuser):
+    """A blank scientificName is rejected with a per-field error."""
+    client.force_login(superuser)
+    resp = client.post(
+        "/api/v2/species/",
+        data={"scientificName": "", "gbifTaxonKey": 88880001},
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "scientificName" in resp.json()["errors"]
+    assert not Species.objects.filter(gbif_taxon_key=88880001).exists()
+
+
 # --- /api/v2/datasets/ ---
 
 
@@ -2653,6 +2788,7 @@ def test_api_token_cannot_delete_another_users_token(client, auth_data):
 #
 # Paths are relative to the API root (no /api/v2 prefix), matching the schema.
 ERROR_RESPONSE_EXPECTATIONS = [
+    ("/species/", "post", {401, 403}),
     ("/areas/{area_id}/geojson/", "get", {403, 404}),
     ("/areas/", "post", {401, 403}),
     ("/areas/from-drawing/", "post", {401, 403}),
