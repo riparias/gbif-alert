@@ -1,3 +1,16 @@
+# Unreleased
+
+- Feature: operators can publish reusable "alert templates" - shared,
+  pre-configured filter presets that users copy into their own alerts. A
+  superuser turns any alert into a live template with a "Publish as template"
+  button; the template's name and description are translatable (editable in the
+  admin) and its position is controlled by a `display_order`. On the new-alert
+  page, published templates appear in a carousel above the manual form, and
+  "Use this template" copies the preset's filters into a new, fully independent
+  alert (a one-time snapshot - there is no live link back to the template).
+  Templates live in their own model, so they never take part in notification
+  e-mails.
+
 # 2.0.7 (2026-06-26)
 
 - Dev/infra: clones and CI no longer download the 209 MB Belgian-municipalities
