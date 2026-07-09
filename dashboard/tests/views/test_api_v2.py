@@ -2721,6 +2721,37 @@ def test_templates_list_returns_flat_language_fields(client, template_data):
     assert "notViewedCount" not in row
 
 
+def test_templates_list_respects_display_order(client):
+    """The list is ordered by the operator-configured display_order (Meta.ordering),
+    regardless of creation order - this is the order the carousel renders."""
+    from dashboard.models import AlertTemplate
+
+    User = get_user_model()
+    op = User.objects.create_user(username="op", password="12345", email="op@e.com")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+
+    def make_template(order):
+        alert = Alert.objects.create(
+            name=f"seed-{order}", user=op, email_notifications_frequency="N"
+        )
+        alert.species.add(sp)
+        tpl = AlertTemplate.create_from_alert(alert, created_by=op)
+        tpl.display_order = order
+        tpl.save()
+        return tpl
+
+    # Create out of order; the endpoint must return them sorted by display_order.
+    t30 = make_template(30)
+    t10 = make_template(10)
+    t20 = make_template(20)
+
+    client.login(username="op", password="12345")
+    response = client.get("/api/v2/alert-templates/")
+    assert response.status_code == 200
+    ids = [row["id"] for row in response.json()]
+    assert ids == [t10.pk, t20.pk, t30.pk]
+
+
 # --- POST /api/v2/alerts/from-template/ ---
 
 
