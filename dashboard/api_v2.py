@@ -1093,6 +1093,17 @@ def auth_signin(request: HttpRequest, payload: SignInIn):
 
 
 @api_v2.post(
+    "/auth/signout/",
+    response={204: None, **ERR_401, **ERR_403},
+    auth=[ApiTokenAuth(), django_auth],
+)
+def auth_signout(request: HttpRequest):
+    """End the current session. Returns 204."""
+    logout(request)
+    return 204, None
+
+
+@api_v2.post(
     "/auth/signup/",
     response={201: SignInOut, 422: ValidationErrorOut},
     auth=None,

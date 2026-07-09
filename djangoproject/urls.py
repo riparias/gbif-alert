@@ -28,7 +28,6 @@ urlpatterns = [
     # User accounts
     path("i18n/", include("django.conf.urls.i18n")),
     path("accounts/signin/", spa_shell, name="signin"),
-    path("accounts/signout/", auth_views.LogoutView.as_view(), name="signout"),
     path(
         "accounts/password-reset/",
         auth_views.PasswordResetView.as_view(

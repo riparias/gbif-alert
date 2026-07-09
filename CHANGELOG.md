@@ -3,6 +3,15 @@
 - Feature: operators can publish reusable "alert templates" - shared,
   pre-configured filter presets that users copy into their own alerts.
 
+# 2.0.8 (2026-07-08)
+
+- Fix: signing out from the navbar user menu returned a 405 error instead of
+  logging the user out. Sign-out was a plain GET link to Django's `LogoutView`,
+  which rejects everything but POST since Django 5. It now posts to a dedicated
+  `POST /api/v2/auth/signout/` endpoint (matching the rest of the SPA auth flow)
+  and redirects home. The unused legacy `accounts/signout/` route and its nav
+  config plumbing were removed.
+
 # 2.0.7 (2026-06-26)
 
 - Dev/infra: clones and CI no longer download the 209 MB Belgian-municipalities

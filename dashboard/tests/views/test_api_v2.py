@@ -1978,6 +1978,22 @@ def test_signup_validation_errors_use_camelcase_keys(client, auth_data):
     assert "last_name" not in keys
 
 
+# --- signout ---
+
+
+def test_signout_clears_session(client, auth_data):
+    user = auth_data["user"]
+    client.force_login(user)
+    # Sanity check: the session is authenticated before signing out.
+    assert client.get("/api/v2/profile/").status_code == 200
+
+    resp = client.post("/api/v2/auth/signout/")
+    assert resp.status_code == 204
+
+    # The session is now anonymous: an auth-required endpoint rejects it.
+    assert client.get("/api/v2/profile/").status_code == 401
+
+
 # --- password-change ---
 
 

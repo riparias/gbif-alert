@@ -196,7 +196,7 @@ def test_required_url_keys(client):
     config = _get_nav_config(response)
     expected_keys = {
         "index", "news", "myAlerts", "aboutSite", "aboutData",
-        "profile", "passwordChange", "myCustomAreas", "signout",
+        "profile", "passwordChange", "myCustomAreas",
         "signin", "signup", "admin", "setLanguage",
     }
     assert set(config["urls"].keys()) == expected_keys

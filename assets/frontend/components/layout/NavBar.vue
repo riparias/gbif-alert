@@ -59,6 +59,17 @@ function onNavClick(event: MouseEvent, url: string | undefined): void {
     }
 }
 
+// User-menu items are either links (they carry a `url`) or actions (they carry
+// a `command`, e.g. sign out). Actions run their handler instead of navigating.
+function onUserMenuItemClick(event: MouseEvent, item: NavItem): void {
+    if (item.command) {
+        event.preventDefault();
+        item.command({ originalEvent: event, item });
+        return;
+    }
+    onNavClick(event, item.url);
+}
+
 const preferences = usePreferencesStore();
 const { speciesNameMode } = storeToRefs(preferences);
 
@@ -193,11 +204,22 @@ const userMenuItems = computed((): NavItem[] => {
     items.push({
         label: t("message.navSignOut"),
         icon: "pi pi-power",
-        url: config.urls.signout,
+        command: signout,
     });
 
     return items;
 });
+
+// Sign out via the API (a session-ending POST), then reload into the anonymous
+// homepage. A plain GET link cannot be used: Django's LogoutView returns 405
+// for anything but POST.
+async function signout(): Promise<void> {
+    await fetch("/api/v2/auth/signout/", {
+        method: "POST",
+        headers: { "X-CSRFToken": getCsrf() },
+    });
+    window.location.href = "/";
+}
 
 function toggleUserMenu(event: Event) {
     userMenuRef.value.toggle(event);
@@ -284,7 +306,7 @@ function toggleUserMenu(event: Event) {
                                     v-bind="props.action"
                                     :href="(item as NavItem).url"
                                     class="gbif-user-menu-item"
-                                    @click="onNavClick($event, (item as NavItem).url)"
+                                    @click="onUserMenuItemClick($event, item as NavItem)"
                                 >
                                     <i v-if="item.icon" :class="item.icon" />
                                     <span>{{ item.label }}</span>
