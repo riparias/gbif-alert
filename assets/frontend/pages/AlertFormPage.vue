@@ -166,9 +166,14 @@ async function confirmCreateFromTemplate() {
         } else {
             const data = await res.json();
             const errs = data.errors ?? {};
-            templateError.value = errs.name
-                ? errs.name.join(", ")
-                : t("message.templatePublishFailed");
+            // Surface whatever the server reported (a duplicate per-user name is a
+            // unique_together error under "__all__", not "name"), falling back to a
+            // generic message only if the payload carried no messages.
+            const messages = Object.values(errs).flat();
+            templateError.value =
+                messages.length > 0
+                    ? messages.join(", ")
+                    : t("message.templatePublishFailed");
         }
     } finally {
         creatingFromTemplate.value = false;

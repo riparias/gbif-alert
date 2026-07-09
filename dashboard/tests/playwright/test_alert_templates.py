@@ -111,3 +111,83 @@ def test_expanded_template_card_species_list_does_not_overflow(page: Page, live_
     # The card must not overflow its grid track horizontally.
     overflow = card.evaluate("el => el.scrollWidth - el.clientWidth")
     assert overflow <= 2, f"template card overflows horizontally by {overflow}px"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_operator_publishes_then_user_creates_from_it(page: Page, live_server):
+    """Full round-trip through the browser: an operator publishes an alert as a
+    template via the button, then a different user finds it in the new-alert
+    carousel and copies it into their own alert."""
+    User = get_user_model()
+    op = User.objects.create_superuser(username="op", password="pass", email="op@e.com")
+    sp = Species.objects.create(name="Procambarus clarkii", gbif_taxon_key=8879527)
+    alert = Alert.objects.create(
+        name="Crayfish of Wallonia", user=op, email_notifications_frequency="N"
+    )
+    alert.species.add(sp)
+
+    # Operator publishes the alert as a template from its detail page.
+    login(page, live_server.url, "op", "pass")
+    page.goto(live_server.url + f"/alert/{alert.pk}")
+    page.wait_for_load_state("networkidle")
+    page.get_by_role("button", name="Publish as template", exact=False).click()
+    expect(page.get_by_text("Template published", exact=False)).to_be_visible()
+    assert AlertTemplate.objects.count() == 1
+
+    # A normal user (fresh session) finds that template and uses it.
+    User.objects.create_user(username="jane", password="pass", email="jane@e.com")
+    page.context.clear_cookies()
+    login(page, live_server.url, "jane", "pass")
+    page.goto(live_server.url + "/new-alert")
+    page.wait_for_load_state("networkidle")
+
+    card = page.locator(".template-card").filter(has_text="Crayfish of Wallonia")
+    expect(card).to_be_visible()
+    card.get_by_role("button", name="Use this template", exact=False).click()
+
+    dialog = page.locator('[data-pc-name="dialog"]')
+    expect(dialog).to_be_visible()
+    dialog.get_by_role("button", name="Use this template", exact=False).click()
+    page.wait_for_url("**/alert/**")
+
+    jane = User.objects.get(username="jane")
+    tpl = AlertTemplate.objects.get()
+    assert Alert.objects.filter(user=jane, created_from_template=tpl).exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_from_template_duplicate_name_shows_error_in_dialog(page: Page, live_server):
+    """Copying a template with a name the user already uses keeps the dialog open,
+    shows the validation error inside it, and creates no second alert."""
+    User = get_user_model()
+    op = User.objects.create_superuser(username="op", password="pass", email="op@e.com")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    seed = Alert.objects.create(name="seed", user=op, email_notifications_frequency="N")
+    seed.species.add(sp)
+    tpl = AlertTemplate.create_from_alert(seed, created_by=op)
+    tpl.name_en = "Reusable template"  # type: ignore[attr-defined]
+    tpl.save()
+
+    jane = User.objects.create_user(username="jane", password="pass", email="jane@e.com")
+    clash = Alert.objects.create(
+        name="Existing name", user=jane, email_notifications_frequency="N"
+    )
+    clash.species.add(sp)
+
+    login(page, live_server.url, "jane", "pass")
+    page.goto(live_server.url + "/new-alert")
+    page.wait_for_load_state("networkidle")
+
+    card = page.locator(".template-card").filter(has_text="Reusable template")
+    card.get_by_role("button", name="Use this template", exact=False).click()
+
+    dialog = page.locator('[data-pc-name="dialog"]')
+    expect(dialog).to_be_visible()
+    # Force a name that already exists for jane.
+    dialog.locator("#tpl-name").fill("Existing name")
+    dialog.get_by_role("button", name="Use this template", exact=False).click()
+
+    # Error shown inside the dialog; no navigation; no second alert for jane.
+    expect(dialog.locator(".p-message")).to_be_visible()
+    assert "/new-alert" in page.url
+    assert Alert.objects.filter(user=jane).count() == 1
