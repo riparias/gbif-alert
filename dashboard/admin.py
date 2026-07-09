@@ -16,6 +16,7 @@ from .models import (
     ObservationComment,
     Area,
     Alert,
+    AlertTemplate,
     ApiToken,
     ObservationUnseen,
 )
@@ -173,6 +174,29 @@ class AlertAdmin(admin.ModelAdmin):
     list_filter = ["user", "email_notifications_frequency"]
 
     actions = [send_alert_notification_email]
+
+
+@admin.register(AlertTemplate)
+class AlertTemplateAdmin(TranslationAdmin):
+    list_display = (
+        "name",
+        "species_summary",
+        "areas_summary",
+        "created_by",
+        "created_at",
+        "display_order",
+    )
+    list_filter = ["created_by"]
+    filter_horizontal = ("species", "datasets", "basis_of_record_filters", "areas")
+    readonly_fields = ("created_at", "updated_at")
+
+    @admin.display(description="species")
+    def species_summary(self, obj):
+        return ", ".join(obj.species.order_by("name").values_list("name", flat=True))
+
+    @admin.display(description="areas")
+    def areas_summary(self, obj):
+        return ", ".join(obj.areas.order_by("name").values_list("name", flat=True))
 
 
 @admin.register(ObservationComment)

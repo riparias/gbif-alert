@@ -2694,3 +2694,158 @@ def test_openapi_declares_error_responses(path, method, expected_codes):
         assert ref.endswith("/DetailErrorOut"), (
             f"{method.upper()} {path} response {code} should be DetailErrorOut, got {ref}"
         )
+
+
+# --- /api/v2/alert-templates/ ---
+
+
+@pytest.fixture()
+def template_data():
+    from dashboard.models import AlertTemplate
+    User = get_user_model()
+    op = User.objects.create_user(username="op", password="12345", email="op@e.com")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    alert = Alert.objects.create(name="seed", user=op, email_notifications_frequency="N")
+    alert.species.add(sp)
+    tpl = AlertTemplate.create_from_alert(alert, created_by=op)
+    tpl.name_en = "Amphibians near X"
+    tpl.name_fr = "Amphibiens pres de X"
+    tpl.name_nl = "Amfibieen bij X"
+    tpl.description_en = "All amphibians within 50 km"
+    tpl.save()
+    return {"op": op, "sp": sp, "template": tpl}
+
+
+def test_templates_list_requires_auth(client):
+    response = client.get("/api/v2/alert-templates/")
+    assert response.status_code == 401
+
+
+def test_templates_list_returns_flat_language_fields(client, template_data):
+    client.login(username="op", password="12345")
+    response = client.get("/api/v2/alert-templates/")
+    assert response.status_code == 200
+    row = response.json()[0]
+    assert row["nameEn"] == "Amphibians near X"
+    assert row["nameFr"] == "Amphibiens pres de X"
+    assert row["nameNl"] == "Amfibieen bij X"
+    assert row["descriptionEn"] == "All amphibians within 50 km"
+    assert row["speciesIds"] == [template_data["sp"].pk]
+    assert "speciesDetails" in row
+    # alert-only fields are absent
+    assert "emailNotificationsFrequency" not in row
+    assert "notViewedCount" not in row
+
+
+def test_templates_list_respects_display_order(client):
+    """The list is ordered by the operator-configured display_order (Meta.ordering),
+    regardless of creation order - this is the order the carousel renders."""
+    from dashboard.models import AlertTemplate
+
+    User = get_user_model()
+    op = User.objects.create_user(username="op", password="12345", email="op@e.com")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+
+    def make_template(order):
+        alert = Alert.objects.create(
+            name=f"seed-{order}", user=op, email_notifications_frequency="N"
+        )
+        alert.species.add(sp)
+        tpl = AlertTemplate.create_from_alert(alert, created_by=op)
+        tpl.display_order = order
+        tpl.save()
+        return tpl
+
+    # Create out of order; the endpoint must return them sorted by display_order.
+    t30 = make_template(30)
+    t10 = make_template(10)
+    t20 = make_template(20)
+
+    client.login(username="op", password="12345")
+    response = client.get("/api/v2/alert-templates/")
+    assert response.status_code == 200
+    ids = [row["id"] for row in response.json()]
+    assert ids == [t10.pk, t20.pk, t30.pk]
+
+
+# --- POST /api/v2/alerts/from-template/ ---
+
+
+def test_from_template_creates_independent_alert(client, template_data):
+    op = template_data["op"]
+    tpl = template_data["template"]
+    client.login(username="op", password="12345")
+    payload = json.dumps(
+        {"templateId": tpl.pk, "name": "My copy", "emailNotificationsFrequency": "D"}
+    )
+    response = client.post(
+        "/api/v2/alerts/from-template/", payload, content_type="application/json"
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "My copy"
+    assert data["emailNotificationsFrequency"] == "D"
+    assert data["speciesIds"] == [template_data["sp"].pk]
+    created = Alert.objects.get(pk=data["id"])
+    assert created.user == op
+    assert created.created_from_template == tpl
+
+
+def test_from_template_duplicate_name_returns_422(client, template_data):
+    tpl = template_data["template"]
+    client.login(username="op", password="12345")
+    # "seed" already exists as an alert name for this user (from the fixture)
+    payload = json.dumps({"templateId": tpl.pk, "name": "seed"})
+    response = client.post(
+        "/api/v2/alerts/from-template/", payload, content_type="application/json"
+    )
+    assert response.status_code == 422
+    assert "Validation failed" == response.json()["detail"]
+
+
+def test_from_template_requires_auth(client, template_data):
+    tpl = template_data["template"]
+    payload = json.dumps({"templateId": tpl.pk, "name": "x"})
+    response = client.post(
+        "/api/v2/alerts/from-template/", payload, content_type="application/json"
+    )
+    assert response.status_code == 401
+
+
+def test_from_template_unknown_template_returns_404(client, template_data):
+    client.login(username="op", password="12345")
+    payload = json.dumps({"templateId": 999999, "name": "x"})
+    response = client.post(
+        "/api/v2/alerts/from-template/", payload, content_type="application/json"
+    )
+    assert response.status_code == 404
+
+
+# --- POST /api/v2/spa/alerts/{id}/publish-as-template/ ---
+
+
+def test_publish_as_template_forbidden_for_non_superuser(client, alert_data):
+    alert = alert_data["alert"]
+    client.login(username="alertuser", password="12345")  # not a superuser
+    response = client.post(f"/api/v2/spa/alerts/{alert.pk}/publish-as-template/")
+    assert response.status_code == 403
+
+
+def test_publish_as_template_creates_template_for_superuser(client, alert_data):
+    from dashboard.models import AlertTemplate
+
+    User = get_user_model()
+    op = User.objects.create_superuser(username="root", password="12345", email="r@e.com")
+    alert = alert_data["alert"]  # owned by alertuser; a superuser may promote any alert
+    client.login(username="root", password="12345")
+    response = client.post(f"/api/v2/spa/alerts/{alert.pk}/publish-as-template/")
+    assert response.status_code == 201
+    tpl = AlertTemplate.objects.get(pk=response.json()["id"])
+    assert tpl.created_by == op
+    assert set(tpl.species.all()) == set(alert.species.all())
+
+
+def test_publish_as_template_requires_auth(client, alert_data):
+    alert = alert_data["alert"]
+    response = client.post(f"/api/v2/spa/alerts/{alert.pk}/publish-as-template/")
+    assert response.status_code == 401

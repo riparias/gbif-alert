@@ -10,20 +10,25 @@ import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
 import InputNumber from "primevue/inputnumber";
 import Message from "primevue/message";
+import Dialog from "primevue/dialog";
+import Carousel from "primevue/carousel";
 import SpeciesFilterModal from "../components/SpeciesFilterModal.vue";
 import AreaFilterModal from "../components/AreaFilterModal.vue";
 import DatasetFilterModal from "../components/DatasetFilterModal.vue";
+import TemplateCard from "../components/TemplateCard.vue";
 import { getNavConfig } from "../utils/navConfig";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
+import { pickByLocale } from "../utils/templateLabel";
 
 type SpeciesOut = components["schemas"]["SpeciesOut"];
 type DatasetOut = components["schemas"]["DatasetOut"];
 type AreaOut = components["schemas"]["AreaOut"];
 type BasisOfRecordOut = components["schemas"]["BasisOfRecordOut"];
 type AlertNotificationFrequencyOut = components["schemas"]["AlertNotificationFrequencyOut"];
+type AlertTemplateOut = components["schemas"]["AlertTemplateOut"];
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -32,12 +37,27 @@ const toast = useToast();
 const alertId = route.params.alertId ? Number(route.params.alertId) : null;
 const isEditMode = alertId !== null;
 
+// numVisible per breakpoint for the template carousel.
+const carouselResponsiveOptions = [
+    { breakpoint: "1200px", numVisible: 2, numScroll: 1 },
+    { breakpoint: "768px", numVisible: 1, numScroll: 1 },
+];
+
 // Available options loaded from API
 const speciesOptions = ref<SpeciesOut[]>([]);
 const datasetOptions = ref<DatasetOut[]>([]);
 const areaOptions = ref<AreaOut[]>([]);
 const basisOfRecordOptions = ref<BasisOfRecordOut[]>([]);
 const frequencyOptions = ref<AlertNotificationFrequencyOut[]>([]);
+
+// Alert templates (create mode only)
+const templates = ref<AlertTemplateOut[]>([]);
+const templateDialogVisible = ref(false);
+const selectedTemplate = ref<AlertTemplateOut | null>(null);
+const newAlertName = ref("");
+const newAlertFrequency = ref("W");
+const creatingFromTemplate = ref(false);
+const templateError = ref("");
 
 // Form fields
 const name = ref("");
@@ -99,6 +119,67 @@ async function loadOptions() {
     frequencyOptions.value = frequencies;
 }
 
+async function loadTemplates() {
+    const res = await fetch("/api/v2/alert-templates/");
+    if (res.ok) templates.value = await res.json();
+}
+
+function templateName(tpl: AlertTemplateOut): string {
+    return pickByLocale(tpl.nameEn, tpl.nameFr, tpl.nameNl, locale.value);
+}
+
+async function openTemplateDialog(tpl: AlertTemplateOut) {
+    selectedTemplate.value = tpl;
+    templateError.value = "";
+    newAlertFrequency.value = "W";
+    // Suggest a default name from the backend.
+    const res = await fetch("/api/v2/spa/alerts/suggest-name/");
+    newAlertName.value = res.ok ? (await res.json()).name : templateName(tpl);
+    templateDialogVisible.value = true;
+}
+
+async function confirmCreateFromTemplate() {
+    if (!selectedTemplate.value) return;
+    creatingFromTemplate.value = true;
+    templateError.value = "";
+    try {
+        const res = await fetch("/api/v2/alerts/from-template/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrf(),
+            },
+            body: JSON.stringify({
+                templateId: selectedTemplate.value.id,
+                name: newAlertName.value,
+                emailNotificationsFrequency: newAlertFrequency.value,
+            }),
+        });
+        if (res.status === 201) {
+            const data = await res.json();
+            toast.add({
+                severity: "success",
+                summary: t("message.alertSuccessfullySaved"),
+                life: 3000,
+            });
+            router.push(`/alert/${data.id}`);
+        } else {
+            const data = await res.json();
+            const errs = data.errors ?? {};
+            // Surface whatever the server reported (a duplicate per-user name is a
+            // unique_together error under "__all__", not "name"), falling back to a
+            // generic message only if the payload carried no messages.
+            const messages = Object.values(errs).flat();
+            templateError.value =
+                messages.length > 0
+                    ? messages.join(", ")
+                    : t("message.templatePublishFailed");
+        }
+    } finally {
+        creatingFromTemplate.value = false;
+    }
+}
+
 async function loadAlertData() {
     const res = await fetch(`/api/v2/alerts/${alertId}/`);
     if (!res.ok) return;
@@ -130,6 +211,7 @@ onMounted(async () => {
     } else {
         document.title = `${t("message.createAlert")} - ${navConfig.siteName}`;
         await suggestName();
+        await loadTemplates();
     }
 });
 
@@ -180,7 +262,10 @@ async function save() {
 </script>
 
 <template>
-    <div class="page-content alert-form-page">
+    <div
+        class="page-content alert-form-page"
+        :class="{ 'alert-form-page--wide': !isEditMode && templates.length }"
+    >
         <div class="page-header">
             <h1>{{ isEditMode ? t("message.editAlert") : t("message.createAlert") }}</h1>
             <Button
@@ -191,7 +276,61 @@ async function save() {
             />
         </div>
 
-        <Card>
+        <template v-if="!isEditMode && templates.length">
+            <h2 class="section-heading">{{ t("message.fromTemplateSectionTitle") }}</h2>
+
+            <Carousel
+                :value="templates"
+                :numVisible="3"
+                :numScroll="1"
+                :responsiveOptions="carouselResponsiveOptions"
+                class="template-carousel"
+            >
+                <template #item="{ data }">
+                    <div class="template-carousel-item">
+                        <TemplateCard :template="data" @use="openTemplateDialog(data)" />
+                    </div>
+                </template>
+            </Carousel>
+
+            <h2 class="section-heading">{{ t("message.configureManually") }}</h2>
+        </template>
+
+        <Dialog
+            v-model:visible="templateDialogVisible"
+            modal
+            :header="t('message.createAlertFromTemplate')"
+            :style="{ width: '28rem' }"
+        >
+            <div class="form-field">
+                <label for="tpl-name">{{ t("message.alertName") }} *</label>
+                <InputText id="tpl-name" v-model="newAlertName" class="w-full" />
+                <Message v-if="templateError" severity="error" :closable="false" size="small">
+                    {{ templateError }}
+                </Message>
+            </div>
+            <div class="form-field">
+                <label for="tpl-freq">{{ t("message.alertNotificationsFrequency") }}</label>
+                <Select
+                    id="tpl-freq"
+                    v-model="newAlertFrequency"
+                    :options="frequencyOptions"
+                    option-label="label"
+                    option-value="id"
+                    class="w-full"
+                />
+            </div>
+            <template #footer>
+                <Button :label="t('message.cancel')" text @click="templateDialogVisible = false" />
+                <Button
+                    :label="t('message.useThisTemplate')"
+                    :loading="creatingFromTemplate"
+                    @click="confirmCreateFromTemplate"
+                />
+            </template>
+        </Dialog>
+
+        <Card class="manual-form">
             <template #content>
                 <div class="form-field">
                     <label for="alert-name">{{ t("message.alertName") }} *</label>
@@ -332,6 +471,25 @@ async function save() {
     margin: 0 auto;
 }
 
+/* In create mode with templates, widen the whole page so the carousel and the
+   shared titles/links use the space; the manual form is constrained separately. */
+.alert-form-page--wide {
+    max-width: min(1140px, 94vw);
+}
+
+/* Keep the manual form narrow and left-aligned even when the page is wide. */
+.manual-form {
+    align-self: flex-start;
+    width: 720px;
+    max-width: 100%;
+}
+
+/* In the wide layout, indent the form so it reads as nested under the
+   "Configure manually" heading (which stays at the page's left edge). */
+.alert-form-page--wide .manual-form {
+    margin-left: 2rem;
+}
+
 .page-header {
     display: flex;
     justify-content: space-between;
@@ -367,5 +525,25 @@ async function save() {
 
 .w-full {
     width: 100%;
+}
+
+.section-heading {
+    font-size: 1.05rem;
+    margin: 0 0 0.75rem;
+}
+
+.template-carousel {
+    margin-bottom: 1.75rem;
+}
+
+/* Each carousel item pads its slot and stretches the card to equal height so
+   the row of cards lines up. */
+.template-carousel-item {
+    height: 100%;
+    padding: 0.25rem 0.5rem;
+}
+
+.template-carousel-item :deep(.template-card) {
+    height: 100%;
 }
 </style>

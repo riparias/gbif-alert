@@ -220,6 +220,12 @@ class AlertIn(Schema):
     approachingDistanceKm: float | None = None
 
 
+class AlertFromTemplateIn(Schema):
+    templateId: int
+    name: str
+    emailNotificationsFrequency: EmailNotificationFrequency = "W"
+
+
 class AlertSpeciesOut(Schema):
     scientificName: str
     vernacularNameEn: str
@@ -241,6 +247,28 @@ class AlertOut(Schema):
     notViewedCount: int
     speciesDetails: list[AlertSpeciesOut]
     lastEmailSentAt: datetime.datetime | None
+
+
+class AlertTemplateOut(Schema):
+    id: int
+    nameEn: str
+    nameFr: str
+    nameNl: str
+    descriptionEn: str
+    descriptionFr: str
+    descriptionNl: str
+    speciesIds: list[int]
+    datasetIds: list[int]
+    basisOfRecordIds: list[int]
+    areaIds: list[int]
+    verifiedFilter: VerifiedFilter
+    areaFilterMode: AreaFilterMode
+    approachingDistanceKm: float | None
+    speciesDetails: list[AlertSpeciesOut]
+
+
+class AlertTemplatePublishedOut(Schema):
+    id: int
 
 
 class AreaFromDrawingIn(Schema):

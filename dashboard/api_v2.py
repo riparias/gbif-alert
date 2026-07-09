@@ -27,11 +27,15 @@ from pydantic import Field
 from dashboard.api_v2_schemas import (
     AlertIn,
     AlertNameSuggestionOut,
+    AlertFromTemplateIn,
     AlertNotificationFrequencyOut,
     AlertOut,
+    AlertTemplateOut,
+    AlertTemplatePublishedOut,
     ApiTokenCreateIn,
     ApiTokenCreatedOut,
     ApiTokenOut,
+    AreaFilterMode,
     AreaFromDrawingIn,
     AreaOut,
     AreaPatchIn,
@@ -60,6 +64,7 @@ from dashboard.api_v2_schemas import (
     SpeciesPerPolygonIn,
     SpeciesPerPolygonOut,
     ValidationErrorOut,
+    VerifiedFilter,
 )
 from dashboard.api_v2_auth import ApiTokenAuth
 from dashboard.forms import SignUpForm, _days_to_value_unit, _value_unit_to_days
@@ -69,6 +74,7 @@ from dashboard.views import jobs as background_jobs
 from dashboard.views.helpers import api_status_to_internal
 from dashboard.models import (
     Alert,
+    AlertTemplate,
     ApiToken,
     Area,
     BasisOfRecord,
@@ -835,6 +841,29 @@ def _alert_to_out(alert: Alert) -> dict:
     }
 
 
+def _alert_template_to_out(template: "AlertTemplate") -> dict:
+    return {
+        "id": template.pk,
+        "nameEn": template.name_en or "",  # type: ignore[attr-defined]
+        "nameFr": template.name_fr or "",  # type: ignore[attr-defined]
+        "nameNl": template.name_nl or "",  # type: ignore[attr-defined]
+        "descriptionEn": template.description_en or "",  # type: ignore[attr-defined]
+        "descriptionFr": template.description_fr or "",  # type: ignore[attr-defined]
+        "descriptionNl": template.description_nl or "",  # type: ignore[attr-defined]
+        "speciesIds": [s.pk for s in template.species.all()],
+        "datasetIds": [d.pk for d in template.datasets.all()],
+        "basisOfRecordIds": [b.pk for b in template.basis_of_record_filters.all()],
+        "areaIds": [a.pk for a in template.areas.all()],
+        "verifiedFilter": template.verified_filter,
+        "areaFilterMode": template.area_filter_mode,
+        "approachingDistanceKm": template.approaching_distance_km,
+        "speciesDetails": [
+            {"scientificName": s.name, **_vernacular_names(s)}
+            for s in template.species.all()
+        ],
+    }
+
+
 def _save_alert(alert: Alert, payload: AlertIn) -> dict[str, list[str]]:
     """Apply payload to alert instance, validate, save if valid.
 
@@ -919,6 +948,19 @@ def alerts_list(request: HttpRequest):
     return [_alert_to_out(a) for a in alerts]
 
 
+@api_v2.get(
+    "/alert-templates/",
+    response={200: list[AlertTemplateOut], **ERR_401},
+    auth=[ApiTokenAuth(), django_auth],
+)
+def alert_templates_list(request: HttpRequest):
+    """Return all published alert templates, operator-ordered."""
+    templates = AlertTemplate.objects.prefetch_related(
+        "species", "datasets", "areas", "basis_of_record_filters"
+    ).all()  # Meta.ordering applies (display_order, name)
+    return [_alert_template_to_out(t) for t in templates]
+
+
 @api_v2.post(
     "/alerts/",
     response={201: AlertOut, 422: ValidationErrorOut, **ERR_401, **ERR_403},
@@ -928,6 +970,37 @@ def alert_create(request: HttpRequest, payload: AlertIn):
     """Create a new alert for the authenticated user."""
     alert = Alert(user=cast(User, request.user))
     errors = _save_alert(alert, payload)
+    if errors:
+        return 422, {"detail": "Validation failed", "errors": errors}
+    return 201, _alert_to_out(alert)
+
+
+@api_v2.post(
+    "/alerts/from-template/",
+    response={201: AlertOut, 422: ValidationErrorOut, **ERR_401, **ERR_403, **ERR_404},
+    auth=[ApiTokenAuth(), django_auth],
+)
+def alert_create_from_template(request: HttpRequest, payload: AlertFromTemplateIn):
+    """Create a new alert for the current user by copying a template's filters."""
+    template: AlertTemplate = get_object_or_404(
+        AlertTemplate.objects.prefetch_related(
+            "species", "datasets", "areas", "basis_of_record_filters"
+        ),
+        id=payload.templateId,
+    )
+    alert = Alert(user=cast(User, request.user), created_from_template=template)
+    alert_in = AlertIn(
+        name=payload.name,
+        speciesIds=[s.pk for s in template.species.all()],
+        datasetIds=[d.pk for d in template.datasets.all()],
+        basisOfRecordIds=[b.pk for b in template.basis_of_record_filters.all()],
+        areaIds=[a.pk for a in template.areas.all()],
+        emailNotificationsFrequency=payload.emailNotificationsFrequency,
+        verifiedFilter=cast(VerifiedFilter, template.verified_filter),
+        areaFilterMode=cast(AreaFilterMode, template.area_filter_mode),
+        approachingDistanceKm=template.approaching_distance_km,
+    )
+    errors = _save_alert(alert, alert_in)
     if errors:
         return 422, {"detail": "Validation failed", "errors": errors}
     return 201, _alert_to_out(alert)
@@ -980,6 +1053,26 @@ def alert_delete(request: HttpRequest, alert_id: int):
     alert = get_object_or_404(Alert, id=alert_id, user=request.user)
     alert.delete()
     return 204, None
+
+
+@api_v2_spa.post(
+    "/alerts/{alert_id}/publish-as-template/",
+    response={201: AlertTemplatePublishedOut, **ERR_401, **ERR_403, **ERR_404},
+    auth=django_auth,
+)
+def alert_publish_as_template(request: HttpRequest, alert_id: int):
+    """Promote an existing alert to a live template. Operators (superusers) only."""
+    user = cast(User, request.user)
+    if not user.is_superuser:
+        raise HttpError(403, "Only operators can publish templates.")
+    alert = get_object_or_404(
+        Alert.objects.prefetch_related(
+            "species", "datasets", "areas", "basis_of_record_filters"
+        ),
+        id=alert_id,
+    )
+    template = AlertTemplate.create_from_alert(alert, created_by=user)
+    return 201, {"id": template.pk}
 
 
 # ---- Auth endpoints ----

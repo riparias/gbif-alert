@@ -51,7 +51,7 @@ def get_translator(lang: str = "en"):
         return trans.gettext
 
 
-class User(AbstractUser):
+class User(AbstractUser):  # type: ignore[django-manager-missing]
     last_visit_news_page = models.DateTimeField(null=True, blank=True)
     language = models.CharField(
         max_length=10, choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE
@@ -1086,20 +1086,31 @@ class ObservationUnseen(models.Model):
         ]
 
 
-class Alert(models.Model):
-    """The per-user configured alerts
+class ObservationFilterSet(models.Model):
+    """Abstract base holding the observation-filter fields shared by concrete
+    filter-owning models (:class:`Alert`, :class:`AlertTemplate`).
 
-    An alert is user specific.
-    Datasets is an optional filter. If left blank, all source datasets will be taken into account.
-    Area is an optional filter. If left blank, data is not filtered by location (which might be more than the selection of all areas)
-    We choose to not extend this logic to species. By keeping this list explicit, we allow site administrators
-    to add new species and areas without having to worry about silently editing user alerts.
+    Concrete subclasses add their own ownership/notification fields. The M2M
+    reverse accessors are auto-namespaced per concrete model (``alert_set``,
+    ``alerttemplate_set``), so no ``related_name`` is needed here.
+
+    Attributes
+    ----------
+    species : ManyToManyField
+        Species the filter matches (at least one is required at the API layer).
+    datasets : ManyToManyField
+        Optional dataset filter; empty means "all datasets".
+    basis_of_record_filters : ManyToManyField
+        Optional basis-of-record filter; empty means "all".
+    areas : ManyToManyField
+        Optional geographic filter; empty means "no location filtering".
+    area_filter_mode : str
+        One of ``AREA_FILTER_MODE_CHOICES``.
+    approaching_distance_km : float or None
+        Buffer distance (0-50 km) used by the "approaching"/"both" modes.
+    verified_filter : str
+        One of ``VERIFIED_FILTER_CHOICES``.
     """
-
-    NO_EMAILS = "N"
-    DAILY_EMAILS = "D"
-    WEEKLY_EMAILS = "W"
-    MONTHLY_EMAILS = "M"
 
     VERIFIED_FILTER_ALL = "all"
     VERIFIED_FILTER_VERIFIED_ONLY = "verified"
@@ -1121,23 +1132,6 @@ class Alert(models.Model):
         (AREA_FILTER_BOTH, "Inside or close to the area"),
     ]
 
-    EMAIL_NOTIFICATION_CHOICES = [
-        (NO_EMAILS, _("No emails")),
-        (DAILY_EMAILS, _("Daily")),
-        (WEEKLY_EMAILS, _("Weekly")),
-        (MONTHLY_EMAILS, _("Monthly")),
-    ]
-
-    EMAIL_NOTIFICATION_DELTAS = (
-        {  # After how much time should we be ready to send a new email
-            DAILY_EMAILS: datetime.timedelta(hours=22),
-            WEEKLY_EMAILS: datetime.timedelta(days=6, hours=22),
-            MONTHLY_EMAILS: datetime.timedelta(weeks=4),
-        }
-    )
-
-    name = models.CharField(verbose_name=_("name"), max_length=255)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     species = models.ManyToManyField(
         Species,
         verbose_name=_("species"),
@@ -1187,23 +1181,14 @@ class Alert(models.Model):
         help_text="Required when area_filter_mode is 'approaching' or 'both'. Distance in km (max 50).",
     )
 
-    email_notifications_frequency = models.CharField(
-        max_length=3,
-        choices=EMAIL_NOTIFICATION_CHOICES,
-        default=WEEKLY_EMAILS,
-        verbose_name=_("email notifications frequency"),
-    )
-
     verified_filter = models.CharField(
         max_length=10,
         choices=VERIFIED_FILTER_CHOICES,
         default=VERIFIED_FILTER_ALL,
     )
 
-    last_email_sent_on = models.DateTimeField(blank=True, null=True, default=None)
-
     class Meta:
-        unique_together = [("user", "name")]
+        abstract = True
 
     def clean(self) -> None:
         if self.area_filter_mode in (self.AREA_FILTER_APPROACHING, self.AREA_FILTER_BOTH):
@@ -1224,6 +1209,128 @@ class Alert(models.Model):
                 raise ValidationError(
                     {"approaching_distance_km": "This field must be empty when the area filter mode is 'inside'."}
                 )
+
+
+class AlertTemplate(ObservationFilterSet):
+    """An operator-published preset that users copy into their own alerts.
+
+    A template shares :class:`ObservationFilterSet`'s filter fields. It carries
+    no user/notification state: copying a template creates an independent
+    :class:`Alert`. ``name`` and ``description`` are translatable (en/fr/nl) via
+    django-modeltranslation.
+
+    Attributes
+    ----------
+    name : str
+        Operator-facing display name (translatable).
+    description : str
+        Optional short explanation shown to users (translatable).
+    created_by : User or None
+        The operator who published the template (audit only).
+    created_at : datetime
+        Creation timestamp.
+    updated_at : datetime
+        Last-modification timestamp.
+    display_order : int
+        Ascending sort key for operator curation.
+    """
+
+    objects = models.Manager()  # type: ignore[django-manager-missing]
+
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="published_alert_templates",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    display_order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["display_order", "name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+    @classmethod
+    def create_from_alert(cls, alert: "Alert", created_by) -> "AlertTemplate":
+        """Snapshot ``alert``'s filters into a new live template.
+
+        The name is seeded from the alert's name in the current language; the
+        operator fills the other-language name/description afterwards in the
+        admin.
+        """
+        template = cls.objects.create(
+            name=alert.name,
+            created_by=created_by,
+            area_filter_mode=alert.area_filter_mode,
+            approaching_distance_km=alert.approaching_distance_km,
+            verified_filter=alert.verified_filter,
+        )
+        template.species.set(alert.species.all())
+        template.datasets.set(alert.datasets.all())
+        template.basis_of_record_filters.set(alert.basis_of_record_filters.all())
+        template.areas.set(alert.areas.all())
+        return template
+
+
+class Alert(ObservationFilterSet):
+    """The per-user configured alerts
+
+    An alert is user specific.
+    Datasets is an optional filter. If left blank, all source datasets will be taken into account.
+    Area is an optional filter. If left blank, data is not filtered by location (which might be more than the selection of all areas)
+    We choose to not extend this logic to species. By keeping this list explicit, we allow site administrators
+    to add new species and areas without having to worry about silently editing user alerts.
+    """
+
+    NO_EMAILS = "N"
+    DAILY_EMAILS = "D"
+    WEEKLY_EMAILS = "W"
+    MONTHLY_EMAILS = "M"
+
+    EMAIL_NOTIFICATION_CHOICES = [
+        (NO_EMAILS, _("No emails")),
+        (DAILY_EMAILS, _("Daily")),
+        (WEEKLY_EMAILS, _("Weekly")),
+        (MONTHLY_EMAILS, _("Monthly")),
+    ]
+
+    EMAIL_NOTIFICATION_DELTAS = (
+        {  # After how much time should we be ready to send a new email
+            DAILY_EMAILS: datetime.timedelta(hours=22),
+            WEEKLY_EMAILS: datetime.timedelta(days=6, hours=22),
+            MONTHLY_EMAILS: datetime.timedelta(weeks=4),
+        }
+    )
+
+    name = models.CharField(verbose_name=_("name"), max_length=255)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    email_notifications_frequency = models.CharField(
+        max_length=3,
+        choices=EMAIL_NOTIFICATION_CHOICES,
+        default=WEEKLY_EMAILS,
+        verbose_name=_("email notifications frequency"),
+    )
+
+    last_email_sent_on = models.DateTimeField(blank=True, null=True, default=None)
+
+    created_from_template = models.ForeignKey(
+        "AlertTemplate",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_alerts",
+        help_text="The template this alert was copied from, if any (traceability only).",
+    )
+
+    class Meta:
+        unique_together = [("user", "name")]
 
     def get_absolute_url(self) -> str:
         return reverse("dashboard:pages:alert-details", kwargs={"alert_id": self.id})

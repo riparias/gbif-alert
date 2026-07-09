@@ -1,3 +1,8 @@
+# Unreleased
+
+- Feature: operators can publish reusable "alert templates" - shared,
+  pre-configured filter presets that users copy into their own alerts.
+
 # 2.0.8 (2026-07-08)
 
 - Fix: signing out from the navbar user menu returned a 405 error instead of
