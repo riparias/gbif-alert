@@ -11,6 +11,7 @@ import Select from "primevue/select";
 import InputNumber from "primevue/inputnumber";
 import Message from "primevue/message";
 import Dialog from "primevue/dialog";
+import Carousel from "primevue/carousel";
 import SpeciesFilterModal from "../components/SpeciesFilterModal.vue";
 import AreaFilterModal from "../components/AreaFilterModal.vue";
 import DatasetFilterModal from "../components/DatasetFilterModal.vue";
@@ -35,6 +36,12 @@ const toast = useToast();
 // Create mode when no alertId param; edit mode when alertId is present.
 const alertId = route.params.alertId ? Number(route.params.alertId) : null;
 const isEditMode = alertId !== null;
+
+// numVisible per breakpoint for the template carousel.
+const carouselResponsiveOptions = [
+    { breakpoint: "1200px", numVisible: 2, numScroll: 1 },
+    { breakpoint: "768px", numVisible: 1, numScroll: 1 },
+];
 
 // Available options loaded from API
 const speciesOptions = ref<SpeciesOut[]>([]);
@@ -250,7 +257,10 @@ async function save() {
 </script>
 
 <template>
-    <div class="page-content alert-form-page">
+    <div
+        class="page-content alert-form-page"
+        :class="{ 'alert-form-page--wide': !isEditMode && templates.length }"
+    >
         <div class="page-header">
             <h1>{{ isEditMode ? t("message.editAlert") : t("message.createAlert") }}</h1>
             <Button
@@ -263,14 +273,20 @@ async function save() {
 
         <template v-if="!isEditMode && templates.length">
             <h2 class="section-heading">{{ t("message.fromTemplateSectionTitle") }}</h2>
-            <div class="template-grid">
-                <TemplateCard
-                    v-for="tpl in templates"
-                    :key="tpl.id"
-                    :template="tpl"
-                    @use="openTemplateDialog(tpl)"
-                />
-            </div>
+
+            <Carousel
+                :value="templates"
+                :numVisible="3"
+                :numScroll="1"
+                :responsiveOptions="carouselResponsiveOptions"
+                class="template-carousel"
+            >
+                <template #item="{ data }">
+                    <div class="template-carousel-item">
+                        <TemplateCard :template="data" @use="openTemplateDialog(data)" />
+                    </div>
+                </template>
+            </Carousel>
 
             <h2 class="section-heading">{{ t("message.configureManually") }}</h2>
         </template>
@@ -309,7 +325,7 @@ async function save() {
             </template>
         </Dialog>
 
-        <Card>
+        <Card class="manual-form">
             <template #content>
                 <div class="form-field">
                     <label for="alert-name">{{ t("message.alertName") }} *</label>
@@ -450,6 +466,25 @@ async function save() {
     margin: 0 auto;
 }
 
+/* In create mode with templates, widen the whole page so the carousel and the
+   shared titles/links use the space; the manual form is constrained separately. */
+.alert-form-page--wide {
+    max-width: min(1140px, 94vw);
+}
+
+/* Keep the manual form narrow and left-aligned even when the page is wide. */
+.manual-form {
+    align-self: flex-start;
+    width: 720px;
+    max-width: 100%;
+}
+
+/* In the wide layout, indent the form so it reads as nested under the
+   "Configure manually" heading (which stays at the page's left edge). */
+.alert-form-page--wide .manual-form {
+    margin-left: 2rem;
+}
+
 .page-header {
     display: flex;
     justify-content: space-between;
@@ -492,10 +527,18 @@ async function save() {
     margin: 0 0 0.75rem;
 }
 
-.template-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
+.template-carousel {
     margin-bottom: 1.75rem;
+}
+
+/* Each carousel item pads its slot and stretches the card to equal height so
+   the row of cards lines up. */
+.template-carousel-item {
+    height: 100%;
+    padding: 0.25rem 0.5rem;
+}
+
+.template-carousel-item :deep(.template-card) {
+    height: 100%;
 }
 </style>

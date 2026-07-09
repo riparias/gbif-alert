@@ -89,7 +89,7 @@ onMounted(() => {
         <div v-if="expanded" class="template-card-details">
             <div class="detail-row">
                 <span class="detail-label">{{ t("message.filterSectionWhat") }}</span>
-                <span class="detail-value">
+                <span class="detail-value detail-species">
                     <template v-if="template.speciesDetails.length">
                         <span
                             v-for="(sp, idx) in template.speciesDetails"
@@ -99,7 +99,7 @@ onMounted(() => {
                             <SpeciesName
                                 :scientific-name="sp.scientificName"
                                 :vernacular-name="pickVernacular(sp, locale)"
-                            /><template v-if="idx < template.speciesDetails.length - 1">, </template>
+                            /><template v-if="idx < template.speciesDetails.length - 1">,</template>
                         </span>
                     </template>
                     <template v-else>{{ t("message.allSpecies") }}</template>
@@ -147,6 +147,9 @@ onMounted(() => {
     border: 1px solid var(--p-content-border-color);
     border-radius: var(--p-content-border-radius);
     background: var(--p-content-background);
+    /* Grid items default to min-width:auto, which lets wide content (e.g. a long
+       species list) push the card past its track and overflow. Allow it to shrink. */
+    min-width: 0;
 }
 
 .template-card-body {
@@ -187,6 +190,16 @@ onMounted(() => {
 
 .detail-value {
     color: var(--p-text-color);
+    overflow-wrap: anywhere;
+}
+
+/* Species render as a wrapping row of chips: each name stays intact (nowrap),
+   but the list wraps to new lines instead of overflowing the card. */
+.detail-species {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 0.4rem;
+    row-gap: 0.15rem;
 }
 
 .detail-species-item {

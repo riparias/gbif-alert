@@ -79,3 +79,35 @@ def test_publish_button_hidden_for_non_superuser(page: Page, live_server):
     # failed page load.
     expect(page.get_by_role("button", name="Edit this alert", exact=False)).to_be_visible()
     expect(page.get_by_role("button", name="Publish as template", exact=False)).to_have_count(0)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_expanded_template_card_species_list_does_not_overflow(page: Page, live_server):
+    """Regression: a template with many species must wrap inside its card, not
+    overflow horizontally. Before the fix the species list was one unbreakable
+    line (each item nowrap, separators trapped inside), overflowing by ~1500px."""
+    User = get_user_model()
+    op = User.objects.create_superuser(username="op", password="pass", email="op@e.com")
+    species = [
+        Species.objects.create(name=f"Genus longspeciesname{i}", gbif_taxon_key=900000 + i)
+        for i in range(20)
+    ]
+    seed = Alert.objects.create(name="many", user=op, email_notifications_frequency="N")
+    seed.species.set(species)
+    tpl = AlertTemplate.create_from_alert(seed, created_by=op)
+    tpl.name_en = "Many species template"  # type: ignore[attr-defined]
+    tpl.save()
+
+    User.objects.create_user(username="bob", password="pass", email="bob@e.com")
+    login(page, live_server.url, "bob", "pass")
+    page.goto(live_server.url + "/new-alert")
+    page.wait_for_load_state("networkidle")
+
+    card = page.locator(".template-card").filter(has_text="Many species template")
+    card.get_by_role("button", name="Details", exact=False).click()
+    # Wait for the species list to be revealed before measuring.
+    expect(card.locator(".detail-species")).to_be_visible()
+
+    # The card must not overflow its grid track horizontally.
+    overflow = card.evaluate("el => el.scrollWidth - el.clientWidth")
+    assert overflow <= 2, f"template card overflows horizontally by {overflow}px"
