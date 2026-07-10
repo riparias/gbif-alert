@@ -1,4 +1,4 @@
-# Unreleased
+# 2.2.0 (2026-07-10)
 
 - Feature: the GBIF download can be scoped to a lat/lon bounding box via env
   vars (`GBIF_DOWNLOAD_LAT_MIN` / `LAT_MAX` / `LON_MIN` / `LON_MAX`), the same
