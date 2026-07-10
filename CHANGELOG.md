@@ -1,4 +1,4 @@
-# Unreleased
+# 2.1.0 (2026-07-10)
 
 - Feature: operators can create species through the public API
   (`POST /api/v2/species/`, superuser only), so species can be added by script

@@ -14,7 +14,18 @@ export interface paths {
         /** Species List */
         get: operations["dashboard_api_v2_species_list"];
         put?: never;
-        post?: never;
+        /**
+         * Species Create
+         * @description Create a species. Superusers (operators) only.
+         *
+         *     Species must exist before observations can be imported for them (the import
+         *     command keys on gbif_taxon_key), so operators need a way to add them; this
+         *     is the programmatic equivalent of the admin's Species form.
+         *
+         *     Returns 403 for authenticated non-superusers, and 422 (with per-field
+         *     errors) for a duplicate gbifTaxonKey or a blank scientificName.
+         */
+        post: operations["dashboard_api_v2_species_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -676,6 +687,89 @@ export interface components {
             /** Imagesourcetype */
             imageSourceType: string;
         };
+        /**
+         * ValidationErrorOut
+         * @description Field-validation error envelope.
+         *
+         *     Used for 422 responses that carry per-field error messages. The top-level
+         *     `detail` lets clients display a generic message when they don't iterate
+         *     per-field; `errors` is a map of field name to a list of validation
+         *     messages for that field.
+         */
+        ValidationErrorOut: {
+            /** Detail */
+            detail: string;
+            /** Errors */
+            errors: {
+                [key: string]: string[];
+            };
+        };
+        /**
+         * DetailErrorOut
+         * @description Single-message error envelope.
+         *
+         *     Used for all 4xx responses that do not carry per-field validation details.
+         *     Equivalent in shape to django-ninja's default error body, made explicit so
+         *     every endpoint declares it in its `response={...}` map and it appears in
+         *     the OpenAPI schema.
+         */
+        DetailErrorOut: {
+            /** Detail */
+            detail: string;
+        };
+        /**
+         * SpeciesIn
+         * @description Payload to create a species (superuser only).
+         *
+         *     Mirrors the fields exposed by the Django admin's Species form. The three
+         *     localized vernacular names map to the django-modeltranslation columns
+         *     (vernacular_name_en/_fr/_nl). `imageSourceType` is intentionally absent: it
+         *     is derived server-side (MANUAL when an image URL is given, else empty),
+         *     exactly as SpeciesAdmin.save_model does.
+         */
+        SpeciesIn: {
+            /** Scientificname */
+            scientificName: string;
+            /** Gbiftaxonkey */
+            gbifTaxonKey: number;
+            /**
+             * Vernacularnameen
+             * @default
+             */
+            vernacularNameEn: string;
+            /**
+             * Vernacularnamefr
+             * @default
+             */
+            vernacularNameFr: string;
+            /**
+             * Vernacularnamenl
+             * @default
+             */
+            vernacularNameNl: string;
+            /** Tags */
+            tags?: string[];
+            /**
+             * Imageurl
+             * @default
+             */
+            imageUrl: string;
+            /**
+             * Imagesourceurl
+             * @default
+             */
+            imageSourceUrl: string;
+            /**
+             * Imageattribution
+             * @default
+             */
+            imageAttribution: string;
+            /**
+             * Imagelicense
+             * @default
+             */
+            imageLicense: string;
+        };
         /** SpeciesPerPolygonOut */
         SpeciesPerPolygonOut: {
             /** Id */
@@ -707,19 +801,6 @@ export interface components {
             imageSourceType: string;
             /** Observationcountinpolygon */
             observationCountInPolygon: number;
-        };
-        /**
-         * DetailErrorOut
-         * @description Single-message error envelope.
-         *
-         *     Used for all 4xx responses that do not carry per-field validation details.
-         *     Equivalent in shape to django-ninja's default error body, made explicit so
-         *     every endpoint declares it in its `response={...}` map and it appears in
-         *     the OpenAPI schema.
-         */
-        DetailErrorOut: {
-            /** Detail */
-            detail: string;
         };
         /** SpeciesPerPolygonIn */
         SpeciesPerPolygonIn: {
@@ -1123,23 +1204,6 @@ export interface components {
             /** Vernacularnamefr */
             vernacularNameFr: string;
         };
-        /**
-         * ValidationErrorOut
-         * @description Field-validation error envelope.
-         *
-         *     Used for 422 responses that carry per-field error messages. The top-level
-         *     `detail` lets clients display a generic message when they don't iterate
-         *     per-field; `errors` is a map of field name to a list of validation
-         *     messages for that field.
-         */
-        ValidationErrorOut: {
-            /** Detail */
-            detail: string;
-            /** Errors */
-            errors: {
-                [key: string]: string[];
-            };
-        };
         /** AlertIn */
         AlertIn: {
             /** Name */
@@ -1390,6 +1454,57 @@ export interface operations {
             };
         };
     };
+    dashboard_api_v2_species_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpeciesIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpeciesOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationErrorOut"];
+                };
+            };
+        };
+    };
     dashboard_api_v2_species_per_polygon: {
         parameters: {
             query?: never;
@@ -1412,7 +1527,7 @@ export interface operations {
                     "application/json": components["schemas"]["SpeciesPerPolygonOut"][];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -1511,7 +1626,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -1602,7 +1717,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -1720,7 +1835,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2004,7 +2119,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2202,7 +2317,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2393,7 +2508,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2542,7 +2657,7 @@ export interface operations {
                     "application/json": components["schemas"]["SignInOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2591,7 +2706,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2671,7 +2786,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -2787,7 +2902,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Unprocessable Content */
             422: {
                 headers: {
                     [name: string]: unknown;
