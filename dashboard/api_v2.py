@@ -60,6 +60,7 @@ from dashboard.api_v2_schemas import (
     SignInIn,
     SignInOut,
     SignUpIn,
+    SpeciesIn,
     SpeciesOut,
     SpeciesPerPolygonIn,
     SpeciesPerPolygonOut,
@@ -178,23 +179,91 @@ def _vernacular_names(species: Species) -> dict[str, str]:
     }
 
 
+def _species_to_out(species: Species) -> dict:
+    """Build the SpeciesOut payload for a single species.
+
+    Shared by the list, per-polygon, and create endpoints so the field mapping
+    lives in one place. Callers that add extra keys (per-polygon adds an
+    observation count) spread this result and add their own.
+    """
+    return {
+        "id": species.pk,
+        "scientificName": species.name,
+        **_vernacular_names(species),
+        "gbifTaxonKey": species.gbif_taxon_key,
+        "tags": [t.name for t in species.tags.all()],
+        "imageUrl": species.image_url,
+        "imageSourceUrl": species.image_source_url,
+        "imageAttribution": species.image_attribution,
+        "imageLicense": species.image_license,
+        "imageSourceType": species.image_source_type,
+    }
+
+
 @api_v2.get("/species/", response=list[SpeciesOut])
 def species_list(request: HttpRequest):
     return [
-        {
-            "id": s.pk,
-            "scientificName": s.name,
-            **_vernacular_names(s),
-            "gbifTaxonKey": s.gbif_taxon_key,
-            "tags": [t.name for t in s.tags.all()],
-            "imageUrl": s.image_url,
-            "imageSourceUrl": s.image_source_url,
-            "imageAttribution": s.image_attribution,
-            "imageLicense": s.image_license,
-            "imageSourceType": s.image_source_type,
-        }
+        _species_to_out(s)
         for s in Species.objects.prefetch_related("tags")  # type: ignore[misc]  # taggit manager not resolvable by django-stubs.all()
     ]
+
+
+@api_v2.post(
+    "/species/",
+    response={201: SpeciesOut, 422: ValidationErrorOut, **ERR_401, **ERR_403},
+    auth=[ApiTokenAuth(), django_auth],
+)
+def species_create(request: HttpRequest, payload: SpeciesIn):
+    """Create a species. Superusers (operators) only.
+
+    Species must exist before observations can be imported for them (the import
+    command keys on gbif_taxon_key), so operators need a way to add them; this
+    is the programmatic equivalent of the admin's Species form.
+
+    Returns 403 for authenticated non-superusers, and 422 (with per-field
+    errors) for a duplicate gbifTaxonKey or a blank scientificName.
+    """
+    user = cast(User, request.user)
+    if not user.is_superuser:
+        raise HttpError(403, "Only operators can create species.")
+
+    species = Species(
+        name=payload.scientificName,
+        gbif_taxon_key=payload.gbifTaxonKey,
+        vernacular_name_en=payload.vernacularNameEn,  # type: ignore[misc]  # modeltranslation column
+        vernacular_name_fr=payload.vernacularNameFr,  # type: ignore[misc]  # modeltranslation column
+        vernacular_name_nl=payload.vernacularNameNl,  # type: ignore[misc]  # modeltranslation column
+        image_url=payload.imageUrl,
+        image_source_url=payload.imageSourceUrl,
+        image_attribution=payload.imageAttribution,
+        image_license=payload.imageLicense,
+        # Derived, never client-set - mirrors SpeciesAdmin.save_model.
+        image_source_type=(Species.ImageSourceType.MANUAL if payload.imageUrl else ""),
+    )
+
+    try:
+        species.full_clean()
+    except DjangoValidationError as exc:
+        # Remap snake_case model fields to the API's camelCase field names so the
+        # error keys match the request shape (same approach as auth_signup).
+        key_map = {
+            "name": "scientificName",
+            "gbif_taxon_key": "gbifTaxonKey",
+            "vernacular_name_en": "vernacularNameEn",
+            "vernacular_name_fr": "vernacularNameFr",
+            "vernacular_name_nl": "vernacularNameNl",
+            "image_url": "imageUrl",
+            "image_source_url": "imageSourceUrl",
+        }
+        errors = {
+            key_map.get(field, field): [str(m) for m in msgs]
+            for field, msgs in exc.message_dict.items()
+        }
+        return 422, {"detail": "Validation failed", "errors": errors}
+
+    species.save()
+    species.tags.set(payload.tags)
+    return 201, _species_to_out(species)
 
 
 @api_v2.post(
@@ -220,16 +289,7 @@ def species_per_polygon(request: HttpRequest, payload: SpeciesPerPolygonIn):
     )
     return 200, [
         {
-            "id": s.pk,
-            "scientificName": s.name,
-            **_vernacular_names(s),
-            "gbifTaxonKey": s.gbif_taxon_key,
-            "tags": [t.name for t in s.tags.all()],
-            "imageUrl": s.image_url,
-            "imageSourceUrl": s.image_source_url,
-            "imageAttribution": s.image_attribution,
-            "imageLicense": s.image_license,
-            "imageSourceType": s.image_source_type,
+            **_species_to_out(s),
             "observationCountInPolygon": s.num_observations,
         }
         for s in qs

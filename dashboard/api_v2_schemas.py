@@ -41,6 +41,28 @@ class SpeciesOut(Schema):
     imageSourceType: str
 
 
+class SpeciesIn(Schema):
+    """Payload to create a species (superuser only).
+
+    Mirrors the fields exposed by the Django admin's Species form. The three
+    localized vernacular names map to the django-modeltranslation columns
+    (vernacular_name_en/_fr/_nl). `imageSourceType` is intentionally absent: it
+    is derived server-side (MANUAL when an image URL is given, else empty),
+    exactly as SpeciesAdmin.save_model does.
+    """
+
+    scientificName: str
+    gbifTaxonKey: int
+    vernacularNameEn: str = ""
+    vernacularNameFr: str = ""
+    vernacularNameNl: str = ""
+    tags: list[str] = Field(default_factory=list)
+    imageUrl: str = ""
+    imageSourceUrl: str = ""
+    imageAttribution: str = ""
+    imageLicense: str = ""
+
+
 class SpeciesPerPolygonIn(Schema):
     geojson: dict  # GeoJSON FeatureCollection (EPSG:4326), Polygon/MultiPolygon features
 

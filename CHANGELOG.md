@@ -1,5 +1,10 @@
 # Unreleased
 
+- Feature: operators can create species through the public API
+  (`POST /api/v2/species/`, superuser only), so species can be added by script
+  instead of only via the admin. Accepts the same fields as the admin form
+  (scientific name, GBIF taxon key, per-language vernacular names, tags, image
+  fields) and works with a personal access token or a session.
 - Feature: operators can publish reusable "alert templates" - shared,
   pre-configured filter presets that users copy into their own alerts.
 
