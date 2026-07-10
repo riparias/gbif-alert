@@ -220,10 +220,78 @@ if _admins_raw:
 # ---------------------------------------------------------------------------
 
 
+def _bbox_predicates() -> list[dict]:
+    """GBIF predicate clauses for an optional lat/lon bounding box.
+
+    Reads the four `GBIF_DOWNLOAD_{LAT,LON}_{MIN,MAX}` env vars and returns
+    `DECIMAL_LATITUDE` / `DECIMAL_LONGITUDE` range clauses (an axis-aligned box
+    scopes cleanly to four numeric ranges, avoiding GBIF's WKT winding-order
+    pitfalls). Returns `[]` when none are set; raises `ImproperlyConfigured` on
+    a partial or invalid box. Evaluated at import so a misconfigured box fails
+    the deploy fast rather than silently at the next import.
+    """
+    from django.core.exceptions import ImproperlyConfigured
+
+    names = (
+        "GBIF_DOWNLOAD_LAT_MIN",
+        "GBIF_DOWNLOAD_LAT_MAX",
+        "GBIF_DOWNLOAD_LON_MIN",
+        "GBIF_DOWNLOAD_LON_MAX",
+    )
+    raw = {n: os.environ.get(n) for n in names}
+    provided = {n: v for n, v in raw.items() if v not in (None, "")}
+    if not provided:
+        return []
+    if len(provided) != 4:
+        missing = ", ".join(n for n in names if n not in provided)
+        raise ImproperlyConfigured(
+            "A GBIF download bounding box needs all four of "
+            f"{', '.join(names)} set together; missing: {missing}."
+        )
+
+    values: dict[str, float] = {}
+    for n in names:
+        try:
+            values[n] = float(raw[n])  # type: ignore[arg-type]
+        except ValueError:
+            raise ImproperlyConfigured(f"{n} must be a number, got {raw[n]!r}.")
+
+    lat_min, lat_max = values["GBIF_DOWNLOAD_LAT_MIN"], values["GBIF_DOWNLOAD_LAT_MAX"]
+    lon_min, lon_max = values["GBIF_DOWNLOAD_LON_MIN"], values["GBIF_DOWNLOAD_LON_MAX"]
+    for label, lo, hi, limit in (
+        ("latitude", lat_min, lat_max, 90),
+        ("longitude", lon_min, lon_max, 180),
+    ):
+        if not (-limit <= lo <= limit and -limit <= hi <= limit):
+            raise ImproperlyConfigured(
+                f"GBIF download {label} must be between {-limit} and {limit}."
+            )
+    if lat_min >= lat_max:
+        raise ImproperlyConfigured(
+            "GBIF_DOWNLOAD_LAT_MIN must be less than GBIF_DOWNLOAD_LAT_MAX."
+        )
+    if lon_min >= lon_max:
+        raise ImproperlyConfigured(
+            "GBIF_DOWNLOAD_LON_MIN must be less than GBIF_DOWNLOAD_LON_MAX."
+        )
+
+    return [
+        {"type": "greaterThanOrEquals", "key": "DECIMAL_LATITUDE", "value": lat_min},
+        {"type": "lessThanOrEquals", "key": "DECIMAL_LATITUDE", "value": lat_max},
+        {"type": "greaterThanOrEquals", "key": "DECIMAL_LONGITUDE", "value": lon_min},
+        {"type": "lessThanOrEquals", "key": "DECIMAL_LONGITUDE", "value": lon_max},
+    ]
+
+
+# Validated once at import (fail-fast); appended by the default builder below.
+_GBIF_BBOX_PREDICATES = _bbox_predicates()
+
+
 def _default_predicate_builder(species_list):
     """Default GBIF download predicate builder.
 
-    Builds a predicate from `GBIF_DOWNLOAD_COUNTRY` and `GBIF_DOWNLOAD_YEAR_MIN`.
+    Builds a predicate from `GBIF_DOWNLOAD_COUNTRY`, `GBIF_DOWNLOAD_YEAR_MIN`,
+    and an optional bounding box (`GBIF_DOWNLOAD_{LAT,LON}_{MIN,MAX}`).
     Operators with more complex predicate needs override this in
     `local_settings.py` by setting `GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"]`.
     """
@@ -241,6 +309,7 @@ def _default_predicate_builder(species_list):
         predicates.append(
             {"type": "greaterThanOrEquals", "key": "YEAR", "value": int(year_min)}
         )
+    predicates.extend(_GBIF_BBOX_PREDICATES)
     return {"predicate": {"type": "and", "predicates": predicates}}
 
 

@@ -77,6 +77,10 @@ _ENV_VARS_READ_BY_SETTINGS = (
     "GBIF_DOWNLOAD_PASSWORD",
     "GBIF_DOWNLOAD_COUNTRY",
     "GBIF_DOWNLOAD_YEAR_MIN",
+    "GBIF_DOWNLOAD_LAT_MIN",
+    "GBIF_DOWNLOAD_LAT_MAX",
+    "GBIF_DOWNLOAD_LON_MIN",
+    "GBIF_DOWNLOAD_LON_MAX",
     "GDAL_LIBRARY_PATH",
     "GEOS_LIBRARY_PATH",
     "DJANGO_SETTINGS_MODULE",
@@ -469,3 +473,112 @@ def test_admins_unset_is_empty_list(clean_env):
     _minimal_env(clean_env)
     settings = _import_settings()
     assert settings.ADMINS == []
+
+
+# ---------------------------------------------------------------------------
+# GBIF download bounding box (GBIF_DOWNLOAD_{LAT,LON}_{MIN,MAX})
+# ---------------------------------------------------------------------------
+
+_FULL_BBOX = {
+    "GBIF_DOWNLOAD_LAT_MIN": "43.005",
+    "GBIF_DOWNLOAD_LAT_MAX": "49.095",
+    "GBIF_DOWNLOAD_LON_MIN": "18.018",
+    "GBIF_DOWNLOAD_LON_MAX": "34.365",
+}
+
+
+def _predicate_clauses(settings):
+    """Call the default predicate builder (no species) and return the flat list
+    of clauses under its top-level `and`."""
+    builder = settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"]
+    return builder([])["predicate"]["predicates"]
+
+
+def _lat_lon_clauses(clauses):
+    return [c for c in clauses if c["key"] in ("DECIMAL_LATITUDE", "DECIMAL_LONGITUDE")]
+
+
+def test_no_bbox_env_produces_no_lat_lon_clauses(clean_env):
+    """With none of the four bbox vars set, the predicate has no spatial clauses."""
+    _minimal_env(clean_env)
+    settings = _import_settings()
+    assert _lat_lon_clauses(_predicate_clauses(settings)) == []
+
+
+def test_full_bbox_adds_four_range_clauses(clean_env):
+    """All four vars set -> four DECIMAL_LATITUDE/LONGITUDE range clauses with
+    the parsed float values."""
+    _minimal_env(clean_env)
+    for name, value in _FULL_BBOX.items():
+        clean_env.setenv(name, value)
+    settings = _import_settings()
+    clauses = _lat_lon_clauses(_predicate_clauses(settings))
+    assert clauses == [
+        {"type": "greaterThanOrEquals", "key": "DECIMAL_LATITUDE", "value": 43.005},
+        {"type": "lessThanOrEquals", "key": "DECIMAL_LATITUDE", "value": 49.095},
+        {"type": "greaterThanOrEquals", "key": "DECIMAL_LONGITUDE", "value": 18.018},
+        {"type": "lessThanOrEquals", "key": "DECIMAL_LONGITUDE", "value": 34.365},
+    ]
+
+
+def test_bbox_composes_with_country_and_year(clean_env):
+    """The bbox clauses coexist with the COUNTRY and YEAR clauses under one AND."""
+    _minimal_env(clean_env)
+    for name, value in _FULL_BBOX.items():
+        clean_env.setenv(name, value)
+    clean_env.setenv("GBIF_DOWNLOAD_COUNTRY", "RO")
+    clean_env.setenv("GBIF_DOWNLOAD_YEAR_MIN", "2000")
+    settings = _import_settings()
+    clauses = _predicate_clauses(settings)
+    keys = [c["key"] for c in clauses]
+    assert keys.count("DECIMAL_LATITUDE") == 2
+    assert keys.count("DECIMAL_LONGITUDE") == 2
+    assert "COUNTRY" in keys
+    assert "YEAR" in keys
+
+
+def test_partial_bbox_raises(clean_env):
+    """Setting some but not all four vars is a hard error, not a silent
+    partial filter."""
+    _minimal_env(clean_env)
+    clean_env.setenv("GBIF_DOWNLOAD_LAT_MIN", "43.005")
+    with pytest.raises(ImproperlyConfigured) as exc_info:
+        _import_settings()
+    assert "GBIF_DOWNLOAD_LAT_MAX" in str(exc_info.value)
+
+
+def test_non_numeric_bbox_raises(clean_env):
+    _minimal_env(clean_env)
+    for name, value in {**_FULL_BBOX, "GBIF_DOWNLOAD_LAT_MIN": "north"}.items():
+        clean_env.setenv(name, value)
+    with pytest.raises(ImproperlyConfigured) as exc_info:
+        _import_settings()
+    assert "GBIF_DOWNLOAD_LAT_MIN" in str(exc_info.value)
+
+
+def test_out_of_range_latitude_raises(clean_env):
+    _minimal_env(clean_env)
+    for name, value in {**_FULL_BBOX, "GBIF_DOWNLOAD_LAT_MAX": "95"}.items():
+        clean_env.setenv(name, value)
+    with pytest.raises(ImproperlyConfigured) as exc_info:
+        _import_settings()
+    assert "latitude" in str(exc_info.value).lower()
+
+
+def test_out_of_range_longitude_raises(clean_env):
+    _minimal_env(clean_env)
+    for name, value in {**_FULL_BBOX, "GBIF_DOWNLOAD_LON_MAX": "200"}.items():
+        clean_env.setenv(name, value)
+    with pytest.raises(ImproperlyConfigured) as exc_info:
+        _import_settings()
+    assert "longitude" in str(exc_info.value).lower()
+
+
+def test_min_not_less_than_max_raises(clean_env):
+    _minimal_env(clean_env)
+    # lat_min == lat_max -> not a valid (positive-area) box.
+    for name, value in {**_FULL_BBOX, "GBIF_DOWNLOAD_LAT_MIN": "49.095"}.items():
+        clean_env.setenv(name, value)
+    with pytest.raises(ImproperlyConfigured) as exc_info:
+        _import_settings()
+    assert "less than" in str(exc_info.value).lower()
