@@ -1,3 +1,11 @@
+# Unreleased
+
+- Feature: the GBIF download can be scoped to a lat/lon bounding box via env
+  vars (`GBIF_DOWNLOAD_LAT_MIN` / `LAT_MAX` / `LON_MIN` / `LON_MAX`), the same
+  way `GBIF_DOWNLOAD_COUNTRY` and `GBIF_DOWNLOAD_YEAR_MIN` already scope by
+  country and year - no custom `PREDICATE_BUILDER` needed. Set all four or none;
+  a partial or out-of-range box fails fast at startup.
+
 # 2.1.0 (2026-07-10)
 
 - Feature: operators can create species through the public API
