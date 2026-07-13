@@ -134,7 +134,9 @@ def test_navbar_red_dot_with_unseen_observations(page: Page, live_server):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_navbar_no_observations_dot_without_unseen_observations(page: Page, live_server):
+def test_navbar_no_observations_dot_without_unseen_observations(
+    page: Page, live_server
+):
     """No red dot is shown on 'My alerts' when the user has no unseen observations.
 
     Note: the news dot (.gbif-nav-dot on the 'What's new' item) is intentionally
@@ -158,7 +160,6 @@ def test_regular_user_cannot_access_admin_directly(page: Page, live_server):
     User.objects.create_user(username="testuser", password="testpass123")
     login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/admin/")
-    page.wait_for_load_state("networkidle")
 
     # Django redirects to admin login and shows an "not authorized" message.
     expect(page).to_have_url(live_server.url + "/admin/login/?next=/admin/")
@@ -176,7 +177,6 @@ def test_superuser_can_access_admin_directly(page: Page, live_server):
     )
     login(page, live_server.url, "admin", "adminpass123")
     page.goto(live_server.url + "/admin/")
-    page.wait_for_load_state("networkidle")
 
     expect(page).to_have_url(live_server.url + "/admin/")
     expect(page).to_have_title("Site administration | Django site admin")

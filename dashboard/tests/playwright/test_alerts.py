@@ -54,7 +54,6 @@ def test_my_alerts_page_shows_alert_list(page: Page, live_server):
 
     login(page, live_server.url, "u1", "pass")
     page.goto(live_server.url + "/my-alerts")
-    page.wait_for_load_state("networkidle")
 
     expect(page.get_by_text("My test alert")).to_be_visible()
     expect(page.get_by_text("Procambarus fallax")).to_be_visible()
@@ -68,7 +67,6 @@ def test_my_alerts_empty_state(page: Page, live_server):
 
     login(page, live_server.url, "u2", "pass")
     page.goto(live_server.url + "/my-alerts")
-    page.wait_for_load_state("networkidle")
 
     expect(
         page.get_by_text("don't currently have any configured alerts", exact=False)
@@ -79,7 +77,6 @@ def test_my_alerts_empty_state(page: Page, live_server):
 def test_my_alerts_page_requires_login(page: Page, live_server):
     """Anonymous user is redirected away from /my-alerts."""
     page.goto(live_server.url + "/my-alerts")
-    page.wait_for_load_state("networkidle")
     # Should be redirected to sign-in
     expect(page).not_to_have_url(live_server.url + "/my-alerts")
 
@@ -92,9 +89,7 @@ def test_my_alerts_navigate_to_create(page: Page, live_server):
 
     login(page, live_server.url, "u3", "pass")
     page.goto(live_server.url + "/my-alerts")
-    page.wait_for_load_state("networkidle")
     page.get_by_text("Create a new alert").first.click()
-    page.wait_for_load_state("networkidle")
 
     expect(page).to_have_url(live_server.url + "/new-alert")
 
@@ -109,16 +104,16 @@ def test_my_alerts_delete_alert(page: Page, live_server):
 
     login(page, live_server.url, "u4", "pass")
     page.goto(live_server.url + "/my-alerts")
-    page.wait_for_load_state("networkidle")
 
     page.get_by_role("button", name="Delete this alert").click()
     # ConfirmDialog appears
     page.get_by_role("button", name="Yes, I'm sure").click()
-    page.wait_for_load_state("networkidle")
 
     # Wait for the alert card to disappear (the dialog title also contains the
     # name, so scope the check to the card container specifically).
-    expect(page.locator(".alert-card").filter(has_text="Alert to delete")).not_to_be_visible()
+    expect(
+        page.locator(".alert-card").filter(has_text="Alert to delete")
+    ).not_to_be_visible()
 
 
 # ---------------------------------------------------------------------------
@@ -135,7 +130,6 @@ def test_create_alert_form_renders(page: Page, live_server):
 
     login(page, live_server.url, "u5", "pass")
     page.goto(live_server.url + "/new-alert")
-    page.wait_for_load_state("networkidle")
 
     # Name input is pre-filled with the suggested name
     name_input = page.locator("#alert-name")
@@ -151,7 +145,10 @@ def test_create_alert_succeeds(page: Page, live_server):
 
     login(page, live_server.url, "u6", "pass")
     page.goto(live_server.url + "/new-alert")
-    page.wait_for_load_state("networkidle")
+
+    # Wait for the form to finish initialising (the suggested name is fetched and
+    # pre-filled asynchronously) before submitting, so the create carries a name.
+    expect(page.locator("#alert-name")).to_have_value("My alert #1")
 
     # Open the species modal and select a species
     page.get_by_role("button", name="All species").click()
@@ -180,14 +177,18 @@ def test_create_alert_shows_error_when_no_species(page: Page, live_server):
 
     login(page, live_server.url, "u7", "pass")
     page.goto(live_server.url + "/new-alert")
-    page.wait_for_load_state("networkidle")
+
+    # Wait for the form to finish initialising (suggested name pre-filled) before
+    # submitting, so the only validation error is the missing-species one -
+    # otherwise we race the async name pre-fill and also get a "name blank"
+    # message, and the assertion below hits two elements (strict-mode violation).
+    expect(page.locator("#alert-name")).to_have_value("My alert #1")
 
     # The PrimeVue error Message for species must NOT be present before submission
     # (only the static field-hint paragraph is shown at this point).
     expect(page.locator("[data-pc-name='message']")).not_to_be_visible()
 
     page.get_by_role("button", name="Create alert").click()
-    page.wait_for_load_state("networkidle")
 
     # After submitting with no species the server returns a validation error and
     # the PrimeVue <Message> component (data-pc-name="message") becomes visible.
@@ -209,7 +210,6 @@ def test_edit_alert_form_pre_fills_existing_data(page: Page, live_server):
 
     login(page, live_server.url, "u8", "pass")
     page.goto(live_server.url + f"/edit-alert/{alert.pk}")
-    page.wait_for_load_state("networkidle")
 
     name_input = page.locator("#alert-name")
     expect(name_input).to_have_value("Existing alert name")
@@ -225,9 +225,12 @@ def test_edit_alert_saves_changes(page: Page, live_server):
 
     login(page, live_server.url, "u12", "pass")
     page.goto(live_server.url + f"/edit-alert/{alert.pk}")
-    page.wait_for_load_state("networkidle")
 
     name_input = page.locator("#alert-name")
+    # Wait for the alert's data (name + species) to load into the form before
+    # editing; otherwise Save posts an incomplete alert (422 - no species) or the
+    # late GET clobbers the typed value.
+    expect(name_input).to_have_value("Original name")
     name_input.click(click_count=3)
     name_input.fill("Updated alert name")
 
@@ -250,7 +253,6 @@ def test_my_alerts_delete_cancel_keeps_alert(page: Page, live_server):
 
     login(page, live_server.url, "u13", "pass")
     page.goto(live_server.url + "/my-alerts")
-    page.wait_for_load_state("networkidle")
 
     page.get_by_role("button", name="Delete this alert").click()
     # ConfirmDialog appears - dismiss it
@@ -275,7 +277,6 @@ def test_alert_detail_page_renders(page: Page, live_server):
 
     login(page, live_server.url, "u9", "pass")
     page.goto(live_server.url + f"/alert/{alert.pk}")
-    page.wait_for_load_state("networkidle")
 
     expect(page.get_by_text("My detail alert").first).to_be_visible()
     expect(page.get_by_text("Procambarus fallax").first).to_be_visible()
@@ -291,10 +292,8 @@ def test_alert_detail_edit_button_navigates(page: Page, live_server):
 
     login(page, live_server.url, "u10", "pass")
     page.goto(live_server.url + f"/alert/{alert.pk}")
-    page.wait_for_load_state("networkidle")
 
     page.get_by_role("button", name="Edit this alert").click()
-    page.wait_for_load_state("networkidle")
 
     expect(page).to_have_url(live_server.url + f"/edit-alert/{alert.pk}")
 
@@ -309,11 +308,9 @@ def test_alert_detail_delete_navigates_to_my_alerts(page: Page, live_server):
 
     login(page, live_server.url, "u11", "pass")
     page.goto(live_server.url + f"/alert/{alert.pk}")
-    page.wait_for_load_state("networkidle")
 
     page.get_by_role("button", name="Delete this alert").click()
     page.get_by_role("button", name="Yes, I'm sure").click()
-    page.wait_for_load_state("networkidle")
 
     expect(page).to_have_url(live_server.url + "/my-alerts")
     assert not Alert.objects.filter(pk=alert.pk).exists()
@@ -359,7 +356,6 @@ def test_alert_detail_mark_all_as_viewed(page: Page, live_server, monkeypatch):
 
     login(page, live_server.url, "u12", "pass")
     page.goto(live_server.url + f"/alert/{alert.pk}")
-    page.wait_for_load_state("networkidle")
 
     page.get_by_role("button", name="Mark all as viewed").click()
     page.get_by_role("button", name="Yes, I'm sure").click()
@@ -384,7 +380,6 @@ def test_alert_detail_mark_all_button_hidden_when_no_unseen(page: Page, live_ser
 
     login(page, live_server.url, "u13", "pass")
     page.goto(live_server.url + f"/alert/{alert.pk}")
-    page.wait_for_load_state("networkidle")
 
     expect(page.get_by_role("button", name="Mark all as viewed")).to_have_count(0)
 
@@ -416,7 +411,6 @@ def test_alert_detail_drawer_refreshes_list_and_sidebar(page: Page, live_server)
 
     login(page, live_server.url, "u14", "pass")
     page.goto(live_server.url + f"/alert/{alert.pk}")
-    page.wait_for_load_state("networkidle")
 
     # The bulk button is visible (1 unseen observation matches).
     bulk_btn = page.get_by_role("button", name="Mark all as viewed")
@@ -424,22 +418,25 @@ def test_alert_detail_drawer_refreshes_list_and_sidebar(page: Page, live_server)
 
     # Switch to the table tab so we can click the row.
     page.get_by_role("tab", name="Table").click()
-    page.wait_for_load_state("networkidle")
 
-    # Open the drawer by clicking the species cell in the row.
-    page.get_by_role("cell", name=re.compile("Procambarus fallax", re.I)).first.click()
-    # Wait for the drawer to actually open and its detail content to render before
-    # closing. networkidle alone is unreliable here: the page is already idle from
-    # load, so it resolves before the drawer fires its detail GET + mark-as-viewed
-    # POST, and an immediate Escape would race (and cancel) those requests.
+    # Open the drawer by clicking the species cell in the row. Opening it fires a
+    # detail GET followed by the mark-as-viewed POST; wait for that POST to
+    # complete before closing, so the close-triggered refresh reads the updated
+    # seen state. Deterministic replacement for a flaky networkidle wait: the page
+    # was already idle from load, so networkidle resolved before the POST fired.
+    with page.expect_response(
+        lambda r: "/mark-as-viewed/" in r.url and r.request.method == "POST"
+    ):
+        page.get_by_role(
+            "cell", name=re.compile("Procambarus fallax", re.I)
+        ).first.click()
+
     drawer = page.locator('[data-pc-name="drawer"]')
     expect(drawer).to_be_visible()
     expect(drawer.get_by_text("Procambarus fallax").first).to_be_visible()
-    page.wait_for_load_state("networkidle")
 
     # Close the drawer (Escape works for PrimeVue Drawer).
     page.keyboard.press("Escape")
-    page.wait_for_load_state("networkidle")
 
     # The (now-seen) observation no longer matches the status=notViewed filter:
     # the row is gone and the bulk button disappears (notViewedCount == 0).

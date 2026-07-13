@@ -18,6 +18,16 @@ and must be overridden before any HTTP requests are made:
 """
 
 import pytest
+from playwright.sync_api import expect
+
+
+# Web-first assertions (expect(...).to_be_visible(), etc.) default to a 5s
+# timeout. Now that the suite no longer waits for the (flaky, deprecated)
+# "networkidle" load state and instead relies on these assertions to
+# synchronise, bump the default so a cold SPA boot in CI - Vue mount plus the
+# first data fetch - has enough headroom before an assertion is judged failed.
+# Actions (click/fill) keep Playwright's own 30s default.
+expect.set_options(timeout=15_000)
 
 
 @pytest.fixture(scope="session", autouse=True)

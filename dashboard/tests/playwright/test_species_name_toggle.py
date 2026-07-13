@@ -73,7 +73,6 @@ def two_observations(db):
 
 def _switch_to_table_view(page: Page) -> None:
     page.get_by_role("tab", name="Table").click()
-    page.wait_for_load_state("networkidle")
 
 
 def _click_toggle(page: Page) -> None:
@@ -85,7 +84,6 @@ def _click_toggle(page: Page) -> None:
 def test_default_mode_shows_scientific(live_server, page: Page, two_observations):
     """With no cookie, the table shows italicised scientific names."""
     page.goto(f"{live_server.url}/?status=all")
-    page.wait_for_load_state("networkidle")
     _switch_to_table_view(page)
 
     em = page.locator("em", has_text="Anas platyrhynchos").first
@@ -96,13 +94,11 @@ def test_default_mode_shows_scientific(live_server, page: Page, two_observations
 def test_toggle_switches_to_vernacular(live_server, page: Page, two_observations):
     """Clicking the navbar toggle flips the rendering to vernacular."""
     page.goto(f"{live_server.url}/?status=all")
-    page.wait_for_load_state("networkidle")
     _switch_to_table_view(page)
 
     expect(page.locator("em", has_text="Anas platyrhynchos").first).to_be_visible()
 
     _click_toggle(page)
-    page.wait_for_load_state("networkidle")
 
     # Species with vernacular shows the common name (no em)
     expect(page.locator("text=Mallard").first).to_be_visible()
@@ -115,15 +111,12 @@ def test_toggle_switches_to_vernacular(live_server, page: Page, two_observations
 def test_preference_persists_across_reload(live_server, page: Page, two_observations):
     """Setting vernacular mode persists after a full page reload."""
     page.goto(f"{live_server.url}/?status=all")
-    page.wait_for_load_state("networkidle")
     _switch_to_table_view(page)
 
     _click_toggle(page)
-    page.wait_for_load_state("networkidle")
     expect(page.locator("text=Mallard").first).to_be_visible()
 
     page.reload()
-    page.wait_for_load_state("networkidle")
     _switch_to_table_view(page)
 
     expect(page.locator("text=Mallard").first).to_be_visible()
@@ -135,13 +128,11 @@ def test_sort_re_issues_when_preference_changes(
 ):
     """While sorted on species, flipping the toggle re-fetches with the new orderBy."""
     page.goto(f"{live_server.url}/?status=all")
-    page.wait_for_load_state("networkidle")
     _switch_to_table_view(page)
 
     # Click the Species column header to sort by it
     species_header = page.get_by_role("columnheader", name="Species")
     species_header.click()
-    page.wait_for_load_state("networkidle")
 
     with page.expect_response(lambda r: "orderBy=vernacularName" in r.url) as resp_info:
         _click_toggle(page)
