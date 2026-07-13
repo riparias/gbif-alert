@@ -3,6 +3,8 @@ import datetime
 import json
 import logging
 import os
+import resource
+import sys
 import tempfile
 import time
 import traceback
@@ -235,7 +237,9 @@ def build_observation_from_raw(
 
     point = Point(raw.decimal_longitude, raw.decimal_latitude, srid=4326)
 
-    identification_verification_status_str = raw.identification_verification_status[:255]
+    identification_verification_status_str = raw.identification_verification_status[
+        :255
+    ]
 
     new_observation = Observation(
         gbif_id=raw.gbif_id,
@@ -291,10 +295,30 @@ def send_error_import_email(exception: BaseException | None = None):
     )
 
 
+def _peak_rss_mb() -> float:
+    """Peak resident-set size of this process so far, in MB.
+
+    ru_maxrss is the high-water mark (it only ever grows), so logging it at each
+    step shows which step pushed memory highest - the key evidence for locating
+    an OOM kill. The unit is platform-dependent: kilobytes on Linux, bytes on
+    macOS.
+    """
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if sys.platform == "darwin":
+        return peak / (1024 * 1024)  # bytes -> MB
+    return peak / 1024  # KB -> MB
+
+
 def _log_with_time(stdout, message: str) -> None:
-    """Timestamped log line, suppressed if stdout is None (e.g. tests)."""
+    """Timestamped log line with peak RSS, suppressed if stdout is None (tests).
+
+    The line is flushed immediately: under an OOM SIGKILL, block-buffered stdout
+    (cron/rqworker, not a tty) would otherwise lose the last lines - exactly the
+    ones that point at the crashing step.
+    """
     if stdout is not None:
-        stdout.write(f"{time.ctime()}: {message}")
+        stdout.write(f"{time.ctime()}: {message} [peak RSS: {_peak_rss_mb():.0f} MB]")
+        stdout.flush()
 
 
 def _batch_insert_observations(
@@ -436,9 +460,10 @@ def run_import(
                 stdout,
                 "3.1 Scanning rows to get the dataset keys and basis of record values",
             )
-            datasets_referenced, bor_values_referenced = (
-                discover_datasets_and_basis_of_record(raw_rows_factory())
-            )
+            (
+                datasets_referenced,
+                bor_values_referenced,
+            ) = discover_datasets_and_basis_of_record(raw_rows_factory())
 
             _log_with_time(stdout, "3.3 Creating/updating the Dataset objects")
             hash_table_datasets: dict[str, Dataset] = {}
@@ -622,24 +647,52 @@ class Command(BaseCommand):
             gbif_predicate = settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"][
                 "PREDICATE_BUILDER"
             ](Species.objects.all())
-
-            download_gbif_occurrences(
-                gbif_predicate,
-                username=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["USERNAME"],
-                password=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PASSWORD"],
-                output_path=source_data_path,
+            _log_with_time(
+                self.stdout,
+                f"GBIF predicate sent to the download API: {json.dumps(gbif_predicate)}",
             )
+
+            # The download library reports progress (the download_id GBIF returns,
+            # each retry, and any non-200 status) via the root logger at INFO, which
+            # is swallowed at the default verbosity - so the GBIF exchange is normally
+            # invisible. Bridge it to our stdout for the duration of the download so we
+            # can confirm the predicate produced a real download (and not, say, an auth
+            # or quota error), then restore the previous logging state.
+            gbif_handler = logging.StreamHandler(sys.stdout)
+            gbif_handler.setFormatter(
+                logging.Formatter("%(asctime)s: GBIF download: %(message)s")
+            )
+            previous_root_level = root_logger.level
+            root_logger.addHandler(gbif_handler)
+            if root_logger.level == logging.NOTSET or root_logger.level > logging.INFO:
+                root_logger.setLevel(logging.INFO)
+            try:
+                download_gbif_occurrences(
+                    gbif_predicate,
+                    username=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["USERNAME"],
+                    password=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PASSWORD"],
+                    output_path=source_data_path,
+                )
+            finally:
+                root_logger.removeHandler(gbif_handler)
+                root_logger.setLevel(previous_root_level)
             _log_with_time(self.stdout, "Observations downloaded")
 
         # 2. Extract gbif_download_id from DwCA metadata (only needs to read metadata)
+        _log_with_time(
+            self.stdout,
+            "Opening DWCA to read metadata (this also builds the line-offset index)",
+        )
         with DwCAReader(source_data_path) as dwca:
             gbif_download_id = extract_gbif_download_id_from_dwca(dwca)
+        _log_with_time(
+            self.stdout, f"GBIF download id read from DWCA metadata: {gbif_download_id}"
+        )
 
         # 3. Build a fresh-generator factory that lazily streams rows
         def raw_rows_factory() -> Iterable[RawObservationRow]:
             return (
-                dwca_row_to_raw(core_row)
-                for core_row in DwCAReader(source_data_path)
+                dwca_row_to_raw(core_row) for core_row in DwCAReader(source_data_path)
             )
 
         # 4. Run the transactional pipeline
