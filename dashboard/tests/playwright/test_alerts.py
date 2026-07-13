@@ -146,6 +146,10 @@ def test_create_alert_succeeds(page: Page, live_server):
     login(page, live_server.url, "u6", "pass")
     page.goto(live_server.url + "/new-alert")
 
+    # Wait for the form to finish initialising (the suggested name is fetched and
+    # pre-filled asynchronously) before submitting, so the create carries a name.
+    expect(page.locator("#alert-name")).to_have_value("My alert #1")
+
     # Open the species modal and select a species
     page.get_by_role("button", name="All species").click()
     page.get_by_role("row", name="Procambarus fallax").click()
@@ -173,6 +177,12 @@ def test_create_alert_shows_error_when_no_species(page: Page, live_server):
 
     login(page, live_server.url, "u7", "pass")
     page.goto(live_server.url + "/new-alert")
+
+    # Wait for the form to finish initialising (suggested name pre-filled) before
+    # submitting, so the only validation error is the missing-species one -
+    # otherwise we race the async name pre-fill and also get a "name blank"
+    # message, and the assertion below hits two elements (strict-mode violation).
+    expect(page.locator("#alert-name")).to_have_value("My alert #1")
 
     # The PrimeVue error Message for species must NOT be present before submission
     # (only the static field-hint paragraph is shown at this point).
@@ -217,6 +227,10 @@ def test_edit_alert_saves_changes(page: Page, live_server):
     page.goto(live_server.url + f"/edit-alert/{alert.pk}")
 
     name_input = page.locator("#alert-name")
+    # Wait for the alert's data (name + species) to load into the form before
+    # editing; otherwise Save posts an incomplete alert (422 - no species) or the
+    # late GET clobbers the typed value.
+    expect(name_input).to_have_value("Original name")
     name_input.click(click_count=3)
     name_input.fill("Updated alert name")
 

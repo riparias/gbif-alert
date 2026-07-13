@@ -256,7 +256,11 @@ def test_editor_edit_mode_rename_and_save(page: Page, live_server):
     login(page, live_server.url, "e3", "pass")
     page.goto(live_server.url + f"/my-custom-areas/{area.pk}/edit")
 
-    page.locator("#editor-area-name").fill("New name")
+    editor_name = page.locator("#editor-area-name")
+    # Wait for the area to load into the form before renaming; otherwise the late
+    # GET clobbers the typed value (or Save posts stale data).
+    expect(editor_name).to_have_value("Old name")
+    editor_name.fill("New name")
     page.get_by_role("button", name="Save").click()
 
     # Should redirect back to the list page

@@ -95,7 +95,11 @@ def test_profile_save_succeeds(page: Page, live_server):
     login(page, live_server.url, "profilesave", "pass1234")
     page.goto(live_server.url + "/profile")
 
-    page.locator("#p-firstname").fill("Charlie")
+    first_name = page.locator("#p-firstname")
+    # Wait for the profile data to load into the form before editing; otherwise
+    # the late GET clobbers the typed value.
+    expect(first_name).to_have_value("Bob")
+    first_name.fill("Charlie")
     page.get_by_role("button", name="Save profile").click()
 
     expect(page.locator(".p-toast")).to_be_visible()
