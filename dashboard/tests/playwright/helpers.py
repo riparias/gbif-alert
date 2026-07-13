@@ -19,11 +19,12 @@ def login(page: Page, base_url: str, username: str, password: str) -> None:
     depending on timing.
     """
     page.goto(base_url + "/accounts/signin/")
-    page.wait_for_load_state("networkidle")
+    # No explicit load-state wait: .fill() below auto-waits for the field.
     page.locator("#signin-username").fill(username)
     page.locator("#signin-password").fill(password)
     page.get_by_role("button", name="Sign in").click()
+    # wait_until defaults to "load"; we already gate on the URL predicate, which
+    # is the deterministic signal that the post-login redirect has committed.
     page.wait_for_url(
         lambda url: url == base_url + "/" or url.startswith(base_url + "/?"),
-        wait_until="networkidle",
     )

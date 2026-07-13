@@ -75,7 +75,6 @@ def _make_observation(
 
 def _switch_to_table_view(page: Page) -> None:
     page.get_by_role("tab", name="Table").click()
-    page.wait_for_load_state("networkidle")
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +86,6 @@ def _switch_to_table_view(page: Page) -> None:
 def test_index_page_renders(page: Page, live_server):
     """The index page loads: sidebar filter panel and stat block are visible."""
     page.goto(live_server.url + "/")
-    page.wait_for_load_state("networkidle")
     expect(page.get_by_text("FILTERS", exact=True)).to_be_visible()
     expect(page.locator(".stat-block")).to_be_visible()
 
@@ -101,7 +99,6 @@ def test_counter_plural(page: Page, live_server):
     _make_observation(gbif_id=2, occurrence_id="2", species=sp, basis=basis)
 
     page.goto(live_server.url + "/?status=all")
-    page.wait_for_load_state("networkidle")
 
     expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
 
@@ -114,7 +111,6 @@ def test_counter_singular(page: Page, live_server):
     _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
 
     page.goto(live_server.url + "/?status=all")
-    page.wait_for_load_state("networkidle")
 
     expect(page.locator(".stat-count").get_by_text("1")).to_be_visible()
 
@@ -129,7 +125,6 @@ def test_empty_state_shown_when_no_results(page: Page, live_server):
 
     # Filter to sp2 which has no observations
     page.goto(live_server.url + f"/?status=all&speciesIds={sp2.pk}")
-    page.wait_for_load_state("networkidle")
 
     expect(page.get_by_text("No matching results found.")).to_be_visible()
     expect(
@@ -156,12 +151,10 @@ def test_species_filter_narrows_results(page: Page, live_server):
 
     # Unfiltered: 3 observations
     page.goto(live_server.url + "/?status=all")
-    page.wait_for_load_state("networkidle")
     expect(page.locator(".stat-count").get_by_text("3")).to_be_visible()
 
     # Filtered to sp1: 2 observations
     page.goto(live_server.url + f"/?status=all&speciesIds={sp1.pk}")
-    page.wait_for_load_state("networkidle")
     expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
 
 
@@ -172,13 +165,18 @@ def test_dataset_filter_narrows_results(page: Page, live_server):
     sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
     ds1 = Dataset.objects.create(name="Dataset A", gbif_dataset_key="key-a")
     ds2 = Dataset.objects.create(name="Dataset B", gbif_dataset_key="key-b")
-    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis, dataset=ds1)
-    _make_observation(gbif_id=2, occurrence_id="2", species=sp, basis=basis, dataset=ds1)
-    _make_observation(gbif_id=3, occurrence_id="3", species=sp, basis=basis, dataset=ds2)
+    _make_observation(
+        gbif_id=1, occurrence_id="1", species=sp, basis=basis, dataset=ds1
+    )
+    _make_observation(
+        gbif_id=2, occurrence_id="2", species=sp, basis=basis, dataset=ds1
+    )
+    _make_observation(
+        gbif_id=3, occurrence_id="3", species=sp, basis=basis, dataset=ds2
+    )
 
     # Filtered to ds1: 2 observations
     page.goto(live_server.url + f"/?status=all&datasetIds={ds1.pk}")
-    page.wait_for_load_state("networkidle")
     expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
 
 
@@ -195,7 +193,6 @@ def test_table_view_shows_species_name(page: Page, live_server):
     _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
 
     page.goto(live_server.url + "/?status=all")
-    page.wait_for_load_state("networkidle")
     _switch_to_table_view(page)
 
     expect(page.get_by_text("Procambarus fallax")).to_be_visible()
@@ -211,7 +208,6 @@ def test_table_shows_verified_badge(page: Page, live_server):
     )
 
     page.goto(live_server.url + "/?status=all")
-    page.wait_for_load_state("networkidle")
     _switch_to_table_view(page)
 
     badge = page.locator(".badge-success")
@@ -229,7 +225,6 @@ def test_table_shows_unverified_badge(page: Page, live_server):
     )
 
     page.goto(live_server.url + "/?status=all")
-    page.wait_for_load_state("networkidle")
     _switch_to_table_view(page)
 
     badge = page.locator(".badge-danger")
@@ -250,7 +245,6 @@ def test_seen_column_shown_for_authenticated_user(page: Page, live_server):
 
     login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/?status=all")
-    page.wait_for_load_state("networkidle")
     _switch_to_table_view(page)
 
     expect(page.get_by_role("columnheader", name="Viewed")).to_be_visible()
@@ -269,7 +263,6 @@ def test_table_row_click_opens_observation_drawer(page: Page, live_server):
     obs = _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
 
     page.goto(live_server.url + "/?status=all")
-    page.wait_for_load_state("networkidle")
     _switch_to_table_view(page)
 
     page.locator("tbody tr").first.click()
@@ -288,7 +281,6 @@ def test_deep_link_url_opens_drawer_on_load(page: Page, live_server):
     obs = _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
 
     page.goto(live_server.url + f"/?status=all&obs={obs.stable_id}")
-    page.wait_for_load_state("networkidle")
 
     drawer = page.locator('[data-pc-name="drawer"]')
     expect(drawer).to_be_visible()
@@ -310,15 +302,11 @@ def test_filter_state_preserved_when_drawer_closed(page: Page, live_server):
     obs = _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
 
     # Navigate with both a species filter and the drawer open
-    page.goto(
-        live_server.url + f"/?status=all&speciesIds={sp.pk}&obs={obs.stable_id}"
-    )
-    page.wait_for_load_state("networkidle")
+    page.goto(live_server.url + f"/?status=all&speciesIds={sp.pk}&obs={obs.stable_id}")
     expect(page.locator('[data-pc-name="drawer"]')).to_be_visible()
 
     # Close the drawer via the X button
     page.get_by_role("button", name="Close").click()
-    page.wait_for_load_state("networkidle")
 
     # ?obs= is gone; speciesIds filter is still present
     sp_pk = sp.pk
@@ -354,7 +342,6 @@ def test_authenticated_user_sees_unseen_by_default(page: Page, live_server):
 
     login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/")
-    page.wait_for_load_state("networkidle")
 
     expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
 
@@ -378,7 +365,6 @@ def test_smart_status_default_falls_back_to_all(page: Page, live_server):
 
     login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/")
-    page.wait_for_load_state("networkidle")
 
     # Falls back to 'all': both observations are shown
     expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
@@ -399,7 +385,6 @@ def test_anonymous_user_sees_no_unseen_filter_badge(page: Page, live_server):
     _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
 
     page.goto(live_server.url + "/")
-    page.wait_for_load_state("networkidle")
 
     # No "Not viewed" chip should be rendered
     expect(page.get_by_text("Not viewed", exact=True)).not_to_be_visible()
@@ -417,7 +402,6 @@ def test_anonymous_user_sees_all_observations_by_default(page: Page, live_server
     _make_observation(gbif_id=2, occurrence_id="2", species=sp, basis=basis)
 
     page.goto(live_server.url + "/")
-    page.wait_for_load_state("networkidle")
 
     # Both observations are shown - no unseen pre-filter was applied
     expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
@@ -440,7 +424,6 @@ def test_authenticated_user_with_unseen_sees_unseen_badge(page: Page, live_serve
 
     login(page, live_server.url, "testuser", "testpass123")
     page.goto(live_server.url + "/")
-    page.wait_for_load_state("networkidle")
 
     expect(page.get_by_text("Not viewed", exact=True)).to_be_visible()
 
@@ -454,7 +437,6 @@ def test_authenticated_user_with_unseen_sees_unseen_badge(page: Page, live_serve
 def test_index_page_renders_sidebar(page: Page, live_server):
     """The index page loads with the sidebar filter panel visible."""
     page.goto(live_server.url + "/?status=all")
-    page.wait_for_load_state("networkidle")
     expect(page.get_by_text("FILTERS", exact=True)).to_be_visible()
 
 
@@ -466,7 +448,6 @@ def test_index_page_has_three_tabs(page: Page, live_server):
     _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
 
     page.goto(live_server.url + "/?status=all")
-    page.wait_for_load_state("networkidle")
 
     expect(page.get_by_role("tab", name="Map")).to_be_visible()
     expect(page.get_by_role("tab", name="Timeline")).to_be_visible()
@@ -482,7 +463,6 @@ def test_index_observation_count_in_sidebar(page: Page, live_server):
     _make_observation(gbif_id=2, occurrence_id="2", species=sp, basis=basis)
 
     page.goto(live_server.url + "/?status=all")
-    page.wait_for_load_state("networkidle")
 
     stat_block = page.locator(".stat-block")
     expect(stat_block).to_be_visible()
@@ -497,9 +477,7 @@ def test_index_timeline_tab_shows_histogram(page: Page, live_server):
     _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
 
     page.goto(live_server.url + "/?status=all")
-    page.wait_for_load_state("networkidle")
 
     page.get_by_role("tab", name="Timeline").click()
-    page.wait_for_load_state("networkidle")
 
     expect(page.locator(".p-tabpanel:visible .histogram-svg")).to_be_visible()

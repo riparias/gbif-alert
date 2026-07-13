@@ -22,7 +22,6 @@ def test_user_creates_alert_from_template(page: Page, live_server):
     User.objects.create_user(username="jane", password="pass", email="jane@e.com")
     login(page, live_server.url, "jane", "pass")
     page.goto(live_server.url + "/new-alert")
-    page.wait_for_load_state("networkidle")
 
     expect(page.get_by_text("Amphibians near X", exact=False)).to_be_visible()
 
@@ -52,33 +51,43 @@ def test_publish_button_visible_only_to_superuser(page: Page, live_server):
     User = get_user_model()
     op = User.objects.create_superuser(username="op", password="pass", email="op@e.com")
     sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
-    alert = Alert.objects.create(name="seed", user=op, email_notifications_frequency="N")
+    alert = Alert.objects.create(
+        name="seed", user=op, email_notifications_frequency="N"
+    )
     alert.species.add(sp)
 
     login(page, live_server.url, "op", "pass")
     page.goto(live_server.url + f"/alert/{alert.pk}")
-    page.wait_for_load_state("networkidle")
-    expect(page.get_by_role("button", name="Publish as template", exact=False)).to_be_visible()
+    expect(
+        page.get_by_role("button", name="Publish as template", exact=False)
+    ).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
 def test_publish_button_hidden_for_non_superuser(page: Page, live_server):
     User = get_user_model()
-    jane = User.objects.create_user(username="jane", password="pass", email="jane@e.com")
+    jane = User.objects.create_user(
+        username="jane", password="pass", email="jane@e.com"
+    )
     sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
-    alert = Alert.objects.create(name="jane's alert", user=jane, email_notifications_frequency="N")
+    alert = Alert.objects.create(
+        name="jane's alert", user=jane, email_notifications_frequency="N"
+    )
     alert.species.add(sp)
 
     login(page, live_server.url, "jane", "pass")
     page.goto(live_server.url + f"/alert/{alert.pk}")
-    page.wait_for_load_state("networkidle")
 
     # Sanity check: the page actually rendered for this user (sidebar actions are
     # only shown to authenticated users), so the absence of the publish button below
     # is a real assertion about the superuser gate, not a false negative from a
     # failed page load.
-    expect(page.get_by_role("button", name="Edit this alert", exact=False)).to_be_visible()
-    expect(page.get_by_role("button", name="Publish as template", exact=False)).to_have_count(0)
+    expect(
+        page.get_by_role("button", name="Edit this alert", exact=False)
+    ).to_be_visible()
+    expect(
+        page.get_by_role("button", name="Publish as template", exact=False)
+    ).to_have_count(0)
 
 
 @pytest.mark.django_db(transaction=True)
@@ -89,7 +98,9 @@ def test_expanded_template_card_species_list_does_not_overflow(page: Page, live_
     User = get_user_model()
     op = User.objects.create_superuser(username="op", password="pass", email="op@e.com")
     species = [
-        Species.objects.create(name=f"Genus longspeciesname{i}", gbif_taxon_key=900000 + i)
+        Species.objects.create(
+            name=f"Genus longspeciesname{i}", gbif_taxon_key=900000 + i
+        )
         for i in range(20)
     ]
     seed = Alert.objects.create(name="many", user=op, email_notifications_frequency="N")
@@ -101,7 +112,6 @@ def test_expanded_template_card_species_list_does_not_overflow(page: Page, live_
     User.objects.create_user(username="bob", password="pass", email="bob@e.com")
     login(page, live_server.url, "bob", "pass")
     page.goto(live_server.url + "/new-alert")
-    page.wait_for_load_state("networkidle")
 
     card = page.locator(".template-card").filter(has_text="Many species template")
     card.get_by_role("button", name="Details", exact=False).click()
@@ -129,7 +139,6 @@ def test_operator_publishes_then_user_creates_from_it(page: Page, live_server):
     # Operator publishes the alert as a template from its detail page.
     login(page, live_server.url, "op", "pass")
     page.goto(live_server.url + f"/alert/{alert.pk}")
-    page.wait_for_load_state("networkidle")
     page.get_by_role("button", name="Publish as template", exact=False).click()
     expect(page.get_by_text("Template published", exact=False)).to_be_visible()
     assert AlertTemplate.objects.count() == 1
@@ -139,7 +148,6 @@ def test_operator_publishes_then_user_creates_from_it(page: Page, live_server):
     page.context.clear_cookies()
     login(page, live_server.url, "jane", "pass")
     page.goto(live_server.url + "/new-alert")
-    page.wait_for_load_state("networkidle")
 
     card = page.locator(".template-card").filter(has_text="Crayfish of Wallonia")
     expect(card).to_be_visible()
@@ -168,7 +176,9 @@ def test_from_template_duplicate_name_shows_error_in_dialog(page: Page, live_ser
     tpl.name_en = "Reusable template"  # type: ignore[attr-defined]
     tpl.save()
 
-    jane = User.objects.create_user(username="jane", password="pass", email="jane@e.com")
+    jane = User.objects.create_user(
+        username="jane", password="pass", email="jane@e.com"
+    )
     clash = Alert.objects.create(
         name="Existing name", user=jane, email_notifications_frequency="N"
     )
@@ -176,7 +186,6 @@ def test_from_template_duplicate_name_shows_error_in_dialog(page: Page, live_ser
 
     login(page, live_server.url, "jane", "pass")
     page.goto(live_server.url + "/new-alert")
-    page.wait_for_load_state("networkidle")
 
     card = page.locator(".template-card").filter(has_text="Reusable template")
     card.get_by_role("button", name="Use this template", exact=False).click()

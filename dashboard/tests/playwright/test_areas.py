@@ -39,7 +39,6 @@ def test_my_areas_page_shows_area_list(page: Page, live_server):
 
     login(page, live_server.url, "a1", "pass")
     page.goto(live_server.url + "/my-custom-areas")
-    page.wait_for_load_state("networkidle")
 
     expect(page.get_by_text("My polygon area")).to_be_visible()
 
@@ -54,7 +53,6 @@ def test_area_card_shows_tags(page: Page, live_server):
 
     login(page, live_server.url, "t1", "pass")
     page.goto(live_server.url + "/my-custom-areas")
-    page.wait_for_load_state("networkidle")
 
     expect(page.get_by_text("woodland", exact=True)).to_be_visible()
     expect(page.get_by_text("protected", exact=True)).to_be_visible()
@@ -68,18 +66,14 @@ def test_my_areas_empty_state(page: Page, live_server):
 
     login(page, live_server.url, "a2", "pass")
     page.goto(live_server.url + "/my-custom-areas")
-    page.wait_for_load_state("networkidle")
 
-    expect(
-        page.get_by_text("don't have any custom areas", exact=False)
-    ).to_be_visible()
+    expect(page.get_by_text("don't have any custom areas", exact=False)).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
 def test_my_areas_page_requires_login(page: Page, live_server):
     """Anonymous user is redirected away from /my-custom-areas."""
     page.goto(live_server.url + "/my-custom-areas")
-    page.wait_for_load_state("networkidle")
     expect(page).not_to_have_url(live_server.url + "/my-custom-areas")
 
 
@@ -97,13 +91,13 @@ def test_delete_area_confirmed(page: Page, live_server):
 
     login(page, live_server.url, "a4", "pass")
     page.goto(live_server.url + "/my-custom-areas")
-    page.wait_for_load_state("networkidle")
 
     page.get_by_role("button", name="Delete").click()
     page.get_by_role("button", name="Yes, I'm sure").click()
-    page.wait_for_load_state("networkidle")
 
-    expect(page.locator(".area-card").filter(has_text="Area to delete")).not_to_be_visible()
+    expect(
+        page.locator(".area-card").filter(has_text="Area to delete")
+    ).not_to_be_visible()
     assert not Area.objects.filter(pk=area.pk).exists()
 
 
@@ -116,7 +110,6 @@ def test_delete_area_cancelled(page: Page, live_server):
 
     login(page, live_server.url, "a5", "pass")
     page.goto(live_server.url + "/my-custom-areas")
-    page.wait_for_load_state("networkidle")
 
     page.get_by_role("button", name="Delete").click()
     page.get_by_role("button", name="Cancel").click()
@@ -139,18 +132,20 @@ def test_delete_area_with_alert_shows_error(page: Page, live_server):
 
     login(page, live_server.url, "a8", "pass")
     page.goto(live_server.url + "/my-custom-areas")
-    page.wait_for_load_state("networkidle")
 
     page.get_by_role("button", name="Delete").click()
     page.get_by_role("button", name="Yes, I'm sure").click()
-    page.wait_for_load_state("networkidle")
 
     # Error toast must be visible
     expect(page.locator(".p-toast")).to_be_visible()
-    expect(page.locator(".p-toast")).to_contain_text("Cannot delete area", ignore_case=True)
+    expect(page.locator(".p-toast")).to_contain_text(
+        "Cannot delete area", ignore_case=True
+    )
 
     # Area is still in the list
-    expect(page.locator(".area-card").filter(has_text="Area with alert")).to_be_visible()
+    expect(
+        page.locator(".area-card").filter(has_text="Area with alert")
+    ).to_be_visible()
     assert Area.objects.filter(pk=area.pk).exists()
 
 
@@ -167,7 +162,6 @@ def test_create_area_succeeds(page: Page, live_server):
 
     login(page, live_server.url, "a6", "pass")
     page.goto(live_server.url + "/my-custom-areas")
-    page.wait_for_load_state("networkidle")
 
     page.get_by_role("button", name="Add area").click()
     page.get_by_text("Upload file").click()
@@ -176,7 +170,6 @@ def test_create_area_succeeds(page: Page, live_server):
     page.locator("#area-name").fill("My uploaded area")
     page.locator("input[type=file]").set_input_files(POLYGON_GPKG)
     page.get_by_role("button", name="Upload").click()
-    page.wait_for_load_state("networkidle")
 
     expect(page.get_by_text("My uploaded area")).to_be_visible()
 
@@ -189,7 +182,6 @@ def test_create_area_invalid_file_shows_error(page: Page, live_server):
 
     login(page, live_server.url, "a7", "pass")
     page.goto(live_server.url + "/my-custom-areas")
-    page.wait_for_load_state("networkidle")
 
     page.get_by_role("button", name="Add area").click()
     page.get_by_text("Upload file").click()
@@ -197,7 +189,6 @@ def test_create_area_invalid_file_shows_error(page: Page, live_server):
     page.locator("#area-name").fill("Bad area")
     page.locator("input[type=file]").set_input_files(POINT_GPKG)
     page.get_by_role("button", name="Upload").click()
-    page.wait_for_load_state("networkidle")
 
     # Dialog stays open and shows an error
     expect(page.locator("[data-testid='area-upload-error']")).to_be_visible()
@@ -216,7 +207,6 @@ def test_editor_create_mode_loads(page: Page, live_server):
 
     login(page, live_server.url, "e1", "pass")
     page.goto(live_server.url + "/my-custom-areas/new")
-    page.wait_for_load_state("networkidle")
 
     expect(page.locator("#editor-area-name")).to_be_visible()
     expect(page.get_by_role("button", name="Draw polygon")).to_be_visible()
@@ -234,7 +224,6 @@ def test_editor_create_mode_loads(page: Page, live_server):
 def test_editor_create_mode_requires_login(page: Page, live_server):
     """Anonymous user is redirected away from the create editor."""
     page.goto(live_server.url + "/my-custom-areas/new")
-    page.wait_for_load_state("networkidle")
     expect(page).not_to_have_url(live_server.url + "/my-custom-areas/new")
 
 
@@ -252,7 +241,6 @@ def test_editor_edit_mode_prefills_name(page: Page, live_server):
 
     login(page, live_server.url, "e2", "pass")
     page.goto(live_server.url + f"/my-custom-areas/{area.pk}/edit")
-    page.wait_for_load_state("networkidle")
 
     expect(page.locator("#editor-area-name")).to_have_value("Prefilled area")
     expect(page.get_by_role("button", name="Delete area")).to_be_visible()
@@ -267,11 +255,9 @@ def test_editor_edit_mode_rename_and_save(page: Page, live_server):
 
     login(page, live_server.url, "e3", "pass")
     page.goto(live_server.url + f"/my-custom-areas/{area.pk}/edit")
-    page.wait_for_load_state("networkidle")
 
     page.locator("#editor-area-name").fill("New name")
     page.get_by_role("button", name="Save").click()
-    page.wait_for_load_state("networkidle")
 
     # Should redirect back to the list page
     expect(page).to_have_url(live_server.url + "/my-custom-areas")
@@ -289,12 +275,10 @@ def test_editor_delete_area_button(page: Page, live_server):
 
     login(page, live_server.url, "e4", "pass")
     page.goto(live_server.url + f"/my-custom-areas/{area.pk}/edit")
-    page.wait_for_load_state("networkidle")
 
     page.get_by_role("button", name="Delete area").click()
     # PrimeVue ConfirmDialog - click the accept button
     page.get_by_role("button", name="Yes, I'm sure").click()
-    page.wait_for_load_state("networkidle")
 
     expect(page).to_have_url(live_server.url + "/my-custom-areas")
     assert not Area.objects.filter(pk=area.pk).exists()
@@ -309,9 +293,7 @@ def test_editor_cancel_returns_to_list(page: Page, live_server):
 
     login(page, live_server.url, "e5", "pass")
     page.goto(live_server.url + f"/my-custom-areas/{area.pk}/edit")
-    page.wait_for_load_state("networkidle")
 
     page.get_by_role("button", name="Cancel").click()
-    page.wait_for_load_state("networkidle")
 
     expect(page).to_have_url(live_server.url + "/my-custom-areas")
