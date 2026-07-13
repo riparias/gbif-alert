@@ -1,3 +1,14 @@
+# 2.2.1 (2026-07-13)
+
+- Diagnostics: the observation import now logs peak RSS (memory high-water mark)
+  on every step and flushes each log line immediately, so an out-of-memory kill
+  can no longer swallow the lines that point at the crashing step. It also
+  brackets the DwCA metadata read (whose line-offset index scales with the row
+  count) and logs the GBIF predicate sent to the download API together with the
+  download API's response (download id, retries, non-200 statuses). This is
+  instrumentation only - no change to import behavior - added to locate an
+  out-of-memory crash on large first imports.
+
 # 2.2.0 (2026-07-10)
 
 - Feature: the GBIF download can be scoped to a lat/lon bounding box via env
