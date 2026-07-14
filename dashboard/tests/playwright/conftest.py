@@ -18,7 +18,7 @@ and must be overridden before any HTTP requests are made:
 """
 
 import pytest
-from playwright.sync_api import expect
+from playwright.sync_api import Page, expect
 
 
 # Web-first assertions (expect(...).to_be_visible(), etc.) default to a 5s
@@ -28,6 +28,40 @@ from playwright.sync_api import expect
 # first data fetch - has enough headroom before an assertion is judged failed.
 # Actions (click/fill) keep Playwright's own 30s default.
 expect.set_options(timeout=15_000)
+
+
+@pytest.fixture(autouse=True)
+def _drain_server_before_db_teardown(page: Page):
+    """Let the live_server finish its in-flight requests before the DB is flushed.
+
+    The SPA fires background requests - notably the map's tile/hexagon queries on
+    the index and alert-detail pages - that can still be running on the
+    live_server when the test body ends. With the ``networkidle`` waits removed
+    the tests finish sooner, so those requests race the ``transaction=True``
+    teardown flush and intermittently deadlock against it ("deadlock detected" /
+    "database couldn't be flushed", cascading into duplicate-key errors later).
+
+    Aborting the requests client-side is not enough: Django's dev server keeps
+    processing a request its worker already started (holding row/table locks)
+    even after the client disconnects. The signal that the *server* is done is
+    network-idle - every request has been answered - so we wait for it here.
+
+    This is a bounded, best-effort drain, never a synchronisation point: it runs
+    only in teardown (the page finished loading long ago, so it settles almost
+    instantly), and a timeout is swallowed rather than failing the test. That is
+    what makes it different from the in-body ``networkidle`` waits this change
+    removed, which failed tests when a still-loading page never went quiet.
+
+    Depending on ``page`` orders this fixture's teardown before the page closes
+    and before the DB flush later in teardown.
+    """
+    yield
+    try:
+        page.wait_for_load_state("networkidle", timeout=10_000)
+    except Exception:
+        # Page already closed/crashed, or genuinely never idle: proceed anyway.
+        # The DB flush is best-effort protected, not guaranteed, by this drain.
+        pass
 
 
 @pytest.fixture(scope="session", autouse=True)
