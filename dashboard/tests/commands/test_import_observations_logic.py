@@ -8,6 +8,8 @@ import datetime
 from unittest import mock
 
 import pytest
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import override_settings
 from maintenance_mode.core import (  # type: ignore
     get_maintenance_mode,
@@ -726,9 +728,9 @@ def test_chunked_import_detects_replacement_in_later_chunk(test_data, monkeypatc
         run_import_with_rows(rows)
 
     # Chunking actually happened
-    assert batch_spy.call_count == 2, (
-        f"Expected 2 chunk flushes, got {batch_spy.call_count}"
-    )
+    assert (
+        batch_spy.call_count == 2
+    ), f"Expected 2 chunk flushes, got {batch_spy.call_count}"
     # First call got indices 0-3 (4 items), second got 4-6 (3 items)
     first_chunk_obs = batch_spy.call_args_list[0].args[0]
     second_chunk_obs = batch_spy.call_args_list[1].args[0]
@@ -795,9 +797,7 @@ def test_basis_of_record_cleanup_mechanism(test_data):
     machine_observation = BasisOfRecord.objects.create(name="MACHINE_OBSERVATION")
 
     # An alert that filters on this (about-to-be-unused) BoR.
-    alert = Alert.objects.create(
-        name="Machine-only alert", user=test_data["user"]
-    )
+    alert = Alert.objects.create(name="Machine-only alert", user=test_data["user"])
     alert.basis_of_record_filters.add(machine_observation)
 
     # Import one row using HUMAN_OBSERVATION. After import,
@@ -873,8 +873,7 @@ def test_transaction(test_data):
 
     for Model in MODELS_TO_OBSERVE:
         assert (
-            list(Model.objects.all().order_by("pk"))
-            == models_before[Model._meta.label]
+            list(Model.objects.all().order_by("pk")) == models_before[Model._meta.label]
         )
 
 
@@ -917,3 +916,24 @@ def test_failed_import_clears_maintenance_and_emails_admins(test_data, mailoutbo
     assert "ERROR during observation data import" in email.subject
     assert "Boom during import" in email.body
     assert "admin@example.com" in email.to
+
+
+def test_import_aborts_when_a_species_lacks_col_key():
+    """The preflight guard blocks the whole import (all-or-nothing) when
+    at least one Species has no gbif_col_taxon_key, naming it in the error."""
+    Species.objects.all().delete()
+    Species.objects.create(name="Has key", gbif_taxon_key=1, gbif_col_taxon_key="AAAA")
+    Species.objects.create(name="Missing key", gbif_taxon_key=2)  # no col key
+    with pytest.raises(CommandError) as exc:
+        call_command("import_observations")
+    assert "Missing key" in str(exc.value)
+
+
+def test_import_aborts_when_all_missing():
+    """Same guard, but with every species missing the key: the error also
+    points the operator at the conversion command to run."""
+    Species.objects.all().delete()
+    Species.objects.create(name="No key at all", gbif_taxon_key=3)
+    with pytest.raises(CommandError) as exc:
+        call_command("import_observations")
+    assert "convert_taxon_keys_to_col" in str(exc.value)

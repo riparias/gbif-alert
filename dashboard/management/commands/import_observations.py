@@ -623,6 +623,21 @@ class Command(BaseCommand):
 
         _log_with_time(self.stdout, "(Re)importing all observations")
 
+        # Preflight: every species must have a COL XR key, otherwise the
+        # download predicate is broken/empty and occurrences cannot be matched.
+        # All-or-nothing on purpose - a missing key would silently drop a
+        # species from monitoring. Blocks before any download is triggered.
+        missing = list(
+            Species.objects.filter(gbif_col_taxon_key__isnull=True).order_by("name")
+        )
+        if missing:
+            names = ", ".join(f"{s.name} ({s.gbif_taxon_key})" for s in missing)
+            raise CommandError(
+                "Cannot import: these species have no gbif_col_taxon_key: "
+                f"{names}. Run `manage.py convert_taxon_keys_to_col` (and curate "
+                "any unresolved species in the admin) before importing."
+            )
+
         # 1. Resolve DwCA source (existing file or trigger a new GBIF download)
         gbif_predicate: dict | None = None
         tmp_source_path: str | None = None
