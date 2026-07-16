@@ -34,6 +34,9 @@ INATURALIST_KEY = "50c9509d-22c7-4a22-a47d-8c48425ef4a7"
 # gbif_taxon_key values used by test_data (Lixus bardanae / Polydrusus planifrons)
 LIXUS_KEY = 1224034
 POLYDRUSUS_KEY = 7972617
+# gbif_col_taxon_key values used by test_data (matching DwCA taxonKey strings)
+LIXUS_COL_KEY = str(LIXUS_KEY)
+POLYDRUSUS_COL_KEY = str(POLYDRUSUS_KEY)
 
 pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.sequential]
 
@@ -80,9 +83,9 @@ def test_maintenance_mode_cleared_after_success(test_data):
                 occurrence_id="mm-check",
                 dataset_key=INATURALIST_KEY,
                 dataset_name="iNaturalist",
-                taxon_key=LIXUS_KEY,
-                accepted_taxon_key=LIXUS_KEY,
-                species_key=LIXUS_KEY,
+                taxon_key=LIXUS_COL_KEY,
+                accepted_taxon_key=LIXUS_COL_KEY,
+                species_key=LIXUS_COL_KEY,
             ),
         ]
     )
@@ -94,7 +97,11 @@ def test_run_import_with_rows_sanity():
     """One valid row in -> one Observation out. Confirms factories.py is
     wired correctly to run_import and the pipeline handles a trivial case."""
     Species.objects.all().delete()
-    Species.objects.create(name="Lixus bardanae", gbif_taxon_key=LIXUS_KEY)
+    Species.objects.create(
+        name="Lixus bardanae",
+        gbif_taxon_key=LIXUS_KEY,
+        gbif_col_taxon_key=LIXUS_COL_KEY,
+    )
 
     run_import_with_rows([make_raw_row(gbif_id=42, occurrence_id="sanity-1")])
 
@@ -123,9 +130,9 @@ def test_verified_classification(test_data):
             occurrence_id="verified-yes",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
             identification_verification_status="validated",
         ),
         make_raw_row(
@@ -133,9 +140,9 @@ def test_verified_classification(test_data):
             occurrence_id="verified-no",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
             identification_verification_status="Unvalidated",
         ),
         make_raw_row(
@@ -143,9 +150,9 @@ def test_verified_classification(test_data):
             occurrence_id="verified-unknown",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
             identification_verification_status="not-a-known-classification",
         ),
         make_raw_row(
@@ -153,9 +160,9 @@ def test_verified_classification(test_data):
             occurrence_id="verified-empty",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
             # default is "" which is explicitly in the JSON as verified=false
         ),
     ]
@@ -189,9 +196,9 @@ def test_initial_data_import_value_replaced(test_data):
                 occurrence_id="https://www.inaturalist.org/observations/33366292",
                 dataset_key=INATURALIST_KEY,
                 dataset_name="iNaturalist",
-                taxon_key=POLYDRUSUS_KEY,
-                accepted_taxon_key=POLYDRUSUS_KEY,
-                species_key=POLYDRUSUS_KEY,
+                taxon_key=POLYDRUSUS_COL_KEY,
+                accepted_taxon_key=POLYDRUSUS_COL_KEY,
+                species_key=POLYDRUSUS_COL_KEY,
             ),
         ]
     )
@@ -214,9 +221,9 @@ def test_initial_data_import_value_new(test_data):
                 occurrence_id="brand-new-occurrence",
                 dataset_key=INATURALIST_KEY,
                 dataset_name="iNaturalist",
-                taxon_key=LIXUS_KEY,
-                accepted_taxon_key=LIXUS_KEY,
-                species_key=LIXUS_KEY,
+                taxon_key=LIXUS_COL_KEY,
+                accepted_taxon_key=LIXUS_COL_KEY,
+                species_key=LIXUS_COL_KEY,
             ),
         ]
     )
@@ -230,7 +237,7 @@ def test_initial_data_import_value_new(test_data):
 def test_dataimport_object_created(test_data):
     """Running run_import creates exactly one new DataImport object."""
     count_before = DataImport.objects.count()
-    run_import_with_rows([make_raw_row(taxon_key=LIXUS_KEY)])
+    run_import_with_rows([make_raw_row(taxon_key=LIXUS_COL_KEY)])
     assert DataImport.objects.count() == count_before + 1
 
 
@@ -242,9 +249,9 @@ def _row_replacing_unseen_observation(**overrides):
         occurrence_id="https://www.inaturalist.org/observations/33366292",
         dataset_key=INATURALIST_KEY,
         dataset_name="iNaturalist",
-        taxon_key=POLYDRUSUS_KEY,
-        accepted_taxon_key=POLYDRUSUS_KEY,
-        species_key=POLYDRUSUS_KEY,
+        taxon_key=POLYDRUSUS_COL_KEY,
+        accepted_taxon_key=POLYDRUSUS_COL_KEY,
+        species_key=POLYDRUSUS_COL_KEY,
     )
     return make_raw_row(**{**defaults, **overrides})
 
@@ -257,9 +264,9 @@ def _row_replacing_seen_observation(**overrides):
         occurrence_id="https://www.inaturalist.org/observations/42577016",
         dataset_key=INATURALIST_KEY,
         dataset_name="iNaturalist",
-        taxon_key=POLYDRUSUS_KEY,
-        accepted_taxon_key=POLYDRUSUS_KEY,
-        species_key=POLYDRUSUS_KEY,
+        taxon_key=POLYDRUSUS_COL_KEY,
+        accepted_taxon_key=POLYDRUSUS_COL_KEY,
+        species_key=POLYDRUSUS_COL_KEY,
     )
     return make_raw_row(**{**defaults, **overrides})
 
@@ -275,9 +282,9 @@ def test_ignore_unusable_observations_logic(test_data):
         occurrence_id="good-1",
         dataset_key=INATURALIST_KEY,
         dataset_name="iNaturalist",
-        taxon_key=LIXUS_KEY,
-        accepted_taxon_key=LIXUS_KEY,
-        species_key=LIXUS_KEY,
+        taxon_key=LIXUS_COL_KEY,
+        accepted_taxon_key=LIXUS_COL_KEY,
+        species_key=LIXUS_COL_KEY,
     )
     rows = [
         good_row,
@@ -287,9 +294,9 @@ def test_ignore_unusable_observations_logic(test_data):
             occurrence_id="no-lon",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
             decimal_longitude=None,
         ),
         # missing latitude -> skip
@@ -298,9 +305,9 @@ def test_ignore_unusable_observations_logic(test_data):
             occurrence_id="no-lat",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
             decimal_latitude=None,
         ),
         # missing year -> skip
@@ -309,9 +316,9 @@ def test_ignore_unusable_observations_logic(test_data):
             occurrence_id="no-year",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
             year=None,
         ),
         # empty occurrence_id -> skip
@@ -320,9 +327,9 @@ def test_ignore_unusable_observations_logic(test_data):
             occurrence_id="",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
         ),
         # absence (occurrence_status != "PRESENT") -> skip
         make_raw_row(
@@ -330,9 +337,9 @@ def test_ignore_unusable_observations_logic(test_data):
             occurrence_id="absent-1",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
             occurrence_status="ABSENT",
         ),
     ]
@@ -483,9 +490,9 @@ def test_unmigrated_ou_gets_deleted(test_data):
                 occurrence_id="brand-new-no-match",
                 dataset_key=INATURALIST_KEY,
                 dataset_name="iNaturalist",
-                taxon_key=LIXUS_KEY,
-                accepted_taxon_key=LIXUS_KEY,
-                species_key=LIXUS_KEY,
+                taxon_key=LIXUS_COL_KEY,
+                accepted_taxon_key=LIXUS_COL_KEY,
+                species_key=LIXUS_COL_KEY,
             ),
         ]
     )
@@ -505,9 +512,9 @@ def test_old_observations_deleted(test_data):
                 occurrence_id="any-new-occurrence",
                 dataset_key=INATURALIST_KEY,
                 dataset_name="iNaturalist",
-                taxon_key=LIXUS_KEY,
-                accepted_taxon_key=LIXUS_KEY,
-                species_key=LIXUS_KEY,
+                taxon_key=LIXUS_COL_KEY,
+                accepted_taxon_key=LIXUS_COL_KEY,
+                species_key=LIXUS_COL_KEY,
             ),
         ]
     )
@@ -571,9 +578,9 @@ def test_seen_status_new_to_seen_because_no_alert(test_data):
                 occurrence_id="totally-new",
                 dataset_key=INATURALIST_KEY,
                 dataset_name="iNaturalist",
-                taxon_key=LIXUS_KEY,
-                accepted_taxon_key=LIXUS_KEY,
-                species_key=LIXUS_KEY,
+                taxon_key=LIXUS_COL_KEY,
+                accepted_taxon_key=LIXUS_COL_KEY,
+                species_key=LIXUS_COL_KEY,
             ),
         ]
     )
@@ -599,9 +606,9 @@ def test_seen_status_new_to_seen_because_old(test_data):
                 occurrence_id="old-lixus",
                 dataset_key=INATURALIST_KEY,
                 dataset_name="iNaturalist",
-                taxon_key=LIXUS_KEY,
-                accepted_taxon_key=LIXUS_KEY,
-                species_key=LIXUS_KEY,
+                taxon_key=LIXUS_COL_KEY,
+                accepted_taxon_key=LIXUS_COL_KEY,
+                species_key=LIXUS_COL_KEY,
             ),
         ]
     )
@@ -626,9 +633,9 @@ def test_seen_status_new_to_unseen(test_data):
                 occurrence_id="recent-lixus",
                 dataset_key=INATURALIST_KEY,
                 dataset_name="iNaturalist",
-                taxon_key=LIXUS_KEY,
-                accepted_taxon_key=LIXUS_KEY,
-                species_key=LIXUS_KEY,
+                taxon_key=LIXUS_COL_KEY,
+                accepted_taxon_key=LIXUS_COL_KEY,
+                species_key=LIXUS_COL_KEY,
             ),
         ]
     )
@@ -666,36 +673,36 @@ def test_chunked_import_detects_replacement_in_later_chunk(test_data, monkeypatc
             occurrence_id="chunk-new-0",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
         ),
         make_raw_row(
             gbif_id=101,
             occurrence_id="chunk-new-1",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
         ),
         make_raw_row(
             gbif_id=102,
             occurrence_id="chunk-new-2",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
         ),
         make_raw_row(
             gbif_id=103,
             occurrence_id="chunk-new-3",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
         ),
         # Chunk 2 (indices 4-6): replacement lives here (index 5)
         make_raw_row(
@@ -703,9 +710,9 @@ def test_chunked_import_detects_replacement_in_later_chunk(test_data, monkeypatc
             occurrence_id="chunk-new-4",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
         ),
         # Matches observation_unseen_to_be_replaced's stable_id
         _row_replacing_unseen_observation(gbif_id=105),
@@ -714,9 +721,9 @@ def test_chunked_import_detects_replacement_in_later_chunk(test_data, monkeypatc
             occurrence_id="chunk-new-6",
             dataset_key=INATURALIST_KEY,
             dataset_name="iNaturalist",
-            taxon_key=LIXUS_KEY,
-            accepted_taxon_key=LIXUS_KEY,
-            species_key=LIXUS_KEY,
+            taxon_key=LIXUS_COL_KEY,
+            accepted_taxon_key=LIXUS_COL_KEY,
+            species_key=LIXUS_COL_KEY,
         ),
     ]
 
@@ -767,9 +774,9 @@ def test_dataset_cleanup_mechanism(test_data):
                 occurrence_id="for-cleanup-test",
                 dataset_key=INATURALIST_KEY,
                 dataset_name="iNaturalist",
-                taxon_key=LIXUS_KEY,
-                accepted_taxon_key=LIXUS_KEY,
-                species_key=LIXUS_KEY,
+                taxon_key=LIXUS_COL_KEY,
+                accepted_taxon_key=LIXUS_COL_KEY,
+                species_key=LIXUS_COL_KEY,
             ),
         ]
     )
@@ -810,9 +817,9 @@ def test_basis_of_record_cleanup_mechanism(test_data):
                 occurrence_id="bor-cleanup-new",
                 dataset_key=INATURALIST_KEY,
                 dataset_name="iNaturalist",
-                taxon_key=LIXUS_KEY,
-                accepted_taxon_key=LIXUS_KEY,
-                species_key=LIXUS_KEY,
+                taxon_key=LIXUS_COL_KEY,
+                accepted_taxon_key=LIXUS_COL_KEY,
+                species_key=LIXUS_COL_KEY,
                 basis_of_record="HUMAN_OBSERVATION",
             ),
         ]
@@ -860,9 +867,9 @@ def test_transaction(test_data):
                         occurrence_id="some-new-occurrence",
                         dataset_key=INATURALIST_KEY,
                         dataset_name="iNaturalist",
-                        taxon_key=LIXUS_KEY,
-                        accepted_taxon_key=LIXUS_KEY,
-                        species_key=LIXUS_KEY,
+                        taxon_key=LIXUS_COL_KEY,
+                        accepted_taxon_key=LIXUS_COL_KEY,
+                        species_key=LIXUS_COL_KEY,
                     ),
                 ]
             )
@@ -900,9 +907,9 @@ def test_failed_import_clears_maintenance_and_emails_admins(test_data, mailoutbo
                         occurrence_id="fail-1",
                         dataset_key=INATURALIST_KEY,
                         dataset_name="iNaturalist",
-                        taxon_key=LIXUS_KEY,
-                        accepted_taxon_key=LIXUS_KEY,
-                        species_key=LIXUS_KEY,
+                        taxon_key=LIXUS_COL_KEY,
+                        accepted_taxon_key=LIXUS_COL_KEY,
+                        species_key=LIXUS_COL_KEY,
                     ),
                 ]
             )

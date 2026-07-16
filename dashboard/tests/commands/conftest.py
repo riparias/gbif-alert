@@ -40,7 +40,8 @@ def predicate_builder_belgium(species_list: QuerySet[Species]):
                 {
                     "type": "in",
                     "key": "TAXON_KEY",
-                    "values": [f"{s.gbif_taxon_key}" for s in species_list],
+                    "values": [s.gbif_col_taxon_key for s in species_list],
+                    "checklistKey": "7ddf754f-d193-4cc9-b351-99906754a03b",
                 },
                 {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"},
                 {
@@ -66,9 +67,13 @@ def test_data():
     )
 
     Species.objects.all().delete()  # There are initially a few species in the database (loaded in data migration)
-    lixus = Species.objects.create(name="Lixus bardanae", gbif_taxon_key=1224034)
+    lixus = Species.objects.create(
+        name="Lixus bardanae", gbif_taxon_key=1224034, gbif_col_taxon_key="1224034"
+    )
     polydrusus = Species.objects.create(
-        name="Polydrusus planifrons", gbif_taxon_key=7972617
+        name="Polydrusus planifrons",
+        gbif_taxon_key=7972617,
+        gbif_col_taxon_key="7972617",
     )
 
     inaturalist = Dataset.objects.create(

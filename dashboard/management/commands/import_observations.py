@@ -75,9 +75,9 @@ class RawObservationRow:
     decimal_latitude: float | None
     dataset_key: str
     dataset_name: str
-    taxon_key: int
-    accepted_taxon_key: int
-    species_key: int
+    taxon_key: str
+    accepted_taxon_key: str
+    species_key: str
     basis_of_record: str
     individual_count: int | None
     coordinate_uncertainty_in_meters: float | None
@@ -119,16 +119,14 @@ def dwca_row_to_raw(row: CoreRow) -> RawObservationRow:
             row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
         ),
         dataset_name=get_string_data(row, field_name=qn("datasetName")),
-        taxon_key=int(
-            get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/taxonKey")
+        taxon_key=get_string_data(
+            row, field_name="http://rs.gbif.org/terms/1.0/taxonKey"
         ),
-        accepted_taxon_key=int(
-            get_string_data(
-                row, field_name="http://rs.gbif.org/terms/1.0/acceptedTaxonKey"
-            )
+        accepted_taxon_key=get_string_data(
+            row, field_name="http://rs.gbif.org/terms/1.0/acceptedTaxonKey"
         ),
-        species_key=int(
-            get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/speciesKey")
+        species_key=get_string_data(
+            row, field_name="http://rs.gbif.org/terms/1.0/speciesKey"
         ),
         basis_of_record=get_string_data(row, field_name=qn("basisOfRecord")),
         individual_count=_get_int_or_none(row, qn("individualCount")),
@@ -146,7 +144,7 @@ def dwca_row_to_raw(row: CoreRow) -> RawObservationRow:
 
 
 def species_for_raw(
-    raw: RawObservationRow, hash_species: dict[int, Species]
+    raw: RawObservationRow, hash_species: dict[str, Species]
 ) -> Species:
     """Look up a Species from a RawObservationRow.
 
@@ -209,7 +207,7 @@ def build_observation_from_raw(
     raw: RawObservationRow,
     current_data_import: DataImport,
     hash_datasets: dict[str, Dataset],
-    hash_species: dict[int, Species],
+    hash_species: dict[str, Species],
     hash_basis_of_record: dict[str, BasisOfRecord],
     hash_verification_status: dict[str, bool],
 ) -> Observation:
@@ -373,7 +371,7 @@ def _import_all_observations(
     raw_rows: Iterable[RawObservationRow],
     data_import: DataImport,
     hash_table_datasets: dict[str, Dataset],
-    hash_table_species: dict[int, Species],
+    hash_table_species: dict[str, Species],
     hash_table_basis_of_record: dict[str, BasisOfRecord],
     hash_table_verification_status: dict[str, bool],
     stdout=None,
@@ -482,8 +480,10 @@ def run_import(
                 hash_table_basis_of_record[bor_value] = bor
 
             _log_with_time(stdout, "4. Creating a hash table of species")
-            hash_table_species: dict[int, Species] = {
-                species.gbif_taxon_key: species for species in Species.objects.all()
+            hash_table_species: dict[str, Species] = {
+                species.gbif_col_taxon_key: species
+                for species in Species.objects.all()
+                if species.gbif_col_taxon_key
             }
 
             _log_with_time(stdout, "5. Building verification status hash")
