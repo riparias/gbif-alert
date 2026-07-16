@@ -43,12 +43,14 @@ enough for your deployment.
 #                 {
 #                     "type": "in",
 #                     "key": "TAXON_KEY",
-#                     "values": [str(s.gbif_taxon_key) for s in species_list],
+#                     "values": [s.gbif_col_taxon_key for s in species_list],
+#                     "checklistKey": settings.GBIF_COL_XR_CHECKLIST_KEY,
 #                 },
 #                 {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"},
 #                 {"type": "greaterThanOrEquals", "key": "YEAR", "value": 2000},
 #             ],
-#         }
+#         },
+#         "checklistKey": settings.GBIF_COL_XR_CHECKLIST_KEY,
 #     }
 #
 #

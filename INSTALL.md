@@ -255,6 +255,23 @@ docker compose exec gbif-alert python manage.py send_alert_notifications_email
 
 The `migrate` service runs first and applies any new database migrations before the app comes back up. Volumes (`valkey_data`, `postgres_data`) are preserved across upgrades.
 
+### Upgrading to COL XR taxon keys
+
+GBIF has frozen its legacy numeric backbone in favour of the Catalogue of Life
+Extended Release (COL XR). This version drives downloads against COL XR.
+
+After deploying:
+
+1. Run `python manage.py migrate` (adds the `gbif_col_taxon_key` column).
+2. Run `python manage.py convert_taxon_keys_to_col`. Review the report and
+   curate any UNRESOLVED species in the admin (assign a COL key manually, or
+   remove species COL cannot match).
+3. If you use a custom `PREDICATE_BUILDER` in `local_settings.py`, update it to
+   use `gbif_col_taxon_key` and add the COL XR `checklistKey` (see
+   `local_settings.template.py`).
+4. Resume imports. `import_observations` refuses to run until every species has
+   a COL key.
+
 ### Backups (bundled-db only)
 
 If you use the bundled `db` service, plain `pg_dump` works:
