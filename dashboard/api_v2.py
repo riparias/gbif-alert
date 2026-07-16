@@ -191,6 +191,7 @@ def _species_to_out(species: Species) -> dict:
         "scientificName": species.name,
         **_vernacular_names(species),
         "gbifTaxonKey": species.gbif_taxon_key,
+        "gbifColTaxonKey": species.gbif_col_taxon_key,
         "tags": [t.name for t in species.tags.all()],
         "imageUrl": species.image_url,
         "imageSourceUrl": species.image_source_url,
@@ -230,6 +231,7 @@ def species_create(request: HttpRequest, payload: SpeciesIn):
     species = Species(
         name=payload.scientificName,
         gbif_taxon_key=payload.gbifTaxonKey,
+        gbif_col_taxon_key=payload.gbifColTaxonKey,
         vernacular_name_en=payload.vernacularNameEn,  # type: ignore[misc]  # modeltranslation column
         vernacular_name_fr=payload.vernacularNameFr,  # type: ignore[misc]  # modeltranslation column
         vernacular_name_nl=payload.vernacularNameNl,  # type: ignore[misc]  # modeltranslation column
@@ -249,6 +251,7 @@ def species_create(request: HttpRequest, payload: SpeciesIn):
         key_map = {
             "name": "scientificName",
             "gbif_taxon_key": "gbifTaxonKey",
+            "gbif_col_taxon_key": "gbifColTaxonKey",
             "vernacular_name_en": "vernacularNameEn",
             "vernacular_name_fr": "vernacularNameFr",
             "vernacular_name_nl": "vernacularNameNl",

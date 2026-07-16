@@ -50,6 +50,7 @@ def filter_lists_data():
         name="Procambarus fallax",
         vernacular_name="marbled crayfish",
         gbif_taxon_key=8879526,
+        gbif_col_taxon_key="5WRC3",
     )
     species_no_tags = Species.objects.create(
         name="Orconectes virilis",
@@ -114,6 +115,7 @@ def test_species_list_camel_case_keys(client, filter_lists_data):
     assert entry["vernacularNameFr"] == ""
     assert "vernacularName" not in entry
     assert entry["gbifTaxonKey"] == 8879526
+    assert entry["gbifColTaxonKey"] == "5WRC3"
     assert sorted(entry["tags"]) == sorted(["invasive", "crustacean"])
 
 
@@ -221,6 +223,40 @@ def test_species_create_as_superuser_via_token_returns_201(client, superuser):
     )
     assert resp.status_code == 201
     assert Species.objects.filter(gbif_taxon_key=5217334).exists()
+
+
+def test_species_create_accepts_optional_col_taxon_key(client, superuser):
+    """gbifColTaxonKey is optional on create and, when given, is persisted and returned."""
+    client.force_login(superuser)
+    resp = client.post(
+        "/api/v2/species/",
+        data={
+            "scientificName": "Ondatra zibethicus",
+            "gbifTaxonKey": 2437394,
+            "gbifColTaxonKey": "6QXWP",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["gbifTaxonKey"] == 2437394
+    assert body["gbifColTaxonKey"] == "6QXWP"
+    created = Species.objects.get(gbif_taxon_key=2437394)
+    assert created.gbif_col_taxon_key == "6QXWP"
+
+
+def test_species_create_without_col_taxon_key_leaves_it_null(client, superuser):
+    """Omitting gbifColTaxonKey on create leaves it null (additive, non-breaking)."""
+    client.force_login(superuser)
+    resp = client.post(
+        "/api/v2/species/",
+        data={"scientificName": "Sciurus carolinensis", "gbifTaxonKey": 2437400},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    assert resp.json()["gbifColTaxonKey"] is None
+    created = Species.objects.get(gbif_taxon_key=2437400)
+    assert created.gbif_col_taxon_key is None
 
 
 def test_species_create_full_parity_fields_are_stored(client, superuser):
