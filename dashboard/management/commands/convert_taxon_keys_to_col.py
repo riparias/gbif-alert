@@ -5,6 +5,7 @@ EXACT + ACCEPTED matches are filled; everything else is left blank and reported
 for manual curation (never silently guessed). Run after deploying the schema
 migration and before resuming imports.
 """
+import requests
 from django.core.management.base import BaseCommand
 
 from dashboard.gbif_taxonomy import match_col_key
@@ -25,9 +26,17 @@ class Command(BaseCommand):
         dry_run = options["dry_run"]
         filled = []
         unresolved = []
+        errors = []
 
         for species in Species.objects.all().order_by("name"):
-            result = match_col_key(species.gbif_taxon_key)
+            try:
+                result = match_col_key(species.gbif_taxon_key)
+            except (requests.RequestException, ValueError) as exc:
+                # A transient GBIF/network/parse error for one species must not
+                # abort the whole run - record it and keep going.
+                errors.append((species, str(exc)))
+                continue
+
             if result.matched:
                 filled.append((species, result))
                 if not dry_run:
@@ -50,6 +59,11 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"  {species.name} ({species.gbif_taxon_key}) [{result.detail}]"
             )
+
+        self.stdout.write("")
+        self.stdout.write(f"ERRORS - could not query GBIF ({len(errors)}):")
+        for species, message in errors:
+            self.stdout.write(f"  {species.name} ({species.gbif_taxon_key}): {message}")
 
         if dry_run:
             self.stdout.write("")

@@ -2,6 +2,7 @@ from io import StringIO
 from unittest.mock import patch
 
 import pytest
+import requests
 from django.core.management import call_command
 
 from dashboard.gbif_taxonomy import ColMatchResult
@@ -49,6 +50,33 @@ def test_dry_run_writes_nothing(mock_match):
     _run(dry_run=True)
     sp.refresh_from_db()
     assert sp.gbif_col_taxon_key is None
+
+
+@patch("dashboard.management.commands.convert_taxon_keys_to_col.match_col_key")
+def test_species_error_does_not_abort_run(mock_match):
+    ok_species = Species.objects.create(
+        name="Branta canadensis", gbif_taxon_key=5232437
+    )
+    error_species = Species.objects.create(
+        name="Ghostus specius", gbif_taxon_key=999999999
+    )
+
+    def side_effect(gbif_taxon_key):
+        if gbif_taxon_key == error_species.gbif_taxon_key:
+            raise requests.RequestException("GBIF is down")
+        return ColMatchResult(col_key="5WRC3", matched=True, detail="EXACT/ACCEPTED")
+
+    mock_match.side_effect = side_effect
+
+    output = _run()
+
+    ok_species.refresh_from_db()
+    error_species.refresh_from_db()
+    assert ok_species.gbif_col_taxon_key == "5WRC3"
+    assert error_species.gbif_col_taxon_key is None
+    assert "Ghostus specius" in output
+    assert "GBIF is down" in output
+    assert "errors" in output.lower()
 
 
 @patch("dashboard.management.commands.convert_taxon_keys_to_col.match_col_key")
