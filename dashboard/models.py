@@ -120,6 +120,15 @@ class Species(models.Model):  # type: ignore
     vernacular_name = models.CharField(max_length=100, blank=True)
     gbif_taxon_key = models.IntegerField(unique=True)
 
+    # Catalogue of Life Extended Release (COL XR) taxon key - alphanumeric
+    # (e.g. "C5KM"), unlike the frozen integer gbif_taxon_key backbone key.
+    # Drives the GBIF download and occurrence matching. null=True is required
+    # alongside unique=True + blank=True so multiple not-yet-populated rows do
+    # not collide on the unique constraint during the migration window.
+    gbif_col_taxon_key = models.CharField(
+        max_length=32, unique=True, null=True, blank=True
+    )
+
     tags = TaggableManager(blank=True)
 
     class ImageSourceType(models.TextChoices):
@@ -168,6 +177,7 @@ class Species(models.Model):  # type: ignore
             "scientificName": self.name,
             "vernacularName": self.vernacular_name,
             "gbifTaxonKey": self.gbif_taxon_key,
+            "gbifColTaxonKey": self.gbif_col_taxon_key,
             "tags": [tag.name for tag in self.tags.all()],
             "imageUrl": self.image_url,
             "imageSourceUrl": self.image_source_url,
