@@ -47,6 +47,8 @@ import types
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 
+from dashboard.models import Species
+
 
 # Every environment variable the refactored settings module reads. Each
 # test starts with all of these unset so its `setenv` calls have a
@@ -582,3 +584,28 @@ def test_min_not_less_than_max_raises(clean_env):
     with pytest.raises(ImproperlyConfigured) as exc_info:
         _import_settings()
     assert "less than" in str(exc_info.value).lower()
+
+
+# ---------------------------------------------------------------------------
+# COL XR checklist key (GBIF_COL_XR_CHECKLIST_KEY)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_default_predicate_builder_uses_col_key_and_checklist():
+    from djangoproject.settings import (
+        _default_predicate_builder,
+        GBIF_COL_XR_CHECKLIST_KEY,
+    )
+
+    Species.objects.create(
+        name="Branta canadensis", gbif_taxon_key=5232437, gbif_col_taxon_key="5WRC3"
+    )
+    result = _default_predicate_builder(Species.objects.all())
+
+    assert result["checklistKey"] == GBIF_COL_XR_CHECKLIST_KEY
+    taxon_pred = next(
+        p for p in result["predicate"]["predicates"] if p.get("key") == "TAXON_KEY"
+    )
+    assert taxon_pred["values"] == ["5WRC3"]
+    assert taxon_pred["checklistKey"] == GBIF_COL_XR_CHECKLIST_KEY
