@@ -63,6 +63,20 @@ def test_no_match_is_unresolved(mock_get):
 
 
 @patch("dashboard.gbif_taxonomy.requests.get")
+def test_exact_accepted_but_missing_key_is_unresolved(mock_get):
+    mock_get.return_value = _fake_response(
+        {
+            "usage": {"status": "ACCEPTED"},
+            "diagnostics": {"matchType": "EXACT"},
+        }
+    )
+    result = match_col_key(123456)
+    assert result.matched is False
+    assert result.col_key is None
+    assert "no-usage-key" in result.detail
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
 def test_non_accepted_or_fuzzy_is_unresolved(mock_get):
     mock_get.return_value = _fake_response(
         {

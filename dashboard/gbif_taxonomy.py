@@ -49,5 +49,10 @@ def match_col_key(gbif_taxon_key: int) -> ColMatchResult:
     if match_type == "EXACT" and status == "ACCEPTED" and key:
         return ColMatchResult(col_key=key, matched=True, detail=f"EXACT/{status}")
 
-    detail = f"{match_type}/{status or 'no-usage'}"
+    if match_type == "EXACT" and status == "ACCEPTED" and not key:
+        # Same matchType/status as an accepted match, but no usage key: make the
+        # detail unambiguous so it can't be mistaken for a match in a report.
+        detail = f"{match_type}/{status}/no-usage-key"
+    else:
+        detail = f"{match_type}/{status or 'no-usage'}"
     return ColMatchResult(col_key=None, matched=False, detail=detail)
