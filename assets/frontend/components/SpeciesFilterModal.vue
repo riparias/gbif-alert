@@ -190,12 +190,12 @@ function tagColor(name: string): string {
             <Column :header="t('message.gbifTaxonKey')" style="width: 9rem">
                 <template #body="{ data }">
                     <a
-                        v-if="data.gbifTaxonKey"
-                        :href="`https://www.gbif.org/species/${data.gbifTaxonKey}`"
+                        v-if="data.gbifColTaxonKey"
+                        :href="`https://www.gbif.org/taxon/${data.gbifColTaxonKey}`"
                         target="_blank"
                         rel="noopener noreferrer"
                         class="gbif-link"
-                    >{{ data.gbifTaxonKey }}</a>
+                    >{{ data.gbifColTaxonKey }}</a>
                 </template>
             </Column>
             <Column :header="t('message.tags')">
