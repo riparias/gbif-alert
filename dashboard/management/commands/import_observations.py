@@ -16,7 +16,7 @@ from django.contrib.gis.geos import Point
 from django.core.mail import mail_admins
 from django.core.management.base import BaseCommand, CommandParser, CommandError
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils import timezone
 from dwca.darwincore.utils import qualname as qn  # type: ignore
 from dwca.read import DwCAReader  # type: ignore
@@ -627,8 +627,13 @@ class Command(BaseCommand):
         # download predicate is broken/empty and occurrences cannot be matched.
         # All-or-nothing on purpose - a missing key would silently drop a
         # species from monitoring. Blocks before any download is triggered.
+        # A blank ("") key counts as missing too, not just NULL: it would pass a
+        # NULL-only check, then be dropped from the match hash and inject an
+        # empty value into the download predicate.
         missing = list(
-            Species.objects.filter(gbif_col_taxon_key__isnull=True).order_by("name")
+            Species.objects.filter(
+                Q(gbif_col_taxon_key__isnull=True) | Q(gbif_col_taxon_key="")
+            ).order_by("name")
         )
         if missing:
             names = ", ".join(f"{s.name} ({s.gbif_taxon_key})" for s in missing)

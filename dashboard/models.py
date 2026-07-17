@@ -158,6 +158,17 @@ class Species(models.Model):  # type: ignore
     def __str__(self) -> str:
         return self.name
 
+    def save(self, *args, **kwargs) -> None:
+        # Persist a blank COL taxon key as NULL rather than "". The field is
+        # unique=True + null=True, so blanks must be NULL to avoid colliding
+        # with each other, and the rest of the app treats NULL as "not yet
+        # resolved" (import preflight guard, species match hash). A ModelForm
+        # (the admin) would otherwise save an empty field as "", which would
+        # pass the guard and then silently drop the species from monitoring.
+        if self.gbif_col_taxon_key == "":
+            self.gbif_col_taxon_key = None
+        super().save(*args, **kwargs)
+
     def display_name_html(self) -> str:
         name = f"<i>{self.name}</i>"
         if self.vernacular_name:
@@ -415,9 +426,7 @@ def create_unseen_observations(observation_queryset: QuerySet["Observation"]) ->
         base_obs_qs = recent_observations.filter(species_id__in=all_species_ids)
 
         if all_dataset_ids and not has_alert_without_dataset_filter:
-            base_obs_qs = base_obs_qs.filter(
-                source_dataset_id__in=all_dataset_ids
-            )
+            base_obs_qs = base_obs_qs.filter(source_dataset_id__in=all_dataset_ids)
 
         if all_basis_of_record_ids and not has_alert_without_basis_of_record_filter:
             base_obs_qs = base_obs_qs.filter(
@@ -972,9 +981,7 @@ class MyAreaManager(models.Manager["Area"]):
         # owned_by is only meaningful for an authenticated user; the FK lookup
         # rejects AnonymousUser, so narrow the WebsiteUser union to User.
         return (
-            super(MyAreaManager, self)
-            .get_queryset()
-            .filter(owner=cast("User", user))
+            super(MyAreaManager, self).get_queryset().filter(owner=cast("User", user))
         )
 
     def public(self) -> QuerySet["Area"]:
@@ -1201,10 +1208,15 @@ class ObservationFilterSet(models.Model):
         abstract = True
 
     def clean(self) -> None:
-        if self.area_filter_mode in (self.AREA_FILTER_APPROACHING, self.AREA_FILTER_BOTH):
+        if self.area_filter_mode in (
+            self.AREA_FILTER_APPROACHING,
+            self.AREA_FILTER_BOTH,
+        ):
             if self.approaching_distance_km is None:
                 raise ValidationError(
-                    {"approaching_distance_km": "This field is required when the area filter mode is not 'inside'."}
+                    {
+                        "approaching_distance_km": "This field is required when the area filter mode is not 'inside'."
+                    }
                 )
             if self.approaching_distance_km <= 0:
                 raise ValidationError(
@@ -1217,7 +1229,9 @@ class ObservationFilterSet(models.Model):
         elif self.area_filter_mode == self.AREA_FILTER_INSIDE:
             if self.approaching_distance_km is not None:
                 raise ValidationError(
-                    {"approaching_distance_km": "This field must be empty when the area filter mode is 'inside'."}
+                    {
+                        "approaching_distance_km": "This field must be empty when the area filter mode is 'inside'."
+                    }
                 )
 
 
@@ -1383,7 +1397,9 @@ class Alert(ObservationFilterSet):
 
     @property
     def verified_filter_display(self) -> str:
-        return dict(self.VERIFIED_FILTER_CHOICES).get(self.verified_filter, self.verified_filter)
+        return dict(self.VERIFIED_FILTER_CHOICES).get(
+            self.verified_filter, self.verified_filter
+        )
 
     @property
     def species_list(self) -> str:

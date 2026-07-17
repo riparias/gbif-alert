@@ -944,3 +944,18 @@ def test_import_aborts_when_all_missing():
     with pytest.raises(CommandError) as exc:
         call_command("import_observations")
     assert "convert_taxon_keys_to_col" in str(exc.value)
+
+
+def test_import_aborts_when_a_species_has_blank_col_key():
+    """A blank ("") col key counts as missing, not a valid key: the guard must
+    still block. Mimics a pre-existing "" row (bypassing save()-normalisation
+    via .update()) to prove the guard is defensive against it."""
+    Species.objects.all().delete()
+    Species.objects.create(name="Has key", gbif_taxon_key=1, gbif_col_taxon_key="AAAA")
+    blank = Species.objects.create(
+        name="Blank key", gbif_taxon_key=2, gbif_col_taxon_key="BBBB"
+    )
+    Species.objects.filter(pk=blank.pk).update(gbif_col_taxon_key="")
+    with pytest.raises(CommandError) as exc:
+        call_command("import_observations")
+    assert "Blank key" in str(exc.value)
