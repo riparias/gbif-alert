@@ -50,7 +50,8 @@ def filter_lists_data():
         name="Procambarus fallax",
         vernacular_name="marbled crayfish",
         gbif_taxon_key=8879526,
-        gbif_col_taxon_key="5WRC3",
+        # Real COL XR key for this taxon (COL treats it as Procambarus virginalis).
+        gbif_col_taxon_key="7WLYV",
     )
     species_no_tags = Species.objects.create(
         name="Orconectes virilis",
@@ -115,7 +116,7 @@ def test_species_list_camel_case_keys(client, filter_lists_data):
     assert entry["vernacularNameFr"] == ""
     assert "vernacularName" not in entry
     assert entry["gbifTaxonKey"] == 8879526
-    assert entry["gbifColTaxonKey"] == "5WRC3"
+    assert entry["gbifColTaxonKey"] == "7WLYV"
     assert sorted(entry["tags"]) == sorted(["invasive", "crustacean"])
 
 
@@ -157,7 +158,13 @@ def test_species_per_polygon_returns_species_with_count(client, observations_dat
                 "geometry": {
                     "type": "Polygon",
                     "coordinates": [
-                        [[4.0, 50.5], [5.0, 50.5], [5.0, 51.0], [4.0, 51.0], [4.0, 50.5]]
+                        [
+                            [4.0, 50.5],
+                            [5.0, 50.5],
+                            [5.0, 51.0],
+                            [4.0, 51.0],
+                            [4.0, 50.5],
+                        ]
                     ],
                 },
             }
@@ -226,31 +233,38 @@ def test_species_create_as_superuser_via_token_returns_201(client, superuser):
 
 
 def test_species_create_accepts_optional_col_taxon_key(client, superuser):
-    """gbifColTaxonKey is optional on create and, when given, is persisted and returned."""
+    """gbifColTaxonKey is optional on create and, when given, is persisted and
+    returned - so an operator scripting species creation can supply the COL key
+    up front instead of waiting for the conversion command to fill it."""
     client.force_login(superuser)
     resp = client.post(
         "/api/v2/species/",
         data={
-            "scientificName": "Ondatra zibethicus",
+            "scientificName": "Callosciurus erythraeus",
             "gbifTaxonKey": 2437394,
-            "gbifColTaxonKey": "6QXWP",
+            "gbifColTaxonKey": "PW5V",
         },
         content_type="application/json",
     )
     assert resp.status_code == 201
     body = resp.json()
     assert body["gbifTaxonKey"] == 2437394
-    assert body["gbifColTaxonKey"] == "6QXWP"
+    assert body["gbifColTaxonKey"] == "PW5V"
     created = Species.objects.get(gbif_taxon_key=2437394)
-    assert created.gbif_col_taxon_key == "6QXWP"
+    assert created.gbif_col_taxon_key == "PW5V"
 
 
 def test_species_create_without_col_taxon_key_leaves_it_null(client, superuser):
-    """Omitting gbifColTaxonKey on create leaves it null (additive, non-breaking)."""
+    """Omitting gbifColTaxonKey on create leaves it null.
+
+    Why: the field must stay optional so the existing create contract is not
+    broken, and a species added before the conversion command runs is simply
+    picked up by it later (null = not yet resolved).
+    """
     client.force_login(superuser)
     resp = client.post(
         "/api/v2/species/",
-        data={"scientificName": "Sciurus carolinensis", "gbifTaxonKey": 2437400},
+        data={"scientificName": "Callosciurus nigrovittatus", "gbifTaxonKey": 2437400},
         content_type="application/json",
     )
     assert resp.status_code == 201
@@ -613,7 +627,9 @@ def test_observations_list_new_fields(client, observations_data):
     assert "basisOfRecord" not in item
 
 
-def test_observation_detail_basis_of_record_id_and_name(client, observation_detail_data):
+def test_observation_detail_basis_of_record_id_and_name(
+    client, observation_detail_data
+):
     """ObservationDetailOut returns both basisOfRecordId and basisOfRecordName."""
     obs = observation_detail_data["obs"]
     bor = observation_detail_data["basis_of_record"]
@@ -684,11 +700,15 @@ def test_status_filter_uses_viewed_vocabulary(client, observations_data):
     """The status filter accepts viewed/notViewed (mapped to internal seen/unseen)."""
     obs = observations_data["obs"]
     user = observations_data["user"]
-    ObservationUnseen.objects.create(observation=obs, user=user)  # obs is now "not viewed"
+    ObservationUnseen.objects.create(
+        observation=obs, user=user
+    )  # obs is now "not viewed"
     client.login(username="obs_user", password="12345")
     url = reverse("api-v2:observations_list")
 
-    not_viewed = {i["id"] for i in client.get(url, {"status": "notViewed"}).json()["items"]}
+    not_viewed = {
+        i["id"] for i in client.get(url, {"status": "notViewed"}).json()["items"]
+    }
     assert obs.pk in not_viewed
 
     viewed = {i["id"] for i in client.get(url, {"status": "viewed"}).json()["items"]}
@@ -739,12 +759,16 @@ def test_pagination_second_page(client, observations_data):
 def test_pagination_metadata(client, observations_data):
     """The response echoes page/pageSize/totalPages and has-next/previous flags."""
     # 2 observations, pageSize 1 -> 2 pages.
-    p1 = client.get(reverse("api-v2:observations_list"), {"pageSize": 1, "page": 1}).json()
+    p1 = client.get(
+        reverse("api-v2:observations_list"), {"pageSize": 1, "page": 1}
+    ).json()
     assert (p1["page"], p1["pageSize"], p1["totalPages"]) == (1, 1, 2)
     assert p1["hasNextPage"] is True
     assert p1["hasPreviousPage"] is False
 
-    p2 = client.get(reverse("api-v2:observations_list"), {"pageSize": 1, "page": 2}).json()
+    p2 = client.get(
+        reverse("api-v2:observations_list"), {"pageSize": 1, "page": 2}
+    ).json()
     assert (p2["page"], p2["totalPages"]) == (2, 2)
     assert p2["hasNextPage"] is False
     assert p2["hasPreviousPage"] is True
@@ -824,7 +848,9 @@ def test_gbif_id_type_split_is_documented(client):
     schema = client.get("/api/v2/openapi.json").json()
     props = schema["components"]["schemas"]
     assert "intrinsic" in props["ObservationOut"]["properties"]["gbifId"]["description"]
-    assert "intrinsic" in props["SpeciesOut"]["properties"]["gbifTaxonKey"]["description"]
+    assert (
+        "intrinsic" in props["SpeciesOut"]["properties"]["gbifTaxonKey"]["description"]
+    )
     # Types are unchanged: gbifTaxonKey stays integer, gbifId stays string.
     assert props["SpeciesOut"]["properties"]["gbifTaxonKey"]["type"] == "integer"
     assert props["ObservationOut"]["properties"]["gbifId"]["type"] == "string"
@@ -2403,11 +2429,15 @@ def test_mark_all_as_seen_authenticated_returns_queued(
     assert calls[0]["user_id"] == user.pk
 
 
-def test_mark_all_as_seen_returns_count_of_unseen(client, observations_data, monkeypatch):
+def test_mark_all_as_seen_returns_count_of_unseen(
+    client, observations_data, monkeypatch
+):
     """count reports how many matching observations were unseen (N2)."""
     from dashboard.views import jobs
 
-    monkeypatch.setattr(jobs.mark_many_observations_as_seen, "delay", lambda qs, u: None)
+    monkeypatch.setattr(
+        jobs.mark_many_observations_as_seen, "delay", lambda qs, u: None
+    )
 
     user = observations_data["user"]
     for o in (observations_data["obs"], observations_data["obs_other_species"]):
@@ -2858,14 +2888,14 @@ def test_openapi_declares_error_responses(path, method, expected_codes):
     schema = api_v2.get_openapi_schema()
     responses = schema["paths"][f"/api/v2{path}"][method]["responses"]
     declared = set(responses.keys())
-    assert expected_codes <= declared, (
-        f"{method.upper()} {path} missing {expected_codes - declared} in OpenAPI"
-    )
+    assert (
+        expected_codes <= declared
+    ), f"{method.upper()} {path} missing {expected_codes - declared} in OpenAPI"
     for code in expected_codes:
         ref = responses[code]["content"]["application/json"]["schema"]["$ref"]
-        assert ref.endswith("/DetailErrorOut"), (
-            f"{method.upper()} {path} response {code} should be DetailErrorOut, got {ref}"
-        )
+        assert ref.endswith(
+            "/DetailErrorOut"
+        ), f"{method.upper()} {path} response {code} should be DetailErrorOut, got {ref}"
 
 
 # --- /api/v2/alert-templates/ ---
@@ -2874,10 +2904,13 @@ def test_openapi_declares_error_responses(path, method, expected_codes):
 @pytest.fixture()
 def template_data():
     from dashboard.models import AlertTemplate
+
     User = get_user_model()
     op = User.objects.create_user(username="op", password="12345", email="op@e.com")
     sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
-    alert = Alert.objects.create(name="seed", user=op, email_notifications_frequency="N")
+    alert = Alert.objects.create(
+        name="seed", user=op, email_notifications_frequency="N"
+    )
     alert.species.add(sp)
     tpl = AlertTemplate.create_from_alert(alert, created_by=op)
     tpl.name_en = "Amphibians near X"
@@ -3007,7 +3040,9 @@ def test_publish_as_template_creates_template_for_superuser(client, alert_data):
     from dashboard.models import AlertTemplate
 
     User = get_user_model()
-    op = User.objects.create_superuser(username="root", password="12345", email="r@e.com")
+    op = User.objects.create_superuser(
+        username="root", password="12345", email="r@e.com"
+    )
     alert = alert_data["alert"]  # owned by alertuser; a superuser may promote any alert
     client.login(username="root", password="12345")
     response = client.post(f"/api/v2/spa/alerts/{alert.pk}/publish-as-template/")

@@ -16,8 +16,11 @@ def make_raw_row(**overrides) -> RawObservationRow:
 
     Pass keyword arguments to override any field. Defaults produce a
     usable, non-skipped row referring to the Lixus bardanae taxon
-    (gbif_taxon_key=1224034), basis HUMAN_OBSERVATION, somewhere in
+    (COL taxon key 3VPFV), basis HUMAN_OBSERVATION, somewhere in
     Belgium in May 2023.
+
+    The taxon keys are COL XR keys (alphanumeric), matching what a real
+    GBIF download interpreted against the COL XR checklist returns.
     """
     defaults = dict(
         gbif_id=1,
@@ -30,9 +33,9 @@ def make_raw_row(**overrides) -> RawObservationRow:
         decimal_latitude=50.0,
         dataset_key="ds-key-1",
         dataset_name="Dataset 1",
-        taxon_key="1224034",
-        accepted_taxon_key="1224034",
-        species_key="1224034",
+        taxon_key="3VPFV",
+        accepted_taxon_key="3VPFV",
+        species_key="3VPFV",
         basis_of_record="HUMAN_OBSERVATION",
         individual_count=1,
         coordinate_uncertainty_in_meters=10.0,

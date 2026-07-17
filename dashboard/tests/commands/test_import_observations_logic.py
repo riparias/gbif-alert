@@ -31,12 +31,13 @@ from dashboard.tests.commands.factories import make_raw_row, run_import_with_row
 
 # iNaturalist gbif_dataset_key used by observations created in test_data
 INATURALIST_KEY = "50c9509d-22c7-4a22-a47d-8c48425ef4a7"
-# gbif_taxon_key values used by test_data (Lixus bardanae / Polydrusus planifrons)
+# Legacy (frozen) GBIF backbone gbif_taxon_key values used by test_data
 LIXUS_KEY = 1224034
 POLYDRUSUS_KEY = 7972617
-# gbif_col_taxon_key values used by test_data (matching DwCA taxonKey strings)
-LIXUS_COL_KEY = str(LIXUS_KEY)
-POLYDRUSUS_COL_KEY = str(POLYDRUSUS_KEY)
+# The real COL XR keys those taxa map to - alphanumeric, as returned by the GBIF
+# v2 match API and as they appear in a COL XR download's taxonKey columns.
+LIXUS_COL_KEY = "3VPFV"  # Lixus bardanae
+POLYDRUSUS_COL_KEY = "4L6VJ"  # Polydrusus planifrons
 
 pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.sequential]
 
@@ -926,36 +927,58 @@ def test_failed_import_clears_maintenance_and_emails_admins(test_data, mailoutbo
 
 
 def test_import_aborts_when_a_species_lacks_col_key():
-    """The preflight guard blocks the whole import (all-or-nothing) when
-    at least one Species has no gbif_col_taxon_key, naming it in the error."""
+    """The preflight guard blocks the whole import when any species lacks a COL
+    key, naming it in the error.
+
+    Why all-or-nothing: a download is interpreted against a single taxonomy, so
+    a species with no COL key cannot be queried or matched. Importing "the rest"
+    would quietly stop monitoring it, so the guard refuses the entire run.
+    """
     Species.objects.all().delete()
-    Species.objects.create(name="Has key", gbif_taxon_key=1, gbif_col_taxon_key="AAAA")
-    Species.objects.create(name="Missing key", gbif_taxon_key=2)  # no col key
+    Species.objects.create(
+        name="Lixus bardanae",
+        gbif_taxon_key=LIXUS_KEY,
+        gbif_col_taxon_key=LIXUS_COL_KEY,
+    )
+    Species.objects.create(
+        name="Polydrusus planifrons", gbif_taxon_key=POLYDRUSUS_KEY
+    )  # no COL key
     with pytest.raises(CommandError) as exc:
         call_command("import_observations")
-    assert "Missing key" in str(exc.value)
+    assert "Polydrusus planifrons" in str(exc.value)
 
 
 def test_import_aborts_when_all_missing():
-    """Same guard, but with every species missing the key: the error also
-    points the operator at the conversion command to run."""
+    """Same guard with every species missing the key: the error also names the
+    conversion command, so an un-migrated instance tells the operator what to
+    run rather than firing a broken download."""
     Species.objects.all().delete()
-    Species.objects.create(name="No key at all", gbif_taxon_key=3)
+    Species.objects.create(name="Lixus bardanae", gbif_taxon_key=LIXUS_KEY)
     with pytest.raises(CommandError) as exc:
         call_command("import_observations")
     assert "convert_taxon_keys_to_col" in str(exc.value)
 
 
 def test_import_aborts_when_a_species_has_blank_col_key():
-    """A blank ("") col key counts as missing, not a valid key: the guard must
-    still block. Mimics a pre-existing "" row (bypassing save()-normalisation
-    via .update()) to prove the guard is defensive against it."""
+    """A blank ("") COL key counts as missing, not as a valid key.
+
+    Why: a "" would pass a NULL-only check, then be dropped from the species
+    match hash and injected as an empty value into the download predicate -
+    silently unmonitoring the species. The row is forced via .update() to
+    bypass the model's save()-normalisation, mimicking a pre-existing blank.
+    """
     Species.objects.all().delete()
-    Species.objects.create(name="Has key", gbif_taxon_key=1, gbif_col_taxon_key="AAAA")
+    Species.objects.create(
+        name="Lixus bardanae",
+        gbif_taxon_key=LIXUS_KEY,
+        gbif_col_taxon_key=LIXUS_COL_KEY,
+    )
     blank = Species.objects.create(
-        name="Blank key", gbif_taxon_key=2, gbif_col_taxon_key="BBBB"
+        name="Polydrusus planifrons",
+        gbif_taxon_key=POLYDRUSUS_KEY,
+        gbif_col_taxon_key=POLYDRUSUS_COL_KEY,
     )
     Species.objects.filter(pk=blank.pk).update(gbif_col_taxon_key="")
     with pytest.raises(CommandError) as exc:
         call_command("import_observations")
-    assert "Blank key" in str(exc.value)
+    assert "Polydrusus planifrons" in str(exc.value)

@@ -68,12 +68,12 @@ def test_data():
 
     Species.objects.all().delete()  # There are initially a few species in the database (loaded in data migration)
     lixus = Species.objects.create(
-        name="Lixus bardanae", gbif_taxon_key=1224034, gbif_col_taxon_key="1224034"
+        name="Lixus bardanae", gbif_taxon_key=1224034, gbif_col_taxon_key="3VPFV"
     )
     polydrusus = Species.objects.create(
         name="Polydrusus planifrons",
         gbif_taxon_key=7972617,
-        gbif_col_taxon_key="7972617",
+        gbif_col_taxon_key="4L6VJ",
     )
 
     inaturalist = Dataset.objects.create(
