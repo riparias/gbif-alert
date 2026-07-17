@@ -1,3 +1,30 @@
+# Unreleased
+
+- Feature: observations are now downloaded and matched against the Catalogue of
+  Life Extended Release (COL XR), the taxonomy GBIF adopted after freezing its
+  own numeric backbone. Species gain a `gbif_col_taxon_key` (alphanumeric, e.g.
+  `3VPFV`) alongside the legacy integer `gbif_taxon_key`, which is kept
+  untouched; the download predicate now sends the COL key plus the COL XR
+  `checklistKey`, and occurrences are matched on it. Without this, the app would
+  keep drifting from current taxonomy: the legacy backbone receives no further
+  updates, so splits, lumps and newly described species never reach it. In
+  practice the switch also *finds* records the frozen backbone was dropping -
+  hybrid taxa such as *Reynoutria* x *bohemica* and *Spiraea* x *billardii* now
+  resolve to the monitored species instead of going unmatched.
+- Upgrade (operator action required): run `python manage.py migrate`, then
+  `python manage.py convert_taxon_keys_to_col` to fill the new key from the
+  legacy one via GBIF's match API. The command reports any species it cannot
+  resolve cleanly rather than guessing - curate those in the admin. If your
+  instance defines a custom `PREDICATE_BUILDER` in `local_settings.py`, update
+  it to use `gbif_col_taxon_key` and add the `checklistKey` (see
+  `local_settings.template.py`). `import_observations` refuses to run until
+  every species has a COL key, so a half-migrated instance fails loudly instead
+  of silently dropping a species from monitoring. See INSTALL.md.
+- Feature: the species filter shows the COL taxon key, linked to the taxon's
+  page on gbif.org. The public `/species/` API additionally exposes
+  `gbifColTaxonKey`; the existing `gbifTaxonKey` is unchanged, so the change is
+  additive for API consumers.
+
 # 2.2.1 (2026-07-13)
 
 - Diagnostics: the observation import now logs peak RSS (memory high-water mark)

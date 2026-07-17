@@ -83,9 +83,7 @@ def test_load_observations_values(test_data) -> None:
     assert occ.source_dataset.name == "iNaturalist research-grade observations"
     assert occ.references == "https://www.inaturalist.org/observations/42577016"
 
-    occ = observations[
-        2
-    ]  # Fourth row in CSV (third was skipped because of date issue)
+    occ = observations[2]  # Fourth row in CSV (third was skipped because of date issue)
 
     assert str(occ.date) == "2018-05-05"
     assert occ.gbif_id == "2423231120"
@@ -177,9 +175,10 @@ def test_dataimport_object_values(test_data):
     assert di.completed
     assert di.gbif_download_id == "0076720-210914110416597"
     assert di.gbif_predicate is None
-    assert di.imported_observations_counter == Observation.objects.filter(
-        data_import=di
-    ).count()
+    assert (
+        di.imported_observations_counter
+        == Observation.objects.filter(data_import=di).count()
+    )
 
 
 def test_gbif_request_not_necessary(test_data) -> None:
@@ -198,9 +197,7 @@ def test_gbif_request(test_data, gbif_download_config) -> None:
     """The correct HTTP requests are emitted to gbif.org"""
     with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
         with requests_mock_module.Mocker() as m:
-            m.post(
-                "https://api.gbif.org/v1/occurrence/download/request", text="1000"
-            )
+            m.post("https://api.gbif.org/v1/occurrence/download/request", text="1000")
             m.get(
                 "https://api.gbif.org/v1/occurrence/download/request/1000",
                 body=gbif_download_file,
@@ -219,7 +216,8 @@ def test_gbif_request(test_data, gbif_download_config) -> None:
             assert request_history[0].text == (
                 '{"predicate": {"type": "and", "predicates": ['
                 '{"type": "equals", "key": "COUNTRY", "value": "BE"}, '
-                '{"type": "in", "key": "TAXON_KEY", "values": ["1224034", "7972617"]}, '
+                '{"type": "in", "key": "TAXON_KEY", "values": ["3VPFV", "4L6VJ"], '
+                '"checklistKey": "7ddf754f-d193-4cc9-b351-99906754a03b"}, '
                 '{"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"}, '
                 '{"type": "greaterThanOrEquals", "key": "YEAR", "value": 2010}]}}'
             )
@@ -236,9 +234,7 @@ def test_gbif_predicate_stored(test_data, gbif_download_config):
     """In case of GBIF request, the predicate is stored in the DataImport object"""
     with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
         with requests_mock_module.Mocker() as m:
-            m.post(
-                "https://api.gbif.org/v1/occurrence/download/request", text="1000"
-            )
+            m.post("https://api.gbif.org/v1/occurrence/download/request", text="1000")
             m.get(
                 "https://api.gbif.org/v1/occurrence/download/request/1000",
                 body=gbif_download_file,
@@ -255,7 +251,8 @@ def test_gbif_predicate_stored(test_data, gbif_download_config):
                         {
                             "key": "TAXON_KEY",
                             "type": "in",
-                            "values": ["1224034", "7972617"],
+                            "values": ["3VPFV", "4L6VJ"],
+                            "checklistKey": "7ddf754f-d193-4cc9-b351-99906754a03b",
                         },
                         {
                             "key": "OCCURRENCE_STATUS",
@@ -270,5 +267,3 @@ def test_gbif_predicate_stored(test_data, gbif_download_config):
                     ],
                 }
             }
-
-

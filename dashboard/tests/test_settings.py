@@ -47,6 +47,8 @@ import types
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 
+from dashboard.models import Species
+
 
 # Every environment variable the refactored settings module reads. Each
 # test starts with all of these unset so its `setenv` calls have a
@@ -116,9 +118,7 @@ def clean_env(monkeypatch):
     for var_name in _ENV_VARS_READ_BY_SETTINGS:
         monkeypatch.delenv(var_name, raising=False)
 
-    module_snapshots = {
-        name: sys.modules.get(name) for name in _MUTATED_MODULES
-    }
+    module_snapshots = {name: sys.modules.get(name) for name in _MUTATED_MODULES}
     try:
         yield monkeypatch
     finally:
@@ -155,6 +155,7 @@ def _import_settings():
         "djangoproject.local_settings"
     )
     import djangoproject.settings  # noqa: WPS433 - module-level import inside fn is the point
+
     return djangoproject.settings
 
 
@@ -379,7 +380,9 @@ def test_entry_points_default_to_settings_module():
     pkg = Path(__file__).resolve().parents[2] / "djangoproject"
     for name in ("wsgi.py", "asgi.py"):
         source = (pkg / name).read_text()
-        assert 'setdefault("DJANGO_SETTINGS_MODULE", "djangoproject.settings")' in source, name
+        assert (
+            'setdefault("DJANGO_SETTINGS_MODULE", "djangoproject.settings")' in source
+        ), name
         assert "djangoproject.local_settings" not in source, name
 
 
@@ -449,9 +452,7 @@ def test_admins_python_literal_raises_improperly_configured(clean_env):
     settings module must reject them at boot instead.
     """
     _minimal_env(clean_env)
-    clean_env.setenv(
-        "ADMINS", '[("Nicolas Noe", "nicolas@niconoe.eu")]'
-    )
+    clean_env.setenv("ADMINS", '[("Nicolas Noe", "nicolas@niconoe.eu")]')
     with pytest.raises(ImproperlyConfigured) as exc_info:
         _import_settings()
     # The message must name the offending input and the expected format so the
@@ -582,3 +583,37 @@ def test_min_not_less_than_max_raises(clean_env):
     with pytest.raises(ImproperlyConfigured) as exc_info:
         _import_settings()
     assert "less than" in str(exc_info.value).lower()
+
+
+# ---------------------------------------------------------------------------
+# COL XR checklist key (GBIF_COL_XR_CHECKLIST_KEY)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_default_predicate_builder_uses_col_key_and_checklist():
+    """The download predicate queries COL XR, using COL keys.
+
+    Why all three assertions matter: without `checklistKey` GBIF silently falls
+    back to the obsolete backbone, and the values must come from
+    gbif_col_taxon_key - sending the legacy integer key against the COL
+    checklist would match nothing. The species below deliberately has a
+    different legacy key (5232437) and COL key (5WRC3) so a regression back to
+    the legacy field fails this test rather than passing by coincidence.
+    """
+    from djangoproject.settings import (
+        _default_predicate_builder,
+        GBIF_COL_XR_CHECKLIST_KEY,
+    )
+
+    Species.objects.create(
+        name="Branta canadensis", gbif_taxon_key=5232437, gbif_col_taxon_key="5WRC3"
+    )
+    result = _default_predicate_builder(Species.objects.all())
+
+    assert result["checklistKey"] == GBIF_COL_XR_CHECKLIST_KEY
+    taxon_pred = next(
+        p for p in result["predicate"]["predicates"] if p.get("key") == "TAXON_KEY"
+    )
+    assert taxon_pred["values"] == ["5WRC3"]
+    assert taxon_pred["checklistKey"] == GBIF_COL_XR_CHECKLIST_KEY

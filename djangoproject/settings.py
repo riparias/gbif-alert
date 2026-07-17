@@ -287,6 +287,15 @@ def _bbox_predicates() -> list[dict]:
 _GBIF_BBOX_PREDICATES = _bbox_predicates()
 
 
+# COL XR is the Catalogue of Life Extended Release checklist that superseded the
+# frozen GBIF backbone. Downloads must reference it so occurrences are
+# interpreted against the current taxonomy. Overridable via env for instances
+# that need a different checklist.
+GBIF_COL_XR_CHECKLIST_KEY = os.environ.get(
+    "GBIF_COL_XR_CHECKLIST_KEY", "7ddf754f-d193-4cc9-b351-99906754a03b"
+)
+
+
 def _default_predicate_builder(species_list):
     """Default GBIF download predicate builder.
 
@@ -299,7 +308,8 @@ def _default_predicate_builder(species_list):
         {
             "type": "in",
             "key": "TAXON_KEY",
-            "values": [str(s.gbif_taxon_key) for s in species_list],
+            "values": [s.gbif_col_taxon_key for s in species_list],
+            "checklistKey": GBIF_COL_XR_CHECKLIST_KEY,
         },
         {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"},
     ]
@@ -310,7 +320,10 @@ def _default_predicate_builder(species_list):
             {"type": "greaterThanOrEquals", "key": "YEAR", "value": int(year_min)}
         )
     predicates.extend(_GBIF_BBOX_PREDICATES)
-    return {"predicate": {"type": "and", "predicates": predicates}}
+    return {
+        "predicate": {"type": "and", "predicates": predicates},
+        "checklistKey": GBIF_COL_XR_CHECKLIST_KEY,
+    }
 
 
 GBIF_ALERT: dict = {

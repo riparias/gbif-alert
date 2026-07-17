@@ -71,15 +71,42 @@ class SpeciesResource(resources.ModelResource):
 @admin.register(Species)
 class SpeciesAdmin(ImportExportModelAdmin, TranslationAdmin):  # type: ignore[misc]  # import-export mixin MRO vs ModelAdmin
     resource_class = SpeciesResource
-    list_display = ("image_thumb", "name", "vernacular_name", "gbif_taxon_key", "tag_list")
-    search_fields = ["name", "vernacular_name", "gbif_taxon_key"]
+    list_display = (
+        "image_thumb",
+        "name",
+        "vernacular_name",
+        "gbif_taxon_key",
+        "gbif_col_taxon_key",
+        "tag_list",
+    )
+    search_fields = ["name", "vernacular_name", "gbif_taxon_key", "gbif_col_taxon_key"]
     readonly_fields = ("image_preview", "image_source_type")
     fieldsets = (
-        (None, {"fields": ("name", "vernacular_name", "gbif_taxon_key", "tags")}),
-        ("Image", {"fields": (
-            "image_url", "image_source_url", "image_attribution",
-            "image_license", "image_source_type", "image_preview",
-        )}),
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "vernacular_name",
+                    "gbif_taxon_key",
+                    "gbif_col_taxon_key",
+                    "tags",
+                )
+            },
+        ),
+        (
+            "Image",
+            {
+                "fields": (
+                    "image_url",
+                    "image_source_url",
+                    "image_attribution",
+                    "image_license",
+                    "image_source_type",
+                    "image_preview",
+                )
+            },
+        ),
     )
 
     def tag_list(self, obj):
@@ -107,7 +134,9 @@ class SpeciesAdmin(ImportExportModelAdmin, TranslationAdmin):  # type: ignore[mi
     def image_preview(self, obj):
         """Return an HTML img tag for the species image URL, or '-' if unset."""
         if obj.image_url:
-            return format_html('<img src="{}" style="max-height:80px" />', obj.image_url)
+            return format_html(
+                '<img src="{}" style="max-height:80px" />', obj.image_url
+            )
         return "-"
 
     image_preview.short_description = "Preview"  # type: ignore[attr-defined]
@@ -218,7 +247,14 @@ class ApiTokenAdmin(admin.ModelAdmin):
     list_display = ("name", "user", "prefix", "created_at", "last_used_at")
     list_filter = ("created_at", "last_used_at")
     search_fields = ("name", "prefix", "user__username", "user__email")
-    readonly_fields = ("user", "name", "prefix", "token_hash", "created_at", "last_used_at")
+    readonly_fields = (
+        "user",
+        "name",
+        "prefix",
+        "token_hash",
+        "created_at",
+        "last_used_at",
+    )
     ordering = ("-created_at",)
 
     def has_add_permission(self, request):
