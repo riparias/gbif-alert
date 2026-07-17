@@ -80,6 +80,26 @@ def test_species_error_does_not_abort_run(mock_match):
 
 
 @patch("dashboard.management.commands.convert_taxon_keys_to_col.match_col_key")
+def test_col_key_collision_is_reported_not_crashed(mock_match):
+    # Two legacy taxa can resolve to the SAME accepted COL key (synonyms are
+    # followed to their accepted usage). The unique constraint would collide;
+    # the command must complete, fill one, and report the other as an error.
+    mock_match.return_value = ColMatchResult(
+        col_key="DUP1", matched=True, detail="EXACT/ACCEPTED"
+    )
+    first = Species.objects.create(name="Aaa first", gbif_taxon_key=111)
+    second = Species.objects.create(name="Bbb second", gbif_taxon_key=222)
+
+    output = _run()  # must not raise despite the collision
+
+    first.refresh_from_db()
+    second.refresh_from_db()
+    assert {first.gbif_col_taxon_key, second.gbif_col_taxon_key} == {"DUP1", None}
+    assert "already assigned" in output.lower()
+    assert "errors" in output.lower()
+
+
+@patch("dashboard.management.commands.convert_taxon_keys_to_col.match_col_key")
 def test_idempotent_rerun(mock_match):
     mock_match.return_value = ColMatchResult(
         col_key="5WRC3", matched=True, detail="EXACT/ACCEPTED"

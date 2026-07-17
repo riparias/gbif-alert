@@ -7,9 +7,7 @@ import dataclasses
 import requests
 from django.conf import settings
 
-COL_XR_CHECKLIST_KEY = getattr(
-    settings, "GBIF_COL_XR_CHECKLIST_KEY", "7ddf754f-d193-4cc9-b351-99906754a03b"
-)
+COL_XR_CHECKLIST_KEY = settings.GBIF_COL_XR_CHECKLIST_KEY
 _GBIF_MATCH_URL = "https://api.gbif.org/v2/species/match"
 _TIMEOUT = 30
 
