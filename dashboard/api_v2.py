@@ -64,6 +64,7 @@ from dashboard.api_v2_schemas import (
     SpeciesOut,
     SpeciesPerPolygonIn,
     SpeciesPerPolygonOut,
+    UserStatusOut,
     ValidationErrorOut,
     VerifiedFilter,
 )
@@ -1232,6 +1233,25 @@ def news_mark_visited(request: HttpRequest):
     if request.user.is_authenticated:
         request.user.mark_news_as_visited_now()
     return 204, None
+
+
+@api_v2_spa.get(
+    "/user-status/",
+    response=UserStatusOut,
+    auth=None,
+)
+def user_status(request: HttpRequest):
+    """Return the current values of the navbar notification dots.
+
+    Anonymous users get False for both flags (they see no dots).
+    """
+    user = request.user
+    if not user.is_authenticated:
+        return {"hasUnseenNews": False, "hasAlertsWithUnseenObservations": False}
+    return {
+        "hasUnseenNews": user.has_unseen_news,
+        "hasAlertsWithUnseenObservations": user.has_alerts_with_unseen_observations,
+    }
 
 
 @api_v2.get(

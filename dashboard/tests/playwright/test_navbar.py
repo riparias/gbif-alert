@@ -26,6 +26,7 @@ from dashboard.models import (
     Species,
 )
 from dashboard.tests.playwright.helpers import login
+from page_fragments.models import NEWS_PAGE_IDENTIFIER, PageFragment
 
 
 # ---------------------------------------------------------------------------
@@ -227,3 +228,37 @@ def test_navbar_signout_logs_user_out(page: Page, live_server):
 
     # The session is gone: the navbar returns to its anonymous state.
     expect(page.get_by_role("link", name="Sign in")).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_news_dot_clears_without_full_reload(page: Page, live_server):
+    """The 'What's new' dot disappears as soon as the user visits the news page.
+
+    Regression test: the dots used to be read from the nav-config JSON block
+    injected at page load, which the SPA never refreshes - so the dot stayed lit
+    while navigating client-side, until the next full page load.
+    """
+    User = get_user_model()
+    User.objects.create_user(username="testuser", password="testpass123")
+    # update_or_create: a data migration may already have created the fragment.
+    PageFragment.objects.update_or_create(
+        identifier=NEWS_PAGE_IDENTIFIER, defaults={"content_en": "Something new"}
+    )
+    login(page, live_server.url, "testuser", "testpass123")
+    page.goto(live_server.url + "/")
+
+    news_item = page.get_by_role("menuitem", name="What's new")
+    expect(news_item.locator(".gbif-nav-dot")).to_be_visible()
+
+    page.evaluate("window.__noReloadMarker = 'spa'")
+    news_item.click()
+
+    # The dot is gone right away, and no full page load happened.
+    expect(news_item.locator(".gbif-nav-dot")).not_to_be_visible()
+    assert page.evaluate("window.__noReloadMarker") == "spa"
+
+    # It stays gone after navigating client-side to another page.
+    page.get_by_role("menuitem", name="About this site").click()
+    expect(page).to_have_url(live_server.url + "/about-site")
+    expect(news_item.locator(".gbif-nav-dot")).not_to_be_visible()
+    assert page.evaluate("window.__noReloadMarker") == "spa"

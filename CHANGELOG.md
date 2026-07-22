@@ -1,5 +1,12 @@
 # Unreleased
 
+- Fix: the navbar notification dots ("What's new" and "My alerts") no longer go
+  stale during a single-page-app session. They were read from the nav config
+  Django injects at page load, so visiting the news page cleared the dot
+  server-side but left it lit on screen until the next full page reload. They
+  now live in a small Pinia store that is updated when the news page is visited
+  and refreshed (via the new internal `/api/v2/spa/user-status/` endpoint) after
+  actions that can change an observation's seen status.
 - Fix: several env vars were read by the settings but never forwarded into the
   containers by the compose files' shared `x-app-env` block, so operators who
   set them under Docker/Dokploy had them silently ignored. Most visible was the
