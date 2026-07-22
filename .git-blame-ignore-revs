@@ -1,0 +1,9 @@
+# Revisions to skip in `git blame` - bulk formatting passes with no behavior
+# change. Enable once per clone with:
+#
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# (GitHub's blame view honours this file automatically.)
+
+# Apply prettier to the frontend (formatting only)
+c4abd63877d3b92c3f6f625477fc63b1c37342b7
