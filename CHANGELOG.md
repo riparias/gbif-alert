@@ -1,65 +1,30 @@
 # Unreleased
 
-- Change: the main navigation is more compact. "About this site" and "About the
-  data" are grouped under a single "About" menu (the parent has no page of its
-  own - it opens the submenu - and is highlighted while either of its pages is
-  open), and "Explore all observations" is shortened to "Explore". The full
-  wording is still used on the 404 page, where it reads as a sentence. The
-  language selector is collapsed to a globe plus the language code ("EN"); the
-  full native names are shown in the dropdown, which is widened for them.
-
-- Fix: the navbar notification dots ("What's new" and "My alerts") no longer go
-  stale during a single-page-app session. They were read from the nav config
-  Django injects at page load, so visiting the news page cleared the dot
-  server-side but left it lit on screen until the next full page reload. They
-  now live in a small Pinia store that is updated when the news page is visited
-  and refreshed (via the new internal `/api/v2/spa/user-status/` endpoint) after
-  actions that can change an observation's seen status.
-- Fix: several env vars were read by the settings but never forwarded into the
-  containers by the compose files' shared `x-app-env` block, so operators who
-  set them under Docker/Dokploy had them silently ignored. Most visible was the
-  GBIF download bounding box (`GBIF_DOWNLOAD_{LAT,LON}_{MIN,MAX}`), which
-  dropped out of the download predicate while country/year (which were listed)
-  kept working; also affected were `DJANGO_CSRF_TRUSTED_ORIGINS`, `CACHE_URL`,
-  `DJANGO_LOG_LEVEL`, `EMAIL_BACKEND`, `EMAIL_SUBJECT_PREFIX`, the SES settings
-  (`AWS_SES_REGION_NAME`, `USE_SES_V2`), the API throttle rates, and
-  `GBIF_COL_XR_CHECKLIST_KEY`. All are now passed through in both
-  `docker-compose.yml` and `docker-compose.dokploy.yml`; redeploy to pick up
-  any you have set. (The HTTPS-hardening flags such as `SECURE_SSL_REDIRECT`
-  are intentionally still not forwarded - they auto-enable from the effective
-  `DEBUG`, and forwarding an unset value would wrongly disable them.) A new
-  test (`test_compose_env_coverage.py`) fails CI if a future setting is added
-  without forwarding it, so this class of silent drop cannot recur.
+- Change: the main navigation is more compact - "About this site" and "About the
+  data" are grouped under an "About" menu, "Explore all observations" is now
+  "Explore", and the language selector shows only the language code.
+- Fix: the "What's new" and "My alerts" notification dots no longer stay lit
+  after you visit the page; they now clear without a full page reload.
+- Fix: several settings were silently ignored under Docker/Dokploy because the
+  compose files never passed them to the containers - most visibly the GBIF
+  download bounding box, plus the log level, email/SES options, CSRF trusted
+  origins and API throttle rates. Redeploy to pick up any you have set.
 - Feature: observations are now downloaded and matched against the Catalogue of
   Life Extended Release (COL XR), the taxonomy GBIF adopted after freezing its
-  own numeric backbone. Species gain a `gbif_col_taxon_key` (alphanumeric, e.g.
-  `3VPFV`) alongside the legacy integer `gbif_taxon_key`, which is kept
-  untouched; the download predicate now sends the COL key plus the COL XR
-  `checklistKey`, and occurrences are matched on it. Without this, the app would
-  keep drifting from current taxonomy: the legacy backbone receives no further
-  updates, so splits, lumps and newly described species never reach it. In
-  practice the switch also *finds* records the frozen backbone was dropping -
-  hybrid taxa such as *Reynoutria* x *bohemica* and *Spiraea* x *billardii* now
-  resolve to the monitored species instead of going unmatched.
+  own backbone. This keeps the app in step with current taxonomy and also finds
+  records the frozen backbone was dropping, such as the hybrids *Reynoutria* x
+  *bohemica* and *Spiraea* x *billardii*.
 - Upgrade (operator action required): run `python manage.py migrate`, then
-  `python manage.py convert_taxon_keys_to_col` to fill the new key from the
-  legacy one via GBIF's match API. The command reports any species it cannot
-  resolve cleanly rather than guessing - curate those in the admin. If your
-  instance defines a custom `PREDICATE_BUILDER` in `local_settings.py`, update
-  it to use `gbif_col_taxon_key` and add the `checklistKey` (see
-  `local_settings.template.py`). `import_observations` refuses to run until
-  every species has a COL key, so a half-migrated instance fails loudly instead
-  of silently dropping a species from monitoring. See INSTALL.md.
-- Feature: the species filter shows the COL taxon key, linked to the taxon's
-  page on gbif.org. The public `/species/` API additionally exposes
-  `gbifColTaxonKey`; the existing `gbifTaxonKey` is unchanged, so the change is
-  additive for API consumers.
-- Dev/infra: the frontend now has a prettier config (`.prettierrc.json`, 4-space
-  indent, 100 columns) and has been formatted with it in one pass. Without a
-  config, prettier used its own defaults and rewrote whole files, so running it
-  as CONTRIBUTING asks buried real changes under hundreds of reformatted lines.
-  `npm run format` / `npm run format-check` scope it to `assets/frontend/`, CI
-  checks it, and the formatting commit is listed in `.git-blame-ignore-revs`.
+  `python manage.py convert_taxon_keys_to_col`. Species it cannot resolve are
+  reported instead of guessed - curate those in the admin. A custom
+  `PREDICATE_BUILDER` in `local_settings.py` must be updated to use
+  `gbif_col_taxon_key` and the COL `checklistKey`. `import_observations` refuses
+  to run until every species has a COL key. See INSTALL.md.
+- Feature: the species filter shows the COL taxon key, linked to gbif.org. The
+  public `/species/` API also exposes `gbifColTaxonKey`; `gbifTaxonKey` is
+  unchanged, so the change is additive for API consumers.
+- Dev/infra: the frontend now has a prettier config (4-space indent, 100
+  columns) and has been formatted with it. Use `npm run format`; CI checks it.
 
 # 2.2.1 (2026-07-13)
 
