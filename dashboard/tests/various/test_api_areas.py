@@ -270,6 +270,81 @@ def test_create_empty_fc_returns_422(area_client):
     assert resp.status_code == 422
 
 
+@pytest.fixture
+def operator_client(client):
+    User = get_user_model()
+    operator = User.objects.create_superuser("boss", "boss@t.com", "pass")
+    client.force_login(operator)
+    return client
+
+
+def test_operator_can_create_shared_area(operator_client):
+    resp = operator_client.post(
+        "/api/v2/areas/",
+        data=json.dumps({"name": "Shared area", "geojson": SIMPLE_FC, "shared": True}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    assert resp.json()["isUserSpecific"] is False
+    assert Area.objects.get(name="Shared area").owner is None
+
+
+def test_shared_area_is_visible_to_another_user(operator_client, django_user_model):
+    resp = operator_client.post(
+        "/api/v2/areas/",
+        data=json.dumps({"name": "Shared area", "geojson": SIMPLE_FC, "shared": True}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+
+    from django.test import Client
+
+    other = django_user_model.objects.create_user(
+        username="bystander", password="pass", email="by@t.com"
+    )
+    other_client = Client()
+    other_client.force_login(other)
+    names = [a["name"] for a in other_client.get("/api/v2/areas/").json()]
+    assert "Shared area" in names
+
+
+def test_operator_without_shared_flag_creates_user_specific_area(operator_client):
+    resp = operator_client.post(
+        "/api/v2/areas/",
+        data=json.dumps({"name": "My own area", "geojson": SIMPLE_FC}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    assert resp.json()["isUserSpecific"] is True
+    assert Area.objects.get(name="My own area").owner is not None
+
+
+def test_regular_user_asking_for_shared_gets_403(area_client):
+    resp = area_client.post(
+        "/api/v2/areas/",
+        data=json.dumps({"name": "Sneaky", "geojson": SIMPLE_FC, "shared": True}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 403
+    assert not Area.objects.filter(name="Sneaky").exists()
+
+
+def test_shared_permission_checked_before_geometry(area_client):
+    """A non-operator gets 403, not 422, even with an unusable geometry."""
+    resp = area_client.post(
+        "/api/v2/areas/",
+        data=json.dumps(
+            {
+                "name": "Sneaky",
+                "geojson": {"type": "FeatureCollection", "features": []},
+                "shared": True,
+            }
+        ),
+        content_type="application/json",
+    )
+    assert resp.status_code == 403
+
+
 # ---------------------------------------------------------------------------
 # AreaPatchAPITests
 # ---------------------------------------------------------------------------

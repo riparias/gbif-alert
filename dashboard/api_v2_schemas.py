@@ -16,7 +16,9 @@ DelayUnit = Literal["days", "weeks", "months", "years"]
 
 # `language` is not a fixed enum (instance-configurable via settings.LANGUAGES),
 # so it stays a plain string with a description rather than a Literal.
-_LANGUAGE_DESC = "A language code enabled on this site (see settings.LANGUAGES, e.g. en/fr/nl)."
+_LANGUAGE_DESC = (
+    "A language code enabled on this site (see settings.LANGUAGES, e.g. en/fr/nl)."
+)
 
 
 class SpeciesOut(Schema):
@@ -314,6 +316,14 @@ class AreaIn(Schema):
             "found are merged into the single MultiPolygon of one area. Only "
             "EPSG:4326 is accepted - reproject before sending."
         )
+    )
+    shared: bool = Field(
+        default=False,
+        description=(
+            "Create a shared area, visible to every user, instead of one "
+            "private to the caller. Operators (superusers) only - anyone else "
+            "asking for a shared area is refused with 403."
+        ),
     )
 
 

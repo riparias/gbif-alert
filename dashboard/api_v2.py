@@ -338,6 +338,43 @@ def area_geojson(request: HttpRequest, area_id: int):
     return json.loads(serialize("geojson", [area], srid=4326))
 
 
+def _area_to_out(area: Area) -> dict:
+    """Build the AreaOut payload for a single area."""
+    return {
+        "id": area.pk,
+        "name": area.name,
+        "isUserSpecific": area.is_user_specific,
+        "tags": [t.name for t in area.tags.all()],
+    }
+
+
+def _resolve_area_owner(user: User, shared: bool) -> User | None:
+    """Owner for a new area: None (public) when an operator asks for a shared one.
+
+    Parameters
+    ----------
+    user : User
+        The authenticated caller.
+    shared : bool
+        Whether the caller asked for an area visible to everyone.
+
+    Returns
+    -------
+    User or None
+        None for a shared area, the caller otherwise.
+
+    Raises
+    ------
+    HttpError
+        403 if a non-superuser asks for a shared area.
+    """
+    if not shared:
+        return user
+    if not user.is_superuser:
+        raise HttpError(403, "Only operators can create shared areas.")
+    return None
+
+
 @api_v2.post(
     "/areas/",
     response={201: AreaOut, 422: DetailErrorOut, **ERR_401, **ERR_403},
@@ -350,20 +387,19 @@ def area_create(request: HttpRequest, payload: AreaIn):
     MultiPolygon geometry, in EPSG:4326. All polygons are merged into a single
     MultiPolygon - one call creates exactly one area.
 
+    Operators can pass `shared` to create an area visible to every user;
+    anyone else doing so is refused with 403.
+
     Returns 422 with a detail message if the geometry is unusable.
     """
     user = cast(User, request.user)
+    owner = _resolve_area_owner(user, payload.shared)
     try:
         mpoly = geojson_to_multipolygon(payload.geojson)
     except ValueError as exc:
         return 422, {"detail": str(exc)}
-    area = Area.objects.create(mpoly=mpoly, owner=user, name=payload.name)
-    return 201, {
-        "id": area.pk,
-        "name": area.name,
-        "isUserSpecific": area.is_user_specific,
-        "tags": [],
-    }
+    area = Area.objects.create(mpoly=mpoly, owner=owner, name=payload.name)
+    return 201, _area_to_out(area)
 
 
 @api_v2.post(
@@ -375,13 +411,18 @@ def area_create_from_file(
     request: HttpRequest,
     name: Form[str],
     data_file: File[UploadedFile],
+    shared: Form[bool] = False,
 ):
     """Create a new user-specific area from an uploaded GeoPackage file.
+
+    Operators can pass `shared` to create an area visible to every user;
+    anyone else doing so is refused with 403.
 
     Returns 422 with a human-readable detail message if the file fails
     validation (wrong geometry type, multiple layers, missing SRS, etc.).
     """
     user = cast(User, request.user)
+    owner = _resolve_area_owner(user, shared)
     with tempfile.NamedTemporaryFile(suffix=data_file.name) as tmp:
         tmp.write(data_file.read())
         tmp.flush()
@@ -391,14 +432,9 @@ def area_create_from_file(
             return 422, {"detail": str(exc)}
 
     area = Area.objects.create(
-        mpoly=cast(GEOSMultiPolygon, GEOSGeometry(wkt)), owner=user, name=name
+        mpoly=cast(GEOSMultiPolygon, GEOSGeometry(wkt)), owner=owner, name=name
     )
-    return 201, {
-        "id": area.pk,
-        "name": area.name,
-        "isUserSpecific": area.is_user_specific,
-        "tags": [],
-    }
+    return 201, _area_to_out(area)
 
 
 @api_v2.patch(
@@ -421,12 +457,7 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
         except ValueError as exc:
             return 422, {"detail": str(exc)}
     area.save()
-    return {
-        "id": area.pk,
-        "name": area.name,
-        "isUserSpecific": area.is_user_specific,
-        "tags": [t.name for t in area.tags.all()],
-    }
+    return _area_to_out(area)
 
 
 @api_v2.delete(
@@ -518,9 +549,7 @@ def observations_list(
     ] = "date",
     orderDir: Annotated[
         str,
-        Field(
-            description="Sort direction: asc or desc. Any other value returns 400."
-        ),
+        Field(description="Sort direction: asc or desc. Any other value returns 400."),
     ] = "desc",
 ):
     """Return a paginated, filtered, and sorted page of observations.
