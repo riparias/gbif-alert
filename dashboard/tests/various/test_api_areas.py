@@ -38,7 +38,9 @@ TWO_POLYGON_FC = {
             "type": "Feature",
             "geometry": {
                 "type": "Polygon",
-                "coordinates": [[[10.0, 50.0], [10.0, 51.0], [11.0, 51.0], [10.0, 50.0]]],
+                "coordinates": [
+                    [[10.0, 50.0], [10.0, 51.0], [11.0, 51.0], [10.0, 50.0]]
+                ],
             },
             "properties": {},
         },
@@ -82,6 +84,7 @@ SIMPLE_MPOLY = MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)), srid=4326)
 # ---------------------------------------------------------------------------
 # GeoJSONToMultiPolygonTests
 # ---------------------------------------------------------------------------
+
 
 def test_single_polygon_returns_multipolygon():
     result = geojson_to_multipolygon(SINGLE_POLYGON_FC)
@@ -128,14 +131,89 @@ def test_reprojected_to_3857():
     assert abs(centroid.x) > 100_000
 
 
+def test_bare_polygon_geometry_accepted():
+    geom = {
+        "type": "Polygon",
+        "coordinates": [[[4.0, 50.0], [4.0, 51.0], [5.0, 51.0], [4.0, 50.0]]],
+    }
+    result = geojson_to_multipolygon(geom)
+    assert result.geom_type == "MultiPolygon"
+    assert len(result) == 1
+
+
+def test_bare_multipolygon_geometry_accepted():
+    geom = {
+        "type": "MultiPolygon",
+        "coordinates": [
+            [[[4.0, 50.0], [4.0, 51.0], [5.0, 51.0], [4.0, 50.0]]],
+            [[[10.0, 50.0], [10.0, 51.0], [11.0, 51.0], [10.0, 50.0]]],
+        ],
+    }
+    result = geojson_to_multipolygon(geom)
+    assert result.geom_type == "MultiPolygon"
+    assert len(result) == 2
+
+
+def test_single_feature_accepted():
+    feature = {
+        "type": "Feature",
+        "properties": {},
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [[[4.0, 50.0], [4.0, 51.0], [5.0, 51.0], [4.0, 50.0]]],
+        },
+    }
+    result = geojson_to_multipolygon(feature)
+    assert result.geom_type == "MultiPolygon"
+    assert len(result) == 1
+
+
+def test_feature_without_geometry_raises_value_error():
+    fc = {
+        "type": "FeatureCollection",
+        "features": [{"type": "Feature", "properties": {}, "geometry": None}],
+    }
+    with pytest.raises(ValueError, match="no geometry"):
+        geojson_to_multipolygon(fc)
+
+
+def test_malformed_coordinates_raise_value_error():
+    """A GEOSException must surface as ValueError, not escape as a 500."""
+    fc = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {},
+                "geometry": {"type": "Polygon", "coordinates": [[[4.0, 50.0]]]},
+            }
+        ],
+    }
+    with pytest.raises(ValueError):
+        geojson_to_multipolygon(fc)
+
+
+def test_unsupported_toplevel_type_raises_value_error():
+    with pytest.raises(ValueError, match="Unsupported GeoJSON type"):
+        geojson_to_multipolygon({"type": "Point", "coordinates": [4.0, 50.0]})
+
+
+def test_non_dict_input_raises_value_error():
+    with pytest.raises(ValueError):
+        geojson_to_multipolygon("not a dict")  # type: ignore[arg-type]
+
+
 # ---------------------------------------------------------------------------
 # AreaFromDrawingAPITests
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def drawing_client(client):
     User = get_user_model()
-    user = User.objects.create_user(username="drawer", password="pass", email="drawer@t.com")
+    user = User.objects.create_user(
+        username="drawer", password="pass", email="drawer@t.com"
+    )
     client.force_login(user)
     return client
 
@@ -196,11 +274,16 @@ def test_create_from_drawing_empty_fc_returns_422(drawing_client):
 # AreaPatchAPITests
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def patch_data(client):
     User = get_user_model()
-    user = User.objects.create_user(username="patcher", password="pass", email="patcher@t.com")
-    other = User.objects.create_user(username="other", password="pass", email="other@t.com")
+    user = User.objects.create_user(
+        username="patcher", password="pass", email="patcher@t.com"
+    )
+    other = User.objects.create_user(
+        username="other", password="pass", email="other@t.com"
+    )
     area = Area.objects.create(name="Original", owner=user, mpoly=SIMPLE_MPOLY)
     client.force_login(user)
     return {"client": client, "user": user, "other": other, "area": area}
@@ -241,7 +324,9 @@ def test_patch_null_geojson_leaves_geometry_unchanged(patch_data):
 
 
 def test_patch_another_users_area_returns_404(patch_data):
-    other_area = Area.objects.create(name="Other area", owner=patch_data["other"], mpoly=SIMPLE_MPOLY)
+    other_area = Area.objects.create(
+        name="Other area", owner=patch_data["other"], mpoly=SIMPLE_MPOLY
+    )
     resp = patch_data["client"].patch(
         f"/api/v2/areas/{other_area.pk}/",
         data=json.dumps({"name": "Hijacked"}),

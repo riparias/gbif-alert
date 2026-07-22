@@ -1,8 +1,13 @@
 import json
 
 from django.contrib.gis.gdal import DataSource
+from django.contrib.gis.gdal.error import GDALException
 from django.contrib.gis.gdal.geometries import MultiPolygon
-from django.contrib.gis.geos import GEOSGeometry, MultiPolygon as GEOSMultiPolygon
+from django.contrib.gis.geos import (
+    GEOSException,
+    GEOSGeometry,
+    MultiPolygon as GEOSMultiPolygon,
+)
 
 from dashboard.models import DATA_SRID
 
@@ -65,6 +70,64 @@ def file_to_wkt_multipolygon(
         )
 
 
+def _geometries_from_geojson(geojson: dict) -> list[dict]:
+    """Normalise accepted GeoJSON shapes to a flat list of geometry dicts.
+
+    Accepts a FeatureCollection, a single Feature, or a bare Polygon /
+    MultiPolygon geometry. Scripts commonly hold one of the latter two (a row
+    from a fiona iteration, or the output of shapely.geometry.mapping), so
+    rejecting them would only force every caller to write the same wrapper.
+
+    Parameters
+    ----------
+    geojson : dict
+        Parsed GeoJSON object.
+
+    Returns
+    -------
+    list of dict
+        The geometry members, in document order.
+
+    Raises
+    ------
+    ValueError
+        If the object is not a dict, has an unsupported type, contains no
+        features, or contains a feature without a geometry.
+    """
+    if not isinstance(geojson, dict):
+        raise ValueError("GeoJSON must be an object")
+
+    geojson_type = geojson.get("type")
+
+    if geojson_type == "FeatureCollection":
+        features = geojson.get("features") or []
+        if not features:
+            raise ValueError(
+                "GeoJSON FeatureCollection must contain at least one feature"
+            )
+        geometries = []
+        for feature in features:
+            geometry = (feature or {}).get("geometry")
+            if not geometry:
+                raise ValueError("A GeoJSON Feature has no geometry")
+            geometries.append(geometry)
+        return geometries
+
+    if geojson_type == "Feature":
+        geometry = geojson.get("geometry")
+        if not geometry:
+            raise ValueError("A GeoJSON Feature has no geometry")
+        return [geometry]
+
+    if geojson_type in ("Polygon", "MultiPolygon"):
+        return [geojson]
+
+    raise ValueError(
+        f"Unsupported GeoJSON type: {geojson_type!r}. Expected a "
+        f"FeatureCollection, a Feature, or a Polygon / MultiPolygon geometry"
+    )
+
+
 def geojson_to_multipolygon(
     geojson: dict,
     dest_srid: int = DATA_SRID,
@@ -74,9 +137,9 @@ def geojson_to_multipolygon(
     Parameters
     ----------
     geojson : dict
-        A GeoJSON FeatureCollection with Polygon or MultiPolygon features,
-        in EPSG:4326. This is the format produced by the OpenLayers GeoJSON
-        format class.
+        A GeoJSON FeatureCollection, a single Feature, or a bare Polygon /
+        MultiPolygon geometry, in EPSG:4326. The FeatureCollection form is what
+        the OpenLayers GeoJSON format class produces.
     dest_srid : int
         Target SRID for the returned geometry. Defaults to DATA_SRID (3857).
 
@@ -89,17 +152,18 @@ def geojson_to_multipolygon(
     Raises
     ------
     ValueError
-        If the FeatureCollection contains no features, or contains a geometry
-        type other than Polygon or MultiPolygon.
+        If the input is not a supported GeoJSON shape, contains no features,
+        has a feature without a geometry, contains a geometry type other than
+        Polygon or MultiPolygon, or has coordinates GEOS cannot parse.
     """
-    features = geojson.get("features", [])
-    if not features:
-        raise ValueError("GeoJSON FeatureCollection must contain at least one feature")
-
     polygons = []
-    for feature in features:
-        geom = GEOSGeometry(json.dumps(feature["geometry"]), srid=4326)
-        geom.transform(dest_srid)
+    for geometry in _geometries_from_geojson(geojson):
+        try:
+            geom = GEOSGeometry(json.dumps(geometry), srid=4326)
+            geom.transform(dest_srid)
+        except (GEOSException, GDALException, TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid geometry: {exc}") from exc
+
         if geom.geom_type == "Polygon":
             polygons.append(geom)
         elif geom.geom_type == "MultiPolygon":
