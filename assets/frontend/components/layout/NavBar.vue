@@ -12,6 +12,7 @@ import { storeToRefs } from "pinia";
 import { getNavConfig } from "../../utils/navConfig";
 import { getCsrf } from "../../utils/csrf";
 import { usePreferencesStore } from "../../stores/preferences";
+import { useUserStore } from "../../stores/user";
 
 // Custom nav item: extends MenuItem with our badge-dot flag.
 // PrimeVue's MenuItem type has an open index signature, so extra fields are allowed.
@@ -22,6 +23,10 @@ interface NavItem extends MenuItem {
 // --- Config ---
 
 const config = getNavConfig();
+// The notification dots come from the store, not from `config`: the nav config
+// is a page-load snapshot, so a dot read from it stays lit until a full reload
+// (e.g. after visiting the news page).
+const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
@@ -98,7 +103,7 @@ const navItems = computed((): NavItem[] => {
             label: t("message.navWhatsNew"),
             url: config.urls.news,
             icon: "pi pi-bell",
-            showDot: config.user.hasUnseenNews,
+            showDot: userStore.hasUnseenNews,
         },
     ];
 
@@ -107,7 +112,7 @@ const navItems = computed((): NavItem[] => {
             label: t("message.navMyAlerts"),
             url: config.urls.myAlerts,
             icon: "pi pi-exclamation-circle",
-            showDot: config.user.hasAlertsWithUnseenObservations,
+            showDot: userStore.hasAlertsWithUnseenObservations,
         });
     }
 
@@ -183,7 +188,7 @@ const userMenuItems = computed((): NavItem[] => {
             label: t("message.navMyAlerts"),
             icon: "pi pi-exclamation-circle",
             url: config.urls.myAlerts,
-            showDot: config.user.hasAlertsWithUnseenObservations,
+            showDot: userStore.hasAlertsWithUnseenObservations,
         },
         {
             label: t("message.navMyCustomAreas"),

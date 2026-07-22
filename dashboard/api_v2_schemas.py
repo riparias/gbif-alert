@@ -408,6 +408,18 @@ class PageFragmentOut(Schema):
     html: str
 
 
+class UserStatusOut(Schema):
+    """Per-user notification dots shown in the navbar (internal SPA helper endpoint).
+
+    Mirrors the `user` block injected in the nav config at page load; the SPA
+    re-fetches it after actions that can change either flag, so the dots stay
+    correct without a full page reload. Both flags are False for anonymous users.
+    """
+
+    hasUnseenNews: bool
+    hasAlertsWithUnseenObservations: bool
+
+
 class AlertNameSuggestionOut(Schema):
     """A suggested, not-yet-used alert name (internal SPA helper endpoint)."""
 

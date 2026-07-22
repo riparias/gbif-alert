@@ -26,6 +26,7 @@ import type { components } from "../types/api";
 import SpeciesName from "./SpeciesName.vue";
 import { storeToRefs } from "pinia";
 import { usePreferencesStore } from "../stores/preferences";
+import { useUserStore } from "../stores/user";
 
 type ObservationOut = components["schemas"]["ObservationOut"];
 
@@ -34,6 +35,7 @@ const props = defineProps<{
 }>();
 
 const resultsStore = useResultsStore();
+const userStore = useUserStore();
 
 const { t, locale } = useI18n();
 const { ensureBasisOfRecordLoaded, basisOfRecordName } = useDisplayLabels();
@@ -60,6 +62,8 @@ function closeDrawer() {
     // and can also mark it as unseen, so any close potentially changed status.
     // Notify watchers (table, sidebar counts, histogram, map, alert).
     resultsStore.bumpStatusEpoch();
+    // ... and the navbar dot, which the server derives from the same state.
+    userStore.refreshStatus();
 }
 
 // --- Column configuration ---

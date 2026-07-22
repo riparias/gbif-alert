@@ -1,6 +1,7 @@
 import datetime
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -19,7 +20,7 @@ from dashboard.models import (
     ObservationUnseen,
     Species,
 )
-from page_fragments.models import PageFragment
+from page_fragments.models import NEWS_PAGE_IDENTIFIER, PageFragment
 
 pytestmark = pytest.mark.django_db
 
@@ -2273,6 +2274,46 @@ def test_news_mark_visited_anonymous(client):
         "/api/v2/spa/news/mark-visited/", content_type="application/json"
     )
     assert resp.status_code == 204
+
+
+# --- user-status ---
+
+
+def test_user_status_anonymous(client):
+    """Anonymous users see no navbar dots."""
+    resp = client.get("/api/v2/spa/user-status/")
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "hasUnseenNews": False,
+        "hasAlertsWithUnseenObservations": False,
+    }
+
+
+@patch("dashboard.models.User.has_unseen_news", True)
+@patch("dashboard.models.User.has_alerts_with_unseen_observations", True)
+def test_user_status_authenticated_all_true(client, auth_data):
+    client.force_login(auth_data["user"])
+    resp = client.get("/api/v2/spa/user-status/")
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "hasUnseenNews": True,
+        "hasAlertsWithUnseenObservations": True,
+    }
+
+
+def test_user_status_reflects_news_visit(client, auth_data):
+    """Visiting the news page flips hasUnseenNews - this is what clears the dot."""
+    user = auth_data["user"]
+    client.force_login(user)
+    PageFragment.objects.update_or_create(
+        identifier=NEWS_PAGE_IDENTIFIER, defaults={"content_en": "Something new"}
+    )
+
+    assert client.get("/api/v2/spa/user-status/").json()["hasUnseenNews"] is True
+
+    client.post("/api/v2/spa/news/mark-visited/", content_type="application/json")
+
+    assert client.get("/api/v2/spa/user-status/").json()["hasUnseenNews"] is False
 
 
 # --- profile ---
