@@ -53,6 +53,8 @@ jobs:
       run: google-chrome --version
     - name: Install frontend dependencies
       run: npm ci
+    - name: Check frontend formatting
+      run: npm run format-check
     - name: Run vite build
       run: npm run vite-build
     - name: Install Playwright browsers
