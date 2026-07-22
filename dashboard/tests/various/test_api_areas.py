@@ -3,6 +3,7 @@ import json
 import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import MultiPolygon, Polygon
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from dashboard.geo_utils import geojson_to_multipolygon
 from dashboard.models import Area
@@ -343,6 +344,29 @@ def test_shared_permission_checked_before_geometry(area_client):
         content_type="application/json",
     )
     assert resp.status_code == 403
+
+
+def test_shared_permission_checked_before_geometry_on_file_upload(area_client):
+    """Non-operator gets 403 on multipart shared-area POST, before file is parsed.
+
+    Both endpoints (JSON and multipart) enforce the same permission rule
+    symmetrically and before processing the geometry.
+    """
+    dummy_file = SimpleUploadedFile(
+        name="invalid.gpkg",
+        content=b"not a valid geopackage",
+        content_type="application/octet-stream",
+    )
+    resp = area_client.post(
+        "/api/v2/areas/from-file/",
+        {
+            "name": "Sneaky",
+            "data_file": dummy_file,
+            "shared": "true",
+        },
+    )
+    assert resp.status_code == 403
+    assert not Area.objects.filter(name="Sneaky").exists()
 
 
 # ---------------------------------------------------------------------------
