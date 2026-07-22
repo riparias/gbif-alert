@@ -320,15 +320,24 @@ def test_navbar_language_selector_shows_only_a_code_until_opened(
 ):
     """The language selector is collapsed to a globe + code to save navbar width.
 
-    The full native names ("Nederlands", ...) live in the overlay, which is
-    widened independently of the collapsed trigger.
+    The full native names ("English", "Nederlands", ...) live in the overlay,
+    which is widened independently of the collapsed trigger.
+
+    Deliberately does not name a language: which ones are enabled is per-instance
+    (ENABLED_LANGUAGES), so the assertions are on the shape of the labels - a
+    two-letter code on the trigger, spelled-out names in the overlay.
     """
     page.goto(live_server.url + "/")
 
     selector = page.get_by_role("combobox", name="Language")
-    expect(selector).to_have_text("EN")
+    # \s* because the globe icon element contributes whitespace to the text.
+    expect(selector).to_have_text(re.compile(r"^\s*[A-Z]{2}\s*$"))
 
     selector.click()
 
-    expect(page.get_by_role("option", name="Nederlands")).to_be_visible()
-    expect(page.get_by_role("option", name="English")).to_be_visible()
+    options = page.get_by_role("option")
+    expect(options.first).to_be_visible()
+    # The selector only renders at all when the instance enables 2+ languages.
+    assert options.count() >= 2
+    for label in options.all_inner_texts():
+        assert len(label.strip()) > 2, f"overlay shows a collapsed label: {label!r}"
