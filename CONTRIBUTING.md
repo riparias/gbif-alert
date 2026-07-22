@@ -30,6 +30,40 @@
    git lfs pull --include=source_data/public_areas/belgian_municipalities/adminvector_4326.gpkg --exclude=
    ```
 
+## Adding a new environment-driven setting
+
+When you make `settings.py` read a new environment variable, you must also
+forward it in **both** compose files (`docker-compose.yml` and
+`docker-compose.dokploy.yml`), in the shared `x-app-env` anchor.
+
+Why: Dokploy's Environment tab and a plain `.env` only feed compose's
+*interpolation* context - a variable reaches a container **only if the anchor
+references it** (`MY_VAR: ${MY_VAR:-default}`). A setting read by `settings.py`
+but missing from the anchor is silently dropped: it stays at its unset default
+in every Docker/Dokploy deploy, and no error is raised. This is exactly how the
+GBIF download bounding box shipped broken - the code read the four
+`GBIF_DOWNLOAD_{LAT,LON}_{MIN,MAX}` vars, but the anchor never forwarded them,
+so the box vanished from the download predicate while country/year (which *were*
+in the anchor) kept working.
+
+Rules of thumb when adding one:
+
+- Match the compose default to the `settings.py` default
+  (`DJANGO_LOG_LEVEL: ${DJANGO_LOG_LEVEL:-INFO}`). An unset var interpolates to
+  an **empty string**, not "absent" - so `${VAR:-}` forces `VAR=""` in the
+  container. Only use `${VAR:-}` when `settings.py` treats `""` the same as
+  unset.
+- If the setting has a *dynamic* default that must stay unset to work (e.g. the
+  HTTPS-hardening flags default to `str(not DEBUG)` and auto-enable in
+  production), do **not** forward it - injecting `""` would read as `False` and
+  disable it. Add it instead to `NOT_FORWARDED` in
+  `dashboard/tests/test_compose_env_coverage.py` with a one-line reason.
+
+`dashboard/tests/test_compose_env_coverage.py` enforces this: it parses every
+env var `settings.py` reads and fails CI if one is neither forwarded by both
+anchors nor allow-listed. So "forgot to update the anchor" is a red test, not a
+silent production regression.
+
 ## Testing / typing
 This project provides the following tools to ensure the application and code stays in a decent state:
 
