@@ -204,6 +204,20 @@ def test_non_dict_input_raises_value_error():
         geojson_to_multipolygon("not a dict")  # type: ignore[arg-type]
 
 
+def test_non_list_features_raises_value_error():
+    with pytest.raises(ValueError):
+        geojson_to_multipolygon(
+            {"type": "FeatureCollection", "features": {"a": 1}}  # type: ignore[dict-item]
+        )
+
+
+def test_non_dict_feature_raises_value_error():
+    with pytest.raises(ValueError):
+        geojson_to_multipolygon(
+            {"type": "FeatureCollection", "features": ["nope"]}  # type: ignore[list-item]
+        )
+
+
 # ---------------------------------------------------------------------------
 # AreaCreateAPITests
 # ---------------------------------------------------------------------------
@@ -347,11 +361,7 @@ def test_shared_permission_checked_before_geometry(area_client):
 
 
 def test_shared_permission_checked_before_geometry_on_file_upload(area_client):
-    """Non-operator gets 403 on multipart shared-area POST, before file is parsed.
-
-    Both endpoints (JSON and multipart) enforce the same permission rule
-    symmetrically and before processing the geometry.
-    """
+    """Non-operator gets 403 on multipart shared-area POST, before the file is parsed."""
     dummy_file = SimpleUploadedFile(
         name="invalid.gpkg",
         content=b"not a valid geopackage",
@@ -395,11 +405,9 @@ def test_create_without_tags_has_no_tags(area_client):
 
 def test_create_from_file_accepts_tags_and_shared(operator_client, tmp_path):
     """The multipart creator has the same capabilities as the JSON one."""
-    import json as json_module
-
     geojson_path = tmp_path / "area.geojson"
     geojson_path.write_text(
-        json_module.dumps(
+        json.dumps(
             {
                 "type": "FeatureCollection",
                 "crs": {"type": "name", "properties": {"name": "EPSG:4326"}},
@@ -425,11 +433,9 @@ def test_create_from_file_accepts_tags_and_shared(operator_client, tmp_path):
 
 def test_create_from_file_duplicate_name_returns_409(operator_client, tmp_path):
     """The multipart creator enforces the same per-scope name uniqueness as the JSON one."""
-    import json as json_module
-
     geojson_path = tmp_path / "area.geojson"
     geojson_path.write_text(
-        json_module.dumps(
+        json.dumps(
             {
                 "type": "FeatureCollection",
                 "crs": {"type": "name", "properties": {"name": "EPSG:4326"}},

@@ -65,9 +65,9 @@ async function upload() {
         });
         emit("created", area);
         resetForm();
-    } else if (resp.status === 422) {
+    } else {
         const data = await resp.json();
-        errorMessage.value = data.detail;
+        errorMessage.value = data.detail ?? t("message.unexpectedError");
     }
 }
 </script>

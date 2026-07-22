@@ -101,13 +101,17 @@ def _geometries_from_geojson(geojson: dict) -> list[dict]:
 
     if geojson_type == "FeatureCollection":
         features = geojson.get("features") or []
+        if not isinstance(features, list):
+            raise ValueError("GeoJSON FeatureCollection 'features' must be a list")
         if not features:
             raise ValueError(
                 "GeoJSON FeatureCollection must contain at least one feature"
             )
         geometries = []
         for feature in features:
-            geometry = (feature or {}).get("geometry")
+            if not isinstance(feature, dict):
+                raise ValueError("A GeoJSON Feature must be an object")
+            geometry = feature.get("geometry")
             if not geometry:
                 raise ValueError("A GeoJSON Feature has no geometry")
             geometries.append(geometry)
@@ -132,7 +136,8 @@ def geojson_to_multipolygon(
     geojson: dict,
     dest_srid: int = DATA_SRID,
 ) -> GEOSMultiPolygon:
-    """Convert a GeoJSON FeatureCollection (EPSG:4326) to a GEOSMultiPolygon.
+    """Convert a GeoJSON FeatureCollection, Feature, or bare Polygon /
+    MultiPolygon geometry (EPSG:4326) to a GEOSMultiPolygon.
 
     Parameters
     ----------

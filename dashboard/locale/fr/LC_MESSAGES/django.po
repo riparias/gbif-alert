@@ -27,6 +27,10 @@ msgstr ""
 msgid "Authentication required"
 msgstr "Authentification requise"
 
+#: dashboard/api_v2.py:468 dashboard/api_v2.py:513 dashboard/api_v2.py:546
+msgid "An area with this name already exists."
+msgstr "Une zone portant ce nom existe déjà."
+
 #: dashboard/api_v2.py:499 dashboard/views/internal_api.py:167
 msgid "At least one species must be selected"
 msgstr "Au moins une espèce doit être sélectionnée"

@@ -206,7 +206,12 @@ overlays. Each area can be either user-specific, either public. For now, there a
 - Administrators with a shell access The custom `load_area` management command can be used to directly import complex polygons from a file 
   source (shapefile, GeoJSON, ...)
 - Users can upload their own areas via the web interface (development in progress
-  
+
+An operator (superuser) can also create a shared area directly over the API, without shell
+access: POST GeoJSON to `/api/v2/areas/` with `"shared": true`, or upload a file to
+`/api/v2/areas/from-file/` with the `shared` form field set. Both routes are restricted to
+superusers for shared areas, and area names must be unique among shared areas.
+
 ### How to use the `load_area` command to import a new public Area
 
 1) Copy the source data file to `source_data/public_areas`
