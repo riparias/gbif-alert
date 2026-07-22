@@ -28,8 +28,10 @@ const activeTags = ref<string[]>([]);
 const localIds = ref(new Set(props.modelValue));
 watch(
     () => props.modelValue,
-    (ids) => { localIds.value = new Set(ids); },
-    { deep: true }
+    (ids) => {
+        localIds.value = new Set(ids);
+    },
+    { deep: true },
 );
 
 const allTags = computed(() => {
@@ -44,20 +46,18 @@ const filtered = computed(() => {
     if (q) list = list.filter((a) => a.name.toLowerCase().includes(q));
     if (activeTags.value.length) {
         list = list.filter((a) =>
-            activeTags.value.every((activeTag) => a.tags.includes(activeTag))
+            activeTags.value.every((activeTag) => a.tags.includes(activeTag)),
         );
     }
     return list;
 });
 
-const tableSelection = computed(() =>
-    filtered.value.filter((a) => localIds.value.has(a.id))
-);
+const tableSelection = computed(() => filtered.value.filter((a) => localIds.value.has(a.id)));
 
 const buttonLabel = computed(() =>
     props.modelValue.length
         ? `${props.modelValue.length} ${t("message.xSelectedAreas")}`
-        : t("message.everywhere")
+        : t("message.everywhere"),
 );
 
 function toggleTag(tag: string) {
@@ -90,8 +90,16 @@ function onUnselectAll() {
 }
 
 const TAG_PALETTE = [
-    "#0b7285", "#7048e8", "#c92a2a", "#e67700", "#2b8a3e",
-    "#1864ab", "#a61e4d", "#087f5b", "#862e9c", "#d9480f",
+    "#0b7285",
+    "#7048e8",
+    "#c92a2a",
+    "#e67700",
+    "#2b8a3e",
+    "#1864ab",
+    "#a61e4d",
+    "#087f5b",
+    "#862e9c",
+    "#d9480f",
 ];
 function tagColor(name: string): string {
     let h = 0;
@@ -126,11 +134,16 @@ function tagColor(name: string): string {
                     :class="{ 'tag-chip--active': activeTags.includes(tag) }"
                     :style="
                         activeTags.includes(tag)
-                            ? { backgroundColor: tagColor(tag), color: '#fff', borderColor: tagColor(tag) }
+                            ? {
+                                  backgroundColor: tagColor(tag),
+                                  color: '#fff',
+                                  borderColor: tagColor(tag),
+                              }
                             : { borderColor: tagColor(tag), color: tagColor(tag) }
                     "
                     @click="toggleTag(tag)"
-                >{{ tag }}</span>
+                    >{{ tag }}</span
+                >
             </div>
         </div>
 
@@ -171,12 +184,16 @@ function tagColor(name: string): string {
                         :key="tag"
                         class="row-tag"
                         :style="{ backgroundColor: tagColor(tag) }"
-                    >{{ tag }}</span>
+                        >{{ tag }}</span
+                    >
                 </template>
             </Column>
             <Column :header="t('message.areaType')" style="width: 8rem">
                 <template #body="{ data }">
-                    <span class="area-type-badge" :class="data.isUserSpecific ? 'user-specific' : 'shared'">
+                    <span
+                        class="area-type-badge"
+                        :class="data.isUserSpecific ? 'user-specific' : 'shared'"
+                    >
                         {{ data.isUserSpecific ? t("message.userSpecific") : t("message.shared") }}
                     </span>
                 </template>
@@ -212,7 +229,9 @@ function tagColor(name: string): string {
     font-size: 0.78rem;
     white-space: nowrap;
     user-select: none;
-    transition: background-color 0.15s, color 0.15s;
+    transition:
+        background-color 0.15s,
+        color 0.15s;
 }
 
 .tag-chip--active {

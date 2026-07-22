@@ -54,7 +54,10 @@ onMounted(() => {
         </div>
 
         <div v-else-if="alerts.length === 0" class="empty-state">
-            <i class="pi pi-bell-slash" style="font-size: 2.5rem; color: var(--p-text-muted-color)" />
+            <i
+                class="pi pi-bell-slash"
+                style="font-size: 2.5rem; color: var(--p-text-muted-color)"
+            />
             <p>{{ t("message.noAlertsConfigured") }}</p>
             <Button
                 icon="pi pi-plus"

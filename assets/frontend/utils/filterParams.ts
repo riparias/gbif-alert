@@ -16,14 +16,13 @@ type FiltersQuery = components["schemas"]["FiltersQuery"];
  */
 export function filtersToParams(
     filtersStore: FiltersStore,
-    { includeDateRange = true }: { includeDateRange?: boolean } = {}
+    { includeDateRange = true }: { includeDateRange?: boolean } = {},
 ): URLSearchParams {
     const params = new URLSearchParams();
     for (const id of filtersStore.speciesIds) params.append("speciesIds", String(id));
     for (const id of filtersStore.datasetIds) params.append("datasetIds", String(id));
     for (const id of filtersStore.areaIds) params.append("areaIds", String(id));
-    for (const id of filtersStore.basisOfRecordIds)
-        params.append("basisOfRecordIds", String(id));
+    for (const id of filtersStore.basisOfRecordIds) params.append("basisOfRecordIds", String(id));
     for (const id of filtersStore.initialDataImportIds)
         params.append("initialDataImportIds", String(id));
     if (includeDateRange) {
@@ -34,10 +33,7 @@ export function filtersToParams(
     params.set("verifiedFilter", filtersStore.verifiedFilter);
     params.set("areaFilterMode", filtersStore.areaFilterMode);
     if (filtersStore.approachingDistanceKm !== null) {
-        params.set(
-            "approachingDistanceKm",
-            String(filtersStore.approachingDistanceKm)
-        );
+        params.set("approachingDistanceKm", String(filtersStore.approachingDistanceKm));
     }
     return params;
 }

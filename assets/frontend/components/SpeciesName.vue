@@ -20,9 +20,7 @@ const { t } = useI18n();
 const navConfig = getNavConfig();
 
 const activeLanguageNameLocal = computed(() => {
-    const lang = navConfig.enabledLanguages.find(
-        (l) => l.code === navConfig.currentLanguage,
-    );
+    const lang = navConfig.enabledLanguages.find((l) => l.code === navConfig.currentLanguage);
     return lang ? lang.nameLocal : navConfig.currentLanguage;
 });
 
@@ -49,9 +47,7 @@ function escapeHtml(s: string): string {
 // Look up the matched species from the filter options store and return image
 // fields when available; null otherwise.
 const speciesImage = computed(() => {
-    const match = filterOptions.species.find(
-        (s) => s.scientificName === props.scientificName,
-    );
+    const match = filterOptions.species.find((s) => s.scientificName === props.scientificName);
     if (!match || !match.imageUrl) return null;
     return {
         url: match.imageUrl,
@@ -113,8 +109,7 @@ const tooltipBinding = computed(() => {
     const base = baseTooltip();
     if (!imageHtml) return base;
     // With an image we must render HTML; escape the base text ourselves.
-    const baseValue =
-        base.escape === false ? base.value : escapeHtml(String(base.value));
+    const baseValue = base.escape === false ? base.value : escapeHtml(String(base.value));
     return { value: `${imageHtml}<div>${baseValue}</div>`, escape: false };
 });
 </script>

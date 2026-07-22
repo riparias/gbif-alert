@@ -15,15 +15,13 @@ const props = withDefaults(
         lon: number;
         coordinateUncertaintyInMeters?: number | null;
     }>(),
-    { coordinateUncertaintyInMeters: null }
+    { coordinateUncertaintyInMeters: null },
 );
 
 // Exact uncertainty -> teal circle; unknown -> 100 m red circle as convention
 const radiusMeters = props.coordinateUncertaintyInMeters ?? 100;
 const fillColor =
-    props.coordinateUncertaintyInMeters != null
-        ? "rgba(0,165,141,0.8)"
-        : "rgba(255,0,0,0.8)";
+    props.coordinateUncertaintyInMeters != null ? "rgba(0,165,141,0.8)" : "rgba(255,0,0,0.8)";
 
 const baseMapRef = ref<InstanceType<typeof BaseMap> | null>(null);
 
@@ -40,8 +38,8 @@ onMounted(() => {
                     fill: new Fill({ color: fillColor }),
                     stroke: new Stroke({ width: 1.25 }),
                 }),
-            })
-        )
+            }),
+        ),
     );
 
     map.addControl(new ScaleLine());

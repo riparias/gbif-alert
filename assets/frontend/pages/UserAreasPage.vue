@@ -86,10 +86,7 @@ onMounted(loadAreas);
             </div>
         </template>
 
-        <AreaUploadDialog
-            v-model:visible="showUploadDialog"
-            @created="onAreaCreated"
-        />
+        <AreaUploadDialog v-model:visible="showUploadDialog" @created="onAreaCreated" />
     </div>
 </template>
 

@@ -100,18 +100,10 @@ export function useFilterSync(isAuthenticated: boolean = true): void {
             // Anonymous users: null (all) is the default (no param); "notViewed" must be explicit.
             if (isAuthenticated) {
                 store.status =
-                    status === "viewed"
-                        ? "viewed"
-                        : status === "all"
-                          ? null
-                          : "notViewed";
+                    status === "viewed" ? "viewed" : status === "all" ? null : "notViewed";
             } else {
                 store.status =
-                    status === "viewed"
-                        ? "viewed"
-                        : status === "notViewed"
-                          ? "notViewed"
-                          : null;
+                    status === "viewed" ? "viewed" : status === "notViewed" ? "notViewed" : null;
             }
             store.verifiedFilter =
                 verified === "verified" || verified === "unverified" ? verified : "all";
@@ -119,7 +111,7 @@ export function useFilterSync(isAuthenticated: boolean = true): void {
                 areaMode === "approaching" || areaMode === "both" ? areaMode : "inside";
             store.approachingDistanceKm = getFloat(query, "approachingDistanceKm");
         },
-        { immediate: true }
+        { immediate: true },
     );
 
     // Store -> URL: debounced to avoid a router.replace on every keystroke.

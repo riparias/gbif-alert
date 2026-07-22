@@ -22,7 +22,7 @@ interface SpeciesChip extends BaseChip {
     kind: "species";
     scientificName: string;
     vernacularName: string;
-    fallbackLabel: string;  // for the "Species #42" case when the option is unknown
+    fallbackLabel: string; // for the "Species #42" case when the option is unknown
 }
 type Chip = TextChip | SpeciesChip;
 
@@ -78,7 +78,9 @@ const chips = computed<Chip[]>(() => {
             key: `bor-${id}`,
             label: bor ? bor.name : `Record type #${id}`,
             clear: () => {
-                filtersStore.basisOfRecordIds = filtersStore.basisOfRecordIds.filter((i) => i !== id);
+                filtersStore.basisOfRecordIds = filtersStore.basisOfRecordIds.filter(
+                    (i) => i !== id,
+                );
             },
         });
     }
@@ -90,7 +92,9 @@ const chips = computed<Chip[]>(() => {
             kind: "text",
             key: "start-date",
             label: `${t("message.dateFromPrefix")} ${d}`,
-            clear: () => { filtersStore.startDate = null; },
+            clear: () => {
+                filtersStore.startDate = null;
+            },
         });
     }
     if (filtersStore.endDate) {
@@ -99,7 +103,9 @@ const chips = computed<Chip[]>(() => {
             kind: "text",
             key: "end-date",
             label: `${t("message.dateUntilPrefix")} ${d}`,
-            clear: () => { filtersStore.endDate = null; },
+            clear: () => {
+                filtersStore.endDate = null;
+            },
         });
     }
 
@@ -113,7 +119,9 @@ const chips = computed<Chip[]>(() => {
             kind: "text",
             key: "verified",
             label,
-            clear: () => { filtersStore.verifiedFilter = "all"; },
+            clear: () => {
+                filtersStore.verifiedFilter = "all";
+            },
         });
     }
 
@@ -124,7 +132,9 @@ const chips = computed<Chip[]>(() => {
             kind: "text",
             key: "status",
             label,
-            clear: () => { filtersStore.status = null; },
+            clear: () => {
+                filtersStore.status = null;
+            },
         });
     }
 
@@ -149,11 +159,7 @@ function clearAll() {
     <div v-if="hasChips" class="active-chips-bar">
         <span class="chips-label">{{ t("message.activeFilters") }}</span>
         <div class="chips-scroll">
-            <span
-                v-for="chip in chips"
-                :key="chip.key"
-                class="filter-chip"
-            >
+            <span v-for="chip in chips" :key="chip.key" class="filter-chip">
                 <template v-if="chip.kind === 'species'">
                     <SpeciesName
                         v-if="chip.scientificName"
@@ -163,7 +169,11 @@ function clearAll() {
                     <template v-else>{{ chip.fallbackLabel }}</template>
                     <button
                         class="chip-clear"
-                        :aria-label="t('message.removeFilter', { label: chip.scientificName || chip.fallbackLabel })"
+                        :aria-label="
+                            t('message.removeFilter', {
+                                label: chip.scientificName || chip.fallbackLabel,
+                            })
+                        "
                         @click="chip.clear()"
                     >
                         &times;
@@ -180,7 +190,9 @@ function clearAll() {
                     </button>
                 </template>
             </span>
-            <button class="clear-all-btn" @click="clearAll">{{ t("message.clearAllFilters") }}</button>
+            <button class="clear-all-btn" @click="clearAll">
+                {{ t("message.clearAllFilters") }}
+            </button>
         </div>
     </div>
 </template>

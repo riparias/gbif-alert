@@ -17,8 +17,7 @@ function readInitialMode(): SpeciesNameMode {
 
 function writeCookie(mode: SpeciesNameMode): void {
     document.cookie =
-        `${COOKIE_NAME}=${mode}; ` +
-        `Path=/; Max-Age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
+        `${COOKIE_NAME}=${mode}; ` + `Path=/; Max-Age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
 }
 
 export const usePreferencesStore = defineStore("preferences", () => {
@@ -31,9 +30,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
     }
 
     function toggleSpeciesNameMode() {
-        setSpeciesNameMode(
-            speciesNameMode.value === "scientific" ? "vernacular" : "scientific",
-        );
+        setSpeciesNameMode(speciesNameMode.value === "scientific" ? "vernacular" : "scientific");
     }
 
     return { speciesNameMode, setSpeciesNameMode, toggleSpeciesNameMode };

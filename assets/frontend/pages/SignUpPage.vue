@@ -53,57 +53,126 @@ async function submit() {
 
 <template>
     <div class="page-content--narrow signup-page">
-        <h1 style="margin-bottom: 1.5rem;">{{ t("message.signUp") }}</h1>
+        <h1 style="margin-bottom: 1.5rem">{{ t("message.signUp") }}</h1>
 
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="su-username" style="font-weight: 500;">{{ t("message.username") }} <span style="font-weight: 400; color: var(--p-text-muted-color);">*</span></label>
-                <InputText id="su-username" v-model="username" class="w-full" autocomplete="username" />
-                <small v-if="fieldError('username')" style="color: var(--p-red-500);">{{ fieldError("username") }}</small>
+        <div style="display: flex; flex-direction: column; gap: 1rem">
+            <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                <label for="su-username" style="font-weight: 500"
+                    >{{ t("message.username") }}
+                    <span style="font-weight: 400; color: var(--p-text-muted-color)">*</span></label
+                >
+                <InputText
+                    id="su-username"
+                    v-model="username"
+                    class="w-full"
+                    autocomplete="username"
+                />
+                <small v-if="fieldError('username')" style="color: var(--p-red-500)">{{
+                    fieldError("username")
+                }}</small>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="su-email" style="font-weight: 500;">{{ t("message.email") }} <span style="font-weight: 400; color: var(--p-text-muted-color);">*</span></label>
-                <InputText id="su-email" v-model="email" type="email" class="w-full" autocomplete="email" />
-                <small v-if="fieldError('email')" style="color: var(--p-red-500);">{{ fieldError("email") }}</small>
+            <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                <label for="su-email" style="font-weight: 500"
+                    >{{ t("message.email") }}
+                    <span style="font-weight: 400; color: var(--p-text-muted-color)">*</span></label
+                >
+                <InputText
+                    id="su-email"
+                    v-model="email"
+                    type="email"
+                    class="w-full"
+                    autocomplete="email"
+                />
+                <small v-if="fieldError('email')" style="color: var(--p-red-500)">{{
+                    fieldError("email")
+                }}</small>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="su-firstname" style="font-weight: 500;">
+            <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                <label for="su-firstname" style="font-weight: 500">
                     {{ t("message.firstName") }}
-                    <span style="font-weight: 400; color: var(--p-text-muted-color);">({{ t("message.optional") }})</span>
+                    <span style="font-weight: 400; color: var(--p-text-muted-color)"
+                        >({{ t("message.optional") }})</span
+                    >
                 </label>
-                <InputText id="su-firstname" v-model="firstName" class="w-full" autocomplete="given-name" />
-                <small v-if="fieldError('firstName')" style="color: var(--p-red-500);">{{ fieldError("firstName") }}</small>
+                <InputText
+                    id="su-firstname"
+                    v-model="firstName"
+                    class="w-full"
+                    autocomplete="given-name"
+                />
+                <small v-if="fieldError('firstName')" style="color: var(--p-red-500)">{{
+                    fieldError("firstName")
+                }}</small>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="su-lastname" style="font-weight: 500;">
+            <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                <label for="su-lastname" style="font-weight: 500">
                     {{ t("message.lastName") }}
-                    <span style="font-weight: 400; color: var(--p-text-muted-color);">({{ t("message.optional") }})</span>
+                    <span style="font-weight: 400; color: var(--p-text-muted-color)"
+                        >({{ t("message.optional") }})</span
+                    >
                 </label>
-                <InputText id="su-lastname" v-model="lastName" class="w-full" autocomplete="family-name" />
-                <small v-if="fieldError('lastName')" style="color: var(--p-red-500);">{{ fieldError("lastName") }}</small>
+                <InputText
+                    id="su-lastname"
+                    v-model="lastName"
+                    class="w-full"
+                    autocomplete="family-name"
+                />
+                <small v-if="fieldError('lastName')" style="color: var(--p-red-500)">{{
+                    fieldError("lastName")
+                }}</small>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="su-password1" style="font-weight: 500;">{{ t("message.newPassword") }} <span style="font-weight: 400; color: var(--p-text-muted-color);">*</span></label>
-                <InputText id="su-password1" v-model="password1" type="password" class="w-full" autocomplete="new-password" />
-                <small v-if="fieldError('password1')" style="color: var(--p-red-500);">{{ fieldError("password1") }}</small>
+            <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                <label for="su-password1" style="font-weight: 500"
+                    >{{ t("message.newPassword") }}
+                    <span style="font-weight: 400; color: var(--p-text-muted-color)">*</span></label
+                >
+                <InputText
+                    id="su-password1"
+                    v-model="password1"
+                    type="password"
+                    class="w-full"
+                    autocomplete="new-password"
+                />
+                <small v-if="fieldError('password1')" style="color: var(--p-red-500)">{{
+                    fieldError("password1")
+                }}</small>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="su-password2" style="font-weight: 500;">{{ t("message.confirmNewPassword") }} <span style="font-weight: 400; color: var(--p-text-muted-color);">*</span></label>
-                <InputText id="su-password2" v-model="password2" type="password" class="w-full" autocomplete="new-password" @keyup.enter="submit" />
-                <small v-if="fieldError('password2')" style="color: var(--p-red-500);">{{ fieldError("password2") }}</small>
+            <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                <label for="su-password2" style="font-weight: 500"
+                    >{{ t("message.confirmNewPassword") }}
+                    <span style="font-weight: 400; color: var(--p-text-muted-color)">*</span></label
+                >
+                <InputText
+                    id="su-password2"
+                    v-model="password2"
+                    type="password"
+                    class="w-full"
+                    autocomplete="new-password"
+                    @keyup.enter="submit"
+                />
+                <small v-if="fieldError('password2')" style="color: var(--p-red-500)">{{
+                    fieldError("password2")
+                }}</small>
             </div>
 
-            <Message v-if="fieldError('__all__')" severity="error">{{ fieldError("__all__") }}</Message>
+            <Message v-if="fieldError('__all__')" severity="error">{{
+                fieldError("__all__")
+            }}</Message>
 
-            <Button :label="t('message.signUp')" :loading="loading" class="w-full" @click="submit" />
+            <Button
+                :label="t('message.signUp')"
+                :loading="loading"
+                class="w-full"
+                @click="submit"
+            />
         </div>
 
-        <div style="margin-top: 1rem;">
+        <div style="margin-top: 1rem">
             {{ t("message.alreadyHaveAccount") }}
             <a href="/accounts/signin/">{{ t("message.signIn") }}</a>
         </div>
@@ -111,5 +180,7 @@ async function submit() {
 </template>
 
 <style scoped>
-.signup-page { margin-top: 4rem; }
+.signup-page {
+    margin-top: 4rem;
+}
 </style>

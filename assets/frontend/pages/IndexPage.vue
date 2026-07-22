@@ -50,6 +50,11 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.welcome-text :deep(p) { margin: 0 0 0.5rem; font-size: 0.9rem; }
-.welcome-text :deep(p:last-child) { margin-bottom: 0; }
+.welcome-text :deep(p) {
+    margin: 0 0 0.5rem;
+    font-size: 0.9rem;
+}
+.welcome-text :deep(p:last-child) {
+    margin-bottom: 0;
+}
 </style>

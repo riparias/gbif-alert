@@ -58,32 +58,66 @@ async function submit() {
 
 <template>
     <div class="page-content--narrow password-change-page">
-        <h1 style="margin-bottom: 1.5rem;">{{ t("message.changePassword") }}</h1>
+        <h1 style="margin-bottom: 1.5rem">{{ t("message.changePassword") }}</h1>
 
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="cp-old" style="font-weight: 500;">{{ t("message.oldPassword") }}</label>
-                <InputText id="cp-old" v-model="oldPassword" type="password" class="w-full" autocomplete="current-password" />
-                <small v-if="fieldError('oldPassword')" style="color: var(--p-red-500);">{{ fieldError("oldPassword") }}</small>
+        <div style="display: flex; flex-direction: column; gap: 1rem">
+            <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                <label for="cp-old" style="font-weight: 500">{{ t("message.oldPassword") }}</label>
+                <InputText
+                    id="cp-old"
+                    v-model="oldPassword"
+                    type="password"
+                    class="w-full"
+                    autocomplete="current-password"
+                />
+                <small v-if="fieldError('oldPassword')" style="color: var(--p-red-500)">{{
+                    fieldError("oldPassword")
+                }}</small>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="cp-new1" style="font-weight: 500;">{{ t("message.newPassword") }}</label>
-                <InputText id="cp-new1" v-model="newPassword1" type="password" class="w-full" autocomplete="new-password" />
-                <small v-if="fieldError('newPassword1')" style="color: var(--p-red-500);">{{ fieldError("newPassword1") }}</small>
+            <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                <label for="cp-new1" style="font-weight: 500">{{ t("message.newPassword") }}</label>
+                <InputText
+                    id="cp-new1"
+                    v-model="newPassword1"
+                    type="password"
+                    class="w-full"
+                    autocomplete="new-password"
+                />
+                <small v-if="fieldError('newPassword1')" style="color: var(--p-red-500)">{{
+                    fieldError("newPassword1")
+                }}</small>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="cp-new2" style="font-weight: 500;">{{ t("message.confirmNewPassword") }}</label>
-                <InputText id="cp-new2" v-model="newPassword2" type="password" class="w-full" autocomplete="new-password" @keyup.enter="submit" />
-                <small v-if="fieldError('newPassword2')" style="color: var(--p-red-500);">{{ fieldError("newPassword2") }}</small>
+            <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                <label for="cp-new2" style="font-weight: 500">{{
+                    t("message.confirmNewPassword")
+                }}</label>
+                <InputText
+                    id="cp-new2"
+                    v-model="newPassword2"
+                    type="password"
+                    class="w-full"
+                    autocomplete="new-password"
+                    @keyup.enter="submit"
+                />
+                <small v-if="fieldError('newPassword2')" style="color: var(--p-red-500)">{{
+                    fieldError("newPassword2")
+                }}</small>
             </div>
 
-            <Button :label="t('message.changePassword')" :loading="loading" class="w-full" @click="submit" />
+            <Button
+                :label="t('message.changePassword')"
+                :loading="loading"
+                class="w-full"
+                @click="submit"
+            />
         </div>
     </div>
 </template>
 
 <style scoped>
-.password-change-page { margin-top: 4rem; }
+.password-change-page {
+    margin-top: 4rem;
+}
 </style>

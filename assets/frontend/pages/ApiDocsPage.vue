@@ -24,7 +24,7 @@ onMounted(async () => {
 
 <template>
     <div class="page-content--wide">
-        <h1 style="margin-bottom: 1rem;">{{ t("message.apiPageTitle") }}</h1>
+        <h1 style="margin-bottom: 1rem">{{ t("message.apiPageTitle") }}</h1>
         <p>{{ t("message.apiPageIntro") }}</p>
 
         <Card class="api-card">
@@ -46,7 +46,8 @@ onMounted(async () => {
                     <strong>{{ t("message.apiAuthTitle") }}:</strong> {{ t("message.apiAuthDesc") }}
                 </p>
                 <p class="auth-note">
-                    <strong>{{ t("message.apiRateLimitTitle") }}:</strong> {{ t("message.apiRateLimitDesc") }}
+                    <strong>{{ t("message.apiRateLimitTitle") }}:</strong>
+                    {{ t("message.apiRateLimitDesc") }}
                 </p>
             </template>
         </Card>
@@ -69,7 +70,8 @@ onMounted(async () => {
                     />
                 </a>
                 <p class="auth-note">
-                    <strong>{{ t("message.apiAuthTitle") }}:</strong> {{ t("message.apiWfsAuthNote") }}
+                    <strong>{{ t("message.apiAuthTitle") }}:</strong>
+                    {{ t("message.apiWfsAuthNote") }}
                 </p>
             </template>
         </Card>
@@ -84,7 +86,8 @@ onMounted(async () => {
             <template #content>
                 <p>{{ t("message.apiLegacyDesc") }}</p>
                 <p class="auth-note">
-                    <strong>{{ t("message.apiAuthTitle") }}:</strong> {{ t("message.apiLegacyAuthNote") }}
+                    <strong>{{ t("message.apiAuthTitle") }}:</strong>
+                    {{ t("message.apiLegacyAuthNote") }}
                 </p>
             </template>
         </Card>

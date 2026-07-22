@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch, type ObjectDirective, type DirectiveBinding, ref } from "vue";
+import {
+    computed,
+    onMounted,
+    onUnmounted,
+    watch,
+    type ObjectDirective,
+    type DirectiveBinding,
+    ref,
+} from "vue";
 import { debounce } from "lodash";
 import { useI18n } from "vue-i18n";
 import { scaleBand, scaleLinear } from "d3-scale";
@@ -28,10 +36,10 @@ interface BarEntry {
 
 // --- Props ---
 
-const props = withDefaults(
-    defineProps<{ height?: number; fullRange?: boolean }>(),
-    { height: 160, fullRange: false }
-);
+const props = withDefaults(defineProps<{ height?: number; fullRange?: boolean }>(), {
+    height: 160,
+    fullRange: false,
+});
 
 // --- Data fetching ---
 
@@ -78,7 +86,10 @@ function buildCompleteSeries(data: HistogramEntry[]): BarEntry[] {
         const key = `${y}-${m}`;
         result.push({ yearMonth: key, count: lookup.get(key) ?? 0 });
         m++;
-        if (m > 12) { m = 1; y++; }
+        if (m > 12) {
+            m = 1;
+            y++;
+        }
     }
 
     return result;
@@ -103,13 +114,13 @@ const xScale = computed(() =>
     scaleBand<string>()
         .domain(barData.value.map((d) => d.yearMonth))
         .range([0, innerW.value])
-        .paddingInner(0.3)
+        .paddingInner(0.3),
 );
 
 const yMax = computed(() => max(barData.value, (d) => d.count) ?? 0);
 
 const yScale = computed(() =>
-    scaleLinear().domain([0, yMax.value]).range([innerH.value, 0]).nice()
+    scaleLinear().domain([0, yMax.value]).range([innerH.value, 0]).nice(),
 );
 
 // --- D3 axis directives ---
@@ -126,9 +137,9 @@ function applyXAxis(el: SVGGElement, binding: DirectiveBinding) {
     const scale = binding.value.scale;
     const domain: string[] = scale.domain();
     const step = Math.max(1, Math.floor(domain.length / NUM_X_TICKS));
-    axisBottom<string>(scale).tickValues(
-        domain.filter((_: string, i: number) => i % step === 0)
-    )(select(el));
+    axisBottom<string>(scale).tickValues(domain.filter((_: string, i: number) => i % step === 0))(
+        select(el),
+    );
 }
 
 const vYaxis: ObjectDirective<SVGGElement> = { mounted: applyYAxis, updated: applyYAxis };
@@ -189,7 +200,10 @@ function innerXToKey(x: number): string {
         const bx = xScale.value(key)!;
         const center = bx + xScale.value.bandwidth() / 2;
         const dist = Math.abs(center - x);
-        if (dist < closestDist) { closestDist = dist; closest = key; }
+        if (dist < closestDist) {
+            closestDist = dist;
+            closest = key;
+        }
     }
     return closest;
 }
@@ -212,10 +226,10 @@ const brushRight = computed(() => dateToInnerX(filtersStore.endDate, "right"));
 
 // Human-readable label shown above the handle (YYYY-MM format)
 const brushLeftLabel = computed(() =>
-    filtersStore.startDate ? filtersStore.startDate.substring(0, 7) : null
+    filtersStore.startDate ? filtersStore.startDate.substring(0, 7) : null,
 );
 const brushRightLabel = computed(() =>
-    filtersStore.endDate ? filtersStore.endDate.substring(0, 7) : null
+    filtersStore.endDate ? filtersStore.endDate.substring(0, 7) : null,
 );
 
 function getSvgInnerX(clientX: number): number {
@@ -290,34 +304,47 @@ function onHandlePointerDown(event: PointerEvent, target: DragTarget) {
                     <!-- Dim zones outside the selection -->
                     <rect
                         v-if="brushLeft > 0"
-                        :x="0" :y="0"
-                        :width="brushLeft" :height="innerH"
+                        :x="0"
+                        :y="0"
+                        :width="brushLeft"
+                        :height="innerH"
                         class="brush-dim"
                     />
                     <rect
                         v-if="brushRight < innerW"
-                        :x="brushRight" :y="0"
-                        :width="innerW - brushRight" :height="innerH"
+                        :x="brushRight"
+                        :y="0"
+                        :width="innerW - brushRight"
+                        :height="innerH"
                         class="brush-dim"
                     />
 
                     <!-- Left handle -->
                     <line
-                        :x1="brushLeft" :y1="0"
-                        :x2="brushLeft" :y2="innerH"
+                        :x1="brushLeft"
+                        :y1="0"
+                        :x2="brushLeft"
+                        :y2="innerH"
                         class="brush-handle-line"
                         :class="{ active: dragging === 'left' || hovering === 'left' }"
                     />
                     <!-- Grip thumb (centered vertically) -->
                     <rect
-                        :x="brushLeft - 6" :y="innerH / 2 - 14"
-                        width="12" height="28" rx="3"
+                        :x="brushLeft - 6"
+                        :y="innerH / 2 - 14"
+                        width="12"
+                        height="28"
+                        rx="3"
                         class="brush-grip"
                         :class="{ active: dragging === 'left' || hovering === 'left' }"
                     />
-                    <line v-for="dy in [-5, 0, 5]" :key="dy"
-                        :x1="brushLeft - 3" :y1="innerH / 2 + dy"
-                        :x2="brushLeft + 3" :y2="innerH / 2 + dy"
+                    <line
+                        v-for="dy in [-5, 0, 5]"
+                        :key="dy"
+                        :x1="brushLeft - 3"
+                        :y1="innerH / 2 + dy"
+                        :x2="brushLeft + 3"
+                        :y2="innerH / 2 + dy"
                         class="brush-grip-dot"
                     />
                     <!-- Date label (shown when hovered, dragged, or date is set) -->
@@ -327,11 +354,15 @@ function onHandlePointerDown(event: PointerEvent, target: DragTarget) {
                         :y="-3"
                         text-anchor="middle"
                         class="brush-label"
-                    >{{ brushLeftLabel ?? "▶" }}</text>
+                    >
+                        {{ brushLeftLabel ?? "▶" }}
+                    </text>
                     <!-- Wide invisible hit area -->
                     <rect
-                        :x="brushLeft - 8" :y="0"
-                        width="16" :height="innerH"
+                        :x="brushLeft - 8"
+                        :y="0"
+                        width="16"
+                        :height="innerH"
                         class="brush-handle-hit"
                         @pointerdown="onHandlePointerDown($event, 'left')"
                         @pointerenter="hovering = 'left'"
@@ -340,20 +371,29 @@ function onHandlePointerDown(event: PointerEvent, target: DragTarget) {
 
                     <!-- Right handle -->
                     <line
-                        :x1="brushRight" :y1="0"
-                        :x2="brushRight" :y2="innerH"
+                        :x1="brushRight"
+                        :y1="0"
+                        :x2="brushRight"
+                        :y2="innerH"
                         class="brush-handle-line"
                         :class="{ active: dragging === 'right' || hovering === 'right' }"
                     />
                     <rect
-                        :x="brushRight - 6" :y="innerH / 2 - 14"
-                        width="12" height="28" rx="3"
+                        :x="brushRight - 6"
+                        :y="innerH / 2 - 14"
+                        width="12"
+                        height="28"
+                        rx="3"
                         class="brush-grip"
                         :class="{ active: dragging === 'right' || hovering === 'right' }"
                     />
-                    <line v-for="dy in [-5, 0, 5]" :key="dy"
-                        :x1="brushRight - 3" :y1="innerH / 2 + dy"
-                        :x2="brushRight + 3" :y2="innerH / 2 + dy"
+                    <line
+                        v-for="dy in [-5, 0, 5]"
+                        :key="dy"
+                        :x1="brushRight - 3"
+                        :y1="innerH / 2 + dy"
+                        :x2="brushRight + 3"
+                        :y2="innerH / 2 + dy"
                         class="brush-grip-dot"
                     />
                     <text
@@ -362,10 +402,14 @@ function onHandlePointerDown(event: PointerEvent, target: DragTarget) {
                         :y="-3"
                         text-anchor="middle"
                         class="brush-label"
-                    >{{ brushRightLabel ?? "◀" }}</text>
+                    >
+                        {{ brushRightLabel ?? "◀" }}
+                    </text>
                     <rect
-                        :x="brushRight - 8" :y="0"
-                        width="16" :height="innerH"
+                        :x="brushRight - 8"
+                        :y="0"
+                        width="16"
+                        :height="innerH"
                         class="brush-handle-hit"
                         @pointerdown="onHandlePointerDown($event, 'right')"
                         @pointerenter="hovering = 'right'"
@@ -375,10 +419,7 @@ function onHandlePointerDown(event: PointerEvent, target: DragTarget) {
 
                 <!-- Axes (rendered last so labels sit on top of brush overlay) -->
                 <g v-yaxis="{ scale: yScale }" />
-                <g
-                    :transform="`translate(0, ${innerH})`"
-                    v-xaxis="{ scale: xScale }"
-                />
+                <g :transform="`translate(0, ${innerH})`" v-xaxis="{ scale: xScale }" />
             </g>
         </svg>
     </div>

@@ -19,7 +19,6 @@ type DatasetOut = components["schemas"]["DatasetOut"];
 type AreaOut = components["schemas"]["AreaOut"];
 type BasisOfRecordOut = components["schemas"]["BasisOfRecordOut"];
 
-
 const { t } = useI18n();
 const filtersStore = useFiltersStore();
 
@@ -132,8 +131,7 @@ const hasAreaSelection = computed(() => filtersStore.areaIds.length > 0);
 const showApproachingDistance = computed(
     () =>
         hasAreaSelection.value &&
-        (filtersStore.areaFilterMode === "approaching" ||
-            filtersStore.areaFilterMode === "both")
+        (filtersStore.areaFilterMode === "approaching" || filtersStore.areaFilterMode === "both"),
 );
 
 // Reset area-related filters when the area selection is cleared
@@ -144,7 +142,7 @@ watch(
             filtersStore.areaFilterMode = "inside";
             filtersStore.approachingDistanceKm = null;
         }
-    }
+    },
 );
 
 // Default approaching distance to 5 km when the mode first requires it
@@ -157,7 +155,7 @@ watch(
         ) {
             filtersStore.approachingDistanceKm = 5;
         }
-    }
+    },
 );
 
 // --- Select options (static) ---
@@ -180,28 +178,19 @@ const areaFilterModeOptions = computed(() => [
         <!-- Species -->
         <div class="filter-group">
             <label>{{ t("message.species") }}</label>
-            <SpeciesFilterModal
-                v-model="selectedSpeciesIds"
-                :options="speciesOptions"
-            />
+            <SpeciesFilterModal v-model="selectedSpeciesIds" :options="speciesOptions" />
         </div>
 
         <!-- Datasets -->
         <div class="filter-group">
             <label>{{ t("message.dataset") }}</label>
-            <DatasetFilterModal
-                v-model="selectedDatasetIds"
-                :options="datasetOptions"
-            />
+            <DatasetFilterModal v-model="selectedDatasetIds" :options="datasetOptions" />
         </div>
 
         <!-- Areas -->
         <div class="filter-group">
             <label>{{ t("message.area") }}</label>
-            <AreaFilterModal
-                v-model="selectedAreaIds"
-                :options="areaOptions"
-            />
+            <AreaFilterModal v-model="selectedAreaIds" :options="areaOptions" />
         </div>
 
         <!-- Area filter mode (only when areas are selected) -->
@@ -366,6 +355,4 @@ const areaFilterModeOptions = computed(() => [
     border-color: #dc2626;
     color: #fff;
 }
-
-
 </style>

@@ -167,8 +167,22 @@ Endpoints are defined in `dashboard/api_v2.py`; response schemas in `dashboard/a
 
 ## Code formatting
 
-We use `black` (for Python code) and `prettier` (for JS/TS/Vue) to automatically and consistently format the source code.
-Please configure your favorite editor/IDE to format on save. 
+We use `black` (for Python code) and `prettier` (for JS/TS/Vue/CSS) to automatically and consistently format the source code.
+Please configure your favorite editor/IDE to format on save.
+
+Prettier's settings live in `.prettierrc.json` (4-space indent, 100-column lines - chosen to
+match the code that was already there). Do not run bare `prettier` on the repository: it would
+also reformat Markdown, JSON and the GitHub workflow files, which are not in scope. Use the npm
+scripts, which target `assets/frontend/` only:
+
+```bash
+$ npm run format         # format the frontend in place
+$ npm run format-check   # check only - this is what CI runs
+```
+
+CI fails on unformatted frontend files. The one-time formatting pass that introduced these rules
+is listed in `.git-blame-ignore-revs`; run
+`git config blame.ignoreRevsFile .git-blame-ignore-revs` once so `git blame` skips it.
 
 ## Observation import mechanism
 

@@ -30,8 +30,10 @@ const activeTags = ref<string[]>([]);
 const localIds = ref(new Set(props.modelValue));
 watch(
     () => props.modelValue,
-    (ids) => { localIds.value = new Set(ids); },
-    { deep: true }
+    (ids) => {
+        localIds.value = new Set(ids);
+    },
+    { deep: true },
 );
 
 const allTags = computed(() => {
@@ -47,7 +49,7 @@ const rows = computed(() =>
     props.options.map((sp) => ({
         ...sp,
         vernacularName: pickVernacular(sp, locale.value),
-    }))
+    })),
 );
 
 const filtered = computed(() => {
@@ -57,26 +59,24 @@ const filtered = computed(() => {
         list = list.filter(
             (sp) =>
                 sp.scientificName.toLowerCase().includes(q) ||
-                (sp.vernacularName ?? "").toLowerCase().includes(q)
+                (sp.vernacularName ?? "").toLowerCase().includes(q),
         );
     }
     if (activeTags.value.length) {
         list = list.filter((sp) =>
-            activeTags.value.every((activeTag) => sp.tags.includes(activeTag))
+            activeTags.value.every((activeTag) => sp.tags.includes(activeTag)),
         );
     }
     return list;
 });
 
 // The subset of the current filtered list that is selected (drives checkbox display).
-const tableSelection = computed(() =>
-    filtered.value.filter((sp) => localIds.value.has(sp.id))
-);
+const tableSelection = computed(() => filtered.value.filter((sp) => localIds.value.has(sp.id)));
 
 const buttonLabel = computed(() =>
     props.modelValue.length
         ? `${props.modelValue.length} ${t("message.xSelectedSpecies")}`
-        : t("message.allSpecies")
+        : t("message.allSpecies"),
 );
 
 function toggleTag(tag: string) {
@@ -110,8 +110,16 @@ function onUnselectAll() {
 
 // Deterministic color from tag name so the same tag always gets the same color.
 const TAG_PALETTE = [
-    "#0b7285", "#7048e8", "#c92a2a", "#e67700", "#2b8a3e",
-    "#1864ab", "#a61e4d", "#087f5b", "#862e9c", "#d9480f",
+    "#0b7285",
+    "#7048e8",
+    "#c92a2a",
+    "#e67700",
+    "#2b8a3e",
+    "#1864ab",
+    "#a61e4d",
+    "#087f5b",
+    "#862e9c",
+    "#d9480f",
 ];
 function tagColor(name: string): string {
     let h = 0;
@@ -146,11 +154,16 @@ function tagColor(name: string): string {
                     :class="{ 'tag-chip--active': activeTags.includes(tag) }"
                     :style="
                         activeTags.includes(tag)
-                            ? { backgroundColor: tagColor(tag), color: '#fff', borderColor: tagColor(tag) }
+                            ? {
+                                  backgroundColor: tagColor(tag),
+                                  color: '#fff',
+                                  borderColor: tagColor(tag),
+                              }
                             : { borderColor: tagColor(tag), color: tagColor(tag) }
                     "
                     @click="toggleTag(tag)"
-                >{{ tag }}</span>
+                    >{{ tag }}</span
+                >
             </div>
         </div>
 
@@ -184,7 +197,9 @@ function tagColor(name: string): string {
         >
             <Column selection-mode="multiple" style="width: 2.5rem" />
             <Column field="scientificName" :header="t('message.scientificName')" sortable>
-                <template #body="{ data }"><em>{{ data.scientificName }}</em></template>
+                <template #body="{ data }"
+                    ><em>{{ data.scientificName }}</em></template
+                >
             </Column>
             <Column field="vernacularName" :header="t('message.vernacularName')" sortable />
             <Column :header="t('message.gbifTaxonKey')" style="width: 9rem">
@@ -195,7 +210,8 @@ function tagColor(name: string): string {
                         target="_blank"
                         rel="noopener noreferrer"
                         class="gbif-link"
-                    >{{ data.gbifColTaxonKey }}</a>
+                        >{{ data.gbifColTaxonKey }}</a
+                    >
                 </template>
             </Column>
             <Column :header="t('message.tags')">
@@ -205,7 +221,8 @@ function tagColor(name: string): string {
                         :key="tag"
                         class="row-tag"
                         :style="{ backgroundColor: tagColor(tag) }"
-                    >{{ tag }}</span>
+                        >{{ tag }}</span
+                    >
                 </template>
             </Column>
         </DataTable>
@@ -239,7 +256,9 @@ function tagColor(name: string): string {
     font-size: 0.78rem;
     white-space: nowrap;
     user-select: none;
-    transition: background-color 0.15s, color 0.15s;
+    transition:
+        background-color 0.15s,
+        color 0.15s;
 }
 
 .tag-chip--active {

@@ -259,7 +259,7 @@ function toggleUserMenu(event: Event) {
                     ]"
                     @click="onNavClick($event, (item as NavItem).url)"
                 >
-                    <i v-if="item.icon" :class="item.icon"  />
+                    <i v-if="item.icon" :class="item.icon" />
                     <span>{{ item.label }}</span>
                     <span v-if="(item as NavItem).showDot" class="gbif-nav-dot" />
                 </a>
@@ -272,14 +272,20 @@ function toggleUserMenu(event: Event) {
                         :aria-label="t('message.speciesDisplayToggleLabel')"
                         :title="t('message.speciesDisplayToggleLabel')"
                     >
-                        <span class="gbif-species-name-toggle-label" :class="{ 'is-active': !speciesNameSwitchValue }">
+                        <span
+                            class="gbif-species-name-toggle-label"
+                            :class="{ 'is-active': !speciesNameSwitchValue }"
+                        >
                             <em>{{ t("message.speciesDisplayShowScientific") }}</em>
                         </span>
                         <ToggleSwitch
                             v-model="speciesNameSwitchValue"
                             :aria-label="t('message.speciesDisplayToggleLabel')"
                         />
-                        <span class="gbif-species-name-toggle-label" :class="{ 'is-active': speciesNameSwitchValue }">
+                        <span
+                            class="gbif-species-name-toggle-label"
+                            :class="{ 'is-active': speciesNameSwitchValue }"
+                        >
                             {{ t("message.speciesDisplayShowVernacular") }}
                         </span>
                     </div>
@@ -315,7 +321,10 @@ function toggleUserMenu(event: Event) {
                                 >
                                     <i v-if="item.icon" :class="item.icon" />
                                     <span>{{ item.label }}</span>
-                                    <span v-if="(item as NavItem).showDot" class="gbif-nav-dot gbif-nav-dot--menu" />
+                                    <span
+                                        v-if="(item as NavItem).showDot"
+                                        class="gbif-nav-dot gbif-nav-dot--menu"
+                                    />
                                 </a>
                             </template>
                         </Menu>

@@ -5,6 +5,8 @@
   "scripts": {
     "vite-dev": "vite",
     "vite-build": "vite build",
+    "format": "prettier --write \"assets/frontend/**/*.{ts,vue,css}\"",
+    "format-check": "prettier --check \"assets/frontend/**/*.{ts,vue,css}\"",
     "generate-types": "python scripts/export_openapi_schema.py && openapi-typescript openapi-schema.json -o assets/frontend/types/api.ts"
   },
   "repository": {
