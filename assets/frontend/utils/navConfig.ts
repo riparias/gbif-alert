@@ -35,7 +35,6 @@ interface MapConfig {
     zoomLevelMinMaxQuery: number;
     tileServerUrlTemplate: string;
     tileServerAggregatedUrlTemplate: string;
-    areasUrlTemplate: string;
     minMaxOccPerHexagonUrl: string;
     observationDetailsUrlTemplate: string;
 }

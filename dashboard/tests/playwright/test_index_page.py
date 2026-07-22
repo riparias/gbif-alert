@@ -21,12 +21,13 @@ import re
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import MultiPolygon, Point, Polygon
 from django.utils import timezone
 from playwright.sync_api import Page, expect
 
 from dashboard.models import (
     Alert,
+    Area,
     BasisOfRecord,
     DataImport,
     Dataset,
@@ -481,3 +482,25 @@ def test_index_timeline_tab_shows_histogram(page: Page, live_server):
     page.get_by_role("tab", name="Timeline").click()
 
     expect(page.locator(".p-tabpanel:visible .histogram-svg")).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_index_map_loads_the_outline_of_a_selected_area(page: Page, live_server):
+    """With an area filter active, the map fetches that area's geometry.
+
+    Regression test: the map built the request from a `areasUrlTemplate` entry
+    that the server never put in the nav config, so the call threw inside a
+    try/except and every area was skipped without a trace - occurrences were
+    filtered correctly but the boundary was never drawn.
+    """
+    area = Area.objects.create(
+        name="Test area",
+        mpoly=MultiPolygon(
+            Polygon(((4.0, 50.0), (4.0, 51.0), (5.0, 51.0), (4.0, 50.0)), srid=4326)
+        ),
+    )
+
+    with page.expect_response(
+        lambda r: r.url.endswith(f"/api/v2/areas/{area.pk}/geojson/") and r.ok
+    ):
+        page.goto(f"{live_server.url}/?areaIds={area.pk}&status=all")

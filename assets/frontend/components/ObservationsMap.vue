@@ -151,11 +151,20 @@ async function loadHexMinMax(): Promise<void> {
     }
 }
 
+// Outline of a selected area. Two stacked strokes: a white casing under a solid
+// blue line, so the boundary stays readable over anything below it - dark aerial
+// tiles, the red hexagon ramp, or a cluster of red points. No fill, so it never
+// hides the observations it contains.
+const AREA_OUTLINE_STYLE = [
+    new Style({ stroke: new Stroke({ color: "rgba(255, 255, 255, 0.9)", width: 6 }) }),
+    new Style({ stroke: new Stroke({ color: "#0b6efd", width: 3 }) }),
+];
+
 async function refreshAreaOverlays(areaIds: number[]): Promise<void> {
     areasCollection.clear();
     for (const id of areaIds) {
         try {
-            const resp = await fetch(mapCfg.areasUrlTemplate.replace("{id}", String(id)));
+            const resp = await fetch(`/api/v2/areas/${id}/geojson/`);
             if (!resp.ok) continue;
             const geojson = await resp.json();
             const source = new VectorSource({
@@ -164,14 +173,9 @@ async function refreshAreaOverlays(areaIds: number[]): Promise<void> {
                     featureProjection: "EPSG:3857",
                 }),
             });
-            areasCollection.push(
-                new VectorLayer({
-                    source,
-                    style: new Style({ stroke: new Stroke({ color: "#0b6efd", width: 3 }) }),
-                }),
-            );
+            areasCollection.push(new VectorLayer({ source, style: AREA_OUTLINE_STYLE }));
         } catch {
-            // Skip areas that fail to load
+            // Skip areas that fail to load (network error, deleted area, ...)
         }
     }
 }
@@ -223,7 +227,9 @@ watch(() => resultsStore.statusEpoch, debouncedRefresh);
 onMounted(() => {
     olMap = baseMapRef.value!.getOlMap()!;
 
-    // Area overlays sit above tiles but below data layers
+    // Area outlines sit above everything else: the data layers carry no zIndex
+    // (so 0), which keeps the boundary readable over hexagons and points alike.
+    // The group is added once; refreshAreaOverlays() swaps its contents.
     olMap.addLayer(
         new LayerGroup({
             layers: areasCollection as unknown as Collection<any>,

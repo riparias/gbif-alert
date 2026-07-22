@@ -1,5 +1,8 @@
 # Unreleased
 
+- Fix: selecting an area now draws its boundary on the map, above the hexagons
+  and points. The outline was never displayed at all - observations were
+  filtered by the area, but nothing showed where it was.
 - Change: the main navigation is more compact - "About this site" and "About the
   data" are grouped under an "About" menu, "Explore all observations" is now
   "Explore", and the language selector shows only the language code.
