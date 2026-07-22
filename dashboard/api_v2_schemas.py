@@ -325,11 +325,16 @@ class AreaIn(Schema):
             "asking for a shared area is refused with 403."
         ),
     )
+    tags: list[str] = Field(
+        default_factory=list,
+        description="Free-form tags, created on the fly if they do not exist yet.",
+    )
 
 
 class AreaPatchIn(Schema):
     name: str | None = None
     geojson: dict | None = None  # None means "leave geometry unchanged"
+    tags: list[str] | None = None  # None means "leave tags unchanged"; [] clears them
 
 
 class SignInIn(Schema):

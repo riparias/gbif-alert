@@ -399,6 +399,7 @@ def area_create(request: HttpRequest, payload: AreaIn):
     except ValueError as exc:
         return 422, {"detail": str(exc)}
     area = Area.objects.create(mpoly=mpoly, owner=owner, name=payload.name)
+    area.tags.set(payload.tags)
     return 201, _area_to_out(area)
 
 
@@ -412,6 +413,7 @@ def area_create_from_file(
     name: Form[str],
     data_file: File[UploadedFile],
     shared: Form[bool] = False,
+    tags: Form[list[str]] = [],
 ):
     """Create a new user-specific area from an uploaded GeoPackage file.
 
@@ -434,6 +436,7 @@ def area_create_from_file(
     area = Area.objects.create(
         mpoly=cast(GEOSMultiPolygon, GEOSGeometry(wkt)), owner=owner, name=name
     )
+    area.tags.set(tags)
     return 201, _area_to_out(area)
 
 
@@ -456,6 +459,8 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
             area.mpoly = geojson_to_multipolygon(payload.geojson)
         except ValueError as exc:
             return 422, {"detail": str(exc)}
+    if payload.tags is not None:
+        area.tags.set(payload.tags)
     area.save()
     return _area_to_out(area)
 

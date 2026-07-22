@@ -369,6 +369,60 @@ def test_shared_permission_checked_before_geometry_on_file_upload(area_client):
     assert not Area.objects.filter(name="Sneaky").exists()
 
 
+def test_create_with_tags(area_client):
+    resp = area_client.post(
+        "/api/v2/areas/",
+        data=json.dumps(
+            {"name": "Tagged", "geojson": SIMPLE_FC, "tags": ["provinces", "belgium"]}
+        ),
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    assert sorted(resp.json()["tags"]) == ["belgium", "provinces"]
+    area = Area.objects.get(name="Tagged")
+    assert sorted(t.name for t in area.tags.all()) == ["belgium", "provinces"]
+
+
+def test_create_without_tags_has_no_tags(area_client):
+    resp = area_client.post(
+        "/api/v2/areas/",
+        data=json.dumps({"name": "Untagged", "geojson": SIMPLE_FC}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    assert resp.json()["tags"] == []
+
+
+def test_create_from_file_accepts_tags_and_shared(operator_client, tmp_path):
+    """The multipart creator has the same capabilities as the JSON one."""
+    import json as json_module
+
+    geojson_path = tmp_path / "area.geojson"
+    geojson_path.write_text(
+        json_module.dumps(
+            {
+                "type": "FeatureCollection",
+                "crs": {"type": "name", "properties": {"name": "EPSG:4326"}},
+                "features": SIMPLE_FC["features"],
+            }
+        )
+    )
+    with geojson_path.open("rb") as fh:
+        resp = operator_client.post(
+            "/api/v2/areas/from-file/",
+            data={
+                "name": "From file",
+                "data_file": fh,
+                "shared": "true",
+                "tags": ["provinces", "belgium"],
+            },
+        )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["isUserSpecific"] is False
+    assert sorted(body["tags"]) == ["belgium", "provinces"]
+
+
 # ---------------------------------------------------------------------------
 # AreaPatchAPITests
 # ---------------------------------------------------------------------------
@@ -451,3 +505,46 @@ def test_patch_requires_auth(patch_data, client):
         content_type="application/json",
     )
     assert resp.status_code == 401
+
+
+def test_patch_sets_tags(patch_data):
+    resp = patch_data["client"].patch(
+        f"/api/v2/areas/{patch_data['area'].pk}/",
+        data=json.dumps({"tags": ["rivers"]}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert resp.json()["tags"] == ["rivers"]
+
+
+def test_patch_tags_replaces_the_whole_set(patch_data):
+    patch_data["area"].tags.set(["old", "stale"])
+    resp = patch_data["client"].patch(
+        f"/api/v2/areas/{patch_data['area'].pk}/",
+        data=json.dumps({"tags": ["fresh"]}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert [t.name for t in patch_data["area"].tags.all()] == ["fresh"]
+
+
+def test_patch_without_tags_leaves_them_unchanged(patch_data):
+    patch_data["area"].tags.set(["keepme"])
+    resp = patch_data["client"].patch(
+        f"/api/v2/areas/{patch_data['area'].pk}/",
+        data=json.dumps({"name": "Renamed again"}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert [t.name for t in patch_data["area"].tags.all()] == ["keepme"]
+
+
+def test_patch_empty_tag_list_clears_tags(patch_data):
+    patch_data["area"].tags.set(["gone"])
+    resp = patch_data["client"].patch(
+        f"/api/v2/areas/{patch_data['area'].pk}/",
+        data=json.dumps({"tags": []}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert list(patch_data["area"].tags.all()) == []
