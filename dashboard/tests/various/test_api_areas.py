@@ -423,6 +423,37 @@ def test_create_from_file_accepts_tags_and_shared(operator_client, tmp_path):
     assert sorted(body["tags"]) == ["belgium", "provinces"]
 
 
+def test_create_from_file_duplicate_name_returns_409(operator_client, tmp_path):
+    """The multipart creator enforces the same per-scope name uniqueness as the JSON one."""
+    import json as json_module
+
+    geojson_path = tmp_path / "area.geojson"
+    geojson_path.write_text(
+        json_module.dumps(
+            {
+                "type": "FeatureCollection",
+                "crs": {"type": "name", "properties": {"name": "EPSG:4326"}},
+                "features": SIMPLE_FC["features"],
+            }
+        )
+    )
+    with geojson_path.open("rb") as fh:
+        first = operator_client.post(
+            "/api/v2/areas/from-file/",
+            data={"name": "From file twice", "data_file": fh, "shared": "true"},
+        )
+    assert first.status_code == 201
+
+    with geojson_path.open("rb") as fh:
+        second = operator_client.post(
+            "/api/v2/areas/from-file/",
+            data={"name": "From file twice", "data_file": fh, "shared": "true"},
+        )
+    assert second.status_code == 409
+    assert "detail" in second.json()
+    assert Area.objects.filter(name="From file twice").count() == 1
+
+
 def test_duplicate_name_same_owner_returns_409(area_client):
     payload = json.dumps({"name": "Twice", "geojson": SIMPLE_FC})
     first = area_client.post(

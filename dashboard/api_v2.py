@@ -348,9 +348,6 @@ def _area_to_out(area: Area) -> dict:
     }
 
 
-AREA_NAME_TAKEN_DETAIL = _("An area with this name already exists.")
-
-
 def _area_name_taken(
     name: str, owner: User | None, exclude_pk: int | None = None
 ) -> bool:
@@ -438,7 +435,7 @@ def area_create(request: HttpRequest, payload: AreaIn):
     except ValueError as exc:
         return 422, {"detail": str(exc)}
     if _area_name_taken(payload.name, owner):
-        return 409, {"detail": str(AREA_NAME_TAKEN_DETAIL)}
+        return 409, {"detail": str(_("An area with this name already exists."))}
     area = Area.objects.create(mpoly=mpoly, owner=owner, name=payload.name)
     area.tags.set(payload.tags)
     return 201, _area_to_out(area)
@@ -483,7 +480,7 @@ def area_create_from_file(
             return 422, {"detail": str(exc)}
 
     if _area_name_taken(name, owner):
-        return 409, {"detail": str(AREA_NAME_TAKEN_DETAIL)}
+        return 409, {"detail": str(_("An area with this name already exists."))}
 
     area = Area.objects.create(
         mpoly=cast(GEOSMultiPolygon, GEOSGeometry(wkt)), owner=owner, name=name
@@ -515,7 +512,7 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
     area = get_object_or_404(Area, pk=area_id, owner=request.user)
     if payload.name is not None and payload.name != area.name:
         if _area_name_taken(payload.name, area.owner, exclude_pk=area.pk):
-            return 409, {"detail": str(AREA_NAME_TAKEN_DETAIL)}
+            return 409, {"detail": str(_("An area with this name already exists."))}
         area.name = payload.name
     if payload.geojson is not None:
         try:
