@@ -303,9 +303,18 @@ class AlertTemplatePublishedOut(Schema):
     id: int
 
 
-class AreaFromDrawingIn(Schema):
+class AreaIn(Schema):
+    """Payload to create an area from GeoJSON."""
+
     name: str
-    geojson: dict  # GeoJSON FeatureCollection, EPSG:4326
+    geojson: dict = Field(
+        description=(
+            "Area geometry in EPSG:4326: a GeoJSON FeatureCollection, a single "
+            "Feature, or a bare Polygon / MultiPolygon geometry. All polygons "
+            "found are merged into the single MultiPolygon of one area. Only "
+            "EPSG:4326 is accepted - reproject before sending."
+        )
+    )
 
 
 class AreaPatchIn(Schema):

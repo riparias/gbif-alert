@@ -36,7 +36,7 @@ from dashboard.api_v2_schemas import (
     ApiTokenCreatedOut,
     ApiTokenOut,
     AreaFilterMode,
-    AreaFromDrawingIn,
+    AreaIn,
     AreaOut,
     AreaPatchIn,
     BasisOfRecordOut,
@@ -343,7 +343,35 @@ def area_geojson(request: HttpRequest, area_id: int):
     response={201: AreaOut, 422: DetailErrorOut, **ERR_401, **ERR_403},
     auth=[ApiTokenAuth(), django_auth],
 )
-def area_create(
+def area_create(request: HttpRequest, payload: AreaIn):
+    """Create an area from GeoJSON.
+
+    Accepts a FeatureCollection, a single Feature, or a bare Polygon /
+    MultiPolygon geometry, in EPSG:4326. All polygons are merged into a single
+    MultiPolygon - one call creates exactly one area.
+
+    Returns 422 with a detail message if the geometry is unusable.
+    """
+    user = cast(User, request.user)
+    try:
+        mpoly = geojson_to_multipolygon(payload.geojson)
+    except ValueError as exc:
+        return 422, {"detail": str(exc)}
+    area = Area.objects.create(mpoly=mpoly, owner=user, name=payload.name)
+    return 201, {
+        "id": area.pk,
+        "name": area.name,
+        "isUserSpecific": area.is_user_specific,
+        "tags": [],
+    }
+
+
+@api_v2.post(
+    "/areas/from-file/",
+    response={201: AreaOut, 422: DetailErrorOut, **ERR_401, **ERR_403},
+    auth=[ApiTokenAuth(), django_auth],
+)
+def area_create_from_file(
     request: HttpRequest,
     name: Form[str],
     data_file: File[UploadedFile],
@@ -365,33 +393,6 @@ def area_create(
     area = Area.objects.create(
         mpoly=cast(GEOSMultiPolygon, GEOSGeometry(wkt)), owner=user, name=name
     )
-    return 201, {
-        "id": area.pk,
-        "name": area.name,
-        "isUserSpecific": area.is_user_specific,
-        "tags": [],
-    }
-
-
-@api_v2.post(
-    "/areas/from-drawing/",
-    response={201: AreaOut, 422: DetailErrorOut, **ERR_401, **ERR_403},
-    auth=[ApiTokenAuth(), django_auth],
-)
-def area_create_from_drawing(request: HttpRequest, payload: AreaFromDrawingIn):
-    """Create a new user-specific area from a GeoJSON FeatureCollection.
-
-    Accepts a GeoJSON FeatureCollection (EPSG:4326) with Polygon or MultiPolygon
-    features drawn by the user. All features are merged into a single MultiPolygon.
-
-    Returns 422 with a detail message if the geometry is invalid.
-    """
-    user = cast(User, request.user)
-    try:
-        mpoly = geojson_to_multipolygon(payload.geojson)
-    except ValueError as exc:
-        return 422, {"detail": str(exc)}
-    area = Area.objects.create(mpoly=mpoly, owner=user, name=payload.name)
     return 201, {
         "id": area.pk,
         "name": area.name,

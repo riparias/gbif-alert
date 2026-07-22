@@ -84,10 +84,13 @@ export interface paths {
         put?: never;
         /**
          * Area Create
-         * @description Create a new user-specific area from an uploaded GeoPackage file.
+         * @description Create an area from GeoJSON.
          *
-         *     Returns 422 with a human-readable detail message if the file fails
-         *     validation (wrong geometry type, multiple layers, missing SRS, etc.).
+         *     Accepts a FeatureCollection, a single Feature, or a bare Polygon /
+         *     MultiPolygon geometry, in EPSG:4326. All polygons are merged into a single
+         *     MultiPolygon - one call creates exactly one area.
+         *
+         *     Returns 422 with a detail message if the geometry is unusable.
          */
         post: operations["dashboard_api_v2_area_create"];
         delete?: never;
@@ -120,7 +123,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v2/areas/from-drawing/": {
+    "/api/v2/areas/from-file/": {
         parameters: {
             query?: never;
             header?: never;
@@ -130,15 +133,13 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Area Create From Drawing
-         * @description Create a new user-specific area from a GeoJSON FeatureCollection.
+         * Area Create From File
+         * @description Create a new user-specific area from an uploaded GeoPackage file.
          *
-         *     Accepts a GeoJSON FeatureCollection (EPSG:4326) with Polygon or MultiPolygon
-         *     features drawn by the user. All features are merged into a single MultiPolygon.
-         *
-         *     Returns 422 with a detail message if the geometry is invalid.
+         *     Returns 422 with a human-readable detail message if the file fails
+         *     validation (wrong geometry type, multiple layers, missing SRS, etc.).
          */
-        post: operations["dashboard_api_v2_area_create_from_drawing"];
+        post: operations["dashboard_api_v2_area_create_from_file"];
         delete?: never;
         options?: never;
         head?: never;
@@ -842,6 +843,21 @@ export interface components {
             tags: string[];
         };
         /**
+         * AreaIn
+         * @description Payload to create an area from GeoJSON.
+         */
+        AreaIn: {
+            /** Name */
+            name: string;
+            /**
+             * Geojson
+             * @description Area geometry in EPSG:4326: a GeoJSON FeatureCollection, a single Feature, or a bare Polygon / MultiPolygon geometry. All polygons found are merged into the single MultiPolygon of one area. Only EPSG:4326 is accepted - reproject before sending.
+             */
+            geojson: {
+                [key: string]: unknown;
+            };
+        };
+        /**
          * GeoJSONFeatureCollectionOut
          * @description A GeoJSON FeatureCollection (EPSG:4326) from Django's geojson serializer.
          *
@@ -875,15 +891,6 @@ export interface components {
             geometry: {
                 [key: string]: unknown;
             } | null;
-        };
-        /** AreaFromDrawingIn */
-        AreaFromDrawingIn: {
-            /** Name */
-            name: string;
-            /** Geojson */
-            geojson: {
-                [key: string]: unknown;
-            };
         };
         /** AreaPatchIn */
         AreaPatchIn: {
@@ -1599,15 +1606,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": {
-                    /** Name */
-                    name: string;
-                    /**
-                     * Data File
-                     * Format: binary
-                     */
-                    data_file: string;
-                };
+                "application/json": components["schemas"]["AreaIn"];
             };
         };
         responses: {
@@ -1689,7 +1688,7 @@ export interface operations {
             };
         };
     };
-    dashboard_api_v2_area_create_from_drawing: {
+    dashboard_api_v2_area_create_from_file: {
         parameters: {
             query?: never;
             header?: never;
@@ -1698,7 +1697,15 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AreaFromDrawingIn"];
+                "multipart/form-data": {
+                    /** Name */
+                    name: string;
+                    /**
+                     * Data File
+                     * Format: binary
+                     */
+                    data_file: string;
+                };
             };
         };
         responses: {

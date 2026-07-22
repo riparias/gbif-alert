@@ -149,7 +149,7 @@ def test_species_list_empty_tags(client, filter_lists_data):
 def test_species_per_polygon_returns_species_with_count(client, observations_data):
     """POST /species/per-polygon/ returns species in the polygon with their count (N1)."""
     # A FeatureCollection with a box around the fixture observation at
-    # (4.35, 50.85) in EPSG:4326 (same GeoJSON shape as areas/from-drawing).
+    # (4.35, 50.85) in EPSG:4326 (same GeoJSON shape as POST /areas/).
     geojson = {
         "type": "FeatureCollection",
         "features": [
@@ -1907,7 +1907,7 @@ def test_geojson_returns_404_for_nonexistent(client, area_endpoints_data):
     assert response.status_code == 404
 
 
-# --- POST /api/v2/areas/ ---
+# --- POST /api/v2/areas/from-file/ ---
 
 
 def test_create_area_returns_201(client, area_endpoints_data):
@@ -1915,7 +1915,7 @@ def test_create_area_returns_201(client, area_endpoints_data):
     gpkg = SAMPLE_DATA_DIR / "polygon_4326.gpkg"
     with open(gpkg, "rb") as f:
         response = client.post(
-            "/api/v2/areas/",
+            "/api/v2/areas/from-file/",
             {"name": "New area", "data_file": f},
         )
     assert response.status_code == 201
@@ -1926,7 +1926,9 @@ def test_create_area_persists_in_db(client, area_endpoints_data):
     client.login(username="owner", password="pass")
     gpkg = SAMPLE_DATA_DIR / "polygon_4326.gpkg"
     with open(gpkg, "rb") as f:
-        client.post("/api/v2/areas/", {"name": "Persisted area", "data_file": f})
+        client.post(
+            "/api/v2/areas/from-file/", {"name": "Persisted area", "data_file": f}
+        )
     assert Area.objects.filter(name="Persisted area", owner=owner).exists()
 
 
@@ -1935,7 +1937,7 @@ def test_create_area_response_shape(client, area_endpoints_data):
     gpkg = SAMPLE_DATA_DIR / "polygon_4326.gpkg"
     with open(gpkg, "rb") as f:
         response = client.post(
-            "/api/v2/areas/",
+            "/api/v2/areas/from-file/",
             {"name": "Shape test", "data_file": f},
         )
     data = response.json()
@@ -1950,7 +1952,9 @@ def test_create_area_wrong_geometry_returns_422(client, area_endpoints_data):
     client.login(username="owner", password="pass")
     gpkg = SAMPLE_DATA_DIR / "point.gpkg"
     with open(gpkg, "rb") as f:
-        response = client.post("/api/v2/areas/", {"name": "Bad", "data_file": f})
+        response = client.post(
+            "/api/v2/areas/from-file/", {"name": "Bad", "data_file": f}
+        )
     assert response.status_code == 422
     assert "detail" in response.json()
 
@@ -1959,14 +1963,18 @@ def test_create_area_too_many_features_returns_422(client, area_endpoints_data):
     client.login(username="owner", password="pass")
     gpkg = SAMPLE_DATA_DIR / "polygon_4326_too_many_features.gpkg"
     with open(gpkg, "rb") as f:
-        response = client.post("/api/v2/areas/", {"name": "Bad", "data_file": f})
+        response = client.post(
+            "/api/v2/areas/from-file/", {"name": "Bad", "data_file": f}
+        )
     assert response.status_code == 422
 
 
 def test_create_area_requires_authentication(client):
     gpkg = SAMPLE_DATA_DIR / "polygon_4326.gpkg"
     with open(gpkg, "rb") as f:
-        response = client.post("/api/v2/areas/", {"name": "Unauth", "data_file": f})
+        response = client.post(
+            "/api/v2/areas/from-file/", {"name": "Unauth", "data_file": f}
+        )
     assert response.status_code == 401
 
 
@@ -2898,7 +2906,7 @@ ERROR_RESPONSE_EXPECTATIONS = [
     ("/species/", "post", {401, 403}),
     ("/areas/{area_id}/geojson/", "get", {403, 404}),
     ("/areas/", "post", {401, 403}),
-    ("/areas/from-drawing/", "post", {401, 403}),
+    ("/areas/from-file/", "post", {401, 403}),
     ("/areas/{area_id}/", "patch", {401, 403, 404}),
     ("/areas/{area_id}/", "delete", {401, 403, 404}),
     ("/observations/mark-as-viewed/", "post", {401, 403}),

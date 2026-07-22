@@ -204,12 +204,12 @@ def test_non_dict_input_raises_value_error():
 
 
 # ---------------------------------------------------------------------------
-# AreaFromDrawingAPITests
+# AreaCreateAPITests
 # ---------------------------------------------------------------------------
 
 
 @pytest.fixture
-def drawing_client(client):
+def area_client(client):
     User = get_user_model()
     user = User.objects.create_user(
         username="drawer", password="pass", email="drawer@t.com"
@@ -218,9 +218,9 @@ def drawing_client(client):
     return client
 
 
-def test_create_from_drawing_returns_201(drawing_client):
-    resp = drawing_client.post(
-        "/api/v2/areas/from-drawing/",
+def test_create_returns_201(area_client):
+    resp = area_client.post(
+        "/api/v2/areas/",
         data=json.dumps({"name": "My drawn area", "geojson": SIMPLE_FC}),
         content_type="application/json",
     )
@@ -231,16 +231,16 @@ def test_create_from_drawing_returns_201(drawing_client):
     assert isinstance(data["id"], int)
 
 
-def test_create_from_drawing_requires_auth(client):
+def test_create_requires_auth(client):
     resp = client.post(
-        "/api/v2/areas/from-drawing/",
+        "/api/v2/areas/",
         data=json.dumps({"name": "Anon area", "geojson": SIMPLE_FC}),
         content_type="application/json",
     )
     assert resp.status_code == 401
 
 
-def test_create_from_drawing_invalid_geometry_returns_422(drawing_client):
+def test_create_invalid_geometry_returns_422(area_client):
     bad_fc = {
         "type": "FeatureCollection",
         "features": [
@@ -251,8 +251,8 @@ def test_create_from_drawing_invalid_geometry_returns_422(drawing_client):
             }
         ],
     }
-    resp = drawing_client.post(
-        "/api/v2/areas/from-drawing/",
+    resp = area_client.post(
+        "/api/v2/areas/",
         data=json.dumps({"name": "Bad area", "geojson": bad_fc}),
         content_type="application/json",
     )
@@ -260,10 +260,10 @@ def test_create_from_drawing_invalid_geometry_returns_422(drawing_client):
     assert "detail" in resp.json()
 
 
-def test_create_from_drawing_empty_fc_returns_422(drawing_client):
+def test_create_empty_fc_returns_422(area_client):
     empty_fc = {"type": "FeatureCollection", "features": []}
-    resp = drawing_client.post(
-        "/api/v2/areas/from-drawing/",
+    resp = area_client.post(
+        "/api/v2/areas/",
         data=json.dumps({"name": "Empty", "geojson": empty_fc}),
         content_type="application/json",
     )

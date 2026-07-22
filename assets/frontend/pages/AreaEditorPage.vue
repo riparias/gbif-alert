@@ -157,7 +157,7 @@ async function save(): Promise<void> {
         featureProjection: "EPSG:3857",
     });
 
-    const url = isEditMode.value ? `/api/v2/areas/${areaId.value}/` : "/api/v2/areas/from-drawing/";
+    const url = isEditMode.value ? `/api/v2/areas/${areaId.value}/` : "/api/v2/areas/";
     const method = isEditMode.value ? "PATCH" : "POST";
 
     try {

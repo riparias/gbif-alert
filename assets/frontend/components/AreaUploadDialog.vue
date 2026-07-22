@@ -46,7 +46,7 @@ async function upload() {
     formData.append("name", name.value);
     formData.append("data_file", fileInput.value.files[0]);
 
-    const resp = await fetch("/api/v2/areas/", {
+    const resp = await fetch("/api/v2/areas/from-file/", {
         method: "POST",
         headers: {
             "X-CSRFToken": getCsrf(),
