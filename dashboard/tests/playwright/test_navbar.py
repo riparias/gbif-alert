@@ -9,6 +9,7 @@ separately in dashboard/tests/views/test_pages.py::NavConfigJsonTests.
 """
 
 import datetime
+import re
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -50,6 +51,16 @@ def _create_observation() -> Observation:
         location=Point(5.09513, 50.48941, srid=4326),
         basis_of_record=BasisOfRecord.objects.create(name="HUMAN_OBSERVATION"),
     )
+
+
+def _open_about_menu(page: Page) -> None:
+    """Open the navbar's "About" submenu and return once its items are visible.
+
+    The two about pages are grouped under a parent item, so they are not in the
+    DOM until the submenu is opened.
+    """
+    page.get_by_role("menuitem", name="About", exact=True).click()
+    expect(page.get_by_role("menuitem", name="About this site")).to_be_visible()
 
 
 # ---------------------------------------------------------------------------
@@ -201,10 +212,14 @@ def test_navbar_internal_link_navigates_without_reload(page: Page, live_server):
     # Stamp the current document so we can tell whether it survives the click.
     page.evaluate("window.__noReloadMarker = 'spa'")
 
+    _open_about_menu(page)
     page.get_by_role("menuitem", name="About this site").click()
 
     # The route changed client-side...
-    expect(page).to_have_url(live_server.url + "/about-site")
+    # Path-based: the filters store may append its own query string (e.g.
+    # ?status=all) shortly after the route changes, which would race an
+    # exact-URL assertion.
+    expect(page).to_have_url(re.compile(r"/about-site(\?|$)"))
     # ...and the original document was never torn down (no full reload/blink).
     assert page.evaluate("window.__noReloadMarker") == "spa"
 
@@ -258,7 +273,71 @@ def test_news_dot_clears_without_full_reload(page: Page, live_server):
     assert page.evaluate("window.__noReloadMarker") == "spa"
 
     # It stays gone after navigating client-side to another page.
+    _open_about_menu(page)
     page.get_by_role("menuitem", name="About this site").click()
-    expect(page).to_have_url(live_server.url + "/about-site")
+    # Path-based: the filters store may append its own query string (e.g.
+    # ?status=all) shortly after the route changes, which would race an
+    # exact-URL assertion.
+    expect(page).to_have_url(re.compile(r"/about-site(\?|$)"))
     expect(news_item.locator(".gbif-nav-dot")).not_to_be_visible()
     assert page.evaluate("window.__noReloadMarker") == "spa"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_navbar_about_pages_are_grouped_in_a_submenu(page: Page, live_server):
+    """The two about pages sit under a single "About" navbar entry."""
+    page.goto(live_server.url + "/")
+    expect(page.locator('[data-pc-name="menubar"]')).to_be_visible()
+
+    # Neither page is reachable at the top level...
+    expect(page.get_by_role("menuitem", name="About this site")).to_have_count(0)
+    expect(page.get_by_role("menuitem", name="About the data")).to_have_count(0)
+
+    # ...they appear once the parent entry is opened.
+    _open_about_menu(page)
+    expect(page.get_by_role("menuitem", name="About the data")).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_navbar_about_entry_is_active_on_a_child_page(page: Page, live_server):
+    """The "About" entry is highlighted while the user is on one of its pages.
+
+    The parent has no page of its own, so without this it would never show the
+    active state that every other top-level entry gets.
+    """
+    page.goto(live_server.url + "/about-data")
+
+    # The parent's own link, not the submenu child (which is also active here).
+    about_link = page.get_by_role("menuitem", name="About", exact=True).locator(
+        "a.gbif-nav-link:not(.gbif-nav-sub-link)"
+    )
+    expect(about_link).to_have_class(re.compile(r"\bgbif-nav-active\b"))
+
+
+@pytest.mark.django_db(transaction=True)
+def test_navbar_language_selector_shows_only_a_code_until_opened(
+    page: Page, live_server
+):
+    """The language selector is collapsed to a globe + code to save navbar width.
+
+    The full native names ("English", "Nederlands", ...) live in the overlay,
+    which is widened independently of the collapsed trigger.
+
+    Deliberately does not name a language: which ones are enabled is per-instance
+    (ENABLED_LANGUAGES), so the assertions are on the shape of the labels - a
+    two-letter code on the trigger, spelled-out names in the overlay.
+    """
+    page.goto(live_server.url + "/")
+
+    selector = page.get_by_role("combobox", name="Language")
+    # \s* because the globe icon element contributes whitespace to the text.
+    expect(selector).to_have_text(re.compile(r"^\s*[A-Z]{2}\s*$"))
+
+    selector.click()
+
+    options = page.get_by_role("option")
+    expect(options.first).to_be_visible()
+    # The selector only renders at all when the instance enables 2+ languages.
+    assert options.count() >= 2
+    for label in options.all_inner_texts():
+        assert len(label.strip()) > 2, f"overlay shows a collapsed label: {label!r}"
