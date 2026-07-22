@@ -1,5 +1,13 @@
 # Unreleased
 
+- Change: the main navigation is more compact. "About this site" and "About the
+  data" are grouped under a single "About" menu (the parent has no page of its
+  own - it opens the submenu - and is highlighted while either of its pages is
+  open), and "Explore all observations" is shortened to "Explore". The full
+  wording is still used on the 404 page, where it reads as a sentence. The
+  language selector is collapsed to a globe plus the language code ("EN"); the
+  full native names are shown in the dropdown, which is widened for them.
+
 - Fix: the navbar notification dots ("What's new" and "My alerts") no longer go
   stale during a single-page-app session. They were read from the nav config
   Django injects at page load, so visiting the news page cleared the dot

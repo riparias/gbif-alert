@@ -89,12 +89,23 @@ function isActive(url: string): boolean {
     return route.path === url;
 }
 
+// A parent item (e.g. "About") has no page of its own, so it counts as active
+// while the user is on any of its children.
+function isItemActive(item: NavItem): boolean {
+    if (item.items) {
+        return (item.items as NavItem[]).some((child) => isActive(child.url ?? ""));
+    }
+    return isActive(item.url ?? "");
+}
+
 // --- Main nav items ---
 
 const navItems = computed((): NavItem[] => {
     const items: NavItem[] = [
         {
-            label: t("message.navExploreAllObservations"),
+            // Short label: the navbar is tight. The full wording is kept for the
+            // 404 page, where it reads as a sentence rather than a nav entry.
+            label: t("message.navExplore"),
             url: config.urls.index,
             icon: "pi pi-map",
             showDot: false,
@@ -116,20 +127,28 @@ const navItems = computed((): NavItem[] => {
         });
     }
 
-    items.push(
-        {
-            label: t("message.navAboutSite"),
-            url: config.urls.aboutSite,
-            icon: "pi pi-info-circle",
-            showDot: false,
-        },
-        {
-            label: t("message.navAboutData"),
-            url: config.urls.aboutData,
-            icon: "pi pi-database",
-            showDot: false,
-        },
-    );
+    // The two "about" pages live in a submenu rather than at the top level.
+    // The parent is not a link of its own (there is no "about" landing page):
+    // clicking it opens the submenu, which is PrimeVue's default for an item
+    // with children.
+    items.push({
+        label: t("message.navAbout"),
+        icon: "pi pi-info-circle",
+        items: [
+            {
+                label: t("message.navAboutSite"),
+                url: config.urls.aboutSite,
+                icon: "pi pi-info-circle",
+                showDot: false,
+            },
+            {
+                label: t("message.navAboutData"),
+                url: config.urls.aboutData,
+                icon: "pi pi-database",
+                showDot: false,
+            },
+        ],
+    });
 
     return items;
 });
@@ -137,6 +156,13 @@ const navItems = computed((): NavItem[] => {
 // --- Language selector ---
 
 const selectedLanguage = ref(config.currentLanguage);
+
+// Collapsed, the selector shows the bare language code ("EN"). Django can hand
+// us a regional code (e.g. "en-us"), which would render as "EN-US", so keep the
+// base subtag only.
+function shortLanguageCode(value: string | null | undefined): string {
+    return (value ?? config.currentLanguage).split("-")[0].toUpperCase();
+}
 
 function changeLanguage(event: { value: string }) {
     // POST to Django's set_language view, matching the behaviour of the old
@@ -245,23 +271,27 @@ function toggleUserMenu(event: Event) {
                 </a>
             </template>
 
-            <template #item="{ item, props }">
+            <template #item="{ item, props, root, hasSubmenu }">
                 <!--
                     props.action provides PrimeVue's own tabindex / aria attrs.
-                    We add href and our active/dot logic on top.
+                    We add href and our active/dot logic on top. A custom item
+                    template also replaces PrimeVue's built-in submenu arrow, so
+                    we render it ourselves when the item has children.
                 -->
                 <a
                     v-bind="props.action"
                     :href="(item as NavItem).url"
                     :class="[
                         'gbif-nav-link',
-                        { 'gbif-nav-active': isActive((item as NavItem).url ?? '') },
+                        root ? 'gbif-nav-root-link' : 'gbif-nav-sub-link',
+                        { 'gbif-nav-active': isItemActive(item as NavItem) },
                     ]"
                     @click="onNavClick($event, (item as NavItem).url)"
                 >
                     <i v-if="item.icon" :class="item.icon" />
                     <span>{{ item.label }}</span>
                     <span v-if="(item as NavItem).showDot" class="gbif-nav-dot" />
+                    <i v-if="hasSubmenu" class="pi pi-angle-down gbif-nav-submenu-icon" />
                 </a>
             </template>
 
@@ -290,7 +320,10 @@ function toggleUserMenu(event: Event) {
                         </span>
                     </div>
 
-                    <!-- Language selector: only shown when more than one language is enabled -->
+                    <!-- Language selector: only shown when more than one language is enabled.
+                         Collapsed it is just a globe + the language code, to keep the navbar
+                         narrow; the overlay is widened (see .gbif-lang-overlay) so the full
+                         native names still fit. -->
                     <Select
                         v-if="config.enabledLanguages.length > 1"
                         v-model="selectedLanguage"
@@ -299,8 +332,17 @@ function toggleUserMenu(event: Event) {
                         option-value="code"
                         size="small"
                         class="gbif-lang-select"
+                        overlay-class="gbif-lang-overlay"
+                        :aria-label="t('message.navLanguage')"
                         @change="changeLanguage"
-                    />
+                    >
+                        <template #value="{ value }">
+                            <span class="gbif-lang-value">
+                                <i class="pi pi-globe" />
+                                {{ shortLanguageCode(value) }}
+                            </span>
+                        </template>
+                    </Select>
 
                     <!-- Authenticated user: dropdown menu -->
                     <template v-if="config.user.isAuthenticated">
@@ -388,9 +430,34 @@ function toggleUserMenu(event: Event) {
 
 .gbif-nav-link.gbif-nav-active {
     font-weight: bold;
+}
+
+/* The active highlight is a pill drawn on the primary-colored bar, so it only
+ * applies to top-level entries. Its padding is ours to set: bar items have no
+ * padding of their own. */
+.gbif-nav-root-link.gbif-nav-active {
     background: rgba(255, 255, 255, 0.15);
     border-radius: 6px;
     padding: 0.35rem 0.6rem;
+}
+
+/* Submenu items ("About this site" / "About the data") are rendered on the
+ * light dropdown panel, but they are still inside .p-menubar, which paints its
+ * links white for the primary-colored bar - so without this they would be white
+ * on white. The active one gets the primary color: the translucent white pill
+ * above would be invisible here, and PrimeVue already pads these links, so
+ * restyling them would knock the active row out of line with the others. */
+.gbif-nav-sub-link {
+    color: var(--p-text-color);
+}
+
+.gbif-nav-sub-link.gbif-nav-active {
+    color: var(--p-primary-color);
+}
+
+.gbif-nav-submenu-icon {
+    font-size: 0.75rem;
+    margin-left: 0.15rem;
 }
 
 .gbif-navbar-end {
@@ -441,8 +508,29 @@ function toggleUserMenu(event: Event) {
 }
 
 .gbif-lang-select {
-    /* Keep the language selector compact within the navbar */
+    /* Keep the language selector compact within the navbar: collapsed it only
+     * holds a globe and a two-letter code, so it should shrink to that. The
+     * full language names live in the overlay, which is widened separately
+     * (:overlay-style above) and is not constrained by the trigger width. */
     min-width: 0;
+    width: auto;
+}
+
+/* Trim PrimeVue's default trigger padding: sized for a full word, it leaves a
+ * lot of air around a two-letter code. */
+:deep(.gbif-lang-select .p-select-label) {
+    padding: 0.25rem 0.4rem;
+}
+
+:deep(.gbif-lang-select .p-select-dropdown) {
+    width: 1.5rem;
+}
+
+.gbif-lang-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
 }
 
 .gbif-species-name-toggle {
@@ -460,5 +548,18 @@ function toggleUserMenu(event: Event) {
 
 .gbif-species-name-toggle-label.is-active {
     opacity: 1;
+}
+</style>
+
+<!--
+    The language dropdown's overlay is teleported to <body>, so a scoped style
+    cannot reach it. PrimeVue also sets the overlay's min-width inline (to the
+    trigger's width) when aligning it, which an inline style always wins - hence
+    !important, without which the panel would shrink to the collapsed trigger
+    and clip the language names.
+-->
+<style>
+.gbif-lang-overlay {
+    min-width: 10rem !important;
 }
 </style>
