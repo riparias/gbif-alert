@@ -24,6 +24,12 @@
   page on gbif.org. The public `/species/` API additionally exposes
   `gbifColTaxonKey`; the existing `gbifTaxonKey` is unchanged, so the change is
   additive for API consumers.
+- Dev/infra: the frontend now has a prettier config (`.prettierrc.json`, 4-space
+  indent, 100 columns) and has been formatted with it in one pass. Without a
+  config, prettier used its own defaults and rewrote whole files, so running it
+  as CONTRIBUTING asks buried real changes under hundreds of reformatted lines.
+  `npm run format` / `npm run format-check` scope it to `assets/frontend/`, CI
+  checks it, and the formatting commit is listed in `.git-blame-ignore-revs`.
 
 # 2.2.1 (2026-07-13)
 
