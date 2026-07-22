@@ -1,5 +1,20 @@
 # Unreleased
 
+- Fix: several env vars were read by the settings but never forwarded into the
+  containers by the compose files' shared `x-app-env` block, so operators who
+  set them under Docker/Dokploy had them silently ignored. Most visible was the
+  GBIF download bounding box (`GBIF_DOWNLOAD_{LAT,LON}_{MIN,MAX}`), which
+  dropped out of the download predicate while country/year (which were listed)
+  kept working; also affected were `DJANGO_CSRF_TRUSTED_ORIGINS`, `CACHE_URL`,
+  `DJANGO_LOG_LEVEL`, `EMAIL_BACKEND`, `EMAIL_SUBJECT_PREFIX`, the SES settings
+  (`AWS_SES_REGION_NAME`, `USE_SES_V2`), the API throttle rates, and
+  `GBIF_COL_XR_CHECKLIST_KEY`. All are now passed through in both
+  `docker-compose.yml` and `docker-compose.dokploy.yml`; redeploy to pick up
+  any you have set. (The HTTPS-hardening flags such as `SECURE_SSL_REDIRECT`
+  are intentionally still not forwarded - they auto-enable from the effective
+  `DEBUG`, and forwarding an unset value would wrongly disable them.) A new
+  test (`test_compose_env_coverage.py`) fails CI if a future setting is added
+  without forwarding it, so this class of silent drop cannot recur.
 - Feature: observations are now downloaded and matched against the Catalogue of
   Life Extended Release (COL XR), the taxonomy GBIF adopted after freezing its
   own numeric backbone. Species gain a `gbif_col_taxon_key` (alphanumeric, e.g.

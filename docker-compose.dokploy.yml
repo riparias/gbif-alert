@@ -18,10 +18,16 @@
 # All configuration via env vars - see .env.example for the contract.
 
 x-app-env: &app-env
+  # NOTE: this block is the ONLY channel by which operator env vars reach the
+  # containers - a var read in settings.py but absent here is silently dropped
+  # (see "Adding a new environment-driven setting" in CONTRIBUTING.md). Keep in sync;
+  # tests/test_compose_env_coverage.py fails CI when a new setting is missing.
   SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
   DEBUG: ${DEBUG:-False}
+  DJANGO_LOG_LEVEL: ${DJANGO_LOG_LEVEL:-INFO}
   DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
   DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?DJANGO_ALLOWED_HOSTS is required}
+  DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
   SITE_BASE_URL: ${SITE_BASE_URL:?SITE_BASE_URL is required}
   SITE_NAME: ${SITE_NAME:?SITE_NAME is required}
   # VALKEY_HOST defaults to the service name `valkey`. On a host running MORE THAN
@@ -29,6 +35,8 @@ x-app-env: &app-env
   # value per stack (e.g. demo-valkey) so each app talks only to its own Valkey - the
   # bare `valkey` alias otherwise resolves to every stack's Valkey at random. See INSTALL.md.
   RQ_REDIS_URL: ${RQ_REDIS_URL:-redis://${VALKEY_HOST:-valkey}:6379/0}
+  CACHE_URL: ${CACHE_URL:-}
+  EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
   EMAIL_HOST: ${EMAIL_HOST:-localhost}
   EMAIL_PORT: ${EMAIL_PORT:-25}
   EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
@@ -36,11 +44,25 @@ x-app-env: &app-env
   EMAIL_USE_TLS: ${EMAIL_USE_TLS:-False}
   DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-}
   SERVER_EMAIL: ${SERVER_EMAIL:-}
+  EMAIL_SUBJECT_PREFIX: "${EMAIL_SUBJECT_PREFIX:-[gbif-alert] }"
   ADMINS: ${ADMINS:-}
+  # Amazon SES (only consulted when EMAIL_BACKEND=django_ses.SESBackend).
+  # AWS_SES_REGION_ENDPOINT is intentionally omitted: settings.py derives it
+  # from AWS_SES_REGION_NAME, and injecting an empty value would break that.
+  AWS_SES_REGION_NAME: ${AWS_SES_REGION_NAME:-}
+  USE_SES_V2: ${USE_SES_V2:-True}
   GBIF_DOWNLOAD_USERNAME: ${GBIF_DOWNLOAD_USERNAME:-}
   GBIF_DOWNLOAD_PASSWORD: ${GBIF_DOWNLOAD_PASSWORD:-}
   GBIF_DOWNLOAD_COUNTRY: ${GBIF_DOWNLOAD_COUNTRY:-}
   GBIF_DOWNLOAD_YEAR_MIN: ${GBIF_DOWNLOAD_YEAR_MIN:-}
+  # Optional lat/lon bounding box: set all four or none (see .env.example).
+  GBIF_DOWNLOAD_LAT_MIN: ${GBIF_DOWNLOAD_LAT_MIN:-}
+  GBIF_DOWNLOAD_LAT_MAX: ${GBIF_DOWNLOAD_LAT_MAX:-}
+  GBIF_DOWNLOAD_LON_MIN: ${GBIF_DOWNLOAD_LON_MIN:-}
+  GBIF_DOWNLOAD_LON_MAX: ${GBIF_DOWNLOAD_LON_MAX:-}
+  GBIF_COL_XR_CHECKLIST_KEY: ${GBIF_COL_XR_CHECKLIST_KEY:-7ddf754f-d193-4cc9-b351-99906754a03b}
+  API_V2_THROTTLE_ANON: ${API_V2_THROTTLE_ANON:-60/min}
+  API_V2_THROTTLE_AUTH: ${API_V2_THROTTLE_AUTH:-600/min}
   ENABLED_LANGUAGES: ${ENABLED_LANGUAGES:-en,fr,nl}
   PRIMEVUE_PRIMARY_PALETTE: ${PRIMEVUE_PRIMARY_PALETTE:-indigo}
   MAP_INITIAL_ZOOM: ${MAP_INITIAL_ZOOM:-2}
