@@ -532,7 +532,7 @@ def area_create_from_file(
     auth=[ApiTokenAuth(), django_auth],
 )
 def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
-    """Update the name and/or geometry of a user-owned area.
+    """Update the name and/or geometry of an area the caller may modify.
 
     Both fields are optional. Passing geojson=None leaves the geometry unchanged.
     Returns 404 if the area does not exist, or the caller may not modify it
@@ -562,7 +562,7 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
     auth=[ApiTokenAuth(), django_auth],
 )
 def area_delete(request: HttpRequest, area_id: int):
-    """Delete a user-owned area.
+    """Delete an area the caller may modify.
 
     Returns 404 if the area does not exist, or the caller may not modify it
     (their own areas, plus the public ones for operators).

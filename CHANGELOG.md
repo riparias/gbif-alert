@@ -1,5 +1,14 @@
 # Unreleased
 
+- Feature: operators can now create, rename and delete shared areas - visible to
+  every user - through the API, instead of editing and re-running the
+  `load_area` command. Areas can also carry tags, and a name can no longer be
+  used twice by the same owner.
+- Change (breaking, API v2): creating an area from GeoJSON is now
+  `POST /api/v2/areas/`; uploading an area file moved to
+  `POST /api/v2/areas/from-file/`. The GeoJSON endpoint also accepts a single
+  Feature or a bare Polygon / MultiPolygon geometry now, not only a
+  FeatureCollection.
 - Fix: selecting an area now draws its boundary on the map, above the hexagons
   and points. The outline was never displayed at all - observations were
   filtered by the area, but nothing showed where it was.
