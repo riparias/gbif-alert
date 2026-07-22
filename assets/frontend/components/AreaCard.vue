@@ -80,8 +80,8 @@ onMounted(async () => {
                 style: new Style({
                     stroke: new Stroke({ color: "#0b6efd", width: 3 }),
                 }),
-            })
-        )
+            }),
+        ),
     );
 
     const extent = vectorSource.getExtent();
@@ -112,7 +112,7 @@ onMounted(async () => {
 
         <template #footer>
             <div class="card-actions">
-<Button
+                <Button
                     :label="t('message.editArea')"
                     icon="pi pi-pencil"
                     severity="secondary"

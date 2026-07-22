@@ -27,8 +27,10 @@ const search = ref("");
 const localIds = ref(new Set(props.modelValue));
 watch(
     () => props.modelValue,
-    (ids) => { localIds.value = new Set(ids); },
-    { deep: true }
+    (ids) => {
+        localIds.value = new Set(ids);
+    },
+    { deep: true },
 );
 
 const filtered = computed(() => {
@@ -37,14 +39,12 @@ const filtered = computed(() => {
     return props.options.filter((d) => d.name.toLowerCase().includes(q));
 });
 
-const tableSelection = computed(() =>
-    filtered.value.filter((d) => localIds.value.has(d.id))
-);
+const tableSelection = computed(() => filtered.value.filter((d) => localIds.value.has(d.id)));
 
 const buttonLabel = computed(() =>
     props.modelValue.length
         ? `${props.modelValue.length} ${t("message.xSelectedDatasets")}`
-        : t("message.allDatasets")
+        : t("message.allDatasets"),
 );
 
 function onRowSelect(e: { data: DatasetOut }) {
@@ -123,7 +123,8 @@ function onUnselectAll() {
                         target="_blank"
                         rel="noopener noreferrer"
                         class="gbif-link"
-                    >{{ data.gbifDatasetKey }}</a>
+                        >{{ data.gbifDatasetKey }}</a
+                    >
                 </template>
             </Column>
         </DataTable>

@@ -80,37 +80,36 @@ async function upload() {
         :style="{ width: '480px' }"
         @update:visible="onHide"
     >
-        <div style="display: flex; flex-direction: column; gap: 1.25rem; padding: 0.5rem 0;">
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="area-name" style="display: block; font-weight: 500;">
+        <div style="display: flex; flex-direction: column; gap: 1.25rem; padding: 0.5rem 0">
+            <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                <label for="area-name" style="display: block; font-weight: 500">
                     {{ t("message.areaName") }}
                 </label>
                 <InputText id="area-name" v-model="name" class="w-full" />
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label style="display: block; font-weight: 500;">
+            <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                <label style="display: block; font-weight: 500">
                     {{ t("message.areaFile") }}
                 </label>
-                <input ref="fileInput" type="file" accept=".gpkg" style="display: block; width: 100%;" />
-                <small style="color: var(--p-text-muted-color, #6b7280);">{{ t("message.areaFileHint") }}</small>
+                <input
+                    ref="fileInput"
+                    type="file"
+                    accept=".gpkg"
+                    style="display: block; width: 100%"
+                />
+                <small style="color: var(--p-text-muted-color, #6b7280)">{{
+                    t("message.areaFileHint")
+                }}</small>
             </div>
 
-            <Message
-                v-if="errorMessage"
-                severity="error"
-                data-testid="area-upload-error"
-            >
+            <Message v-if="errorMessage" severity="error" data-testid="area-upload-error">
                 {{ errorMessage }}
             </Message>
         </div>
 
         <template #footer>
-            <Button
-                :label="t('message.cancel')"
-                severity="secondary"
-                @click="onHide"
-            />
+            <Button :label="t('message.cancel')" severity="secondary" @click="onHide" />
             <Button
                 :label="t('message.upload')"
                 :loading="uploading"

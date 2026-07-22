@@ -25,9 +25,13 @@ const router = useRouter();
 const confirm = useConfirm();
 const toast = useToast();
 
-const { speciesExpanded, tooManySpecies, visibleSpecies, areaDescription, SPECIES_COLLAPSE_THRESHOLD } = useAlertMeta(
-    () => props.alert
-);
+const {
+    speciesExpanded,
+    tooManySpecies,
+    visibleSpecies,
+    areaDescription,
+    SPECIES_COLLAPSE_THRESHOLD,
+} = useAlertMeta(() => props.alert);
 
 function formatDate(iso: string | null): string {
     if (!iso) return t("message.never");
@@ -125,7 +129,10 @@ function confirmDelete() {
                 <span>
                     {{ frequencyLabel(alert.emailNotificationsFrequency) }}
                     &middot;
-                    <span class="muted">{{ t("message.lastEmailSentAt") }} {{ formatDate(alert.lastEmailSentAt) }}</span>
+                    <span class="muted"
+                        >{{ t("message.lastEmailSentAt") }}
+                        {{ formatDate(alert.lastEmailSentAt) }}</span
+                    >
                 </span>
             </div>
         </template>

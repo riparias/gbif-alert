@@ -34,8 +34,13 @@ const resultsStore = useResultsStore();
 const filtersStore = useFiltersStore();
 const publishing = ref(false);
 
-const { speciesExpanded, tooManySpecies, visibleSpecies, areaDescription, SPECIES_COLLAPSE_THRESHOLD } =
-    useAlertMeta(() => props.alert);
+const {
+    speciesExpanded,
+    tooManySpecies,
+    visibleSpecies,
+    areaDescription,
+    SPECIES_COLLAPSE_THRESHOLD,
+} = useAlertMeta(() => props.alert);
 const { datasetName, basisOfRecordName } = useDisplayLabels();
 
 function confirmMarkAllAsViewed() {
@@ -88,7 +93,10 @@ async function publishAsTemplate() {
         });
         toast.add({
             severity: res.status === 201 ? "success" : "error",
-            summary: res.status === 201 ? t("message.templatePublished") : t("message.templatePublishFailed"),
+            summary:
+                res.status === 201
+                    ? t("message.templatePublished")
+                    : t("message.templatePublishFailed"),
             life: 5000,
         });
     } finally {
@@ -99,19 +107,19 @@ async function publishAsTemplate() {
 const formattedCount = computed(() =>
     resultsStore.loading && resultsStore.observationCount === 0
         ? "--"
-        : resultsStore.observationCount.toLocaleString()
+        : resultsStore.observationCount.toLocaleString(),
 );
 
 const formattedSpeciesCount = computed(() =>
     resultsStore.loading && resultsStore.speciesCount === 0
         ? "--"
-        : resultsStore.speciesCount.toLocaleString()
+        : resultsStore.speciesCount.toLocaleString(),
 );
 
 const formattedDatasetsCount = computed(() =>
     resultsStore.loading && resultsStore.datasetsCount === 0
         ? "--"
-        : resultsStore.datasetsCount.toLocaleString()
+        : resultsStore.datasetsCount.toLocaleString(),
 );
 </script>
 
@@ -122,7 +130,9 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- SPECIES section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading"><i class="pi pi-search" />{{ t("message.filterSectionWhat") }}</div>
+            <div class="sidebar-section-heading">
+                <i class="pi pi-search" />{{ t("message.filterSectionWhat") }}
+            </div>
             <ul class="species-list">
                 <li v-for="sp in visibleSpecies" :key="sp.scientificName">
                     <SpeciesName
@@ -147,7 +157,9 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- WHERE section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading"><i class="pi pi-map-marker" />{{ t("message.filterSectionWhere") }}</div>
+            <div class="sidebar-section-heading">
+                <i class="pi pi-map-marker" />{{ t("message.filterSectionWhere") }}
+            </div>
             <div class="meta-row">
                 <i class="pi pi-map-marker meta-icon" />
                 <span :class="{ muted: !areaDescription }">
@@ -158,7 +170,9 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- DATASETS section (hidden when no datasets configured) -->
         <div v-if="alert.datasetIds.length > 0" class="sidebar-section">
-            <div class="sidebar-section-heading"><i class="pi pi-database" />{{ t("message.dataset") }}</div>
+            <div class="sidebar-section-heading">
+                <i class="pi pi-database" />{{ t("message.dataset") }}
+            </div>
             <div class="chips">
                 <Tag
                     v-for="id in alert.datasetIds"
@@ -172,7 +186,9 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- BASIS OF RECORD section (hidden when all) -->
         <div v-if="alert.basisOfRecordIds.length > 0" class="sidebar-section">
-            <div class="sidebar-section-heading"><i class="pi pi-tag" />{{ t("message.basisOfRecord") }}</div>
+            <div class="sidebar-section-heading">
+                <i class="pi pi-tag" />{{ t("message.basisOfRecord") }}
+            </div>
             <div class="meta-row">
                 <i class="pi pi-tag meta-icon" />
                 <span>{{ alert.basisOfRecordIds.map(basisOfRecordName).join(", ") }}</span>
@@ -181,7 +197,9 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- STATUS section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading"><i class="pi pi-check-circle" />{{ t("message.filterSectionStatus") }}</div>
+            <div class="sidebar-section-heading">
+                <i class="pi pi-check-circle" />{{ t("message.filterSectionStatus") }}
+            </div>
             <div v-if="alert.verifiedFilter !== 'all'" class="meta-row">
                 <i class="pi pi-check-circle meta-icon" />
                 <span>{{
@@ -213,11 +231,17 @@ const formattedDatasetsCount = computed(() =>
             </div>
             <div class="stat-cards">
                 <div class="stat-card">
-                    <span class="stat-card-value"><i class="pi pi-list stat-card-icon" />{{ formattedSpeciesCount }}</span>
+                    <span class="stat-card-value"
+                        ><i class="pi pi-list stat-card-icon" />{{ formattedSpeciesCount }}</span
+                    >
                     <span class="stat-card-label">{{ t("message.statSpeciesLabel") }}</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-card-value"><i class="pi pi-database stat-card-icon" />{{ formattedDatasetsCount }}</span>
+                    <span class="stat-card-value"
+                        ><i class="pi pi-database stat-card-icon" />{{
+                            formattedDatasetsCount
+                        }}</span
+                    >
                     <span class="stat-card-label">{{ t("message.statDatasetsLabel") }}</span>
                 </div>
             </div>

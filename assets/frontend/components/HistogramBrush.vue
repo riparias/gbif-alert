@@ -27,16 +27,18 @@ function lastYearDate(): Date {
     return d;
 }
 
-const lastMonthActive = computed(() =>
-    filtersStore.endDate === null &&
-    filtersStore.startDate !== null &&
-    yearMonth(filtersStore.startDate) === yearMonth(isoDate(lastMonthDate()))
+const lastMonthActive = computed(
+    () =>
+        filtersStore.endDate === null &&
+        filtersStore.startDate !== null &&
+        yearMonth(filtersStore.startDate) === yearMonth(isoDate(lastMonthDate())),
 );
 
-const lastYearActive = computed(() =>
-    filtersStore.endDate === null &&
-    filtersStore.startDate !== null &&
-    yearMonth(filtersStore.startDate) === yearMonth(isoDate(lastYearDate()))
+const lastYearActive = computed(
+    () =>
+        filtersStore.endDate === null &&
+        filtersStore.startDate !== null &&
+        yearMonth(filtersStore.startDate) === yearMonth(isoDate(lastYearDate())),
 );
 
 function applyLastMonth(): void {
@@ -113,7 +115,10 @@ function applyLastYear(): void {
     border-radius: 999px;
     padding: 0.1rem 0.6rem;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    transition:
+        background 0.15s,
+        color 0.15s,
+        border-color 0.15s;
     font-family: inherit;
     line-height: 1.4;
 }

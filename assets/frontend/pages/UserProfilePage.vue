@@ -40,7 +40,7 @@ const delayValue = ref(1);
 const delayUnit = ref("years");
 
 const languageOptions = computed(() =>
-    enabledLanguages.map((lang) => ({ value: lang.code, label: lang.nameLocal }))
+    enabledLanguages.map((lang) => ({ value: lang.code, label: lang.nameLocal })),
 );
 
 const delayUnitOptions = computed(() => [
@@ -124,36 +124,46 @@ async function deleteAccount() {
 
 <template>
     <div class="page-content--narrow">
-        <h1 style="margin-bottom: 1.5rem;">{{ t("message.navMyProfile") }}</h1>
+        <h1 style="margin-bottom: 1.5rem">{{ t("message.navMyProfile") }}</h1>
 
         <ProgressSpinner v-if="loading" />
 
         <template v-else>
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                    <label style="font-weight: 500;">{{ t("message.username") }}</label>
+            <div style="display: flex; flex-direction: column; gap: 1rem">
+                <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                    <label style="font-weight: 500">{{ t("message.username") }}</label>
                     <InputText :value="username" disabled class="w-full" />
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                    <label for="p-firstname" style="font-weight: 500;">{{ t("message.firstName") }}</label>
+                <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                    <label for="p-firstname" style="font-weight: 500">{{
+                        t("message.firstName")
+                    }}</label>
                     <InputText id="p-firstname" v-model="firstName" class="w-full" />
-                    <small v-if="fieldError('firstName')" style="color: var(--p-red-500);">{{ fieldError("firstName") }}</small>
+                    <small v-if="fieldError('firstName')" style="color: var(--p-red-500)">{{
+                        fieldError("firstName")
+                    }}</small>
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                    <label for="p-lastname" style="font-weight: 500;">{{ t("message.lastName") }}</label>
+                <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                    <label for="p-lastname" style="font-weight: 500">{{
+                        t("message.lastName")
+                    }}</label>
                     <InputText id="p-lastname" v-model="lastName" class="w-full" />
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                    <label for="p-email" style="font-weight: 500;">{{ t("message.email") }}</label>
+                <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                    <label for="p-email" style="font-weight: 500">{{ t("message.email") }}</label>
                     <InputText id="p-email" v-model="email" type="email" class="w-full" />
-                    <small v-if="fieldError('email')" style="color: var(--p-red-500);">{{ fieldError("email") }}</small>
+                    <small v-if="fieldError('email')" style="color: var(--p-red-500)">{{
+                        fieldError("email")
+                    }}</small>
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                    <label for="p-language" style="font-weight: 500;">{{ t("message.language") }}</label>
+                <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                    <label for="p-language" style="font-weight: 500">{{
+                        t("message.language")
+                    }}</label>
                     <Select
                         id="p-language"
                         v-model="language"
@@ -164,30 +174,41 @@ async function deleteAccount() {
                     />
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                    <label style="font-weight: 500;">{{ t("message.notificationDelay") }}</label>
-                    <div style="display: flex; gap: 0.5rem;">
+                <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                    <label style="font-weight: 500">{{ t("message.notificationDelay") }}</label>
+                    <div style="display: flex; gap: 0.5rem">
                         <InputText
                             v-model.number="delayValue"
                             type="number"
                             min="1"
-                            style="width: 80px;"
+                            style="width: 80px"
                         />
                         <Select
                             v-model="delayUnit"
                             :options="delayUnitOptions"
                             option-label="label"
                             option-value="value"
-                            style="flex: 1;"
+                            style="flex: 1"
                         />
                     </div>
-                    <small style="color: var(--p-text-muted-color);">{{ t("message.notificationDelayHelp") }}</small>
-                    <small v-if="fieldError('delayValue')" style="color: var(--p-red-500);">{{ fieldError("delayValue") }}</small>
+                    <small style="color: var(--p-text-muted-color)">{{
+                        t("message.notificationDelayHelp")
+                    }}</small>
+                    <small v-if="fieldError('delayValue')" style="color: var(--p-red-500)">{{
+                        fieldError("delayValue")
+                    }}</small>
                 </div>
 
-                <Button :label="t('message.saveProfile')" :loading="saving" class="w-full" @click="save" />
+                <Button
+                    :label="t('message.saveProfile')"
+                    :loading="saving"
+                    class="w-full"
+                    @click="save"
+                />
 
-                <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--p-surface-200);" />
+                <hr
+                    style="margin: 1rem 0; border: none; border-top: 1px solid var(--p-surface-200)"
+                />
 
                 <Button
                     :label="t('message.deleteAccount')"

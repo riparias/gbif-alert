@@ -36,11 +36,13 @@ async function submit() {
 
 <template>
     <div class="page-content--narrow signin-page">
-        <h1 style="margin-bottom: 1.5rem;">{{ t("message.signIn") }}</h1>
+        <h1 style="margin-bottom: 1.5rem">{{ t("message.signIn") }}</h1>
 
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="signin-username" style="font-weight: 500;">{{ t("message.username") }}</label>
+        <div style="display: flex; flex-direction: column; gap: 1rem">
+            <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                <label for="signin-username" style="font-weight: 500">{{
+                    t("message.username")
+                }}</label>
                 <InputText
                     id="signin-username"
                     v-model="username"
@@ -49,8 +51,10 @@ async function submit() {
                 />
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 0.375rem;">
-                <label for="signin-password" style="font-weight: 500;">{{ t("message.password") }}</label>
+            <div style="display: flex; flex-direction: column; gap: 0.375rem">
+                <label for="signin-password" style="font-weight: 500">{{
+                    t("message.password")
+                }}</label>
                 <InputText
                     id="signin-password"
                     v-model="password"
@@ -73,7 +77,7 @@ async function submit() {
             />
         </div>
 
-        <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+        <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem">
             <a href="/accounts/password-reset/">{{ t("message.forgotPassword") }}</a>
             <span>
                 {{ t("message.noAccountYet") }}
@@ -84,5 +88,7 @@ async function submit() {
 </template>
 
 <style scoped>
-.signin-page { margin-top: 4rem; }
+.signin-page {
+    margin-top: 4rem;
+}
 </style>

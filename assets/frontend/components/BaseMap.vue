@@ -21,7 +21,7 @@ const props = withDefaults(
         initialLat: 20,
         initialZoom: 2,
         showControls: true,
-    }
+    },
 );
 
 const { t } = useI18n();
@@ -38,7 +38,7 @@ onMounted(() => {
                 zoom: props.initialZoom,
                 center: fromLonLat([props.initialLon, props.initialLat]),
             }),
-        })
+        }),
     );
     attachToMap(olMap);
 });

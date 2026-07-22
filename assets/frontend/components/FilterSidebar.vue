@@ -142,8 +142,7 @@ const hasAreaSelection = computed(() => filtersStore.areaIds.length > 0);
 const showApproachingDistance = computed(
     () =>
         hasAreaSelection.value &&
-        (filtersStore.areaFilterMode === "approaching" ||
-            filtersStore.areaFilterMode === "both")
+        (filtersStore.areaFilterMode === "approaching" || filtersStore.areaFilterMode === "both"),
 );
 
 // Reset area-related filters when the area selection is cleared
@@ -154,7 +153,7 @@ watch(
             filtersStore.areaFilterMode = "inside";
             filtersStore.approachingDistanceKm = null;
         }
-    }
+    },
 );
 
 // Default approaching distance to 5 km when the mode first requires it
@@ -167,7 +166,7 @@ watch(
         ) {
             filtersStore.approachingDistanceKm = 5;
         }
-    }
+    },
 );
 
 // --- Select options (static) ---
@@ -192,19 +191,19 @@ const areaFilterModeOptions = computed(() => [
 const formattedCount = computed(() =>
     resultsStore.loading && resultsStore.observationCount === 0
         ? "--"
-        : resultsStore.observationCount.toLocaleString()
+        : resultsStore.observationCount.toLocaleString(),
 );
 
 const formattedSpeciesCount = computed(() =>
     resultsStore.loading && resultsStore.speciesCount === 0
         ? "--"
-        : resultsStore.speciesCount.toLocaleString()
+        : resultsStore.speciesCount.toLocaleString(),
 );
 
 const formattedDatasetsCount = computed(() =>
     resultsStore.loading && resultsStore.datasetsCount === 0
         ? "--"
-        : resultsStore.datasetsCount.toLocaleString()
+        : resultsStore.datasetsCount.toLocaleString(),
 );
 </script>
 
@@ -214,22 +213,18 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- WHAT section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading"><i class="pi pi-search" />{{ t("message.filterSectionWhat") }}</div>
+            <div class="sidebar-section-heading">
+                <i class="pi pi-search" />{{ t("message.filterSectionWhat") }}
+            </div>
 
             <div class="filter-group">
                 <label>{{ t("message.species") }}</label>
-                <SpeciesFilterModal
-                    v-model="selectedSpeciesIds"
-                    :options="speciesOptions"
-                />
+                <SpeciesFilterModal v-model="selectedSpeciesIds" :options="speciesOptions" />
             </div>
 
             <div class="filter-group">
                 <label>{{ t("message.dataset") }}</label>
-                <DatasetFilterModal
-                    v-model="selectedDatasetIds"
-                    :options="datasetOptions"
-                />
+                <DatasetFilterModal v-model="selectedDatasetIds" :options="datasetOptions" />
             </div>
 
             <div class="filter-group">
@@ -250,14 +245,13 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- WHERE section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading"><i class="pi pi-map-marker" />{{ t("message.filterSectionWhere") }}</div>
+            <div class="sidebar-section-heading">
+                <i class="pi pi-map-marker" />{{ t("message.filterSectionWhere") }}
+            </div>
 
             <div class="filter-group">
                 <label>{{ t("message.area") }}</label>
-                <AreaFilterModal
-                    v-model="selectedAreaIds"
-                    :options="areaOptions"
-                />
+                <AreaFilterModal v-model="selectedAreaIds" :options="areaOptions" />
             </div>
 
             <!-- Area filter mode (only when areas are selected) -->
@@ -289,7 +283,9 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- WHEN section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading"><i class="pi pi-calendar" />{{ t("message.filterSectionWhen") }}</div>
+            <div class="sidebar-section-heading">
+                <i class="pi pi-calendar" />{{ t("message.filterSectionWhen") }}
+            </div>
 
             <div class="filter-group">
                 <label>{{ t("message.dateFrom") }}</label>
@@ -314,7 +310,9 @@ const formattedDatasetsCount = computed(() =>
 
         <!-- STATUS section -->
         <div class="sidebar-section">
-            <div class="sidebar-section-heading"><i class="pi pi-check-circle" />{{ t("message.filterSectionStatus") }}</div>
+            <div class="sidebar-section-heading">
+                <i class="pi pi-check-circle" />{{ t("message.filterSectionStatus") }}
+            </div>
 
             <div class="filter-group">
                 <label>{{ t("message.verificationFilter") }}</label>
@@ -343,11 +341,17 @@ const formattedDatasetsCount = computed(() =>
             </div>
             <div class="stat-cards">
                 <div class="stat-card">
-                    <span class="stat-card-value"><i class="pi pi-list stat-card-icon" />{{ formattedSpeciesCount }}</span>
+                    <span class="stat-card-value"
+                        ><i class="pi pi-list stat-card-icon" />{{ formattedSpeciesCount }}</span
+                    >
                     <span class="stat-card-label">{{ t("message.statSpeciesLabel") }}</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-card-value"><i class="pi pi-database stat-card-icon" />{{ formattedDatasetsCount }}</span>
+                    <span class="stat-card-value"
+                        ><i class="pi pi-database stat-card-icon" />{{
+                            formattedDatasetsCount
+                        }}</span
+                    >
                     <span class="stat-card-label">{{ t("message.statDatasetsLabel") }}</span>
                 </div>
             </div>

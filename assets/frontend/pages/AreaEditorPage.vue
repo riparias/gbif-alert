@@ -57,7 +57,7 @@ const vectorLayer = markRaw(
             stroke: new Stroke({ color: "#0b6efd", width: 3 }),
             fill: new Fill({ color: "rgba(11, 110, 253, 0.1)" }),
         }),
-    })
+    }),
 );
 
 let drawInteraction: Draw | null = null;
@@ -95,7 +95,9 @@ function activateEditMode(): void {
     if (!olMap) return;
     selectInteraction = markRaw(new OLSelect());
     modifyInteraction = markRaw(new Modify({ source: vectorSource }));
-    modifyInteraction.on("modifyend", () => { isDirty.value = true; });
+    modifyInteraction.on("modifyend", () => {
+        isDirty.value = true;
+    });
     snapInteraction = markRaw(new Snap({ source: vectorSource }));
     olMap.addInteraction(selectInteraction);
     olMap.addInteraction(modifyInteraction);
@@ -135,7 +137,7 @@ function activateDeleteMode(): void {
 }
 
 const canSave = computed(
-    () => areaName.value.trim() !== "" && polygonCount.value > 0 && !saving.value
+    () => areaName.value.trim() !== "" && polygonCount.value > 0 && !saving.value,
 );
 const canDeletePolygon = computed(() => polygonCount.value > 0);
 
@@ -150,14 +152,12 @@ async function save(): Promise<void> {
     saving.value = true;
     errorMessage.value = null;
 
-    const geojson = new GeoJSON().writeFeaturesObject(
-        vectorSource.getFeatures(),
-        { dataProjection: "EPSG:4326", featureProjection: "EPSG:3857" }
-    );
+    const geojson = new GeoJSON().writeFeaturesObject(vectorSource.getFeatures(), {
+        dataProjection: "EPSG:4326",
+        featureProjection: "EPSG:3857",
+    });
 
-    const url = isEditMode.value
-        ? `/api/v2/areas/${areaId.value}/`
-        : "/api/v2/areas/from-drawing/";
+    const url = isEditMode.value ? `/api/v2/areas/${areaId.value}/` : "/api/v2/areas/from-drawing/";
     const method = isEditMode.value ? "PATCH" : "POST";
 
     try {
@@ -210,13 +210,13 @@ onMounted(async () => {
             target: mapEl.value!,
             layers: [markRaw(makeBaseLayer("osmHot")), vectorLayer],
             view: new View({
-                    zoom: getNavConfig().map.initialPosition.initialZoom,
-                    center: fromLonLat([
-                        getNavConfig().map.initialPosition.initialLon,
-                        getNavConfig().map.initialPosition.initialLat,
-                    ]),
-                }),
-        })
+                zoom: getNavConfig().map.initialPosition.initialZoom,
+                center: fromLonLat([
+                    getNavConfig().map.initialPosition.initialLon,
+                    getNavConfig().map.initialPosition.initialLat,
+                ]),
+            }),
+        }),
     );
     attachToMap(olMap);
 

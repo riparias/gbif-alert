@@ -23,9 +23,7 @@ import { routes } from "./router/index";
 // branding color via GBIF_ALERT["PRIMEVUE_PRIMARY_PALETTE"] in Django settings.
 const primaryPalette: string = getNavConfig().primaryPalette;
 
-const shades = [
-    "50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950",
-];
+const shades = ["50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950"];
 
 const GbifAlertPreset = definePreset(Material, {
     semantic: {

@@ -26,7 +26,7 @@ const { ensureAlertLabelsLoaded, datasetName, basisOfRecordName } = useDisplayLa
 const expanded = ref(false);
 
 const name = computed(() =>
-    pickByLocale(props.template.nameEn, props.template.nameFr, props.template.nameNl, locale.value)
+    pickByLocale(props.template.nameEn, props.template.nameFr, props.template.nameNl, locale.value),
 );
 
 const description = computed(() =>
@@ -34,8 +34,8 @@ const description = computed(() =>
         props.template.descriptionEn,
         props.template.descriptionFr,
         props.template.descriptionNl,
-        locale.value
-    )
+        locale.value,
+    ),
 );
 
 // useAlertMeta expects a getter returning a full AlertOut, but only reads
@@ -65,7 +65,7 @@ const { areaDescription } = useAlertMeta(() => alertLike.value);
 const datasetNames = computed(() => props.template.datasetIds.map(datasetName).join(", "));
 
 const basisOfRecordNames = computed(() =>
-    props.template.basisOfRecordIds.map(basisOfRecordName).join(", ")
+    props.template.basisOfRecordIds.map(basisOfRecordName).join(", "),
 );
 
 const verifiedFilterLabel = computed(() => {
@@ -115,7 +115,9 @@ onMounted(() => {
             </div>
             <div class="detail-row">
                 <span class="detail-label">{{ t("message.basisOfRecord") }}</span>
-                <span class="detail-value">{{ basisOfRecordNames || t("message.allBasisOfRecord") }}</span>
+                <span class="detail-value">{{
+                    basisOfRecordNames || t("message.allBasisOfRecord")
+                }}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-label">{{ t("message.filterSectionStatus") }}</span>

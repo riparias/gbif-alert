@@ -6,8 +6,7 @@ type SpeciesOut = components["schemas"]["SpeciesOut"];
 type DatasetOut = components["schemas"]["DatasetOut"];
 type AreaOut = components["schemas"]["AreaOut"];
 type BasisOfRecordOut = components["schemas"]["BasisOfRecordOut"];
-type AlertNotificationFrequencyOut =
-    components["schemas"]["AlertNotificationFrequencyOut"];
+type AlertNotificationFrequencyOut = components["schemas"]["AlertNotificationFrequencyOut"];
 
 // Cache of lookup lists so components can resolve IDs (and enum codes) to
 // human-readable names without duplicate requests. Populated by FilterSidebar

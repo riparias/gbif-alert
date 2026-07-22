@@ -168,7 +168,7 @@ async function refreshAreaOverlays(areaIds: number[]): Promise<void> {
                 new VectorLayer({
                     source,
                     style: new Style({ stroke: new Stroke({ color: "#0b6efd", width: 3 }) }),
-                })
+                }),
             );
         } catch {
             // Skip areas that fail to load
@@ -228,7 +228,7 @@ onMounted(() => {
         new LayerGroup({
             layers: areasCollection as unknown as Collection<any>,
             zIndex: 1000,
-        })
+        }),
     );
 
     // stopEvent: true so that clicks on the popup don't propagate to the map
@@ -282,13 +282,7 @@ onUnmounted(() => {
         <template #extra-controls>
             <div class="opacity-row">
                 <span class="opacity-label">{{ t("message.dataLayerOpacity") }}</span>
-                <Slider
-                    v-model="opacity"
-                    :min="0"
-                    :max="1"
-                    :step="0.1"
-                    class="opacity-slider"
-                />
+                <Slider v-model="opacity" :min="0" :max="1" :step="0.1" class="opacity-slider" />
             </div>
         </template>
 
@@ -299,10 +293,7 @@ onUnmounted(() => {
             </button>
             <ul class="popup-list">
                 <li v-for="obs in popupObservations" :key="obs.gbifId">
-                    <a
-                        href="#"
-                        @click.prevent="openObservationFromMap(obs.stableId)"
-                    >
+                    <a href="#" @click.prevent="openObservationFromMap(obs.stableId)">
                         <SpeciesName
                             :scientific-name="obs.scientificName"
                             :vernacular-name="obs.vernacularName"

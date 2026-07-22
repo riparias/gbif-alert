@@ -98,7 +98,7 @@ watch(areaFilterMode, (mode) => {
 const showApproachingDistance = computed(
     () =>
         selectedAreaIds.value.length > 0 &&
-        (areaFilterMode.value === "approaching" || areaFilterMode.value === "both")
+        (areaFilterMode.value === "approaching" || areaFilterMode.value === "both"),
 );
 
 async function loadOptions() {
@@ -110,7 +110,7 @@ async function loadOptions() {
         fetch("/api/v2/alerts/notification-frequencies/"),
     ]);
     const [species, datasets, areas, basisOfRecord, frequencies] = await Promise.all(
-        responses.map((r) => r.json())
+        responses.map((r) => r.json()),
     );
     speciesOptions.value = species;
     datasetOptions.value = datasets;
@@ -171,9 +171,7 @@ async function confirmCreateFromTemplate() {
             // generic message only if the payload carried no messages.
             const messages = Object.values(errs).flat();
             templateError.value =
-                messages.length > 0
-                    ? messages.join(", ")
-                    : t("message.templatePublishFailed");
+                messages.length > 0 ? messages.join(", ") : t("message.templatePublishFailed");
         }
     } finally {
         creatingFromTemplate.value = false;
@@ -343,10 +341,7 @@ async function save() {
                 <div class="form-field">
                     <label>{{ t("message.speciesToInclude") }} *</label>
                     <p class="field-hint">{{ t("message.atLeastOneSpeciesMustBeSelected") }}</p>
-                    <SpeciesFilterModal
-                        v-model="selectedSpeciesIds"
-                        :options="speciesOptions"
-                    />
+                    <SpeciesFilterModal v-model="selectedSpeciesIds" :options="speciesOptions" />
                     <Message v-if="errors.species" severity="error" :closable="false" size="small">
                         {{ errors.species.join(", ") }}
                     </Message>
@@ -355,10 +350,7 @@ async function save() {
                 <div class="form-field">
                     <label>{{ t("message.areasToInclude") }}</label>
                     <p class="field-hint">{{ t("message.noAreaSelection") }}</p>
-                    <AreaFilterModal
-                        v-model="selectedAreaIds"
-                        :options="areaOptions"
-                    />
+                    <AreaFilterModal v-model="selectedAreaIds" :options="areaOptions" />
                 </div>
 
                 <div v-if="selectedAreaIds.length > 0" class="form-field">
@@ -407,10 +399,7 @@ async function save() {
                 <div class="form-field">
                     <label>{{ t("message.datasetsToInclude") }}</label>
                     <p class="field-hint">{{ t("message.noDatasetSelection") }}</p>
-                    <DatasetFilterModal
-                        v-model="selectedDatasetIds"
-                        :options="datasetOptions"
-                    />
+                    <DatasetFilterModal v-model="selectedDatasetIds" :options="datasetOptions" />
                 </div>
 
                 <div class="form-field">

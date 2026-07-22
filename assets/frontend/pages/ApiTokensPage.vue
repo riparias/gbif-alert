@@ -31,7 +31,7 @@ const createdToken = ref<string | null>(null);
 const sampleCurl = computed(() =>
     createdToken.value
         ? `curl -H "Authorization: Bearer ${createdToken.value}" ${window.location.origin}/api/v2/alerts/`
-        : ""
+        : "",
 );
 
 onMounted(async () => {
@@ -102,11 +102,11 @@ function formatDate(iso: string | null): string {
 
 <template>
     <div class="page-content--wide">
-        <h1 style="margin-bottom: 0.5rem;">{{ t("message.apiTokensTitle") }}</h1>
-        <p style="color: var(--p-text-muted-color); margin-bottom: 0.5rem;">
+        <h1 style="margin-bottom: 0.5rem">{{ t("message.apiTokensTitle") }}</h1>
+        <p style="color: var(--p-text-muted-color); margin-bottom: 0.5rem">
             {{ t("message.apiTokensIntro") }}
         </p>
-        <p style="margin-bottom: 1.25rem;">
+        <p style="margin-bottom: 1.25rem">
             <router-link to="/api-docs">{{ t("message.apiTokenSeeDocs") }}</router-link>
         </p>
 
@@ -115,18 +115,33 @@ function formatDate(iso: string | null): string {
         <template v-else>
             <!-- Just-created token, shown once, with a ready-to-run sample -->
             <div v-if="createdToken" class="created-token">
-                <small style="color: var(--p-orange-600); font-weight: 500;">
+                <small style="color: var(--p-orange-600); font-weight: 500">
                     {{ t("message.apiTokenCreatedWarning") }}
                 </small>
                 <div class="copy-row">
-                    <InputText :value="createdToken" readonly class="w-full" data-testid="created-token-value" />
-                    <Button icon="pi pi-copy" :label="t('message.copyToken')" size="small" @click="copyText(createdToken)" />
+                    <InputText
+                        :value="createdToken"
+                        readonly
+                        class="w-full"
+                        data-testid="created-token-value"
+                    />
+                    <Button
+                        icon="pi pi-copy"
+                        :label="t('message.copyToken')"
+                        size="small"
+                        @click="copyText(createdToken)"
+                    />
                 </div>
 
                 <p class="usage-hint">{{ t("message.apiTokenUsageHint") }}</p>
                 <div class="copy-row">
                     <pre class="sample-curl" data-testid="sample-curl">{{ sampleCurl }}</pre>
-                    <Button icon="pi pi-copy" :label="t('message.copyCommand')" size="small" @click="copyText(sampleCurl)" />
+                    <Button
+                        icon="pi pi-copy"
+                        :label="t('message.copyCommand')"
+                        size="small"
+                        @click="copyText(sampleCurl)"
+                    />
                 </div>
             </div>
 
@@ -135,10 +150,10 @@ function formatDate(iso: string | null): string {
             <ul v-if="tokens.length" class="token-list">
                 <li v-for="tk in tokens" :key="tk.id" class="token-row">
                     <div>
-                        <span style="font-weight: 500;">{{ tk.name || tk.prefix }}</span>
+                        <span style="font-weight: 500">{{ tk.name || tk.prefix }}</span>
                         <code class="prefix">{{ tk.prefix }}&hellip;</code>
                         <br />
-                        <small style="color: var(--p-text-muted-color);">
+                        <small style="color: var(--p-text-muted-color)">
                             {{ t("message.apiTokenLastUsed") }} {{ formatDate(tk.lastUsedAt) }}
                         </small>
                     </div>
@@ -155,7 +170,7 @@ function formatDate(iso: string | null): string {
 
             <!-- Create -->
             <h2 class="section-title">{{ t("message.apiTokensCreateTitle") }}</h2>
-            <div class="copy-row" style="margin-top: 0.75rem;">
+            <div class="copy-row" style="margin-top: 0.75rem">
                 <InputText
                     v-model="newTokenName"
                     :placeholder="t('message.apiTokenNamePlaceholder')"

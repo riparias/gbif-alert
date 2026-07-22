@@ -74,7 +74,9 @@ async function load() {
             await fetch(`/api/v2/observations/${props.stableId}/mark-as-viewed/`, {
                 method: "POST",
                 headers: { "X-CSRFToken": getCsrf() },
-            }).catch(() => { /* non-fatal */ });
+            }).catch(() => {
+                /* non-fatal */
+            });
         }
     } finally {
         loading.value = false;
@@ -133,7 +135,9 @@ onMounted(load);
 <template>
     <div class="obs-detail-panel">
         <!-- Loading / not found -->
-        <div v-if="loading" class="detail-loading"><i class="pi pi-spin pi-spinner" /> {{ t("message.loading") }}</div>
+        <div v-if="loading" class="detail-loading">
+            <i class="pi pi-spin pi-spinner" /> {{ t("message.loading") }}
+        </div>
         <div v-else-if="notFound" class="detail-not-found">
             {{ t("message.observationNotFound") }}
         </div>
@@ -183,7 +187,9 @@ onMounted(load);
             <div class="detail-body">
                 <!-- Metadata -->
                 <Card class="detail-meta-card">
-                    <template #title><i class="pi pi-info-circle" /> {{ t("message.details") }}</template>
+                    <template #title
+                        ><i class="pi pi-info-circle" /> {{ t("message.details") }}</template
+                    >
                     <template #content>
                         <dl class="detail-dl">
                             <dt>{{ t("message.gbifId") }}</dt>
@@ -238,7 +244,8 @@ onMounted(load);
                                         v-if="obs.references.startsWith('http')"
                                         :href="obs.references"
                                         target="_blank"
-                                    >{{ obs.references }}</a>
+                                        >{{ obs.references }}</a
+                                    >
                                     <span v-else>{{ obs.references }}</span>
                                 </dd>
                             </template>
@@ -246,13 +253,14 @@ onMounted(load);
                             <dt>{{ t("message.firstImportedDuring") }}</dt>
                             <dd>{{ initialDataImportLabel }}</dd>
                         </dl>
-
                     </template>
                 </Card>
 
                 <!-- Map + location details -->
                 <Card class="detail-map-card">
-                    <template #title><i class="pi pi-map-marker" /> {{ t("message.location") }}</template>
+                    <template #title
+                        ><i class="pi pi-map-marker" /> {{ t("message.location") }}</template
+                    >
                     <template #content>
                         <SingleObservationMap
                             v-if="obs.lat != null && obs.lon != null"
@@ -292,16 +300,14 @@ onMounted(load);
 
             <!-- Comments -->
             <Card class="comments-card">
-                <template #title><i class="pi pi-comments" /> {{ t("message.userComments") }}</template>
+                <template #title
+                    ><i class="pi pi-comments" /> {{ t("message.userComments") }}</template
+                >
                 <template #content>
                     <div v-if="obs.comments.length === 0" class="no-comments">
                         {{ t("message.noCommentsYet") }}
                     </div>
-                    <div
-                        v-for="comment in obs.comments"
-                        :key="comment.id"
-                        class="comment"
-                    >
+                    <div v-for="comment in obs.comments" :key="comment.id" class="comment">
                         <p class="comment-meta">
                             <em>
                                 {{

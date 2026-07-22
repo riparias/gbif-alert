@@ -65,14 +65,14 @@ function closeDrawer() {
 // --- Column configuration ---
 
 const COLUMN_DEFS = [
-    { key: "date",          sortField: "date",           defaultVisible: true  },
-    { key: "species",       sortField: null, defaultVisible: true  },
-    { key: "dataset",       sortField: "datasetName",    defaultVisible: true  },
-    { key: "municipality",  sortField: "municipality",   defaultVisible: true  },
-    { key: "verified",      sortField: "verified",       defaultVisible: true  },
-    { key: "basisOfRecord", sortField: null,             defaultVisible: true  },
-    { key: "gbifId",        sortField: null,             defaultVisible: false },
-    { key: "seen",          sortField: null,             defaultVisible: true  },
+    { key: "date", sortField: "date", defaultVisible: true },
+    { key: "species", sortField: null, defaultVisible: true },
+    { key: "dataset", sortField: "datasetName", defaultVisible: true },
+    { key: "municipality", sortField: "municipality", defaultVisible: true },
+    { key: "verified", sortField: "verified", defaultVisible: true },
+    { key: "basisOfRecord", sortField: null, defaultVisible: true },
+    { key: "gbifId", sortField: null, defaultVisible: false },
+    { key: "seen", sortField: null, defaultVisible: true },
 ] as const;
 
 type ColumnKey = (typeof COLUMN_DEFS)[number]["key"];
@@ -87,7 +87,9 @@ function loadVisibleColumns(): Set<ColumnKey> {
             if (Array.isArray(parsed)) {
                 const validKeys = new Set(COLUMN_DEFS.map((c) => c.key));
                 return new Set(
-                    (parsed as string[]).filter((k) => validKeys.has(k as ColumnKey)) as ColumnKey[]
+                    (parsed as string[]).filter((k) =>
+                        validKeys.has(k as ColumnKey),
+                    ) as ColumnKey[],
                 );
             }
         }
@@ -101,7 +103,11 @@ const visibleColumns = ref<Set<ColumnKey>>(loadVisibleColumns());
 
 function toggleColumn(key: ColumnKey) {
     const next = new Set(visibleColumns.value);
-    if (next.has(key)) { next.delete(key); } else { next.add(key); }
+    if (next.has(key)) {
+        next.delete(key);
+    } else {
+        next.add(key);
+    }
     visibleColumns.value = next;
     localStorage.setItem(LS_KEY, JSON.stringify([...next]));
 }
@@ -182,7 +188,7 @@ watch(
     () => {
         currentPage.value = 1;
         loadObservations();
-    }
+    },
 );
 
 // When the user flips the navbar species-name toggle while sorted on the
@@ -226,7 +232,10 @@ onMounted(async () => {
         <Tabs value="map">
             <TabList>
                 <Tab value="map"><i class="pi pi-map" /> {{ t("message.mapView") }}</Tab>
-                <Tab value="timeline"><i class="pi pi-chart-bar" /> {{ t("message.timelineView") }} <span class="tab-new-badge">{{ t("message.newBadge") }}</span></Tab>
+                <Tab value="timeline"
+                    ><i class="pi pi-chart-bar" /> {{ t("message.timelineView") }}
+                    <span class="tab-new-badge">{{ t("message.newBadge") }}</span></Tab
+                >
                 <Tab value="table"><i class="pi pi-table" /> {{ t("message.tableView") }}</Tab>
             </TabList>
             <TabPanels>
@@ -251,7 +260,9 @@ onMounted(async () => {
                         <Popover ref="columnPopover">
                             <div class="column-picker">
                                 <div
-                                    v-for="col in COLUMN_DEFS.filter((c) => c.key !== 'seen' || hasSeen)"
+                                    v-for="col in COLUMN_DEFS.filter(
+                                        (c) => c.key !== 'seen' || hasSeen,
+                                    )"
                                     :key="col.key"
                                     class="column-picker-item"
                                 >
@@ -261,7 +272,9 @@ onMounted(async () => {
                                         :binary="true"
                                         @update:model-value="toggleColumn(col.key)"
                                     />
-                                    <label :for="`col-${col.key}`">{{ t(`message.${col.key}`) }}</label>
+                                    <label :for="`col-${col.key}`">{{
+                                        t(`message.${col.key}`)
+                                    }}</label>
                                 </div>
                             </div>
                         </Popover>
@@ -284,7 +297,12 @@ onMounted(async () => {
                         @sort="onSort"
                         @row-click="(e) => openObservation(e.data.stableId)"
                     >
-                        <Column v-if="visibleColumns.has('date')" field="date" :header="t('message.date')" sortable />
+                        <Column
+                            v-if="visibleColumns.has('date')"
+                            field="date"
+                            :header="t('message.date')"
+                            sortable
+                        />
                         <Column
                             v-if="visibleColumns.has('species')"
                             :field="speciesSortFieldName"
@@ -298,34 +316,80 @@ onMounted(async () => {
                                 />
                             </template>
                         </Column>
-                        <Column v-if="visibleColumns.has('dataset')" field="datasetName" :header="t('message.dataset')" sortable header-class="col-dataset" body-class="col-dataset">
+                        <Column
+                            v-if="visibleColumns.has('dataset')"
+                            field="datasetName"
+                            :header="t('message.dataset')"
+                            sortable
+                            header-class="col-dataset"
+                            body-class="col-dataset"
+                        >
                             <template #body="{ data }">
-                                <span class="cell-text" :title="data.datasetName">{{ data.datasetName }}</span>
+                                <span class="cell-text" :title="data.datasetName">{{
+                                    data.datasetName
+                                }}</span>
                             </template>
                         </Column>
-                        <Column v-if="visibleColumns.has('municipality')" field="municipality" :header="t('message.municipality')" sortable>
+                        <Column
+                            v-if="visibleColumns.has('municipality')"
+                            field="municipality"
+                            :header="t('message.municipality')"
+                            sortable
+                        >
                             <template #body="{ data }">
-                                <span class="cell-text" :title="data.municipality || undefined">{{ data.municipality || '-' }}</span>
+                                <span class="cell-text" :title="data.municipality || undefined">{{
+                                    data.municipality || "-"
+                                }}</span>
                             </template>
                         </Column>
-                        <Column v-if="visibleColumns.has('verified')" field="verified" :header="t('message.verified')" sortable>
+                        <Column
+                            v-if="visibleColumns.has('verified')"
+                            field="verified"
+                            :header="t('message.verified')"
+                            sortable
+                        >
                             <template #body="{ data }">
-                                <span class="verified-badge" :class="data.verified ? 'badge-success' : 'badge-danger'" :title="data.identificationVerificationStatus || undefined">
-                                    {{ data.verified ? t('message.verified') : t('message.unverified') }}
+                                <span
+                                    class="verified-badge"
+                                    :class="data.verified ? 'badge-success' : 'badge-danger'"
+                                    :title="data.identificationVerificationStatus || undefined"
+                                >
+                                    {{
+                                        data.verified
+                                            ? t("message.verified")
+                                            : t("message.unverified")
+                                    }}
                                 </span>
                             </template>
                         </Column>
-                        <Column v-if="visibleColumns.has('basisOfRecord')" :header="t('message.basisOfRecord')">
+                        <Column
+                            v-if="visibleColumns.has('basisOfRecord')"
+                            :header="t('message.basisOfRecord')"
+                        >
                             <template #body="{ data }">
-                                <span class="cell-text" :title="basisOfRecordName(data.basisOfRecordId)">{{ basisOfRecordName(data.basisOfRecordId) }}</span>
+                                <span
+                                    class="cell-text"
+                                    :title="basisOfRecordName(data.basisOfRecordId)"
+                                    >{{ basisOfRecordName(data.basisOfRecordId) }}</span
+                                >
                             </template>
                         </Column>
                         <Column v-if="visibleColumns.has('gbifId')" :header="t('message.gbifId')">
                             <template #body="{ data }">
-                                <a :href="`https://www.gbif.org/occurrence/${data.gbifId}`" target="_blank" rel="noopener noreferrer" class="gbif-link" @click.stop>{{ data.gbifId }}</a>
+                                <a
+                                    :href="`https://www.gbif.org/occurrence/${data.gbifId}`"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="gbif-link"
+                                    @click.stop
+                                    >{{ data.gbifId }}</a
+                                >
                             </template>
                         </Column>
-                        <Column v-if="visibleColumns.has('seen') && hasSeen" :header="t('message.seen')">
+                        <Column
+                            v-if="visibleColumns.has('seen') && hasSeen"
+                            :header="t('message.seen')"
+                        >
                             <template #body="{ data }">
                                 <span v-if="data.viewedByCurrentUser === true">&#10003;</span>
                                 <span v-else-if="data.viewedByCurrentUser === false">&bull;</span>
@@ -352,21 +416,72 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.observations-table :deep(tbody tr) { cursor: pointer; }
-.observations-table :deep(table) { table-layout: fixed; }
+.observations-table :deep(tbody tr) {
+    cursor: pointer;
+}
+.observations-table :deep(table) {
+    table-layout: fixed;
+}
 .observations-table :deep(th.col-dataset),
-.observations-table :deep(td.col-dataset) { width: 180px; }
-.gbif-link { color: var(--p-primary-color); font-size: 0.85rem; }
-.empty-state { display: flex; flex-direction: column; align-items: center; padding: 3rem 1rem; gap: 0.5rem; color: var(--p-text-muted-color); }
-.empty-state-icon { font-size: 2.5rem; line-height: 1; }
-.empty-state-title { margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--p-text-color); }
-.empty-state-hint { margin: 0; font-size: 0.9rem; }
-.table-toolbar { display: flex; justify-content: flex-end; padding: 0.25rem 0; }
-.column-picker { display: flex; flex-direction: column; gap: 0.5rem; min-width: 160px; }
-.column-picker-item { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
-.column-picker-item label { cursor: pointer; user-select: none; }
-.cell-text { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.observations-table :deep(td) { overflow: hidden; }
+.observations-table :deep(td.col-dataset) {
+    width: 180px;
+}
+.gbif-link {
+    color: var(--p-primary-color);
+    font-size: 0.85rem;
+}
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1rem;
+    gap: 0.5rem;
+    color: var(--p-text-muted-color);
+}
+.empty-state-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+}
+.empty-state-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--p-text-color);
+}
+.empty-state-hint {
+    margin: 0;
+    font-size: 0.9rem;
+}
+.table-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.25rem 0;
+}
+.column-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 160px;
+}
+.column-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+.column-picker-item label {
+    cursor: pointer;
+    user-select: none;
+}
+.cell-text {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.observations-table :deep(td) {
+    overflow: hidden;
+}
 .tab-new-badge {
     font-size: 0.58rem;
     font-weight: 700;
@@ -382,7 +497,12 @@ onMounted(async () => {
 }
 
 @keyframes badge-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
 }
 </style>
