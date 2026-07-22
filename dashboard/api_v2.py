@@ -14,7 +14,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers import serialize
 from django.db.models import Count, F, Value
 from django.db.models.functions import Coalesce, NullIf, TruncMonth
-from django.http import HttpRequest
+from django.http import Http404, HttpRequest
 from django.shortcuts import get_object_or_404
 from django.utils.translation import get_language, gettext as _
 from ninja import File, Form, NinjaAPI, Query
@@ -403,6 +403,36 @@ def _resolve_area_owner(user: User, shared: bool) -> User | None:
     return None
 
 
+def _get_editable_area(user: User, area_id: int) -> Area:
+    """Fetch an area the user is allowed to modify.
+
+    A user may modify their own areas; an operator (superuser) may also modify
+    public ones, since those are site content. Another user's private area is
+    off-limits to everyone, operators included.
+
+    Parameters
+    ----------
+    user : User
+        The authenticated caller.
+    area_id : int
+        Primary key of the area.
+
+    Returns
+    -------
+    Area
+
+    Raises
+    ------
+    Http404
+        If the area does not exist, or the user may not modify it. Not-found
+        and not-allowed are deliberately indistinguishable, as before.
+    """
+    area = get_object_or_404(Area, pk=area_id)
+    if area.is_owned_by(user) or (area.is_public and user.is_superuser):
+        return area
+    raise Http404
+
+
 @api_v2.post(
     "/areas/",
     response={
@@ -505,11 +535,12 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
     """Update the name and/or geometry of a user-owned area.
 
     Both fields are optional. Passing geojson=None leaves the geometry unchanged.
-    Returns 404 if the area does not exist or belongs to another user.
+    Returns 404 if the area does not exist, or the caller may not modify it
+    (their own areas, plus the public ones for operators).
     Returns 409 if an area of that name already exists in the same scope
     (the caller's areas, or the public ones).
     """
-    area = get_object_or_404(Area, pk=area_id, owner=request.user)
+    area = _get_editable_area(cast(User, request.user), area_id)
     if payload.name is not None and payload.name != area.name:
         if _area_name_taken(payload.name, area.owner, exclude_pk=area.pk):
             return 409, {"detail": str(_("An area with this name already exists."))}
@@ -533,10 +564,11 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
 def area_delete(request: HttpRequest, area_id: int):
     """Delete a user-owned area.
 
-    Returns 404 if the area does not exist or belongs to another user.
+    Returns 404 if the area does not exist, or the caller may not modify it
+    (their own areas, plus the public ones for operators).
     Returns 409 with a detail message if any alerts reference this area.
     """
-    area = get_object_or_404(Area, pk=area_id, owner=request.user)
+    area = _get_editable_area(cast(User, request.user), area_id)
     try:
         area.delete()
     except Area.HasAlerts:

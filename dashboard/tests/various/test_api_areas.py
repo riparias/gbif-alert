@@ -654,3 +654,59 @@ def test_patch_with_own_unchanged_name_returns_200(patch_data):
         content_type="application/json",
     )
     assert resp.status_code == 200
+
+
+def test_operator_can_patch_a_shared_area(operator_client):
+    public_area = Area.objects.create(name="Public", owner=None, mpoly=SIMPLE_MPOLY)
+    resp = operator_client.patch(
+        f"/api/v2/areas/{public_area.pk}/",
+        data=json.dumps({"name": "Public renamed"}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    public_area.refresh_from_db()
+    assert public_area.name == "Public renamed"
+
+
+def test_operator_can_delete_a_shared_area(operator_client):
+    public_area = Area.objects.create(name="Public", owner=None, mpoly=SIMPLE_MPOLY)
+    resp = operator_client.delete(f"/api/v2/areas/{public_area.pk}/")
+    assert resp.status_code == 204
+    assert not Area.objects.filter(pk=public_area.pk).exists()
+
+
+def test_regular_user_cannot_patch_a_shared_area(patch_data):
+    public_area = Area.objects.create(name="Public", owner=None, mpoly=SIMPLE_MPOLY)
+    resp = patch_data["client"].patch(
+        f"/api/v2/areas/{public_area.pk}/",
+        data=json.dumps({"name": "Hijacked"}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 404
+    public_area.refresh_from_db()
+    assert public_area.name == "Public"
+
+
+def test_regular_user_cannot_delete_a_shared_area(patch_data):
+    public_area = Area.objects.create(name="Public", owner=None, mpoly=SIMPLE_MPOLY)
+    resp = patch_data["client"].delete(f"/api/v2/areas/{public_area.pk}/")
+    assert resp.status_code == 404
+    assert Area.objects.filter(pk=public_area.pk).exists()
+
+
+def test_operator_cannot_patch_another_users_private_area(
+    operator_client, django_user_model
+):
+    """Operators get access to site content, not to other people's private areas."""
+    owner = django_user_model.objects.create_user(
+        username="privateowner", password="pass", email="po@t.com"
+    )
+    private_area = Area.objects.create(name="Private", owner=owner, mpoly=SIMPLE_MPOLY)
+    resp = operator_client.patch(
+        f"/api/v2/areas/{private_area.pk}/",
+        data=json.dumps({"name": "Snooped"}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 404
+    private_area.refresh_from_db()
+    assert private_area.name == "Private"
