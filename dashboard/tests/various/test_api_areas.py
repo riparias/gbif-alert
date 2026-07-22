@@ -423,6 +423,60 @@ def test_create_from_file_accepts_tags_and_shared(operator_client, tmp_path):
     assert sorted(body["tags"]) == ["belgium", "provinces"]
 
 
+def test_duplicate_name_same_owner_returns_409(area_client):
+    payload = json.dumps({"name": "Twice", "geojson": SIMPLE_FC})
+    first = area_client.post(
+        "/api/v2/areas/", data=payload, content_type="application/json"
+    )
+    assert first.status_code == 201
+    second = area_client.post(
+        "/api/v2/areas/", data=payload, content_type="application/json"
+    )
+    assert second.status_code == 409
+    assert "detail" in second.json()
+    assert Area.objects.filter(name="Twice").count() == 1
+
+
+def test_duplicate_name_across_scopes_is_allowed(operator_client, django_user_model):
+    shared = operator_client.post(
+        "/api/v2/areas/",
+        data=json.dumps({"name": "Antwerpen", "geojson": SIMPLE_FC, "shared": True}),
+        content_type="application/json",
+    )
+    assert shared.status_code == 201
+
+    from django.test import Client
+
+    user = django_user_model.objects.create_user(
+        username="regular", password="pass", email="reg@t.com"
+    )
+    user_client = Client()
+    user_client.force_login(user)
+    private = user_client.post(
+        "/api/v2/areas/",
+        data=json.dumps({"name": "Antwerpen", "geojson": SIMPLE_FC}),
+        content_type="application/json",
+    )
+    assert private.status_code == 201
+    assert Area.objects.filter(name="Antwerpen").count() == 2
+
+
+def test_two_shared_areas_cannot_share_a_name(operator_client):
+    payload = json.dumps({"name": "Shared twice", "geojson": SIMPLE_FC, "shared": True})
+    assert (
+        operator_client.post(
+            "/api/v2/areas/", data=payload, content_type="application/json"
+        ).status_code
+        == 201
+    )
+    assert (
+        operator_client.post(
+            "/api/v2/areas/", data=payload, content_type="application/json"
+        ).status_code
+        == 409
+    )
+
+
 # ---------------------------------------------------------------------------
 # AreaPatchAPITests
 # ---------------------------------------------------------------------------
@@ -548,3 +602,24 @@ def test_patch_empty_tag_list_clears_tags(patch_data):
     )
     assert resp.status_code == 200
     assert list(patch_data["area"].tags.all()) == []
+
+
+def test_patch_rename_onto_taken_name_returns_409(patch_data):
+    Area.objects.create(name="Taken", owner=patch_data["user"], mpoly=SIMPLE_MPOLY)
+    resp = patch_data["client"].patch(
+        f"/api/v2/areas/{patch_data['area'].pk}/",
+        data=json.dumps({"name": "Taken"}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 409
+    patch_data["area"].refresh_from_db()
+    assert patch_data["area"].name == "Original"
+
+
+def test_patch_with_own_unchanged_name_returns_200(patch_data):
+    resp = patch_data["client"].patch(
+        f"/api/v2/areas/{patch_data['area'].pk}/",
+        data=json.dumps({"name": "Original", "geojson": SIMPLE_FC}),
+        content_type="application/json",
+    )
+    assert resp.status_code == 200

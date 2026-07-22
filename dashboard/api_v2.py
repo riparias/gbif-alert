@@ -348,6 +348,37 @@ def _area_to_out(area: Area) -> dict:
     }
 
 
+AREA_NAME_TAKEN_DETAIL = _("An area with this name already exists.")
+
+
+def _area_name_taken(
+    name: str, owner: User | None, exclude_pk: int | None = None
+) -> bool:
+    """Whether an area of that name already exists in the same scope.
+
+    Scope is the owner: a public area and a user's own area may share a name,
+    but two public areas - or two areas of the same user - may not.
+
+    Parameters
+    ----------
+    name : str
+        Candidate area name.
+    owner : User or None
+        None for the public scope, the owning user otherwise.
+    exclude_pk : int or None
+        Primary key to ignore, so an area does not collide with itself on
+        rename.
+
+    Returns
+    -------
+    bool
+    """
+    qs = Area.objects.filter(name=name, owner=owner)
+    if exclude_pk is not None:
+        qs = qs.exclude(pk=exclude_pk)
+    return qs.exists()
+
+
 def _resolve_area_owner(user: User, shared: bool) -> User | None:
     """Owner for a new area: None (public) when an operator asks for a shared one.
 
@@ -377,7 +408,13 @@ def _resolve_area_owner(user: User, shared: bool) -> User | None:
 
 @api_v2.post(
     "/areas/",
-    response={201: AreaOut, 422: DetailErrorOut, **ERR_401, **ERR_403},
+    response={
+        201: AreaOut,
+        409: DetailErrorOut,
+        422: DetailErrorOut,
+        **ERR_401,
+        **ERR_403,
+    },
     auth=[ApiTokenAuth(), django_auth],
 )
 def area_create(request: HttpRequest, payload: AreaIn):
@@ -391,6 +428,8 @@ def area_create(request: HttpRequest, payload: AreaIn):
     anyone else doing so is refused with 403.
 
     Returns 422 with a detail message if the geometry is unusable.
+    Returns 409 if an area of that name already exists in the same scope
+    (the caller's areas, or the public ones).
     """
     user = cast(User, request.user)
     owner = _resolve_area_owner(user, payload.shared)
@@ -398,6 +437,8 @@ def area_create(request: HttpRequest, payload: AreaIn):
         mpoly = geojson_to_multipolygon(payload.geojson)
     except ValueError as exc:
         return 422, {"detail": str(exc)}
+    if _area_name_taken(payload.name, owner):
+        return 409, {"detail": str(AREA_NAME_TAKEN_DETAIL)}
     area = Area.objects.create(mpoly=mpoly, owner=owner, name=payload.name)
     area.tags.set(payload.tags)
     return 201, _area_to_out(area)
@@ -405,7 +446,13 @@ def area_create(request: HttpRequest, payload: AreaIn):
 
 @api_v2.post(
     "/areas/from-file/",
-    response={201: AreaOut, 422: DetailErrorOut, **ERR_401, **ERR_403},
+    response={
+        201: AreaOut,
+        409: DetailErrorOut,
+        422: DetailErrorOut,
+        **ERR_401,
+        **ERR_403,
+    },
     auth=[ApiTokenAuth(), django_auth],
 )
 def area_create_from_file(
@@ -422,6 +469,8 @@ def area_create_from_file(
 
     Returns 422 with a human-readable detail message if the file fails
     validation (wrong geometry type, multiple layers, missing SRS, etc.).
+    Returns 409 if an area of that name already exists in the same scope
+    (the caller's areas, or the public ones).
     """
     user = cast(User, request.user)
     owner = _resolve_area_owner(user, shared)
@@ -433,6 +482,9 @@ def area_create_from_file(
         except ValueError as exc:
             return 422, {"detail": str(exc)}
 
+    if _area_name_taken(name, owner):
+        return 409, {"detail": str(AREA_NAME_TAKEN_DETAIL)}
+
     area = Area.objects.create(
         mpoly=cast(GEOSMultiPolygon, GEOSGeometry(wkt)), owner=owner, name=name
     )
@@ -442,7 +494,14 @@ def area_create_from_file(
 
 @api_v2.patch(
     "/areas/{area_id}/",
-    response={200: AreaOut, 422: DetailErrorOut, **ERR_401, **ERR_403, **ERR_404},
+    response={
+        200: AreaOut,
+        409: DetailErrorOut,
+        422: DetailErrorOut,
+        **ERR_401,
+        **ERR_403,
+        **ERR_404,
+    },
     auth=[ApiTokenAuth(), django_auth],
 )
 def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
@@ -450,9 +509,13 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
 
     Both fields are optional. Passing geojson=None leaves the geometry unchanged.
     Returns 404 if the area does not exist or belongs to another user.
+    Returns 409 if an area of that name already exists in the same scope
+    (the caller's areas, or the public ones).
     """
     area = get_object_or_404(Area, pk=area_id, owner=request.user)
-    if payload.name is not None:
+    if payload.name is not None and payload.name != area.name:
+        if _area_name_taken(payload.name, area.owner, exclude_pk=area.pk):
+            return 409, {"detail": str(AREA_NAME_TAKEN_DETAIL)}
         area.name = payload.name
     if payload.geojson is not None:
         try:

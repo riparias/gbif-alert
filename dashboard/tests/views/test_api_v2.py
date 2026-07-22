@@ -2905,9 +2905,9 @@ def test_api_token_cannot_delete_another_users_token(client, auth_data):
 ERROR_RESPONSE_EXPECTATIONS = [
     ("/species/", "post", {401, 403}),
     ("/areas/{area_id}/geojson/", "get", {403, 404}),
-    ("/areas/", "post", {401, 403}),
+    ("/areas/", "post", {401, 403, 409}),
     ("/areas/from-file/", "post", {401, 403}),
-    ("/areas/{area_id}/", "patch", {401, 403, 404}),
+    ("/areas/{area_id}/", "patch", {401, 403, 404, 409}),
     ("/areas/{area_id}/", "delete", {401, 403, 404}),
     ("/observations/mark-as-viewed/", "post", {401, 403}),
     ("/observations/{stable_id}/", "get", {404}),
