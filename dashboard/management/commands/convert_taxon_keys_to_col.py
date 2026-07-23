@@ -33,9 +33,15 @@ class Command(BaseCommand):
         # Only species that still need a key: reruns must not re-query GBIF for
         # already-resolved species (and doing so would widen the window for the
         # COL-key collision handled below).
-        unresolved_species = Species.objects.filter(
+        needs_col_key = Species.objects.filter(
             Q(gbif_col_taxon_key__isnull=True) | Q(gbif_col_taxon_key="")
         ).order_by("name")
+
+        # A species with no legacy key has nothing to convert FROM - it was
+        # added COL-first. Reporting it as a failure every run would train
+        # operators to ignore the error list.
+        nothing_to_convert = list(needs_col_key.filter(gbif_taxon_key__isnull=True))
+        unresolved_species = needs_col_key.exclude(gbif_taxon_key__isnull=True)
 
         for species in unresolved_species:
             try:
@@ -86,6 +92,11 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"  {species.name} ({species.gbif_taxon_key}) [{result.detail}]"
             )
+
+        self.stdout.write("")
+        self.stdout.write(f"NOTHING TO CONVERT ({len(nothing_to_convert)}):")
+        for species in nothing_to_convert:
+            self.stdout.write(f"  {species.name} (no legacy key - added COL-first)")
 
         self.stdout.write("")
         self.stdout.write(f"ERRORS ({len(errors)}):")

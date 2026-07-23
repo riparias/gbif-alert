@@ -136,6 +136,36 @@ def test_col_key_collision_is_reported_not_crashed(mock_match):
 
 
 @patch("dashboard.management.commands.convert_taxon_keys_to_col.match_col_key")
+def test_species_with_no_keys_is_reported_as_nothing_to_convert(mock_match):
+    """A species with neither key yet has nothing to convert FROM.
+
+    Why: an earlier task made gbif_taxon_key optional, so a species added
+    COL-first can sit in the database before its COL key is filled in -
+    Species.clean() enforces "at least one key" but plain ORM creation (as
+    used here, and by any code path that skips full_clean()) does not call
+    it. Sending such a row to match_col_key would call GBIF with None, and
+    reporting it as a failure would train operators to ignore the error list.
+    """
+    mock_match.return_value = ColMatchResult(
+        col_key="4L6VJ", matched=True, detail="EXACT/ACCEPTED"
+    )
+    keyless = Species.objects.create(name="Newly described sp.")
+    needs_conversion = Species.objects.create(
+        name="Needs conversion sp.", gbif_taxon_key=5232437
+    )
+
+    output = _run()
+
+    # The keyless species must never reach GBIF.
+    mock_match.assert_called_once_with(needs_conversion.gbif_taxon_key)
+    keyless.refresh_from_db()
+    assert keyless.gbif_col_taxon_key is None  # left untouched
+    assert "NOTHING TO CONVERT" in output
+    assert "Newly described sp." in output
+    assert "ERRORS (0)" in output
+
+
+@patch("dashboard.management.commands.convert_taxon_keys_to_col.match_col_key")
 def test_idempotent_rerun(mock_match):
     """Re-running is safe: already-resolved species keep their key.
 
