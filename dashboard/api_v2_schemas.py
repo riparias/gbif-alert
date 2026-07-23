@@ -16,7 +16,9 @@ DelayUnit = Literal["days", "weeks", "months", "years"]
 
 # `language` is not a fixed enum (instance-configurable via settings.LANGUAGES),
 # so it stays a plain string with a description rather than a Literal.
-_LANGUAGE_DESC = "A language code enabled on this site (see settings.LANGUAGES, e.g. en/fr/nl)."
+_LANGUAGE_DESC = (
+    "A language code enabled on this site (see settings.LANGUAGES, e.g. en/fr/nl)."
+)
 
 
 class SpeciesOut(Schema):
@@ -303,14 +305,36 @@ class AlertTemplatePublishedOut(Schema):
     id: int
 
 
-class AreaFromDrawingIn(Schema):
+class AreaIn(Schema):
+    """Payload to create an area from GeoJSON."""
+
     name: str
-    geojson: dict  # GeoJSON FeatureCollection, EPSG:4326
+    geojson: dict = Field(
+        description=(
+            "Area geometry in EPSG:4326: a GeoJSON FeatureCollection, a single "
+            "Feature, or a bare Polygon / MultiPolygon geometry. All polygons "
+            "found are merged into the single MultiPolygon of one area. Only "
+            "EPSG:4326 is accepted - reproject before sending."
+        )
+    )
+    shared: bool = Field(
+        default=False,
+        description=(
+            "Create a shared area, visible to every user, instead of one "
+            "private to the caller. Operators (superusers) only - anyone else "
+            "asking for a shared area is refused with 403."
+        ),
+    )
+    tags: list[str] = Field(
+        default_factory=list,
+        description="Free-form tags, created on the fly if they do not exist yet.",
+    )
 
 
 class AreaPatchIn(Schema):
     name: str | None = None
     geojson: dict | None = None  # None means "leave geometry unchanged"
+    tags: list[str] | None = None  # None means "leave tags unchanged"; [] clears them
 
 
 class SignInIn(Schema):

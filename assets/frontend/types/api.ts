@@ -84,10 +84,18 @@ export interface paths {
         put?: never;
         /**
          * Area Create
-         * @description Create a new user-specific area from an uploaded GeoPackage file.
+         * @description Create an area from GeoJSON.
          *
-         *     Returns 422 with a human-readable detail message if the file fails
-         *     validation (wrong geometry type, multiple layers, missing SRS, etc.).
+         *     Accepts a FeatureCollection, a single Feature, or a bare Polygon /
+         *     MultiPolygon geometry, in EPSG:4326. All polygons are merged into a single
+         *     MultiPolygon - one call creates exactly one area.
+         *
+         *     Operators can pass `shared` to create an area visible to every user;
+         *     anyone else doing so is refused with 403.
+         *
+         *     Returns 422 with a detail message if the geometry is unusable.
+         *     Returns 409 if an area of that name already exists in the same scope
+         *     (the caller's areas, or the public ones).
          */
         post: operations["dashboard_api_v2_area_create"];
         delete?: never;
@@ -120,7 +128,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v2/areas/from-drawing/": {
+    "/api/v2/areas/from-file/": {
         parameters: {
             query?: never;
             header?: never;
@@ -130,15 +138,18 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Area Create From Drawing
-         * @description Create a new user-specific area from a GeoJSON FeatureCollection.
+         * Area Create From File
+         * @description Create a new user-specific area from an uploaded GeoPackage file.
          *
-         *     Accepts a GeoJSON FeatureCollection (EPSG:4326) with Polygon or MultiPolygon
-         *     features drawn by the user. All features are merged into a single MultiPolygon.
+         *     Operators can pass `shared` to create an area visible to every user;
+         *     anyone else doing so is refused with 403.
          *
-         *     Returns 422 with a detail message if the geometry is invalid.
+         *     Returns 422 with a human-readable detail message if the file fails
+         *     validation (wrong geometry type, multiple layers, missing SRS, etc.).
+         *     Returns 409 if an area of that name already exists in the same scope
+         *     (the caller's areas, or the public ones).
          */
-        post: operations["dashboard_api_v2_area_create_from_drawing"];
+        post: operations["dashboard_api_v2_area_create_from_file"];
         delete?: never;
         options?: never;
         head?: never;
@@ -171,6 +182,8 @@ export interface paths {
          *
          *     Both fields are optional. Passing geojson=None leaves the geometry unchanged.
          *     Returns 404 if the area does not exist or belongs to another user.
+         *     Returns 409 if an area of that name already exists in the same scope
+         *     (the caller's areas, or the public ones).
          */
         patch: operations["dashboard_api_v2_area_patch"];
         trace?: never;
@@ -842,6 +855,32 @@ export interface components {
             tags: string[];
         };
         /**
+         * AreaIn
+         * @description Payload to create an area from GeoJSON.
+         */
+        AreaIn: {
+            /** Name */
+            name: string;
+            /**
+             * Geojson
+             * @description Area geometry in EPSG:4326: a GeoJSON FeatureCollection, a single Feature, or a bare Polygon / MultiPolygon geometry. All polygons found are merged into the single MultiPolygon of one area. Only EPSG:4326 is accepted - reproject before sending.
+             */
+            geojson: {
+                [key: string]: unknown;
+            };
+            /**
+             * Shared
+             * @description Create a shared area, visible to every user, instead of one private to the caller. Operators (superusers) only - anyone else asking for a shared area is refused with 403.
+             * @default false
+             */
+            shared: boolean;
+            /**
+             * Tags
+             * @description Free-form tags, created on the fly if they do not exist yet.
+             */
+            tags?: string[];
+        };
+        /**
          * GeoJSONFeatureCollectionOut
          * @description A GeoJSON FeatureCollection (EPSG:4326) from Django's geojson serializer.
          *
@@ -876,15 +915,6 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
-        /** AreaFromDrawingIn */
-        AreaFromDrawingIn: {
-            /** Name */
-            name: string;
-            /** Geojson */
-            geojson: {
-                [key: string]: unknown;
-            };
-        };
         /** AreaPatchIn */
         AreaPatchIn: {
             /** Name */
@@ -893,6 +923,8 @@ export interface components {
             geojson?: {
                 [key: string]: unknown;
             } | null;
+            /** Tags */
+            tags?: string[] | null;
         };
         /** BasisOfRecordOut */
         BasisOfRecordOut: {
@@ -1599,15 +1631,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": {
-                    /** Name */
-                    name: string;
-                    /**
-                     * Data File
-                     * Format: binary
-                     */
-                    data_file: string;
-                };
+                "application/json": components["schemas"]["AreaIn"];
             };
         };
         responses: {
@@ -1631,6 +1655,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1689,7 +1722,7 @@ export interface operations {
             };
         };
     };
-    dashboard_api_v2_area_create_from_drawing: {
+    dashboard_api_v2_area_create_from_file: {
         parameters: {
             query?: never;
             header?: never;
@@ -1698,7 +1731,25 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AreaFromDrawingIn"];
+                "multipart/form-data": {
+                    /** Name */
+                    name: string;
+                    /**
+                     * Shared
+                     * @default false
+                     */
+                    shared?: boolean;
+                    /**
+                     * Tags
+                     * @default []
+                     */
+                    tags?: string[];
+                    /**
+                     * Data File
+                     * Format: binary
+                     */
+                    data_file: string;
+                };
             };
         };
         responses: {
@@ -1722,6 +1773,15 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1840,6 +1900,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

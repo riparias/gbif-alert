@@ -46,7 +46,7 @@ async function upload() {
     formData.append("name", name.value);
     formData.append("data_file", fileInput.value.files[0]);
 
-    const resp = await fetch("/api/v2/areas/", {
+    const resp = await fetch("/api/v2/areas/from-file/", {
         method: "POST",
         headers: {
             "X-CSRFToken": getCsrf(),
@@ -65,9 +65,9 @@ async function upload() {
         });
         emit("created", area);
         resetForm();
-    } else if (resp.status === 422) {
+    } else {
         const data = await resp.json();
-        errorMessage.value = data.detail;
+        errorMessage.value = data.detail ?? t("message.unexpectedError");
     }
 }
 </script>

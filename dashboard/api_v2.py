@@ -14,7 +14,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers import serialize
 from django.db.models import Count, F, Value
 from django.db.models.functions import Coalesce, NullIf, TruncMonth
-from django.http import HttpRequest
+from django.http import Http404, HttpRequest
 from django.shortcuts import get_object_or_404
 from django.utils.translation import get_language, gettext as _
 from ninja import File, Form, NinjaAPI, Query
@@ -36,7 +36,7 @@ from dashboard.api_v2_schemas import (
     ApiTokenCreatedOut,
     ApiTokenOut,
     AreaFilterMode,
-    AreaFromDrawingIn,
+    AreaIn,
     AreaOut,
     AreaPatchIn,
     BasisOfRecordOut,
@@ -338,88 +338,8 @@ def area_geojson(request: HttpRequest, area_id: int):
     return json.loads(serialize("geojson", [area], srid=4326))
 
 
-@api_v2.post(
-    "/areas/",
-    response={201: AreaOut, 422: DetailErrorOut, **ERR_401, **ERR_403},
-    auth=[ApiTokenAuth(), django_auth],
-)
-def area_create(
-    request: HttpRequest,
-    name: Form[str],
-    data_file: File[UploadedFile],
-):
-    """Create a new user-specific area from an uploaded GeoPackage file.
-
-    Returns 422 with a human-readable detail message if the file fails
-    validation (wrong geometry type, multiple layers, missing SRS, etc.).
-    """
-    user = cast(User, request.user)
-    with tempfile.NamedTemporaryFile(suffix=data_file.name) as tmp:
-        tmp.write(data_file.read())
-        tmp.flush()
-        try:
-            wkt = file_to_wkt_multipolygon(tmp.name)
-        except ValueError as exc:
-            return 422, {"detail": str(exc)}
-
-    area = Area.objects.create(
-        mpoly=cast(GEOSMultiPolygon, GEOSGeometry(wkt)), owner=user, name=name
-    )
-    return 201, {
-        "id": area.pk,
-        "name": area.name,
-        "isUserSpecific": area.is_user_specific,
-        "tags": [],
-    }
-
-
-@api_v2.post(
-    "/areas/from-drawing/",
-    response={201: AreaOut, 422: DetailErrorOut, **ERR_401, **ERR_403},
-    auth=[ApiTokenAuth(), django_auth],
-)
-def area_create_from_drawing(request: HttpRequest, payload: AreaFromDrawingIn):
-    """Create a new user-specific area from a GeoJSON FeatureCollection.
-
-    Accepts a GeoJSON FeatureCollection (EPSG:4326) with Polygon or MultiPolygon
-    features drawn by the user. All features are merged into a single MultiPolygon.
-
-    Returns 422 with a detail message if the geometry is invalid.
-    """
-    user = cast(User, request.user)
-    try:
-        mpoly = geojson_to_multipolygon(payload.geojson)
-    except ValueError as exc:
-        return 422, {"detail": str(exc)}
-    area = Area.objects.create(mpoly=mpoly, owner=user, name=payload.name)
-    return 201, {
-        "id": area.pk,
-        "name": area.name,
-        "isUserSpecific": area.is_user_specific,
-        "tags": [],
-    }
-
-
-@api_v2.patch(
-    "/areas/{area_id}/",
-    response={200: AreaOut, 422: DetailErrorOut, **ERR_401, **ERR_403, **ERR_404},
-    auth=[ApiTokenAuth(), django_auth],
-)
-def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
-    """Update the name and/or geometry of a user-owned area.
-
-    Both fields are optional. Passing geojson=None leaves the geometry unchanged.
-    Returns 404 if the area does not exist or belongs to another user.
-    """
-    area = get_object_or_404(Area, pk=area_id, owner=request.user)
-    if payload.name is not None:
-        area.name = payload.name
-    if payload.geojson is not None:
-        try:
-            area.mpoly = geojson_to_multipolygon(payload.geojson)
-        except ValueError as exc:
-            return 422, {"detail": str(exc)}
-    area.save()
+def _area_to_out(area: Area) -> dict:
+    """Build the AreaOut payload for a single area."""
     return {
         "id": area.pk,
         "name": area.name,
@@ -428,18 +348,227 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
     }
 
 
+def _area_name_taken(
+    name: str, owner: User | None, exclude_pk: int | None = None
+) -> bool:
+    """Whether an area of that name already exists in the same scope.
+
+    Scope is the owner: a public area and a user's own area may share a name,
+    but two public areas - or two areas of the same user - may not.
+
+    Parameters
+    ----------
+    name : str
+        Candidate area name.
+    owner : User or None
+        None for the public scope, the owning user otherwise.
+    exclude_pk : int or None
+        Primary key to ignore, so an area does not collide with itself on
+        rename.
+
+    Returns
+    -------
+    bool
+    """
+    qs = Area.objects.filter(name=name, owner=owner)
+    if exclude_pk is not None:
+        qs = qs.exclude(pk=exclude_pk)
+    return qs.exists()
+
+
+def _resolve_area_owner(user: User, shared: bool) -> User | None:
+    """Owner for a new area: None (public) when an operator asks for a shared one.
+
+    Parameters
+    ----------
+    user : User
+        The authenticated caller.
+    shared : bool
+        Whether the caller asked for an area visible to everyone.
+
+    Returns
+    -------
+    User or None
+        None for a shared area, the caller otherwise.
+
+    Raises
+    ------
+    HttpError
+        403 if a non-superuser asks for a shared area.
+    """
+    if not shared:
+        return user
+    if not user.is_superuser:
+        raise HttpError(403, "Only operators can create shared areas.")
+    return None
+
+
+def _get_editable_area(user: User, area_id: int) -> Area:
+    """Fetch an area the user is allowed to modify.
+
+    A user may modify their own areas; an operator (superuser) may also modify
+    public ones, since those are site content. Another user's private area is
+    off-limits to everyone, operators included.
+
+    Parameters
+    ----------
+    user : User
+        The authenticated caller.
+    area_id : int
+        Primary key of the area.
+
+    Returns
+    -------
+    Area
+
+    Raises
+    ------
+    Http404
+        If the area does not exist, or the user may not modify it. Not-found
+        and not-allowed are deliberately indistinguishable, as before.
+    """
+    area = get_object_or_404(Area, pk=area_id)
+    if area.is_owned_by(user) or (area.is_public and user.is_superuser):
+        return area
+    raise Http404
+
+
+@api_v2.post(
+    "/areas/",
+    response={
+        201: AreaOut,
+        409: DetailErrorOut,
+        422: DetailErrorOut,
+        **ERR_401,
+        **ERR_403,
+    },
+    auth=[ApiTokenAuth(), django_auth],
+)
+def area_create(request: HttpRequest, payload: AreaIn):
+    """Create an area from GeoJSON.
+
+    Accepts a FeatureCollection, a single Feature, or a bare Polygon /
+    MultiPolygon geometry, in EPSG:4326. All polygons are merged into a single
+    MultiPolygon - one call creates exactly one area.
+
+    Operators can pass `shared` to create an area visible to every user;
+    anyone else doing so is refused with 403.
+
+    Returns 422 with a detail message if the geometry is unusable.
+    Returns 409 if an area of that name already exists in the same scope
+    (the caller's areas, or the public ones).
+    """
+    user = cast(User, request.user)
+    owner = _resolve_area_owner(user, payload.shared)
+    try:
+        mpoly = geojson_to_multipolygon(payload.geojson)
+    except ValueError as exc:
+        return 422, {"detail": str(exc)}
+    if _area_name_taken(payload.name, owner):
+        return 409, {"detail": str(_("An area with this name already exists."))}
+    area = Area.objects.create(mpoly=mpoly, owner=owner, name=payload.name)
+    area.tags.set(payload.tags)
+    return 201, _area_to_out(area)
+
+
+@api_v2.post(
+    "/areas/from-file/",
+    response={
+        201: AreaOut,
+        409: DetailErrorOut,
+        422: DetailErrorOut,
+        **ERR_401,
+        **ERR_403,
+    },
+    auth=[ApiTokenAuth(), django_auth],
+)
+def area_create_from_file(
+    request: HttpRequest,
+    name: Form[str],
+    data_file: File[UploadedFile],
+    shared: Form[bool] = False,
+    tags: Form[list[str]] = [],
+):
+    """Create a new user-specific area from an uploaded GeoPackage file.
+
+    Operators can pass `shared` to create an area visible to every user;
+    anyone else doing so is refused with 403.
+
+    Returns 422 with a human-readable detail message if the file fails
+    validation (wrong geometry type, multiple layers, missing SRS, etc.).
+    Returns 409 if an area of that name already exists in the same scope
+    (the caller's areas, or the public ones).
+    """
+    user = cast(User, request.user)
+    owner = _resolve_area_owner(user, shared)
+    with tempfile.NamedTemporaryFile(suffix=data_file.name) as tmp:
+        tmp.write(data_file.read())
+        tmp.flush()
+        try:
+            wkt = file_to_wkt_multipolygon(tmp.name)
+        except ValueError as exc:
+            return 422, {"detail": str(exc)}
+
+    if _area_name_taken(name, owner):
+        return 409, {"detail": str(_("An area with this name already exists."))}
+
+    area = Area.objects.create(
+        mpoly=cast(GEOSMultiPolygon, GEOSGeometry(wkt)), owner=owner, name=name
+    )
+    area.tags.set(tags)
+    return 201, _area_to_out(area)
+
+
+@api_v2.patch(
+    "/areas/{area_id}/",
+    response={
+        200: AreaOut,
+        409: DetailErrorOut,
+        422: DetailErrorOut,
+        **ERR_401,
+        **ERR_403,
+        **ERR_404,
+    },
+    auth=[ApiTokenAuth(), django_auth],
+)
+def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
+    """Update the name and/or geometry of an area the caller may modify.
+
+    Both fields are optional. Passing geojson=None leaves the geometry unchanged.
+    Returns 404 if the area does not exist, or the caller may not modify it
+    (their own areas, plus the public ones for operators).
+    Returns 409 if an area of that name already exists in the same scope
+    (the caller's areas, or the public ones).
+    """
+    area = _get_editable_area(cast(User, request.user), area_id)
+    if payload.name is not None and payload.name != area.name:
+        if _area_name_taken(payload.name, area.owner, exclude_pk=area.pk):
+            return 409, {"detail": str(_("An area with this name already exists."))}
+        area.name = payload.name
+    if payload.geojson is not None:
+        try:
+            area.mpoly = geojson_to_multipolygon(payload.geojson)
+        except ValueError as exc:
+            return 422, {"detail": str(exc)}
+    if payload.tags is not None:
+        area.tags.set(payload.tags)
+    area.save()
+    return _area_to_out(area)
+
+
 @api_v2.delete(
     "/areas/{area_id}/",
     response={204: None, 409: DetailErrorOut, **ERR_401, **ERR_403, **ERR_404},
     auth=[ApiTokenAuth(), django_auth],
 )
 def area_delete(request: HttpRequest, area_id: int):
-    """Delete a user-owned area.
+    """Delete an area the caller may modify.
 
-    Returns 404 if the area does not exist or belongs to another user.
+    Returns 404 if the area does not exist, or the caller may not modify it
+    (their own areas, plus the public ones for operators).
     Returns 409 with a detail message if any alerts reference this area.
     """
-    area = get_object_or_404(Area, pk=area_id, owner=request.user)
+    area = _get_editable_area(cast(User, request.user), area_id)
     try:
         area.delete()
     except Area.HasAlerts:
@@ -517,9 +646,7 @@ def observations_list(
     ] = "date",
     orderDir: Annotated[
         str,
-        Field(
-            description="Sort direction: asc or desc. Any other value returns 400."
-        ),
+        Field(description="Sort direction: asc or desc. Any other value returns 400."),
     ] = "desc",
 ):
     """Return a paginated, filtered, and sorted page of observations.
