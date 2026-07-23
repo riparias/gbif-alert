@@ -1,5 +1,14 @@
-# Unreleased
+# 2.3.0 (2026-07-23)
 
+- Fix: clicking a navigation link right after another one could be silently
+  ignored, leaving you on the page you were trying to leave with a stray
+  `?status=all` appended. The index page's filter sync outlived the page
+  itself and overrode the navigation you had just asked for.
+- Change (operator-facing): importing species from a CSV/XLSX file in the admin
+  now validates each row, instead of storing whatever it is given. A row with
+  no taxon key at all - which would block the next observation import - is
+  rejected, as are malformed image URLs and over-long names. Exporting,
+  editing and re-importing the app's own data is unaffected.
 - Feature: a species can now be added with only a Catalogue of Life (COL XR)
   taxon key. The GBIF backbone key is frozen, so a species described after the
   freeze has none - until now that made it impossible to monitor. At least one
@@ -47,6 +56,9 @@
   unchanged, so the change is additive for API consumers.
 - Dev/infra: the frontend now has a prettier config (4-space indent, 100
   columns) and has been formatted with it. Use `npm run format`; CI checks it.
+- Dev/infra: the Python codebase is now black-formatted throughout, and CI
+  checks it - the counterpart to the prettier check above, whose absence is why
+  29 files had drifted.
 
 # 2.2.1 (2026-07-13)
 
