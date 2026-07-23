@@ -155,7 +155,7 @@ export const messages = {
             gbifId: "GBIF ID",
             gbifRefreshIntro:
                 "The data (observations) shown in this application is frequently and automatically refreshed from",
-            gbifTaxonKey: "GBIF taxon key",
+            gbifTaxonKey: "Taxon key",
             hideDataImports: "Hide",
             home: "Home",
             importedObservations: "Imported observations",
@@ -462,7 +462,7 @@ export const messages = {
             gbifId: "Identifiant GBIF",
             gbifRefreshIntro:
                 "Les données (observations) affichées dans cette application sont fréquemment et automatiquement actualisées depuis",
-            gbifTaxonKey: "Clé taxonomique GBIF",
+            gbifTaxonKey: "Clé taxonomique",
             hideDataImports: "Masquer",
             home: "Accueil",
             importedObservations: "Observations importées",
@@ -768,7 +768,7 @@ export const messages = {
             gbifId: "GBIF ID",
             gbifRefreshIntro:
                 "De gegevens (waarnemingen) in deze applicatie worden regelmatig en automatisch ververst vanuit",
-            gbifTaxonKey: "GBIF taxon key",
+            gbifTaxonKey: "Taxonsleutel",
             hideDataImports: "Verbergen",
             home: "Home",
             importedObservations: "Geimporteerde waarnemingen",
