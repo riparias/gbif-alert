@@ -168,9 +168,10 @@ export interface paths {
         post?: never;
         /**
          * Area Delete
-         * @description Delete a user-owned area.
+         * @description Delete an area the caller may modify.
          *
-         *     Returns 404 if the area does not exist or belongs to another user.
+         *     Returns 404 if the area does not exist, or the caller may not modify it
+         *     (their own areas, plus the public ones for operators).
          *     Returns 409 with a detail message if any alerts reference this area.
          */
         delete: operations["dashboard_api_v2_area_delete"];
@@ -178,10 +179,11 @@ export interface paths {
         head?: never;
         /**
          * Area Patch
-         * @description Update the name and/or geometry of a user-owned area.
+         * @description Update the name and/or geometry of an area the caller may modify.
          *
          *     Both fields are optional. Passing geojson=None leaves the geometry unchanged.
-         *     Returns 404 if the area does not exist or belongs to another user.
+         *     Returns 404 if the area does not exist, or the caller may not modify it
+         *     (their own areas, plus the public ones for operators).
          *     Returns 409 if an area of that name already exists in the same scope
          *     (the caller's areas, or the public ones).
          */
@@ -684,9 +686,9 @@ export interface components {
             vernacularNameFr: string;
             /**
              * Gbiftaxonkey
-             * @description GBIF taxon key. Numeric in GBIF's data model, so returned as an integer. Distinct from `gbifId` (an occurrence identifier) which GBIF models as a string - the int/str split is intrinsic to GBIF, not an inconsistency in this API.
+             * @description Legacy GBIF backbone taxon key. Numeric in GBIF's data model, so returned as an integer. Null for a species that only has a COL key - the backbone is frozen, so a species described after the freeze has no such key. Distinct from `gbifId` (an occurrence identifier) which GBIF models as a string - the int/str split is intrinsic to GBIF, not an inconsistency in this API.
              */
-            gbifTaxonKey: number;
+            gbifTaxonKey?: number | null;
             /**
              * Gbifcoltaxonkey
              * @description Catalogue of Life (COL XR) taxon key - alphanumeric. Primary key used for GBIF downloads and occurrence matching. Null until the operator has run convert_taxon_keys_to_col. Distinct from the legacy integer gbifTaxonKey, which is retained for reference.
@@ -748,8 +750,11 @@ export interface components {
         SpeciesIn: {
             /** Scientificname */
             scientificName: string;
-            /** Gbiftaxonkey */
-            gbifTaxonKey: number;
+            /**
+             * Gbiftaxonkey
+             * @description Legacy GBIF backbone taxon key. Optional: supply this, gbifColTaxonKey, or both. A species with neither is refused with 422, since it could never match a GBIF download.
+             */
+            gbifTaxonKey?: number | null;
             /** Gbifcoltaxonkey */
             gbifColTaxonKey?: string | null;
             /**
@@ -804,9 +809,9 @@ export interface components {
             vernacularNameFr: string;
             /**
              * Gbiftaxonkey
-             * @description GBIF taxon key. Numeric in GBIF's data model, so returned as an integer. Distinct from `gbifId` (an occurrence identifier) which GBIF models as a string - the int/str split is intrinsic to GBIF, not an inconsistency in this API.
+             * @description Legacy GBIF backbone taxon key. Numeric in GBIF's data model, so returned as an integer. Null for a species that only has a COL key - the backbone is frozen, so a species described after the freeze has no such key. Distinct from `gbifId` (an occurrence identifier) which GBIF models as a string - the int/str split is intrinsic to GBIF, not an inconsistency in this API.
              */
-            gbifTaxonKey: number;
+            gbifTaxonKey?: number | null;
             /**
              * Gbifcoltaxonkey
              * @description Catalogue of Life (COL XR) taxon key - alphanumeric. Primary key used for GBIF downloads and occurrence matching. Null until the operator has run convert_taxon_keys_to_col. Distinct from the legacy integer gbifTaxonKey, which is retained for reference.

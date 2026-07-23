@@ -220,6 +220,54 @@ def test_species_create_as_superuser_session_returns_201(client, superuser):
     assert body["id"] == created.pk
 
 
+def test_species_create_with_only_col_key_returns_201(client, superuser):
+    """A COL-only species is creatable - the point of issue #380."""
+    client.force_login(superuser)
+    resp = client.post(
+        "/api/v2/species/",
+        data={"scientificName": "Newly described sp.", "gbifColTaxonKey": "C5KM"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["gbifTaxonKey"] is None
+    assert body["gbifColTaxonKey"] == "C5KM"
+
+
+def test_species_create_with_only_legacy_key_still_returns_201(client, superuser):
+    """The pre-existing client contract is unchanged."""
+    client.force_login(superuser)
+    resp = client.post(
+        "/api/v2/species/",
+        data={"scientificName": "Legacy sp.", "gbifTaxonKey": 1234567},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    assert resp.json()["gbifTaxonKey"] == 1234567
+
+
+def test_species_create_without_any_key_returns_422(client, superuser):
+    """Neither key is the one genuinely broken state."""
+    client.force_login(superuser)
+    resp = client.post(
+        "/api/v2/species/",
+        data={"scientificName": "Keyless sp."},
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "__all__" in resp.json()["errors"]
+
+
+def test_species_list_serialises_a_null_legacy_key(client, superuser):
+    """GET /species/ must not choke on a COL-only species."""
+    Species.objects.create(name="Newly described sp.", gbif_col_taxon_key="C5KM")
+    client.force_login(superuser)
+    resp = client.get("/api/v2/species/")
+    assert resp.status_code == 200
+    row = next(r for r in resp.json() if r["scientificName"] == "Newly described sp.")
+    assert row["gbifTaxonKey"] is None
+
+
 def test_species_create_as_superuser_via_token_returns_201(client, superuser):
     """A superuser's bearer token can also create a species."""
     _, raw = ApiToken.create_for(superuser, "script")
@@ -852,8 +900,11 @@ def test_gbif_id_type_split_is_documented(client):
     assert (
         "intrinsic" in props["SpeciesOut"]["properties"]["gbifTaxonKey"]["description"]
     )
-    # Types are unchanged: gbifTaxonKey stays integer, gbifId stays string.
-    assert props["SpeciesOut"]["properties"]["gbifTaxonKey"]["type"] == "integer"
+    # gbifTaxonKey is integer-or-null (nullable since a COL-only species has
+    # none); gbifId stays a plain string.
+    assert {"type": "integer"} in props["SpeciesOut"]["properties"]["gbifTaxonKey"][
+        "anyOf"
+    ]
     assert props["ObservationOut"]["properties"]["gbifId"]["type"] == "string"
 
 

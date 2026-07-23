@@ -27,13 +27,16 @@ class SpeciesOut(Schema):
     vernacularNameEn: str
     vernacularNameNl: str
     vernacularNameFr: str
-    gbifTaxonKey: int = Field(
+    gbifTaxonKey: int | None = Field(
+        default=None,
         description=(
-            "GBIF taxon key. Numeric in GBIF's data model, so returned as an "
-            "integer. Distinct from `gbifId` (an occurrence identifier) which "
+            "Legacy GBIF backbone taxon key. Numeric in GBIF's data model, so "
+            "returned as an integer. Null for a species that only has a COL key - "
+            "the backbone is frozen, so a species described after the freeze has "
+            "no such key. Distinct from `gbifId` (an occurrence identifier) which "
             "GBIF models as a string - the int/str split is intrinsic to GBIF, "
             "not an inconsistency in this API."
-        )
+        ),
     )
     gbifColTaxonKey: str | None = Field(
         default=None,
@@ -63,7 +66,14 @@ class SpeciesIn(Schema):
     """
 
     scientificName: str
-    gbifTaxonKey: int
+    gbifTaxonKey: int | None = Field(
+        default=None,
+        description=(
+            "Legacy GBIF backbone taxon key. Optional: supply this, "
+            "gbifColTaxonKey, or both. A species with neither is refused with "
+            "422, since it could never match a GBIF download."
+        ),
+    )
     gbifColTaxonKey: str | None = None
     vernacularNameEn: str = ""
     vernacularNameFr: str = ""
