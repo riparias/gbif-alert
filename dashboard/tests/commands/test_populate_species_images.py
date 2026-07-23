@@ -2,7 +2,6 @@ import pytest
 from io import StringIO
 from unittest import mock
 from django.core.management import call_command
-from django.core.management.base import CommandError
 from dashboard.models import Species
 from dashboard.species_images import ResolvedImage
 
@@ -138,15 +137,85 @@ def test_species_flag_by_gbif_taxon_key_targets_correct_row():
 
 
 @pytest.mark.django_db
-def test_invalid_species_flag_raises_command_error():
-    """Non-digit --species value must raise CommandError, not silently no-op."""
-    with pytest.raises(CommandError):
+def test_species_flag_by_col_taxon_key_targets_correct_row():
+    """--species <col key> fills only the species with that COL key.
+
+    A COL-only species has no gbif_taxon_key, so a COL key is the only way
+    to target it by anything other than pk.
+    """
+    sp_target = Species.objects.create(
+        name="Newly described sp.", gbif_col_taxon_key="C5KM"
+    )
+    sp_other = Species.objects.create(name="Other sp.", gbif_taxon_key=999046)
+    with mock.patch(
+        "dashboard.management.commands.populate_species_images.resolve_species_image",
+        return_value=_wiki_result(),
+    ):
+        call_command("populate_species_images", "--species", "C5KM", stdout=StringIO())
+    sp_target.refresh_from_db()
+    sp_other.refresh_from_db()
+    assert sp_target.image_url == "https://example.org/x.jpg"
+    assert sp_other.image_url == ""
+
+
+@pytest.mark.django_db
+def test_species_flag_by_all_digit_col_taxon_key_targets_correct_row():
+    """--species <col key> works even when the COL key is all-digit.
+
+    COL keys are alphanumeric but nothing guarantees a given key contains a
+    letter, so the digit branch must also compare against gbif_col_taxon_key
+    (as a string, since the column is a CharField) - not just pk/gbif_taxon_key.
+    """
+    sp_target = Species.objects.create(
+        name="Newly described sp.", gbif_col_taxon_key="34567"
+    )
+    sp_other = Species.objects.create(name="Other sp.", gbif_taxon_key=999047)
+    with mock.patch(
+        "dashboard.management.commands.populate_species_images.resolve_species_image",
+        return_value=_wiki_result(),
+    ):
+        call_command("populate_species_images", "--species", "34567", stdout=StringIO())
+    sp_target.refresh_from_db()
+    sp_other.refresh_from_db()
+    assert sp_target.image_url == "https://example.org/x.jpg"
+    assert sp_other.image_url == ""
+
+
+@pytest.mark.django_db
+def test_nonmatching_species_flag_warns():
+    """A --species value matching no species writes a warning, not silent success."""
+    out = StringIO()
+    with mock.patch(
+        "dashboard.management.commands.populate_species_images.resolve_species_image",
+    ) as resolver:
+        call_command(
+            "populate_species_images",
+            "--species",
+            "not-a-number",
+            stdout=out,
+        )
+    resolver.assert_not_called()
+    assert "not-a-number" in out.getvalue()
+    assert "did not match any species" in out.getvalue()
+
+
+@pytest.mark.django_db
+def test_nonmatching_species_flag_processes_nothing():
+    """A non-digit --species value with no matching COL key is a no-op, not an error.
+
+    COL keys are alphanumeric, so there is no format check left to reject a
+    non-digit value up front - it is simply matched against gbif_col_taxon_key.
+    """
+    with mock.patch(
+        "dashboard.management.commands.populate_species_images.resolve_species_image",
+    ) as resolver:
         call_command(
             "populate_species_images",
             "--species",
             "not-a-number",
             stdout=StringIO(),
         )
+    resolver.assert_not_called()
 
 
 @pytest.mark.django_db
@@ -157,7 +226,7 @@ def test_command_isolates_per_species_failure():
     a = Species.objects.create(name="Aardvark testus", gbif_taxon_key=999050)
     b = Species.objects.create(name="Bobcat testus", gbif_taxon_key=999051)
 
-    def side_effect(name, gbif_taxon_key):
+    def side_effect(name, gbif_taxon_key, gbif_col_taxon_key):
         if gbif_taxon_key == 999050:
             raise RuntimeError("boom")
         return _wiki_result()

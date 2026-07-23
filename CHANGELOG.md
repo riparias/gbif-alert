@@ -1,5 +1,15 @@
 # Unreleased
 
+- Feature: a species can now be added with only a Catalogue of Life (COL XR)
+  taxon key. The GBIF backbone key is frozen, so a species described after the
+  freeze has none - until now that made it impossible to monitor. At least one
+  of the two keys is still required.
+- Change: the WFS observations endpoint gained a `species_col_key` element,
+  alongside the existing `species_gbif_key`. Existing consumers are unaffected;
+  the new element is the one to prefer, since `species_gbif_key` is empty for a
+  species that only has a COL key.
+- Change (API v2): `gbifTaxonKey` can now be null in species responses, and is
+  optional when creating a species.
 - Feature: operators can now create, rename and delete shared areas - visible to
   every user - through the API, instead of editing and re-running the
   `load_area` command. Areas can also carry tags, and a name can no longer be

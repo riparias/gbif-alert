@@ -136,6 +136,38 @@ def test_col_key_collision_is_reported_not_crashed(mock_match):
 
 
 @patch("dashboard.management.commands.convert_taxon_keys_to_col.match_col_key")
+def test_species_with_no_keys_is_reported_as_needing_manual_curation(mock_match):
+    """A species with neither key has nothing to convert FROM, and is flagged
+    for manual curation rather than silently skipped.
+
+    Why: Species.clean() forbids a species having both keys blank, and the v2
+    API calls full_clean(), so this state should be unreachable through normal
+    use. But the admin's bulk CSV/XLSX import does not call full_clean() (nor
+    does plain ORM creation, as used here), so such a row can still land in
+    the database - and it will block the next import_observations run. Sending
+    it to match_col_key would call GBIF with None, so the command reports it
+    instead, with wording that makes clear it needs action.
+    """
+    mock_match.return_value = ColMatchResult(
+        col_key="4L6VJ", matched=True, detail="EXACT/ACCEPTED"
+    )
+    keyless = Species.objects.create(name="Newly described sp.")
+    needs_conversion = Species.objects.create(
+        name="Needs conversion sp.", gbif_taxon_key=5232437
+    )
+
+    output = _run()
+
+    # The keyless species must never reach GBIF.
+    mock_match.assert_called_once_with(needs_conversion.gbif_taxon_key)
+    keyless.refresh_from_db()
+    assert keyless.gbif_col_taxon_key is None  # left untouched
+    assert "NO TAXON KEY - needs manual curation" in output
+    assert "Newly described sp." in output
+    assert "ERRORS (0)" in output
+
+
+@patch("dashboard.management.commands.convert_taxon_keys_to_col.match_col_key")
 def test_idempotent_rerun(mock_match):
     """Re-running is safe: already-resolved species keep their key.
 

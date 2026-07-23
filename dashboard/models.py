@@ -118,7 +118,12 @@ WebsiteUser = User | AnonymousUser
 class Species(models.Model):  # type: ignore
     name = models.CharField(max_length=100)  # Scientific name
     vernacular_name = models.CharField(max_length=100, blank=True)
-    gbif_taxon_key = models.IntegerField(unique=True)
+    # Legacy GBIF backbone key. Optional since the backbone froze: a species
+    # described afterwards has no such key, and the pipeline keys on
+    # gbif_col_taxon_key anyway. null=True alongside unique=True is safe -
+    # Postgres treats NULLs as distinct - and lets several COL-only species
+    # coexist. Species.clean() enforces that at least one of the two keys is set.
+    gbif_taxon_key = models.IntegerField(unique=True, null=True, blank=True)
 
     # Catalogue of Life Extended Release (COL XR) taxon key - alphanumeric
     # (e.g. "C5KM"), unlike the frozen integer gbif_taxon_key backbone key.
@@ -157,6 +162,27 @@ class Species(models.Model):  # type: ignore
 
     def __str__(self) -> str:
         return self.name
+
+    def clean(self) -> None:
+        """Require at least one taxon key.
+
+        A species with neither key can never match a GBIF download, and
+        `import_observations` refuses to run while any species lacks a COL key -
+        so such a row would silently break the instance's next import.
+
+        Raises
+        ------
+        ValidationError
+            If both gbif_taxon_key and gbif_col_taxon_key are missing. Raised as
+            a non-field error, so it appears under "__all__".
+        """
+        super().clean()
+        # Falsy rather than `is None` on purpose: a blank COL key ("") is only
+        # normalised to NULL in save(), and 0 is not a real GBIF taxon key.
+        if not self.gbif_taxon_key and not self.gbif_col_taxon_key:
+            raise ValidationError(
+                "A species needs a GBIF taxon key, a COL taxon key, or both."
+            )
 
     def save(self, *args, **kwargs) -> None:
         # Persist a blank COL taxon key as NULL rather than "". The field is
