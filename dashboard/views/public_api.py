@@ -192,6 +192,17 @@ class CustomXsdElementGBIFTaxonKey(XsdElement):
         return instance.species.gbif_taxon_key
 
 
+class CustomXsdElementCOLTaxonKey(XSDElementForceStringType):
+    """The COL XR taxon key, which drives downloads and occurrence matching.
+
+    Subclasses the string-forcing helper rather than XsdElement: COL keys are
+    alphanumeric ("C5KM"), unlike the integer legacy backbone key.
+    """
+
+    def get_value(self, instance):
+        return instance.species.gbif_col_taxon_key
+
+
 class CustomXsdElementScientificName(XSDElementForceStringType):
     def get_value(self, instance):
         return instance.species.name
@@ -256,6 +267,11 @@ class ObservationsWFSView(WFSView):
                     "species_gbif_key",
                     model_attribute="species",
                     xsd_class=CustomXsdElementGBIFTaxonKey,
+                ),
+                field(
+                    "species_col_key",
+                    model_attribute="species",
+                    xsd_class=CustomXsdElementCOLTaxonKey,
                 ),
                 field(
                     "species_scientific_name",

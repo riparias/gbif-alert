@@ -187,6 +187,60 @@ def test_wfs_capabilities_title_falls_back_without_site_name(client, settings):
     assert "GBIF Alert - observations" in body
 
 
+def test_wfs_exposes_the_col_taxon_key(db, client):
+    """External consumers need an identifier for COL-only observations too.
+
+    Without this element, an observation of a species with no legacy key
+    carries no taxon identifier at all.
+    """
+    base_url = reverse("dashboard:public-api:wfs-observations")
+    response = client.get(
+        f"{base_url}?SERVICE=WFS&REQUEST=DescribeFeatureType&VERSION=2.0.0&TYPENAMES=app:observation"
+    )
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "species_col_key" in body
+    # COL keys are alphanumeric ("C5KM"), so the element must be string-typed.
+    # django-gisserver renders element types without an "xsd:" prefix, as
+    # confirmed by the pre-existing species_scientific_name element (also
+    # string-typed via XSDElementForceStringType):
+    #   <element name="species_scientific_name" type="string" minOccurs="0" />
+    assert 'name="species_col_key" type="string"' in body
+
+
+def test_wfs_getfeature_exposes_col_key_for_col_only_species(public_api_data, client):
+    """A GetFeature request surfaces species_col_key for a COL-only species.
+
+    This is the behaviour that actually matters to consumers: an observation
+    whose species has a COL key but no legacy GBIF key must still carry a
+    usable taxon identifier in the WFS output.
+    """
+    col_only_species = Species.objects.create(
+        name="Col only species", gbif_col_taxon_key="C5KM"
+    )
+    Observation.objects.create(
+        gbif_id=999,
+        occurrence_id="999",
+        species=col_only_species,
+        date=SEPTEMBER_13_2021,
+        data_import=public_api_data["di"],
+        initial_data_import=public_api_data["di"],
+        source_dataset=public_api_data["first_dataset"],
+        location=Point(5.09513, 50.48941, srid=4326),  # Andenne
+        basis_of_record=public_api_data["basis_of_record"],
+    )
+
+    base_url = reverse("dashboard:public-api:wfs-observations")
+    response = client.get(
+        f"{base_url}?SERVICE=WFS&REQUEST=GetFeature&VERSION=2.0.0"
+        f"&TYPENAMES=app:observation&OUTPUTFORMAT=geojson"
+    )
+    assert response.status_code == 200
+    body = b"".join(response.streaming_content).decode()
+    assert '"species_gbif_key":null' in body
+    assert '"species_col_key":"C5KM"' in body
+
+
 def test_observations_json_view_data(public_api_data, client):
     """If the user is authenticated, there is data about which observations were already seen by that user"""
     client.login(username="frusciante1", password="12345")
