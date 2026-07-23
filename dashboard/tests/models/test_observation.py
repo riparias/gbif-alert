@@ -36,11 +36,16 @@ def use_static_files_storage(settings):
 # ObservationTests - per-test setup (was setUp)
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def obs_data():
     basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
-    dataset = Dataset.objects.create(name="Test dataset", gbif_dataset_key=SAMPLE_DATASET_KEY)
-    species_p_fallax = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    dataset = Dataset.objects.create(
+        name="Test dataset", gbif_dataset_key=SAMPLE_DATASET_KEY
+    )
+    species_p_fallax = Species.objects.create(
+        name="Procambarus fallax", gbif_taxon_key=8879526
+    )
     di = DataImport.objects.create(start=timezone.now())
     obs = Observation.objects.create(
         gbif_id=1,
@@ -55,18 +60,24 @@ def obs_data():
     )
     User = get_user_model()
     comment_author = User.objects.create_user(
-        username="testuser", password="12345",
-        first_name="John", last_name="Frusciante",
+        username="testuser",
+        password="12345",
+        first_name="John",
+        last_name="Frusciante",
         email="frusciante@gmail.com",
         notification_delay_days=365,
     )
     alert = Alert.objects.create(user=comment_author)
     alert.datasets.add(dataset)
     first_comment = ObservationComment.objects.create(
-        author=comment_author, observation=obs, text="This is a first comment",
+        author=comment_author,
+        observation=obs,
+        text="This is a first comment",
     )
     second_comment = ObservationComment.objects.create(
-        author=comment_author, observation=obs, text="This is a second comment",
+        author=comment_author,
+        observation=obs,
+        text="This is a second comment",
     )
     second_obs = Observation.objects.create(
         gbif_id=2,
@@ -79,7 +90,9 @@ def obs_data():
         location=Point(5.09513, 50.48941, srid=4326),
         basis_of_record=basis_of_record,
     )
-    obs2_unseen_obj = ObservationUnseen.objects.create(observation=second_obs, user=comment_author)
+    obs2_unseen_obj = ObservationUnseen.objects.create(
+        observation=second_obs, user=comment_author
+    )
     return {
         "basis_of_record": basis_of_record,
         "dataset": dataset,
@@ -102,8 +115,12 @@ def test_as_dict_observation_seen_anonymous(obs_data):
 
 def test_as_dict_observation_seen_non_anonymous(obs_data):
     """as_dict() contains observation_view data for authenticated users."""
-    assert obs_data["obs"].as_dict(for_user=obs_data["comment_author"])["seenByCurrentUser"]
-    assert not obs_data["second_obs"].as_dict(for_user=obs_data["comment_author"])["seenByCurrentUser"]
+    assert obs_data["obs"].as_dict(for_user=obs_data["comment_author"])[
+        "seenByCurrentUser"
+    ]
+    assert not obs_data["second_obs"].as_dict(for_user=obs_data["comment_author"])[
+        "seenByCurrentUser"
+    ]
 
 
 def test_already_seen_by_case_1(obs_data):
@@ -124,42 +141,62 @@ def test_already_seen_by_case_3(obs_data):
 
 def test_mark_as_seen_by_case_1(obs_data):
     """Standard case: mark a previously unseen observation by a regular user."""
-    assert ObservationUnseen.objects.filter(
-        observation=obs_data["second_obs"], user=obs_data["comment_author"]
-    ).count() == 1
+    assert (
+        ObservationUnseen.objects.filter(
+            observation=obs_data["second_obs"], user=obs_data["comment_author"]
+        ).count()
+        == 1
+    )
     r = obs_data["second_obs"].mark_as_seen_by(user=obs_data["comment_author"])
     assert r is None
-    assert ObservationUnseen.objects.filter(
-        observation=obs_data["second_obs"], user=obs_data["comment_author"]
-    ).count() == 0
+    assert (
+        ObservationUnseen.objects.filter(
+            observation=obs_data["second_obs"], user=obs_data["comment_author"]
+        ).count()
+        == 0
+    )
 
 
 def test_mark_as_seen_by_case_2(obs_data):
     """Anonymous user: nothing happens."""
-    assert ObservationUnseen.objects.filter(observation=obs_data["second_obs"]).count() == 1
+    assert (
+        ObservationUnseen.objects.filter(observation=obs_data["second_obs"]).count()
+        == 1
+    )
     r = obs_data["second_obs"].mark_as_seen_by(user=AnonymousUser())
     assert r is None
-    assert ObservationUnseen.objects.filter(observation=obs_data["second_obs"]).count() == 1
+    assert (
+        ObservationUnseen.objects.filter(observation=obs_data["second_obs"]).count()
+        == 1
+    )
 
 
 def test_mark_as_seen_by_case_3(obs_data):
     """The user has already seen this observation: nothing happens."""
-    ovs_before = list(ObservationUnseen.objects.filter(observation=obs_data["obs"]).values())
+    ovs_before = list(
+        ObservationUnseen.objects.filter(observation=obs_data["obs"]).values()
+    )
     r = obs_data["second_obs"].mark_as_seen_by(user=obs_data["comment_author"])
     assert r is None
-    ovs_after = list(ObservationUnseen.objects.filter(observation=obs_data["obs"]).values())
+    ovs_after = list(
+        ObservationUnseen.objects.filter(observation=obs_data["obs"]).values()
+    )
     assert ovs_after == ovs_before
 
 
 def test_mark_as_unseen_by_happy_path(obs_data):
     """Normal case: user has previously seen the occurrence and it matches one of their alerts."""
     with pytest.raises(ObservationUnseen.DoesNotExist):
-        ObservationUnseen.objects.get(observation=obs_data["obs"], user=obs_data["comment_author"])
+        ObservationUnseen.objects.get(
+            observation=obs_data["obs"], user=obs_data["comment_author"]
+        )
     assert obs_data["comment_author"].obs_match_alerts(obs_data["obs"])
 
     r = obs_data["obs"].mark_as_unseen_by(user=obs_data["comment_author"])
     assert r
-    ObservationUnseen.objects.get(observation=obs_data["obs"], user=obs_data["comment_author"])
+    ObservationUnseen.objects.get(
+        observation=obs_data["obs"], user=obs_data["comment_author"]
+    )
 
 
 def test_mark_as_unseen_by_failure_1(obs_data):
@@ -181,7 +218,9 @@ def test_mark_as_unseen_by_failure_2(obs_data):
 def test_mark_as_unseen_by_failure_3(obs_data):
     """User has seen the observation but it doesn't match any of their alerts."""
     with pytest.raises(ObservationUnseen.DoesNotExist):
-        ObservationUnseen.objects.get(observation=obs_data["obs"], user=obs_data["comment_author"])
+        ObservationUnseen.objects.get(
+            observation=obs_data["obs"], user=obs_data["comment_author"]
+        )
     assert obs_data["comment_author"].obs_match_alerts(obs_data["obs"])
 
     obs_data["alert"].delete()
@@ -189,16 +228,22 @@ def test_mark_as_unseen_by_failure_3(obs_data):
     r = obs_data["obs"].mark_as_unseen_by(user=obs_data["comment_author"])
     assert not r
     with pytest.raises(ObservationUnseen.DoesNotExist):
-        ObservationUnseen.objects.get(observation=obs_data["obs"], user=obs_data["comment_author"])
+        ObservationUnseen.objects.get(
+            observation=obs_data["obs"], user=obs_data["comment_author"]
+        )
 
 
 def test_date_older_than_user_delay(obs_data):
     """date_older_than_user_delay works as expected."""
     yesterday = datetime.date.today() - datetime.timedelta(days=1)
-    assert not obs_data["obs"].date_older_than_user_delay(obs_data["comment_author"], the_date=yesterday)
+    assert not obs_data["obs"].date_older_than_user_delay(
+        obs_data["comment_author"], the_date=yesterday
+    )
 
     two_years_ago = datetime.date.today() - datetime.timedelta(days=365 * 2)
-    assert obs_data["obs"].date_older_than_user_delay(obs_data["comment_author"], the_date=two_years_ago)
+    assert obs_data["obs"].date_older_than_user_delay(
+        obs_data["comment_author"], the_date=two_years_ago
+    )
 
 
 def test_get_identical_observations_unsaved(obs_data):
@@ -224,10 +269,12 @@ def test_get_identical_observations(obs_data):
 
     di_2 = DataImport.objects.create(start=timezone.now())
     unrelated_one = Observation.objects.create(
-        gbif_id=1, occurrence_id=SAMPLE_OCCURRENCE_ID[::-1],
+        gbif_id=1,
+        occurrence_id=SAMPLE_OCCURRENCE_ID[::-1],
         species=Species.objects.all()[0],
         date=datetime.date.today() - datetime.timedelta(days=1),
-        data_import=di_2, initial_data_import=di_2,
+        data_import=di_2,
+        initial_data_import=di_2,
         source_dataset=obs_data["dataset"],
         location=Point(5.09513, 50.48941, srid=4326),
         basis_of_record=obs_data["basis_of_record"],
@@ -237,10 +284,12 @@ def test_get_identical_observations(obs_data):
 
     di_3 = DataImport.objects.create(start=timezone.now())
     new_one = Observation.objects.create(
-        gbif_id=1, occurrence_id=SAMPLE_OCCURRENCE_ID,
+        gbif_id=1,
+        occurrence_id=SAMPLE_OCCURRENCE_ID,
         species=Species.objects.all()[0],
         date=datetime.date.today() - datetime.timedelta(days=1),
-        data_import=di_3, initial_data_import=di_3,
+        data_import=di_3,
+        initial_data_import=di_3,
         source_dataset=obs_data["dataset"],
         location=Point(5.09513, 50.48941, srid=4326),
         basis_of_record=obs_data["basis_of_record"],
@@ -252,10 +301,12 @@ def test_get_identical_observations(obs_data):
 
     di_4 = DataImport.objects.create(start=timezone.now())
     another_new_one = Observation.objects.create(
-        gbif_id=1, occurrence_id=SAMPLE_OCCURRENCE_ID,
+        gbif_id=1,
+        occurrence_id=SAMPLE_OCCURRENCE_ID,
         species=Species.objects.all()[0],
         date=datetime.date.today() - datetime.timedelta(days=1),
-        data_import=di_4, initial_data_import=di_4,
+        data_import=di_4,
+        initial_data_import=di_4,
         source_dataset=obs_data["dataset"],
         location=Point(5.09513, 50.48941, srid=4326),
         basis_of_record=obs_data["basis_of_record"],
@@ -271,10 +322,12 @@ def test_replaced_observations(obs_data):
 
     di_2 = DataImport.objects.create(start=timezone.now())
     new_one = Observation.objects.create(
-        gbif_id=1, occurrence_id=SAMPLE_OCCURRENCE_ID,
+        gbif_id=1,
+        occurrence_id=SAMPLE_OCCURRENCE_ID,
         species=Species.objects.all()[0],
         date=datetime.date.today() - datetime.timedelta(days=1),
-        data_import=di_2, initial_data_import=di_2,
+        data_import=di_2,
+        initial_data_import=di_2,
         source_dataset=obs_data["dataset"],
         location=Point(5.09513, 50.48941, srid=4326),
         basis_of_record=obs_data["basis_of_record"],
@@ -286,10 +339,12 @@ def test_replaced_observations(obs_data):
 
     di_3 = DataImport.objects.create(start=timezone.now())
     another_new_one = Observation.objects.create(
-        gbif_id=1, occurrence_id=SAMPLE_OCCURRENCE_ID,
+        gbif_id=1,
+        occurrence_id=SAMPLE_OCCURRENCE_ID,
         species=Species.objects.all()[0],
         date=datetime.date.today() - datetime.timedelta(days=1),
-        data_import=di_3, initial_data_import=di_3,
+        data_import=di_3,
+        initial_data_import=di_3,
         source_dataset=obs_data["dataset"],
         location=Point(5.09513, 50.48941, srid=4326),
         basis_of_record=obs_data["basis_of_record"],
@@ -327,42 +382,69 @@ def area_filter_data():
     di = DataImport.objects.create(start=timezone.now())
     area = Area.objects.create(name="Test square", mpoly=_TEST_AREA_POLYGON)
     obs_inside = Observation.objects.create(
-        gbif_id=9100, occurrence_id="afm_inside", species=species,
-        date=datetime.date.today(), data_import=di, initial_data_import=di,
-        source_dataset=dataset, location=Point(4.35, 50.85, srid=4326),
+        gbif_id=9100,
+        occurrence_id="afm_inside",
+        species=species,
+        date=datetime.date.today(),
+        data_import=di,
+        initial_data_import=di,
+        source_dataset=dataset,
+        location=Point(4.35, 50.85, srid=4326),
         basis_of_record=basis_of_record,
     )
     obs_near = Observation.objects.create(
-        gbif_id=9101, occurrence_id="afm_near", species=species,
-        date=datetime.date.today(), data_import=di, initial_data_import=di,
-        source_dataset=dataset, location=Point(4.18, 50.85, srid=4326),
+        gbif_id=9101,
+        occurrence_id="afm_near",
+        species=species,
+        date=datetime.date.today(),
+        data_import=di,
+        initial_data_import=di,
+        source_dataset=dataset,
+        location=Point(4.18, 50.85, srid=4326),
         basis_of_record=basis_of_record,
     )
     obs_far = Observation.objects.create(
-        gbif_id=9102, occurrence_id="afm_far", species=species,
-        date=datetime.date.today(), data_import=di, initial_data_import=di,
-        source_dataset=dataset, location=Point(3.50, 50.85, srid=4326),
+        gbif_id=9102,
+        occurrence_id="afm_far",
+        species=species,
+        date=datetime.date.today(),
+        data_import=di,
+        initial_data_import=di,
+        source_dataset=dataset,
+        location=Point(3.50, 50.85, srid=4326),
         basis_of_record=basis_of_record,
     )
     return {
-        "species": species, "area": area,
-        "obs_inside": obs_inside, "obs_near": obs_near, "obs_far": obs_far,
+        "species": species,
+        "area": area,
+        "obs_inside": obs_inside,
+        "obs_near": obs_near,
+        "obs_far": obs_far,
     }
 
 
 def _filter_obs(species, area, mode, distance_km=None):
     return set(
         Observation.objects.filtered_from_my_params(
-            species_ids=[species.pk], datasets_ids=[], basis_of_record_ids=[],
-            start_date=None, end_date=None, areas_ids=[area.pk],
-            status_for_user=None, initial_data_import_ids=[], user=None,
-            area_filter_mode=mode, approaching_distance_km=distance_km,
+            species_ids=[species.pk],
+            datasets_ids=[],
+            basis_of_record_ids=[],
+            start_date=None,
+            end_date=None,
+            areas_ids=[area.pk],
+            status_for_user=None,
+            initial_data_import_ids=[],
+            user=None,
+            area_filter_mode=mode,
+            approaching_distance_km=distance_km,
         ).values_list("pk", flat=True)
     )
 
 
 def test_inside_mode_returns_only_observation_inside_polygon(area_filter_data):
-    result = _filter_obs(area_filter_data["species"], area_filter_data["area"], "inside")
+    result = _filter_obs(
+        area_filter_data["species"], area_filter_data["area"], "inside"
+    )
     assert area_filter_data["obs_inside"].pk in result
     assert area_filter_data["obs_near"].pk not in result
     assert area_filter_data["obs_far"].pk not in result
@@ -370,14 +452,21 @@ def test_inside_mode_returns_only_observation_inside_polygon(area_filter_data):
 
 def test_approaching_mode_excludes_inside_includes_nearby(area_filter_data):
     """10 km buffer: obs_near (~8.4 km) is included; obs_inside is excluded."""
-    result = _filter_obs(area_filter_data["species"], area_filter_data["area"], "approaching", distance_km=10.0)
+    result = _filter_obs(
+        area_filter_data["species"],
+        area_filter_data["area"],
+        "approaching",
+        distance_km=10.0,
+    )
     assert area_filter_data["obs_inside"].pk not in result
     assert area_filter_data["obs_near"].pk in result
     assert area_filter_data["obs_far"].pk not in result
 
 
 def test_both_mode_includes_inside_and_nearby(area_filter_data):
-    result = _filter_obs(area_filter_data["species"], area_filter_data["area"], "both", distance_km=10.0)
+    result = _filter_obs(
+        area_filter_data["species"], area_filter_data["area"], "both", distance_km=10.0
+    )
     assert area_filter_data["obs_inside"].pk in result
     assert area_filter_data["obs_near"].pk in result
     assert area_filter_data["obs_far"].pk not in result
@@ -385,7 +474,12 @@ def test_both_mode_includes_inside_and_nearby(area_filter_data):
 
 def test_approaching_mode_small_buffer_excludes_everything(area_filter_data):
     """1 km buffer: obs_near at ~8.4 km is too far away."""
-    result = _filter_obs(area_filter_data["species"], area_filter_data["area"], "approaching", distance_km=1.0)
+    result = _filter_obs(
+        area_filter_data["species"],
+        area_filter_data["area"],
+        "approaching",
+        distance_km=1.0,
+    )
     assert area_filter_data["obs_inside"].pk not in result
     assert area_filter_data["obs_near"].pk not in result
     assert area_filter_data["obs_far"].pk not in result
@@ -393,7 +487,12 @@ def test_approaching_mode_small_buffer_excludes_everything(area_filter_data):
 
 def test_inside_mode_is_default_when_no_distance_given(area_filter_data):
     """When mode is 'approaching' but no distance_km, falls back to inside."""
-    result = _filter_obs(area_filter_data["species"], area_filter_data["area"], "approaching", distance_km=None)
+    result = _filter_obs(
+        area_filter_data["species"],
+        area_filter_data["area"],
+        "approaching",
+        distance_km=None,
+    )
     assert area_filter_data["obs_inside"].pk in result
     assert area_filter_data["obs_near"].pk not in result
 
@@ -402,11 +501,15 @@ def test_inside_mode_is_default_when_no_distance_given(area_filter_data):
 # CreateUnseenObservationsAreaFilterModeTests
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def unseen_afm_data():
     User = get_user_model()
     user = User.objects.create_user(
-        username="afm_user", password="pass", email="afm@test.com", notification_delay_days=365,
+        username="afm_user",
+        password="pass",
+        email="afm@test.com",
+        notification_delay_days=365,
     )
     basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBS_AFM2")
     species = Species.objects.create(name="Testus unseenus", gbif_taxon_key=9999002)
@@ -417,34 +520,56 @@ def unseen_afm_data():
     di = DataImport.objects.create(start=timezone.now())
     area = Area.objects.create(name="Unseen test square", mpoly=_TEST_AREA_POLYGON)
     obs_inside = Observation.objects.create(
-        gbif_id=9200, occurrence_id="cu_inside", species=species,
-        date=datetime.date.today(), data_import=di, initial_data_import=di,
-        source_dataset=dataset, location=Point(4.35, 50.85, srid=4326),
+        gbif_id=9200,
+        occurrence_id="cu_inside",
+        species=species,
+        date=datetime.date.today(),
+        data_import=di,
+        initial_data_import=di,
+        source_dataset=dataset,
+        location=Point(4.35, 50.85, srid=4326),
         basis_of_record=basis_of_record,
     )
     obs_near = Observation.objects.create(
-        gbif_id=9201, occurrence_id="cu_near", species=species,
-        date=datetime.date.today(), data_import=di, initial_data_import=di,
-        source_dataset=dataset, location=Point(4.18, 50.85, srid=4326),
+        gbif_id=9201,
+        occurrence_id="cu_near",
+        species=species,
+        date=datetime.date.today(),
+        data_import=di,
+        initial_data_import=di,
+        source_dataset=dataset,
+        location=Point(4.18, 50.85, srid=4326),
         basis_of_record=basis_of_record,
     )
     obs_far = Observation.objects.create(
-        gbif_id=9202, occurrence_id="cu_far", species=species,
-        date=datetime.date.today(), data_import=di, initial_data_import=di,
-        source_dataset=dataset, location=Point(3.50, 50.85, srid=4326),
+        gbif_id=9202,
+        occurrence_id="cu_far",
+        species=species,
+        date=datetime.date.today(),
+        data_import=di,
+        initial_data_import=di,
+        source_dataset=dataset,
+        location=Point(3.50, 50.85, srid=4326),
         basis_of_record=basis_of_record,
     )
     return {
-        "user": user, "species": species, "area": area,
-        "obs_inside": obs_inside, "obs_near": obs_near, "obs_far": obs_far,
+        "user": user,
+        "species": species,
+        "area": area,
+        "obs_inside": obs_inside,
+        "obs_near": obs_near,
+        "obs_far": obs_far,
     }
 
 
 def _make_unseen_alert(user, species, area, mode, distance_km=None):
     import uuid
+
     alert = Alert.objects.create(
-        user=user, name=f"alert_{uuid.uuid4().hex[:8]}",
-        area_filter_mode=mode, approaching_distance_km=distance_km,
+        user=user,
+        name=f"alert_{uuid.uuid4().hex[:8]}",
+        area_filter_mode=mode,
+        approaching_distance_km=distance_km,
     )
     alert.species.add(species)
     alert.areas.add(area)
@@ -452,41 +577,80 @@ def _make_unseen_alert(user, species, area, mode, distance_km=None):
 
 
 def test_inside_alert_marks_only_inside_observation_as_unseen(unseen_afm_data):
-    _make_unseen_alert(unseen_afm_data["user"], unseen_afm_data["species"], unseen_afm_data["area"], "inside")
-    create_unseen_observations(
-        Observation.objects.filter(pk__in=[
-            unseen_afm_data["obs_inside"].pk,
-            unseen_afm_data["obs_near"].pk,
-            unseen_afm_data["obs_far"].pk,
-        ])
+    _make_unseen_alert(
+        unseen_afm_data["user"],
+        unseen_afm_data["species"],
+        unseen_afm_data["area"],
+        "inside",
     )
-    unseen = set(ObservationUnseen.objects.filter(user=unseen_afm_data["user"]).values_list("observation_id", flat=True))
+    create_unseen_observations(
+        Observation.objects.filter(
+            pk__in=[
+                unseen_afm_data["obs_inside"].pk,
+                unseen_afm_data["obs_near"].pk,
+                unseen_afm_data["obs_far"].pk,
+            ]
+        )
+    )
+    unseen = set(
+        ObservationUnseen.objects.filter(user=unseen_afm_data["user"]).values_list(
+            "observation_id", flat=True
+        )
+    )
     assert unseen_afm_data["obs_inside"].pk in unseen
     assert unseen_afm_data["obs_near"].pk not in unseen
     assert unseen_afm_data["obs_far"].pk not in unseen
 
 
 def test_approaching_alert_marks_only_near_observation_as_unseen(unseen_afm_data):
-    _make_unseen_alert(unseen_afm_data["user"], unseen_afm_data["species"], unseen_afm_data["area"], "approaching", distance_km=10.0)
-    create_unseen_observations(
-        Observation.objects.filter(pk__in=[
-            unseen_afm_data["obs_inside"].pk, unseen_afm_data["obs_near"].pk, unseen_afm_data["obs_far"].pk,
-        ])
+    _make_unseen_alert(
+        unseen_afm_data["user"],
+        unseen_afm_data["species"],
+        unseen_afm_data["area"],
+        "approaching",
+        distance_km=10.0,
     )
-    unseen = set(ObservationUnseen.objects.filter(user=unseen_afm_data["user"]).values_list("observation_id", flat=True))
+    create_unseen_observations(
+        Observation.objects.filter(
+            pk__in=[
+                unseen_afm_data["obs_inside"].pk,
+                unseen_afm_data["obs_near"].pk,
+                unseen_afm_data["obs_far"].pk,
+            ]
+        )
+    )
+    unseen = set(
+        ObservationUnseen.objects.filter(user=unseen_afm_data["user"]).values_list(
+            "observation_id", flat=True
+        )
+    )
     assert unseen_afm_data["obs_inside"].pk not in unseen
     assert unseen_afm_data["obs_near"].pk in unseen
     assert unseen_afm_data["obs_far"].pk not in unseen
 
 
 def test_both_alert_marks_inside_and_near_as_unseen(unseen_afm_data):
-    _make_unseen_alert(unseen_afm_data["user"], unseen_afm_data["species"], unseen_afm_data["area"], "both", distance_km=10.0)
-    create_unseen_observations(
-        Observation.objects.filter(pk__in=[
-            unseen_afm_data["obs_inside"].pk, unseen_afm_data["obs_near"].pk, unseen_afm_data["obs_far"].pk,
-        ])
+    _make_unseen_alert(
+        unseen_afm_data["user"],
+        unseen_afm_data["species"],
+        unseen_afm_data["area"],
+        "both",
+        distance_km=10.0,
     )
-    unseen = set(ObservationUnseen.objects.filter(user=unseen_afm_data["user"]).values_list("observation_id", flat=True))
+    create_unseen_observations(
+        Observation.objects.filter(
+            pk__in=[
+                unseen_afm_data["obs_inside"].pk,
+                unseen_afm_data["obs_near"].pk,
+                unseen_afm_data["obs_far"].pk,
+            ]
+        )
+    )
+    unseen = set(
+        ObservationUnseen.objects.filter(user=unseen_afm_data["user"]).values_list(
+            "observation_id", flat=True
+        )
+    )
     assert unseen_afm_data["obs_inside"].pk in unseen
     assert unseen_afm_data["obs_near"].pk in unseen
     assert unseen_afm_data["obs_far"].pk not in unseen
@@ -494,14 +658,33 @@ def test_both_alert_marks_inside_and_near_as_unseen(unseen_afm_data):
 
 def test_two_alerts_different_modes_both_handled(unseen_afm_data):
     """User with one inside alert and one approaching alert: both obs get marked."""
-    _make_unseen_alert(unseen_afm_data["user"], unseen_afm_data["species"], unseen_afm_data["area"], "inside")
-    _make_unseen_alert(unseen_afm_data["user"], unseen_afm_data["species"], unseen_afm_data["area"], "approaching", distance_km=10.0)
-    create_unseen_observations(
-        Observation.objects.filter(pk__in=[
-            unseen_afm_data["obs_inside"].pk, unseen_afm_data["obs_near"].pk, unseen_afm_data["obs_far"].pk,
-        ])
+    _make_unseen_alert(
+        unseen_afm_data["user"],
+        unseen_afm_data["species"],
+        unseen_afm_data["area"],
+        "inside",
     )
-    unseen = set(ObservationUnseen.objects.filter(user=unseen_afm_data["user"]).values_list("observation_id", flat=True))
+    _make_unseen_alert(
+        unseen_afm_data["user"],
+        unseen_afm_data["species"],
+        unseen_afm_data["area"],
+        "approaching",
+        distance_km=10.0,
+    )
+    create_unseen_observations(
+        Observation.objects.filter(
+            pk__in=[
+                unseen_afm_data["obs_inside"].pk,
+                unseen_afm_data["obs_near"].pk,
+                unseen_afm_data["obs_far"].pk,
+            ]
+        )
+    )
+    unseen = set(
+        ObservationUnseen.objects.filter(user=unseen_afm_data["user"]).values_list(
+            "observation_id", flat=True
+        )
+    )
     assert unseen_afm_data["obs_inside"].pk in unseen
     assert unseen_afm_data["obs_near"].pk in unseen
     assert unseen_afm_data["obs_far"].pk not in unseen

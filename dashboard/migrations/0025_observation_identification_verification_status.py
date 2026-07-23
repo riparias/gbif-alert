@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dashboard', '0024_finalize_basis_of_record_fk'),
+        ("dashboard", "0024_finalize_basis_of_record_fk"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='observation',
-            name='identification_verification_status',
+            model_name="observation",
+            name="identification_verification_status",
             field=models.CharField(blank=True, max_length=255),
         ),
     ]

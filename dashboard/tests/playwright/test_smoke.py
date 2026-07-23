@@ -14,7 +14,9 @@ def test_homepage_loads(page: Page, live_server):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_alert_detail_page_has_sidebar_layout(page: Page, live_server, django_user_model):
+def test_alert_detail_page_has_sidebar_layout(
+    page: Page, live_server, django_user_model
+):
     """Alert detail page renders a two-column layout with a dark sidebar on the left."""
     from dashboard.models import Alert
 
@@ -30,9 +32,16 @@ def test_alert_detail_page_has_sidebar_layout(page: Page, live_server, django_us
     django_client.force_login(user)
     session_cookie = django_client.cookies["sessionid"]
     domain = live_server.url.split("://")[1].split(":")[0]
-    page.context.add_cookies([
-        {"name": "sessionid", "value": session_cookie.value, "domain": domain, "path": "/"},
-    ])
+    page.context.add_cookies(
+        [
+            {
+                "name": "sessionid",
+                "value": session_cookie.value,
+                "domain": domain,
+                "path": "/",
+            },
+        ]
+    )
 
     page.goto(f"{live_server.url}/alert/{alert.id}/")
 

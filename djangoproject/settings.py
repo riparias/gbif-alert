@@ -58,7 +58,9 @@ if _geos := os.environ.get("GEOS_LIBRARY_PATH"):
 #      sending `Host: localhost` against a reverse-proxied deploy still
 #      get filtered by the proxy's own host validation.
 ALLOWED_HOSTS = [
-    h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()
+    h.strip()
+    for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
+    if h.strip()
 ]
 for _loopback in ("localhost", "127.0.0.1"):
     if _loopback not in ALLOWED_HOSTS:
@@ -468,7 +470,11 @@ DJANGO_VITE = {
         # dev_mode in conftest.py, so a stray True can't break Playwright.)
         "dev_mode": os.environ.get("DJANGO_VITE_DEV_MODE", "False").lower() == "true",
         "dev_server_port": 5274,
-        "manifest_path": BASE_DIR / "static_global" / "vite" / ".vite" / "manifest.json",
+        "manifest_path": BASE_DIR
+        / "static_global"
+        / "vite"
+        / ".vite"
+        / "manifest.json",
         # Vite outputs to static_global/vite/, so assets are served at /static/vite/...
         # This prefix is used both in dev (to construct the dev server URL matching
         # vite.config.ts base: "/static/vite/") and in production (prepended before
@@ -721,9 +727,7 @@ SECURE_HSTS_SECONDS = int(
 SECURE_HSTS_INCLUDE_SUBDOMAINS = (
     os.environ.get("SECURE_HSTS_INCLUDE_SUBDOMAINS", "False").lower() == "true"
 )
-SECURE_HSTS_PRELOAD = (
-    os.environ.get("SECURE_HSTS_PRELOAD", "False").lower() == "true"
-)
+SECURE_HSTS_PRELOAD = os.environ.get("SECURE_HSTS_PRELOAD", "False").lower() == "true"
 
 # ---------------------------------------------------------------------------
 # Validation.

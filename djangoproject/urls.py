@@ -67,5 +67,9 @@ urlpatterns = [
     # The negative lookahead excludes Django-owned prefixes so that paths like /admin
     # (without trailing slash) still get redirected correctly by APPEND_SLASH middleware
     # rather than being swallowed by this rule. MUST be last.
-    re_path(r"^(?!admin|api/|accounts/|i18n/|markdownx/|django-rq/|healthz).*$", spa_shell, name="spa-shell"),
+    re_path(
+        r"^(?!admin|api/|accounts/|i18n/|markdownx/|django-rq/|healthz).*$",
+        spa_shell,
+        name="spa-shell",
+    ),
 ]

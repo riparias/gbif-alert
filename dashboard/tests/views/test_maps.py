@@ -28,33 +28,53 @@ pytestmark = pytest.mark.django_db
 def maps_data():
     """Shared data for all map tests (replaces MapsTestDataMixin.setUpTestData)."""
     basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
-    first_species = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
-    second_species = Species.objects.create(name="Orconectes virilis", gbif_taxon_key=2227064)
+    first_species = Species.objects.create(
+        name="Procambarus fallax", gbif_taxon_key=8879526
+    )
+    second_species = Species.objects.create(
+        name="Orconectes virilis", gbif_taxon_key=2227064
+    )
     di = DataImport.objects.create(start=timezone.now())
     first_dataset = Dataset.objects.create(
         name="Test dataset", gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
     )
     second_dataset = Dataset.objects.create(
-        name="Test dataset #2", gbif_dataset_key="aaa7b334-ce0d-4e88-aaae-2e0c138d049f",
+        name="Test dataset #2",
+        gbif_dataset_key="aaa7b334-ce0d-4e88-aaae-2e0c138d049f",
     )
     obs = Observation.objects.create(
-        gbif_id=1, occurrence_id="1", species=first_species,
-        date=datetime.date(2020, 1, 1), data_import=di, initial_data_import=di,
-        source_dataset=first_dataset, location=Point(5.09513, 50.48941, srid=4326),
+        gbif_id=1,
+        occurrence_id="1",
+        species=first_species,
+        date=datetime.date(2020, 1, 1),
+        data_import=di,
+        initial_data_import=di,
+        source_dataset=first_dataset,
+        location=Point(5.09513, 50.48941, srid=4326),
         basis_of_record=basis_of_record,
     )
     Observation.objects.create(
-        gbif_id=2, occurrence_id="2", species=second_species,
-        date=datetime.date.today(), data_import=di, initial_data_import=di,
-        source_dataset=second_dataset, location=Point(4.35978, 50.64728, srid=4326),
+        gbif_id=2,
+        occurrence_id="2",
+        species=second_species,
+        date=datetime.date.today(),
+        data_import=di,
+        initial_data_import=di,
+        source_dataset=second_dataset,
+        location=Point(4.35978, 50.64728, srid=4326),
         basis_of_record=basis_of_record,
     )
     public_area_andenne = Area.objects.create(
         name="Public polygon - Andenne",
         mpoly=MultiPolygon(
             Polygon(
-                ((4.7866, 50.5200), (5.6271, 50.6839), (5.6930, 50.5724),
-                 (4.8306, 50.4116), (4.7866, 50.5200)),
+                (
+                    (4.7866, 50.5200),
+                    (5.6271, 50.6839),
+                    (5.6930, 50.5724),
+                    (4.8306, 50.4116),
+                    (4.7866, 50.5200),
+                ),
                 srid=4326,
             ),
             srid=4326,
@@ -64,8 +84,13 @@ def maps_data():
         name="Public polygon - Lillois",
         mpoly=MultiPolygon(
             Polygon(
-                ((4.3164, 50.6658), (4.4025, 50.6658), (4.4025, 50.6164),
-                 (4.3164, 50.6164), (4.3164, 50.6658)),
+                (
+                    (4.3164, 50.6658),
+                    (4.4025, 50.6658),
+                    (4.4025, 50.6164),
+                    (4.3164, 50.6164),
+                    (4.3164, 50.6658),
+                ),
                 srid=4326,
             ),
             srid=4326,
@@ -73,8 +98,11 @@ def maps_data():
     )
     User = get_user_model()
     user = User.objects.create_user(
-        username="frusciante", password="12345",
-        first_name="John", last_name="Frusciante", email="frusciante@gmail.com",
+        username="frusciante",
+        password="12345",
+        first_name="John",
+        last_name="Frusciante",
+        email="frusciante@gmail.com",
     )
     ObservationUnseen.objects.create(observation=obs, user=user)
     create_or_refresh_all_materialized_views()
@@ -95,6 +123,7 @@ def maps_data():
 # ---------------------------------------------------------------------------
 # MinMaxPerHexagonTests
 # ---------------------------------------------------------------------------
+
 
 def test_min_max_status_area_combinations(maps_data, client):
     """Regression test for https://github.com/riparias/gbif-alert/issues/283"""
@@ -1020,8 +1049,7 @@ def test_tiles_vernacular_name_in_active_language(maps_data, client):
         response = client.get(tile_url)
         decoded_tile = mapbox_vector_tile.decode(response.content)
         features_by_gbif_id = {
-            f["properties"]["gbif_id"]: f
-            for f in decoded_tile["default"]["features"]
+            f["properties"]["gbif_id"]: f for f in decoded_tile["default"]["features"]
         }
         assert (
             features_by_gbif_id["1"]["properties"]["vernacular_name"] == expected_name
@@ -1072,7 +1100,9 @@ def test_aggregated_tiles_features_type(maps_data, client):
     decoded_tile = mapbox_vector_tile.decode(response.content)
     for feature in decoded_tile["default"]["features"]:
         assert feature["geometry"]["type"] == "Polygon"
-        assert len(feature["geometry"]["coordinates"][0]) == 7  # 7 coordinates pair = 6 sides
+        assert (
+            len(feature["geometry"]["coordinates"][0]) == 7
+        )  # 7 coordinates pair = 6 sides
 
 
 def test_aggregated_tiles_null_filters_ignored(maps_data, client):
@@ -1090,7 +1120,9 @@ def test_aggregated_tiles_null_filters_ignored(maps_data, client):
 
     assert len(decoded_tile["default"]["features"]) == 1  # it has a single feature
     the_feature = decoded_tile["default"]["features"][0]
-    assert the_feature["properties"]["count"] == 2  # It has a "count" property with the value 2
+    assert (
+        the_feature["properties"]["count"] == 2
+    )  # It has a "count" property with the value 2
 
 
 def test_aggregated_tiles_area_filter(maps_data, client):
@@ -1189,7 +1221,9 @@ def test_aggregated_tiles_status_filter_case1(maps_data, client):
     decoded_tile = mapbox_vector_tile.decode(response.content)
     assert len(decoded_tile["default"]["features"]) == 1  # it has a single feature
     the_feature = decoded_tile["default"]["features"][0]
-    assert the_feature["properties"]["count"] == 1  # Only one observation this time, due to the filter
+    assert (
+        the_feature["properties"]["count"] == 1
+    )  # Only one observation this time, due to the filter
 
 
 def test_aggregated_tiles_status_filter_case2(maps_data, client):
@@ -1205,7 +1239,9 @@ def test_aggregated_tiles_status_filter_case2(maps_data, client):
 
     assert len(decoded_tile["default"]["features"]) == 1  # it has a single feature
     the_feature = decoded_tile["default"]["features"][0]
-    assert the_feature["properties"]["count"] == 1  # Only one observation this time (the one in Andenne), due to the filter
+    assert (
+        the_feature["properties"]["count"] == 1
+    )  # Only one observation this time (the one in Andenne), due to the filter
 
     # Case 2: zoom a bit to make sure it's the one in Andenne
 
@@ -1246,7 +1282,9 @@ def test_aggregated_tiles_species_filter(maps_data, client):
     decoded_tile = mapbox_vector_tile.decode(response.content)
     assert len(decoded_tile["default"]["features"]) == 1  # it has a single feature
     the_feature = decoded_tile["default"]["features"][0]
-    assert the_feature["properties"]["count"] == 1  # Only one observation this time, due to the filter
+    assert (
+        the_feature["properties"]["count"] == 1
+    )  # Only one observation this time, due to the filter
 
     # Case 2: A tile that covers an important part of Wallonia, including Andenne and Braine. Should have a single
     # polygon this time
@@ -1314,7 +1352,9 @@ def test_aggregated_tiles_dataset_filter(maps_data, client):
     decoded_tile = mapbox_vector_tile.decode(response.content)
     assert len(decoded_tile["default"]["features"]) == 1  # it has a single feature
     the_feature = decoded_tile["default"]["features"][0]
-    assert the_feature["properties"]["count"] == 1  # Only one observation this time, due to the filter
+    assert (
+        the_feature["properties"]["count"] == 1
+    )  # Only one observation this time, due to the filter
 
     # Case 2: A tile that covers an important part of Wallonia, including Andenne and Braine. Should have a single
     # polygon this time
@@ -1503,7 +1543,9 @@ def test_aggregated_tiles_species_multiple_species_filters(maps_data, client):
     decoded_tile = mapbox_vector_tile.decode(response.content)
     assert len(decoded_tile["default"]["features"]) == 1  # it has a single feature
     the_feature = decoded_tile["default"]["features"][0]
-    assert the_feature["properties"]["count"] == 4  # 3 in Lillois (tetraodon, 1 in Andenne)
+    assert (
+        the_feature["properties"]["count"] == 4
+    )  # 3 in Lillois (tetraodon, 1 in Andenne)
 
     # Case 2: A tile that covers an important part of Wallonia, including Andenne and Lillois. Should have two polygons
     base_url = reverse(
@@ -1557,9 +1599,13 @@ def test_aggregated_tiles_basic_data_in_hexagons(maps_data, client):
 
     assert len(decoded_tile["default"]["features"]) == 1  # it has a single feature
     the_feature = decoded_tile["default"]["features"][0]
-    assert the_feature["properties"]["count"] == 2  # It has a "count" property with the value 2
+    assert (
+        the_feature["properties"]["count"] == 2
+    )  # It has a "count" property with the value 2
     assert the_feature["geometry"]["type"] == "Polygon"  # the feature is a polygon
-    assert len(the_feature["geometry"]["coordinates"][0]) == 7  # 7 coordinates pair = 6 sides
+    assert (
+        len(the_feature["geometry"]["coordinates"][0]) == 7
+    )  # 7 coordinates pair = 6 sides
 
     # Another very large tile, over Greenland. Should be empty
     response = client.get(

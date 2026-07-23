@@ -68,7 +68,7 @@ def clear_stale_import_maintenance() -> None:
                 )
         else:
             cache.delete(MAINTENANCE_IMPORT_MARKER)
-    except Exception as exc:  # noqa: BLE001 - boot must not be blocked by a cache hiccup
-        logger.warning(
-            "clear_stale_import_maintenance skipped due to error: %r", exc
-        )
+    except (
+        Exception
+    ) as exc:  # noqa: BLE001 - boot must not be blocked by a cache hiccup
+        logger.warning("clear_stale_import_maintenance skipped due to error: %r", exc)

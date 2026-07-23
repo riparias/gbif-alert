@@ -121,10 +121,23 @@ def test_resolve_gbif_image_no_results_returns_none():
 def test_resolve_species_image_falls_back_to_gbif():
     with requests_mock_module.Mocker() as m:
         m.get(WIKI_SUMMARY, status_code=404)
-        m.get(GBIF_SEARCH, json={
-            "results": [{"key": 1, "media": [
-                {"type": "StillImage", "identifier": "https://example.org/f.jpg",
-                 "license": "CC0"}]}]})
+        m.get(
+            GBIF_SEARCH,
+            json={
+                "results": [
+                    {
+                        "key": 1,
+                        "media": [
+                            {
+                                "type": "StillImage",
+                                "identifier": "https://example.org/f.jpg",
+                                "license": "CC0",
+                            }
+                        ],
+                    }
+                ]
+            },
+        )
         result = resolve_species_image("Vulpes vulpes", 5219243)
     assert result is not None
     assert result.source_type == "gbif"

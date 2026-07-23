@@ -14,8 +14,11 @@ class _Form:
 
 @pytest.mark.django_db
 def test_admin_manual_url_sets_provenance_manual():
-    sp = Species(name="Testus specius", gbif_taxon_key=999020,
-                 image_url="https://example.org/x.jpg")
+    sp = Species(
+        name="Testus specius",
+        gbif_taxon_key=999020,
+        image_url="https://example.org/x.jpg",
+    )
     admin = SpeciesAdmin(Species, AdminSite())
     admin.save_model(request=None, obj=sp, form=_Form(["image_url"]), change=False)
     sp.refresh_from_db()
@@ -24,8 +27,12 @@ def test_admin_manual_url_sets_provenance_manual():
 
 @pytest.mark.django_db
 def test_admin_clearing_url_resets_provenance():
-    sp = Species(name="Testus specius", gbif_taxon_key=999021,
-                 image_url="", image_source_type="wikipedia")
+    sp = Species(
+        name="Testus specius",
+        gbif_taxon_key=999021,
+        image_url="",
+        image_source_type="wikipedia",
+    )
     admin = SpeciesAdmin(Species, AdminSite())
     admin.save_model(request=None, obj=sp, form=_Form(["image_url"]), change=True)
     sp.refresh_from_db()

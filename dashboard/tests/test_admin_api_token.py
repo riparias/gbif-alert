@@ -28,8 +28,6 @@ def test_api_token_admin_changelist_and_revoke(client, django_user_model):
     # Creating is forbidden.
     assert client.get("/admin/dashboard/apitoken/add/").status_code == 403
     # Revoking (deleting) works.
-    resp = client.post(
-        f"/admin/dashboard/apitoken/{token.pk}/delete/", {"post": "yes"}
-    )
+    resp = client.post(f"/admin/dashboard/apitoken/{token.pk}/delete/", {"post": "yes"})
     assert resp.status_code == 302
     assert not ApiToken.objects.filter(pk=token.pk).exists()

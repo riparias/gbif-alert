@@ -170,7 +170,9 @@ def filters_from_request(
     )
     verified_filter = extract_str_request(request, "verifiedFilter")
     raw_mode = extract_str_request(request, "areaFilterMode") or "inside"
-    area_filter_mode = raw_mode if raw_mode in ("inside", "approaching", "both") else "inside"
+    area_filter_mode = (
+        raw_mode if raw_mode in ("inside", "approaching", "both") else "inside"
+    )
     raw_distance = extract_str_request(request, "approachingDistanceKm")
     approaching_distance_km: float | None = None
     if raw_distance:

@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dashboard', '0029_observation_location_geography_index'),
+        ("dashboard", "0029_observation_location_geography_index"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='alert',
-            name='approaching_distance_km',
-            field=models.FloatField(blank=True, help_text="Required when area_filter_mode is 'approaching' or 'both'. Distance in km (max 50).", null=True),
+            model_name="alert",
+            name="approaching_distance_km",
+            field=models.FloatField(
+                blank=True,
+                help_text="Required when area_filter_mode is 'approaching' or 'both'. Distance in km (max 50).",
+                null=True,
+            ),
         ),
     ]

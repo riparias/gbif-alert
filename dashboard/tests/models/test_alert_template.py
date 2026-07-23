@@ -19,7 +19,8 @@ def promote_data():
         ),
     )
     alert = Alert.objects.create(
-        name="Amphibians near X", user=operator,
+        name="Amphibians near X",
+        user=operator,
         email_notifications_frequency="W",
         area_filter_mode=Alert.AREA_FILTER_APPROACHING,
         approaching_distance_km=50,
@@ -51,14 +52,20 @@ def test_create_from_alert_snapshots_scalar_and_m2m(promote_data):
 @pytest.mark.django_db
 def test_template_is_not_an_alert_row(promote_data):
     """Templates must never appear in Alert.objects (notification isolation)."""
-    AlertTemplate.create_from_alert(promote_data["alert"], created_by=promote_data["operator"])
+    AlertTemplate.create_from_alert(
+        promote_data["alert"], created_by=promote_data["operator"]
+    )
     assert Alert.objects.count() == 1  # only the operator's own alert
 
 
 @pytest.mark.django_db
 def test_deleting_template_nulls_alert_pointer(promote_data):
-    tpl = AlertTemplate.create_from_alert(promote_data["alert"], created_by=promote_data["operator"])
-    a = Alert.objects.create(name="copy", user=promote_data["operator"], created_from_template=tpl)
+    tpl = AlertTemplate.create_from_alert(
+        promote_data["alert"], created_by=promote_data["operator"]
+    )
+    a = Alert.objects.create(
+        name="copy", user=promote_data["operator"], created_from_template=tpl
+    )
     tpl.delete()
     a.refresh_from_db()
     assert a.created_from_template is None
@@ -68,7 +75,10 @@ def test_deleting_template_nulls_alert_pointer(promote_data):
 @pytest.mark.django_db
 def test_notification_command_does_not_see_templates(promote_data):
     from django.core.management import call_command
-    AlertTemplate.create_from_alert(promote_data["alert"], created_by=promote_data["operator"])
+
+    AlertTemplate.create_from_alert(
+        promote_data["alert"], created_by=promote_data["operator"]
+    )
     # Should run without touching templates and without error.
     call_command("send_alert_notifications_email")
     # Templates are not Alerts, so the command's Alert.objects.all() cannot include them.

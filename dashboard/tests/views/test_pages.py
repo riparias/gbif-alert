@@ -11,7 +11,9 @@ from dashboard.models import Alert, Area, Dataset, Species
 
 pytestmark = pytest.mark.django_db
 
-_NAV_CONFIG_RE = re.compile(r'id="gbif-alert-nav-config"[^>]*>(.*?)</script>', re.DOTALL)
+_NAV_CONFIG_RE = re.compile(
+    r'id="gbif-alert-nav-config"[^>]*>(.*?)</script>', re.DOTALL
+)
 
 
 def _get_nav_config(response):
@@ -25,21 +27,36 @@ def _get_nav_config(response):
 def alert_pages_data():
     User = get_user_model()
     first_user = User.objects.create_user(
-        username="frusciante", password="12345",
-        first_name="John", last_name="Frusciante", email="frusciante@gmail.com",
+        username="frusciante",
+        password="12345",
+        first_name="John",
+        last_name="Frusciante",
+        email="frusciante@gmail.com",
     )
     second_user = User.objects.create_user(
-        username="other_user", password="12345",
-        first_name="Aaa", last_name="Bbb", email="otheruser@gmail.com",
+        username="other_user",
+        password="12345",
+        first_name="Aaa",
+        last_name="Bbb",
+        email="otheruser@gmail.com",
     )
-    first_species = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
-    second_species = Species.objects.create(name="Orconectes virilis", gbif_taxon_key=2227064)
+    first_species = Species.objects.create(
+        name="Procambarus fallax", gbif_taxon_key=8879526
+    )
+    second_species = Species.objects.create(
+        name="Orconectes virilis", gbif_taxon_key=2227064
+    )
     public_area_andenne = Area.objects.create(
         name="Public polygon - Andenne",
         mpoly=MultiPolygon(
             Polygon(
-                ((4.7866, 50.5200), (5.6271, 50.6839), (5.6930, 50.5724),
-                 (4.8306, 50.4116), (4.7866, 50.5200)),
+                (
+                    (4.7866, 50.5200),
+                    (5.6271, 50.6839),
+                    (5.6930, 50.5724),
+                    (4.8306, 50.4116),
+                    (4.7866, 50.5200),
+                ),
                 srid=4326,
             ),
         ),
@@ -48,22 +65,29 @@ def alert_pages_data():
         name="Test dataset", gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
     )
     alert = Alert.objects.create(
-        name="Test alert", user=first_user, email_notifications_frequency="N",
+        name="Test alert",
+        user=first_user,
+        email_notifications_frequency="N",
     )
     alert.species.add(first_species)
     alert.datasets.add(first_dataset)
     alert.areas.add(public_area_andenne)
     first_user_area = Area.objects.create(
-        name="First user polygon", owner=first_user,
+        name="First user polygon",
+        owner=first_user,
         mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
     )
     second_user_area = Area.objects.create(
-        name="Second user polygon", owner=second_user,
+        name="Second user polygon",
+        owner=second_user,
         mpoly=MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0)))),
     )
     return {
-        "first_user": first_user, "second_user": second_user,
-        "alert": alert, "first_user_area": first_user_area, "second_user_area": second_user_area,
+        "first_user": first_user,
+        "second_user": second_user,
+        "alert": alert,
+        "first_user_area": first_user_area,
+        "second_user_area": second_user_area,
     }
 
 
@@ -78,6 +102,7 @@ def nav_users():
 
 
 # --- IndexPageTests ---
+
 
 def test_index_base(client):
     """The Vue SPA shell is served at /"""
@@ -105,10 +130,14 @@ def test_spa_shell_sets_csrf_cookie_for_anonymous_user(client):
 
 # --- AlertWebPagesTests ---
 
+
 def test_user_can_access_own_alert_details(client, alert_pages_data):
     """Authenticated user gets the SPA shell for their alert detail page."""
     client.login(username="frusciante", password="12345")
-    page_url = reverse("dashboard:pages:alert-details", kwargs={"alert_id": alert_pages_data["alert"].id})
+    page_url = reverse(
+        "dashboard:pages:alert-details",
+        kwargs={"alert_id": alert_pages_data["alert"].id},
+    )
     response = client.get(page_url)
     assert response.status_code == 200
     assert "dashboard/base.html" in [t.name for t in response.templates]
@@ -116,7 +145,10 @@ def test_user_can_access_own_alert_details(client, alert_pages_data):
 
 def test_anonymous_cant_access_alert_details(client, alert_pages_data):
     """An anonymous user is redirected to sign in when trying to see alert details."""
-    page_url = reverse("dashboard:pages:alert-details", kwargs={"alert_id": alert_pages_data["alert"].id})
+    page_url = reverse(
+        "dashboard:pages:alert-details",
+        kwargs={"alert_id": alert_pages_data["alert"].id},
+    )
     response = client.get(page_url)
     assert response.status_code == 302
 
@@ -124,7 +156,10 @@ def test_anonymous_cant_access_alert_details(client, alert_pages_data):
 def test_otheruser_cant_access_alert_details(client, alert_pages_data):
     """An authenticated user cannot see another user's alert detail page."""
     client.login(username="other_user", password="12345")
-    page_url = reverse("dashboard:pages:alert-details", kwargs={"alert_id": alert_pages_data["alert"].id})
+    page_url = reverse(
+        "dashboard:pages:alert-details",
+        kwargs={"alert_id": alert_pages_data["alert"].id},
+    )
     response = client.get(page_url)
     assert response.status_code == 404
 
@@ -146,7 +181,9 @@ def test_anonymous_cant_access_alert_create(client):
 def test_user_can_access_alert_edit_page(client, alert_pages_data):
     """Authenticated user gets the SPA shell for their alert edit page."""
     client.login(username="frusciante", password="12345")
-    page_url = reverse("dashboard:pages:alert-edit", kwargs={"alert_id": alert_pages_data["alert"].id})
+    page_url = reverse(
+        "dashboard:pages:alert-edit", kwargs={"alert_id": alert_pages_data["alert"].id}
+    )
     response = client.get(page_url)
     assert response.status_code == 200
     assert "dashboard/base.html" in [t.name for t in response.templates]
@@ -155,14 +192,18 @@ def test_user_can_access_alert_edit_page(client, alert_pages_data):
 def test_otheruser_cant_access_alert_edit(client, alert_pages_data):
     """Another user cannot access alert edit page."""
     client.login(username="other_user", password="12345")
-    page_url = reverse("dashboard:pages:alert-edit", kwargs={"alert_id": alert_pages_data["alert"].id})
+    page_url = reverse(
+        "dashboard:pages:alert-edit", kwargs={"alert_id": alert_pages_data["alert"].id}
+    )
     response = client.get(page_url)
     assert response.status_code == 404
 
 
 def test_anonymous_cant_access_alert_edit(client, alert_pages_data):
     """Anonymous user is redirected when accessing alert edit page."""
-    page_url = reverse("dashboard:pages:alert-edit", kwargs={"alert_id": alert_pages_data["alert"].id})
+    page_url = reverse(
+        "dashboard:pages:alert-edit", kwargs={"alert_id": alert_pages_data["alert"].id}
+    )
     response = client.get(page_url)
     assert response.status_code == 302
 
@@ -183,6 +224,7 @@ def test_anonymous_cant_access_my_alerts(client):
 
 # --- NavConfigJsonTests ---
 
+
 def test_json_present_on_every_page(client):
     """The nav config script tag is present on every page that uses base.html."""
     for url in ["/", reverse("dashboard:pages:news")]:
@@ -195,9 +237,18 @@ def test_required_url_keys(client):
     response = client.get("/")
     config = _get_nav_config(response)
     expected_keys = {
-        "index", "news", "myAlerts", "aboutSite", "aboutData",
-        "profile", "passwordChange", "myCustomAreas",
-        "signin", "signup", "admin", "setLanguage",
+        "index",
+        "news",
+        "myAlerts",
+        "aboutSite",
+        "aboutData",
+        "profile",
+        "passwordChange",
+        "myCustomAreas",
+        "signin",
+        "signup",
+        "admin",
+        "setLanguage",
     }
     assert set(config["urls"].keys()) == expected_keys
 

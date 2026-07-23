@@ -31,7 +31,6 @@ def reverse_populate(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("dashboard", "0022_add_basis_of_record_fk_and_m2m"),
     ]

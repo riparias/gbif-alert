@@ -49,6 +49,10 @@ jobs:
         sudo apt-get install binutils libproj-dev gdal-bin gettext
     - name: Install dependencies
       run: uv sync --frozen --python ${{ matrix.python-version }}
+    - name: Check Python formatting
+      # Counterpart to "Check frontend formatting" below. Early, so a
+      # formatting slip fails in seconds rather than after the browser tests.
+      run: uv run black --check .
     - name: Show chrome version (for debugging purposes)
       run: google-chrome --version
     - name: Install frontend dependencies

@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dashboard', '0025_observation_identification_verification_status'),
+        ("dashboard", "0025_observation_identification_verification_status"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='observation',
-            name='verified',
+            model_name="observation",
+            name="verified",
             field=models.BooleanField(default=False),
         ),
     ]

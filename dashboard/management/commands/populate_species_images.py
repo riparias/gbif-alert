@@ -33,9 +33,7 @@ class Command(BaseCommand):
         refresh = options["refresh"]
 
         # Always exclude manually-curated images regardless of --refresh.
-        qs = Species.objects.exclude(
-            image_source_type=Species.ImageSourceType.MANUAL
-        )
+        qs = Species.objects.exclude(image_source_type=Species.ImageSourceType.MANUAL)
         if not refresh:
             qs = qs.filter(image_url="")
 
@@ -58,9 +56,7 @@ class Command(BaseCommand):
             # value, a transient DB error, or an unforeseen parse issue) must log
             # and continue, never abort the whole run.
             try:
-                resolved = resolve_species_image(
-                    species.name, species.gbif_taxon_key
-                )
+                resolved = resolve_species_image(species.name, species.gbif_taxon_key)
                 if resolved is None:
                     self.stdout.write(f"  no image: {species.name}")
                     continue
@@ -85,7 +81,9 @@ class Command(BaseCommand):
                     ]
                 )
                 filled += 1
-            except Exception as exc:  # noqa: BLE001 - one bad species must not abort the run
+            except (
+                Exception
+            ) as exc:  # noqa: BLE001 - one bad species must not abort the run
                 self.stderr.write(f"  skipped {species.name}: {exc}")
                 continue
 

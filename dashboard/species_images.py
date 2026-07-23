@@ -16,8 +16,7 @@ from urllib.parse import quote, unquote
 import requests
 
 USER_AGENT = (
-    "gbif-alert/2.x species-image-fetcher "
-    "(+https://github.com/riparias/gbif-alert)"
+    "gbif-alert/2.x species-image-fetcher " "(+https://github.com/riparias/gbif-alert)"
 )
 _TIMEOUT = 15
 
@@ -85,9 +84,7 @@ def resolve_wikipedia_image(scientific_name: str) -> ResolvedImage | None:
     if not image_url:
         return None
 
-    page_url = (
-        data.get("content_urls", {}).get("desktop", {}).get("page", "")
-    )
+    page_url = data.get("content_urls", {}).get("desktop", {}).get("page", "")
     attribution, license_name = _wikimedia_credit(image_url)
     return ResolvedImage(
         image_url=image_url,
@@ -160,9 +157,7 @@ def resolve_gbif_image(gbif_taxon_key: int) -> ResolvedImage | None:
                 return ResolvedImage(
                     image_url=identifier,
                     source_url=f"https://www.gbif.org/occurrence/{occ.get('key')}",
-                    attribution=media.get("rightsHolder")
-                    or media.get("creator")
-                    or "",
+                    attribution=media.get("rightsHolder") or media.get("creator") or "",
                     license=media.get("license", ""),
                     source_type="gbif",
                 )

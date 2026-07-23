@@ -23,7 +23,9 @@ def use_static_files_storage(settings):
 @pytest.fixture
 def obs_and_species():
     basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
-    species_p_fallax = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    species_p_fallax = Species.objects.create(
+        name="Procambarus fallax", gbif_taxon_key=8879526
+    )
     di = DataImport.objects.create(start=timezone.now())
     obs = Observation.objects.create(
         gbif_id=1,
@@ -70,7 +72,9 @@ def test_follows_dataset_change(obs_and_species):
     """The stable identifier changes if the observation gets linked to another dataset."""
     obs = obs_and_species["obs"]
     stable_id_before = obs.stable_id
-    obs.source_dataset = Dataset.objects.create(name="New dataset", gbif_dataset_key="newdatasetid")
+    obs.source_dataset = Dataset.objects.create(
+        name="New dataset", gbif_dataset_key="newdatasetid"
+    )
     obs.save()
     obs.refresh_from_db()
     assert obs.stable_id != stable_id_before

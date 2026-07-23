@@ -9,7 +9,13 @@ from django.urls import reverse
 from django.utils import timezone
 
 from dashboard.models import (
-    Area, BasisOfRecord, DataImport, Dataset, Observation, ObservationUnseen, Species,
+    Area,
+    BasisOfRecord,
+    DataImport,
+    Dataset,
+    Observation,
+    ObservationUnseen,
+    Species,
 )
 
 SEPTEMBER_13_2021 = datetime.datetime.strptime("2021-09-13", "%Y-%m-%d").date()
@@ -391,7 +397,9 @@ def test_observations_json_max_date_filter(public_api_data, client):
 def test_observations_json_species_filter(public_api_data, client):
     d = public_api_data
     base_url = reverse("dashboard:public-api:filtered-observations-data-page")
-    url_with_params = f"{base_url}?limit=10&page_number=1&speciesIds[]={d['second_species'].pk}"
+    url_with_params = (
+        f"{base_url}?limit=10&page_number=1&speciesIds[]={d['second_species'].pk}"
+    )
     response = client.get(url_with_params)
     json_data = response.json()
     assert json_data["totalResultsCount"] == 2
@@ -402,7 +410,9 @@ def test_observations_json_species_filter(public_api_data, client):
 def test_observations_json_dataset_filter(public_api_data, client):
     d = public_api_data
     base_url = reverse("dashboard:public-api:filtered-observations-data-page")
-    url_with_params = f"{base_url}?limit=10&page_number=1&datasetsIds[]={d['first_dataset'].pk}"
+    url_with_params = (
+        f"{base_url}?limit=10&page_number=1&datasetsIds[]={d['first_dataset'].pk}"
+    )
     response = client.get(url_with_params)
     json_data = response.json()
     assert json_data["totalResultsCount"] == 2
@@ -427,7 +437,9 @@ def test_observations_json_basis_of_record_filter(public_api_data, client):
     assert json_data["totalResultsCount"] == 2
 
     # Filter by MACHINE_OBSERVATION: should return obs3 only
-    url_with_params = f"{base_url}?limit=10&page_number=1&basisOfRecordIds[]={machine_obs.pk}"
+    url_with_params = (
+        f"{base_url}?limit=10&page_number=1&basisOfRecordIds[]={machine_obs.pk}"
+    )
     response = client.get(url_with_params)
     json_data = response.json()
     assert json_data["totalResultsCount"] == 1
@@ -438,11 +450,15 @@ def test_observations_json_area_filter(public_api_data, client):
     """We filter by a single area"""
     d = public_api_data
     base_url = reverse("dashboard:public-api:filtered-observations-data-page")
-    url_with_params = f"{base_url}?limit=10&page_number=1&areaIds[]={d['public_area_andenne'].pk}"
+    url_with_params = (
+        f"{base_url}?limit=10&page_number=1&areaIds[]={d['public_area_andenne'].pk}"
+    )
     response = client.get(url_with_params)
     json_data = response.json()
     assert json_data["totalResultsCount"] == 1
-    assert json_data["results"][0]["gbifId"] == "1"  # Only one observation in Andenne because of the selected area
+    assert (
+        json_data["results"][0]["gbifId"] == "1"
+    )  # Only one observation in Andenne because of the selected area
 
 
 def test_observations_json_status_filter_invalid_value(public_api_data, client):
@@ -488,12 +504,16 @@ def test_observations_json_status_filter_logged(public_api_data, client):
     client.login(username="frusciante", password="12345")
 
     # Case 1.1: asking seen observations => 0 results
-    response = client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id&status=seen")
+    response = client.get(
+        f"{base_url}?limit=10&page_number=1&order=gbif_id&status=seen"
+    )
     filtered_seen_results = response.json()
     assert filtered_seen_results["totalResultsCount"] == 0
 
     # case 1.2: asking unseen observations => same results than no filtering
-    response = client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id&status=unseen")
+    response = client.get(
+        f"{base_url}?limit=10&page_number=1&order=gbif_id&status=unseen"
+    )
     filtered_unseen_results = response.json()
     filtered_unseen_results_ids = [r["id"] for r in filtered_unseen_results["results"]]
 
@@ -503,7 +523,9 @@ def test_observations_json_status_filter_logged(public_api_data, client):
     # Case 2: this user has one seen observation
     # Case 2.1: asking seen observations
     client.login(username="frusciante1", password="12345")
-    response = client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id&status=seen")
+    response = client.get(
+        f"{base_url}?limit=10&page_number=1&order=gbif_id&status=seen"
+    )
     filtered_seen_results = response.json()
     assert filtered_seen_results["totalResultsCount"] == 1
     assert (
@@ -513,13 +535,19 @@ def test_observations_json_status_filter_logged(public_api_data, client):
 
     # Case 2.2: asking unseen observations
     client.login(username="frusciante1", password="12345")
-    response = client.get(f"{base_url}?limit=10&page_number=1&order=gbif_id&status=unseen")
+    response = client.get(
+        f"{base_url}?limit=10&page_number=1&order=gbif_id&status=unseen"
+    )
     filtered_unseen_results = response.json()
-    filtered_unseen_results_gbif_ids = [r["gbifId"] for r in filtered_unseen_results["results"]]
+    filtered_unseen_results_gbif_ids = [
+        r["gbifId"] for r in filtered_unseen_results["results"]
+    ]
     assert filtered_unseen_results_gbif_ids == ["1", "3"]
 
 
-def test_observations_json_no_repeated_queries(public_api_data, client, django_assert_num_queries):
+def test_observations_json_no_repeated_queries(
+    public_api_data, client, django_assert_num_queries
+):
     """Getting occurrences doesn't generate a deluge of queries to the dataset and species tables"""
     with django_assert_num_queries(2):
         client.get(reverse("dashboard:public-api:filtered-observations-data-page"))
@@ -532,7 +560,9 @@ def test_observations_json_multiple_areas_filter(public_api_data, client):
     url_with_params = f"{base_url}?limit=10&page_number=1&areaIds[]={d['public_area_andenne'].pk}&areaIds[]={d['public_area_lillois'].pk}"
     response = client.get(url_with_params)
     json_data = response.json()
-    assert json_data["totalResultsCount"] == 3  # All 3 observations should be there because the two areas cover them all
+    assert (
+        json_data["totalResultsCount"] == 3
+    )  # All 3 observations should be there because the two areas cover them all
 
 
 def test_observations_json_multiple_datasets_filter_case1(public_api_data, client):
@@ -597,7 +627,10 @@ def test_observations_json_multiple_species_filter_case2(public_api_data, client
 
     assert json_data["totalResultsCount"] == 2
     for result in json_data["results"]:
-        assert result["scientificName"] in [d["first_species"].name, species_tetraodon.name]
+        assert result["scientificName"] in [
+            d["first_species"].name,
+            species_tetraodon.name,
+        ]
 
 
 def test_observations_json_multiple_dataset_filter_case2(public_api_data, client):

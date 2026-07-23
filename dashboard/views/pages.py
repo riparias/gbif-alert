@@ -58,9 +58,7 @@ def alert_create_page(request: AuthenticatedHttpRequest) -> HttpResponse:
 
 
 @login_required
-def alert_edit_page(
-    request: AuthenticatedHttpRequest, alert_id: int
-) -> HttpResponse:
+def alert_edit_page(request: AuthenticatedHttpRequest, alert_id: int) -> HttpResponse:
     get_object_or_404(Alert, id=alert_id, user=request.user)
     return spa_shell(request)
 
@@ -90,5 +88,7 @@ def area_editor_new_page(request: AuthenticatedHttpRequest) -> HttpResponse:
 
 
 @login_required
-def area_editor_edit_page(request: AuthenticatedHttpRequest, area_id: int) -> HttpResponse:
+def area_editor_edit_page(
+    request: AuthenticatedHttpRequest, area_id: int
+) -> HttpResponse:
     return spa_shell(request)

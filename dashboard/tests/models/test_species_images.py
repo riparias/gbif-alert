@@ -49,7 +49,9 @@ def test_species_image_url_accepts_long_url():
     # Real Wikimedia thumbnail URLs routinely exceed Django's default URLField
     # length of 200 (e.g. the Pallas's squirrel thumbnail is 216 chars). The
     # field must store them without truncation.
-    long_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/" + "a" * 300 + ".jpg"
+    long_url = (
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/" + "a" * 300 + ".jpg"
+    )
     assert len(long_url) > 200
     sp = Species.objects.create(
         name="Longus urlus",

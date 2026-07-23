@@ -22,7 +22,9 @@ def assert_correct_polygon(wkt: str | None) -> None:
 
 
 def test_uploaded_file_to_multipolygon_gpkg_polygon_3857():
-    wkt = file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "polygon_3857.gpkg", dest_srid=3857)
+    wkt = file_to_wkt_multipolygon(
+        SAMPLE_DATA_PATH / "polygon_3857.gpkg", dest_srid=3857
+    )
     assert_correct_polygon(wkt)
 
 
@@ -32,32 +34,46 @@ def test_default_srid():
 
 
 def test_uploaded_file_to_multipolygon_gpkg_multipolygon_3857():
-    wkt = file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "multipolygon_3857.gpkg", dest_srid=3857)
+    wkt = file_to_wkt_multipolygon(
+        SAMPLE_DATA_PATH / "multipolygon_3857.gpkg", dest_srid=3857
+    )
     assert_correct_polygon(wkt)
 
 
 def test_uploaded_file_to_multipolygon_gpkg_polygon_4326():
-    wkt = file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "polygon_4326.gpkg", dest_srid=3857)
+    wkt = file_to_wkt_multipolygon(
+        SAMPLE_DATA_PATH / "polygon_4326.gpkg", dest_srid=3857
+    )
     assert_correct_polygon(wkt)
 
 
 def test_uploaded_file_to_multipolygon_gpkg_polygon_lambert():
-    wkt = file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "polygon_lambert.gpkg", dest_srid=3857)
+    wkt = file_to_wkt_multipolygon(
+        SAMPLE_DATA_PATH / "polygon_lambert.gpkg", dest_srid=3857
+    )
     assert_correct_polygon(wkt)
 
 
 def test_uploaded_file_to_multipolygon_gpkg_multipolygon_4326():
-    wkt = file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "multipolygon_4326.gpkg", dest_srid=3857)
+    wkt = file_to_wkt_multipolygon(
+        SAMPLE_DATA_PATH / "multipolygon_4326.gpkg", dest_srid=3857
+    )
     assert_correct_polygon(wkt)
 
 
 def test_uploaded_file_to_multipolygon_too_many_features():
-    with pytest.raises(ValueError, match="The file must contain a single feature, 2 features found"):
-        file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "polygon_4326_too_many_features.gpkg", dest_srid=3857)
+    with pytest.raises(
+        ValueError, match="The file must contain a single feature, 2 features found"
+    ):
+        file_to_wkt_multipolygon(
+            SAMPLE_DATA_PATH / "polygon_4326_too_many_features.gpkg", dest_srid=3857
+        )
 
 
 def test_uploaded_file_to_multipolygon_zero_features():
-    with pytest.raises(ValueError, match="The file must contain a single feature, 0 features found"):
+    with pytest.raises(
+        ValueError, match="The file must contain a single feature, 0 features found"
+    ):
         file_to_wkt_multipolygon(SAMPLE_DATA_PATH / "empty.gpkg", dest_srid=3857)
 
 

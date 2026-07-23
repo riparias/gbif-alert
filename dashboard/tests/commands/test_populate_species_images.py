@@ -33,7 +33,8 @@ def test_command_fills_empty_species():
 @pytest.mark.django_db
 def test_command_never_overwrites_manual():
     sp = Species.objects.create(
-        name="Testus specius", gbif_taxon_key=999031,
+        name="Testus specius",
+        gbif_taxon_key=999031,
         image_url="https://manual.example/owned.jpg",
         image_source_type=Species.ImageSourceType.MANUAL,
     )
@@ -50,7 +51,8 @@ def test_command_never_overwrites_manual():
 @pytest.mark.django_db
 def test_command_skips_already_filled_without_refresh():
     sp = Species.objects.create(
-        name="Testus specius", gbif_taxon_key=999032,
+        name="Testus specius",
+        gbif_taxon_key=999032,
         image_url="https://old.example/a.jpg",
         image_source_type=Species.ImageSourceType.WIKIPEDIA,
     )
@@ -89,9 +91,11 @@ def test_limit_zero_processes_nothing():
     ) as resolver:
         call_command("populate_species_images", "--limit", "0", stdout=StringIO())
     resolver.assert_not_called()
-    assert not Species.objects.filter(
-        gbif_taxon_key__in=[999040, 999041]
-    ).exclude(image_url="").exists()
+    assert (
+        not Species.objects.filter(gbif_taxon_key__in=[999040, 999041])
+        .exclude(image_url="")
+        .exists()
+    )
 
 
 @pytest.mark.django_db
@@ -104,9 +108,11 @@ def test_limit_one_processes_at_most_one():
         return_value=_wiki_result(),
     ):
         call_command("populate_species_images", "--limit", "1", stdout=StringIO())
-    filled = Species.objects.filter(
-        gbif_taxon_key__in=[999042, 999043]
-    ).exclude(image_url="").count()
+    filled = (
+        Species.objects.filter(gbif_taxon_key__in=[999042, 999043])
+        .exclude(image_url="")
+        .count()
+    )
     assert filled == 1
 
 

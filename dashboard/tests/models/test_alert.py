@@ -26,6 +26,7 @@ pytestmark = pytest.mark.django_db
 # Shared settings override (replaces @override_settings on each class)
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(autouse=True)
 def use_static_files_storage(settings):
     settings.STATICFILES_STORAGE = (
@@ -36,6 +37,7 @@ def use_static_files_storage(settings):
 # ---------------------------------------------------------------------------
 # AlertTests fixtures and tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def alert_data():
@@ -51,7 +53,9 @@ def alert_data():
     observation = Observation.objects.create(
         gbif_id=1,
         occurrence_id="1",
-        species=Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526),
+        species=Species.objects.create(
+            name="Procambarus fallax", gbif_taxon_key=8879526
+        ),
         date=SEPTEMBER_13_2021,
         data_import=di,
         initial_data_import=di,
@@ -87,7 +91,9 @@ def test_unseen_observations_count_zero_case_1(alert_data):
 
 
 def test_unseen_observations_count_zero_case_2(alert_data):
-    another_species = Species.objects.create(name="Lixus Bardanae", gbif_taxon_key=48435)
+    another_species = Species.objects.create(
+        name="Lixus Bardanae", gbif_taxon_key=48435
+    )
     alert = Alert.objects.create(
         user=alert_data["user"], email_notifications_frequency=Alert.DAILY_EMAILS
     )
@@ -111,7 +117,9 @@ def test_has_unseen_observations_false_case_1(alert_data):
 
 
 def test_has_unseen_observations_false_case_2(alert_data):
-    another_species = Species.objects.create(name="Lixus Bardanae", gbif_taxon_key=48435)
+    another_species = Species.objects.create(
+        name="Lixus Bardanae", gbif_taxon_key=48435
+    )
     alert = Alert.objects.create(
         user=alert_data["user"], email_notifications_frequency=Alert.DAILY_EMAILS
     )
@@ -158,9 +166,9 @@ def test_email_should_be_sent_now_nothing_unseen(alert_data):
 
 def test_email_should_be_sent_now_first_time(alert_data):
     """If there are unseen observations and no emails sent yet, now is the right time."""
-    for i, frequency in enumerate([
-        Alert.DAILY_EMAILS, Alert.WEEKLY_EMAILS, Alert.MONTHLY_EMAILS
-    ]):
+    for i, frequency in enumerate(
+        [Alert.DAILY_EMAILS, Alert.WEEKLY_EMAILS, Alert.MONTHLY_EMAILS]
+    ):
         alert = Alert.objects.create(
             name=f"My new test alert #{i}",
             user=alert_data["user"],
@@ -227,6 +235,7 @@ def test_email_should_be_sent_now_monthly(alert_data):
 # AlertCleanValidationTests
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def clean_user():
     return User.objects.create_user(
@@ -235,70 +244,111 @@ def clean_user():
 
 
 def test_inside_with_no_distance_is_valid(clean_user):
-    alert = Alert(user=clean_user, area_filter_mode=Alert.AREA_FILTER_INSIDE, approaching_distance_km=None)
+    alert = Alert(
+        user=clean_user,
+        area_filter_mode=Alert.AREA_FILTER_INSIDE,
+        approaching_distance_km=None,
+    )
     alert.clean()  # no exception
 
 
 def test_inside_with_distance_raises(clean_user):
-    alert = Alert(user=clean_user, area_filter_mode=Alert.AREA_FILTER_INSIDE, approaching_distance_km=10.0)
+    alert = Alert(
+        user=clean_user,
+        area_filter_mode=Alert.AREA_FILTER_INSIDE,
+        approaching_distance_km=10.0,
+    )
     with pytest.raises(ValidationError) as exc:
         alert.clean()
     assert "approaching_distance_km" in exc.value.message_dict
 
 
 def test_approaching_with_no_distance_raises(clean_user):
-    alert = Alert(user=clean_user, area_filter_mode=Alert.AREA_FILTER_APPROACHING, approaching_distance_km=None)
+    alert = Alert(
+        user=clean_user,
+        area_filter_mode=Alert.AREA_FILTER_APPROACHING,
+        approaching_distance_km=None,
+    )
     with pytest.raises(ValidationError) as exc:
         alert.clean()
     assert "approaching_distance_km" in exc.value.message_dict
 
 
 def test_approaching_with_zero_distance_raises(clean_user):
-    alert = Alert(user=clean_user, area_filter_mode=Alert.AREA_FILTER_APPROACHING, approaching_distance_km=0.0)
+    alert = Alert(
+        user=clean_user,
+        area_filter_mode=Alert.AREA_FILTER_APPROACHING,
+        approaching_distance_km=0.0,
+    )
     with pytest.raises(ValidationError) as exc:
         alert.clean()
     assert "approaching_distance_km" in exc.value.message_dict
 
 
 def test_approaching_with_negative_distance_raises(clean_user):
-    alert = Alert(user=clean_user, area_filter_mode=Alert.AREA_FILTER_APPROACHING, approaching_distance_km=-5.0)
+    alert = Alert(
+        user=clean_user,
+        area_filter_mode=Alert.AREA_FILTER_APPROACHING,
+        approaching_distance_km=-5.0,
+    )
     with pytest.raises(ValidationError) as exc:
         alert.clean()
     assert "approaching_distance_km" in exc.value.message_dict
 
 
 def test_approaching_with_distance_exceeding_max_raises(clean_user):
-    alert = Alert(user=clean_user, area_filter_mode=Alert.AREA_FILTER_APPROACHING, approaching_distance_km=51.0)
+    alert = Alert(
+        user=clean_user,
+        area_filter_mode=Alert.AREA_FILTER_APPROACHING,
+        approaching_distance_km=51.0,
+    )
     with pytest.raises(ValidationError) as exc:
         alert.clean()
     assert "approaching_distance_km" in exc.value.message_dict
 
 
 def test_approaching_with_valid_distance_is_valid(clean_user):
-    alert = Alert(user=clean_user, area_filter_mode=Alert.AREA_FILTER_APPROACHING, approaching_distance_km=10.0)
+    alert = Alert(
+        user=clean_user,
+        area_filter_mode=Alert.AREA_FILTER_APPROACHING,
+        approaching_distance_km=10.0,
+    )
     alert.clean()  # no exception
 
 
 def test_both_with_valid_distance_is_valid(clean_user):
-    alert = Alert(user=clean_user, area_filter_mode=Alert.AREA_FILTER_BOTH, approaching_distance_km=50.0)
+    alert = Alert(
+        user=clean_user,
+        area_filter_mode=Alert.AREA_FILTER_BOTH,
+        approaching_distance_km=50.0,
+    )
     alert.clean()  # no exception
 
 
 def test_both_with_no_distance_raises(clean_user):
-    alert = Alert(user=clean_user, area_filter_mode=Alert.AREA_FILTER_BOTH, approaching_distance_km=None)
+    alert = Alert(
+        user=clean_user,
+        area_filter_mode=Alert.AREA_FILTER_BOTH,
+        approaching_distance_km=None,
+    )
     with pytest.raises(ValidationError) as exc:
         alert.clean()
     assert "approaching_distance_km" in exc.value.message_dict
 
 
 def test_approaching_with_max_distance_is_valid(clean_user):
-    alert = Alert(user=clean_user, area_filter_mode=Alert.AREA_FILTER_APPROACHING, approaching_distance_km=50.0)
+    alert = Alert(
+        user=clean_user,
+        area_filter_mode=Alert.AREA_FILTER_APPROACHING,
+        approaching_distance_km=50.0,
+    )
     alert.clean()  # no exception
 
 
 # ---------------------------------------------------------------------------
 # AlertAreaDescriptionTests
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def area_desc_data():
@@ -349,13 +399,17 @@ def test_inside_single_area(make_area_alert, area_desc_data):
 
 def test_inside_two_areas(make_area_alert, area_desc_data):
     alert = make_area_alert(
-        Alert.AREA_FILTER_INSIDE, None, [area_desc_data["area_a"], area_desc_data["area_b"]]
+        Alert.AREA_FILTER_INSIDE,
+        None,
+        [area_desc_data["area_a"], area_desc_data["area_b"]],
     )
     assert alert.area_description == "inside 'Foret de Soignes' or 'Zonienwoud'"
 
 
 def test_approaching_single_area(make_area_alert, area_desc_data):
-    alert = make_area_alert(Alert.AREA_FILTER_APPROACHING, 10.0, [area_desc_data["area_a"]])
+    alert = make_area_alert(
+        Alert.AREA_FILTER_APPROACHING, 10.0, [area_desc_data["area_a"]]
+    )
     assert alert.area_description == "within 10 km of 'Foret de Soignes'"
 
 
