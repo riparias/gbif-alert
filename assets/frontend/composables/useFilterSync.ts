@@ -1,4 +1,4 @@
-import { watch } from "vue";
+import { onUnmounted, watch } from "vue";
 import { useRoute, useRouter, type LocationQuery } from "vue-router";
 import { debounce } from "lodash";
 import { useFiltersStore } from "../stores/filters";
@@ -135,4 +135,13 @@ export function useFilterSync(isAuthenticated: boolean = true): void {
     }, 300);
 
     watch(store, syncToUrl, { deep: true });
+
+    // Drop a pending sync when the page this composable belongs to goes away.
+    // Without this, a replace scheduled just before navigating fires ~300ms
+    // later from a dead component. Because it carries a query but no path,
+    // vue-router resolves it against whatever route is current when it fires -
+    // so if the user clicks another link inside that window, the replace lands
+    // on the route being left and supersedes the in-flight push: the click is
+    // silently swallowed and they stay put with the filter query appended.
+    onUnmounted(() => syncToUrl.cancel());
 }

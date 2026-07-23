@@ -216,12 +216,41 @@ def test_navbar_internal_link_navigates_without_reload(page: Page, live_server):
     page.get_by_role("menuitem", name="About this site").click()
 
     # The route changed client-side...
-    # Path-based: the filters store may append its own query string (e.g.
-    # ?status=all) shortly after the route changes, which would race an
-    # exact-URL assertion.
+    # Path-based, so an incidental query string cannot race this assertion.
+    # (The filters store used to append ?status=all here from an already-left
+    # page; useFilterSync now cancels that pending sync on unmount, pinned by
+    # test_leaving_the_index_does_not_append_its_filter_query.)
     expect(page).to_have_url(re.compile(r"/about-site(\?|$)"))
     # ...and the original document was never torn down (no full reload/blink).
     assert page.evaluate("window.__noReloadMarker") == "spa"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_leaving_the_index_does_not_append_its_filter_query(page: Page, live_server):
+    """Navigating away from the index leaves no ?status=all behind.
+
+    Regression test for a flaky-test root cause: useFilterSync debounces its
+    store-to-URL sync by 300ms, so leaving the index within that window left a
+    replace pending. It fired from the unmounted page, and because it carries a
+    query but no path, vue-router resolved it against whatever route was current
+    by then - appending the index's filter query to an unrelated page. Worse, a
+    click landing in that same window was superseded by the replace and silently
+    swallowed, leaving the user where they started.
+    """
+    User = get_user_model()
+    User.objects.create_user(username="testuser", password="testpass123")
+    login(page, live_server.url, "testuser", "testpass123")
+    page.goto(live_server.url + "/")
+
+    # Leave immediately, well inside the 300ms debounce window.
+    page.get_by_role("menuitem", name="What's new").click()
+    expect(page).to_have_url(re.compile(r"/whats-new$"))
+
+    # Give any pending sync more than its debounce to fire. It must not.
+    page.wait_for_timeout(700)
+    assert page.url.endswith(
+        "/whats-new"
+    ), f"a filter query leaked onto the page we navigated to: {page.url}"
 
 
 @pytest.mark.django_db(transaction=True)
@@ -275,9 +304,10 @@ def test_news_dot_clears_without_full_reload(page: Page, live_server):
     # It stays gone after navigating client-side to another page.
     _open_about_menu(page)
     page.get_by_role("menuitem", name="About this site").click()
-    # Path-based: the filters store may append its own query string (e.g.
-    # ?status=all) shortly after the route changes, which would race an
-    # exact-URL assertion.
+    # Path-based, so an incidental query string cannot race this assertion.
+    # (The filters store used to append ?status=all here from an already-left
+    # page; useFilterSync now cancels that pending sync on unmount, pinned by
+    # test_leaving_the_index_does_not_append_its_filter_query.)
     expect(page).to_have_url(re.compile(r"/about-site(\?|$)"))
     expect(news_item.locator(".gbif-nav-dot")).not_to_be_visible()
     assert page.evaluate("window.__noReloadMarker") == "spa"
