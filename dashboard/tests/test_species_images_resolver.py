@@ -1,4 +1,6 @@
 # dashboard/tests/test_species_images_resolver.py
+from unittest.mock import patch
+
 import requests_mock as requests_mock_module
 from dashboard.species_images import (
     resolve_wikipedia_image,
@@ -141,3 +143,54 @@ def test_resolve_species_image_falls_back_to_gbif():
         result = resolve_species_image("Vulpes vulpes", 5219243)
     assert result is not None
     assert result.source_type == "gbif"
+
+
+def test_gbif_image_uses_the_col_key_with_a_checklist_key():
+    """A COL key is only meaningful to GBIF alongside its checklistKey."""
+    with patch("dashboard.species_images.requests.get") as mocked:
+        mocked.return_value.json.return_value = {"results": []}
+        resolve_gbif_image("C5KM", checklist_key="the-checklist")
+    params = mocked.call_args.kwargs["params"]
+    assert params["taxonKey"] == "C5KM"
+    assert params["checklistKey"] == "the-checklist"
+
+
+def test_gbif_image_omits_the_checklist_key_for_a_legacy_key():
+    """The frozen backbone is GBIF's default checklist - passing one would be wrong."""
+    with patch("dashboard.species_images.requests.get") as mocked:
+        mocked.return_value.json.return_value = {"results": []}
+        resolve_gbif_image(1234567)
+    assert "checklistKey" not in mocked.call_args.kwargs["params"]
+
+
+def test_species_image_falls_back_to_the_legacy_key_when_col_finds_nothing():
+    """Fallback covers an empty COL result, not only an absent COL key."""
+    with patch(
+        "dashboard.species_images.resolve_wikipedia_image", return_value=None
+    ), patch("dashboard.species_images.resolve_gbif_image") as gbif:
+        gbif.side_effect = [None, "the-legacy-image"]
+        result = resolve_species_image(
+            "Some sp.", gbif_taxon_key=1234567, gbif_col_taxon_key="C5KM"
+        )
+    assert result == "the-legacy-image"
+    assert gbif.call_count == 2
+    assert gbif.call_args_list[0].args[0] == "C5KM"
+    assert gbif.call_args_list[1].args[0] == 1234567
+
+
+def test_species_image_skips_gbif_entirely_without_any_key():
+    with patch(
+        "dashboard.species_images.resolve_wikipedia_image", return_value=None
+    ), patch("dashboard.species_images.resolve_gbif_image") as gbif:
+        result = resolve_species_image("Some sp.")
+    assert result is None
+    gbif.assert_not_called()
+
+
+def test_species_image_prefers_wikipedia_and_never_calls_gbif():
+    with patch(
+        "dashboard.species_images.resolve_wikipedia_image", return_value="wiki-image"
+    ), patch("dashboard.species_images.resolve_gbif_image") as gbif:
+        result = resolve_species_image("Some sp.", gbif_col_taxon_key="C5KM")
+    assert result == "wiki-image"
+    gbif.assert_not_called()

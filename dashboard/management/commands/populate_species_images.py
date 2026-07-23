@@ -3,7 +3,7 @@
 Wikipedia/Wikimedia first, GBIF occurrence media as fallback. Never touches a
 species whose image was set manually in the admin (image_source_type="manual").
 """
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.db.models import Q
 
 from dashboard.models import Species
@@ -25,7 +25,7 @@ class Command(BaseCommand):
             "--species",
             type=str,
             default=None,
-            help="Restrict to one species by pk or gbif_taxon_key.",
+            help="Restrict to one species by pk, gbif_taxon_key, or COL taxon key.",
         )
 
     def handle(self, *args, **options):
@@ -39,12 +39,12 @@ class Command(BaseCommand):
 
         if options["species"] is not None:
             value = options["species"]
-            if not value.isdigit():
-                raise CommandError(
-                    f"--species value {value!r} must be a digit (pk or gbif_taxon_key)"
-                )
-            int_val = int(value)
-            qs = qs.filter(Q(pk=int_val) | Q(gbif_taxon_key=int_val))
+            if value.isdigit():
+                int_val = int(value)
+                qs = qs.filter(Q(pk=int_val) | Q(gbif_taxon_key=int_val))
+            else:
+                # COL keys are alphanumeric, so a non-digit value can only be one.
+                qs = qs.filter(gbif_col_taxon_key=value)
 
         qs = qs.order_by("name")
         if options["limit"] is not None:
@@ -56,7 +56,9 @@ class Command(BaseCommand):
             # value, a transient DB error, or an unforeseen parse issue) must log
             # and continue, never abort the whole run.
             try:
-                resolved = resolve_species_image(species.name, species.gbif_taxon_key)
+                resolved = resolve_species_image(
+                    species.name, species.gbif_taxon_key, species.gbif_col_taxon_key
+                )
                 if resolved is None:
                     self.stdout.write(f"  no image: {species.name}")
                     continue

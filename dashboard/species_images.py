@@ -14,6 +14,7 @@ import re
 from urllib.parse import quote, unquote
 
 import requests
+from django.conf import settings
 
 USER_AGENT = (
     "gbif-alert/2.x species-image-fetcher " "(+https://github.com/riparias/gbif-alert)"
@@ -133,16 +134,34 @@ def _wikimedia_credit(image_url: str) -> tuple[str, str]:
     return artist, license_name
 
 
-def resolve_gbif_image(gbif_taxon_key: int) -> ResolvedImage | None:
-    """Resolve a StillImage from GBIF occurrence media for a taxon key."""
+def resolve_gbif_image(
+    taxon_key: int | str, checklist_key: str | None = None
+) -> ResolvedImage | None:
+    """Resolve a StillImage from GBIF occurrence media for a taxon key.
+
+    Parameters
+    ----------
+    taxon_key : int or str
+        A legacy backbone key (int) or a COL XR key (str, e.g. "C5KM").
+    checklist_key : str or None
+        The checklist the key belongs to. Required for a COL key; omitted for a
+        legacy key, which belongs to GBIF's default (frozen) backbone.
+
+    Returns
+    -------
+    ResolvedImage or None
+    """
+    params = {
+        "taxonKey": str(taxon_key),
+        "mediaType": "StillImage",
+        "limit": "20",
+    }
+    if checklist_key:
+        params["checklistKey"] = checklist_key
     try:
         resp = requests.get(
             _GBIF_OCCURRENCE_SEARCH,
-            params={
-                "taxonKey": str(gbif_taxon_key),
-                "mediaType": "StillImage",
-                "limit": "20",
-            },
+            params=params,
             headers=_headers(),
             timeout=_TIMEOUT,
         )
@@ -165,9 +184,41 @@ def resolve_gbif_image(gbif_taxon_key: int) -> ResolvedImage | None:
 
 
 def resolve_species_image(
-    scientific_name: str, gbif_taxon_key: int
+    scientific_name: str,
+    gbif_taxon_key: int | None = None,
+    gbif_col_taxon_key: str | None = None,
 ) -> ResolvedImage | None:
-    """Wikipedia first, GBIF occurrence media as fallback."""
-    return resolve_wikipedia_image(scientific_name) or resolve_gbif_image(
-        gbif_taxon_key
-    )
+    """Wikipedia first, GBIF occurrence media as fallback.
+
+    The GBIF fallback prefers the COL key, then tries the legacy backbone key.
+    The second attempt also covers a COL key that simply has no media, not only
+    a species that has no COL key yet.
+
+    Parameters
+    ----------
+    scientific_name : str
+        Used for the Wikipedia lookup.
+    gbif_taxon_key : int or None
+        Legacy backbone key, if the species has one.
+    gbif_col_taxon_key : str or None
+        COL XR key, if the species has one.
+
+    Returns
+    -------
+    ResolvedImage or None
+    """
+    wikipedia = resolve_wikipedia_image(scientific_name)
+    if wikipedia is not None:
+        return wikipedia
+
+    if gbif_col_taxon_key:
+        from_col = resolve_gbif_image(
+            gbif_col_taxon_key, checklist_key=settings.GBIF_COL_XR_CHECKLIST_KEY
+        )
+        if from_col is not None:
+            return from_col
+
+    if gbif_taxon_key:
+        return resolve_gbif_image(gbif_taxon_key)
+
+    return None
