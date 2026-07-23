@@ -66,6 +66,14 @@ class ObservationAdmin(admin.GISModelAdmin):
 class SpeciesResource(resources.ModelResource):
     class Meta:
         model = Species
+        # Species.clean() requires at least one taxon key (legacy GBIF or COL).
+        # That rule is only enforced when full_clean() actually runs - the admin
+        # ModelForm calls it via _post_clean, and the v2 API calls it directly,
+        # but django-import-export's own default (clean_model_instances=False)
+        # skips it. Without this, a bulk CSV/XLSX import through the admin can
+        # create a Species with no taxon key at all, which then blocks the next
+        # import_observations run.
+        clean_model_instances = True
 
 
 @admin.register(Species)
