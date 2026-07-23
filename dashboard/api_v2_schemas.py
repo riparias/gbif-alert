@@ -28,7 +28,6 @@ class SpeciesOut(Schema):
     vernacularNameNl: str
     vernacularNameFr: str
     gbifTaxonKey: int | None = Field(
-        default=None,
         description=(
             "Legacy GBIF backbone taxon key. Numeric in GBIF's data model, so "
             "returned as an integer. Null for a species that only has a COL key - "

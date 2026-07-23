@@ -40,11 +40,25 @@ class Command(BaseCommand):
         if options["species"] is not None:
             value = options["species"]
             if value.isdigit():
+                # An all-digit value could be a pk, a legacy gbif_taxon_key, or a
+                # (numeric-looking) COL key - COL keys are alphanumeric but not
+                # guaranteed to contain a letter. gbif_col_taxon_key is a
+                # CharField, so compare against the original string, not int_val.
                 int_val = int(value)
-                qs = qs.filter(Q(pk=int_val) | Q(gbif_taxon_key=int_val))
+                species_q = (
+                    Q(pk=int_val)
+                    | Q(gbif_taxon_key=int_val)
+                    | Q(gbif_col_taxon_key=value)
+                )
             else:
                 # COL keys are alphanumeric, so a non-digit value can only be one.
-                qs = qs.filter(gbif_col_taxon_key=value)
+                species_q = Q(gbif_col_taxon_key=value)
+
+            if not Species.objects.filter(species_q).exists():
+                self.stdout.write(
+                    self.style.WARNING(f"--species {value!r} did not match any species")
+                )
+            qs = qs.filter(species_q)
 
         qs = qs.order_by("name")
         if options["limit"] is not None:

@@ -219,11 +219,12 @@ def species_create(request: HttpRequest, payload: SpeciesIn):
     """Create a species. Superusers (operators) only.
 
     Species must exist before observations can be imported for them (the import
-    command keys on gbif_taxon_key), so operators need a way to add them; this
-    is the programmatic equivalent of the admin's Species form.
+    command keys on gbif_col_taxon_key), so operators need a way to add them;
+    this is the programmatic equivalent of the admin's Species form.
 
     Returns 403 for authenticated non-superusers, and 422 (with per-field
-    errors) for a duplicate gbifTaxonKey or a blank scientificName.
+    errors) for a duplicate gbifTaxonKey, a blank scientificName, or a species
+    with neither taxon key.
     """
     user = cast(User, request.user)
     if not user.is_superuser:
