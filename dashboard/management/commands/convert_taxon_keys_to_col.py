@@ -37,10 +37,14 @@ class Command(BaseCommand):
             Q(gbif_col_taxon_key__isnull=True) | Q(gbif_col_taxon_key="")
         ).order_by("name")
 
-        # A species with no legacy key has nothing to convert FROM - it was
-        # added COL-first. Reporting it as a failure every run would train
-        # operators to ignore the error list.
-        nothing_to_convert = list(needs_col_key.filter(gbif_taxon_key__isnull=True))
+        # A species with neither key cannot be converted - there is nothing to
+        # match on. This should be unreachable via the API: Species.clean()
+        # forbids having both keys blank, and the v2 API calls full_clean().
+        # But the admin's bulk CSV/XLSX import (SpeciesResource in admin.py)
+        # does not call full_clean(), so it - along with fixtures, data
+        # migrations, and raw ORM writes - can still leave a species in this
+        # state. Report it here rather than sending None to GBIF.
+        no_taxon_key = list(needs_col_key.filter(gbif_taxon_key__isnull=True))
         unresolved_species = needs_col_key.exclude(gbif_taxon_key__isnull=True)
 
         for species in unresolved_species:
@@ -94,9 +98,14 @@ class Command(BaseCommand):
             )
 
         self.stdout.write("")
-        self.stdout.write(f"NOTHING TO CONVERT ({len(nothing_to_convert)}):")
-        for species in nothing_to_convert:
-            self.stdout.write(f"  {species.name} (no legacy key - added COL-first)")
+        self.stdout.write(
+            f"NO TAXON KEY - needs manual curation ({len(no_taxon_key)}):"
+        )
+        for species in no_taxon_key:
+            self.stdout.write(
+                f"  {species.name} (no taxon key at all - enter one manually "
+                "or the next import will be blocked)"
+            )
 
         self.stdout.write("")
         self.stdout.write(f"ERRORS ({len(errors)}):")
