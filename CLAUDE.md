@@ -21,7 +21,11 @@ needed. It loads `.env` from the project root, reads env vars (see `.env.example
 imports an optional `djangoproject/local_settings.py` as an escape hatch on top.
 
 On macOS, GeoDjango needs explicit library paths - set `GDAL_LIBRARY_PATH` and
-`GEOS_LIBRARY_PATH` in `.env` (or `local_settings.py`).
+`GEOS_LIBRARY_PATH` in `.env` (or `local_settings.py`). With Homebrew these are
+typically:
+
+    GDAL_LIBRARY_PATH=/opt/homebrew/lib/libgdal.dylib
+    GEOS_LIBRARY_PATH=/opt/homebrew/lib/libgeos_c.dylib
 
 ### Setup
 ```bash

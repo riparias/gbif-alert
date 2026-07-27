@@ -20,6 +20,7 @@ import { useResultsStore } from "../stores/results";
 import BaseMap from "./BaseMap.vue";
 import SpeciesName from "./SpeciesName.vue";
 import { getNavConfig } from "../utils/navConfig";
+import { useFillToViewportBottom } from "../composables/useFillToViewportBottom";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -38,6 +39,17 @@ const opacity = ref<number>(0.8);
 // --- DOM / component refs ---
 
 const baseMapRef = ref<InstanceType<typeof BaseMap> | null>(null);
+
+// Fill the page down to just above the footer rather than sitting at a fixed
+// 480px, which left ~490px of dead space below the map on a tall screen. Never
+// shorter than the old fixed height, so short viewports are unaffected.
+// OpenLayers observes its own target and calls updateSize(), so nothing else
+// has to react to the change.
+const MIN_MAP_HEIGHT_PX = 480;
+const mapHeight = useFillToViewportBottom(
+    () => baseMapRef.value?.$el as HTMLElement | undefined,
+    MIN_MAP_HEIGHT_PX,
+);
 const popupEl = ref<HTMLElement | null>(null);
 
 // --- OL objects (kept outside Vue reactivity) ---
@@ -279,7 +291,7 @@ onUnmounted(() => {
 <template>
     <BaseMap
         ref="baseMapRef"
-        height="480px"
+        :height="mapHeight"
         :initial-lon="mapCfg.initialPosition.initialLon"
         :initial-lat="mapCfg.initialPosition.initialLat"
         :initial-zoom="mapCfg.initialPosition.initialZoom"
