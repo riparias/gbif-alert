@@ -53,13 +53,41 @@ def _create_observation() -> Species:
     return species
 
 
+# Measure the map inside the page, and only believe a box that two consecutive
+# frames agree on.
+#
+# Both halves matter. The alert detail page mounts the map, unmounts it for a
+# single tick and mounts it again: its first observations query (the alert's
+# "not viewed" filter) comes back empty, so the empty state renders between that
+# response and the fallback query that drops the filter. A box measured from
+# Python resolves the element in one round-trip and measures it in the next, so
+# on a loaded machine it can measure the node that tick just discarded - which
+# reports as None rather than as a failure to find the map. Reading the box in
+# one page-side evaluation removes that gap; requiring two matching frames also
+# skips the tick where the wrapper still has its pre-measurement default height.
+_STABLE_MAP_BOX_JS = """() => {
+    const el = document.querySelector(".base-map-wrapper");
+    const previous = window.__mapBox ?? null;
+    if (!el) {
+        window.__mapBox = null;
+        return null;
+    }
+    const rect = el.getBoundingClientRect();
+    if (rect.height === 0) {
+        window.__mapBox = null;
+        return null;
+    }
+    const box = { y: rect.y, height: rect.height };
+    window.__mapBox = box;
+    const settled = previous && previous.y === box.y && previous.height === box.height;
+    return settled ? box : null;
+}"""
+
+
 def _map_box(page: Page):
-    """The rendered map's box, once it has been sized."""
-    wrapper = page.locator(".base-map-wrapper")
-    expect(wrapper).to_be_visible()
-    box = wrapper.bounding_box()
-    assert box is not None
-    return box
+    """The rendered map's box, once it has been sized and has settled."""
+    expect(page.locator(".base-map-wrapper")).to_be_visible()
+    return page.wait_for_function(_STABLE_MAP_BOX_JS).json_value()
 
 
 @pytest.mark.django_db(transaction=True)
