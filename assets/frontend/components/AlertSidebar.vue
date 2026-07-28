@@ -121,6 +121,10 @@ const formattedDatasetsCount = computed(() =>
         ? "--"
         : resultsStore.datasetsCount.toLocaleString(),
 );
+
+function showSpeciesTab() {
+    resultsStore.activeResultsTab = "species";
+}
 </script>
 
 <template>
@@ -230,12 +234,12 @@ const formattedDatasetsCount = computed(() =>
                 <span class="stat-label">{{ t("message.statObservationsLabel") }}</span>
             </div>
             <div class="stat-cards">
-                <div class="stat-card">
+                <button type="button" class="stat-card stat-card-action" @click="showSpeciesTab">
                     <span class="stat-card-value"
                         ><i class="pi pi-list stat-card-icon" />{{ formattedSpeciesCount }}</span
                     >
                     <span class="stat-card-label">{{ t("message.statSpeciesLabel") }}</span>
-                </div>
+                </button>
                 <div class="stat-card">
                     <span class="stat-card-value"
                         ><i class="pi pi-database stat-card-icon" />{{
@@ -291,6 +295,14 @@ const formattedDatasetsCount = computed(() =>
     line-height: 1.3;
     padding-bottom: 0.25rem;
     border-bottom: 1px solid #334155; /* slate-700 */
+}
+
+.stat-card-action {
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
 }
 
 .species-list {

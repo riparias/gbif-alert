@@ -13,3 +13,12 @@ the welcome text, an operator-editable page fragment of unknowable height.
 **Rejected:** `calc(100dvh - Npx)`, which needs that offset as a constant;
 and aligning the map to the sidebar, which the short alert detail sidebar would
 have made shorter rather than taller.
+
+## 2026-07-28 - Species breakdown results tab
+**What:** A read-only "Species" results tab, backed by a new
+`/observations/species-breakdown/` aggregate endpoint.
+**Why:** The sidebar reported how many species matched a search but gave no
+way to find out which ones.
+**Rejected:** Folding several charts behind a renamed "Chart" tab - it costs
+roughly 2.5x for a chart registry serving two charts, and a pie chart is
+unreadable at fifty species.
