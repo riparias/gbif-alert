@@ -60,6 +60,7 @@ from dashboard.api_v2_schemas import (
     SignInIn,
     SignInOut,
     SignUpIn,
+    SpeciesCountOut,
     SpeciesIn,
     SpeciesOut,
     SpeciesPerPolygonIn,
@@ -804,6 +805,48 @@ def observations_counter(request: HttpRequest, filters: Query[FiltersQuery]):
     """
     qs = _filtered_observations(request, filters)
     return {"count": qs.count()}
+
+
+@api_v2.get(
+    "/observations/species-breakdown/",
+    response=list[SpeciesCountOut],
+    summary="Species present in a filtered result set",
+)
+def observations_species_breakdown(request: HttpRequest, filters: Query[FiltersQuery]):
+    """Return each species present in the filtered observations, with its
+    observation count, ranked by count descending.
+
+    A species with no matching observation is absent from the response
+    rather than present with a zero count.
+
+    Defined before observation_detail so the literal
+    `/observations/species-breakdown/` path is matched ahead of
+    `/observations/{stable_id}/`.
+    """
+    qs = _filtered_observations(request, filters)
+
+    # Group on species_id alone: a single integer group key, and no join to
+    # dashboard_species in the aggregate. Note that .values() discards the
+    # manager's select_related - Query.set_values() sets select_related =
+    # False - so this really does touch only dashboard_observation.
+    rows = (
+        qs.values("species_id")
+        .annotate(count=Count("pk"))
+        .order_by("-count", "species_id")
+    )
+
+    # Hydrate names afterwards from the (small, pk-indexed) species table.
+    species_by_id = Species.objects.in_bulk([row["species_id"] for row in rows])
+
+    return [
+        {
+            "id": row["species_id"],
+            "scientificName": species_by_id[row["species_id"]].name,
+            **_vernacular_names(species_by_id[row["species_id"]]),
+            "count": row["count"],
+        }
+        for row in rows
+    ]
 
 
 @api_v2.post(
