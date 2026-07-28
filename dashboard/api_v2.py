@@ -12,7 +12,7 @@ from django.contrib.gis.geos import (
 )
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers import serialize
-from django.db.models import Count, F, Value
+from django.db.models import Count, F, QuerySet, Value
 from django.db.models.functions import Coalesce, NullIf, TruncMonth
 from django.http import Http404, HttpRequest
 from django.shortcuts import get_object_or_404
@@ -629,6 +629,33 @@ _VERNACULAR_LANG_CODES = {code[:2] for code, _name in settings.LANGUAGES}
 _ACCEPTED_ORDER_BY = set(_SIMPLE_SORT_FIELD_MAP) | _LOCALISED_SORT_FIELDS
 
 
+def _filtered_observations(
+    request: HttpRequest, filters: FiltersQuery
+) -> QuerySet[Observation]:
+    """The observation queryset matching `filters` for this request.
+
+    Every filtered v2 endpoint funnels through here so they cannot drift
+    apart. The user is resolved anonymous-safely: ApiTokenAuth assigns
+    request.user, so token-authenticated requests resolve to their owner
+    just like session ones.
+    """
+    user = request.user if request.user.is_authenticated else None
+    return Observation.objects.filtered_from_my_params(
+        species_ids=filters.speciesIds,
+        datasets_ids=filters.datasetIds,
+        basis_of_record_ids=filters.basisOfRecordIds,
+        start_date=filters.startDate,
+        end_date=filters.endDate,
+        areas_ids=filters.areaIds,
+        status_for_user=api_status_to_internal(filters.status),
+        initial_data_import_ids=filters.initialDataImportIds,
+        user=user,
+        verified_filter=filters.verifiedFilter,
+        area_filter_mode=filters.areaFilterMode,
+        approaching_distance_km=filters.approachingDistanceKm,
+    )
+
+
 @api_v2.get(
     "/observations/",
     response={200: ObservationsPageOut, 400: DetailErrorOut},
@@ -670,21 +697,7 @@ def observations_list(
         return 400, {"detail": "Invalid page. Must be 1 or greater."}
 
     user = request.user if request.user.is_authenticated else None
-
-    qs = Observation.objects.filtered_from_my_params(
-        species_ids=filters.speciesIds,
-        datasets_ids=filters.datasetIds,
-        basis_of_record_ids=filters.basisOfRecordIds,
-        start_date=filters.startDate,
-        end_date=filters.endDate,
-        areas_ids=filters.areaIds,
-        status_for_user=api_status_to_internal(filters.status),
-        initial_data_import_ids=filters.initialDataImportIds,
-        user=user,
-        verified_filter=filters.verifiedFilter,
-        area_filter_mode=filters.areaFilterMode,
-        approaching_distance_km=filters.approachingDistanceKm,
-    )
+    qs = _filtered_observations(request, filters)
 
     aggregates = qs.aggregate(
         total=Count("pk"),
@@ -766,22 +779,7 @@ def observations_list(
 
 @api_v2.get("/observations/histogram/", response=list[HistogramEntryOut])
 def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
-    user = request.user if request.user.is_authenticated else None
-
-    qs = Observation.objects.filtered_from_my_params(
-        species_ids=filters.speciesIds,
-        datasets_ids=filters.datasetIds,
-        basis_of_record_ids=filters.basisOfRecordIds,
-        start_date=filters.startDate,
-        end_date=filters.endDate,
-        areas_ids=filters.areaIds,
-        status_for_user=api_status_to_internal(filters.status),
-        initial_data_import_ids=filters.initialDataImportIds,
-        user=user,
-        verified_filter=filters.verifiedFilter,
-        area_filter_mode=filters.areaFilterMode,
-        approaching_distance_km=filters.approachingDistanceKm,
-    )
+    qs = _filtered_observations(request, filters)
 
     rows = (
         qs.annotate(month=TruncMonth("date"))
@@ -804,21 +802,7 @@ def observations_counter(request: HttpRequest, filters: Query[FiltersQuery]):
     Defined before observation_detail so the literal `/observations/counter/`
     path is matched ahead of `/observations/{stable_id}/`.
     """
-    user = request.user if request.user.is_authenticated else None
-    qs = Observation.objects.filtered_from_my_params(
-        species_ids=filters.speciesIds,
-        datasets_ids=filters.datasetIds,
-        basis_of_record_ids=filters.basisOfRecordIds,
-        start_date=filters.startDate,
-        end_date=filters.endDate,
-        areas_ids=filters.areaIds,
-        status_for_user=api_status_to_internal(filters.status),
-        initial_data_import_ids=filters.initialDataImportIds,
-        user=user,
-        verified_filter=filters.verifiedFilter,
-        area_filter_mode=filters.areaFilterMode,
-        approaching_distance_km=filters.approachingDistanceKm,
-    )
+    qs = _filtered_observations(request, filters)
     return {"count": qs.count()}
 
 
@@ -835,20 +819,7 @@ def observations_mark_all_as_seen(request: HttpRequest, filters: FiltersQuery):
     payload in the body, not the query string - audit N4).
     """
     user = cast(User, request.user)
-    qs = Observation.objects.filtered_from_my_params(
-        species_ids=filters.speciesIds,
-        datasets_ids=filters.datasetIds,
-        basis_of_record_ids=filters.basisOfRecordIds,
-        start_date=filters.startDate,
-        end_date=filters.endDate,
-        areas_ids=filters.areaIds,
-        status_for_user=api_status_to_internal(filters.status),
-        initial_data_import_ids=filters.initialDataImportIds,
-        user=user,
-        verified_filter=filters.verifiedFilter,
-        area_filter_mode=filters.areaFilterMode,
-        approaching_distance_km=filters.approachingDistanceKm,
-    )
+    qs = _filtered_observations(request, filters)
     # N2: report how many matching observations are currently unseen by the user
     # (the rows the job will actually flip), so the consumer knows what happened.
     count = qs.filter(observationunseen__user=user).distinct().count()
