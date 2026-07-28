@@ -93,22 +93,33 @@ def _build_where_clause(params: dict) -> tuple[str, dict]:
     elif params.get("verified_filter") == "unverified":
         clauses.append("AND obs.verified = false")
 
+    # Seen/unseen status, always relative to the requesting user. Both branches
+    # are written as a plain condition on (user_id, observation_id) so that
+    # dashboard_ou_user_obs_idx (migration 0037) is all Postgres needs. Going
+    # through an `id IN (SELECT id FROM <unseen> WHERE user_id = ...)` subquery
+    # instead adds a self-join of the unseen table - the index still finds the
+    # user's rows, but the plan then walks back to the same table by primary key
+    # just to read user_id. On 100k observations / 102k unseen rows that self-
+    # join costs 20x the buffers once another filter narrows the tile (1759 ->
+    # 83, 0.62ms -> 0.37ms). Same reasoning as in
+    # ObservationManager.filtered_from_my_params, which these two clauses must
+    # stay equivalent to.
     status = params.get("status")
     if status == "seen":
+        # "Seen" is the absence of an unseen record *for this user*: a record
+        # belonging to somebody else must not hide the observation here.
         clauses.append(
-            f"""AND NOT (EXISTS(
-            SELECT (1) FROM {_TBL_UNSEEN} ov WHERE (
-                ov.id IN (SELECT ov1.id FROM {_TBL_UNSEEN} ov1 WHERE ov1.user_id = %(user_id)s)
-                AND ov.observation_id = obs.id
-            ) LIMIT 1))"""
+            f"""AND NOT EXISTS(
+            SELECT 1 FROM {_TBL_UNSEEN} ov
+            WHERE ov.user_id = %(user_id)s AND ov.observation_id = obs.id)"""
         )
         binds["user_id"] = params["user_id"]
     elif status == "unseen":
-        clauses.append(
-            f"""AND {_TBL_UNSEEN}.id IN (
-                SELECT ov1.id FROM {_TBL_UNSEEN} ov1 WHERE ov1.user_id = %(user_id)s
-            )"""
-        )
+        # _build_joins() INNER JOINs the unseen table on observation_id; keeping
+        # only this user's rows both applies the filter and guarantees at most
+        # one joined row per observation (unique_together on observation+user),
+        # so the aggregated endpoints do not double-count.
+        clauses.append(f"AND {_TBL_UNSEEN}.user_id = %(user_id)s")
         binds["user_id"] = params["user_id"]
 
     if params.get("limit_to_tile"):
