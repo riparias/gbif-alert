@@ -379,10 +379,9 @@ function showSpeciesTab() {
 }
 
 .stat-card-action {
-    border: none;
-    background: none;
     font: inherit;
     color: inherit;
+    text-align: left;
     cursor: pointer;
 }
 
