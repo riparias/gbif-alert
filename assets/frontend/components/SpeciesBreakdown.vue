@@ -9,6 +9,8 @@ import { useResultsStore } from "../stores/results";
 import { filtersToParams } from "../utils/filterParams";
 import { pickVernacular } from "../utils/vernacular";
 import SpeciesName from "./SpeciesName.vue";
+import { storeToRefs } from "pinia";
+import { usePreferencesStore } from "../stores/preferences";
 import type { components } from "../types/api";
 
 type SpeciesCountOut = components["schemas"]["SpeciesCountOut"];
@@ -18,12 +20,30 @@ const props = defineProps<{ active: boolean }>();
 const { t, locale } = useI18n();
 const filtersStore = useFiltersStore();
 const resultsStore = useResultsStore();
+const preferences = usePreferencesStore();
+const { speciesNameMode } = storeToRefs(preferences);
 
 const rows = ref<SpeciesCountOut[]>([]);
 const loading = ref(false);
 const stale = ref(true);
 
 const total = computed(() => rows.value.reduce((sum, row) => sum + row.count, 0));
+
+// Sort/display key for the species column: mirror exactly what SpeciesName.vue
+// renders for the current scientific/vernacular toggle, so clicking the header
+// doesn't produce an order that looks arbitrary next to what's on screen. In
+// "scientific" mode that's always the scientific name; in "vernacular" mode
+// it's the locale's vernacular name, falling back to the scientific name when
+// that column is empty (same fallback SpeciesName.vue uses).
+const displayRows = computed(() =>
+    rows.value.map((row) => ({
+        ...row,
+        displayName:
+            speciesNameMode.value === "vernacular"
+                ? pickVernacular(row, locale.value) || row.scientificName
+                : row.scientificName,
+    })),
+);
 
 function share(count: number): number {
     return total.value === 0 ? 0 : (count / total.value) * 100;
@@ -74,14 +94,14 @@ onUnmounted(() => debouncedReload.cancel());
 
 <template>
     <DataTable
-        :value="rows"
+        :value="displayRows"
         :loading="loading"
         sort-field="count"
         :sort-order="-1"
         row-hover
         class="species-breakdown-table"
     >
-        <Column field="scientificName" :header="t('message.species')" sortable>
+        <Column field="displayName" :header="t('message.species')" sortable>
             <template #body="{ data }">
                 <SpeciesName
                     :scientific-name="data.scientificName"
