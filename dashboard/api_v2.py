@@ -635,8 +635,8 @@ def _filtered_observations(
 ) -> QuerySet[Observation]:
     """The observation queryset matching `filters` for this request.
 
-    Every filtered v2 endpoint funnels through here so they cannot drift
-    apart. The user is resolved anonymous-safely: ApiTokenAuth assigns
+    Every endpoint taking FiltersQuery funnels through here so they cannot
+    drift apart. The user is resolved anonymous-safely: ApiTokenAuth assigns
     request.user, so token-authenticated requests resolve to their owner
     just like session ones.
     """
