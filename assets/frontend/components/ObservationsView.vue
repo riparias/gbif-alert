@@ -12,6 +12,7 @@ import Popover from "primevue/popover";
 import Checkbox from "primevue/checkbox";
 import ObservationHistogram from "./ObservationHistogram.vue";
 import ObservationsMap from "./ObservationsMap.vue";
+import SpeciesBreakdown from "./SpeciesBreakdown.vue";
 import Tabs from "primevue/tabs";
 import TabList from "primevue/tablist";
 import Tab from "primevue/tab";
@@ -248,6 +249,9 @@ onMounted(async () => {
                     ><i class="pi pi-chart-bar" /> {{ t("message.timelineView") }}
                     <span class="tab-new-badge">{{ t("message.newBadge") }}</span></Tab
                 >
+                <Tab value="species"
+                    ><i class="pi pi-sitemap" /> {{ t("message.speciesView") }}</Tab
+                >
                 <Tab value="table"><i class="pi pi-table" /> {{ t("message.tableView") }}</Tab>
             </TabList>
             <TabPanels>
@@ -257,6 +261,13 @@ onMounted(async () => {
 
                 <TabPanel value="timeline">
                     <ObservationHistogram v-if="visitedTabs.has('timeline')" />
+                </TabPanel>
+
+                <TabPanel value="species">
+                    <SpeciesBreakdown
+                        v-if="visitedTabs.has('species')"
+                        :active="activeResultsTab === 'species'"
+                    />
                 </TabPanel>
 
                 <TabPanel value="table">
