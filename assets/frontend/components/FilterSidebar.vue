@@ -205,6 +205,10 @@ const formattedDatasetsCount = computed(() =>
         ? "--"
         : resultsStore.datasetsCount.toLocaleString(),
 );
+
+function showSpeciesTab() {
+    resultsStore.activeResultsTab = "species";
+}
 </script>
 
 <template>
@@ -340,12 +344,12 @@ const formattedDatasetsCount = computed(() =>
                 <span class="stat-label">{{ t("message.statObservationsLabel") }}</span>
             </div>
             <div class="stat-cards">
-                <div class="stat-card">
+                <button type="button" class="stat-card stat-card-action" @click="showSpeciesTab">
                     <span class="stat-card-value"
                         ><i class="pi pi-list stat-card-icon" />{{ formattedSpeciesCount }}</span
                     >
                     <span class="stat-card-label">{{ t("message.statSpeciesLabel") }}</span>
-                </div>
+                </button>
                 <div class="stat-card">
                     <span class="stat-card-value"
                         ><i class="pi pi-database stat-card-icon" />{{
@@ -372,6 +376,13 @@ const formattedDatasetsCount = computed(() =>
 
 .sidebar-control {
     width: 100%;
+}
+
+.stat-card-action {
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
 }
 
 /* ---- Compact input sizing for all PrimeVue controls inside the sidebar ---- */

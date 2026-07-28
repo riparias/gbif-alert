@@ -3214,3 +3214,196 @@ def test_publish_as_template_requires_auth(client, alert_data):
     alert = alert_data["alert"]
     response = client.post(f"/api/v2/spa/alerts/{alert.pk}/publish-as-template/")
     assert response.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v2/observations/species-breakdown/
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def breakdown_data():
+    """Three observations of species A, one of species B - both on the same
+    dataset. A second dataset carries its own species (species C) so tests
+    can exercise the dataset filter without disturbing the A/B counts the
+    other tests here rely on."""
+    species_a = Species.objects.create(
+        name="Procambarus fallax",
+        gbif_taxon_key=8879526,
+        vernacular_name_en="Marbled crayfish",
+        vernacular_name_nl="Marmerkreeft",
+        vernacular_name_fr="Ecrevisse marbree",
+    )
+    species_b = Species.objects.create(
+        name="Vespa velutina",
+        gbif_taxon_key=1311477,
+        vernacular_name_en="Asian hornet",
+        vernacular_name_nl="Aziatische hoornaar",
+        vernacular_name_fr="Frelon asiatique",
+    )
+    species_c = Species.objects.create(
+        name="Herpestes javanicus",
+        gbif_taxon_key=4265185,
+        vernacular_name_en="Small Indian mongoose",
+        vernacular_name_nl="Kleine mangoeste",
+        vernacular_name_fr="Mangouste indienne",
+    )
+    dataset = Dataset.objects.create(
+        name="Test dataset",
+        gbif_dataset_key="4fa7b334-ce0d-4e88-aaae-2e0c138d049e",
+    )
+    dataset_2 = Dataset.objects.create(
+        name="Second test dataset",
+        gbif_dataset_key="8b1730c5-7e0b-4b8a-9a1a-8f6e6c2f9b7d",
+    )
+    basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    di = DataImport.objects.create(
+        start=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
+    )
+    for i in range(3):
+        Observation.objects.create(
+            gbif_id=f"b{i}",
+            occurrence_id=f"occ:b{i}",
+            species=species_a,
+            source_dataset=dataset,
+            date=datetime.date(2024, 1, 15),
+            data_import=di,
+            initial_data_import=di,
+            basis_of_record=basis_of_record,
+        )
+    Observation.objects.create(
+        gbif_id="b3",
+        occurrence_id="occ:b3",
+        species=species_b,
+        source_dataset=dataset,
+        date=datetime.date(2024, 6, 20),
+        data_import=di,
+        initial_data_import=di,
+        basis_of_record=basis_of_record,
+    )
+    Observation.objects.create(
+        gbif_id="b4",
+        occurrence_id="occ:b4",
+        species=species_c,
+        source_dataset=dataset_2,
+        # Deliberately before the 2024-05-01 cutoff used by the date-filter
+        # test below, so that test's expectations stay unaffected by this
+        # dataset's addition.
+        date=datetime.date(2024, 2, 1),
+        data_import=di,
+        initial_data_import=di,
+        basis_of_record=basis_of_record,
+    )
+    return {
+        "species_a": species_a,
+        "species_b": species_b,
+        "species_c": species_c,
+        "dataset": dataset,
+        "dataset_2": dataset_2,
+    }
+
+
+def test_species_breakdown_empty_returns_empty_list(client):
+    """No observations at all: an empty list, not an error."""
+    response = client.get(reverse("api-v2:observations_species_breakdown"))
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_species_breakdown_counts_and_order(client, breakdown_data):
+    """Entries are ranked by count descending; ties (here species B and C,
+    both at 1) fall back to species_id ascending, matching creation order."""
+    response = client.get(reverse("api-v2:observations_species_breakdown"))
+    payload = response.json()
+    assert [(e["scientificName"], e["count"]) for e in payload] == [
+        ("Procambarus fallax", 3),
+        ("Vespa velutina", 1),
+        ("Herpestes javanicus", 1),
+    ]
+
+
+def test_species_breakdown_entry_shape(client, breakdown_data):
+    """Each entry carries the id, the scientific name, all three vernacular
+    columns in the right fields, and the count - the fields SpeciesBreakdown.vue
+    reads. The fixture species carry distinct per-language vernacular names, so
+    an fr/nl transposition in the response builder would fail this."""
+    response = client.get(reverse("api-v2:observations_species_breakdown"))
+    payload = response.json()
+    entry = next(e for e in payload if e["scientificName"] == "Procambarus fallax")
+    assert set(entry) == {
+        "id",
+        "scientificName",
+        "vernacularNameEn",
+        "vernacularNameNl",
+        "vernacularNameFr",
+        "count",
+    }
+    assert entry["vernacularNameEn"] == "Marbled crayfish"
+    assert entry["vernacularNameNl"] == "Marmerkreeft"
+    assert entry["vernacularNameFr"] == "Ecrevisse marbree"
+
+
+def test_species_breakdown_respects_species_filter(client, breakdown_data):
+    """A species filter narrows the breakdown to that species."""
+    species_b = breakdown_data["species_b"]
+    response = client.get(
+        reverse("api-v2:observations_species_breakdown"),
+        {"speciesIds": species_b.pk},
+    )
+    assert [(e["scientificName"], e["count"]) for e in response.json()] == [
+        ("Vespa velutina", 1)
+    ]
+
+
+def test_species_breakdown_respects_date_filter(client, breakdown_data):
+    """A date range narrows the breakdown. Species B is the only June record."""
+    response = client.get(
+        reverse("api-v2:observations_species_breakdown"),
+        {"startDate": "2024-05-01"},
+    )
+    assert [(e["scientificName"], e["count"]) for e in response.json()] == [
+        ("Vespa velutina", 1)
+    ]
+
+
+def test_species_breakdown_respects_dataset_filter(client, breakdown_data):
+    """A dataset filter narrows the breakdown to species observed in that
+    dataset. Species C is the only one on the second dataset."""
+    dataset_2 = breakdown_data["dataset_2"]
+    response = client.get(
+        reverse("api-v2:observations_species_breakdown"),
+        {"datasetIds": dataset_2.pk},
+    )
+    assert [(e["scientificName"], e["count"]) for e in response.json()] == [
+        ("Herpestes javanicus", 1)
+    ]
+
+
+def test_species_breakdown_species_with_no_matches_is_absent(client, breakdown_data):
+    """A species with zero matching observations does not appear at all,
+    rather than appearing with count 0."""
+    response = client.get(
+        reverse("api-v2:observations_species_breakdown"),
+        {"startDate": "2024-05-01"},
+    )
+    assert "Procambarus fallax" not in [e["scientificName"] for e in response.json()]
+
+
+def test_species_breakdown_respects_unseen_status_filter(client, breakdown_data):
+    """status=notViewed (the external vocabulary for the internal "unseen"
+    state - see api_status_to_internal) restricts the breakdown to the
+    requesting user's unseen rows. This is the only filter that joins a
+    per-user table, so it is worth its own test."""
+    User = get_user_model()
+    user = User.objects.create_user(username="breakdown_user", password="pw")
+    # Exactly one of the three Procambarus observations is unseen for them.
+    unseen_obs = Observation.objects.filter(species=breakdown_data["species_a"]).first()
+    ObservationUnseen.objects.create(observation=unseen_obs, user=user)
+
+    client.force_login(user)
+    response = client.get(
+        reverse("api-v2:observations_species_breakdown"), {"status": "notViewed"}
+    )
+    assert [(e["scientificName"], e["count"]) for e in response.json()] == [
+        ("Procambarus fallax", 1)
+    ]
