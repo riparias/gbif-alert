@@ -15,7 +15,7 @@ from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core.mail import mail_admins
 from django.core.management.base import BaseCommand, CommandParser, CommandError
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 from dwca.darwincore.utils import qualname as qn  # type: ignore
@@ -415,6 +415,47 @@ def _import_all_observations(
     return skipped_observations_counter
 
 
+def _vacuum_analyze_rewritten_tables(stdout) -> None:
+    """VACUUM ANALYZE the two tables the import rewrites wholesale.
+
+    The import replaces every observation row (and, through
+    ``migrate_unseen_observations``, most of the unseen table), so on commit
+    both tables hold as many dead tuples as live ones and their visibility maps
+    still describe the *previous* dataset. Until something vacuums them, an
+    index-only scan has to fall back to a heap fetch per index entry: measured
+    on a 100k-row import, the observations histogram did 199970 heap fetches
+    and touched ~200k buffers (85 ms), against 0 heap fetches and 773 buffers
+    (22 ms) once vacuumed. Waiting for autovacuum leaves that regression in
+    place for however long it takes to get round to a freshly rewritten table.
+
+    Cost is small next to the import itself: ~0.9 s for the observations table
+    and ~0.15 s for the unseen table per 100k observations.
+
+    Runs outside the import transaction, because VACUUM cannot run inside one,
+    and after maintenance mode has been lifted - so it competes with live
+    traffic rather than extending the outage.
+    """
+    if connection.in_atomic_block:
+        # Nothing to do rather than a hard failure: this happens when the
+        # command is driven from inside a transaction (a plain Django TestCase,
+        # or a caller wrapping it in atomic()), where a rollback discards the
+        # rewrite anyway.
+        _log_with_time(stdout, "Skipping VACUUM ANALYZE: running inside a transaction.")
+        return
+
+    for table in ("dashboard_observation", "dashboard_observationunseen"):
+        try:
+            with connection.cursor() as cursor:
+                # Table names are literals, never user input.
+                cursor.execute(f"VACUUM (ANALYZE) {table}")
+            _log_with_time(stdout, f"VACUUM ANALYZE done on {table}")
+        except Exception as exc:
+            # The import is already committed and the site is back up, so a
+            # vacuum problem (e.g. the DB user does not own the table) must not
+            # fail the command: autovacuum will get there eventually.
+            _log_with_time(stdout, f"VACUUM ANALYZE failed on {table}: {exc!r}")
+
+
 def run_import(
     raw_rows_factory: Callable[[], Iterable[RawObservationRow]],
     *,
@@ -590,6 +631,11 @@ def run_import(
         # import stranded the site in maintenance mode).
         _log_with_time(stdout, "Leaving maintenance mode.")
         disable_maintenance_for_import()
+
+    # After the transaction and after maintenance mode is lifted: the table was
+    # just rewritten, so its visibility map and statistics are stale.
+    _log_with_time(stdout, "Vacuuming and analyzing the rewritten tables")
+    _vacuum_analyze_rewritten_tables(stdout)
 
     _log_with_time(stdout, "Sending success report")
     send_successful_import_email()

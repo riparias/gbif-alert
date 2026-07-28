@@ -10,6 +10,7 @@ from unittest import mock
 import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.db import connection
 from django.test import override_settings
 from maintenance_mode.core import (  # type: ignore
     get_maintenance_mode,
@@ -982,3 +983,74 @@ def test_import_aborts_when_a_species_has_blank_col_key():
     with pytest.raises(CommandError) as exc:
         call_command("import_observations")
     assert "Polydrusus planifrons" in str(exc.value)
+
+
+def test_import_vacuum_analyzes_the_rewritten_tables(test_data):
+    """The import ends by vacuuming the two tables it rewrites wholesale.
+
+    Why it matters: the import replaces every observation row, so on commit the
+    visibility map still describes the previous dataset and index-only scans
+    degrade into a heap fetch per index entry until something vacuums. VACUUM
+    cannot run inside a transaction, so this also pins that the call happens
+    after the import transaction has committed.
+    """
+    executed: list[str] = []
+    real_execute = type(connection.cursor()).execute
+
+    def spy(self, sql, params=None):
+        if isinstance(sql, str) and sql.startswith("VACUUM"):
+            executed.append(sql)
+            assert (
+                not connection.in_atomic_block
+            ), "VACUUM was issued inside a transaction; it cannot run there"
+            return None
+        return real_execute(self, sql, params)
+
+    with mock.patch.object(type(connection.cursor()), "execute", spy):
+        run_import_with_rows(
+            [
+                make_raw_row(
+                    gbif_id=1,
+                    occurrence_id="some-new-occurrence",
+                    dataset_key=INATURALIST_KEY,
+                    dataset_name="iNaturalist",
+                    taxon_key=LIXUS_COL_KEY,
+                    accepted_taxon_key=LIXUS_COL_KEY,
+                    species_key=LIXUS_COL_KEY,
+                ),
+            ]
+        )
+
+    assert executed == [
+        "VACUUM (ANALYZE) dashboard_observation",
+        "VACUUM (ANALYZE) dashboard_observationunseen",
+    ]
+
+
+def test_import_survives_a_failing_vacuum(test_data):
+    """A vacuum problem must not fail an import that already committed.
+
+    The data is in and the site is back up by then; autovacuum will catch up.
+    """
+    with mock.patch(
+        "dashboard.management.commands.import_observations.connection"
+    ) as fake_connection:
+        fake_connection.in_atomic_block = False
+        fake_connection.cursor.side_effect = Exception("no privileges to vacuum")
+
+        data_import = run_import_with_rows(
+            [
+                make_raw_row(
+                    gbif_id=1,
+                    occurrence_id="some-new-occurrence",
+                    dataset_key=INATURALIST_KEY,
+                    dataset_name="iNaturalist",
+                    taxon_key=LIXUS_COL_KEY,
+                    accepted_taxon_key=LIXUS_COL_KEY,
+                    species_key=LIXUS_COL_KEY,
+                ),
+            ]
+        )
+
+    # The import itself completed and committed.
+    assert Observation.objects.filter(data_import=data_import).count() == 1
