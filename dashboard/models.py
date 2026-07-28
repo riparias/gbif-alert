@@ -570,11 +570,17 @@ class ObservationManager(models.Manager["Observation"]):
             qs = qs.filter(initial_data_import_id__in=initial_data_import_ids)
 
         if status_for_user and user:
-            ous = ObservationUnseen.objects.filter(user=user)
+            # Filter directly on the related user rather than through an
+            # `__in=<subquery of ObservationUnseen>`: the subquery form makes
+            # Postgres join dashboard_observationunseen to *itself* (once by
+            # observation_id, then by primary key just to read user_id), which
+            # cannot use the (user_id, observation_id) index. `__user=user`
+            # reduces to WHERE user_id = %s on the joined row and lets the
+            # planner satisfy it with an index-only scan on that index.
             if status_for_user == "seen":
-                qs = qs.exclude(observationunseen__in=ous)
+                qs = qs.exclude(observationunseen__user=user)
             elif status_for_user == "unseen":
-                qs = qs.filter(observationunseen__in=ous)
+                qs = qs.filter(observationunseen__user=user)
 
         if verified_filter == "verified":
             qs = qs.filter(verified=True)
@@ -783,6 +789,13 @@ class Observation(models.Model):
         unique_together = [("gbif_id", "data_import"), ("stable_id", "data_import")]
         indexes = [
             models.Index(fields=["stable_id"], name="dashboard_o_stable__idx"),
+            # Serves both the default observation list sort (ORDER BY date DESC,
+            # id DESC LIMIT 20 - see api_v2.observations_list) and the
+            # date__gte/date__lte range filter in filtered_from_my_params().
+            # Declared ascending on purpose: a btree can be scanned in either
+            # direction, so this serves the DESC sort just as well, and it also
+            # covers the ascending sort the API exposes via orderDir=asc.
+            models.Index(fields=["date", "id"], name="dashboard_o_date_id_idx"),
         ]
 
     def __str__(self):
@@ -1111,7 +1124,14 @@ class ObservationUnseen(models.Model):
     """
 
     observation = models.ForeignKey(Observation, on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    # db_index=False: the (user, observation) index below starts with user_id,
+    # so it already serves every lookup a standalone user_id index would, and
+    # Django's default FK index would only add write cost on an import that
+    # rewrites this whole table. Keep the two together - dropping the composite
+    # index without restoring db_index=True here would leave user_id unindexed.
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, db_index=False
+    )
 
     def relevant_for_user(self, date_new_observation) -> bool:
         """Return True if this "unseen object" is still relevant for the user"""
@@ -1126,6 +1146,16 @@ class ObservationUnseen(models.Model):
     class Meta:
         unique_together = [
             ("observation", "user"),
+        ]
+        indexes = [
+            # unique_together already provides an index, but on
+            # (observation_id, user_id). The unseen-status filter in
+            # filtered_from_my_params() needs the opposite column order: it
+            # starts from "the rows belonging to this user", then joins into
+            # observations, which the unique index cannot serve.
+            models.Index(
+                fields=["user", "observation"], name="dashboard_ou_user_obs_idx"
+            ),
         ]
 
 

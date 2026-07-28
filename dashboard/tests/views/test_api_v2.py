@@ -764,6 +764,64 @@ def test_status_filter_uses_viewed_vocabulary(client, observations_data):
     assert obs.pk not in viewed
 
 
+def test_status_filter_ignores_other_users_unseen_records(client, observations_data):
+    """The status filter must only look at the *current* user's unseen records.
+
+    Guards the shape of the underlying query: the filter has to be anchored on
+    user_id, not merely on "an unseen row exists for this observation". An
+    observation another user has not seen is still "viewed" for us.
+    """
+    obs = observations_data["obs"]
+    User = get_user_model()
+    other_user = User.objects.create_user(
+        username="someone_else", password="12345", email="someone_else@example.com"
+    )
+    # Only the *other* user has this observation flagged as unseen.
+    ObservationUnseen.objects.create(observation=obs, user=other_user)
+
+    client.login(username="obs_user", password="12345")
+    url = reverse("api-v2:observations_list")
+
+    not_viewed = {
+        i["id"] for i in client.get(url, {"status": "notViewed"}).json()["items"]
+    }
+    assert obs.pk not in not_viewed
+
+    viewed = {i["id"] for i in client.get(url, {"status": "viewed"}).json()["items"]}
+    assert obs.pk in viewed
+
+
+def test_status_filter_scopes_seen_and_unseen_per_user(client, observations_data):
+    """Two users, two different unseen sets: each must get their own answer."""
+    obs = observations_data["obs"]
+    obs_other = observations_data["obs_other_species"]
+    user = observations_data["user"]
+    User = get_user_model()
+    other_user = User.objects.create_user(
+        username="someone_else", password="12345", email="someone_else@example.com"
+    )
+    ObservationUnseen.objects.create(observation=obs, user=user)
+    ObservationUnseen.objects.create(observation=obs_other, user=other_user)
+
+    url = reverse("api-v2:observations_list")
+
+    client.login(username="obs_user", password="12345")
+    assert {
+        i["id"] for i in client.get(url, {"status": "notViewed"}).json()["items"]
+    } == {obs.pk}
+    assert {i["id"] for i in client.get(url, {"status": "viewed"}).json()["items"]} == {
+        obs_other.pk
+    }
+
+    client.login(username="someone_else", password="12345")
+    assert {
+        i["id"] for i in client.get(url, {"status": "notViewed"}).json()["items"]
+    } == {obs_other.pk}
+    assert {i["id"] for i in client.get(url, {"status": "viewed"}).json()["items"]} == {
+        obs.pk
+    }
+
+
 def test_invalid_enum_filter_values_are_rejected(client, observations_data):
     """Closed-choice filters are now Literal-typed, so junk values are rejected."""
     url = reverse("api-v2:observations_list")

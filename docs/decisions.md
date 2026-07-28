@@ -14,6 +14,29 @@ the welcome text, an operator-editable page fragment of unknowable height.
 and aligning the map to the sidebar, which the short alert detail sidebar would
 have made shorter rather than taller.
 
+## 2026-07-28 - Index the observation date and the per-user unseen lookup
+
+**What:** Concurrent btree indexes on `Observation(date, id)` and
+`ObservationUnseen(user, observation)`, the unseen filter rewritten to use the
+latter, and a `VACUUM ANALYZE` closing `import_observations`.
+**Why:** The default list sorted the whole table on every load, and the import
+rewrites the table wholesale, so index-only scans did a heap fetch per index
+entry (199970 of them, 85ms) until something vacuumed.
+**Rejected:** Keeping the `observationunseen__in=<subquery>` form, which
+self-joins the unseen table and left the new index at zero scans; and a plain
+`CREATE INDEX`, which write-locks `dashboard_observation` for its duration.
+
+## 2026-07-28 - Drop the FK index on ObservationUnseen.user_id
+
+**What:** `db_index=False` on the `user` FK, dropping
+`dashboard_observationunseen_user_id_c919a467` concurrently in migration 0038.
+**Why:** The `(user_id, observation_id)` index added the same day serves every
+lookup a `(user_id)` index can, so the FK index was only write cost on a table
+the import rewrites in full.
+**Rejected:** Also dropping the `observation_id` FK index, redundant against the
+same-day unique constraint on `(observation_id, user_id)` by the same argument -
+but it is the table's most-scanned index and the smaller one to walk.
+
 ## 2026-07-28 - Species breakdown results tab
 
 **What:** A read-only "Species" results tab, backed by a new

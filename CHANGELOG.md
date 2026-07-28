@@ -3,6 +3,10 @@
 - Feature: a new "Species" tab in the results view lists the species present in
   the current search along with their observation counts and shares. The
   species count in the sidebar now links to it.
+- Change: the observations list, the date filter, the "not viewed" filter and
+  the histogram are now served by database indexes rather than sorting or
+  scanning the whole dataset on each request - the histogram was about 4x
+  faster in testing. The import leaves the database ready for them, too.
 - Change: the observations map now grows to fill the page down to the footer
   instead of staying at a fixed height, which left a large empty band below it
   on a tall screen. It never gets shorter than it used to be, so smaller
