@@ -385,6 +385,47 @@ def test_alert_detail_mark_all_button_hidden_when_no_unseen(page: Page, live_ser
 
 
 @pytest.mark.django_db(transaction=True)
+def test_alert_species_stat_card_opens_species_view(page: Page, live_server):
+    """Clicking the sidebar species stat card on an alert detail page switches
+    to the Species tab (AlertSidebar carries the same stat-card-action markup
+    as FilterSidebar, but only the index page had a test for it)."""
+    User = get_user_model()
+    user = User.objects.create_user(username="u15", password="pass", email="u15@t.com")
+    sp = _make_species("Procambarus fallax", 8879526)
+    alert = _make_alert(user, "Alert with species tab", sp)
+
+    # A matching observation, otherwise the page shows the empty state instead
+    # of the tabs (and stat cards).
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    dataset = Dataset.objects.create(name="ds15", gbif_dataset_key="ds15-key")
+    di = DataImport.objects.create(start=timezone.now())
+    Observation.objects.create(
+        gbif_id=44,
+        occurrence_id="occ-44",
+        species=sp,
+        date=datetime.date.today(),
+        data_import=di,
+        initial_data_import=di,
+        source_dataset=dataset,
+        location=Point(5.09513, 50.48941, srid=4326),
+        basis_of_record=basis,
+    )
+
+    login(page, live_server.url, "u15", "pass")
+    page.goto(live_server.url + f"/alert/{alert.pk}")
+
+    # Scope to the stat-cards row: Playwright matches accessible names by
+    # substring, so an unscoped name="species" would also match the "Species"
+    # tab and (on pages that have one) the "All species" filter trigger button,
+    # tripping strict mode.
+    page.locator(".stat-cards").get_by_role("button", name="species").click()
+
+    expect(page.get_by_role("tab", name="Species")).to_have_attribute(
+        "aria-selected", "true"
+    )
+
+
+@pytest.mark.django_db(transaction=True)
 def test_alert_detail_drawer_refreshes_list_and_sidebar(page: Page, live_server):
     """Opening then closing the drawer drops the now-seen observation from the
     status=notViewed view and hides the bulk button (notViewedCount becomes 0)."""
