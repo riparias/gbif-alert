@@ -120,6 +120,20 @@ def maps_data():
     }
 
 
+@pytest.fixture
+def other_user_unseen_everything(maps_data):
+    """A second user for whom *both* observations are unseen.
+
+    Nothing changes for `frusciante`: the status filter is per-user, so an
+    observation someone else has not seen is still "seen" for them.
+    """
+    User = get_user_model()
+    other_user = User.objects.create_user(username="kiedis", password="12345")
+    for observation in Observation.objects.all():
+        ObservationUnseen.objects.create(observation=observation, user=other_user)
+    return other_user
+
+
 # ---------------------------------------------------------------------------
 # MinMaxPerHexagonTests
 # ---------------------------------------------------------------------------
@@ -429,6 +443,27 @@ def test_min_max_in_hexagon_with_status_filter(maps_data, client):
     )
     assert response.json()["min"] == 1
     assert response.json()["max"] == 1
+
+
+def test_min_max_in_hexagon_status_filter_is_scoped_to_current_user(
+    maps_data, other_user_unseen_everything, client
+):
+    """Per-hexagon counts only take the current user's unseen records into
+    account: a single hexagon holding both observations counts 1 unseen one for
+    frusciante, not the 3 unseen records that exist in total."""
+    client.login(username="frusciante", password="12345")
+
+    response = client.get(
+        reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+        data={"zoom": 1, "status": "notViewed"},
+    )
+    assert response.json() == {"min": 1, "max": 1}
+
+    response = client.get(
+        reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+        data={"zoom": 1, "status": "viewed"},
+    )
+    assert response.json() == {"min": 1, "max": 1}
 
 
 def test_min_max_in_hexagon_with_status_filter_anonymous(maps_data, client):
@@ -992,6 +1027,32 @@ def test_tiles_status_filter_frontend_vocabulary(maps_data, client):
     assert decoded_tile["default"]["features"][0]["properties"]["gbif_id"] == "1"
 
 
+def test_tiles_status_filter_is_scoped_to_current_user(
+    maps_data, other_user_unseen_everything, client
+):
+    """The status filter only looks at the current user's unseen records.
+
+    Another user's unseen record must not make an observation "unseen" for
+    frusciante, nor stop it from being "seen".
+    """
+    client.login(username="frusciante", password="12345")
+    base_url = reverse(_SINGLE_OBS_URL, kwargs={"zoom": 2, "x": 2, "y": 1})
+
+    # Lillois (gbif_id=2) is unseen for kiedis, but frusciante has no unseen
+    # record for it => it is still "viewed" for frusciante.
+    response = client.get(f"{base_url}?status=viewed")
+    decoded_tile = mapbox_vector_tile.decode(response.content)
+    assert len(decoded_tile["default"]["features"]) == 1
+    assert decoded_tile["default"]["features"][0]["properties"]["gbif_id"] == "2"
+
+    # Andenne (gbif_id=1) is unseen for both users, but it appears once and it
+    # is the only unseen one for frusciante.
+    response = client.get(f"{base_url}?status=notViewed")
+    decoded_tile = mapbox_vector_tile.decode(response.content)
+    assert len(decoded_tile["default"]["features"]) == 1
+    assert decoded_tile["default"]["features"][0]["properties"]["gbif_id"] == "1"
+
+
 def test_tiles_initial_data_import_filter(maps_data, client):
     second_di = DataImport.objects.create(start=timezone.now())
     Observation.objects.create(
@@ -1265,6 +1326,30 @@ def test_aggregated_tiles_status_filter_case2(maps_data, client):
     response = client.get(url_with_params)
     decoded_tile = mapbox_vector_tile.decode(response.content)
     assert decoded_tile == {}
+
+
+def test_aggregated_tiles_status_filter_is_scoped_to_current_user(
+    maps_data, other_user_unseen_everything, client
+):
+    """Hexagon counts only take the current user's unseen records into account.
+
+    Both observations are unseen for kiedis, and Andenne is unseen for both
+    users: a status filter that ignored the user (or that joined the unseen
+    table without narrowing it to one user) would count 3 observations in the
+    single hexagon instead of 1.
+    """
+    client.login(username="frusciante", password="12345")
+    base_url = reverse(_AGGREGATED_URL, kwargs={"zoom": 2, "x": 2, "y": 1})
+
+    response = client.get(f"{base_url}?status=notViewed")
+    decoded_tile = mapbox_vector_tile.decode(response.content)
+    assert len(decoded_tile["default"]["features"]) == 1
+    assert decoded_tile["default"]["features"][0]["properties"]["count"] == 1
+
+    response = client.get(f"{base_url}?status=viewed")
+    decoded_tile = mapbox_vector_tile.decode(response.content)
+    assert len(decoded_tile["default"]["features"]) == 1
+    assert decoded_tile["default"]["features"][0]["properties"]["count"] == 1
 
 
 def test_aggregated_tiles_species_filter(maps_data, client):

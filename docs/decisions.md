@@ -36,3 +36,14 @@ the import rewrites in full.
 **Rejected:** Also dropping the `observation_id` FK index, redundant against the
 same-day unique constraint on `(observation_id, user_id)` by the same argument -
 but it is the table's most-scanned index and the smaller one to walk.
+
+## 2026-07-28 - Map tiles filter seen/unseen on (user_id, observation_id)
+
+**What:** The map SQL's status filter is now `user_id = %s` on the joined unseen
+row and a `NOT EXISTS` keyed on `(user_id, observation_id)`, instead of the
+`id IN (SELECT id ... WHERE user_id = %s)` subquery.
+**Why:** The subquery form self-joined the unseen table by primary key just to
+read `user_id`, so map tiles missed the `dashboard_ou_user_obs_idx` win the
+observation list already got; the map is the heaviest reader of that filter.
+**Rejected:** Leaving the map SQL alone as "the ORM path is what matters" - the
+two must stay equivalent, and divergent shapes are how they drift apart.
