@@ -218,6 +218,18 @@ watch(speciesNameMode, () => {
 onUnmounted(() => reloadOnFilterChange.cancel());
 
 onMounted(async () => {
+    // activeResultsTab lives in the Pinia store, which outlives this
+    // component - without a reset, a tab chosen on one page (e.g. Species on
+    // the index page) would still be selected after navigating to an alert
+    // detail page, where the map has never been mounted. Reset both the
+    // active tab and which panels have been visited so the map is always the
+    // starting point on a fresh mount, and no tab from a previous page is
+    // left gated open or falsely marked as already visited. This only runs on
+    // mount, so switching tabs via the sidebar's species stat card on an
+    // already-mounted page is unaffected.
+    activeResultsTab.value = "map";
+    visitedTabs.value = new Set(["map"]);
+
     // The table/drawer render the basis-of-record name from its id; ensure the
     // option list is available (the alert detail page has no FilterSidebar).
     ensureBasisOfRecordLoaded();
@@ -246,11 +258,11 @@ onMounted(async () => {
             <TabList>
                 <Tab value="map"><i class="pi pi-map" /> {{ t("message.mapView") }}</Tab>
                 <Tab value="timeline"
-                    ><i class="pi pi-chart-bar" /> {{ t("message.timelineView") }}
-                    <span class="tab-new-badge">{{ t("message.newBadge") }}</span></Tab
+                    ><i class="pi pi-chart-bar" /> {{ t("message.timelineView") }}</Tab
                 >
                 <Tab value="species"
-                    ><i class="pi pi-sitemap" /> {{ t("message.speciesView") }}</Tab
+                    ><i class="pi pi-sitemap" /> {{ t("message.speciesView") }}
+                    <span class="tab-new-badge">{{ t("message.newBadge") }}</span></Tab
                 >
                 <Tab value="table"><i class="pi pi-table" /> {{ t("message.tableView") }}</Tab>
             </TabList>
