@@ -37,6 +37,14 @@ const props = defineProps<{
 const resultsStore = useResultsStore();
 const userStore = useUserStore();
 
+const { activeResultsTab } = storeToRefs(resultsStore);
+
+// A panel mounts on first visit and then stays mounted. PrimeVue's own
+// `lazy` prop would unmount inactive panels, re-initialising the OpenLayers
+// map on every tab switch.
+const visitedTabs = ref(new Set([activeResultsTab.value]));
+watch(activeResultsTab, (tab) => visitedTabs.value.add(tab));
+
 const { t, locale } = useI18n();
 const { ensureBasisOfRecordLoaded, basisOfRecordName } = useDisplayLabels();
 const filtersStore = useFiltersStore();
@@ -233,7 +241,7 @@ onMounted(async () => {
 
     <template v-else>
         <!-- Map / Timeline / Table tabs -->
-        <Tabs value="map">
+        <Tabs v-model:value="activeResultsTab">
             <TabList>
                 <Tab value="map"><i class="pi pi-map" /> {{ t("message.mapView") }}</Tab>
                 <Tab value="timeline"
@@ -244,11 +252,11 @@ onMounted(async () => {
             </TabList>
             <TabPanels>
                 <TabPanel value="map">
-                    <ObservationsMap />
+                    <ObservationsMap v-if="visitedTabs.has('map')" />
                 </TabPanel>
 
                 <TabPanel value="timeline">
-                    <ObservationHistogram />
+                    <ObservationHistogram v-if="visitedTabs.has('timeline')" />
                 </TabPanel>
 
                 <TabPanel value="table">
