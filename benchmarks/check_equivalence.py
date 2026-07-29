@@ -17,7 +17,7 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
 django.setup()
 
-from dwca.read import DwCAReader  # noqa: E402  # type: ignore
+from dwca.read import DwCAReader  # type: ignore  # noqa: E402
 
 from dashboard.management.commands.import_observations import (  # noqa: E402
     _IMPORT_TERMS,
