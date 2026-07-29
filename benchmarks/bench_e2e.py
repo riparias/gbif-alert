@@ -30,8 +30,8 @@ import os
 import subprocess
 import time
 
-BENCH_DB = "gbif_alert_bench"
-TEMPLATE_DB = "gbif_alert_bench_template"
+BENCH_DB = os.environ.get("BENCH_DB_NAME", "gbif_alert_bench")
+TEMPLATE_DB = os.environ.get("BENCH_TEMPLATE_DB", f"{BENCH_DB}_template")
 BENCH_SETTINGS = "benchmarks.bench_settings"
 
 
