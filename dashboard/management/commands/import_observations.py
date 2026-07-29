@@ -816,12 +816,14 @@ class Command(BaseCommand):
             # A generator function, so each call returns a fresh iterator, and
             # the reader is closed when the pass ends. The previous generator
             # expression never closed its DwCAReader.
-            with DwCAReader(source_data_path) as dwca:
+            # Metadata was already read at step 2 by its own reader; parsing the
+            # EML again on each row pass is wasted work.
+            with DwCAReader(source_data_path, skip_metadata=True) as dwca:
                 for values in dwca.iter_terms(_IMPORT_TERMS):
                     yield _raw_from_values(values)
 
         def discovery_rows_factory() -> Iterable[tuple[str, str, str]]:
-            with DwCAReader(source_data_path) as dwca:
+            with DwCAReader(source_data_path, skip_metadata=True) as dwca:
                 for dataset_key, dataset_name, basis_of_record in dwca.iter_terms(
                     _DISCOVERY_TERMS
                 ):
