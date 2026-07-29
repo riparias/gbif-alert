@@ -41,8 +41,8 @@ but it is the table's most-scanned index and the smaller one to walk.
 
 **What:** Upgraded python-dwca-reader to 0.17.1 and switched the import to the
 positional iter_terms API, narrowing the discovery pass to three terms.
-**Why:** 1.29x faster end to end at 100K rows and 1.44x at 1M rows (saving
-roughly 4 minutes off a ~14.5-minute import), mostly from dropping a per-open
-full-file index scan and a 230-key dict built for every row.
+**Why:** About 12x faster archive parsing, from dropping a per-open full-file
+index scan and a 230-key dict built for every row. Worth roughly 5% of a real
+import: parsing was never the bottleneck, database work is.
 **Rejected:** Upgrading without adopting iter_terms - it left the largest
 proportional gain unclaimed for our 230-column archives.

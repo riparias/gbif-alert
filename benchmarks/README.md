@@ -10,11 +10,46 @@ to the read path, back to back in one sitting on an idle machine.
 
 ## Headline finding
 
-The DwCA parse itself got roughly **12x faster**. The full end-to-end import
-only got **1.3-1.4x faster**. Parsing was never the dominant cost of an
-import - inserting/updating rows in Postgres is. See "Where did the time go"
-below for the stage-by-stage breakdown that shows this directly, not just as
-an inference from the two ratios.
+The DwCA parse itself got roughly **12x faster**. The end-to-end import
+measured here got **1.3-1.4x faster** - but read the warning immediately
+below before quoting that second number anywhere. It does not represent a
+production import.
+
+Parsing was never the dominant cost of an import. Database work is.
+
+## WARNING: the end-to-end numbers here understate a real import
+
+Every end-to-end run in this document restored a database whose `Observation`
+table was EMPTY, with zero users and zero alerts. A real import never runs in
+that state, and the difference is structural, not a detail:
+
+- `build_observation_from_raw` calls `Observation.replaced_observation`, which
+  looks for an existing observation with the same `stable_id`. Against an
+  empty table that is 1 cheap query per row. Against a populated table it is
+  **5 queries per row** (measured): the property issues two `COUNT(*)`s,
+  fetches the row, then follows two foreign keys.
+- `create_unseen_observations` iterates users that have alerts. With zero
+  users it returns immediately. This also means the stage-log interval that
+  looks like "Creating unseen observations" in the breakdown below is mostly
+  the NEXT chunk's parse-and-build work, not unseen creation - the interval
+  logging attributes it to the preceding stage.
+
+Measured against a populated 1M-row table, the build step alone costs about
+**3.3 ms and 5.0 queries per row**, projecting to roughly **56 minutes and
+5.1 million queries** for a 1M-row import. Real imports recorded in this
+project's `DataImport` table take **57-95 minutes**, against the 10 minutes
+measured here.
+
+Consequences for reading this document:
+
+- The parse-only ratios are sound. They do not touch the database and are
+  unaffected by any of the above.
+- The end-to-end ratios are not representative. On a real import the roughly
+  197 s this change saves is about **5%** of total import time, not 30%.
+
+To fix the methodology, the benchmark template database needs a previous
+import's observations plus some users and alerts, so the harness measures a
+re-import rather than a first import.
 
 ## Scripts and how to run them
 
