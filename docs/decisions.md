@@ -36,3 +36,13 @@ the import rewrites in full.
 **Rejected:** Also dropping the `observation_id` FK index, redundant against the
 same-day unique constraint on `(observation_id, user_id)` by the same argument -
 but it is the table's most-scanned index and the smaller one to walk.
+
+## 2026-07-29 - Read DwCA archives through iter_terms
+
+**What:** Upgraded python-dwca-reader to 0.17.1 and switched the import to the
+positional iter_terms API, narrowing the discovery pass to three terms.
+**Why:** 1.29x faster end to end at 100K rows and 1.44x at 1M rows (saving
+roughly 4 minutes off a ~14.5-minute import), mostly from dropping a per-open
+full-file index scan and a 230-key dict built for every row.
+**Rejected:** Upgrading without adopting iter_terms - it left the largest
+proportional gain unclaimed for our 230-column archives.

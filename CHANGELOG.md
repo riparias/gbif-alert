@@ -1,5 +1,10 @@
 # Unreleased
 
+- Change: observation imports are faster - roughly 1.3x on a 100,000-row
+  import and 1.4x on a 1,000,000-row import, cutting about 4 minutes off an
+  import of that size (roughly 14.5 minutes down to about 10). Parsing the
+  GBIF archive got much faster, but most of an import's time is spent
+  writing to the database, which this change does not touch.
 - Change: the observations list, the date filter, the "not viewed" filter and
   the histogram are now served by database indexes rather than sorting or
   scanning the whole dataset on each request - the histogram was about 4x
