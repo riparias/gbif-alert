@@ -70,7 +70,7 @@ def _psql(sql: str) -> subprocess.CompletedProcess:
     )
 
 
-def restore_database(attempts: int = 4) -> None:
+def restore_database(attempts: int = 30, delay_seconds: int = 10) -> None:
     """Drop and recreate the bench database from the template.
 
     Any other session has to go first: DROP DATABASE fails while anything is
@@ -78,9 +78,16 @@ def restore_database(attempts: int = 4) -> None:
     that run's process exited - observed more than a minute later. So terminate
     stragglers, then retry, because termination is not instantaneous either.
 
+    Retries persistently - about five minutes by default - because the failures
+    seen here are transient and the thing they abort is expensive. On this
+    machine Postgres.app intermittently refuses connections with 'failed to
+    verify "trust" authentication / You did not confirm the permission dialog',
+    clearing again on its own a few minutes later. A short retry window turned
+    that blip into a lost 76-minute benchmark run twice.
+
     psql's stderr is reported on failure. The earlier version passed check=True
     with captured output, which raised a CalledProcessError showing the command
-    but not the reason.
+    but not the reason, which is why the first occurrence was opaque.
     """
     for attempt in range(1, attempts + 1):
         _psql(
