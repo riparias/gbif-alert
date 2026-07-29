@@ -70,6 +70,15 @@ _IMPORT_TERMS = [
     qn("references"),
 ]
 
+# The discovery pass only ever needed these three. Requesting three terms
+# instead of twenty-one, and skipping the RawObservationRow construction
+# entirely, makes pass 1 substantially cheaper on a multi-million-row archive.
+_DISCOVERY_TERMS = [
+    _GBIF + "datasetKey",
+    qn("datasetName"),
+    qn("basisOfRecord"),
+]
+
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _VERIFICATION_STATUS_JSON = os.path.join(
     _THIS_DIR, "..", "..", "verification_status_classification.json"
@@ -206,20 +215,25 @@ def species_for_raw(
 
 
 def discover_datasets_and_basis_of_record(
-    rows: Iterable[RawObservationRow],
+    rows: Iterable[tuple[str, str, str]],
 ) -> tuple[dict[str, str], set[str]]:
     """Walk a row stream once, collecting distinct dataset keys (with their
     names) and distinct basis-of-record values.
+
+    Each element is a (dataset_key, dataset_name, basis_of_record) triple -
+    the only three fields this pass ever read. Taking a narrow triple rather
+    than a full RawObservationRow lets the DwCA adapter request three terms
+    instead of twenty-one.
 
     Memory is O(distinct datasets + distinct BoR values), never O(rows),
     so this is safe for multi-million-row imports.
     """
     datasets: dict[str, str] = {}
     basis_of_record_values: set[str] = set()
-    for raw in rows:
-        datasets[raw.dataset_key] = raw.dataset_name
-        if raw.basis_of_record:
-            basis_of_record_values.add(raw.basis_of_record)
+    for dataset_key, dataset_name, basis_of_record in rows:
+        datasets[dataset_key] = dataset_name
+        if basis_of_record:
+            basis_of_record_values.add(basis_of_record)
     return datasets, basis_of_record_values
 
 
@@ -498,6 +512,7 @@ def _vacuum_analyze_rewritten_tables(stdout) -> None:
 
 def run_import(
     raw_rows_factory: Callable[[], Iterable[RawObservationRow]],
+    discovery_rows_factory: Callable[[], Iterable[tuple[str, str, str]]],
     *,
     gbif_download_id: str | None = None,
     gbif_predicate: dict | None = None,
@@ -505,10 +520,11 @@ def run_import(
 ) -> DataImport:
     """Run the transactional observation-import pipeline.
 
-    ``raw_rows_factory`` is invoked twice: once for dataset / basis-of-record
-    discovery, once to build and insert observations. Each call must return
-    a fresh iterable. This preserves streaming for multi-million-row imports:
-    no row is held in memory across passes.
+    ``discovery_rows_factory`` feeds pass 1 (dataset / basis-of-record
+    discovery) with (dataset_key, dataset_name, basis_of_record) triples;
+    ``raw_rows_factory`` feeds pass 2, which builds and inserts observations.
+    Each call must return a fresh iterable. This preserves streaming for
+    multi-million-row imports: no row is held in memory across passes.
 
     Maintenance mode is enabled for the duration of the import and always
     cleared on exit, whether the import succeeds or fails. On failure the
@@ -542,7 +558,7 @@ def run_import(
             (
                 datasets_referenced,
                 bor_values_referenced,
-            ) = discover_datasets_and_basis_of_record(raw_rows_factory())
+            ) = discover_datasets_and_basis_of_record(discovery_rows_factory())
 
             _log_with_time(stdout, "3.3 Creating/updating the Dataset objects")
             hash_table_datasets: dict[str, Dataset] = {}
@@ -804,9 +820,21 @@ class Command(BaseCommand):
                 for values in dwca.iter_terms(_IMPORT_TERMS):
                     yield _raw_from_values(values)
 
+        def discovery_rows_factory() -> Iterable[tuple[str, str, str]]:
+            with DwCAReader(source_data_path) as dwca:
+                for dataset_key, dataset_name, basis_of_record in dwca.iter_terms(
+                    _DISCOVERY_TERMS
+                ):
+                    yield (
+                        dataset_key.strip(),
+                        dataset_name.strip(),
+                        basis_of_record.strip(),
+                    )
+
         # 4. Run the transactional pipeline
         run_import(
             raw_rows_factory,
+            discovery_rows_factory,
             gbif_download_id=gbif_download_id,
             gbif_predicate=gbif_predicate,
             stdout=self.stdout,
