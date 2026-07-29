@@ -8,6 +8,11 @@ dataset/ directory) is copied through unchanged.
 Both GBIF extension files use gbifID as their first column, which is what the
 core id column holds, so a simple first-column membership test is enough.
 
+Caveat: this truncates by file order rather than sampling, so the subset's
+dataset composition is not representative of the source archive. GBIF exports
+are grouped by dataset, so extension coverage (e.g. how many rows have
+associated media) can differ substantially from the population rate.
+
 Usage:
     uv run python benchmarks/make_subset.py <source.zip> <dest.zip> <n_rows>
 """
