@@ -450,7 +450,7 @@ requires-dist = [
     { name = "html2text", specifier = "==2024.2.25" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2,<4" },
     { name = "python-dotenv", specifier = ">=1.0.0,<2" },
-    { name = "python-dwca-reader", specifier = ">=0.16.4,<0.17" },
+    { name = "python-dwca-reader", specifier = ">=0.17.1,<0.18" },
     { name = "requests", specifier = ">=2.26.0,<3" },
     { name = "setuptools" },
     { name = "whitenoise", specifier = ">=6.7.0,<7" },
@@ -1266,11 +1266,11 @@ wheels = [
 
 [[package]]
 name = "python-dwca-reader"
-version = "0.16.4"
+version = "0.17.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/1c/72/2cc9f206d04a96712cb33b7a61c8b6e2fa3c27b521e0b4033d75ae657083/python-dwca-reader-0.16.4.tar.gz", hash = "sha256:cfd26278346e9828716af1525a34ab0d2b6cd847bc261fd475611b23ae5ccc5e", size = 39375, upload-time = "2024-10-18T09:24:06.885Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/74/00/bf6270f70720c59fe84ada5c2ac7ca0b524a77986942300131fcda259a9b/python_dwca_reader-0.17.1.tar.gz", hash = "sha256:12a284ae578dd0855046b04a98b61294ee820bc24e00cecf862c75fca224548c", size = 62485, upload-time = "2026-07-29T09:19:39.609Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/12/eca4793fd70bf0c46f4193a9444e89da71af46f920fa6b69edf48dcd50bc/python_dwca_reader-0.16.4-py3-none-any.whl", hash = "sha256:7007258866f7b0e335f2c6d59c46607533c0ad46ef85febc6a3bfe4c5b864e7f", size = 41031, upload-time = "2024-10-18T09:24:05.148Z" },
+    { url = "https://files.pythonhosted.org/packages/53/37/5331809fcc51037172fb14be0c30fb367f961127acbb009d66e193746536/python_dwca_reader-0.17.1-py3-none-any.whl", hash = "sha256:5645732f3a7fbc4e50b658a5ae14c9a804910d17f01d50885c2b3a0ffdf079bd", size = 63464, upload-time = "2026-07-29T09:19:38.424Z" },
 ]
 
 [[package]]
