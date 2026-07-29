@@ -20,7 +20,6 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from dwca.darwincore.utils import qualname as qn  # type: ignore
 from dwca.read import DwCAReader  # type: ignore
-from dwca.rows import CoreRow  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
 from dashboard.maintenance import (
     disable_maintenance_for_import,
@@ -42,6 +41,35 @@ from dashboard.views.helpers import (
 
 BULK_CREATE_CHUNK_SIZE = 10000
 
+_GBIF = "http://rs.gbif.org/terms/1.0/"
+
+# Terms requested from the DwCA core file, in RawObservationRow field order.
+# iter_terms() yields a tuple whose positions match this list exactly, so the
+# order here and the unpacking in _raw_from_values must stay in step.
+_IMPORT_TERMS = [
+    _GBIF + "gbifID",
+    qn("occurrenceID"),
+    qn("occurrenceStatus"),
+    qn("year"),
+    qn("month"),
+    qn("day"),
+    qn("decimalLongitude"),
+    qn("decimalLatitude"),
+    _GBIF + "datasetKey",
+    qn("datasetName"),
+    _GBIF + "taxonKey",
+    _GBIF + "acceptedTaxonKey",
+    _GBIF + "speciesKey",
+    qn("basisOfRecord"),
+    qn("individualCount"),
+    qn("coordinateUncertaintyInMeters"),
+    qn("identificationVerificationStatus"),
+    qn("locality"),
+    qn("municipality"),
+    qn("recordedBy"),
+    qn("references"),
+]
+
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _VERIFICATION_STATUS_JSON = os.path.join(
     _THIS_DIR, "..", "..", "verification_status_classification.json"
@@ -59,7 +87,7 @@ def load_verification_status_hash() -> dict[str, bool]:
 class RawObservationRow:
     """Format-agnostic representation of a single observation row.
 
-    Produced by adapters (e.g. ``dwca_row_to_raw``) and consumed by the
+    Produced by adapters (e.g. ``_raw_from_values``) and consumed by the
     import pipeline. Unparseable numeric fields are represented as ``None``
     so the business logic (not the adapter) owns the skip-vs-default
     decision.
@@ -88,58 +116,75 @@ class RawObservationRow:
     references: str
 
 
-def _get_int_or_none(row: CoreRow, field_name: str) -> int | None:
+def _int_or_none(value: str) -> int | None:
     try:
-        return int(get_string_data(row, field_name=field_name))
+        return int(value)
     except ValueError:
         return None
 
 
-def _get_float_or_none(row: CoreRow, field_name: str) -> float | None:
+def _float_or_none(value: str) -> float | None:
     try:
-        return float(get_string_data(row, field_name=field_name))
+        return float(value)
     except ValueError:
         return None
 
 
-def dwca_row_to_raw(row: CoreRow) -> RawObservationRow:
-    """Convert a DwCA CoreRow into a typed RawObservationRow."""
+def _raw_from_values(values: tuple[str, ...]) -> RawObservationRow:
+    """Build a RawObservationRow from one iter_terms() tuple.
+
+    ``values`` holds the terms listed in _IMPORT_TERMS, in that order.
+    iter_terms() yields raw field values, so the strip() that the previous
+    row-based adapter applied via get_string_data is applied here instead.
+    """
+    (
+        gbif_id,
+        occurrence_id,
+        occurrence_status,
+        year,
+        month,
+        day,
+        decimal_longitude,
+        decimal_latitude,
+        dataset_key,
+        dataset_name,
+        taxon_key,
+        accepted_taxon_key,
+        species_key,
+        basis_of_record,
+        individual_count,
+        coordinate_uncertainty_in_meters,
+        identification_verification_status,
+        locality,
+        municipality,
+        recorded_by,
+        references,
+    ) = map(str.strip, values)
+
     return RawObservationRow(
-        gbif_id=int(
-            get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/gbifID")
+        gbif_id=int(gbif_id),
+        occurrence_id=occurrence_id,
+        occurrence_status=occurrence_status,
+        year=_int_or_none(year),
+        month=_int_or_none(month),
+        day=_int_or_none(day),
+        decimal_longitude=_float_or_none(decimal_longitude),
+        decimal_latitude=_float_or_none(decimal_latitude),
+        dataset_key=dataset_key,
+        dataset_name=dataset_name,
+        taxon_key=taxon_key,
+        accepted_taxon_key=accepted_taxon_key,
+        species_key=species_key,
+        basis_of_record=basis_of_record,
+        individual_count=_int_or_none(individual_count),
+        coordinate_uncertainty_in_meters=_float_or_none(
+            coordinate_uncertainty_in_meters
         ),
-        occurrence_id=get_string_data(row, field_name=qn("occurrenceID")),
-        occurrence_status=get_string_data(row, field_name=qn("occurrenceStatus")),
-        year=_get_int_or_none(row, qn("year")),
-        month=_get_int_or_none(row, qn("month")),
-        day=_get_int_or_none(row, qn("day")),
-        decimal_longitude=_get_float_or_none(row, qn("decimalLongitude")),
-        decimal_latitude=_get_float_or_none(row, qn("decimalLatitude")),
-        dataset_key=get_string_data(
-            row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
-        ),
-        dataset_name=get_string_data(row, field_name=qn("datasetName")),
-        taxon_key=get_string_data(
-            row, field_name="http://rs.gbif.org/terms/1.0/taxonKey"
-        ),
-        accepted_taxon_key=get_string_data(
-            row, field_name="http://rs.gbif.org/terms/1.0/acceptedTaxonKey"
-        ),
-        species_key=get_string_data(
-            row, field_name="http://rs.gbif.org/terms/1.0/speciesKey"
-        ),
-        basis_of_record=get_string_data(row, field_name=qn("basisOfRecord")),
-        individual_count=_get_int_or_none(row, qn("individualCount")),
-        coordinate_uncertainty_in_meters=_get_float_or_none(
-            row, qn("coordinateUncertaintyInMeters")
-        ),
-        identification_verification_status=get_string_data(
-            row, field_name=qn("identificationVerificationStatus")
-        ),
-        locality=get_string_data(row, field_name=qn("locality")),
-        municipality=get_string_data(row, field_name=qn("municipality")),
-        recorded_by=get_string_data(row, field_name=qn("recordedBy")),
-        references=get_string_data(row, field_name=qn("references")),
+        identification_verification_status=identification_verification_status,
+        locality=locality,
+        municipality=municipality,
+        recorded_by=recorded_by,
+        references=references,
     )
 
 
@@ -192,11 +237,6 @@ def extract_gbif_download_id_from_dwca(dwca: DwCAReader) -> str:
             .find("citation")
             .get("identifier")
         )
-
-
-def get_string_data(row: CoreRow, field_name: str) -> str:
-    """Extract string data from a row (with minor cleanup)"""
-    return row.data[field_name].strip()
 
 
 class SkippedObservationException(Exception):
@@ -757,9 +797,12 @@ class Command(BaseCommand):
 
         # 3. Build a fresh-generator factory that lazily streams rows
         def raw_rows_factory() -> Iterable[RawObservationRow]:
-            return (
-                dwca_row_to_raw(core_row) for core_row in DwCAReader(source_data_path)
-            )
+            # A generator function, so each call returns a fresh iterator, and
+            # the reader is closed when the pass ends. The previous generator
+            # expression never closed its DwCAReader.
+            with DwCAReader(source_data_path) as dwca:
+                for values in dwca.iter_terms(_IMPORT_TERMS):
+                    yield _raw_from_values(values)
 
         # 4. Run the transactional pipeline
         run_import(
