@@ -46,3 +46,13 @@ index scan and a 230-key dict built for every row. Worth roughly 5% of a real
 import: parsing was never the bottleneck, database work is.
 **Rejected:** Upgrading without adopting iter_terms - it left the largest
 proportional gain unclaimed for our 230-column archives.
+
+## 2026-07-29 - One query per observation for the replaced-observation lookup
+
+**What:** `Observation.replaced_observation` now does a single `select_related`
+slice instead of two `count()` calls, a row fetch and two foreign-key fetches.
+**Why:** It runs once per observation on the import's hot path - five queries
+per row meant about five million queries on a million-row re-import. Measured
+1.25x on the build step, roughly 8 minutes off a million-row import.
+**Rejected:** Also deferring the geometry column - measured slower (6.59s vs
+5.86s per 3000 rows), because GeoDjango converts it lazily anyway.

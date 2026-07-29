@@ -892,18 +892,34 @@ class Observation(models.Model):
         See https://stackoverflow.com/questions/23489548/how-do-i-invalidate-cached-property-in-django
         """
 
-        identical_observations = self.get_identical_observations()
-        if identical_observations.count() == 0:
-            return None
-        elif identical_observations.count() == 1:
-            the_other_one = identical_observations[0]
-            if the_other_one.data_import.pk < self.data_import.pk:
-                return the_other_one
-            else:
-                raise Observation.OtherIdenticalObservationIsNewer
+        # One query, not five. This sits on the import's hot path: it runs once
+        # per observation, so a re-import of a million rows ran a million times.
+        # The previous form issued two COUNT(*) queries (count() does not
+        # populate the queryset cache, so asking twice asks the database twice),
+        # a third query to fetch the row, then one each to follow data_import
+        # and initial_data_import.
+        #
+        # Slicing to 2 is enough to tell "none" from "exactly one" from "more
+        # than one, which is abnormal", and select_related pulls both foreign
+        # keys in the same round trip - the caller reads initial_data_import
+        # straight after.
+        identical_observations = list(
+            self.get_identical_observations().select_related(
+                "data_import", "initial_data_import"
+            )[:2]
+        )
 
-        else:  # Multiple observations found, this is abnormal
+        if not identical_observations:
+            return None
+
+        if len(identical_observations) > 1:  # This is abnormal
             raise Observation.MultipleObjectsReturned
+
+        the_other_one = identical_observations[0]
+        if the_other_one.data_import.pk < self.data_import.pk:
+            return the_other_one
+        else:
+            raise Observation.OtherIdenticalObservationIsNewer
 
     def get_identical_observations(self) -> QuerySet[Self]:
         """Return 'identical' observations (same stable_id), excluding myself"""

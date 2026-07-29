@@ -51,6 +51,42 @@ To fix the methodology, the benchmark template database needs a previous
 import's observations plus some users and alerts, so the harness measures a
 re-import rather than a first import.
 
+## Cost of the `replaced_observation` lookup
+
+Measured after the above was discovered, against a **populated** 1,010,445-row
+`Observation` table - that is, the realistic re-import case the end-to-end runs
+above never exercised. 3000 rows per run, three runs, back to back on an idle
+machine, timing `build_observation_from_raw` only (no inserts). Query counts
+were taken in a separate run, because capturing queries forces a debug cursor
+that taxes each query and so penalises the many-query variant unequally.
+
+| variant | queries/row | avg per 3000 rows | projected @1M rows |
+| --- | --- | --- | --- |
+| two `count()`s + row fetch + 2 FK fetches (before) | 5.00 | 7.34 s | 2485 s |
+| single `select_related` slice (after) | 1.00 | 5.86 s | 1984 s |
+| no lookup at all (floor, not a correct import) | 0 | 2.07 s | 702 s |
+
+So collapsing five queries into one is worth **1.25x** on the build step,
+roughly 500 s (about 8 minutes) off a million-row import.
+
+Two things worth recording, because both were counter-intuitive:
+
+- **Query count is a poor proxy for cost here.** Dropping from 5 queries to 1
+  removed only 28% of the lookup's cost, not 80%. The five it replaced were
+  cheap indexed lookups; the one that remains is a three-table join that
+  materialises a full `Observation` plus two `DataImport` model instances per
+  row.
+- **`defer("location")` made it slower**, 6.59 s against 5.86 s, so it is not
+  used. GeoDjango converts the geometry lazily on attribute access anyway, so
+  deferring adds attribute machinery without avoiding any work.
+
+The floor row is the interesting one: even after this change, **1282 s of the
+1984 s is still the lookup**. Removing it entirely means batching - one
+`stable_id__in` query per chunk of 10000 rows instead of one query per row,
+the same pattern `_batch_insert_observations` already uses for comments. That
+is the remaining large win in the import, worth roughly another 1.8x on the
+build step.
+
 ## Scripts and how to run them
 
 All commands assume the repo root and require `PYTHONPATH=.` (a
