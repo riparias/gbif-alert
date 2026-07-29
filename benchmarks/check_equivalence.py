@@ -4,7 +4,7 @@ Not part of the test suite: it needs a multi-gigabyte archive. Run once after
 adopting iter_terms, and again after any future python-dwca-reader upgrade.
 
 Usage:
-    uv run python benchmarks/check_equivalence.py <archive.zip>
+    PYTHONPATH=. uv run python benchmarks/check_equivalence.py <archive.zip>
 
 Exit status is 0 when every row matches, 1 otherwise.
 """

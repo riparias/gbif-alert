@@ -252,6 +252,13 @@ python-dwca-reader 0.17.1, variant iter_terms
 
 ## Raw output: end-to-end, 100K archive
 
+Note: the raw stage logs below (and in the 1M archive section further down)
+quote "Opening DWCA to read metadata (this also builds the line-offset
+index)" - the wording of that log line was changed after these measurements
+were taken. The quoted output is left as-is since it's a record of what was
+actually printed at the time; see `import_observations.py` for the current
+text.
+
 Stage logs are condensed: repetitive per-batch lines ("Bulk size reached...",
 "Bulk creation", "Migrating comments", "Creating unseen observations...")
 are collapsed to one sample cycle plus a count, since the full logs run to

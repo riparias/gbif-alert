@@ -801,10 +801,7 @@ class Command(BaseCommand):
             _log_with_time(self.stdout, "Observations downloaded")
 
         # 2. Extract gbif_download_id from DwCA metadata (only needs to read metadata)
-        _log_with_time(
-            self.stdout,
-            "Opening DWCA to read metadata (this also builds the line-offset index)",
-        )
+        _log_with_time(self.stdout, "Opening DWCA to read metadata")
         with DwCAReader(source_data_path) as dwca:
             gbif_download_id = extract_gbif_download_id_from_dwca(dwca)
         _log_with_time(
