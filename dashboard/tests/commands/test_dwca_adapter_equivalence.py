@@ -21,9 +21,7 @@ from dashboard.tests.commands.legacy_dwca_adapter import (
     legacy_dwca_row_to_raw,
 )
 
-SAMPLE_DWCA = (
-    Path(__file__).parent / "sample_data" / "gbif_download.zip"
-)
+SAMPLE_DWCA = Path(__file__).parent / "sample_data" / "gbif_download.zip"
 
 
 def test_import_terms_match_the_legacy_term_list():
@@ -38,7 +36,9 @@ def test_iter_terms_adapter_matches_row_adapter_on_the_fixture():
         legacy_rows = [legacy_dwca_row_to_raw(row) for row in dwca]
 
     with DwCAReader(SAMPLE_DWCA) as dwca:
-        new_rows = [_raw_from_values(values) for values in dwca.iter_terms(_IMPORT_TERMS)]
+        new_rows = [
+            _raw_from_values(values) for values in dwca.iter_terms(_IMPORT_TERMS)
+        ]
 
     assert len(new_rows) == len(legacy_rows)
     assert new_rows == legacy_rows
