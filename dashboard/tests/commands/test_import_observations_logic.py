@@ -658,11 +658,15 @@ def test_chunked_import_detects_replacement_in_later_chunk(test_data, monkeypatc
     - the comment on the replaced observation ends up on the new row
       inserted in the later chunk
 
-    Current chunking quirk (worth pinning as a test so a refactor doesn't
-    silently break it): the flush fires when ``index > 0 and index %
-    CHUNK_SIZE == 0``. With CHUNK_SIZE=3 and 7 rows (indices 0-6), the
-    first flush carries 4 items (0-3), the second carries 3 (4-6), and
-    no final flush runs because the list ends empty.
+    Chunking (pinned here so a refactor does not silently change it): rows are
+    pulled from the source a chunk at a time, so with CHUNK_SIZE=3 and 7 rows
+    the flushes carry 3, 3 and 1 items - three in total.
+
+    This replaced an earlier off-by-one: the flush used to fire when ``index >
+    0 and index % CHUNK_SIZE == 0``, which made the first batch carry
+    CHUNK_SIZE + 1 items and dropped the final flush whenever the row count was
+    an exact multiple. That shape was itself pinned by this test, which is what
+    forced the change to be noticed rather than slipping through.
     """
     from dashboard.management.commands import import_observations as mod
 
@@ -736,15 +740,11 @@ def test_chunked_import_detects_replacement_in_later_chunk(test_data, monkeypatc
     ) as batch_spy:
         run_import_with_rows(rows)
 
-    # Chunking actually happened
+    # Chunking actually happened: 7 rows at CHUNK_SIZE=3 gives 3 + 3 + 1
     assert (
-        batch_spy.call_count == 2
-    ), f"Expected 2 chunk flushes, got {batch_spy.call_count}"
-    # First call got indices 0-3 (4 items), second got 4-6 (3 items)
-    first_chunk_obs = batch_spy.call_args_list[0].args[0]
-    second_chunk_obs = batch_spy.call_args_list[1].args[0]
-    assert len(first_chunk_obs) == 4
-    assert len(second_chunk_obs) == 3
+        batch_spy.call_count == 3
+    ), f"Expected 3 chunk flushes, got {batch_spy.call_count}"
+    assert [len(call.args[0]) for call in batch_spy.call_args_list] == [3, 3, 1]
 
     # All 7 rows made it to the DB
     assert Observation.objects.count() == 7

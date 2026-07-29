@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import itertools
 import json
 import logging
 import os
@@ -197,6 +198,61 @@ def _raw_from_values(values: tuple[str, ...]) -> RawObservationRow:
     )
 
 
+@dataclass(frozen=True)
+class ExistingObservation:
+    """The two fields the import needs from an already-stored observation."""
+
+    data_import_id: int
+    # Not nullable on the model, so a stored observation always has one.
+    initial_data_import_id: int
+
+
+def fetch_existing_by_stable_id(
+    stable_ids: list[str],
+) -> dict[str, list[ExistingObservation]]:
+    """Look up the already-stored observations for a whole chunk, in one query.
+
+    This replaces a per-observation lookup that cost five queries a row, so on
+    a million-row re-import it ran five million times.
+
+    Returns a list per stable id rather than a single value because more than
+    one match is possible - the unique constraint is on
+    ``(stable_id, data_import_id)``, so an interrupted earlier import can leave
+    two - and more than one is an abnormal condition the caller must reject.
+
+    Deliberately ``values_list`` rather than model objects: this runs for every
+    imported row, and instantiating an ``Observation`` plus its two
+    ``DataImport`` relations per row was most of the cost being removed here.
+    """
+    existing: dict[str, list[ExistingObservation]] = {}
+    for stable_id, data_import_id, initial_data_import_id in Observation.objects.filter(
+        stable_id__in=stable_ids
+    ).values_list("stable_id", "data_import_id", "initial_data_import_id"):
+        existing.setdefault(stable_id, []).append(
+            ExistingObservation(
+                data_import_id=data_import_id,
+                initial_data_import_id=initial_data_import_id,
+            )
+        )
+    return existing
+
+
+def _chunked(
+    iterable: Iterable[RawObservationRow], size: int
+) -> Iterable[list[RawObservationRow]]:
+    """Yield lists of up to ``size`` rows, pulling from ``iterable`` lazily.
+
+    Only one chunk is held at a time, so this keeps the import's streaming
+    behaviour: memory stays O(chunk), never O(rows).
+    """
+    iterator = iter(iterable)
+    while True:
+        chunk = list(itertools.islice(iterator, size))
+        if not chunk:
+            return
+        yield chunk
+
+
 def species_for_raw(
     raw: RawObservationRow, hash_species: dict[str, Species]
 ) -> Species:
@@ -264,8 +320,13 @@ def build_observation_from_raw(
     hash_species: dict[str, Species],
     hash_basis_of_record: dict[str, BasisOfRecord],
     hash_verification_status: dict[str, bool],
+    existing_by_stable_id: dict[str, list[ExistingObservation]],
 ) -> Observation:
     """Build an Observation from a RawObservationRow.
+
+    ``existing_by_stable_id`` is the chunk-wide lookup from
+    ``fetch_existing_by_stable_id``; it must cover this row's stable id, or the
+    row is treated as new to the system.
 
     Raises SkippedObservationException when the row is unusable (missing
     year, missing coordinates, missing occurrence_id, or occurrence_status
@@ -313,13 +374,42 @@ def build_observation_from_raw(
         coordinate_uncertainty_in_meters=raw.coordinate_uncertainty_in_meters,
         references=raw.references,
     )
-    new_observation.set_or_migrate_initial_data_import(
-        current_data_import=current_data_import
-    )
-
-    # We'll use bulk_create() later, so we need to call set_stable_id() on each object
+    # We'll use bulk_create() later, so we need to call set_stable_id() on each
+    # object. It has to happen before _set_initial_data_import, which keys off it.
     new_observation.set_stable_id()
+    _set_initial_data_import(
+        new_observation,
+        current_data_import=current_data_import,
+        existing_by_stable_id=existing_by_stable_id,
+    )
     return new_observation
+
+
+def _set_initial_data_import(
+    observation: Observation,
+    current_data_import: DataImport,
+    existing_by_stable_id: dict[str, list[ExistingObservation]],
+) -> None:
+    """Carry initial_data_import over from the observation this one replaces.
+
+    Same rules as ``Observation.set_or_migrate_initial_data_import``, but reading
+    the chunk-wide dict built by ``fetch_existing_by_stable_id`` instead of
+    querying once per observation.
+    """
+    matches = existing_by_stable_id.get(observation.stable_id, [])
+
+    if not matches:  # New to the system
+        observation.initial_data_import = current_data_import
+        return
+
+    if len(matches) > 1:  # Multiple observations found, this is abnormal
+        raise Observation.MultipleObjectsReturned
+
+    replaced = matches[0]
+    if replaced.data_import_id >= current_data_import.pk:
+        raise Observation.OtherIdenticalObservationIsNewer
+
+    observation.initial_data_import_id = replaced.initial_data_import_id
 
 
 def send_successful_import_email():
@@ -432,39 +522,51 @@ def _import_all_observations(
 ) -> int:
     """Stream rows into the DB in chunks of BULK_CREATE_CHUNK_SIZE.
 
+    Rows are consumed a chunk at a time rather than one at a time: every chunk
+    resolves its already-stored observations in a single query before any of its
+    rows are built. That is what keeps the previously-imported-observation
+    lookup off the per-row path.
+
+    Each chunk is looked up after the previous chunk has been inserted, so a row
+    that replaces one inserted earlier in the same import is still detected.
+
     Returns the number of skipped observations.
     """
     skipped_observations_counter = 0
-    observations_to_insert: list[Observation] = []
 
-    for index, raw_row in enumerate(raw_rows):
-        try:
-            obs = build_observation_from_raw(
-                raw_row,
-                data_import,
-                hash_datasets=hash_table_datasets,
-                hash_species=hash_table_species,
-                hash_basis_of_record=hash_table_basis_of_record,
-                hash_verification_status=hash_table_verification_status,
-            )
-            observations_to_insert.append(obs)
-            if stdout is not None:
-                stdout.write(".", ending="")
-        except KeyError:
-            raise CommandError(f"species not found in db for raw row: {raw_row}")
-        except SkippedObservationException:
-            skipped_observations_counter += 1
-            if stdout is not None:
-                stdout.write("x", ending="")
+    for raw_chunk in _chunked(raw_rows, BULK_CREATE_CHUNK_SIZE):
+        existing_by_stable_id = fetch_existing_by_stable_id(
+            [
+                Observation.build_stable_id(raw_row.occurrence_id, raw_row.dataset_key)
+                for raw_row in raw_chunk
+            ]
+        )
 
-        if index > 0 and index % BULK_CREATE_CHUNK_SIZE == 0:
+        observations_to_insert: list[Observation] = []
+        for raw_row in raw_chunk:
+            try:
+                obs = build_observation_from_raw(
+                    raw_row,
+                    data_import,
+                    hash_datasets=hash_table_datasets,
+                    hash_species=hash_table_species,
+                    hash_basis_of_record=hash_table_basis_of_record,
+                    hash_verification_status=hash_table_verification_status,
+                    existing_by_stable_id=existing_by_stable_id,
+                )
+                observations_to_insert.append(obs)
+                if stdout is not None:
+                    stdout.write(".", ending="")
+            except KeyError:
+                raise CommandError(f"species not found in db for raw row: {raw_row}")
+            except SkippedObservationException:
+                skipped_observations_counter += 1
+                if stdout is not None:
+                    stdout.write("x", ending="")
+
+        if observations_to_insert:
             _log_with_time(stdout, "Bulk size reached...")
             _batch_insert_observations(observations_to_insert, stdout=stdout)
-            observations_to_insert = []
-
-    # Insert the last chunk
-    if observations_to_insert:
-        _batch_insert_observations(observations_to_insert, stdout=stdout)
 
     return skipped_observations_counter
 
