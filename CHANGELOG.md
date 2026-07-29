@@ -5,8 +5,9 @@
   bottleneck, and almost all of an import's time goes on database work that
   this change does not touch.
 - Change: while importing, deciding whether an observation is already known
-  took five database queries per observation and now takes one, cutting
-  roughly 8 minutes off a million-row import in testing.
+  took five database queries per observation. It is now resolved once per
+  batch of 10,000, which cut about 27 minutes off a million-observation
+  re-import in testing.
 - Change: the observations list, the date filter, the "not viewed" filter and
   the histogram are now served by database indexes rather than sorting or
   scanning the whole dataset on each request - the histogram was about 4x

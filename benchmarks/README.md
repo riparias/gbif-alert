@@ -55,37 +55,50 @@ re-import rather than a first import.
 
 Measured after the above was discovered, against a **populated** 1,010,445-row
 `Observation` table - that is, the realistic re-import case the end-to-end runs
-above never exercised. 3000 rows per run, three runs, back to back on an idle
-machine, timing `build_observation_from_raw` only (no inserts). Query counts
-were taken in a separate run, because capturing queries forces a debug cursor
-that taxes each query and so penalises the many-query variant unequally.
+above never exercised. 30000 rows per run, three runs per variant, all four
+measured back to back in one sitting on an idle machine, timing the row-building
+phase only (no inserts). Query counts came from a separate run, because
+capturing queries forces a debug cursor that taxes each query and so penalises
+the many-query variants unequally.
 
-| variant | queries/row | avg per 3000 rows | projected @1M rows |
+| variant | queries/row | avg per 30000 rows | projected @1M rows |
 | --- | --- | --- | --- |
-| two `count()`s + row fetch + 2 FK fetches (before) | 5.00 | 7.34 s | 2485 s |
-| single `select_related` slice (after) | 1.00 | 5.86 s | 1984 s |
-| no lookup at all (floor, not a correct import) | 0 | 2.07 s | 702 s |
+| two `count()`s + row fetch + 2 FK fetches (original) | 5.00 | 52.02 s | 1760 s |
+| single `select_related` slice | 1.00 | 37.64 s | 1273 s |
+| one `values_list` query per 10000-row chunk | 1 per 10000 | 3.70 s | 125 s |
+| no lookup at all (floor, not a correct import) | 0 | 3.32 s | 112 s |
 
-So collapsing five queries into one is worth **1.25x** on the build step,
-roughly 500 s (about 8 minutes) off a million-row import.
+- Collapsing five queries into one: **1.38x**, about 490 s (8 minutes) off a
+  million-row re-import.
+- Batching the lookup per chunk: a further **10.2x**, about another 1150 s
+  (19 minutes).
+- Together: **14.1x** on the row-building phase, roughly 1635 s (27 minutes).
 
-Two things worth recording, because both were counter-intuitive:
+The batched variant lands within 13 s of the floor, so this lookup has gone from
+dominating the phase to costing about 1% of it. There is nothing further to win
+here.
 
-- **Query count is a poor proxy for cost here.** Dropping from 5 queries to 1
-  removed only 28% of the lookup's cost, not 80%. The five it replaced were
-  cheap indexed lookups; the one that remains is a three-table join that
-  materialises a full `Observation` plus two `DataImport` model instances per
-  row.
-- **`defer("location")` made it slower**, 6.59 s against 5.86 s, so it is not
-  used. GeoDjango converts the geometry lazily on attribute access anyway, so
-  deferring adds attribute machinery without avoiding any work.
+### A measurement mistake worth recording
 
-The floor row is the interesting one: even after this change, **1282 s of the
-1984 s is still the lookup**. Removing it entirely means batching - one
-`stable_id__in` query per chunk of 10000 rows instead of one query per row,
-the same pattern `_batch_insert_observations` already uses for comments. That
-is the remaining large win in the import, worth roughly another 1.8x on the
-build step.
+The first version of this table was measured at 3000 rows per run and reported
+2485 s / 1984 s / 702 s. Those projections were inflated, by roughly 500 s each.
+Every run opens the archive once (about 1.5 s), and projecting with
+`avg / N * 1_015_049` scales that one-off cost as though it were per-row. At
+N=3000 that is a sixth of the measured time being multiplied by 338. The ratios
+between variants survived it; the absolute figures did not. Measure with enough
+rows that fixed per-run costs are negligible, or subtract them before projecting.
+
+### Two counter-intuitive results
+
+- **Query count is a poor proxy for cost.** Going from 5 queries to 1 removed
+  only 28% of the phase's cost, not 80%: the five were cheap indexed lookups,
+  while the one replacing them was a three-table join materialising a full
+  `Observation` plus two `DataImport` instances per row. The batched version is
+  fast because `values_list` skips model instantiation entirely, not merely
+  because it issues fewer queries.
+- **`defer("location")` made it slower**, 6.59 s against 5.86 s when it was
+  tried, so it is not used. GeoDjango converts the geometry lazily on attribute
+  access anyway, so deferring only adds attribute machinery.
 
 ## Scripts and how to run them
 

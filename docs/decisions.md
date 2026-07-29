@@ -56,3 +56,17 @@ per row meant about five million queries on a million-row re-import. Measured
 1.25x on the build step, roughly 8 minutes off a million-row import.
 **Rejected:** Also deferring the geometry column - measured slower (6.59s vs
 5.86s per 3000 rows), because GeoDjango converts it lazily anyway.
+
+## 2026-07-29 - Resolve replaced observations once per chunk
+
+**What:** `_import_all_observations` now pulls raw rows a chunk at a time and
+resolves the chunk's stable ids in one `values_list` query, replacing the
+per-row lookup; the flush also lost an off-by-one that made the first batch
+carry CHUNK_SIZE + 1 rows.
+**Why:** 14.1x on the row-building phase (1760s -> 125s projected at 1M rows),
+about 27 minutes off a million-row re-import, and it lands within 13s of the
+no-lookup floor. Corrects the 1.25x reported for the previous entry, which was
+measured at too few rows per run to amortise the fixed archive-open cost - the
+real figure for that step alone is 1.38x.
+**Rejected:** Keeping the per-row lookup and only widening the chunk size - the
+cost was the round trips and the model instantiation per row, not the batch size.
