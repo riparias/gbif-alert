@@ -8,10 +8,12 @@ import datetime
 from unittest import mock
 
 import pytest
+from django.contrib.gis.geos import Point
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.db import connection
 from django.test import override_settings
+from django.utils import timezone
 from maintenance_mode.core import (  # type: ignore
     get_maintenance_mode,
     set_maintenance_mode,
@@ -234,6 +236,82 @@ def test_initial_data_import_value_new(test_data):
     latest_di = DataImport.objects.latest("id")
     assert obs.initial_data_import == latest_di
     assert obs.data_import == latest_di
+
+
+def test_duplicate_stable_id_within_one_import_is_rejected(test_data, monkeypatch):
+    """Two rows in one archive sharing occurrence_id + dataset_key are refused.
+
+    The second row lands in a later chunk, so the chunk lookup finds the first
+    one already inserted under the *current* import. That is not older than the
+    row being built, so the import raises instead of silently keeping one of
+    the two.
+
+    Covers the OtherIdenticalObservationIsNewer branch of
+    _set_initial_data_import, which the chunk-batched lookup reimplemented.
+    """
+    from dashboard.management.commands import import_observations as mod
+
+    monkeypatch.setattr(mod, "BULK_CREATE_CHUNK_SIZE", 1)
+
+    duplicated = dict(
+        occurrence_id="same-occurrence-appearing-twice",
+        dataset_key=INATURALIST_KEY,
+        dataset_name="iNaturalist",
+        taxon_key=LIXUS_COL_KEY,
+        accepted_taxon_key=LIXUS_COL_KEY,
+        species_key=LIXUS_COL_KEY,
+    )
+
+    with pytest.raises(Observation.OtherIdenticalObservationIsNewer):
+        run_import_with_rows(
+            [
+                make_raw_row(gbif_id=8001, **duplicated),
+                make_raw_row(gbif_id=8002, **duplicated),
+            ]
+        )
+
+
+def test_two_stored_observations_sharing_a_stable_id_are_rejected(test_data):
+    """Two stored observations with the same stable_id make the import refuse.
+
+    The unique constraint is on (stable_id, data_import), so an interrupted
+    earlier import can leave two rows sharing a stable_id. Which one to inherit
+    initial_data_import from is undefined, so the import raises rather than
+    picking arbitrarily.
+
+    Covers the MultipleObjectsReturned branch of _set_initial_data_import.
+    """
+    occurrence_id = "https://www.inaturalist.org/observations/33366292"
+    # test_data already stores one observation with this occurrence_id, under
+    # its own DataImport. Add a second one under a different DataImport so two
+    # stored rows share a stable_id.
+    other_di = DataImport.objects.create(start=timezone.now())
+    Observation.objects.create(
+        gbif_id=7001,
+        occurrence_id=occurrence_id,
+        source_dataset=test_data["inaturalist"],
+        species=test_data["polydrusus"],
+        date=datetime.date.today() - datetime.timedelta(days=1),
+        data_import=other_di,
+        initial_data_import=other_di,
+        location=Point(5.09513, 50.48941, srid=4326),
+        basis_of_record=BasisOfRecord.objects.get(name="HUMAN_OBSERVATION"),
+    )
+
+    with pytest.raises(Observation.MultipleObjectsReturned):
+        run_import_with_rows(
+            [
+                make_raw_row(
+                    gbif_id=7002,
+                    occurrence_id=occurrence_id,
+                    dataset_key=INATURALIST_KEY,
+                    dataset_name="iNaturalist",
+                    taxon_key=POLYDRUSUS_COL_KEY,
+                    accepted_taxon_key=POLYDRUSUS_COL_KEY,
+                    species_key=POLYDRUSUS_COL_KEY,
+                ),
+            ]
+        )
 
 
 def test_dataimport_object_created(test_data):
