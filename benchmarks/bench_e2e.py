@@ -62,17 +62,45 @@ def assert_bench_database() -> None:
     print(f"target database: {name}")
 
 
-def restore_database() -> None:
-    """Drop and recreate the bench database from the template."""
-    for sql in (
-        f"DROP DATABASE IF EXISTS {BENCH_DB};",
-        f"CREATE DATABASE {BENCH_DB} TEMPLATE {TEMPLATE_DB};",
-    ):
-        subprocess.run(
-            ["psql", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", sql],
-            check=True,
-            capture_output=True,
+def _psql(sql: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["psql", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", sql],
+        capture_output=True,
+        text=True,
+    )
+
+
+def restore_database(attempts: int = 4) -> None:
+    """Drop and recreate the bench database from the template.
+
+    Any other session has to go first: DROP DATABASE fails while anything is
+    connected, and the previous run's connection can still be closing well after
+    that run's process exited - observed more than a minute later. So terminate
+    stragglers, then retry, because termination is not instantaneous either.
+
+    psql's stderr is reported on failure. The earlier version passed check=True
+    with captured output, which raised a CalledProcessError showing the command
+    but not the reason.
+    """
+    for attempt in range(1, attempts + 1):
+        _psql(
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+            f"WHERE datname = '{BENCH_DB}' AND pid <> pg_backend_pid();"
         )
+        dropped = _psql(f"DROP DATABASE IF EXISTS {BENCH_DB};")
+        if dropped.returncode == 0:
+            created = _psql(f"CREATE DATABASE {BENCH_DB} TEMPLATE {TEMPLATE_DB};")
+            if created.returncode == 0:
+                return
+            raise SystemExit(f"could not create {BENCH_DB}: {created.stderr.strip()}")
+
+        if attempt == attempts:
+            raise SystemExit(
+                f"could not drop {BENCH_DB} after {attempts} attempts: "
+                f"{dropped.stderr.strip()}"
+            )
+        print(f"  drop failed (attempt {attempt}), retrying: {dropped.stderr.strip()}")
+        time.sleep(5)
 
 
 def main(archive: str, dwca_version: str | None) -> int:
