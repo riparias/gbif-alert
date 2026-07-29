@@ -544,6 +544,41 @@ unseen-observation creation) that the DwCA read-path change does not touch
 at all. That is the direct, stage-level evidence for the headline finding:
 parsing was never the dominant cost of an import.
 
+## RawObservationRow: is slots=True worth it
+
+At iter_terms speed, the full pass builds ~1M frozen `RawObservationRow`
+instances in under 10s, so it was worth checking whether `slots=True` on
+that dataclass is a visible win. Measured with
+`PYTHONPATH=. uv run python benchmarks/bench_parse.py <1M archive> iter_terms`,
+three runs per configuration, back to back in one sitting on an otherwise
+idle machine (a warm-up run preceded the first configuration; all runs
+across both configurations agreed within about 4%, so no cold-cache outlier
+needed to be excluded):
+
+| configuration            | run 1 | run 2 | run 3 | mean  |
+|---------------------------|-------|-------|-------|-------|
+| `frozen=True` (current)   | 9.84s | 9.93s | 10.06s | 9.94s |
+| `frozen=True, slots=True` | 9.80s | 9.89s | 9.69s  | 9.79s |
+
+That is a 1.5% improvement (9.94s -> 9.79s), well inside this harness's
+roughly-5% noise floor and not distinguishable from run-to-run variance.
+Note the absolute numbers here are higher than the 8.83s "full pass"
+figure published above for the same line - this session's machine was
+evidently under different background load than when that figure was taken;
+only the relative comparison between the two configurations in this table
+matters for the decision.
+
+Before considering the change, `RawObservationRow`'s usage was checked for
+the preconditions `slots=True` requires: no subclassing, no ad-hoc
+attributes, no pickling. All held (`grep -rn "RawObservationRow"
+--include="*.py" dashboard/ benchmarks/`, checked against every call site).
+So the change would have been safe to make - it just is not worth making.
+
+**Decision: keep `frozen=True` without `slots=True`.** The measured gain
+does not clear the bar, and an unmotivated change to a shared dataclass is
+not worth carrying. `dashboard/management/commands/import_observations.py`
+is unchanged.
+
 ## Caveats
 
 - The 1M archive (`/Users/nnoe/Downloads/0002644-260120142942310.zip`) has
