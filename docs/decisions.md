@@ -37,6 +37,56 @@ the import rewrites in full.
 same-day unique constraint on `(observation_id, user_id)` by the same argument -
 but it is the table's most-scanned index and the smaller one to walk.
 
+## 2026-07-29 - Read DwCA archives through iter_terms
+
+**What:** Upgraded python-dwca-reader to 0.17.1 and switched the import to the
+positional iter_terms API, narrowing the discovery pass to three terms.
+**Why:** About 12x faster archive parsing, from dropping a per-open full-file
+index scan and a 230-key dict built for every row. Worth roughly 5% of a real
+import: parsing was never the bottleneck, database work is.
+**Rejected:** Upgrading without adopting iter_terms - it left the largest
+proportional gain unclaimed for our 230-column archives.
+
+## 2026-07-29 - One query per observation for the replaced-observation lookup
+
+**What:** `Observation.replaced_observation` now does a single `select_related`
+slice instead of two `count()` calls, a row fetch and two foreign-key fetches.
+**Why:** It runs once per observation on the import's hot path - five queries
+per row meant about five million queries on a million-row re-import. Measured
+1.25x on the build step, roughly 8 minutes off a million-row import.
+**Rejected:** Also deferring the geometry column - measured slower (6.59s vs
+5.86s per 3000 rows), because GeoDjango converts it lazily anyway.
+
+## 2026-07-29 - Resolve replaced observations once per chunk
+
+**What:** `_import_all_observations` now pulls raw rows a chunk at a time and
+resolves the chunk's stable ids in one `values_list` query, replacing the
+per-row lookup; the flush also lost an off-by-one that made the first batch
+carry CHUNK_SIZE + 1 rows.
+**Why:** 14.1x on the row-building phase (1760s -> 125s projected at 1M rows),
+about 27 minutes off a million-row re-import, and it lands within 13s of the
+no-lookup floor. Corrects the 1.25x reported for the previous entry, which was
+measured at too few rows per run to amortise the fixed archive-open cost - the
+real figure for that step alone is 1.38x.
+**Rejected:** Keeping the per-row lookup and only widening the chunk size - the
+cost was the round trips and the model instantiation per row, not the batch size.
+
+## 2026-07-30 - Benchmark imports against a clone of a real database
+
+**What:** The end-to-end import benchmark now runs against a clone of a real
+database (real observation volume, users, alerts, unseen records) rather than a
+purpose-built empty one, via `BENCH_DB_NAME` and
+`benchmarks/remap_species_to_archive.py`.
+**Why:** The empty-table runs reported 1.3-1.4x for the read-path work and 10
+minutes for an import that really takes 57-95. With an empty `Observation`
+table the per-observation replaced-observation lookup costs one cheap query
+instead of five, and `create_unseen_observations` is a no-op with no users - so
+the benchmark was measuring a code path production never takes. Re-measured
+realistically, the combined change is 2.75x (72.3 -> 26.2 min) and parsing is
+3.0% of the original import, not the dominant cost it had been assumed to be.
+**Rejected:** Running against the developer database directly - the archive's
+taxon keys match none of its species, so the import would have skipped every row
+and then deleted all 1,102,040 observations.
 ## 2026-07-28 - Map tiles filter seen/unseen on (user_id, observation_id)
 
 **What:** The map SQL's status filter is now `user_id = %s` on the joined unseen

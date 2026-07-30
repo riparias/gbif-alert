@@ -317,45 +317,13 @@ def test_get_identical_observations(obs_data):
     assert unrelated_one.get_identical_observations().count() == 0
 
 
-def test_replaced_observations(obs_data):
-    assert obs_data["obs"].replaced_observation is None
-
-    di_2 = DataImport.objects.create(start=timezone.now())
-    new_one = Observation.objects.create(
-        gbif_id=1,
-        occurrence_id=SAMPLE_OCCURRENCE_ID,
-        species=Species.objects.all()[0],
-        date=datetime.date.today() - datetime.timedelta(days=1),
-        data_import=di_2,
-        initial_data_import=di_2,
-        source_dataset=obs_data["dataset"],
-        location=Point(5.09513, 50.48941, srid=4326),
-        basis_of_record=obs_data["basis_of_record"],
-    )
-    assert new_one.replaced_observation == obs_data["obs"]
-    del obs_data["obs"].replaced_observation
-    with pytest.raises(Observation.OtherIdenticalObservationIsNewer):
-        obs_data["obs"].replaced_observation
-
-    di_3 = DataImport.objects.create(start=timezone.now())
-    another_new_one = Observation.objects.create(
-        gbif_id=1,
-        occurrence_id=SAMPLE_OCCURRENCE_ID,
-        species=Species.objects.all()[0],
-        date=datetime.date.today() - datetime.timedelta(days=1),
-        data_import=di_3,
-        initial_data_import=di_3,
-        source_dataset=obs_data["dataset"],
-        location=Point(5.09513, 50.48941, srid=4326),
-        basis_of_record=obs_data["basis_of_record"],
-    )
-    del new_one.replaced_observation
-    with pytest.raises(Observation.MultipleObjectsReturned):
-        new_one.replaced_observation
-    with pytest.raises(Observation.MultipleObjectsReturned):
-        another_new_one.replaced_observation
-    with pytest.raises(Observation.MultipleObjectsReturned):
-        obs_data["obs"].replaced_observation
+# The behaviour that Observation.replaced_observation used to provide - inherit
+# initial_data_import from an older identical observation, raise
+# OtherIdenticalObservationIsNewer / MultipleObjectsReturned otherwise - now
+# lives in the import command and is covered there by
+# test_import_observations_logic.py (test_initial_data_import_value_replaced,
+# test_duplicate_stable_id_within_one_import_is_rejected,
+# test_two_stored_observations_sharing_a_stable_id_are_rejected).
 
 
 # ---------------------------------------------------------------------------

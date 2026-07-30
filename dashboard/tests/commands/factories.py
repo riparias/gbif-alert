@@ -56,11 +56,17 @@ def run_import_with_rows(
 ):
     """Drive the full import pipeline from an in-memory list of rows.
 
-    The factory given to run_import is called twice (once for discovery,
-    once for insert); ``iter(rows)`` produces a fresh iterator each call.
+    run_import takes two factories: one yielding the narrow
+    (dataset_key, dataset_name, basis_of_record) triples used by the
+    discovery pass, one yielding the full rows used by the insert pass.
+    Both are derived from the same list here, and each call rebuilds its
+    iterator so the two passes stay independent.
     """
     return run_import(
         lambda: iter(rows),
+        lambda: (
+            (row.dataset_key, row.dataset_name, row.basis_of_record) for row in rows
+        ),
         gbif_download_id=gbif_download_id,
         gbif_predicate=gbif_predicate,
     )

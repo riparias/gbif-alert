@@ -1,0 +1,811 @@
+# DwCA read-path benchmarks
+
+Benchmarks for the Darwin Core Archive (DwCA) read path used by
+`import_observations` (python-dwca-reader 0.16.4 -> 0.17.1, plus the switch
+from the row-object API to positional `iter_terms`, plus a narrowed discovery
+pass that requests 3 terms instead of building a full row).
+
+Not part of the test suite; not run in CI. Run manually before/after changes
+to the read path, back to back in one sitting on an idle machine.
+
+## Headline finding
+
+Measured against a clone of a real database, a full re-import of a
+1,015,049-row archive went from **72.3 minutes to 26.2 minutes: 2.75x**, about
+46 minutes saved. See "Realistic end-to-end results" below - those are the
+numbers to quote.
+
+Of that, only about 130 s came from the DwCA parse being roughly **12x**
+faster. Parsing was **3.0%** of the original import. Nearly all of the saving
+came from a lookup in the row-building phase that ran five queries per
+observation.
+
+The empty-database end-to-end figures further down (1.3-1.4x) are kept for the
+record but must not be quoted - the warning below explains why.
+
+## WARNING: the empty-database end-to-end numbers understate a real import
+
+The end-to-end runs in the "Raw output" sections below restored a database whose
+`Observation` table was EMPTY, with zero users and zero alerts. A real import
+never runs in that state, and the difference is structural, not a detail:
+
+- `build_observation_from_raw` calls `Observation.replaced_observation`, which
+  looks for an existing observation with the same `stable_id`. Against an
+  empty table that is 1 cheap query per row. Against a populated table it is
+  **5 queries per row** (measured): the property issues two `COUNT(*)`s,
+  fetches the row, then follows two foreign keys.
+- `create_unseen_observations` iterates users that have alerts. With zero
+  users it returns immediately. This also means the stage-log interval that
+  looks like "Creating unseen observations" in the breakdown below is mostly
+  the NEXT chunk's parse-and-build work, not unseen creation - the interval
+  logging attributes it to the preceding stage.
+
+Measured against a populated 1M-row table, the build step alone costs about
+**3.3 ms and 5.0 queries per row**, projecting to roughly **56 minutes and
+5.1 million queries** for a 1M-row import. Real imports recorded in this
+project's `DataImport` table take **57-95 minutes**, against the 10 minutes
+measured here.
+
+Consequences for reading this document:
+
+- The parse-only ratios are sound. They do not touch the database and are
+  unaffected by any of the above.
+- The end-to-end ratios are not representative. On a real import the roughly
+  197 s this change saves is about **5%** of total import time, not 30%.
+
+This was fixed: the harness can now target a clone of a real database, and the
+"Realistic end-to-end results" section below supersedes those figures.
+
+## Realistic end-to-end results
+
+Run against `gbif_alert_bench_realistic`, a clone of a developer database:
+1,102,040 observations, 185 users, 153 alerts, 329,855 unseen records, and
+**99.8%** of the archive's stable ids already present - so the
+replaced-observation lookup does the work a real re-import does and
+`create_unseen_observations` has real users to iterate.
+
+Archive: the full 1,015,049-row GBIF download. Sides alternated, each restoring
+the 4.2 GB template first so every run starts identical. Both sides ran in the
+same checkout, venv and Python (3.13.7); only two files and the library version
+differ, swapped with `git checkout`.
+
+| run | before (`ffbce80`, 0.16.4) | after (`iter_terms` + chunk-batched lookup) |
+| --- | --- | --- |
+| 1 | 4538.3 s | 1550.3 s |
+| 2 | 4134.5 s | 1598.9 s |
+| average | **4336 s (72.3 min)** | **1575 s (26.2 min)** |
+
+**2.75x**, about 46 minutes saved. Pairwise the two runs give 2.93x and 2.59x.
+
+Agreement: the "after" side is within 3.1%, inside the +/-5% this document asks
+for. The "before" side is **9.8% apart, outside it** - 70-minute runs on a
+laptop drift. So treat the ratio as 2.6-2.9x rather than a precise 2.75x. The
+effect is about ten times larger than the spread, so the conclusion holds even
+though the third digit does not.
+
+Both sides did equivalent work: 102 chunk flushes each, peak RSS within 2.5%
+(2841 / 2910 MB before, 2848 / 2910 MB after).
+
+### Stage breakdown, before -> after (run 1)
+
+| stage | before | after |
+| --- | --- | --- |
+| "Creating unseen observations" interval | 3547 s | 850 s |
+| Bulk creation | 460 s | 341 s |
+| Migrating comments | 206 s | 188 s |
+| Discovery scan (pure parse) | 138 s | 7 s |
+| Deleting previous observations | 77 s | 80 s |
+| Migrating unseen observations | 37 s | 35 s |
+| Committing the transaction | 32 s | 32 s |
+
+Two things to read carefully here:
+
+- **Parsing was 138 s of 4538 s, 3.0%.** Any claim that parsing dominated an
+  import was wrong, and was wrong before this work started.
+- The top row is an interval, not a stage. `_log_with_time` stamps the start of
+  each stage, so the span attributed to "Creating unseen observations" also
+  contains the NEXT chunk's parse-and-build work. It is the biggest remaining
+  cost either way, and with row-building now around 125 s most of the 850 s is
+  genuine unseen creation - which runs once per chunk and iterates every user,
+  so roughly 19000 queries per import. That is the next thing worth attacking.
+
+### Reproducing it
+
+```bash
+# 1. Clone a real database (needs no active connections to the source)
+psql -d postgres -c 'CREATE DATABASE gbif_alert_bench_realistic TEMPLATE "<source>";'
+
+# 2. Relabel its species so the archive's taxon keys resolve
+BENCH_DB_NAME=gbif_alert_bench_realistic DJANGO_SETTINGS_MODULE=benchmarks.bench_settings \
+  PYTHONPATH=. uv run python benchmarks/remap_species_to_archive.py <archive.zip>
+
+# 3. Snapshot it, so every run can restore an identical starting state
+psql -d postgres -c 'CREATE DATABASE gbif_alert_bench_realistic_template TEMPLATE gbif_alert_bench_realistic;'
+
+# 4. Run. BENCH_PGHOST avoids Postgres.app's socket permission check.
+BENCH_DB_NAME=gbif_alert_bench_realistic BENCH_PGHOST=127.0.0.1 PYTHONPATH=. \
+  uv run python benchmarks/bench_e2e.py <archive.zip> [--dwca-version 0.16.4]
+```
+
+Step 2 is a compromise worth understanding: a real database's species carry the
+taxon keys of whatever checklist it was last imported against, so an archive
+from a different era matches nothing, every row is skipped, and the import
+deletes the observation table instead of measuring anything. Relabelling keeps
+volume, users, alerts, unseen records and the observation rows real and changes
+only which taxon a species claims to be.
+
+### Things that invalidated runs here, worth knowing before trusting a number
+
+- **A second driver survived a `pkill`** and spent seven minutes calling
+  `pg_terminate_backend` on the database a benchmark was running against.
+  Nothing errored; the run would have finished and produced a plausible wrong
+  number. It was spotted in the process list and discarded. `bench_e2e.py`
+  callers now take a PID lock.
+- **Postgres.app intermittently refuses unix-socket connections** pending an
+  app-permission dialog, which aborted two restores - once after five minutes
+  of retrying. `BENCH_PGHOST=127.0.0.1` routes the restore over TCP and avoided
+  it.
+- **A `git worktree` baseline got Python 3.14** where the main checkout uses
+  3.13, and lacked the untracked `.env` and `local_settings.py`. Comparing
+  across Python minor versions would have quietly confounded the result. The
+  worktree was abandoned in favour of swapping two files in one checkout.
+- **Killing a driver mid-run left the baseline files checked out** in the
+  working tree, which surfaced later as unrelated-looking type errors. Drivers
+  now restore on trap and verify with `git diff --quiet`.
+
+## Cost of the `replaced_observation` lookup
+
+Measured after the above was discovered, against a **populated** 1,010,445-row
+`Observation` table - that is, the realistic re-import case the end-to-end runs
+above never exercised. 30000 rows per run, three runs per variant, all four
+measured back to back in one sitting on an idle machine, timing the row-building
+phase only (no inserts). Query counts came from a separate run, because
+capturing queries forces a debug cursor that taxes each query and so penalises
+the many-query variants unequally.
+
+| variant | queries/row | avg per 30000 rows | projected @1M rows |
+| --- | --- | --- | --- |
+| two `count()`s + row fetch + 2 FK fetches (original) | 5.00 | 52.02 s | 1760 s |
+| single `select_related` slice | 1.00 | 37.64 s | 1273 s |
+| one `values_list` query per 10000-row chunk | 1 per 10000 | 3.70 s | 125 s |
+| no lookup at all (floor, not a correct import) | 0 | 3.32 s | 112 s |
+
+- Collapsing five queries into one: **1.38x**, about 490 s (8 minutes) off a
+  million-row re-import.
+- Batching the lookup per chunk: a further **10.2x**, about another 1150 s
+  (19 minutes).
+- Together: **14.1x** on the row-building phase, roughly 1635 s (27 minutes).
+
+The batched variant lands within 13 s of the floor, so this lookup has gone from
+dominating the phase to costing about 1% of it. There is nothing further to win
+here.
+
+### A measurement mistake worth recording
+
+The first version of this table was measured at 3000 rows per run and reported
+2485 s / 1984 s / 702 s. Those projections were inflated, by roughly 500 s each.
+Every run opens the archive once (about 1.5 s), and projecting with
+`avg / N * 1_015_049` scales that one-off cost as though it were per-row. At
+N=3000 that is a sixth of the measured time being multiplied by 338. The ratios
+between variants survived it; the absolute figures did not. Measure with enough
+rows that fixed per-run costs are negligible, or subtract them before projecting.
+
+### Two counter-intuitive results
+
+- **Query count is a poor proxy for cost.** Going from 5 queries to 1 removed
+  only 28% of the phase's cost, not 80%: the five were cheap indexed lookups,
+  while the one replacing them was a three-table join materialising a full
+  `Observation` plus two `DataImport` instances per row. The batched version is
+  fast because `values_list` skips model instantiation entirely, not merely
+  because it issues fewer queries.
+- **`defer("location")` made it slower**, 6.59 s against 5.86 s when it was
+  tried, so it is not used. GeoDjango converts the geometry lazily on attribute
+  access anyway, so deferring only adds attribute machinery.
+
+## Scripts and how to run them
+
+All commands assume the repo root and require `PYTHONPATH=.` (a
+directly-executed script under `benchmarks/` does not have the repo root on
+`sys.path`, so `django.setup()` cannot import `djangoproject.settings`
+otherwise).
+
+### `bench_parse.py` - parse-only, three read-path variants
+
+```bash
+# baseline: 0.16.4, row-object path (frozen legacy adapter)
+PYTHONPATH=. uv run --with "python-dwca-reader==0.16.4" python benchmarks/bench_parse.py <archive> rows
+
+# upgrade: 0.17.1, same row-object path (library-only effect)
+PYTHONPATH=. uv run python benchmarks/bench_parse.py <archive> rows
+
+# iter_terms: 0.17.1, the new positional path + narrowed discovery
+PYTHONPATH=. uv run python benchmarks/bench_parse.py <archive> iter_terms
+```
+
+Important: all three of these run from the **same, current checkout**. The
+0.16.4 baseline point is produced by overriding only the library version with
+`--with`; the old row-based reading logic itself lives on in this checkout as
+a frozen copy (`dashboard/tests/commands/legacy_dwca_adapter.py`) so it stays
+measurable without needing the pre-upgrade commit. `bench_parse.py` measures
+three points per variant: open archive, discovery pass (dataset keys / basis
+of record), and a full pass building every `RawObservationRow`.
+
+### `bench_e2e.py` - end-to-end import (parse + database writes)
+
+```bash
+PYTHONPATH=. uv run python benchmarks/bench_e2e.py <archive.zip>
+
+# baseline, for comparison - here the OLD IMPORTER CODE must run, not just
+# the old library, so this only works from a checkout of the pre-upgrade
+# commit (see "Baseline setup" below):
+PYTHONPATH=. uv run python benchmarks/bench_e2e.py <archive.zip> --dwca-version 0.16.4
+```
+
+Restores `gbif_alert_bench` from `gbif_alert_bench_template` before every
+run, then runs `manage.py import_observations` as a child process and times
+it. Refuses to run unless the resolved database name contains `"bench"`.
+
+### Baseline setup (`bench_e2e.py` "before" side only)
+
+The current checkout calls `iter_terms`, which does not exist in 0.16.4, so
+pinning the library version alone crashes it. The end-to-end "before" point
+therefore needs a checkout of the commit before the upgrade, with the
+benchmark harness copied in:
+
+```bash
+BASE=<commit before "Upgrade python-dwca-reader to 0.17.1">
+git worktree add /tmp/gbif-baseline "$BASE"
+cp -R benchmarks /tmp/gbif-baseline/     # benchmarks/ does not exist at BASE
+cd /tmp/gbif-baseline
+PYTHONPATH=. uv run python benchmarks/bench_e2e.py <archive> --dwca-version 0.16.4
+```
+
+`bench_e2e.py` restores the database via `psql` with absolute database names,
+so it works identically from a worktree.
+
+### `make_subset.py` / `setup_bench_db.py` / `check_equivalence.py`
+
+Supporting scripts used to build the 100K archive, seed the bench database
+from the archive's own taxon keys, and verify the `iter_terms` adapter
+against the frozen row adapter row-by-row. Not re-run for this benchmark;
+see their own docstrings.
+
+## Methodology
+
+- All configurations were measured back to back, in one sitting, on an
+  otherwise idle machine.
+- Each configuration was run **at least twice**; a pair is required to agree
+  within roughly 5% before being reported as the comparable figure. Every
+  run, including any discarded as an outlier, is listed below in full - none
+  are silently dropped.
+- **Ratios are the result. Absolute seconds are context only** - they depend
+  on this specific machine, disk, and Postgres instance.
+- `peak=` / `peak RSS` is a process-wide high-water mark: it never decreases
+  within a run, so it is comparable **across invocations** of a script
+  (e.g. baseline peak vs upgrade peak) but **not across the lines of one
+  invocation** (a later line's peak includes everything before it).
+- One configuration - the 0.16.4 parse-only baseline - showed a cold-cache
+  outlier on its first run at 1M scale (and arguably at 100K scale too for
+  the end-to-end baseline). Where that happened, the first run is reported
+  explicitly as an outlier and excluded from the ratio, and a third run was
+  taken to confirm agreement between the remaining two. See "Cold-cache
+  outliers" below.
+
+## Machine, OS, Python, commit
+
+- Machine: Apple M2 Max (macOS), 2026-07-29
+- OS: macOS 26.5 (build 25F71)
+- Python: 3.13.7 (project pin: `requires-python = ">=3.13"`)
+- Commit measured (the "upgrade"/"after" side, and the current checkout for
+  all parse-only points): `2c14ecac72fc5582d33ff47efcd1dfa2c9e38258` on
+  branch `feature/dwca-reader-performance`
+  ("Add the end-to-end import benchmark harness")
+- Commit measured (the end-to-end "before" side, old importer code + old
+  library, checked out into `/tmp/gbif-baseline`):
+  `ffbce8059fc1d5e9a176d219f406960448ebd8e0` on `main`/`devel`
+  ("Merge pull request #391 from riparias/feature/observation-date-index") -
+  this is the commit immediately before "Upgrade python-dwca-reader to
+  0.17.1".
+- python-dwca-reader versions: 0.16.4 (baseline) and 0.17.1 (upgrade,
+  iter_terms).
+- Archives: `/tmp/dwca-bench-100k.zip` (100,000 core data rows, head-truncated
+  from the full archive - see Caveats) and
+  `/Users/nnoe/Downloads/0002644-260120142942310.zip` (1,015,049 core data
+  rows).
+
+## Cold-cache outliers
+
+Two configurations showed a first run clearly slower than the rest, in a
+pattern consistent with the OS page cache (and/or Postgres shared buffers)
+being cold on the first touch of a large file or a freshly-restored database:
+
+- **1M parse-only, 0.16.4 baseline**: run 1's full pass was 147.45s; runs 2
+  and 3 were 106.99s and 105.57s (1.3% apart). Run 1 is reported below but
+  excluded from every ratio; the warm figure used for ratios is the average
+  of runs 2 and 3.
+- **100K end-to-end, 0.16.4 baseline**: run 1 was 109.4s; runs 2 and 3 were
+  102.0s and 102.5s (0.5% apart). By the time this ran, the 100K archive's
+  bytes had already been read repeatedly by the preceding parse-only matrix,
+  so a cold *archive* is not the likely mechanism here - more plausibly, the
+  two intervening 100K end-to-end "upgrade" runs (each dropping/recreating
+  the bench database and writing ~99K rows) evicted relevant OS/Postgres
+  cache before this baseline's first run. The mechanism is not confirmed,
+  but the empirical pattern (run 1 elevated, runs 2+3 tightly agreeing) is
+  the same, so it is treated the same way: run 1 excluded from the ratio,
+  warm figure is the average of runs 2 and 3.
+
+No other configuration needed a third run; all other pairs agreed within
+5% on their first two runs.
+
+## Raw output: parse-only, 100K archive
+
+```
+$ PYTHONPATH=. uv run --with "python-dwca-reader==0.16.4" python benchmarks/bench_parse.py /tmp/dwca-bench-100k.zip rows   # run 1
+archive: /tmp/dwca-bench-100k.zip
+python-dwca-reader 0.16.4, variant rows
+  open archive                                  0.61s  n=opened  peak=131MB
+  discovery pass (full row built)              19.09s  n=30 datasets, 4 bor  peak=131MB
+  full RawObservationRow pass                  19.00s  n=100000  peak=132MB
+
+$ PYTHONPATH=. uv run --with "python-dwca-reader==0.16.4" python benchmarks/bench_parse.py /tmp/dwca-bench-100k.zip rows   # run 2
+archive: /tmp/dwca-bench-100k.zip
+python-dwca-reader 0.16.4, variant rows
+  open archive                                  0.63s  n=opened  peak=131MB
+  discovery pass (full row built)              19.09s  n=30 datasets, 4 bor  peak=131MB
+  full RawObservationRow pass                  18.96s  n=100000  peak=132MB
+
+$ PYTHONPATH=. uv run python benchmarks/bench_parse.py /tmp/dwca-bench-100k.zip rows   # run 1
+archive: /tmp/dwca-bench-100k.zip
+python-dwca-reader 0.17.1, variant rows
+  open archive                                  0.30s  n=opened  peak=130MB
+  discovery pass (full row built)              14.09s  n=30 datasets, 4 bor  peak=130MB
+  full RawObservationRow pass                  14.10s  n=100000  peak=131MB
+
+$ PYTHONPATH=. uv run python benchmarks/bench_parse.py /tmp/dwca-bench-100k.zip rows   # run 2
+archive: /tmp/dwca-bench-100k.zip
+python-dwca-reader 0.17.1, variant rows
+  open archive                                  0.31s  n=opened  peak=131MB
+  discovery pass (full row built)              14.03s  n=30 datasets, 4 bor  peak=131MB
+  full RawObservationRow pass                  14.05s  n=100000  peak=131MB
+
+$ PYTHONPATH=. uv run python benchmarks/bench_parse.py /tmp/dwca-bench-100k.zip iter_terms   # run 1
+archive: /tmp/dwca-bench-100k.zip
+python-dwca-reader 0.17.1, variant iter_terms
+  open archive                                  0.28s  n=opened  peak=129MB
+  discovery pass (3 terms)                      1.01s  n=30 datasets, 4 bor  peak=129MB
+  full RawObservationRow pass                   1.52s  n=100000  peak=129MB
+
+$ PYTHONPATH=. uv run python benchmarks/bench_parse.py /tmp/dwca-bench-100k.zip iter_terms   # run 2
+archive: /tmp/dwca-bench-100k.zip
+python-dwca-reader 0.17.1, variant iter_terms
+  open archive                                  0.31s  n=opened  peak=130MB
+  discovery pass (3 terms)                      1.01s  n=30 datasets, 4 bor  peak=130MB
+  full RawObservationRow pass                   1.49s  n=100000  peak=130MB
+```
+
+## Raw output: parse-only, 1M archive
+
+```
+$ PYTHONPATH=. uv run --with "python-dwca-reader==0.16.4" python benchmarks/bench_parse.py <1M archive> rows   # run 1 - COLD CACHE, excluded from ratios
+archive: /Users/nnoe/Downloads/0002644-260120142942310.zip
+python-dwca-reader 0.16.4, variant rows
+  open archive                                  4.84s  n=opened  peak=136MB
+  discovery pass (full row built)             146.67s  n=101 datasets, 5 bor  peak=138MB
+  full RawObservationRow pass                 147.45s  n=1015049  peak=138MB
+
+$ PYTHONPATH=. uv run --with "python-dwca-reader==0.16.4" python benchmarks/bench_parse.py <1M archive> rows   # run 2 - warm
+archive: /Users/nnoe/Downloads/0002644-260120142942310.zip
+python-dwca-reader 0.16.4, variant rows
+  open archive                                  3.96s  n=opened  peak=152MB
+  discovery pass (full row built)             114.27s  n=101 datasets, 5 bor  peak=160MB
+  full RawObservationRow pass                 106.99s  n=1015049  peak=160MB
+
+$ PYTHONPATH=. uv run --with "python-dwca-reader==0.16.4" python benchmarks/bench_parse.py <1M archive> rows   # run 3 - warm, taken to confirm run 2 vs run 1
+archive: /Users/nnoe/Downloads/0002644-260120142942310.zip
+python-dwca-reader 0.16.4, variant rows
+  open archive                                  3.90s  n=opened  peak=141MB
+  discovery pass (full row built)             104.37s  n=101 datasets, 5 bor  peak=146MB
+  full RawObservationRow pass                 105.57s  n=1015049  peak=146MB
+
+$ PYTHONPATH=. uv run python benchmarks/bench_parse.py <1M archive> rows   # run 1
+archive: /Users/nnoe/Downloads/0002644-260120142942310.zip
+python-dwca-reader 0.17.1, variant rows
+  open archive                                  1.35s  n=opened  peak=136MB
+  discovery pass (full row built)              79.33s  n=101 datasets, 5 bor  peak=137MB
+  full RawObservationRow pass                  77.24s  n=1015049  peak=137MB
+
+$ PYTHONPATH=. uv run python benchmarks/bench_parse.py <1M archive> rows   # run 2
+archive: /Users/nnoe/Downloads/0002644-260120142942310.zip
+python-dwca-reader 0.17.1, variant rows
+  open archive                                  1.46s  n=opened  peak=137MB
+  discovery pass (full row built)              77.35s  n=101 datasets, 5 bor  peak=138MB
+  full RawObservationRow pass                  77.20s  n=1015049  peak=138MB
+
+$ PYTHONPATH=. uv run python benchmarks/bench_parse.py <1M archive> iter_terms   # run 1
+archive: /Users/nnoe/Downloads/0002644-260120142942310.zip
+python-dwca-reader 0.17.1, variant iter_terms
+  open archive                                  1.48s  n=opened  peak=137MB
+  discovery pass (3 terms)                      6.44s  n=101 datasets, 5 bor  peak=138MB
+  full RawObservationRow pass                   8.91s  n=1015049  peak=138MB
+
+$ PYTHONPATH=. uv run python benchmarks/bench_parse.py <1M archive> iter_terms   # run 2
+archive: /Users/nnoe/Downloads/0002644-260120142942310.zip
+python-dwca-reader 0.17.1, variant iter_terms
+  open archive                                  1.69s  n=opened  peak=136MB
+  discovery pass (3 terms)                      6.31s  n=101 datasets, 5 bor  peak=137MB
+  full RawObservationRow pass                   8.75s  n=1015049  peak=137MB
+```
+
+## Raw output: end-to-end, 100K archive
+
+Note: the raw stage logs below (and in the 1M archive section further down)
+quote "Opening DWCA to read metadata (this also builds the line-offset
+index)" - the wording of that log line was changed after these measurements
+were taken. The quoted output is left as-is since it's a record of what was
+actually printed at the time; see `import_observations.py` for the current
+text.
+
+Stage logs are condensed: repetitive per-batch lines ("Bulk size reached...",
+"Bulk creation", "Migrating comments", "Creating unseen observations...")
+are collapsed to one sample cycle plus a count, since the full logs run to
+tens of thousands of lines of per-row progress dots and repeated per-batch
+messages.
+
+```
+$ PYTHONPATH=. uv run python benchmarks/bench_e2e.py /tmp/dwca-bench-100k.zip   # upgrade run 1
+archive: /tmp/dwca-bench-100k.zip
+python-dwca-reader: project pin
+target database: gbif_alert_bench
+restoring database from template...
+
+total wall clock: 78.3s
+
+stage log (condensed):
+  ... [Re]importing all observations -> Opening DWCA to read metadata -> pre-importing
+  datasets/basis-of-record -> creating a hash table of species -> Importing all rows ...
+  ... (9 bulk-insert batch cycles: Bulk size reached / Bulk creation / Migrating comments /
+  Creating unseen observations, repeating) ...
+  All observations imported -> migrating unseen -> deleting previous observations ->
+  refreshing materialized views -> committing transaction -> vacuum analyze ->
+  Import observations process successfully completed in 1m 16s
+
+$ PYTHONPATH=. uv run python benchmarks/bench_e2e.py /tmp/dwca-bench-100k.zip   # upgrade run 2
+total wall clock: 80.1s
+(same stage structure as run 1)
+
+$ cd /tmp/gbif-baseline && PYTHONPATH=. uv run python benchmarks/bench_e2e.py /tmp/dwca-bench-100k.zip --dwca-version 0.16.4   # baseline run 1 - COLD, excluded
+total wall clock: 109.4s
+
+$ cd /tmp/gbif-baseline && PYTHONPATH=. uv run python benchmarks/bench_e2e.py /tmp/dwca-bench-100k.zip --dwca-version 0.16.4   # baseline run 2 - warm
+total wall clock: 102.0s
+
+$ cd /tmp/gbif-baseline && PYTHONPATH=. uv run python benchmarks/bench_e2e.py /tmp/dwca-bench-100k.zip --dwca-version 0.16.4   # baseline run 3 - warm, confirms run 2
+total wall clock: 102.5s
+```
+
+Full condensed stage log, upgrade run 1 (representative; baseline run has the
+same structure with the row-based, unnarrowed discovery pass and slower
+per-batch timings):
+
+```
+archive: /tmp/dwca-bench-100k.zip
+python-dwca-reader: project pin
+target database: gbif_alert_bench
+restoring database from template...
+
+total wall clock: 78.3s
+
+stage log (repetitive per-batch lines collapsed):
+  Wed Jul 29 13:45:46 2026: (Re)importing all observations [peak RSS: 135 MB]
+  Wed Jul 29 13:45:46 2026: Using a user-provided DWCA file [peak RSS: 136 MB]
+  Wed Jul 29 13:45:46 2026: Opening DWCA to read metadata (this also builds the line-offset index) [peak RSS: 136 MB]
+  Wed Jul 29 13:45:46 2026: GBIF download id read from DWCA metadata: 0002644-260120142942310 [peak RSS: 146 MB]
+  Wed Jul 29 13:45:46 2026: Real import is starting. We'll use a transaction and put the website in maintenance mode [peak RSS: 146 MB]
+  Wed Jul 29 13:45:46 2026: Created a new DataImport object: #1 [peak RSS: 146 MB]
+  Wed Jul 29 13:45:46 2026: 3. Pre-importing all datasets and basis of record values [peak RSS: 146 MB]
+  Wed Jul 29 13:45:46 2026: 3.1 Scanning rows to get the dataset keys and basis of record values [peak RSS: 146 MB]
+  Wed Jul 29 13:45:47 2026: 3.3 Creating/updating the Dataset objects [peak RSS: 156 MB]
+  [30 lines like 'Creating/updating dataset <uuid>' elided]
+  Wed Jul 29 13:45:47 2026: 3.4 Creating/getting the BasisOfRecord objects [peak RSS: 156 MB]
+  Wed Jul 29 13:45:47 2026: 4. Creating a hash table of species [peak RSS: 156 MB]
+  Wed Jul 29 13:45:47 2026: 5. Building verification status hash [peak RSS: 156 MB]
+  Wed Jul 29 13:45:47 2026: Importing all rows [peak RSS: 163 MB]
+  Wed Jul 29 13:45:52 2026: Bulk size reached... [peak RSS: 187 MB]
+  Wed Jul 29 13:45:52 2026: Bulk creation [peak RSS: 187 MB]
+  Wed Jul 29 13:45:54 2026: Migrating comments [peak RSS: 297 MB]
+  Wed Jul 29 13:45:54 2026: Creating unseen observations for new observations [peak RSS: 297 MB]
+  ... (9 more bulk-insert batch cycles like the one above, same 4 messages repeating) ...
+  Wed Jul 29 13:46:59 2026: All observations imported [peak RSS: 300 MB]
+  Wed Jul 29 13:46:59 2026: Migrating unseen observations [peak RSS: 300 MB]
+  Wed Jul 29 13:46:59 2026: now deleting observations linked to previous data imports... [peak RSS: 300 MB]
+  Wed Jul 29 13:46:59 2026: Previous observations deleted [peak RSS: 300 MB]
+  Wed Jul 29 13:46:59 2026: We'll now create or refresh the materialized views. This can take a while. [peak RSS: 300 MB]
+  Wed Jul 29 13:47:00 2026: Deleting (no longer used) dataset  [peak RSS: 300 MB]
+  Wed Jul 29 13:47:00 2026: Deleting (no longer used) dataset  [peak RSS: 300 MB]
+  Wed Jul 29 13:47:00 2026: Updating the DataImport object [peak RSS: 300 MB]
+  Wed Jul 29 13:47:00 2026: Committing the transaction [peak RSS: 300 MB]
+  Wed Jul 29 13:47:01 2026: Transaction committed [peak RSS: 300 MB]
+  Wed Jul 29 13:47:01 2026: Leaving maintenance mode. [peak RSS: 300 MB]
+  Wed Jul 29 13:47:01 2026: Vacuuming and analyzing the rewritten tables [peak RSS: 300 MB]
+  Wed Jul 29 13:47:02 2026: VACUUM ANALYZE done on dashboard_observation [peak RSS: 300 MB]
+  Wed Jul 29 13:47:02 2026: VACUUM ANALYZE done on dashboard_observationunseen [peak RSS: 300 MB]
+  Wed Jul 29 13:47:02 2026: Sending success report [peak RSS: 300 MB]
+  Wed Jul 29 13:47:02 2026: Import observations process successfully completed in 1m 16s [peak RSS: 300 MB]
+```
+
+## Raw output: end-to-end, 1M archive
+
+Both sides sanity-checked: `dashboard_observation` count after the final run
+was 1,010,445 out of 1,015,049 core rows (99.55% imported, 0.45% skipped) -
+consistent with the bench database's 100% taxon-key coverage (see Caveats).
+No run reported `IMPORT FAILED` or mass skips.
+
+```
+$ cd /tmp/gbif-baseline && PYTHONPATH=. uv run python benchmarks/bench_e2e.py <1M archive> --dwca-version 0.16.4   # baseline run 1
+total wall clock: 861.0s   (14m 19s reported by the importer itself)
+
+$ cd /tmp/gbif-baseline && PYTHONPATH=. uv run python benchmarks/bench_e2e.py <1M archive> --dwca-version 0.16.4   # baseline run 2
+total wall clock: 883.7s   (14m 42s)
+
+$ PYTHONPATH=. uv run python benchmarks/bench_e2e.py <1M archive>   # upgrade run 1
+total wall clock: 610.5s   (10m 7s)
+
+$ PYTHONPATH=. uv run python benchmarks/bench_e2e.py <1M archive>   # upgrade run 2
+total wall clock: 603.4s   (10m 2s)
+```
+
+Both baseline runs agree within 2.6%; both upgrade runs agree within 1.2%.
+Neither pair needed a third run.
+
+Full condensed stage log, baseline run 1 (repetitive per-batch and per-dataset
+lines collapsed - the full archive has 101 datasets and ~101 bulk-insert
+batches):
+
+```
+archive: /Users/nnoe/Downloads/0002644-260120142942310.zip
+python-dwca-reader: 0.16.4
+target database: gbif_alert_bench
+restoring database from template...
+
+total wall clock: 861.0s
+
+stage log (repetitive per-item lines collapsed, see note):
+  Wed Jul 29 14:22:28 2026: (Re)importing all observations [peak RSS: 140 MB]
+  Wed Jul 29 14:22:28 2026: Using a user-provided DWCA file [peak RSS: 141 MB]
+  Wed Jul 29 14:22:28 2026: Opening DWCA to read metadata (this also builds the line-offset index) [peak RSS: 141 MB]
+  Wed Jul 29 14:22:31 2026: GBIF download id read from DWCA metadata: 0002644-260120142942310 [peak RSS: 157 MB]
+  Wed Jul 29 14:22:31 2026: Real import is starting. We'll use a transaction and put the website in maintenance mode [peak RSS: 157 MB]
+  Wed Jul 29 14:22:31 2026: Created a new DataImport object: #1 [peak RSS: 157 MB]
+  Wed Jul 29 14:22:31 2026: 3. Pre-importing all datasets and basis of record values [peak RSS: 157 MB]
+  Wed Jul 29 14:22:31 2026: 3.1 Scanning rows to get the dataset keys and basis of record values [peak RSS: 157 MB]
+  Wed Jul 29 14:24:16 2026: 3.3 Creating/updating the Dataset objects [peak RSS: 171 MB]
+  [101 lines like 'Creating/updating dataset <uuid>' / 'Deleting (no longer used) dataset <name>' elided]
+  Wed Jul 29 14:24:16 2026: 3.4 Creating/getting the BasisOfRecord objects [peak RSS: 171 MB]
+  Wed Jul 29 14:24:16 2026: 4. Creating a hash table of species [peak RSS: 171 MB]
+  Wed Jul 29 14:24:16 2026: 5. Building verification status hash [peak RSS: 171 MB]
+  Wed Jul 29 14:24:16 2026: Importing all rows [peak RSS: 171 MB]
+  Wed Jul 29 14:24:25 2026: Bulk size reached... [peak RSS: 187 MB]
+  Wed Jul 29 14:24:25 2026: Bulk creation [peak RSS: 187 MB]
+  Wed Jul 29 14:24:26 2026: Migrating comments [peak RSS: 296 MB]
+  Wed Jul 29 14:24:26 2026: Creating unseen observations for new observations [peak RSS: 296 MB]
+  ... (101 bulk-insert batch cycles total in this run, same 4 messages repeating) ...
+  Wed Jul 29 14:36:29 2026: All observations imported [peak RSS: 307 MB]
+  Wed Jul 29 14:36:29 2026: Migrating unseen observations [peak RSS: 307 MB]
+  Wed Jul 29 14:36:29 2026: now deleting observations linked to previous data imports... [peak RSS: 307 MB]
+  Wed Jul 29 14:36:29 2026: Previous observations deleted [peak RSS: 307 MB]
+  Wed Jul 29 14:36:29 2026: We'll now create or refresh the materialized views. This can take a while. [peak RSS: 307 MB]
+  [7 lines like 'Creating/updating dataset <uuid>' / 'Deleting (no longer used) dataset <name>' elided]
+  Wed Jul 29 14:36:34 2026: Deleting (no longer used) basis of record LIVING_SPECIMEN [peak RSS: 307 MB]
+  Wed Jul 29 14:36:34 2026: Updating the DataImport object [peak RSS: 307 MB]
+  Wed Jul 29 14:36:35 2026: Committing the transaction [peak RSS: 307 MB]
+  Wed Jul 29 14:36:47 2026: Transaction committed [peak RSS: 307 MB]
+  Wed Jul 29 14:36:47 2026: Leaving maintenance mode. [peak RSS: 307 MB]
+  Wed Jul 29 14:36:47 2026: Vacuuming and analyzing the rewritten tables [peak RSS: 307 MB]
+  Wed Jul 29 14:36:48 2026: VACUUM ANALYZE done on dashboard_observation [peak RSS: 307 MB]
+  Wed Jul 29 14:36:48 2026: VACUUM ANALYZE done on dashboard_observationunseen [peak RSS: 307 MB]
+  Wed Jul 29 14:36:48 2026: Sending success report [peak RSS: 307 MB]
+  Wed Jul 29 14:36:48 2026: Import observations process successfully completed in 14m 19s [peak RSS: 307 MB]
+```
+
+Full condensed stage log, upgrade run 1:
+
+```
+archive: /Users/nnoe/Downloads/0002644-260120142942310.zip
+python-dwca-reader: project pin
+target database: gbif_alert_bench
+restoring database from template...
+
+total wall clock: 610.5s
+
+stage log (repetitive per-item lines collapsed, see note):
+  Wed Jul 29 14:51:37 2026: (Re)importing all observations [peak RSS: 151 MB]
+  Wed Jul 29 14:51:37 2026: Using a user-provided DWCA file [peak RSS: 151 MB]
+  Wed Jul 29 14:51:37 2026: Opening DWCA to read metadata (this also builds the line-offset index) [peak RSS: 151 MB]
+  Wed Jul 29 14:51:39 2026: GBIF download id read from DWCA metadata: 0002644-260120142942310 [peak RSS: 162 MB]
+  Wed Jul 29 14:51:39 2026: Real import is starting. We'll use a transaction and put the website in maintenance mode [peak RSS: 162 MB]
+  Wed Jul 29 14:51:39 2026: Created a new DataImport object: #1 [peak RSS: 162 MB]
+  Wed Jul 29 14:51:39 2026: 3. Pre-importing all datasets and basis of record values [peak RSS: 162 MB]
+  Wed Jul 29 14:51:39 2026: 3.1 Scanning rows to get the dataset keys and basis of record values [peak RSS: 162 MB]
+  Wed Jul 29 14:51:46 2026: 3.3 Creating/updating the Dataset objects [peak RSS: 172 MB]
+  [101 lines like 'Creating/updating dataset <uuid>' / 'Deleting (no longer used) dataset <name>' elided]
+  Wed Jul 29 14:51:46 2026: 3.4 Creating/getting the BasisOfRecord objects [peak RSS: 172 MB]
+  Wed Jul 29 14:51:46 2026: 4. Creating a hash table of species [peak RSS: 172 MB]
+  Wed Jul 29 14:51:46 2026: 5. Building verification status hash [peak RSS: 172 MB]
+  Wed Jul 29 14:51:46 2026: Importing all rows [peak RSS: 172 MB]
+  Wed Jul 29 14:51:51 2026: Bulk size reached... [peak RSS: 179 MB]
+  Wed Jul 29 14:51:51 2026: Bulk creation [peak RSS: 179 MB]
+  Wed Jul 29 14:51:53 2026: Migrating comments [peak RSS: 287 MB]
+  Wed Jul 29 14:51:53 2026: Creating unseen observations for new observations [peak RSS: 287 MB]
+  ... (101 bulk-insert batch cycles total in this run, same 4 messages repeating) ...
+  Wed Jul 29 15:01:26 2026: All observations imported [peak RSS: 312 MB]
+  Wed Jul 29 15:01:26 2026: Migrating unseen observations [peak RSS: 312 MB]
+  Wed Jul 29 15:01:26 2026: now deleting observations linked to previous data imports... [peak RSS: 312 MB]
+  Wed Jul 29 15:01:26 2026: Previous observations deleted [peak RSS: 312 MB]
+  Wed Jul 29 15:01:26 2026: We'll now create or refresh the materialized views. This can take a while. [peak RSS: 312 MB]
+  [7 lines like 'Creating/updating dataset <uuid>' / 'Deleting (no longer used) dataset <name>' elided]
+  Wed Jul 29 15:01:31 2026: Deleting (no longer used) basis of record LIVING_SPECIMEN [peak RSS: 312 MB]
+  Wed Jul 29 15:01:31 2026: Updating the DataImport object [peak RSS: 312 MB]
+  Wed Jul 29 15:01:32 2026: Committing the transaction [peak RSS: 312 MB]
+  Wed Jul 29 15:01:43 2026: Transaction committed [peak RSS: 312 MB]
+  Wed Jul 29 15:01:43 2026: Leaving maintenance mode. [peak RSS: 312 MB]
+  Wed Jul 29 15:01:43 2026: Vacuuming and analyzing the rewritten tables [peak RSS: 312 MB]
+  Wed Jul 29 15:01:44 2026: VACUUM ANALYZE done on dashboard_observation [peak RSS: 312 MB]
+  Wed Jul 29 15:01:44 2026: VACUUM ANALYZE done on dashboard_observationunseen [peak RSS: 312 MB]
+  Wed Jul 29 15:01:44 2026: Sending success report [peak RSS: 312 MB]
+  Wed Jul 29 15:01:44 2026: Import observations process successfully completed in 10m 7s [peak RSS: 312 MB]
+```
+
+## Ratio table
+
+Figures are the mean of the warm/comparable runs listed above (cold-cache
+run 1's are excluded where flagged). "e2e total" has only a baseline ->
+upgrade column: `bench_e2e.py` measures exactly two points (old code + old
+library vs new code + new library), not an intermediate "library-only,
+new e2e" variant.
+
+### 100K archive
+
+| stage      | baseline -> upgrade | upgrade -> iter_terms | baseline -> iter_terms |
+|------------|---------------------|------------------------|--------------------------|
+| open       | 0.62s -> 0.31s = 2.03x | 0.31s -> 0.30s = 1.03x | 0.62s -> 0.30s = 2.10x |
+| discovery  | 19.09s -> 14.06s = 1.36x | 14.06s -> 1.01s = 13.92x | 19.09s -> 1.01s = 18.90x |
+| full pass  | 18.98s -> 14.08s = 1.35x | 14.08s -> 1.51s = 9.35x | 18.98s -> 1.51s = 12.61x |
+| e2e total  | 102.25s -> 79.2s = 1.29x | n/a | n/a |
+
+### 1M archive
+
+| stage      | baseline -> upgrade | upgrade -> iter_terms | baseline -> iter_terms |
+|------------|---------------------|------------------------|--------------------------|
+| open       | 3.93s -> 1.41s = 2.79x | 1.41s -> 1.59s = 0.89x (see note) | 3.93s -> 1.59s = 2.48x |
+| discovery  | 109.32s -> 78.34s = 1.40x | 78.34s -> 6.38s = 12.29x | 109.32s -> 6.38s = 17.15x |
+| full pass  | 106.28s -> 77.22s = 1.38x | 77.22s -> 8.83s = 8.75x | 106.28s -> 8.83s = 12.03x |
+| e2e total  | 872.35s -> 606.95s = 1.44x | n/a | n/a |
+
+Note on 1M "open" upgrade -> iter_terms: iter_terms open (1.59s avg) came out
+*slower* than plain-rows open (1.41s avg) at this scale, a ~13% difference
+inside numbers this small (under 2s) and likely just process/OS noise at
+that magnitude rather than a real effect - flagging rather than smoothing it
+away. It has no bearing on the full-pass numbers, which are an order of
+magnitude larger and agree tightly run-to-run.
+
+Cross-scale corroboration for the warm-baseline treatment: the 100K and 1M
+full-pass baseline -> iter_terms ratios are 12.61x and 12.03x - close to each
+other despite the 10x difference in row count, which is what you'd expect if
+both are measuring the same effect and the 1M baseline's run 1 really was a
+cache artifact rather than the "true" number.
+
+### Library upgrade alone (0.16.4 -> 0.17.1, same row-based code)
+
+The baseline -> upgrade column above, on the row path, is the effect of
+*only* bumping the library version with the pre-existing row-object code
+unchanged: **1.35x at 100K, 1.38x at 1M**. This is measured, not estimated.
+
+This is well short of the ~4x python-dwca-reader's own upstream benchmarks
+report for the 0.16 -> 0.17 jump. A plausible but **unconfirmed** explanation:
+this archive's `occurrence.txt` has 230 columns (verified: `unzip -p
+dwca-bench-100k.zip occurrence.txt | head -1 | tr '\t' '\n' | wc -l` -> 230),
+where upstream's benchmark used roughly 50. The row path materializes a full
+column dict either way, on both library versions, so a wider row leaves less
+headroom for the iteration rewrite alone to remove - the bulk of this
+archive's win instead comes from switching to `iter_terms` (only requesting
+the ~10-20 columns actually used) plus the narrowed discovery pass, not from
+the library bump by itself. This is a hypothesis, not a confirmed cause.
+
+## Where did the time go (1M end-to-end, stage breakdown)
+
+Derived from the timestamped stage log of representative runs (baseline
+run 1, upgrade run 1 - see raw output above), not from the `bench_parse.py`
+figures, so this is an independent check on the headline finding:
+
+| stage                                              | baseline (0.16.4, old code) | upgrade (0.17.1, iter_terms) | change |
+|-----------------------------------------------------|------------------------------|-------------------------------|--------|
+| open + read metadata                                 | ~3s   | ~2s   | roughly flat |
+| discovery ("3.1 Scanning rows...")                    | ~105s | ~7s   | -98s (matches the parse-only discovery ratio, ~15x) |
+| dataset/basis-of-record creation                      | <1s   | <1s   | flat |
+| **"Importing all rows" (parse full pass + DB writes)** | **~733s** | **~580s** | **-153s, only 1.26x** |
+| tail (unseen migration, cleanup, materialized views, vacuum) | ~19s | ~18s | roughly flat |
+| **total**                                              | **~861s** | **~607s** | **-254s, 1.42x** |
+
+The "Importing all rows" stage is where parsing and database writes both
+happen, and it dominates the total (85%+ of wall clock on both sides). Within
+that stage, the parse-only benchmark says the parse itself shrank from
+~106s to ~9s (a ~97s saving) - almost exactly matching the ~98s saved in the
+discovery stage above, which uses the same read APIs. But the *stage's*
+total time only dropped by ~153s (733s -> 580s), meaning roughly 570-630s of
+that stage on both sides is Postgres work (bulk inserts, comment migration,
+unseen-observation creation) that the DwCA read-path change does not touch
+at all. That is the direct, stage-level evidence for the headline finding:
+parsing was never the dominant cost of an import.
+
+## RawObservationRow: is slots=True worth it
+
+At iter_terms speed, the full pass builds ~1M frozen `RawObservationRow`
+instances in under 10s, so it was worth checking whether `slots=True` on
+that dataclass is a visible win. Measured with
+`PYTHONPATH=. uv run python benchmarks/bench_parse.py <1M archive> iter_terms`,
+three runs per configuration, back to back in one sitting on an otherwise
+idle machine (a warm-up run preceded the first configuration; all runs
+across both configurations agreed within about 4%, so no cold-cache outlier
+needed to be excluded):
+
+| configuration            | run 1 | run 2 | run 3 | mean  |
+|---------------------------|-------|-------|-------|-------|
+| `frozen=True` (current)   | 9.84s | 9.93s | 10.06s | 9.94s |
+| `frozen=True, slots=True` | 9.80s | 9.89s | 9.69s  | 9.79s |
+
+That is a 1.5% improvement (9.94s -> 9.79s), well inside this harness's
+roughly-5% noise floor and not distinguishable from run-to-run variance.
+Note the absolute numbers here are higher than the 8.83s "full pass"
+figure published above for the same line - this session's machine was
+evidently under different background load than when that figure was taken;
+only the relative comparison between the two configurations in this table
+matters for the decision.
+
+Before considering the change, `RawObservationRow`'s usage was checked for
+the preconditions `slots=True` requires: no subclassing, no ad-hoc
+attributes, no pickling. All held (`grep -rn "RawObservationRow"
+--include="*.py" dashboard/ benchmarks/`, checked against every call site).
+So the change would have been safe to make - it just is not worth making.
+
+**Decision: keep `frozen=True` without `slots=True`.** The measured gain
+does not clear the bar, and an unmotivated change to a shared dataclass is
+not worth carrying. `dashboard/management/commands/import_observations.py`
+is unchanged.
+
+## Caveats
+
+- The 1M archive (`/Users/nnoe/Downloads/0002644-260120142942310.zip`) has
+  1,015,049 core data rows (not 1,015,050 - that figure came from `wc -l`,
+  which counts the header line).
+- The 100K archive (`/tmp/dwca-bench-100k.zip`) is **head-truncated**, not
+  sampled: it is the first 100,000 core rows of the full archive, so its
+  dataset composition differs from the full archive (GBIF exports are
+  grouped by dataset). Measured impact on scanned bytes is under 1% (see
+  Task 9 notes); this does not affect the parse-only ratios materially, and
+  the cross-scale corroboration above (12.61x at 100K vs 12.03x at 1M) is
+  itself evidence the truncation is not distorting the comparison.
+- The archive predates the COL taxonomy migration, so its `taxonKey` values
+  do not match any real current species. The end-to-end benchmark database is
+  seeded with **synthetic species created directly from the archive's own
+  top taxon keys** (155 distinct taxon keys found, all 155 seeded, giving
+  100% row coverage: 1,015,049 / 1,015,049 rows match a seeded species).
+  Production has real species with real GBIF/COL taxon keys and will skip
+  many more incoming rows than this benchmark does.
+- Because skipped rows do strictly **less** work than imported rows (no
+  object construction, no bulk insert, no comment migration, no unseen-row
+  creation), a production import with a realistic skip rate would spend
+  proportionally *less* time in the part of the pipeline this change
+  speeds up relative to the parts it doesn't touch. The measured end-to-end
+  gain here (1.29x-1.44x) is therefore a conservative estimate, not an
+  inflated one, relative to a production-like skip rate.
+- Both end-to-end sides were sanity-checked against row counts: after the
+  final run, `dashboard_observation` held 1,010,445 rows (99.55% of
+  1,015,049), consistent with the near-100% taxon coverage above. No run
+  reported `IMPORT FAILED` or mass skips.
+- A concurrent, unrelated Claude Code session briefly checked out a
+  different branch in the main repository checkout during this benchmark
+  run. All actual measurements were re-run afterward from isolated git
+  worktrees (`/tmp/gbif-baseline`, `/tmp/gbif-upgrade`) once this was
+  discovered, so no reported figure was collected while that interference
+  was active. Noted here for full transparency, not because it is believed
+  to have affected any number in this file.

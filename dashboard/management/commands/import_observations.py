@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import itertools
 import json
 import logging
 import os
@@ -20,7 +21,6 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from dwca.darwincore.utils import qualname as qn  # type: ignore
 from dwca.read import DwCAReader  # type: ignore
-from dwca.rows import CoreRow  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
 from dashboard.maintenance import (
     disable_maintenance_for_import,
@@ -42,6 +42,44 @@ from dashboard.views.helpers import (
 
 BULK_CREATE_CHUNK_SIZE = 10000
 
+_GBIF = "http://rs.gbif.org/terms/1.0/"
+
+# Terms requested from the DwCA core file, in RawObservationRow field order.
+# iter_terms() yields a tuple whose positions match this list exactly, so the
+# order here and the unpacking in _raw_from_values must stay in step.
+_IMPORT_TERMS = [
+    _GBIF + "gbifID",
+    qn("occurrenceID"),
+    qn("occurrenceStatus"),
+    qn("year"),
+    qn("month"),
+    qn("day"),
+    qn("decimalLongitude"),
+    qn("decimalLatitude"),
+    _GBIF + "datasetKey",
+    qn("datasetName"),
+    _GBIF + "taxonKey",
+    _GBIF + "acceptedTaxonKey",
+    _GBIF + "speciesKey",
+    qn("basisOfRecord"),
+    qn("individualCount"),
+    qn("coordinateUncertaintyInMeters"),
+    qn("identificationVerificationStatus"),
+    qn("locality"),
+    qn("municipality"),
+    qn("recordedBy"),
+    qn("references"),
+]
+
+# The discovery pass only ever needed these three. Requesting three terms
+# instead of twenty-one, and skipping the RawObservationRow construction
+# entirely, makes pass 1 substantially cheaper on a multi-million-row archive.
+_DISCOVERY_TERMS = [
+    _GBIF + "datasetKey",
+    qn("datasetName"),
+    qn("basisOfRecord"),
+]
+
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _VERIFICATION_STATUS_JSON = os.path.join(
     _THIS_DIR, "..", "..", "verification_status_classification.json"
@@ -59,7 +97,7 @@ def load_verification_status_hash() -> dict[str, bool]:
 class RawObservationRow:
     """Format-agnostic representation of a single observation row.
 
-    Produced by adapters (e.g. ``dwca_row_to_raw``) and consumed by the
+    Produced by adapters (e.g. ``_raw_from_values``) and consumed by the
     import pipeline. Unparseable numeric fields are represented as ``None``
     so the business logic (not the adapter) owns the skip-vs-default
     decision.
@@ -88,59 +126,131 @@ class RawObservationRow:
     references: str
 
 
-def _get_int_or_none(row: CoreRow, field_name: str) -> int | None:
+def _int_or_none(value: str) -> int | None:
     try:
-        return int(get_string_data(row, field_name=field_name))
+        return int(value)
     except ValueError:
         return None
 
 
-def _get_float_or_none(row: CoreRow, field_name: str) -> float | None:
+def _float_or_none(value: str) -> float | None:
     try:
-        return float(get_string_data(row, field_name=field_name))
+        return float(value)
     except ValueError:
         return None
 
 
-def dwca_row_to_raw(row: CoreRow) -> RawObservationRow:
-    """Convert a DwCA CoreRow into a typed RawObservationRow."""
+def _raw_from_values(values: tuple[str, ...]) -> RawObservationRow:
+    """Build a RawObservationRow from one iter_terms() tuple.
+
+    ``values`` holds the terms listed in _IMPORT_TERMS, in that order.
+    iter_terms() yields raw field values, so the strip() that the previous
+    row-based adapter applied via get_string_data is applied here instead.
+    """
+    (
+        gbif_id,
+        occurrence_id,
+        occurrence_status,
+        year,
+        month,
+        day,
+        decimal_longitude,
+        decimal_latitude,
+        dataset_key,
+        dataset_name,
+        taxon_key,
+        accepted_taxon_key,
+        species_key,
+        basis_of_record,
+        individual_count,
+        coordinate_uncertainty_in_meters,
+        identification_verification_status,
+        locality,
+        municipality,
+        recorded_by,
+        references,
+    ) = map(str.strip, values)
+
     return RawObservationRow(
-        gbif_id=int(
-            get_string_data(row, field_name="http://rs.gbif.org/terms/1.0/gbifID")
+        gbif_id=int(gbif_id),
+        occurrence_id=occurrence_id,
+        occurrence_status=occurrence_status,
+        year=_int_or_none(year),
+        month=_int_or_none(month),
+        day=_int_or_none(day),
+        decimal_longitude=_float_or_none(decimal_longitude),
+        decimal_latitude=_float_or_none(decimal_latitude),
+        dataset_key=dataset_key,
+        dataset_name=dataset_name,
+        taxon_key=taxon_key,
+        accepted_taxon_key=accepted_taxon_key,
+        species_key=species_key,
+        basis_of_record=basis_of_record,
+        individual_count=_int_or_none(individual_count),
+        coordinate_uncertainty_in_meters=_float_or_none(
+            coordinate_uncertainty_in_meters
         ),
-        occurrence_id=get_string_data(row, field_name=qn("occurrenceID")),
-        occurrence_status=get_string_data(row, field_name=qn("occurrenceStatus")),
-        year=_get_int_or_none(row, qn("year")),
-        month=_get_int_or_none(row, qn("month")),
-        day=_get_int_or_none(row, qn("day")),
-        decimal_longitude=_get_float_or_none(row, qn("decimalLongitude")),
-        decimal_latitude=_get_float_or_none(row, qn("decimalLatitude")),
-        dataset_key=get_string_data(
-            row, field_name="http://rs.gbif.org/terms/1.0/datasetKey"
-        ),
-        dataset_name=get_string_data(row, field_name=qn("datasetName")),
-        taxon_key=get_string_data(
-            row, field_name="http://rs.gbif.org/terms/1.0/taxonKey"
-        ),
-        accepted_taxon_key=get_string_data(
-            row, field_name="http://rs.gbif.org/terms/1.0/acceptedTaxonKey"
-        ),
-        species_key=get_string_data(
-            row, field_name="http://rs.gbif.org/terms/1.0/speciesKey"
-        ),
-        basis_of_record=get_string_data(row, field_name=qn("basisOfRecord")),
-        individual_count=_get_int_or_none(row, qn("individualCount")),
-        coordinate_uncertainty_in_meters=_get_float_or_none(
-            row, qn("coordinateUncertaintyInMeters")
-        ),
-        identification_verification_status=get_string_data(
-            row, field_name=qn("identificationVerificationStatus")
-        ),
-        locality=get_string_data(row, field_name=qn("locality")),
-        municipality=get_string_data(row, field_name=qn("municipality")),
-        recorded_by=get_string_data(row, field_name=qn("recordedBy")),
-        references=get_string_data(row, field_name=qn("references")),
+        identification_verification_status=identification_verification_status,
+        locality=locality,
+        municipality=municipality,
+        recorded_by=recorded_by,
+        references=references,
     )
+
+
+@dataclass(frozen=True)
+class ExistingObservation:
+    """The two fields the import needs from an already-stored observation."""
+
+    data_import_id: int
+    # Not nullable on the model, so a stored observation always has one.
+    initial_data_import_id: int
+
+
+def fetch_existing_by_stable_id(
+    stable_ids: list[str],
+) -> dict[str, list[ExistingObservation]]:
+    """Look up the already-stored observations for a whole chunk, in one query.
+
+    This replaces a per-observation lookup that cost five queries a row, so on
+    a million-row re-import it ran five million times.
+
+    Returns a list per stable id rather than a single value because more than
+    one match is possible - the unique constraint is on
+    ``(stable_id, data_import_id)``, so an interrupted earlier import can leave
+    two - and more than one is an abnormal condition the caller must reject.
+
+    Deliberately ``values_list`` rather than model objects: this runs for every
+    imported row, and instantiating an ``Observation`` plus its two
+    ``DataImport`` relations per row was most of the cost being removed here.
+    """
+    existing: dict[str, list[ExistingObservation]] = {}
+    for stable_id, data_import_id, initial_data_import_id in Observation.objects.filter(
+        stable_id__in=stable_ids
+    ).values_list("stable_id", "data_import_id", "initial_data_import_id"):
+        existing.setdefault(stable_id, []).append(
+            ExistingObservation(
+                data_import_id=data_import_id,
+                initial_data_import_id=initial_data_import_id,
+            )
+        )
+    return existing
+
+
+def _chunked(
+    iterable: Iterable[RawObservationRow], size: int
+) -> Iterable[list[RawObservationRow]]:
+    """Yield lists of up to ``size`` rows, pulling from ``iterable`` lazily.
+
+    Only one chunk is held at a time, so this keeps the import's streaming
+    behaviour: memory stays O(chunk), never O(rows).
+    """
+    iterator = iter(iterable)
+    while True:
+        chunk = list(itertools.islice(iterator, size))
+        if not chunk:
+            return
+        yield chunk
 
 
 def species_for_raw(
@@ -161,20 +271,25 @@ def species_for_raw(
 
 
 def discover_datasets_and_basis_of_record(
-    rows: Iterable[RawObservationRow],
+    rows: Iterable[tuple[str, str, str]],
 ) -> tuple[dict[str, str], set[str]]:
     """Walk a row stream once, collecting distinct dataset keys (with their
     names) and distinct basis-of-record values.
+
+    Each element is a (dataset_key, dataset_name, basis_of_record) triple -
+    the only three fields this pass ever read. Taking a narrow triple rather
+    than a full RawObservationRow lets the DwCA adapter request three terms
+    instead of twenty-one.
 
     Memory is O(distinct datasets + distinct BoR values), never O(rows),
     so this is safe for multi-million-row imports.
     """
     datasets: dict[str, str] = {}
     basis_of_record_values: set[str] = set()
-    for raw in rows:
-        datasets[raw.dataset_key] = raw.dataset_name
-        if raw.basis_of_record:
-            basis_of_record_values.add(raw.basis_of_record)
+    for dataset_key, dataset_name, basis_of_record in rows:
+        datasets[dataset_key] = dataset_name
+        if basis_of_record:
+            basis_of_record_values.add(basis_of_record)
     return datasets, basis_of_record_values
 
 
@@ -194,11 +309,6 @@ def extract_gbif_download_id_from_dwca(dwca: DwCAReader) -> str:
         )
 
 
-def get_string_data(row: CoreRow, field_name: str) -> str:
-    """Extract string data from a row (with minor cleanup)"""
-    return row.data[field_name].strip()
-
-
 class SkippedObservationException(Exception):
     pass
 
@@ -210,8 +320,13 @@ def build_observation_from_raw(
     hash_species: dict[str, Species],
     hash_basis_of_record: dict[str, BasisOfRecord],
     hash_verification_status: dict[str, bool],
+    existing_by_stable_id: dict[str, list[ExistingObservation]],
 ) -> Observation:
     """Build an Observation from a RawObservationRow.
+
+    ``existing_by_stable_id`` is the chunk-wide lookup from
+    ``fetch_existing_by_stable_id``; it must cover this row's stable id, or the
+    row is treated as new to the system.
 
     Raises SkippedObservationException when the row is unusable (missing
     year, missing coordinates, missing occurrence_id, or occurrence_status
@@ -259,13 +374,44 @@ def build_observation_from_raw(
         coordinate_uncertainty_in_meters=raw.coordinate_uncertainty_in_meters,
         references=raw.references,
     )
-    new_observation.set_or_migrate_initial_data_import(
-        current_data_import=current_data_import
-    )
-
-    # We'll use bulk_create() later, so we need to call set_stable_id() on each object
+    # We'll use bulk_create() later, so we need to call set_stable_id() on each
+    # object. It has to happen before _set_initial_data_import, which keys off it.
     new_observation.set_stable_id()
+    _set_initial_data_import(
+        new_observation,
+        current_data_import=current_data_import,
+        existing_by_stable_id=existing_by_stable_id,
+    )
     return new_observation
+
+
+def _set_initial_data_import(
+    observation: Observation,
+    current_data_import: DataImport,
+    existing_by_stable_id: dict[str, list[ExistingObservation]],
+) -> None:
+    """Carry initial_data_import over from the observation this one replaces.
+
+    Reads the chunk-wide dict built by ``fetch_existing_by_stable_id`` rather
+    than querying per observation. Rules: no match -> this is new, its
+    initial_data_import is the current import; exactly one older match -> inherit
+    that match's initial_data_import; one match that is not older ->
+    OtherIdenticalObservationIsNewer; more than one match -> MultipleObjectsReturned.
+    """
+    matches = existing_by_stable_id.get(observation.stable_id, [])
+
+    if not matches:  # New to the system
+        observation.initial_data_import = current_data_import
+        return
+
+    if len(matches) > 1:  # Multiple observations found, this is abnormal
+        raise Observation.MultipleObjectsReturned
+
+    replaced = matches[0]
+    if replaced.data_import_id >= current_data_import.pk:
+        raise Observation.OtherIdenticalObservationIsNewer
+
+    observation.initial_data_import_id = replaced.initial_data_import_id
 
 
 def send_successful_import_email():
@@ -378,39 +524,51 @@ def _import_all_observations(
 ) -> int:
     """Stream rows into the DB in chunks of BULK_CREATE_CHUNK_SIZE.
 
+    Rows are consumed a chunk at a time rather than one at a time: every chunk
+    resolves its already-stored observations in a single query before any of its
+    rows are built. That is what keeps the previously-imported-observation
+    lookup off the per-row path.
+
+    Each chunk is looked up after the previous chunk has been inserted, so a row
+    that replaces one inserted earlier in the same import is still detected.
+
     Returns the number of skipped observations.
     """
     skipped_observations_counter = 0
-    observations_to_insert: list[Observation] = []
 
-    for index, raw_row in enumerate(raw_rows):
-        try:
-            obs = build_observation_from_raw(
-                raw_row,
-                data_import,
-                hash_datasets=hash_table_datasets,
-                hash_species=hash_table_species,
-                hash_basis_of_record=hash_table_basis_of_record,
-                hash_verification_status=hash_table_verification_status,
-            )
-            observations_to_insert.append(obs)
-            if stdout is not None:
-                stdout.write(".", ending="")
-        except KeyError:
-            raise CommandError(f"species not found in db for raw row: {raw_row}")
-        except SkippedObservationException:
-            skipped_observations_counter += 1
-            if stdout is not None:
-                stdout.write("x", ending="")
+    for raw_chunk in _chunked(raw_rows, BULK_CREATE_CHUNK_SIZE):
+        existing_by_stable_id = fetch_existing_by_stable_id(
+            [
+                Observation.build_stable_id(raw_row.occurrence_id, raw_row.dataset_key)
+                for raw_row in raw_chunk
+            ]
+        )
 
-        if index > 0 and index % BULK_CREATE_CHUNK_SIZE == 0:
+        observations_to_insert: list[Observation] = []
+        for raw_row in raw_chunk:
+            try:
+                obs = build_observation_from_raw(
+                    raw_row,
+                    data_import,
+                    hash_datasets=hash_table_datasets,
+                    hash_species=hash_table_species,
+                    hash_basis_of_record=hash_table_basis_of_record,
+                    hash_verification_status=hash_table_verification_status,
+                    existing_by_stable_id=existing_by_stable_id,
+                )
+                observations_to_insert.append(obs)
+                if stdout is not None:
+                    stdout.write(".", ending="")
+            except KeyError:
+                raise CommandError(f"species not found in db for raw row: {raw_row}")
+            except SkippedObservationException:
+                skipped_observations_counter += 1
+                if stdout is not None:
+                    stdout.write("x", ending="")
+
+        if observations_to_insert:
             _log_with_time(stdout, "Bulk size reached...")
             _batch_insert_observations(observations_to_insert, stdout=stdout)
-            observations_to_insert = []
-
-    # Insert the last chunk
-    if observations_to_insert:
-        _batch_insert_observations(observations_to_insert, stdout=stdout)
 
     return skipped_observations_counter
 
@@ -458,6 +616,7 @@ def _vacuum_analyze_rewritten_tables(stdout) -> None:
 
 def run_import(
     raw_rows_factory: Callable[[], Iterable[RawObservationRow]],
+    discovery_rows_factory: Callable[[], Iterable[tuple[str, str, str]]],
     *,
     gbif_download_id: str | None = None,
     gbif_predicate: dict | None = None,
@@ -465,10 +624,11 @@ def run_import(
 ) -> DataImport:
     """Run the transactional observation-import pipeline.
 
-    ``raw_rows_factory`` is invoked twice: once for dataset / basis-of-record
-    discovery, once to build and insert observations. Each call must return
-    a fresh iterable. This preserves streaming for multi-million-row imports:
-    no row is held in memory across passes.
+    ``discovery_rows_factory`` feeds pass 1 (dataset / basis-of-record
+    discovery) with (dataset_key, dataset_name, basis_of_record) triples;
+    ``raw_rows_factory`` feeds pass 2, which builds and inserts observations.
+    Each call must return a fresh iterable. This preserves streaming for
+    multi-million-row imports: no row is held in memory across passes.
 
     Maintenance mode is enabled for the duration of the import and always
     cleared on exit, whether the import succeeds or fails. On failure the
@@ -502,7 +662,7 @@ def run_import(
             (
                 datasets_referenced,
                 bor_values_referenced,
-            ) = discover_datasets_and_basis_of_record(raw_rows_factory())
+            ) = discover_datasets_and_basis_of_record(discovery_rows_factory())
 
             _log_with_time(stdout, "3.3 Creating/updating the Dataset objects")
             hash_table_datasets: dict[str, Dataset] = {}
@@ -745,10 +905,7 @@ class Command(BaseCommand):
             _log_with_time(self.stdout, "Observations downloaded")
 
         # 2. Extract gbif_download_id from DwCA metadata (only needs to read metadata)
-        _log_with_time(
-            self.stdout,
-            "Opening DWCA to read metadata (this also builds the line-offset index)",
-        )
+        _log_with_time(self.stdout, "Opening DWCA to read metadata")
         with DwCAReader(source_data_path) as dwca:
             gbif_download_id = extract_gbif_download_id_from_dwca(dwca)
         _log_with_time(
@@ -757,13 +914,30 @@ class Command(BaseCommand):
 
         # 3. Build a fresh-generator factory that lazily streams rows
         def raw_rows_factory() -> Iterable[RawObservationRow]:
-            return (
-                dwca_row_to_raw(core_row) for core_row in DwCAReader(source_data_path)
-            )
+            # A generator function, so each call returns a fresh iterator, and
+            # the reader is closed when the pass ends. The previous generator
+            # expression never closed its DwCAReader.
+            # Metadata was already read at step 2 by its own reader; parsing the
+            # EML again on each row pass is wasted work.
+            with DwCAReader(source_data_path, skip_metadata=True) as dwca:
+                for values in dwca.iter_terms(_IMPORT_TERMS):
+                    yield _raw_from_values(values)
+
+        def discovery_rows_factory() -> Iterable[tuple[str, str, str]]:
+            with DwCAReader(source_data_path, skip_metadata=True) as dwca:
+                for dataset_key, dataset_name, basis_of_record in dwca.iter_terms(
+                    _DISCOVERY_TERMS
+                ):
+                    yield (
+                        dataset_key.strip(),
+                        dataset_name.strip(),
+                        basis_of_record.strip(),
+                    )
 
         # 4. Run the transactional pipeline
         run_import(
             raw_rows_factory,
+            discovery_rows_factory,
             gbif_download_id=gbif_download_id,
             gbif_predicate=gbif_predicate,
             stdout=self.stdout,

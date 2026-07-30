@@ -1,5 +1,12 @@
 # Unreleased
 
+- Change: importing observations is about 2.75x faster. On a test database
+  holding a million observations with real users and alerts, a full re-import
+  went from roughly 72 minutes to 26 minutes. Two things account for it:
+  reading the GBIF archive is about 12x faster, and deciding whether an
+  observation is already known now takes one database query per batch of
+  10,000 instead of five per observation - the second is by far the larger
+  share.
 - Feature: a new "Species" tab in the results view lists the species present in
   the current search along with their observation counts and shares. The
   species count in the sidebar now links to it.

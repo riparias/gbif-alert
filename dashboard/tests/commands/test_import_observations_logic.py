@@ -8,10 +8,12 @@ import datetime
 from unittest import mock
 
 import pytest
+from django.contrib.gis.geos import Point
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.db import connection
 from django.test import override_settings
+from django.utils import timezone
 from maintenance_mode.core import (  # type: ignore
     get_maintenance_mode,
     set_maintenance_mode,
@@ -234,6 +236,82 @@ def test_initial_data_import_value_new(test_data):
     latest_di = DataImport.objects.latest("id")
     assert obs.initial_data_import == latest_di
     assert obs.data_import == latest_di
+
+
+def test_duplicate_stable_id_within_one_import_is_rejected(test_data, monkeypatch):
+    """Two rows in one archive sharing occurrence_id + dataset_key are refused.
+
+    The second row lands in a later chunk, so the chunk lookup finds the first
+    one already inserted under the *current* import. That is not older than the
+    row being built, so the import raises instead of silently keeping one of
+    the two.
+
+    Covers the OtherIdenticalObservationIsNewer branch of
+    _set_initial_data_import, which the chunk-batched lookup reimplemented.
+    """
+    from dashboard.management.commands import import_observations as mod
+
+    monkeypatch.setattr(mod, "BULK_CREATE_CHUNK_SIZE", 1)
+
+    duplicated = dict(
+        occurrence_id="same-occurrence-appearing-twice",
+        dataset_key=INATURALIST_KEY,
+        dataset_name="iNaturalist",
+        taxon_key=LIXUS_COL_KEY,
+        accepted_taxon_key=LIXUS_COL_KEY,
+        species_key=LIXUS_COL_KEY,
+    )
+
+    with pytest.raises(Observation.OtherIdenticalObservationIsNewer):
+        run_import_with_rows(
+            [
+                make_raw_row(gbif_id=8001, **duplicated),
+                make_raw_row(gbif_id=8002, **duplicated),
+            ]
+        )
+
+
+def test_two_stored_observations_sharing_a_stable_id_are_rejected(test_data):
+    """Two stored observations with the same stable_id make the import refuse.
+
+    The unique constraint is on (stable_id, data_import), so an interrupted
+    earlier import can leave two rows sharing a stable_id. Which one to inherit
+    initial_data_import from is undefined, so the import raises rather than
+    picking arbitrarily.
+
+    Covers the MultipleObjectsReturned branch of _set_initial_data_import.
+    """
+    occurrence_id = "https://www.inaturalist.org/observations/33366292"
+    # test_data already stores one observation with this occurrence_id, under
+    # its own DataImport. Add a second one under a different DataImport so two
+    # stored rows share a stable_id.
+    other_di = DataImport.objects.create(start=timezone.now())
+    Observation.objects.create(
+        gbif_id=7001,
+        occurrence_id=occurrence_id,
+        source_dataset=test_data["inaturalist"],
+        species=test_data["polydrusus"],
+        date=datetime.date.today() - datetime.timedelta(days=1),
+        data_import=other_di,
+        initial_data_import=other_di,
+        location=Point(5.09513, 50.48941, srid=4326),
+        basis_of_record=BasisOfRecord.objects.get(name="HUMAN_OBSERVATION"),
+    )
+
+    with pytest.raises(Observation.MultipleObjectsReturned):
+        run_import_with_rows(
+            [
+                make_raw_row(
+                    gbif_id=7002,
+                    occurrence_id=occurrence_id,
+                    dataset_key=INATURALIST_KEY,
+                    dataset_name="iNaturalist",
+                    taxon_key=POLYDRUSUS_COL_KEY,
+                    accepted_taxon_key=POLYDRUSUS_COL_KEY,
+                    species_key=POLYDRUSUS_COL_KEY,
+                ),
+            ]
+        )
 
 
 def test_dataimport_object_created(test_data):
@@ -658,11 +736,15 @@ def test_chunked_import_detects_replacement_in_later_chunk(test_data, monkeypatc
     - the comment on the replaced observation ends up on the new row
       inserted in the later chunk
 
-    Current chunking quirk (worth pinning as a test so a refactor doesn't
-    silently break it): the flush fires when ``index > 0 and index %
-    CHUNK_SIZE == 0``. With CHUNK_SIZE=3 and 7 rows (indices 0-6), the
-    first flush carries 4 items (0-3), the second carries 3 (4-6), and
-    no final flush runs because the list ends empty.
+    Chunking (pinned here so a refactor does not silently change it): rows are
+    pulled from the source a chunk at a time, so with CHUNK_SIZE=3 and 7 rows
+    the flushes carry 3, 3 and 1 items - three in total.
+
+    This replaced an earlier off-by-one: the flush used to fire when ``index >
+    0 and index % CHUNK_SIZE == 0``, which made the first batch carry
+    CHUNK_SIZE + 1 items and dropped the final flush whenever the row count was
+    an exact multiple. That shape was itself pinned by this test, which is what
+    forced the change to be noticed rather than slipping through.
     """
     from dashboard.management.commands import import_observations as mod
 
@@ -736,15 +818,11 @@ def test_chunked_import_detects_replacement_in_later_chunk(test_data, monkeypatc
     ) as batch_spy:
         run_import_with_rows(rows)
 
-    # Chunking actually happened
+    # Chunking actually happened: 7 rows at CHUNK_SIZE=3 gives 3 + 3 + 1
     assert (
-        batch_spy.call_count == 2
-    ), f"Expected 2 chunk flushes, got {batch_spy.call_count}"
-    # First call got indices 0-3 (4 items), second got 4-6 (3 items)
-    first_chunk_obs = batch_spy.call_args_list[0].args[0]
-    second_chunk_obs = batch_spy.call_args_list[1].args[0]
-    assert len(first_chunk_obs) == 4
-    assert len(second_chunk_obs) == 3
+        batch_spy.call_count == 3
+    ), f"Expected 3 chunk flushes, got {batch_spy.call_count}"
+    assert [len(call.args[0]) for call in batch_spy.call_args_list] == [3, 3, 1]
 
     # All 7 rows made it to the DB
     assert Observation.objects.count() == 7
