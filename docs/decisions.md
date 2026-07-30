@@ -70,3 +70,20 @@ measured at too few rows per run to amortise the fixed archive-open cost - the
 real figure for that step alone is 1.38x.
 **Rejected:** Keeping the per-row lookup and only widening the chunk size - the
 cost was the round trips and the model instantiation per row, not the batch size.
+
+## 2026-07-30 - Benchmark imports against a clone of a real database
+
+**What:** The end-to-end import benchmark now runs against a clone of a real
+database (real observation volume, users, alerts, unseen records) rather than a
+purpose-built empty one, via `BENCH_DB_NAME` and
+`benchmarks/remap_species_to_archive.py`.
+**Why:** The empty-table runs reported 1.3-1.4x for the read-path work and 10
+minutes for an import that really takes 57-95. With an empty `Observation`
+table the per-observation replaced-observation lookup costs one cheap query
+instead of five, and `create_unseen_observations` is a no-op with no users - so
+the benchmark was measuring a code path production never takes. Re-measured
+realistically, the combined change is 2.75x (72.3 -> 26.2 min) and parsing is
+3.0% of the original import, not the dominant cost it had been assumed to be.
+**Rejected:** Running against the developer database directly - the archive's
+taxon keys match none of its species, so the import would have skipped every row
+and then deleted all 1,102,040 observations.

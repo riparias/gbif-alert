@@ -1,13 +1,12 @@
 # Unreleased
 
-- Change: reading the GBIF archive during an import is about 12x faster. A
-  full import gets roughly 5% faster overall - the archive was never the
-  bottleneck, and almost all of an import's time goes on database work that
-  this change does not touch.
-- Change: while importing, deciding whether an observation is already known
-  took five database queries per observation. It is now resolved once per
-  batch of 10,000, which cut about 27 minutes off a million-observation
-  re-import in testing.
+- Change: importing observations is about 2.75x faster. On a test database
+  holding a million observations with real users and alerts, a full re-import
+  went from roughly 72 minutes to 26 minutes. Two things account for it:
+  reading the GBIF archive is about 12x faster, and deciding whether an
+  observation is already known now takes one database query per batch of
+  10,000 instead of five per observation - the second is by far the larger
+  share.
 - Change: the observations list, the date filter, the "not viewed" filter and
   the histogram are now served by database indexes rather than sorting or
   scanning the whole dataset on each request - the histogram was about 4x

@@ -10,18 +10,24 @@ to the read path, back to back in one sitting on an idle machine.
 
 ## Headline finding
 
-The DwCA parse itself got roughly **12x faster**. The end-to-end import
-measured here got **1.3-1.4x faster** - but read the warning immediately
-below before quoting that second number anywhere. It does not represent a
-production import.
+Measured against a clone of a real database, a full re-import of a
+1,015,049-row archive went from **72.3 minutes to 26.2 minutes: 2.75x**, about
+46 minutes saved. See "Realistic end-to-end results" below - those are the
+numbers to quote.
 
-Parsing was never the dominant cost of an import. Database work is.
+Of that, only about 130 s came from the DwCA parse being roughly **12x**
+faster. Parsing was **3.0%** of the original import. Nearly all of the saving
+came from a lookup in the row-building phase that ran five queries per
+observation.
 
-## WARNING: the end-to-end numbers here understate a real import
+The empty-database end-to-end figures further down (1.3-1.4x) are kept for the
+record but must not be quoted - the warning below explains why.
 
-Every end-to-end run in this document restored a database whose `Observation`
-table was EMPTY, with zero users and zero alerts. A real import never runs in
-that state, and the difference is structural, not a detail:
+## WARNING: the empty-database end-to-end numbers understate a real import
+
+The end-to-end runs in the "Raw output" sections below restored a database whose
+`Observation` table was EMPTY, with zero users and zero alerts. A real import
+never runs in that state, and the difference is structural, not a detail:
 
 - `build_observation_from_raw` calls `Observation.replaced_observation`, which
   looks for an existing observation with the same `stable_id`. Against an
@@ -47,9 +53,105 @@ Consequences for reading this document:
 - The end-to-end ratios are not representative. On a real import the roughly
   197 s this change saves is about **5%** of total import time, not 30%.
 
-To fix the methodology, the benchmark template database needs a previous
-import's observations plus some users and alerts, so the harness measures a
-re-import rather than a first import.
+This was fixed: the harness can now target a clone of a real database, and the
+"Realistic end-to-end results" section below supersedes those figures.
+
+## Realistic end-to-end results
+
+Run against `gbif_alert_bench_realistic`, a clone of a developer database:
+1,102,040 observations, 185 users, 153 alerts, 329,855 unseen records, and
+**99.8%** of the archive's stable ids already present - so the
+replaced-observation lookup does the work a real re-import does and
+`create_unseen_observations` has real users to iterate.
+
+Archive: the full 1,015,049-row GBIF download. Sides alternated, each restoring
+the 4.2 GB template first so every run starts identical. Both sides ran in the
+same checkout, venv and Python (3.13.7); only two files and the library version
+differ, swapped with `git checkout`.
+
+| run | before (`ffbce80`, 0.16.4) | after (`iter_terms` + chunk-batched lookup) |
+| --- | --- | --- |
+| 1 | 4538.3 s | 1550.3 s |
+| 2 | 4134.5 s | 1598.9 s |
+| average | **4336 s (72.3 min)** | **1575 s (26.2 min)** |
+
+**2.75x**, about 46 minutes saved. Pairwise the two runs give 2.93x and 2.59x.
+
+Agreement: the "after" side is within 3.1%, inside the +/-5% this document asks
+for. The "before" side is **9.8% apart, outside it** - 70-minute runs on a
+laptop drift. So treat the ratio as 2.6-2.9x rather than a precise 2.75x. The
+effect is about ten times larger than the spread, so the conclusion holds even
+though the third digit does not.
+
+Both sides did equivalent work: 102 chunk flushes each, peak RSS within 2.5%
+(2841 / 2910 MB before, 2848 / 2910 MB after).
+
+### Stage breakdown, before -> after (run 1)
+
+| stage | before | after |
+| --- | --- | --- |
+| "Creating unseen observations" interval | 3547 s | 850 s |
+| Bulk creation | 460 s | 341 s |
+| Migrating comments | 206 s | 188 s |
+| Discovery scan (pure parse) | 138 s | 7 s |
+| Deleting previous observations | 77 s | 80 s |
+| Migrating unseen observations | 37 s | 35 s |
+| Committing the transaction | 32 s | 32 s |
+
+Two things to read carefully here:
+
+- **Parsing was 138 s of 4538 s, 3.0%.** Any claim that parsing dominated an
+  import was wrong, and was wrong before this work started.
+- The top row is an interval, not a stage. `_log_with_time` stamps the start of
+  each stage, so the span attributed to "Creating unseen observations" also
+  contains the NEXT chunk's parse-and-build work. It is the biggest remaining
+  cost either way, and with row-building now around 125 s most of the 850 s is
+  genuine unseen creation - which runs once per chunk and iterates every user,
+  so roughly 19000 queries per import. That is the next thing worth attacking.
+
+### Reproducing it
+
+```bash
+# 1. Clone a real database (needs no active connections to the source)
+psql -d postgres -c 'CREATE DATABASE gbif_alert_bench_realistic TEMPLATE "<source>";'
+
+# 2. Relabel its species so the archive's taxon keys resolve
+BENCH_DB_NAME=gbif_alert_bench_realistic DJANGO_SETTINGS_MODULE=benchmarks.bench_settings \
+  PYTHONPATH=. uv run python benchmarks/remap_species_to_archive.py <archive.zip>
+
+# 3. Snapshot it, so every run can restore an identical starting state
+psql -d postgres -c 'CREATE DATABASE gbif_alert_bench_realistic_template TEMPLATE gbif_alert_bench_realistic;'
+
+# 4. Run. BENCH_PGHOST avoids Postgres.app's socket permission check.
+BENCH_DB_NAME=gbif_alert_bench_realistic BENCH_PGHOST=127.0.0.1 PYTHONPATH=. \
+  uv run python benchmarks/bench_e2e.py <archive.zip> [--dwca-version 0.16.4]
+```
+
+Step 2 is a compromise worth understanding: a real database's species carry the
+taxon keys of whatever checklist it was last imported against, so an archive
+from a different era matches nothing, every row is skipped, and the import
+deletes the observation table instead of measuring anything. Relabelling keeps
+volume, users, alerts, unseen records and the observation rows real and changes
+only which taxon a species claims to be.
+
+### Things that invalidated runs here, worth knowing before trusting a number
+
+- **A second driver survived a `pkill`** and spent seven minutes calling
+  `pg_terminate_backend` on the database a benchmark was running against.
+  Nothing errored; the run would have finished and produced a plausible wrong
+  number. It was spotted in the process list and discarded. `bench_e2e.py`
+  callers now take a PID lock.
+- **Postgres.app intermittently refuses unix-socket connections** pending an
+  app-permission dialog, which aborted two restores - once after five minutes
+  of retrying. `BENCH_PGHOST=127.0.0.1` routes the restore over TCP and avoided
+  it.
+- **A `git worktree` baseline got Python 3.14** where the main checkout uses
+  3.13, and lacked the untracked `.env` and `local_settings.py`. Comparing
+  across Python minor versions would have quietly confounded the result. The
+  worktree was abandoned in favour of swapping two files in one checkout.
+- **Killing a driver mid-run left the baseline files checked out** in the
+  working tree, which surfaced later as unrelated-looking type errors. Drivers
+  now restore on trap and verify with `git diff --quiet`.
 
 ## Cost of the `replaced_observation` lookup
 
