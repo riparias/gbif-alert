@@ -17,6 +17,11 @@ export const useResultsStore = defineStore("results", () => {
         statusEpoch.value += 1;
     }
 
+    // Which results tab is showing. Lives here rather than in
+    // ObservationsView because FilterSidebar is a sibling, not a parent, and
+    // its species stat card switches to the species tab.
+    const activeResultsTab = ref("map");
+
     return {
         observationCount,
         speciesCount,
@@ -24,5 +29,6 @@ export const useResultsStore = defineStore("results", () => {
         loading,
         statusEpoch,
         bumpStatusEpoch,
+        activeResultsTab,
     };
 });

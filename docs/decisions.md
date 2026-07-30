@@ -87,3 +87,23 @@ realistically, the combined change is 2.75x (72.3 -> 26.2 min) and parsing is
 **Rejected:** Running against the developer database directly - the archive's
 taxon keys match none of its species, so the import would have skipped every row
 and then deleted all 1,102,040 observations.
+## 2026-07-28 - Map tiles filter seen/unseen on (user_id, observation_id)
+
+**What:** The map SQL's status filter is now `user_id = %s` on the joined unseen
+row and a `NOT EXISTS` keyed on `(user_id, observation_id)`, instead of the
+`id IN (SELECT id ... WHERE user_id = %s)` subquery.
+**Why:** The subquery form self-joined the unseen table by primary key just to
+read `user_id`, so map tiles missed the `dashboard_ou_user_obs_idx` win the
+observation list already got; the map is the heaviest reader of that filter.
+**Rejected:** Leaving the map SQL alone as "the ORM path is what matters" - the
+two must stay equivalent, and divergent shapes are how they drift apart.
+
+## 2026-07-28 - Species breakdown results tab
+
+**What:** A read-only "Species" results tab, backed by a new
+`/observations/species-breakdown/` aggregate endpoint.
+**Why:** The sidebar reported how many species matched a search but gave no
+way to find out which ones.
+**Rejected:** Folding several charts behind a renamed "Chart" tab - it costs
+roughly 2.5x for a chart registry serving two charts, and a pie chart is
+unreadable at fifty species.

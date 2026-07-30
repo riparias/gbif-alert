@@ -12,6 +12,7 @@ import Popover from "primevue/popover";
 import Checkbox from "primevue/checkbox";
 import ObservationHistogram from "./ObservationHistogram.vue";
 import ObservationsMap from "./ObservationsMap.vue";
+import SpeciesBreakdown from "./SpeciesBreakdown.vue";
 import Tabs from "primevue/tabs";
 import TabList from "primevue/tablist";
 import Tab from "primevue/tab";
@@ -36,6 +37,14 @@ const props = defineProps<{
 
 const resultsStore = useResultsStore();
 const userStore = useUserStore();
+
+const { activeResultsTab } = storeToRefs(resultsStore);
+
+// A panel mounts on first visit and then stays mounted. PrimeVue's own
+// `lazy` prop would unmount inactive panels, re-initialising the OpenLayers
+// map on every tab switch.
+const visitedTabs = ref(new Set([activeResultsTab.value]));
+watch(activeResultsTab, (tab) => visitedTabs.value.add(tab));
 
 const { t, locale } = useI18n();
 const { ensureBasisOfRecordLoaded, basisOfRecordName } = useDisplayLabels();
@@ -209,6 +218,18 @@ watch(speciesNameMode, () => {
 onUnmounted(() => reloadOnFilterChange.cancel());
 
 onMounted(async () => {
+    // activeResultsTab lives in the Pinia store, which outlives this
+    // component - without a reset, a tab chosen on one page (e.g. Species on
+    // the index page) would still be selected after navigating to an alert
+    // detail page, where the map has never been mounted. Reset both the
+    // active tab and which panels have been visited so the map is always the
+    // starting point on a fresh mount, and no tab from a previous page is
+    // left gated open or falsely marked as already visited. This only runs on
+    // mount, so switching tabs via the sidebar's species stat card on an
+    // already-mounted page is unaffected.
+    activeResultsTab.value = "map";
+    visitedTabs.value = new Set(["map"]);
+
     // The table/drawer render the basis-of-record name from its id; ensure the
     // option list is available (the alert detail page has no FilterSidebar).
     ensureBasisOfRecordLoaded();
@@ -233,22 +254,32 @@ onMounted(async () => {
 
     <template v-else>
         <!-- Map / Timeline / Table tabs -->
-        <Tabs value="map">
+        <Tabs v-model:value="activeResultsTab">
             <TabList>
                 <Tab value="map"><i class="pi pi-map" /> {{ t("message.mapView") }}</Tab>
                 <Tab value="timeline"
-                    ><i class="pi pi-chart-bar" /> {{ t("message.timelineView") }}
+                    ><i class="pi pi-chart-bar" /> {{ t("message.timelineView") }}</Tab
+                >
+                <Tab value="species"
+                    ><i class="pi pi-sitemap" /> {{ t("message.speciesView") }}
                     <span class="tab-new-badge">{{ t("message.newBadge") }}</span></Tab
                 >
                 <Tab value="table"><i class="pi pi-table" /> {{ t("message.tableView") }}</Tab>
             </TabList>
             <TabPanels>
                 <TabPanel value="map">
-                    <ObservationsMap />
+                    <ObservationsMap v-if="visitedTabs.has('map')" />
                 </TabPanel>
 
                 <TabPanel value="timeline">
-                    <ObservationHistogram />
+                    <ObservationHistogram v-if="visitedTabs.has('timeline')" />
+                </TabPanel>
+
+                <TabPanel value="species">
+                    <SpeciesBreakdown
+                        v-if="visitedTabs.has('species')"
+                        :active="activeResultsTab === 'species'"
+                    />
                 </TabPanel>
 
                 <TabPanel value="table">

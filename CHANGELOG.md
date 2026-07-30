@@ -7,6 +7,9 @@
   observation is already known now takes one database query per batch of
   10,000 instead of five per observation - the second is by far the larger
   share.
+- Feature: a new "Species" tab in the results view lists the species present in
+  the current search along with their observation counts and shares. The
+  species count in the sidebar now links to it.
 - Change: the observations list, the date filter, the "not viewed" filter and
   the histogram are now served by database indexes rather than sorting or
   scanning the whole dataset on each request - the histogram was about 4x

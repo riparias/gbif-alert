@@ -185,6 +185,24 @@ class HistogramEntryOut(Schema):
     count: int
 
 
+class SpeciesCountOut(Schema):
+    """A species present in a filtered result set, with its observation count.
+
+    Deliberately slimmer than SpeciesOut: this feeds a summary table, so the
+    tags, image and taxon-key fields would be dead weight on every row (and
+    the tags would cost a prefetch). The three flat vernacular columns are
+    kept so the frontend's pickVernacular helper and the scientific/vernacular
+    display toggle work unchanged.
+    """
+
+    id: int
+    scientificName: str
+    vernacularNameEn: str
+    vernacularNameNl: str
+    vernacularNameFr: str
+    count: int
+
+
 class CommentOut(Schema):
     id: int
     authorUsername: str | None

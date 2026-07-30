@@ -291,6 +291,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/observations/species-breakdown/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Species present in a filtered result set
+         * @description Return each species present in the filtered observations, with its
+         *     observation count, ranked by count descending.
+         *
+         *     A species with no matching observation is absent from the response
+         *     rather than present with a zero count.
+         *
+         *     Defined before observation_detail so the literal
+         *     `/observations/species-breakdown/` path is matched ahead of
+         *     `/observations/{stable_id}/`.
+         */
+        get: operations["dashboard_api_v2_observations_species_breakdown"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/observations/mark-as-viewed/": {
         parameters: {
             query?: never;
@@ -1072,6 +1100,30 @@ export interface components {
          * @description The number of observations matching a filter set.
          */
         CountOut: {
+            /** Count */
+            count: number;
+        };
+        /**
+         * SpeciesCountOut
+         * @description A species present in a filtered result set, with its observation count.
+         *
+         *     Deliberately slimmer than SpeciesOut: this feeds a summary table, so the
+         *     tags, image and taxon-key fields would be dead weight on every row (and
+         *     the tags would cost a prefetch). The three flat vernacular columns are
+         *     kept so the frontend's pickVernacular helper and the scientific/vernacular
+         *     display toggle work unchanged.
+         */
+        SpeciesCountOut: {
+            /** Id */
+            id: number;
+            /** Scientificname */
+            scientificName: string;
+            /** Vernacularnameen */
+            vernacularNameEn: string;
+            /** Vernacularnamenl */
+            vernacularNameNl: string;
+            /** Vernacularnamefr */
+            vernacularNameFr: string;
             /** Count */
             count: number;
         };
@@ -2078,6 +2130,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CountOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_observations_species_breakdown: {
+        parameters: {
+            query?: {
+                speciesIds?: number[];
+                datasetIds?: number[];
+                basisOfRecordIds?: number[];
+                startDate?: string | null;
+                endDate?: string | null;
+                areaIds?: number[];
+                status?: ("all" | "viewed" | "notViewed") | null;
+                initialDataImportIds?: number[];
+                verifiedFilter?: "all" | "verified" | "unverified";
+                areaFilterMode?: "inside" | "approaching" | "both";
+                approachingDistanceKm?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpeciesCountOut"][];
                 };
             };
         };

@@ -504,3 +504,47 @@ def test_index_map_loads_the_outline_of_a_selected_area(page: Page, live_server)
         lambda r: r.url.endswith(f"/api/v2/areas/{area.pk}/geojson/") and r.ok
     ):
         page.goto(f"{live_server.url}/?areaIds={area.pk}&status=all")
+
+
+# ---------------------------------------------------------------------------
+# Species view
+# ---------------------------------------------------------------------------
+
+
+def _switch_to_species_view(page: Page) -> None:
+    page.get_by_role("tab", name="Species").click()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_species_view_lists_species_with_count(page: Page, live_server):
+    """The Species tab lists each species in the results with its count."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+    _make_observation(gbif_id=2, occurrence_id="2", species=sp, basis=basis)
+
+    page.goto(live_server.url + "/?status=all")
+    _switch_to_species_view(page)
+
+    table = page.locator(".species-breakdown-table")
+    expect(table.get_by_text("Procambarus fallax")).to_be_visible()
+    expect(table.get_by_role("cell", name="2", exact=True)).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_species_stat_card_opens_species_view(page: Page, live_server):
+    """Clicking the sidebar species stat card switches to the Species tab."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+
+    page.goto(live_server.url + "/?status=all")
+    # Scope to the stat-cards row: Playwright matches accessible names by
+    # substring, so an unscoped name="species" would also match the
+    # "Species" tab and the sidebar's "All species" filter trigger button,
+    # tripping strict mode.
+    page.locator(".stat-cards").get_by_role("button", name="species").click()
+
+    expect(page.get_by_role("tab", name="Species")).to_have_attribute(
+        "aria-selected", "true"
+    )
