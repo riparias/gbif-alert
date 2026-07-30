@@ -859,16 +859,6 @@ class Observation(models.Model):
             "dashboard:pages:observation-details", kwargs={"stable_id": self.stable_id}
         )
 
-    def set_or_migrate_initial_data_import(
-        self, current_data_import: DataImport
-    ) -> None:
-        """If this is the first import of this observation, set initial_data_import to the current import. Otherwise, migrate its value from the previous observation."""
-        replaced_observation = self.replaced_observation
-        if replaced_observation is None:
-            self.initial_data_import = current_data_import
-        else:
-            self.initial_data_import = replaced_observation.initial_data_import
-
     @staticmethod
     def date_older_than_user_delay(user: User, the_date) -> bool:
         today = timezone.now().date()
@@ -877,52 +867,14 @@ class Observation(models.Model):
             today - datetime.timedelta(days=user.notification_delay_days)
         )
 
-    @cached_property
-    def replaced_observation(self) -> Self | None:
-        """Return the observation (from a previous import) that will be replaced by this one
-
-        return None if this observation is new to the system
-        raises:
-        - Observation.MultipleObjectsReturned if multiple old observations match
-        - Observation.OtherIdenticalObservationIsNewer if another one has the same stable identifier, but is more recent
-
-
-        BEWARE: this method is cached to improve import performances, if you want to call it multiple time on the same
-        observation, you may want ti invalidate it first (with del observation.replaced_observation).
-        See https://stackoverflow.com/questions/23489548/how-do-i-invalidate-cached-property-in-django
-        """
-
-        # One query, not five. This sits on the import's hot path: it runs once
-        # per observation, so a re-import of a million rows ran a million times.
-        # The previous form issued two COUNT(*) queries (count() does not
-        # populate the queryset cache, so asking twice asks the database twice),
-        # a third query to fetch the row, then one each to follow data_import
-        # and initial_data_import.
-        #
-        # Slicing to 2 is enough to tell "none" from "exactly one" from "more
-        # than one, which is abnormal", and select_related pulls both foreign
-        # keys in the same round trip - the caller reads initial_data_import
-        # straight after.
-        identical_observations = list(
-            self.get_identical_observations().select_related(
-                "data_import", "initial_data_import"
-            )[:2]
-        )
-
-        if not identical_observations:
-            return None
-
-        if len(identical_observations) > 1:  # This is abnormal
-            raise Observation.MultipleObjectsReturned
-
-        the_other_one = identical_observations[0]
-        if the_other_one.data_import.pk < self.data_import.pk:
-            return the_other_one
-        else:
-            raise Observation.OtherIdenticalObservationIsNewer
-
     def get_identical_observations(self) -> QuerySet[Self]:
-        """Return 'identical' observations (same stable_id), excluding myself"""
+        """Return 'identical' observations (same stable_id), excluding myself.
+
+        No production code calls this now - the import resolves replaced
+        observations in bulk (see fetch_existing_by_stable_id in
+        import_observations.py). Kept as a small, tested query helper; its
+        tests document the same-stable_id semantics.
+        """
         return Observation.objects.exclude(pk=self.pk).filter(  # type: ignore
             stable_id=Observation.build_stable_id(
                 self.occurrence_id, self.source_dataset.gbif_dataset_key

@@ -392,9 +392,11 @@ def _set_initial_data_import(
 ) -> None:
     """Carry initial_data_import over from the observation this one replaces.
 
-    Same rules as ``Observation.set_or_migrate_initial_data_import``, but reading
-    the chunk-wide dict built by ``fetch_existing_by_stable_id`` instead of
-    querying once per observation.
+    Reads the chunk-wide dict built by ``fetch_existing_by_stable_id`` rather
+    than querying per observation. Rules: no match -> this is new, its
+    initial_data_import is the current import; exactly one older match -> inherit
+    that match's initial_data_import; one match that is not older ->
+    OtherIdenticalObservationIsNewer; more than one match -> MultipleObjectsReturned.
     """
     matches = existing_by_stable_id.get(observation.stable_id, [])
 
