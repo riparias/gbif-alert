@@ -63,11 +63,20 @@ def assert_bench_database() -> None:
 
 
 def _psql(sql: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        ["psql", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", sql],
-        capture_output=True,
-        text=True,
-    )
+    """Run one statement against the maintenance database.
+
+    Set BENCH_PGHOST to connect over TCP instead of the unix socket. On
+    Postgres.app, socket connections are subject to an app-permission check that
+    intermittently refuses with 'failed to verify "trust" authentication', which
+    aborted restores here; TCP is not obviously subject to it. Opt-in, because
+    not every PostgreSQL install listens on TCP.
+    """
+    command = ["psql", "-d", "postgres", "-v", "ON_ERROR_STOP=1"]
+    host = os.environ.get("BENCH_PGHOST")
+    if host:
+        command += ["-h", host]
+    command += ["-c", sql]
+    return subprocess.run(command, capture_output=True, text=True)
 
 
 def restore_database(attempts: int = 30, delay_seconds: int = 10) -> None:
