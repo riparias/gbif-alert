@@ -113,7 +113,7 @@ This is the most critical and performance-sensitive process. It:
 This pipeline is performance-sensitive: batch database operations to avoid N+1 queries.
 
 ### Observation Identity
-Observations are identified across imports by `stable_id` — a SHA1 hash of `occurrence_id` + `dataset_key`. When an observation is re-imported, comments and seen/unseen status are migrated from the old record to the new one via `replaced_observation`.
+Observations are identified across imports by `stable_id` - a SHA1 hash of `occurrence_id` + `dataset_key`. When an observation is re-imported, the new record inherits from the one it replaces: `initial_data_import` (via `_set_initial_data_import`, so "first seen" survives), its comments (repointed in `_batch_insert_observations`), and its seen/unseen status (see below). The replaced record is resolved for a whole chunk at a time in a single query (`fetch_existing_by_stable_id`); this is the import's hottest path, so do not reintroduce a per-observation lookup.
 
 ### Seen/Unseen Status
 `ObservationUnseen` records track which observations each user hasn't seen. An observation is "unseen" if it matches a user's alert AND is newer than their notification delay setting. The `migrate_unseen_observations()` function updates these during import.
