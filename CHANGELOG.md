@@ -1,4 +1,4 @@
-# Unreleased
+# 2.4.0 (2026-08-17)
 
 - Change: importing observations is about 2.75x faster. On a test database
   holding a million observations with real users and alerts, a full re-import
