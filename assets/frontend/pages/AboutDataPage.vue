@@ -1,22 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import Accordion from "primevue/accordion";
+import AccordionPanel from "primevue/accordionpanel";
+import AccordionHeader from "primevue/accordionheader";
+import AccordionContent from "primevue/accordioncontent";
 import Button from "primevue/button";
 import ProgressSpinner from "primevue/progressspinner";
+import DataImportDetails from "../components/DataImportDetails.vue";
+import type { components } from "../types/api";
 
-interface DataImport {
-    id: number;
-    name: string;
-    startedAt: string;
-    endedAt: string | null;
-    importedCount: number;
-    newObservationsCount: number;
-    skippedCount: number;
-    gbifDownloadId: string;
-}
+type DataImportOut = components["schemas"]["DataImportOut"];
 
 const { t, locale } = useI18n();
-const imports = ref<DataImport[]>([]);
+const imports = ref<DataImportOut[]>([]);
 const loading = ref(true);
 const showAll = ref(false);
 
@@ -59,7 +56,7 @@ function gbifDownloadUrl(downloadId: string): string {
 
             <p>{{ t("message.mostRecentImportLabel") }}</p>
 
-            <!-- Most recent import: full detail card -->
+            <!-- Most recent import: details are always expanded -->
             <div
                 style="
                     border: 1px solid var(--p-surface-300);
@@ -87,36 +84,10 @@ function gbifDownloadUrl(downloadId: string): string {
                         >{{ t("message.gbifDownload") }} &rarr;</a
                     >
                 </div>
-                <dl
-                    style="
-                        display: grid;
-                        grid-template-columns: max-content 1fr;
-                        gap: 0.25rem 1.5rem;
-                        margin: 0;
-                    "
-                >
-                    <dt style="font-weight: 600">{{ t("message.dateTimeRange") }}</dt>
-                    <dd style="margin: 0">
-                        {{ formatDateTime(imports[0].startedAt) }}
-                        <template v-if="imports[0].endedAt">
-                            &ndash; {{ formatDateTime(imports[0].endedAt) }}
-                        </template>
-                    </dd>
-
-                    <dt style="font-weight: 600">{{ t("message.importedObservations") }}</dt>
-                    <dd style="margin: 0">{{ imports[0].importedCount.toLocaleString(locale) }}</dd>
-
-                    <dt style="font-weight: 600">{{ t("message.newObservationsThisImport") }}</dt>
-                    <dd style="margin: 0">
-                        {{ imports[0].newObservationsCount.toLocaleString(locale) }}
-                    </dd>
-
-                    <dt style="font-weight: 600">{{ t("message.skippedObservations") }}</dt>
-                    <dd style="margin: 0">{{ imports[0].skippedCount.toLocaleString(locale) }}</dd>
-                </dl>
+                <DataImportDetails :data-import="imports[0]" />
             </div>
 
-            <!-- Toggle for older imports -->
+            <!-- Older imports: a summary line each, expandable to the same details -->
             <template v-if="imports.length > 1">
                 <Button
                     :label="
@@ -128,31 +99,29 @@ function gbifDownloadUrl(downloadId: string): string {
                     @click="showAll = !showAll"
                 />
 
-                <ul
-                    v-if="showAll"
-                    style="
-                        list-style: none;
-                        padding: 0;
-                        display: flex;
-                        flex-direction: column;
-                        gap: 0.5rem;
-                    "
-                >
-                    <li
-                        v-for="imp in imports.slice(1)"
-                        :key="imp.id"
-                        style="
-                            padding: 0.5rem 0.75rem;
-                            border: 1px solid var(--p-surface-200);
-                            border-radius: 6px;
-                        "
-                    >
-                        <strong>{{ imp.name }}</strong>
-                        &ndash; {{ formatDateTime(imp.startedAt) }} &ndash;
-                        {{ t("message.importedObservations") }}:
-                        {{ imp.importedCount.toLocaleString(locale) }}
-                    </li>
-                </ul>
+                <Accordion v-if="showAll" multiple>
+                    <AccordionPanel v-for="imp in imports.slice(1)" :key="imp.id" :value="imp.id">
+                        <AccordionHeader>
+                            <span>
+                                <strong>{{ imp.name }}</strong>
+                                &ndash; {{ formatDateTime(imp.startedAt) }} &ndash;
+                                {{ t("message.importedObservations") }}:
+                                {{ imp.importedCount.toLocaleString(locale) }}
+                            </span>
+                        </AccordionHeader>
+                        <AccordionContent>
+                            <DataImportDetails :data-import="imp" />
+                            <a
+                                v-if="imp.gbifDownloadId"
+                                :href="gbifDownloadUrl(imp.gbifDownloadId)"
+                                target="_blank"
+                                rel="noopener"
+                                style="display: inline-block; margin-top: 0.75rem"
+                                >{{ t("message.gbifDownload") }} &rarr;</a
+                            >
+                        </AccordionContent>
+                    </AccordionPanel>
+                </Accordion>
             </template>
         </template>
     </div>

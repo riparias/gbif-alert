@@ -57,6 +57,49 @@ def test_about_data_page_renders(page: Page, live_server):
 
 
 @pytest.mark.django_db(transaction=True)
+def test_about_data_page_older_imports_expand_to_full_details(page: Page, live_server):
+    """Older imports are summarized, but their details can be expanded on demand.
+
+    The most recent import is always fully detailed; the older ones start as a
+    one-line summary and only reveal the same detail block once opened.
+    """
+    older = DataImport.objects.create(
+        start=datetime.datetime(2024, 3, 14, 10, 0, 0, tzinfo=datetime.timezone.utc),
+        end=datetime.datetime(2024, 3, 14, 11, 0, 0, tzinfo=datetime.timezone.utc),
+        completed=True,
+        imported_observations_counter=42,
+        skipped_observations_counter=7,
+    )
+    DataImport.objects.create(
+        start=datetime.datetime(2024, 3, 15, 10, 0, 0, tzinfo=datetime.timezone.utc),
+        end=datetime.datetime(2024, 3, 15, 11, 0, 0, tzinfo=datetime.timezone.utc),
+        completed=True,
+        imported_observations_counter=99,
+    )
+
+    page.goto(live_server.url + "/about-data")
+
+    # Only the most recent import is detailed at first; the older list is hidden.
+    visible_details = page.get_by_text("Skipped observations", exact=False).locator(
+        "visible=true"
+    )
+    expect(visible_details).to_have_count(1)
+
+    page.get_by_role("button", name="Show all data imports").click()
+
+    # The older import shows up as a collapsed summary line...
+    older_summary = page.get_by_role("button", name=f"Data import #{older.pk}")
+    expect(older_summary).to_be_visible()
+    expect(visible_details).to_have_count(1)
+
+    # ...and opening it reveals a second, identically-shaped detail block.
+    older_summary.click()
+    expect(visible_details).to_have_count(2)
+    # The older import's own numbers, not the recent one's.
+    expect(page.get_by_text("7", exact=True)).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
 def test_news_page_renders(page: Page, live_server):
     """News page loads and shows a heading."""
     page.goto(live_server.url + "/whats-new")
