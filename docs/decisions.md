@@ -107,3 +107,14 @@ way to find out which ones.
 **Rejected:** Folding several charts behind a renamed "Chart" tab - it costs
 roughly 2.5x for a chart registry serving two charts, and a pie chart is
 unreadable at fifty species.
+
+## 2026-08-17 - Expandable details for older data imports
+
+**What:** Older imports on the about-data page became a PrimeVue Accordion whose
+panels expand to the same detail block as the most recent import, extracted into
+a shared `DataImportDetails` component.
+**Why:** The API already returned full details for every import, so the older
+ones were summarized purely by the frontend - the data was there but unreachable.
+**Rejected:** Dropping the "Show all data imports" button and always rendering
+the collapsed accordion - the page's default should stay "one import, fully
+described".

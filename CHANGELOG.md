@@ -14,6 +14,10 @@
   the histogram are now served by database indexes rather than sorting or
   scanning the whole dataset on each request - the histogram was about 4x
   faster in testing. The import leaves the database ready for them, too.
+- Change: on the "About the data" page, older data imports can now be expanded
+  to show the same details as the most recent one - date range, imported, new
+  and skipped observation counts, and the GBIF download link. Previously only
+  their one-line summary was available.
 - Change: the observations map now grows to fill the page down to the footer
   instead of staying at a fixed height, which left a large empty band below it
   on a tall screen. It never gets shorter than it used to be, so smaller
