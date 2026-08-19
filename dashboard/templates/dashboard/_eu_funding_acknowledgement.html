@@ -1,0 +1,23 @@
+{% load i18n %}
+{% load static %}
+{% load gbif-alert_extras %}
+
+{% comment %}
+Short form of the EU funding acknowledgement, shown on every page when the
+instance sets SHOW_EU_FUNDING_ACKNOWLEDGEMENT. The long form (full disclaimer,
+project name and grant number) belongs on the "about this site" page, which is
+why the emblem links there. See docs/eu-funding-acknowledgement.md.
+
+The emblem is the Commission's official file and must not be altered: no
+border, no recolouring, no CSS filter, no other logo inside its clear space.
+The wording is part of the image, and repeated as its alt text so screen
+readers and search engines get it as real text.
+{% endcomment %}
+{% eu_funding_emblem_path negative=True as eu_emblem_path %}
+<div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.2);">
+    <a href="{% url 'dashboard:pages:about-site' %}" style="display: inline-block; padding: 0.75rem; color: #fff;">
+        <img src="{% static eu_emblem_path %}"
+             alt="{% translate "Funded by the European Union" %}"
+             style="display: block; height: 48px; width: auto;">
+    </a>
+</div>

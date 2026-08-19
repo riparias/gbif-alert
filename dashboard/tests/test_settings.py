@@ -72,6 +72,7 @@ _ENV_VARS_READ_BY_SETTINGS = (
     "ADMINS",
     "ENABLED_LANGUAGES",
     "PRIMEVUE_PRIMARY_PALETTE",
+    "SHOW_EU_FUNDING_ACKNOWLEDGEMENT",
     "MAP_INITIAL_ZOOM",
     "MAP_INITIAL_LAT",
     "MAP_INITIAL_LON",
@@ -255,6 +256,27 @@ def test_gbif_alert_constructed_from_env(clean_env):
     assert settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["USERNAME"] == "alice"
     assert settings.GBIF_ALERT["MAIN_MAP_CONFIG"]["initialZoom"] == 5
     assert settings.GBIF_ALERT["MAIN_MAP_CONFIG"]["initialLat"] == 50.5
+
+
+def test_eu_funding_acknowledgement_is_off_unless_asked_for(clean_env):
+    """The EU emblem must never appear on an instance that did not opt in.
+
+    GBIF Alert is a reusable tool: most instances are not EU-funded, and
+    displaying the emblem on one of those would be a false claim of EU
+    support (Horizon Europe Grant Agreement, Art. 17.2). The default is
+    therefore False, and only the literal string "True" turns it on.
+    """
+    clean_env.setenv("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
+    clean_env.setenv("SECRET_KEY", "x")
+    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "example.org")
+    clean_env.setenv("SITE_BASE_URL", "http://localhost")
+    clean_env.setenv("DATABASE_URL", "postgis://u:p@h:5432/d")
+    clean_env.setenv("SITE_NAME", "Test Site")
+
+    assert _import_settings().GBIF_ALERT["SHOW_EU_FUNDING_ACKNOWLEDGEMENT"] is False
+
+    clean_env.setenv("SHOW_EU_FUNDING_ACKNOWLEDGEMENT", "True")
+    assert _import_settings().GBIF_ALERT["SHOW_EU_FUNDING_ACKNOWLEDGEMENT"] is True
 
 
 def test_default_time_zone_is_brussels(clean_env):

@@ -225,6 +225,10 @@ msgstr ""
 msgid "GBIF predicate"
 msgstr "Prédicat GBIF"
 
+#: dashboard/templates/dashboard/_eu_funding_acknowledgement.html:20
+msgid "Funded by the European Union"
+msgstr "Financé par l'Union européenne"
+
 #: dashboard/templates/dashboard/_footer.html:10
 msgid "Latest data import:"
 msgstr "Dernier import de données :"

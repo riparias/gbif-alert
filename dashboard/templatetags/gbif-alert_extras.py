@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 
 from django import template
 from django.conf import settings
+from django.contrib.staticfiles import finders
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import get_language, get_language_info
@@ -165,3 +166,31 @@ def as_link_if_url(value):
         return mark_safe(f'<a href="{value}">{value}</a>')
     else:
         return value
+
+
+EU_EMBLEM_STATIC_DIR = "eu-funding"
+EU_EMBLEM_FALLBACK_LANGUAGE = "en"
+
+
+@register.simple_tag
+def eu_funding_emblem_path(negative: bool = False) -> str:
+    """Static path of the official EU emblem matching the active language.
+
+    The Commission ships one file per language, with the funding statement
+    already typeset in it, so the file - not a translated caption next to a
+    flag - is what carries the wording. We ship en/fr/nl (the languages this
+    tool supports) and fall back to English when the active language has no
+    asset, rather than showing nothing.
+
+    `negative` selects the Commission's version for dark backgrounds (white
+    lettering); the default is the positive/colour one.
+    """
+    suffix = "-negative" if negative else ""
+    # `get_language()` can return a regional code ("en-us", the Django default
+    # when nothing matched) while our assets are named by base language.
+    language_code = (get_language() or EU_EMBLEM_FALLBACK_LANGUAGE).split("-")[0]
+
+    candidate = f"{EU_EMBLEM_STATIC_DIR}/eu-funded-{language_code}{suffix}.png"
+    if finders.find(candidate) is None:
+        candidate = f"{EU_EMBLEM_STATIC_DIR}/eu-funded-{EU_EMBLEM_FALLBACK_LANGUAGE}{suffix}.png"
+    return candidate

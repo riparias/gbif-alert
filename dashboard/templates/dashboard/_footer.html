@@ -12,4 +12,5 @@
             {% translate 'This site is powered by <a href="https://github.com/riparias/gbif-alert">GBIF Alert</a> version' %} <a href="https://github.com/riparias/gbif-alert/tree/{{ git_version_number }}">{{ git_version_number }}</a>
         </div>
     </div>
+    {% if gbif_alert_settings.SHOW_EU_FUNDING_ACKNOWLEDGEMENT %}{% include "dashboard/_eu_funding_acknowledgement.html" %}{% endif %}
 </footer>
