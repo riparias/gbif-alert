@@ -15,7 +15,6 @@ Visit the project website at [www.gbif-alert.org](https://www.gbif-alert.org) fo
   proximity filtering (observations inside or *approaching* your areas), a modern
   public API (v2), and a fully reworked Docker/deployment stack. See the
   [changelog](CHANGELOG.md).
-- 🎉 **GBIF Alert was awarded the first prize of the [GBIF Ebbe Nielsen Challenge 2023](https://www.gbif.org/fr/news/EQgUzZ4YA75BSeLs1naI9/)!** 🎉
 
 It is a reusable website engine powered by [Django](https://www.djangoproject.com/) available under the [MIT license](LICENSE).
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
@@ -44,3 +43,25 @@ GBIF Alert exposes a stable, supported public HTTP API (API v2) for programmatic
 Each instance documents its own API: visit `/api-docs` on any instance for an overview, with the interactive reference at `/api/v2/docs` and an OGC WFS service at `/api/wfs/observations/`. For example, on the demo instance: https://demo.gbif-alert.org/api-docs
 
 The older `/api/*` JSON endpoints are deprecated in favour of API v2 and will be removed on 30 June 2027.
+
+## Funding and acknowledgements
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="static_global/eu-funding/eu-funded-en-negative.png">
+  <img src="static_global/eu-funding/eu-funded-en.png" alt="Funded by the European Union" width="280">
+</picture>
+
+Development of GBIF Alert has been supported by the European Union's Horizon Europe research and
+innovation programme under grant agreements No 101181413 (GuardIAS) and No 101180559 (OneSTOP),
+and previously by LIFE RIPARIAS.
+
+Funded by the European Union. Views and opinions expressed are however those of the author(s)
+only and do not necessarily reflect those of the European Union or the European Research
+Executive Agency (REA). Neither the European Union nor the granting authority can be held
+responsible for them.
+
+GBIF Alert was also awarded the first prize of the [GBIF Ebbe Nielsen Challenge 2023](https://www.gbif.org/fr/news/EQgUzZ4YA75BSeLs1naI9/).
+
+The EU emblem above acknowledges the funding of **this software**. It is *not* shown to end users
+by default: a running instance displays it only if its operator explicitly opts in, which only
+genuinely EU-funded instances may do. See [docs/eu-funding-acknowledgement.md](docs/eu-funding-acknowledgement.md).

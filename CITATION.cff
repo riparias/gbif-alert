@@ -1,0 +1,50 @@
+cff-version: 1.2.0
+message: >-
+  If you use GBIF Alert, please cite it as below. Development of GBIF Alert has
+  been supported by the European Union's Horizon Europe research and innovation
+  programme under grant agreements No 101181413 (GuardIAS) and No 101180559
+  (OneSTOP), and previously by LIFE RIPARIAS.
+title: GBIF Alert
+abstract: >-
+  GBIF Alert is a reusable, open-source early alert system for invasive species,
+  built on GBIF occurrence data. A single instance monitors a configurable set of
+  species over a configurable area, and notifies its users by email when new
+  occurrences are published on GBIF. It is deployed as several independent
+  instances by different organisations.
+type: software
+authors:
+  - family-names: Noé
+    given-names: Nicolas
+    email: nicolas@niconoe.eu
+    orcid: https://orcid.org/0000-0002-9503-4750
+license: MIT
+repository-code: https://github.com/riparias/gbif-alert
+url: https://www.gbif-alert.org
+keywords:
+  - GBIF
+  - biodiversity
+  - invasive alien species
+  - early warning
+  - early alert
+  - occurrence data
+  - species monitoring
+  - Django
+references:
+  - type: grant
+    title: GuardIAS - Guarding European Waters from IAS
+    number: "101181413"
+    authors:
+      - name: European Research Executive Agency (REA)
+    notes: >-
+      Funded by the European Union's Horizon Europe research and innovation
+      programme under grant agreement No 101181413.
+  - type: grant
+    title: >-
+      OneSTOP - OneBiosecurity Systems and Technology for People, Places and
+      Pathways
+    number: "101180559"
+    authors:
+      - name: European Research Executive Agency (REA)
+    notes: >-
+      Funded by the European Union's Horizon Europe research and innovation
+      programme under grant agreement No 101180559.

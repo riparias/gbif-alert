@@ -1,3 +1,12 @@
+# Unreleased
+
+- Feature: instances funded by the European Union can now show the official
+  "Funded by the European Union" emblem in their footer, linking to their "about
+  this site" page. It is off by default and enabled with the new
+  `SHOW_EU_FUNDING_ACKNOWLEDGEMENT` setting; see
+  `docs/eu-funding-acknowledgement.md` for what an EU-funded instance must
+  display and where.
+
 # 2.4.0 (2026-08-17)
 
 - Change: importing observations is about 2.75x faster. On a test database
