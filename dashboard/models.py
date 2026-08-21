@@ -484,15 +484,23 @@ def create_unseen_observations(observation_queryset: QuerySet["Observation"]) ->
 
             group_obs_qs = base_obs_qs
             if group_area_ids and not has_group_without_area_filter:
-                combined_areas = Area.objects.filter(pk__in=group_area_ids).aggregate(
-                    area=AggregateUnion("mpoly")
-                )["area"]
-                if combined_areas:
-                    if mode == Alert.AREA_FILTER_INSIDE or not distance_km:
-                        group_obs_qs = group_obs_qs.filter(
-                            location__within=combined_areas
-                        )
-                    else:
+                if mode == Alert.AREA_FILTER_INSIDE or not distance_km:
+                    # Same parts join as filtered_from_my_params - see the
+                    # comment there for why .extra() rather than the ORM's
+                    # EXISTS form.
+                    group_obs_qs = group_obs_qs.extra(
+                        tables=["dashboard_areapart"],
+                        where=[
+                            "dashboard_areapart.area_id = ANY(%s)",
+                            "ST_Intersects(dashboard_observation.location, dashboard_areapart.geom)",
+                        ],
+                        params=[list(group_area_ids)],
+                    ).distinct()
+                else:
+                    combined_areas = Area.objects.filter(
+                        pk__in=group_area_ids
+                    ).aggregate(area=AggregateUnion("mpoly"))["area"]
+                    if combined_areas:
                         target_ewkb = compute_area_filter_geometry(
                             combined_areas, mode, distance_km
                         )
@@ -551,12 +559,39 @@ class ObservationManager(models.Manager["Observation"]):
         if end_date:
             qs = qs.filter(date__lte=end_date)
         if areas_ids:
-            combined_areas = Area.objects.filter(pk__in=areas_ids).aggregate(
-                area=AggregateUnion("mpoly")
-            )["area"]
             if area_filter_mode == "inside" or not approaching_distance_km:
-                qs = qs.filter(location__within=combined_areas)
+                # Join the pre-subdivided pieces rather than testing against one
+                # large polygon: the GIST index then rejects almost everything by
+                # bounding box, and the per-request ST_Union disappears.
+                #
+                # Measured on a 1.1M-observation production copy, per real alert:
+                # 12 areas 4146 -> 35 ms, 62 areas 16417 -> 828 ms, 14 areas
+                # 3764 -> 153 ms. The exception is a filter matching nearly every
+                # observation, where the DISTINCT below costs more than the join
+                # saves: 16 areas / 99.4% of rows went 1763 -> 4610 ms. Accepted -
+                # those alerts are rare and already slow either way.
+                #
+                # `.extra()` rather than the ORM's natural EXISTS form: EXISTS
+                # makes the planner probe per observation instead of running a
+                # spatial join (measured 10-30 s on the same alerts). An
+                # `id IN (SELECT DISTINCT ...)` two-stage form is worse still -
+                # it misestimates by 9x and ran for over 40 minutes.
+                #
+                # .distinct() is required, not defensive: overlapping selected
+                # areas match an observation once per area, and ST_Subdivide
+                # pieces share edges, so a point on a cut line matches two pieces.
+                qs = qs.extra(
+                    tables=["dashboard_areapart"],
+                    where=[
+                        "dashboard_areapart.area_id = ANY(%s)",
+                        "ST_Intersects(dashboard_observation.location, dashboard_areapart.geom)",
+                    ],
+                    params=[list(areas_ids)],
+                ).distinct()
             else:
+                combined_areas = Area.objects.filter(pk__in=areas_ids).aggregate(
+                    area=AggregateUnion("mpoly")
+                )["area"]
                 target_ewkb = compute_area_filter_geometry(
                     combined_areas, area_filter_mode, approaching_distance_km
                 )
@@ -1042,6 +1077,29 @@ class Area(models.Model):
                 }
             )
 
+    def rebuild_parts(self) -> None:
+        """Replace this area's :class:`AreaPart` rows from its current geometry.
+
+        Done in SQL so the geometries never travel through Python. Measured at
+        roughly 100 ms for the most complex area in the LIFE RIPARIAS database
+        (53,459 vertices), which is why this runs synchronously on save rather
+        than in a background job: pieces are then guaranteed to exist, so the
+        observation filter needs no fallback path.
+        """
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "DELETE FROM dashboard_areapart WHERE area_id = %s", [self.pk]
+            )
+            cursor.execute(
+                "INSERT INTO dashboard_areapart (area_id, geom) "
+                "SELECT id, ST_Subdivide(mpoly, %s) FROM dashboard_area WHERE id = %s",
+                [AREA_PART_MAX_VERTICES, self.pk],
+            )
+
+    def save(self, *args, **kwargs) -> None:
+        super().save(*args, **kwargs)
+        self.rebuild_parts()
+
     def delete(self, *args, **kwargs):
         if self.alert_set.count() > 0:
             raise Area.HasAlerts
@@ -1076,6 +1134,40 @@ class Area(models.Model):
             d["geojson_str"] = self.mpoly.geojson
 
         return d
+
+
+# ST_Subdivide cuts each area into pieces of at most this many vertices. Tuned
+# on a 1.1M-observation production copy: the query time curve is flat between
+# 128 and 256 and degrades either side (see the design doc).
+AREA_PART_MAX_VERTICES = 128
+
+
+class AreaPart(models.Model):
+    """A piece of an :class:`Area`'s geometry, produced by ``ST_Subdivide``.
+
+    Derived data - ``Area.mpoly`` remains the source of truth and this table can
+    be dropped and rebuilt at any time. Filtering observations against many
+    small pieces lets the GIST index reject nearly everything by bounding box,
+    instead of running an exact point-in-polygon test against one polygon with
+    tens of thousands of vertices.
+
+    Attributes
+    ----------
+    area : Area
+        The area this piece belongs to. Deleting the area deletes its pieces.
+    geom : PolygonField
+        One subdivision of ``area.mpoly``. ``ST_Subdivide`` always yields
+        polygons, never multipolygons.
+    """
+
+    # No explicit Meta.indexes on `area`: ForeignKey already implies
+    # db_index=True, and a second btree on the same column is pure write cost -
+    # the same reasoning as migration 0038 on dashboard_observationunseen.
+    area = models.ForeignKey(Area, on_delete=models.CASCADE, related_name="parts")
+    geom = models.PolygonField(srid=DATA_SRID)
+
+    def __str__(self) -> str:
+        return f"Part of {self.area}"
 
 
 class ObservationView(models.Model):

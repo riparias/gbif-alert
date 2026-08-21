@@ -1,5 +1,17 @@
 # Unreleased
 
+- Change: filtering observations by area is much faster. On a database of a
+  million observations, an alert covering 62 areas went from 16 seconds to under
+  one, and one covering 12 areas from 4 seconds to a few milliseconds. Maps,
+  lists and notification emails all benefit. The exception is an alert whose
+  areas cover nearly every observation in the database, which gets somewhat
+  slower.
+- Fix: selecting several areas at once no longer fails when one of them has a
+  self-intersecting boundary. Such a combination previously returned a server
+  error, on both the map and the observation list.
+- Change: an observation lying exactly on the boundary of an area now counts as
+  inside it, on maps, lists and alerts alike. Previously it was excluded. No
+  observation in the LIFE RIPARIAS database was affected by this.
 - Feature: an area can now be pre-selected as the home page's default filter.
   Tick "Is default home filter" on a public area in the admin, and visitors
   land on a home page already scoped to it - useful when the instance
