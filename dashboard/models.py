@@ -1152,11 +1152,11 @@ class AreaPart(models.Model):
         polygons, never multipolygons.
     """
 
+    # No explicit Meta.indexes on `area`: ForeignKey already implies
+    # db_index=True, and a second btree on the same column is pure write cost -
+    # the same reasoning as migration 0038 on dashboard_observationunseen.
     area = models.ForeignKey(Area, on_delete=models.CASCADE, related_name="parts")
     geom = models.PolygonField(srid=DATA_SRID)
-
-    class Meta:
-        indexes = [models.Index(fields=["area"])]
 
     def __str__(self) -> str:
         return f"Part of {self.area}"
