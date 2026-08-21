@@ -551,12 +551,39 @@ class ObservationManager(models.Manager["Observation"]):
         if end_date:
             qs = qs.filter(date__lte=end_date)
         if areas_ids:
-            combined_areas = Area.objects.filter(pk__in=areas_ids).aggregate(
-                area=AggregateUnion("mpoly")
-            )["area"]
             if area_filter_mode == "inside" or not approaching_distance_km:
-                qs = qs.filter(location__within=combined_areas)
+                # Join the pre-subdivided pieces rather than testing against one
+                # large polygon: the GIST index then rejects almost everything by
+                # bounding box, and the per-request ST_Union disappears.
+                #
+                # Measured on a 1.1M-observation production copy, per real alert:
+                # 12 areas 4146 -> 35 ms, 62 areas 16417 -> 828 ms, 14 areas
+                # 3764 -> 153 ms. The exception is a filter matching nearly every
+                # observation, where the DISTINCT below costs more than the join
+                # saves: 16 areas / 99.4% of rows went 1763 -> 4610 ms. Accepted -
+                # those alerts are rare and already slow either way.
+                #
+                # `.extra()` rather than the ORM's natural EXISTS form: EXISTS
+                # makes the planner probe per observation instead of running a
+                # spatial join (measured 10-30 s on the same alerts). An
+                # `id IN (SELECT DISTINCT ...)` two-stage form is worse still -
+                # it misestimates by 9x and ran for over 40 minutes.
+                #
+                # .distinct() is required, not defensive: overlapping selected
+                # areas match an observation once per area, and ST_Subdivide
+                # pieces share edges, so a point on a cut line matches two pieces.
+                qs = qs.extra(
+                    tables=["dashboard_areapart"],
+                    where=[
+                        "dashboard_areapart.area_id = ANY(%s)",
+                        "ST_Intersects(dashboard_observation.location, dashboard_areapart.geom)",
+                    ],
+                    params=[list(areas_ids)],
+                ).distinct()
             else:
+                combined_areas = Area.objects.filter(pk__in=areas_ids).aggregate(
+                    area=AggregateUnion("mpoly")
+                )["area"]
                 target_ewkb = compute_area_filter_geometry(
                     combined_areas, area_filter_mode, approaching_distance_km
                 )
