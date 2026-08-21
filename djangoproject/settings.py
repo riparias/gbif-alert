@@ -336,6 +336,15 @@ GBIF_ALERT: dict = {
         for s in os.environ.get("ENABLED_LANGUAGES", "en,fr,nl").split(",")
         if s.strip()
     ),
+    # Show the "Funded by the European Union" emblem in the footer of every
+    # page. Defaults to False, and MUST stay False unless this specific
+    # instance is genuinely funded by the EU: displaying the emblem otherwise
+    # is a false claim of EU support (Horizon Europe Grant Agreement, Art.
+    # 17.2). See docs/eu-funding-acknowledgement.md.
+    "SHOW_EU_FUNDING_ACKNOWLEDGEMENT": os.environ.get(
+        "SHOW_EU_FUNDING_ACKNOWLEDGEMENT", "False"
+    ).lower()
+    == "true",
     "GBIF_DOWNLOAD_CONFIG": {
         "USERNAME": os.environ.get("GBIF_DOWNLOAD_USERNAME", ""),
         "PASSWORD": os.environ.get("GBIF_DOWNLOAD_PASSWORD", ""),

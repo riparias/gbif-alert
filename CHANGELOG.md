@@ -5,6 +5,12 @@
   land on a home page already scoped to it - useful when the instance
   downloads a wider region than it focuses on. The filter can be removed like
   any other one.
+- Feature: instances funded by the European Union can now show the official
+  "Funded by the European Union" emblem in their footer, linking to their "about
+  this site" page. It is off by default and enabled with the new
+  `SHOW_EU_FUNDING_ACKNOWLEDGEMENT` setting; see
+  `docs/eu-funding-acknowledgement.md` for what an EU-funded instance must
+  display and where.
 
 # 2.4.0 (2026-08-17)
 

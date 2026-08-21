@@ -14,6 +14,7 @@ will periodically download from GBIF and will import in its database.
 - Your end-users will be able to filter those occurrences further to match their specific needs.
 - The available languages in the interface: English, French and Dutch are currently supported.
 - Website texts, e.g. the introduction on the home page, the footer content and the "about this site" page.
+- Whether the footer carries the EU funding acknowledgement, via `SHOW_EU_FUNDING_ACKNOWLEDGEMENT` (off by default, and reserved for genuinely EU-funded instances - see [docs/eu-funding-acknowledgement.md](docs/eu-funding-acknowledgement.md)).
 - The primary color theme of the interface, via the `PRIMEVUE_PRIMARY_PALETTE`
   setting (e.g. `indigo`, `emerald`, `blue`, `rose`; see `.env.example`).
 
@@ -198,6 +199,7 @@ All operationally-significant settings live in `.env`. Highlights:
 - **Branding**: `SITE_NAME`, `PRIMEVUE_PRIMARY_PALETTE`.
 - **Map default view**: `MAP_INITIAL_ZOOM`, `MAP_INITIAL_LAT`, `MAP_INITIAL_LON`.
 - **Languages**: `ENABLED_LANGUAGES` (comma-separated subset of `en,fr,nl`).
+- **EU funding acknowledgement**: `SHOW_EU_FUNDING_ACKNOWLEDGEMENT` (default `False`). When `True`, every page shows the official "Funded by the European Union" emblem in the footer, linking to your "about this site" page. **Only switch this on if your instance is genuinely funded by the European Union** - displaying the emblem otherwise is a false claim of EU support. Such an instance must also put the full disclaimer on its "about this site" page: see [docs/eu-funding-acknowledgement.md](docs/eu-funding-acknowledgement.md) for ready-to-paste text.
 - **Email**: SMTP by default (`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`). To send through **Amazon SES with an IAM role** instead of SMTP credentials, set `EMAIL_BACKEND=django_ses.SESBackend` and `AWS_SES_REGION_NAME` (e.g. `eu-west-1`); the credentials are then taken from the ambient AWS role (ECS task role / EC2 instance role), so no SMTP user/password is stored. `DEFAULT_FROM_EMAIL` must be a verified SES identity.
 - **Co-hosting multiple stacks on one host**: if you run more than one gbif-alert deployment on the same Docker host sharing `dokploy-network`, set `VALKEY_HOST` to a unique value per deployment (e.g. `VALKEY_HOST=mysite-valkey`). Each stack defines a service named `valkey`, and on a shared network the bare name resolves to every stack's Valkey at random - cross-contaminating the cache, the RQ queue, and maintenance-mode state. A unique `VALKEY_HOST` points each app at its own Valkey. A single-stack host needs no change (it defaults to `valkey`).
 - **GBIF download filter**: `GBIF_DOWNLOAD_USERNAME`, `GBIF_DOWNLOAD_PASSWORD`, `GBIF_DOWNLOAD_COUNTRY`, `GBIF_DOWNLOAD_YEAR_MIN`, and an optional lat/lon bounding box `GBIF_DOWNLOAD_LAT_MIN` / `GBIF_DOWNLOAD_LAT_MAX` / `GBIF_DOWNLOAD_LON_MIN` / `GBIF_DOWNLOAD_LON_MAX` (set all four or none; degrees, WGS84). The default predicate builder uses these to construct the download filter; the box ANDs with country/year.
@@ -331,3 +333,25 @@ Older installs ran `DJANGO_SETTINGS_MODULE=djangoproject.local_settings`, where 
 - Stop setting `DJANGO_SETTINGS_MODULE` (or set it explicitly to `djangoproject.settings`).
 - Move operational config into the **project-root `.env`** (the only `.env` loaded) or real environment variables - including any Redis credentials in `CACHE_URL`/`RQ_REDIS_URL` (`redis://:PASSWORD@host:6379/0`).
 - Keep only Python overrides (e.g. `PREDICATE_BUILDER`, local GDAL paths) in `djangoproject/local_settings.py`, regenerated from `djangoproject/local_settings.template.py` - it is an override layer, **not** an entry point, and must not call `load_dotenv`.
+
+## Funding and acknowledgements
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="static_global/eu-funding/eu-funded-en-negative.png">
+  <img src="static_global/eu-funding/eu-funded-en.png" alt="Funded by the European Union" width="280">
+</picture>
+
+Development of GBIF Alert has been supported by the European Union's Horizon Europe research and
+innovation programme under grant agreements No 101181413 (GuardIAS) and No 101180559 (OneSTOP),
+and previously by LIFE RIPARIAS.
+
+Funded by the European Union. Views and opinions expressed are however those of the author(s)
+only and do not necessarily reflect those of the European Union or the European Research
+Executive Agency (REA). Neither the European Union nor the granting authority can be held
+responsible for them.
+
+GBIF Alert was also awarded the first prize of the [GBIF Ebbe Nielsen Challenge 2023](https://www.gbif.org/fr/news/EQgUzZ4YA75BSeLs1naI9/).
+
+The EU emblem above acknowledges the funding of **this software**. It is *not* shown to end users
+by default: a running instance displays it only if its operator explicitly opts in, which only
+genuinely EU-funded instances may do. See [docs/eu-funding-acknowledgement.md](docs/eu-funding-acknowledgement.md).

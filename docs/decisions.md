@@ -131,3 +131,14 @@ box.
 `.env` is brittle across databases and renames; and seeding the store without a
 URL sentinel, which loses the default on any shared link and resurrects it after
 "clear all".
+## 2026-08-19 - EU funding acknowledgement, opt-in per instance
+
+**What:** Repository docs and `CITATION.cff` acknowledge the Horizon Europe
+grants unconditionally; the footer emblem ships in the codebase but renders only
+when an instance sets `SHOW_EU_FUNDING_ACKNOWLEDGEMENT` (default off).
+**Why:** The obligation (Grant Agreement Art. 17) is ours, not every deployer's -
+an emblem in a shared template would make unrelated instances claim EU support.
+**Rejected:** Deployer-supplied footer HTML - the short acknowledgement is
+identical on every EU-funded instance, so a boolean beats pasted markup; and
+SVG assets - the Commission ships no SVG, and converting the EPS would re-typeset
+an emblem that must not be modified.
