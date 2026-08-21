@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-03 08:59+0200\n"
+"POT-Creation-Date: 2026-08-21 14:50+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,128 +18,73 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: dashboard/api_v2.py:171
+#: dashboard/api_v2.py:470 dashboard/api_v2.py:515 dashboard/api_v2.py:548
+msgid "An area with this name already exists."
+msgstr "Une zone portant ce nom existe déjà."
+
+#: dashboard/api_v2.py:580
 msgid "The area cannot be deleted because it has alerts associated with it."
 msgstr ""
 "Cette zone ne peut pas être supprimée car elle est associée à des alertes."
 
-#: dashboard/api_v2.py:394 dashboard/api_v2.py:438
-msgid "Authentication required"
-msgstr "Authentification requise"
-
-#: dashboard/api_v2.py:468 dashboard/api_v2.py:513 dashboard/api_v2.py:546
-msgid "An area with this name already exists."
-msgstr "Une zone portant ce nom existe déjà."
-
-#: dashboard/api_v2.py:499 dashboard/views/internal_api.py:167
+#: dashboard/api_v2.py:1088
 msgid "At least one species must be selected"
 msgstr "Au moins une espèce doit être sélectionnée"
 
-#: dashboard/api_v2.py:503 dashboard/views/internal_api.py:171
+#: dashboard/api_v2.py:1093
 msgid "At least one area must be selected for the chosen area filter mode."
 msgstr ""
+"Au moins une zone doit être sélectionnée pour le mode de filtrage choisi."
 
-#: dashboard/api_v2.py:627
+#: dashboard/api_v2.py:1296
 msgid "Invalid username or password."
 msgstr "Nom d'utilisateur ou mot de passe incorrect."
 
-#: dashboard/api_v2.py:670
+#: dashboard/api_v2.py:1355
 msgid "The old password is incorrect."
 msgstr "L'ancien mot de passe est incorrect."
 
-#: dashboard/api_v2.py:672
+#: dashboard/api_v2.py:1360
 msgid "The two passwords do not match."
 msgstr "Les deux mots de passe ne correspondent pas."
 
-#: dashboard/api_v2.py:721
+#: dashboard/api_v2.py:1431
 msgid "This email address is already in use."
 msgstr "Cette adresse e-mail est déjà utilisée."
 
-#: dashboard/forms.py:29
+#: dashboard/forms.py:26
 msgid "First name"
 msgstr "Prénom"
 
-#: dashboard/forms.py:29 dashboard/forms.py:32
+#: dashboard/forms.py:26 dashboard/forms.py:29
 msgid "Optional."
 msgstr "Facultatif."
 
-#: dashboard/forms.py:32
+#: dashboard/forms.py:29
 msgid "Last name"
 msgstr "Nom de famille"
 
-#: dashboard/forms.py:35
+#: dashboard/forms.py:32
 msgid "Email"
 msgstr "Email"
 
-#: dashboard/forms.py:37
+#: dashboard/forms.py:34
 msgid "Required. Enter a valid email address."
 msgstr "Requis. Entrez une adresse email valide."
 
-#: dashboard/forms.py:41
+#: dashboard/forms.py:38
 msgid "Language"
 msgstr "Langue"
 
-#: dashboard/forms.py:43
+#: dashboard/forms.py:40
 msgid "This language will be used for emails."
-msgstr ""
+msgstr "Cette langue sera utilisée pour les emails."
 
-#: dashboard/forms.py:59
-msgid "days"
-msgstr "jours"
-
-#: dashboard/forms.py:60
-msgid "weeks"
-msgstr "semaines"
-
-#: dashboard/forms.py:61
-msgid "months"
-msgstr "mois"
-
-#: dashboard/forms.py:62
-msgid "years"
-msgstr "ans"
-
-#: dashboard/forms.py:113
-msgid "Notification delay"
-msgstr "Délai de notification"
-
-#: dashboard/forms.py:117
-msgid "Delay unit"
-msgstr "Unité de délai"
-
-#: dashboard/forms.py:148
-msgid ""
-"Observations older than this delay will be automatically considered as "
-"'viewed'. Note: 1 month = 30 days, 1 year = 365 days."
-msgstr ""
-"Les observations plus anciennes que ce délai seront automatiquement "
-"considérées comme 'vues'. Note : 1 mois = 30 jours, 1 an = 365 jours."
-
-#: dashboard/models.py:1053
-msgid "No emails"
-msgstr "Pas d'emails"
-
-#: dashboard/models.py:1054
-msgid "Daily"
-msgstr "Journalier"
-
-#: dashboard/models.py:1055
-msgid "Weekly"
-msgstr "Hebdomadaire"
-
-#: dashboard/models.py:1056
-msgid "Monthly"
-msgstr "Mensuel"
-
-#: dashboard/models.py:1067
-msgid "name"
-msgstr "nom"
-
-#: dashboard/models.py:1071
+#: dashboard/models.py:1197
 msgid "species"
 msgstr "espèces"
 
-#: dashboard/models.py:1074
+#: dashboard/models.py:1200
 msgid ""
 "To select multiple items, press and hold the Ctrl or Command key and click "
 "the items."
@@ -147,11 +92,11 @@ msgstr ""
 "Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:1080
+#: dashboard/models.py:1206
 msgid "datasets"
 msgstr "jeux de données"
 
-#: dashboard/models.py:1083
+#: dashboard/models.py:1209
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
@@ -160,11 +105,11 @@ msgstr ""
 "Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou 'pomme / "
 "command' enfoncée "
 
-#: dashboard/models.py:1089
+#: dashboard/models.py:1215
 msgid "basis of record"
 msgstr "type d'observation"
 
-#: dashboard/models.py:1092
+#: dashboard/models.py:1218
 msgid ""
 "Optional (no selection = notify me for all basis of records). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
@@ -173,11 +118,11 @@ msgstr ""
 "d'observation). Pour sélectionner plusieurs éléments, maintenez la touche "
 "Ctrl ou 'pomme / command' enfoncée "
 
-#: dashboard/models.py:1099
+#: dashboard/models.py:1225
 msgid "areas"
 msgstr "zones"
 
-#: dashboard/models.py:1101
+#: dashboard/models.py:1227
 msgid ""
 "Optional (no selection = notify me for all data in the system). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
@@ -186,54 +131,47 @@ msgstr ""
 "système). Pour sélectionner plusieurs éléments, maintenez la touche Ctrl ou "
 "'pomme / command' enfoncée "
 
-#: dashboard/models.py:1122
+#: dashboard/models.py:1364
+msgid "No emails"
+msgstr "Pas d'emails"
+
+#: dashboard/models.py:1365
+msgid "Daily"
+msgstr "Journalier"
+
+#: dashboard/models.py:1366
+msgid "Weekly"
+msgstr "Hebdomadaire"
+
+#: dashboard/models.py:1367
+msgid "Monthly"
+msgstr "Mensuel"
+
+#: dashboard/models.py:1378
+msgid "name"
+msgstr "nom"
+
+#: dashboard/models.py:1385
 msgid "email notifications frequency"
 msgstr "fréquence des notifications par email"
 
-#: dashboard/models.py:1324
+#: dashboard/models.py:1552
 msgid "new observation(s) for your alert"
 msgstr "nouvelle(s) observation(s) pour votre alerte"
-
-#: dashboard/templates/dashboard/503.html:6
-msgid "In maintenance"
-msgstr "Maintenance en cours"
-
-#: dashboard/templates/dashboard/_data_import.html:6
-msgid "Data import: #"
-msgstr "Import de données #"
-
-#: dashboard/templates/dashboard/_data_import.html:9
-msgid "Date/time"
-msgstr "Date/heure"
-
-#: dashboard/templates/dashboard/_data_import.html:14
-msgid "Imported observations"
-msgstr "Observations importées"
-
-#: dashboard/templates/dashboard/_data_import.html:19
-msgid "New observations in this import"
-msgstr "Nouvelles observations dans cet import"
-
-#: dashboard/templates/dashboard/_data_import.html:25
-#, python-format
-msgid "Skipped observations in <a href=\"%(gbif_url)s\">GBIF download</a>"
-msgstr ""
-"Observations ignorées dans le <a href=\"%(gbif_url)s\">téléchargement GBIF</"
-"a>"
-
-#: dashboard/templates/dashboard/_data_import.html:31
-msgid "GBIF predicate"
-msgstr "Prédicat GBIF"
 
 #: dashboard/templates/dashboard/_eu_funding_acknowledgement.html:20
 msgid "Funded by the European Union"
 msgstr "Financé par l'Union européenne"
 
 #: dashboard/templates/dashboard/_footer.html:10
+msgid "API"
+msgstr "API"
+
+#: dashboard/templates/dashboard/_footer.html:11
 msgid "Latest data import:"
 msgstr "Dernier import de données :"
 
-#: dashboard/templates/dashboard/_footer.html:11
+#: dashboard/templates/dashboard/_footer.html:12
 msgid ""
 "This site is powered by <a href=\"https://github.com/riparias/gbif-"
 "alert\">GBIF Alert</a> version"
@@ -312,13 +250,63 @@ msgstr ""
 "Nous vous avons envoyé des instructions pour définir votre mot de passe. "
 "Vous devriez recevoir l'email sous peu !"
 
-#: dashboard/views/actions.py:36
-msgid "Your alert has been deleted."
-msgstr "Votre alerte a été supprimée."
+#~ msgid "Authentication required"
+#~ msgstr "Authentification requise"
 
-#: dashboard/views/actions.py:49
-msgid "Your account has been deleted."
-msgstr "Votre compte utilisateur a été supprimé."
+#~ msgid "days"
+#~ msgstr "jours"
+
+#~ msgid "weeks"
+#~ msgstr "semaines"
+
+#~ msgid "months"
+#~ msgstr "mois"
+
+#~ msgid "years"
+#~ msgstr "ans"
+
+#~ msgid "Notification delay"
+#~ msgstr "Délai de notification"
+
+#~ msgid "Delay unit"
+#~ msgstr "Unité de délai"
+
+#~ msgid ""
+#~ "Observations older than this delay will be automatically considered as "
+#~ "'viewed'. Note: 1 month = 30 days, 1 year = 365 days."
+#~ msgstr ""
+#~ "Les observations plus anciennes que ce délai seront automatiquement "
+#~ "considérées comme 'vues'. Note : 1 mois = 30 jours, 1 an = 365 jours."
+
+#~ msgid "In maintenance"
+#~ msgstr "Maintenance en cours"
+
+#~ msgid "Data import: #"
+#~ msgstr "Import de données #"
+
+#~ msgid "Date/time"
+#~ msgstr "Date/heure"
+
+#~ msgid "Imported observations"
+#~ msgstr "Observations importées"
+
+#~ msgid "New observations in this import"
+#~ msgstr "Nouvelles observations dans cet import"
+
+#, python-format
+#~ msgid "Skipped observations in <a href=\"%(gbif_url)s\">GBIF download</a>"
+#~ msgstr ""
+#~ "Observations ignorées dans le <a href=\"%(gbif_url)s\">téléchargement "
+#~ "GBIF</a>"
+
+#~ msgid "GBIF predicate"
+#~ msgstr "Prédicat GBIF"
+
+#~ msgid "Your alert has been deleted."
+#~ msgstr "Votre alerte a été supprimée."
+
+#~ msgid "Your account has been deleted."
+#~ msgstr "Votre compte utilisateur a été supprimé."
 
 #~ msgid "Area name"
 #~ msgstr "Nom de la zone"
