@@ -1078,6 +1078,40 @@ class Area(models.Model):
         return d
 
 
+# ST_Subdivide cuts each area into pieces of at most this many vertices. Tuned
+# on a 1.1M-observation production copy: the query time curve is flat between
+# 128 and 256 and degrades either side (see the design doc).
+AREA_PART_MAX_VERTICES = 128
+
+
+class AreaPart(models.Model):
+    """A piece of an :class:`Area`'s geometry, produced by ``ST_Subdivide``.
+
+    Derived data - ``Area.mpoly`` remains the source of truth and this table can
+    be dropped and rebuilt at any time. Filtering observations against many
+    small pieces lets the GIST index reject nearly everything by bounding box,
+    instead of running an exact point-in-polygon test against one polygon with
+    tens of thousands of vertices.
+
+    Attributes
+    ----------
+    area : Area
+        The area this piece belongs to. Deleting the area deletes its pieces.
+    geom : PolygonField
+        One subdivision of ``area.mpoly``. ``ST_Subdivide`` always yields
+        polygons, never multipolygons.
+    """
+
+    area = models.ForeignKey(Area, on_delete=models.CASCADE, related_name="parts")
+    geom = models.PolygonField(srid=DATA_SRID)
+
+    class Meta:
+        indexes = [models.Index(fields=["area"])]
+
+    def __str__(self) -> str:
+        return f"Part of {self.area}"
+
+
 class ObservationView(models.Model):
     """
     !! This model is deprecated, we now use ObservationUnseen instead !!
