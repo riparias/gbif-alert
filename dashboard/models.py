@@ -484,15 +484,23 @@ def create_unseen_observations(observation_queryset: QuerySet["Observation"]) ->
 
             group_obs_qs = base_obs_qs
             if group_area_ids and not has_group_without_area_filter:
-                combined_areas = Area.objects.filter(pk__in=group_area_ids).aggregate(
-                    area=AggregateUnion("mpoly")
-                )["area"]
-                if combined_areas:
-                    if mode == Alert.AREA_FILTER_INSIDE or not distance_km:
-                        group_obs_qs = group_obs_qs.filter(
-                            location__within=combined_areas
-                        )
-                    else:
+                if mode == Alert.AREA_FILTER_INSIDE or not distance_km:
+                    # Same parts join as filtered_from_my_params - see the
+                    # comment there for why .extra() rather than the ORM's
+                    # EXISTS form.
+                    group_obs_qs = group_obs_qs.extra(
+                        tables=["dashboard_areapart"],
+                        where=[
+                            "dashboard_areapart.area_id = ANY(%s)",
+                            "ST_Intersects(dashboard_observation.location, dashboard_areapart.geom)",
+                        ],
+                        params=[list(group_area_ids)],
+                    ).distinct()
+                else:
+                    combined_areas = Area.objects.filter(
+                        pk__in=group_area_ids
+                    ).aggregate(area=AggregateUnion("mpoly"))["area"]
+                    if combined_areas:
                         target_ewkb = compute_area_filter_geometry(
                             combined_areas, mode, distance_km
                         )

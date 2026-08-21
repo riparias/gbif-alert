@@ -184,3 +184,34 @@ def test_filtering_by_an_area_with_no_observations_returns_nothing(
         ),
     )
     assert _new_filter_ids([far_away.pk]) == set()
+
+
+@pytest.mark.django_db
+def test_unseen_observations_respect_the_area_filter(observations_and_areas):
+    """An alert scoped to an area only marks observations inside it as unseen."""
+    from django.contrib.auth import get_user_model
+
+    from dashboard.models import Alert, ObservationUnseen, create_unseen_observations
+
+    user = get_user_model().objects.create_user(
+        username="u", password="p", email="u@e.com", notification_delay_days=365
+    )
+    alert = Alert.objects.create(
+        name="Square only", user=user, email_notifications_frequency="N"
+    )
+    alert.species.set(Species.objects.all())
+    alert.areas.set([observations_and_areas["square"]])
+
+    create_unseen_observations(Observation.objects.all())
+
+    unseen_ids = set(
+        ObservationUnseen.objects.filter(user=user).values_list(
+            "observation_id", flat=True
+        )
+    )
+    # The parts-based filter reaches alert results too, so the border
+    # observation is now marked unseen where ST_Within used to skip it. That is
+    # the documented semantics change, asserted here rather than tolerated.
+    on_border = Observation.objects.get(occurrence_id="1").pk
+    expected = _old_filter_ids([observations_and_areas["square"].pk]) | {on_border}
+    assert unseen_ids == expected
