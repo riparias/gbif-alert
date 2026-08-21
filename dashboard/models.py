@@ -1042,6 +1042,29 @@ class Area(models.Model):
                 }
             )
 
+    def rebuild_parts(self) -> None:
+        """Replace this area's :class:`AreaPart` rows from its current geometry.
+
+        Done in SQL so the geometries never travel through Python. Measured at
+        roughly 100 ms for the most complex area in the LIFE RIPARIAS database
+        (53,459 vertices), which is why this runs synchronously on save rather
+        than in a background job: pieces are then guaranteed to exist, so the
+        observation filter needs no fallback path.
+        """
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "DELETE FROM dashboard_areapart WHERE area_id = %s", [self.pk]
+            )
+            cursor.execute(
+                "INSERT INTO dashboard_areapart (area_id, geom) "
+                "SELECT id, ST_Subdivide(mpoly, %s) FROM dashboard_area WHERE id = %s",
+                [AREA_PART_MAX_VERTICES, self.pk],
+            )
+
+    def save(self, *args, **kwargs) -> None:
+        super().save(*args, **kwargs)
+        self.rebuild_parts()
+
     def delete(self, *args, **kwargs):
         if self.alert_set.count() > 0:
             raise Area.HasAlerts
