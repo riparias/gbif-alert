@@ -1852,3 +1852,73 @@ def test_aggregated_tiles_end_date_filter(maps_data, client):
     response = client.get(url_with_params)
     decoded_tile = mapbox_vector_tile.decode(response.content)
     assert decoded_tile == {}
+
+
+def test_tile_area_filter_matches_the_orm_area_filter(observations_and_areas):
+    """The map and the list must select the same observations - see the comment
+    in dashboard/models.py above filtered_from_my_params()."""
+    from django.db import connection
+
+    from dashboard.models import Observation
+    from dashboard.views.maps import _filtered_observations_subquery
+
+    area_ids = [observations_and_areas["square"].pk]
+
+    sql, binds = _filtered_observations_subquery({"area_ids": area_ids})
+    with connection.cursor() as cur:
+        # gbif_id rather than id: the subquery carries both the observation's
+        # and the joined species' `id`, so `id` alone is ambiguous.
+        cur.execute(f"SELECT gbif_id FROM ({sql}) AS sub", binds)
+        tile_ids = {r[0] for r in cur.fetchall()}
+
+    orm_ids = set(
+        Observation.objects.filtered_from_my_params(
+            species_ids=[],
+            datasets_ids=[],
+            basis_of_record_ids=[],
+            start_date=None,
+            end_date=None,
+            areas_ids=area_ids,
+            status_for_user=None,
+            initial_data_import_ids=[],
+            user=None,
+        ).values_list("gbif_id", flat=True)
+    )
+
+    assert tile_ids == orm_ids
+
+
+def test_tile_area_filter_returns_each_observation_once(observations_and_areas):
+    """Joining many parts must not duplicate an observation in a tile.
+
+    The hexagon endpoint aggregates the subquery with COUNT(*), so a duplicate
+    row does not merely render twice - it inflates the count.
+    """
+    from django.db import connection
+
+    from dashboard.views.maps import _filtered_observations_subquery
+
+    area_ids = [a.pk for a in observations_and_areas.values()]
+    sql, binds = _filtered_observations_subquery({"area_ids": area_ids})
+    with connection.cursor() as cur:
+        cur.execute(
+            f"SELECT count(*), count(DISTINCT gbif_id) FROM ({sql}) AS sub", binds
+        )
+        total, distinct = cur.fetchone()
+
+    assert total == distinct
+
+
+def test_tile_subquery_still_exposes_the_species_columns(observations_and_areas):
+    """The MVT endpoint reads species.name and species.vernacular_name_* from
+    this subquery, so narrowing its select list to obs.* would break tiles."""
+    from django.db import connection
+
+    from dashboard.views.maps import _filtered_observations_subquery
+
+    sql, binds = _filtered_observations_subquery(
+        {"area_ids": [observations_and_areas["square"].pk]}
+    )
+    with connection.cursor() as cur:
+        cur.execute(f"SELECT name, vernacular_name_en FROM ({sql}) AS sub", binds)
+        assert cur.fetchall()

@@ -6,6 +6,7 @@ from django.http import HttpResponse, JsonResponse, HttpRequest
 from dashboard.models import (
     Observation,
     Area,
+    AreaPart,
     Species,
     ObservationUnseen,
     compute_area_filter_geometry,
@@ -20,7 +21,7 @@ from dashboard.views.helpers import (
 from django.conf import settings
 from django.utils.translation import get_language
 
-_TBL_AREAS = Area.objects.model._meta.db_table
+_TBL_AREA_PARTS = AreaPart.objects.model._meta.db_table
 _TBL_OBS = Observation.objects.model._meta.db_table
 _TBL_UNSEEN = ObservationUnseen.objects.model._meta.db_table
 _TBL_SPECIES = Species.objects.model._meta.db_table
@@ -80,7 +81,10 @@ def _build_where_clause(params: dict) -> tuple[str, dict]:
         )
         binds["precomputed_area_ewkb"] = params["precomputed_area_ewkb"]
     elif params.get("area_ids"):
-        clauses.append("AND ST_Within(obs.location, areas.mpoly)")
+        clauses.append(
+            "AND parts.area_id = ANY(%(area_ids)s) "
+            "AND ST_Intersects(obs.location, parts.geom)"
+        )
 
     if params.get("initial_data_import_ids"):
         clauses.append(
@@ -153,10 +157,11 @@ def _build_joins(params: dict) -> tuple[str, dict]:
             f"INNER JOIN {_TBL_UNSEEN} ON obs.id = {_TBL_UNSEEN}.observation_id"
         )
     if params.get("area_ids") and not params.get("precomputed_area_ewkb"):
-        joins.append(
-            f", (SELECT ST_Union(mpoly) AS mpoly FROM {_TBL_AREAS} "
-            f"WHERE {_TBL_AREAS}.id = ANY(%(area_ids)s)) AS areas"
-        )
+        # The subdivided pieces of the selected areas. No ST_Union: the pieces
+        # already carry their area_id, so the union that used to run on every
+        # request is gone entirely - along with the GEOS TopologyException it
+        # raised whenever one of the selected areas was self-intersecting.
+        joins.append(f", {_TBL_AREA_PARTS} AS parts")
         binds["area_ids"] = list(params["area_ids"])
 
     return " ".join(joins), binds
@@ -169,8 +174,18 @@ def _filtered_observations_subquery(params: dict) -> tuple[str, dict]:
     joins_sql, binds = _build_joins(params)
     where_sql, where_binds = _build_where_clause(params)
     binds.update(where_binds)
+    # DISTINCT, and an explicit select list rather than `*`: an observation
+    # matches once per area part it falls in, so overlapping selected areas
+    # would otherwise duplicate it - rendering it twice in a vector tile and
+    # inflating the hexagon endpoint's COUNT(*).
+    #
+    # obs.* AND species.*, not obs.* alone: the MVT endpoint reads
+    # `observations.name` and `observations.vernacular_name_<lang>` from this
+    # subquery. Listing the tables explicitly also keeps the joined parts and
+    # unseen columns out, which is what lets DISTINCT collapse the duplicates
+    # at all - `SELECT DISTINCT *` would carry a different parts.id per row.
     sql = f"""
-        SELECT * FROM {_TBL_OBS} as obs
+        SELECT DISTINCT obs.*, species.* FROM {_TBL_OBS} as obs
         {joins_sql}
         WHERE (
             {where_sql}
