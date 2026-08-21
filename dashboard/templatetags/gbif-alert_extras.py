@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import get_language, get_language_info
 
-from dashboard.models import DataImport
+from dashboard.models import Area, DataImport
 
 register = template.Library()
 
@@ -125,6 +125,14 @@ def nav_config_json(context):
             ).replace("PLACEHOLDER", "{stable_id}"),
         },
         "speciesNameMode": species_name_mode,
+        # Areas pre-selected in the home page's area filter. Public areas only:
+        # Area.clean() enforces it, but clean() does not run on bulk updates or
+        # loaddata, and a private geometry must never leak into every page.
+        "defaultAreaIds": list(
+            Area.objects.filter(
+                is_default_home_filter=True, owner__isnull=True
+            ).values_list("id", flat=True)
+        ),
     }
 
     return mark_safe(json.dumps(conf))

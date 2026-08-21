@@ -182,7 +182,8 @@ class AreaAdmin(admin.GISModelAdmin):
     def tag_list(self, obj):
         return ", ".join(o.name for o in obj.tags.all())
 
-    list_display = ("name", "owner", "tag_list")
+    list_display = ("name", "owner", "is_default_home_filter", "tag_list")
+    list_filter = ("is_default_home_filter",)
 
 
 # Beware: the following action is mostly for debugging purposes and will send an email if the usual criteria are not

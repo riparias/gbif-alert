@@ -118,3 +118,16 @@ ones were summarized purely by the frontend - the data was there but unreachable
 **Rejected:** Dropping the "Show all data imports" button and always rendering
 the collapsed accordion - the page's default should stay "one import, fully
 described".
+
+## 2026-08-21 - Instance-configurable default area filter on the home page
+
+**What:** A public area can be flagged `is_default_home_filter` in the Django
+admin; the home page then opens with it pre-selected, removable like any other
+filter via a new `?areaIds=none` sentinel.
+**Why:** Instances downloading a bounding box wider than their area of interest
+(to spot approaching species) landed visitors on an unfiltered map of the whole
+box.
+**Rejected:** An env var naming the area - referencing a database row from
+`.env` is brittle across databases and renames; and seeding the store without a
+URL sentinel, which loses the default on any shared link and resurrects it after
+"clear all".

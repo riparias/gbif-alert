@@ -1,3 +1,11 @@
+# Unreleased
+
+- Feature: an area can now be pre-selected as the home page's default filter.
+  Tick "Is default home filter" on a public area in the admin, and visitors
+  land on a home page already scoped to it - useful when the instance
+  downloads a wider region than it focuses on. The filter can be removed like
+  any other one.
+
 # 2.4.0 (2026-08-17)
 
 - Change: importing observations is about 2.75x faster. On a test database

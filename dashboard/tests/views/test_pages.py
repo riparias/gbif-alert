@@ -354,3 +354,45 @@ def test_species_name_mode_unknown_cookie_falls_back_to_default(client):
     client.cookies[SPECIES_NAME_MODE_COOKIE] = "tlhIngan"
     config = _get_nav_config(client.get("/"))
     assert config["speciesNameMode"] == "scientific"
+
+
+def _make_area(name, **kwargs):
+    return Area.objects.create(
+        name=name,
+        mpoly=MultiPolygon(
+            Polygon(
+                ((4.3, 50.6), (4.4, 50.6), (4.4, 50.7), (4.3, 50.7), (4.3, 50.6)),
+                srid=4326,
+            ),
+            srid=4326,
+        ),
+        **kwargs,
+    )
+
+
+def test_default_area_ids_empty_when_no_area_is_flagged(client):
+    """Instances without a configured default expose an empty list."""
+    _make_area("Not the default")
+    assert _get_nav_config(client.get("/"))["defaultAreaIds"] == []
+
+
+def test_default_area_ids_lists_flagged_public_areas(client):
+    """A public area flagged as the home default appears in the nav config."""
+    flagged = _make_area("Romania", is_default_home_filter=True)
+    _make_area("Somewhere else")
+
+    assert _get_nav_config(client.get("/"))["defaultAreaIds"] == [flagged.pk]
+
+
+def test_default_area_ids_excludes_user_specific_areas(client):
+    """A user-owned area never becomes a site-wide default, even if flagged.
+
+    Area.clean() forbids it, but clean() does not run on bulk updates,
+    loaddata or raw SQL - so the query filters on owner as well.
+    """
+    User = get_user_model()
+    owner = User.objects.create_user(username="owner", password="12345")
+    private = _make_area("Private garden", owner=owner)
+    Area.objects.filter(pk=private.pk).update(is_default_home_filter=True)
+
+    assert _get_nav_config(client.get("/"))["defaultAreaIds"] == []

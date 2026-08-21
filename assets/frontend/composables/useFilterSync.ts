@@ -2,6 +2,21 @@ import { onUnmounted, watch } from "vue";
 import { useRoute, useRouter, type LocationQuery } from "vue-router";
 import { debounce } from "lodash";
 import { useFiltersStore } from "../stores/filters";
+import { getNavConfig } from "../utils/navConfig";
+
+// Written to the URL when the visitor removes an area filter that was
+// pre-selected by the instance (Area.is_default_home_filter). Without it,
+// "no areaIds in the URL" would mean "the default", and clearing the filter
+// could not survive a reload or be shared as a link. Mirrors the ?status=all
+// opt-out used for authenticated users below.
+const AREA_IDS_NONE = "none";
+
+// Order-insensitive comparison: URL param order is not meaningful.
+function sameIds(a: number[], b: number[]): boolean {
+    if (a.length !== b.length) return false;
+    const sortedB = [...b].sort();
+    return [...a].sort().every((v, i) => v === sortedB[i]);
+}
 
 // --- Query parsing helpers ---
 
@@ -31,12 +46,17 @@ type QueryRecord = Record<string, string | string[]>;
 function buildQuery(
     store: ReturnType<typeof useFiltersStore>,
     isAuthenticated: boolean,
+    defaultAreaIds: number[],
 ): QueryRecord {
     const q: QueryRecord = {};
     if (store.speciesIds.length) q.speciesIds = store.speciesIds.map(String);
     if (store.datasetIds.length) q.datasetIds = store.datasetIds.map(String);
     if (store.basisOfRecordIds.length) q.basisOfRecordIds = store.basisOfRecordIds.map(String);
-    if (store.areaIds.length) q.areaIds = store.areaIds.map(String);
+    // The instance default is the implicit value, so it stays out of the URL;
+    // an empty selection has to be spelled out when a default exists.
+    if (!sameIds(store.areaIds, defaultAreaIds)) {
+        q.areaIds = store.areaIds.length ? store.areaIds.map(String) : [AREA_IDS_NONE];
+    }
     if (store.initialDataImportIds.length)
         q.initialDataImportIds = store.initialDataImportIds.map(String);
     if (store.startDate) q.startDate = store.startDate;
@@ -79,6 +99,7 @@ export function useFilterSync(isAuthenticated: boolean = true): void {
     const route = useRoute();
     const router = useRouter();
     const store = useFiltersStore();
+    const defaultAreaIds = getNavConfig().defaultAreaIds ?? [];
 
     // URL -> store: runs immediately on mount so the store is populated from the
     // URL before onMounted() fires (which triggers the first data load).
@@ -92,7 +113,11 @@ export function useFilterSync(isAuthenticated: boolean = true): void {
             store.speciesIds = getIntArray(query, "speciesIds");
             store.datasetIds = getIntArray(query, "datasetIds");
             store.basisOfRecordIds = getIntArray(query, "basisOfRecordIds");
-            store.areaIds = getIntArray(query, "areaIds");
+            // Absent means "use the instance default"; present (including the
+            // AREA_IDS_NONE sentinel, which parses to an empty list) is taken
+            // literally as the visitor's own choice.
+            store.areaIds =
+                query.areaIds === undefined ? [...defaultAreaIds] : getIntArray(query, "areaIds");
             store.initialDataImportIds = getIntArray(query, "initialDataImportIds");
             store.startDate = getString(query, "startDate");
             store.endDate = getString(query, "endDate");
@@ -122,7 +147,7 @@ export function useFilterSync(isAuthenticated: boolean = true): void {
     // the store watch fires but buildQuery() produces the same URL, so we skip
     // router.replace() and the cycle stops.
     const syncToUrl = debounce(() => {
-        const q = buildQuery(store, isAuthenticated);
+        const q = buildQuery(store, isAuthenticated, defaultAreaIds);
         // NOTE: The ?obs= param is managed by ObservationsView's drawer, not by the filter
         // store. We carry it through verbatim so that changing a filter does not
         // close an open drawer. It is intentionally excluded from buildQuery() to
