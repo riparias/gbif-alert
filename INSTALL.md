@@ -294,6 +294,13 @@ Schedule via host cron (or external orchestration). Production deployments shoul
 | Restart app | `docker compose restart gbif-alert` |
 | Django shell | `docker compose exec gbif-alert python manage.py shell` |
 | Healthcheck | `curl http://localhost:8000/healthz` |
+| Rebuild area parts | `docker compose exec gbif-alert python manage.py rebuild_area_parts` |
+
+Areas are stored pre-subdivided so that filtering observations by area is fast,
+and this is maintained automatically whenever an area is saved. If
+`python manage.py check` reports areas without parts - possible after a bulk
+import or a database restore that bypassed the application - run the rebuild
+command above.
 
 ## Run GBIF Alert manually
 

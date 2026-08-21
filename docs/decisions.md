@@ -142,3 +142,19 @@ an emblem in a shared template would make unrelated instances claim EU support.
 identical on every EU-funded instance, so a boolean beats pasted markup; and
 SVG assets - the Commission ships no SVG, and converting the EPS would re-typeset
 an emblem that must not be modified.
+
+## 2026-08-21 - Subdivide area geometries for the observation filter
+
+**What:** Every area is stored pre-chopped by `ST_Subdivide` in a derived
+`AreaPart` table, and the `inside` filter joins those pieces instead of
+intersecting one geometry unioned per request.
+**Why:** The GIST index could only prefilter by the union's bounding box, so
+filtering ran an exact point-in-polygon test against huge geometries - 16 s for
+a 62-area alert over a million observations. Pieces also removed a crash: the
+per-request `ST_Union` raised a GEOS TopologyException on self-intersecting
+areas.
+**Rejected:** Deduplicating with `EXISTS` or with a two-stage `id IN (...)`
+query - both defeat the spatial join, measuring 10-30 s and over 40 minutes
+against the chosen form's sub-second. A materialized view refreshed at import
+time was also rejected: user-created areas would have no pieces until the next
+import, forcing a permanent fallback path.
