@@ -1,5 +1,10 @@
 # Unreleased
 
+- Feature: an area can now be pre-selected as the home page's default filter.
+  Tick "Is default home filter" on a public area in the admin, and visitors
+  land on a home page already scoped to it - useful when the instance
+  downloads a wider region than it focuses on. The filter can be removed like
+  any other one.
 - Feature: instances funded by the European Union can now show the official
   "Funded by the European Union" emblem in their footer, linking to their "about
   this site" page. It is off by default and enabled with the new

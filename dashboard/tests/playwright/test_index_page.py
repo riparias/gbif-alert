@@ -548,3 +548,81 @@ def test_species_stat_card_opens_species_view(page: Page, live_server):
     expect(page.get_by_role("tab", name="Species")).to_have_attribute(
         "aria-selected", "true"
     )
+
+
+# ---------------------------------------------------------------------------
+# Instance-configured default area filter (Area.is_default_home_filter)
+# ---------------------------------------------------------------------------
+
+
+def _area_around_observations(name: str, **kwargs) -> Area:
+    """A public area containing the point used by _make_observation()."""
+    return Area.objects.create(
+        name=name,
+        mpoly=MultiPolygon(
+            Polygon(
+                (
+                    (5.0, 50.4),
+                    (5.2, 50.4),
+                    (5.2, 50.6),
+                    (5.0, 50.6),
+                    (5.0, 50.4),
+                ),
+                srid=4326,
+            ),
+            srid=4326,
+        ),
+        **kwargs,
+    )
+
+
+@pytest.mark.django_db(transaction=True)
+def test_default_area_is_preselected_on_the_home_page(page: Page, live_server):
+    """A flagged area filters the home page without any URL parameter."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+    far_away = _make_observation(gbif_id=2, occurrence_id="2", species=sp, basis=basis)
+    far_away.location = Point(2.35, 48.85, srid=4326)  # Paris, outside the area
+    far_away.save()
+    _area_around_observations("Default region", is_default_home_filter=True)
+
+    page.goto(live_server.url + "/?status=all")
+
+    expect(page.locator(".stat-count").get_by_text("1")).to_be_visible()
+    expect(page.get_by_text("Default region")).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_default_area_filter_can_be_removed_and_stays_removed(page: Page, live_server):
+    """Removing the pre-selected area chip survives a reload via ?areaIds=none."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+    far_away = _make_observation(gbif_id=2, occurrence_id="2", species=sp, basis=basis)
+    far_away.location = Point(2.35, 48.85, srid=4326)
+    far_away.save()
+    _area_around_observations("Default region", is_default_home_filter=True)
+
+    page.goto(live_server.url + "/?status=all")
+    page.get_by_role("button", name="Remove Default region").click()
+
+    expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
+    expect(page).to_have_url(re.compile(r"areaIds=none"))
+
+    page.reload()
+    expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_home_page_is_unfiltered_when_no_area_is_flagged(page: Page, live_server):
+    """Instances without a default area keep a clean URL and no area chip."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+    _area_around_observations("Just an area")
+
+    page.goto(live_server.url + "/?status=all")
+
+    expect(page.locator(".stat-count").get_by_text("1")).to_be_visible()
+    expect(page).not_to_have_url(re.compile(r"areaIds"))

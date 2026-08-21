@@ -1013,6 +1013,13 @@ class Area(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, blank=True, null=True
     )  # an area can be public or user-specific
     name = models.CharField(max_length=255)
+    is_default_home_filter = models.BooleanField(
+        default=False,
+        help_text=(
+            "Pre-select this area as the home page's default filter. Public "
+            "areas only. Visitors can remove it like any other filter."
+        ),
+    )
 
     tags = TaggableManager(blank=True)
     objects = MyAreaManager()
@@ -1022,6 +1029,18 @@ class Area(models.Model):
 
     class HasAlerts(Exception):
         """This area is referenced by at least one alert"""
+
+    def clean(self):
+        super().clean()
+        if self.is_default_home_filter and self.owner_id is not None:
+            raise ValidationError(
+                {
+                    "is_default_home_filter": (
+                        "Only a public area (without an owner) can be the home "
+                        "page's default filter."
+                    )
+                }
+            )
 
     def delete(self, *args, **kwargs):
         if self.alert_set.count() > 0:

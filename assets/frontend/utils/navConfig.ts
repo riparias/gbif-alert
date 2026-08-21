@@ -50,6 +50,8 @@ export interface NavConfig {
     urls: NavUrls;
     map: MapConfig;
     speciesNameMode: SpeciesNameMode;
+    // Areas pre-selected in the home page area filter (empty on most instances).
+    defaultAreaIds: number[];
 }
 
 let _cache: NavConfig | null = null;
