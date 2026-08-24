@@ -1922,3 +1922,39 @@ def test_tile_subquery_still_exposes_the_species_columns(observations_and_areas)
     with connection.cursor() as cur:
         cur.execute(f"SELECT name, vernacular_name_en FROM ({sql}) AS sub", binds)
         assert cur.fetchall()
+
+
+def test_tile_subquery_does_not_deduplicate_without_an_area_filter():
+    """DISTINCT is only needed when the area-parts join can duplicate a row.
+
+    Applying it unconditionally costs a sort of every observation in the
+    database on the busiest query there is - the unfiltered main page. Measured
+    at 21 ms -> 1467 ms on a 1.1M-observation database.
+    """
+    from dashboard.views.maps import _filtered_observations_subquery
+
+    sql, _ = _filtered_observations_subquery({})
+
+    assert "DISTINCT" not in sql
+
+
+def test_tile_subquery_deduplicates_when_filtering_by_area(observations_and_areas):
+    from dashboard.views.maps import _filtered_observations_subquery
+
+    sql, _ = _filtered_observations_subquery(
+        {"area_ids": [observations_and_areas["square"].pk]}
+    )
+
+    assert "DISTINCT" in sql
+
+
+def test_tile_subquery_does_not_deduplicate_for_a_precomputed_area_buffer():
+    """approaching/both modes filter against one prebuilt geometry, not parts,
+    so they cannot duplicate a row either."""
+    from dashboard.views.maps import _filtered_observations_subquery
+
+    sql, _ = _filtered_observations_subquery(
+        {"area_ids": [1], "precomputed_area_ewkb": b"\x00"}
+    )
+
+    assert "DISTINCT" not in sql
