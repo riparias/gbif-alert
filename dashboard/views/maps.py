@@ -45,6 +45,17 @@ _TBL_SPECIES = Species.objects.model._meta.db_table
 # ---------------------------------------------------------------------------
 
 
+def _uses_area_parts(params: dict) -> bool:
+    """Whether this query filters through the subdivided area parts.
+
+    Three things depend on this and must agree: the parts table joins into the
+    FROM list, the area condition goes in the WHERE clause, and the select list
+    is deduplicated. A precomputed buffer (approaching/both modes) filters
+    against one prebuilt geometry instead, and needs none of them.
+    """
+    return bool(params.get("area_ids")) and not params.get("precomputed_area_ewkb")
+
+
 def _build_where_clause(params: dict) -> tuple[str, dict]:
     """Build the WHERE-condition fragment and its named bind params.
 
@@ -80,7 +91,7 @@ def _build_where_clause(params: dict) -> tuple[str, dict]:
             "AND ST_Within(obs.location, ST_GeomFromEWKB(%(precomputed_area_ewkb)s))"
         )
         binds["precomputed_area_ewkb"] = params["precomputed_area_ewkb"]
-    elif params.get("area_ids"):
+    elif _uses_area_parts(params):
         clauses.append(
             "AND parts.area_id = ANY(%(area_ids)s) "
             "AND ST_Intersects(obs.location, parts.geom)"
@@ -156,7 +167,7 @@ def _build_joins(params: dict) -> tuple[str, dict]:
         joins.append(
             f"INNER JOIN {_TBL_UNSEEN} ON obs.id = {_TBL_UNSEEN}.observation_id"
         )
-    if params.get("area_ids") and not params.get("precomputed_area_ewkb"):
+    if _uses_area_parts(params):
         # The subdivided pieces of the selected areas. No ST_Union: the pieces
         # already carry their area_id, so the union that used to run on every
         # request is gone entirely - along with the GEOS TopologyException it
@@ -174,18 +185,25 @@ def _filtered_observations_subquery(params: dict) -> tuple[str, dict]:
     joins_sql, binds = _build_joins(params)
     where_sql, where_binds = _build_where_clause(params)
     binds.update(where_binds)
-    # DISTINCT, and an explicit select list rather than `*`: an observation
-    # matches once per area part it falls in, so overlapping selected areas
-    # would otherwise duplicate it - rendering it twice in a vector tile and
-    # inflating the hexagon endpoint's COUNT(*).
+    # DISTINCT only when the parts join is present: an observation matches once
+    # per area part it falls in, so overlapping selected areas would otherwise
+    # duplicate it - rendering it twice in a vector tile and inflating the
+    # hexagon endpoint's COUNT(*). The parts join is the only source of
+    # duplicates here; the unseen join is at most 1:1 thanks to its
+    # unique_together plus the user_id condition.
+    #
+    # Applying it unconditionally is expensive and pointless: on the unfiltered
+    # main page it sorts every observation in the database, measured at
+    # 21 ms -> 1467 ms on 1.1M observations.
     #
     # obs.* AND species.*, not obs.* alone: the MVT endpoint reads
     # `observations.name` and `observations.vernacular_name_<lang>` from this
     # subquery. Listing the tables explicitly also keeps the joined parts and
     # unseen columns out, which is what lets DISTINCT collapse the duplicates
     # at all - `SELECT DISTINCT *` would carry a different parts.id per row.
+    distinct = "DISTINCT " if _uses_area_parts(params) else ""
     sql = f"""
-        SELECT DISTINCT obs.*, species.* FROM {_TBL_OBS} as obs
+        SELECT {distinct}obs.*, species.* FROM {_TBL_OBS} as obs
         {joins_sql}
         WHERE (
             {where_sql}
