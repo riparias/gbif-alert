@@ -158,3 +158,13 @@ query - both defeat the spatial join, measuring 10-30 s and over 40 minutes
 against the chosen form's sub-second. A materialized view refreshed at import
 time was also rejected: user-created areas would have no pieces until the next
 import, forcing a permanent fallback path.
+
+## 2026-08-26 - Auto-deploy the devel instance, not the demo
+**What:** The post-build webhook call in `image.yml` now redeploys the `devel`
+instance; the demo instance no longer auto-follows the `devel` branch and is
+bumped manually to stable releases.
+**Why:** The demo is what outsiders evaluate GBIF Alert on, so it should show a
+released version rather than whatever last landed on `devel`.
+**Rejected:** Keeping both wired (demo and devel each auto-deploying from
+`devel`) - that leaves the demo exposed to unreleased regressions, which is the
+problem being fixed.

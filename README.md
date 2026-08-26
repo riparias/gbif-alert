@@ -33,7 +33,8 @@ See [INSTALL.md](INSTALL.md) for more information.
 ## GBIF Alert instances in the wild
 
 - LIFE RIPARIAS Early Alert: [production](https://alert.riparias.be) / [development](https://dev-alert.riparias.be) (Targets riparian invasive species in Belgium)
-- [GBIF Alert demo instance](https://demo.gbif-alert.org) (Always in sync with the `devel` branch of this repository)
+- [GBIF Alert demo instance](https://demo.gbif-alert.org) (Follows the latest stable release)
+- [GBIF Alert devel instance](https://devel.gbif-alert.org) (Always in sync with the `devel` branch of this repository)
 - The Belgian Biodiversity Platform uses GBIF alert under the hood as an API for the ManaIAS project. 
 
 ## API
