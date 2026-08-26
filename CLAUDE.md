@@ -131,7 +131,7 @@ The app provides an OGC Web Feature Service endpoint at `/api/wfs/observations` 
 
 ## Branching & Deployment
 - Never commit directly to `main`
-- Feature branches → merge to `devel` (auto-builds + redeploys the demo from the GHCR image) → merge to `main` → tag `v*` to publish a release image; production rolls forward by bumping `GBIF_ALERT_TAG` (see INSTALL.md "Upgrades")
+- Feature branches → merge to `devel` (auto-builds + redeploys the devel instance from the GHCR image; the demo instance is bumped manually to stable releases) → merge to `main` → tag `v*` to publish a release image; production rolls forward by bumping `GBIF_ALERT_TAG` (see INSTALL.md "Upgrades")
 - CI runs Django tests + mypy on every push (GitHub Actions)
 
 ## Versioning

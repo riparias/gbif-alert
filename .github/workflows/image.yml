@@ -61,16 +61,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Redeploy the demo instance once a fresh `devel` image is in the
+  # Redeploy the devel instance once a fresh `devel` image is in the
   # registry. Fires only after `build` pushes it - never on PRs or `main`.
-  deploy-demo:
+  # The demo instance deliberately does NOT auto-follow `devel`: it is bumped
+  # manually to stable releases.
+  deploy-devel:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/devel'
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Dokploy redeploy (demo)
+      - name: Trigger Dokploy redeploy (devel instance)
         # Dokploy's auto-deploy webhook expects a GitHub-style push payload
-        # and only deploys when the ref matches the branch the demo service
+        # and only deploys when the ref matches the branch the devel service
         # tracks (devel). A bodyless call is answered with a 301 +
         # {"message":"Branch Not Match"} and deploys nothing - and since 301
         # is not an HTTP error, we must assert 200 explicitly or a rejection
@@ -81,6 +83,6 @@ jobs:
             -H "X-GitHub-Event: push" \
             -d '{"ref":"refs/heads/devel"}' \
             -o /tmp/dokploy-resp.json -w '%{http_code}' \
-            "${{ secrets.DOKPLOY_DEMO_DEPLOY_WEBHOOK }}")
+            "${{ secrets.DOKPLOY_DEVEL_DEPLOY_WEBHOOK }}")
           echo "Dokploy responded $code:"; cat /tmp/dokploy-resp.json; echo
           test "$code" = "200"
