@@ -160,6 +160,7 @@ time was also rejected: user-created areas would have no pieces until the next
 import, forcing a permanent fallback path.
 
 ## 2026-08-26 - Auto-deploy the devel instance, not the demo
+
 **What:** The post-build webhook call in `image.yml` now redeploys the `devel`
 instance; the demo instance no longer auto-follows the `devel` branch and is
 bumped manually to stable releases.
@@ -168,3 +169,16 @@ released version rather than whatever last landed on `devel`.
 **Rejected:** Keeping both wired (demo and devel each auto-deploying from
 `devel`) - that leaves the demo exposed to unreleased regressions, which is the
 problem being fixed.
+
+## 2026-08-26 - Full partial update for species, not a tags-only endpoint
+
+**What:** `PATCH /api/v2/species/{id}/` accepts any subset of the create
+payload's fields; `null` means "leave unchanged" and `tags` replaces the whole
+set.
+**Why:** Adding tags was the trigger, but `species_create` already owns the
+validation and camelCase error remapping (now the shared
+`_species_validation_errors` helper), so covering every admin-editable field
+cost little more than tags alone would have.
+**Rejected:** A tags-only endpoint - it would have needed a sibling endpoint for
+the first vernacular-name fix. Append-only tag semantics were rejected too:
+replacement matches create, and leaves removal possible.

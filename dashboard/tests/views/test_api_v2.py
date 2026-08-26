@@ -418,6 +418,282 @@ def test_species_create_blank_scientific_name_returns_422(client, superuser):
     assert not Species.objects.filter(gbif_taxon_key=88880001).exists()
 
 
+# --- PATCH /api/v2/species/{species_id}/ ---
+
+
+@pytest.fixture()
+def patchable_species():
+    """A fully-populated species to patch, so "unchanged" is observable."""
+    species = Species.objects.create(
+        name="Elodea nuttallii",
+        gbif_taxon_key=5329212,
+        gbif_col_taxon_key="6PZKT",
+        vernacular_name_en="Nuttall's waterweed",
+        vernacular_name_fr="elodee de Nuttall",
+        vernacular_name_nl="smalle waterpest",
+        image_url="https://example.org/elodea.jpg",
+        image_source_url="https://example.org/elodea-page",
+        image_attribution="A. Photographer",
+        image_license="CC BY 4.0",
+        image_source_type=Species.ImageSourceType.WIKIPEDIA,
+    )
+    species.tags.add("invasive", "plant")
+    return species
+
+
+def test_species_patch_replaces_tags(client, superuser, patchable_species):
+    """Sending tags replaces the whole set - the way an operator adds one."""
+    client.force_login(superuser)
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={"tags": ["invasive", "plant", "aquatic"]},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert sorted(resp.json()["tags"]) == ["aquatic", "invasive", "plant"]
+    patchable_species.refresh_from_db()
+    assert sorted(t.name for t in patchable_species.tags.all()) == [
+        "aquatic",
+        "invasive",
+        "plant",
+    ]
+
+
+def test_species_patch_empty_tags_list_clears_tags(
+    client, superuser, patchable_species
+):
+    """An empty list is a value, not an omission: it removes every tag."""
+    client.force_login(superuser)
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={"tags": []},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert resp.json()["tags"] == []
+    assert patchable_species.tags.count() == 0
+
+
+def test_species_patch_omitted_fields_are_unchanged(
+    client, superuser, patchable_species
+):
+    """Only what is sent changes; everything else keeps its stored value."""
+    client.force_login(superuser)
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={"tags": ["aquatic"]},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    patchable_species.refresh_from_db()
+    assert patchable_species.name == "Elodea nuttallii"
+    assert patchable_species.gbif_taxon_key == 5329212
+    assert patchable_species.gbif_col_taxon_key == "6PZKT"
+    assert patchable_species.vernacular_name_en == "Nuttall's waterweed"
+    assert patchable_species.image_url == "https://example.org/elodea.jpg"
+    assert patchable_species.image_license == "CC BY 4.0"
+
+
+def test_species_patch_updates_scalar_fields(client, superuser, patchable_species):
+    """Every admin-parity field is writable through the patch."""
+    client.force_login(superuser)
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={
+            "scientificName": "Elodea nuttallii (Planch.) H.St.John",
+            "gbifTaxonKey": 5329299,
+            "gbifColTaxonKey": "6PZKX",
+            "vernacularNameEn": "western waterweed",
+            "vernacularNameFr": "elodee a feuilles etroites",
+            "vernacularNameNl": "smalle waterpest (nl)",
+            "imageSourceUrl": "https://example.org/other-page",
+            "imageAttribution": "B. Photographer",
+            "imageLicense": "CC0",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    patchable_species.refresh_from_db()
+    assert patchable_species.name == "Elodea nuttallii (Planch.) H.St.John"
+    assert patchable_species.gbif_taxon_key == 5329299
+    assert patchable_species.gbif_col_taxon_key == "6PZKX"
+    assert patchable_species.vernacular_name_en == "western waterweed"
+    assert patchable_species.vernacular_name_fr == "elodee a feuilles etroites"
+    assert patchable_species.vernacular_name_nl == "smalle waterpest (nl)"
+    assert patchable_species.image_source_url == "https://example.org/other-page"
+    assert patchable_species.image_attribution == "B. Photographer"
+    assert patchable_species.image_license == "CC0"
+
+
+def test_species_patch_response_is_the_updated_species(
+    client, superuser, patchable_species
+):
+    """The 200 body is the same SpeciesOut shape the list endpoint returns."""
+    client.force_login(superuser)
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={"vernacularNameEn": "renamed"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["id"] == patchable_species.pk
+    assert body["scientificName"] == "Elodea nuttallii"
+    assert body["vernacularNameEn"] == "renamed"
+    assert body["gbifColTaxonKey"] == "6PZKT"
+
+
+def test_species_patch_via_token(client, superuser, patchable_species):
+    """A superuser's bearer token can patch too - this is a scripting endpoint."""
+    _, raw = ApiToken.create_for(superuser, "script")
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={"tags": ["scripted"]},
+        content_type="application/json",
+        HTTP_AUTHORIZATION=f"Bearer {raw}",
+    )
+    assert resp.status_code == 200
+    assert [t.name for t in patchable_species.tags.all()] == ["scripted"]
+
+
+def test_species_patch_as_regular_user_returns_403(
+    client, filter_lists_data, patchable_species
+):
+    """An authenticated non-superuser cannot patch a species."""
+    client.force_login(filter_lists_data["other_user"])
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={"tags": ["nope"]},
+        content_type="application/json",
+    )
+    assert resp.status_code == 403
+    assert patchable_species.tags.count() == 2
+
+
+def test_species_patch_anonymous_returns_401(client, patchable_species):
+    """An anonymous request cannot patch a species."""
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={"tags": ["nope"]},
+        content_type="application/json",
+    )
+    assert resp.status_code == 401
+    assert patchable_species.tags.count() == 2
+
+
+def test_species_patch_unknown_id_returns_404(client, superuser):
+    """Patching a species that does not exist is a 404."""
+    client.force_login(superuser)
+    resp = client.patch(
+        "/api/v2/species/999999/",
+        data={"tags": ["nope"]},
+        content_type="application/json",
+    )
+    assert resp.status_code == 404
+
+
+def test_species_patch_duplicate_taxon_key_returns_422(
+    client, superuser, patchable_species
+):
+    """Moving onto another species' gbifTaxonKey is a per-field validation error."""
+    Species.objects.create(name="Occupied", gbif_taxon_key=7654321)
+    client.force_login(superuser)
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={"gbifTaxonKey": 7654321},
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "gbifTaxonKey" in resp.json()["errors"]
+    patchable_species.refresh_from_db()
+    assert patchable_species.gbif_taxon_key == 5329212
+
+
+def test_species_patch_blank_scientific_name_returns_422(
+    client, superuser, patchable_species
+):
+    """A blank scientificName is rejected, as it is on create."""
+    client.force_login(superuser)
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={"scientificName": ""},
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "scientificName" in resp.json()["errors"]
+    patchable_species.refresh_from_db()
+    assert patchable_species.name == "Elodea nuttallii"
+
+
+def test_species_patch_clearing_the_only_taxon_key_returns_422(client, superuser):
+    """A species must keep at least one taxon key, so clearing the last one fails."""
+    species = Species.objects.create(name="COL only sp.", gbif_col_taxon_key="C5KM")
+    client.force_login(superuser)
+    resp = client.patch(
+        f"/api/v2/species/{species.pk}/",
+        data={"gbifColTaxonKey": ""},
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "__all__" in resp.json()["errors"]
+    species.refresh_from_db()
+    assert species.gbif_col_taxon_key == "C5KM"
+
+
+def test_species_patch_new_image_url_sets_source_type_manual(
+    client, superuser, patchable_species
+):
+    """A hand-edited image URL becomes MANUAL, so auto-populate leaves it alone."""
+    client.force_login(superuser)
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={"imageUrl": "https://example.org/hand-picked.jpg"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    patchable_species.refresh_from_db()
+    assert patchable_species.image_url == "https://example.org/hand-picked.jpg"
+    assert patchable_species.image_source_type == Species.ImageSourceType.MANUAL
+
+
+def test_species_patch_unchanged_image_url_keeps_source_type(
+    client, superuser, patchable_species
+):
+    """Re-sending the stored URL is not an edit, so provenance is untouched.
+
+    Why: a client doing a read-modify-write round-trip would otherwise flip
+    every auto-populated image to MANUAL just by echoing it back.
+    """
+    client.force_login(superuser)
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={
+            "imageUrl": "https://example.org/elodea.jpg",
+            "imageAttribution": "Corrected credit",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    patchable_species.refresh_from_db()
+    assert patchable_species.image_source_type == Species.ImageSourceType.WIKIPEDIA
+
+
+def test_species_patch_clearing_image_url_resets_source_type(
+    client, superuser, patchable_species
+):
+    """Clearing the URL clears provenance with it."""
+    client.force_login(superuser)
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={"imageUrl": ""},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    patchable_species.refresh_from_db()
+    assert patchable_species.image_url == ""
+    assert patchable_species.image_source_type == ""
+
+
 # --- /api/v2/datasets/ ---
 
 

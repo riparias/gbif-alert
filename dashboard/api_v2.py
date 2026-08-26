@@ -63,6 +63,7 @@ from dashboard.api_v2_schemas import (
     SpeciesCountOut,
     SpeciesIn,
     SpeciesOut,
+    SpeciesPatchIn,
     SpeciesPerPolygonIn,
     SpeciesPerPolygonOut,
     UserStatusOut,
@@ -203,6 +204,33 @@ def _species_to_out(species: Species) -> dict:
     }
 
 
+def _species_validation_errors(species: Species) -> dict[str, list[str]] | None:
+    """Run model validation, returning API-shaped errors or None when valid.
+
+    The keys are remapped from the snake_case model fields to the API's
+    camelCase names so they match the request shape (same approach as
+    auth_signup). Non-field errors keep Django's "__all__" key.
+    """
+    try:
+        species.full_clean()
+    except DjangoValidationError as exc:
+        key_map = {
+            "name": "scientificName",
+            "gbif_taxon_key": "gbifTaxonKey",
+            "gbif_col_taxon_key": "gbifColTaxonKey",
+            "vernacular_name_en": "vernacularNameEn",
+            "vernacular_name_fr": "vernacularNameFr",
+            "vernacular_name_nl": "vernacularNameNl",
+            "image_url": "imageUrl",
+            "image_source_url": "imageSourceUrl",
+        }
+        return {
+            key_map.get(field, field): [str(m) for m in msgs]
+            for field, msgs in exc.message_dict.items()
+        }
+    return None
+
+
 @api_v2.get("/species/", response=list[SpeciesOut])
 def species_list(request: HttpRequest):
     return [
@@ -246,25 +274,8 @@ def species_create(request: HttpRequest, payload: SpeciesIn):
         image_source_type=(Species.ImageSourceType.MANUAL if payload.imageUrl else ""),
     )
 
-    try:
-        species.full_clean()
-    except DjangoValidationError as exc:
-        # Remap snake_case model fields to the API's camelCase field names so the
-        # error keys match the request shape (same approach as auth_signup).
-        key_map = {
-            "name": "scientificName",
-            "gbif_taxon_key": "gbifTaxonKey",
-            "gbif_col_taxon_key": "gbifColTaxonKey",
-            "vernacular_name_en": "vernacularNameEn",
-            "vernacular_name_fr": "vernacularNameFr",
-            "vernacular_name_nl": "vernacularNameNl",
-            "image_url": "imageUrl",
-            "image_source_url": "imageSourceUrl",
-        }
-        errors = {
-            key_map.get(field, field): [str(m) for m in msgs]
-            for field, msgs in exc.message_dict.items()
-        }
+    errors = _species_validation_errors(species)
+    if errors is not None:
         return 422, {"detail": "Validation failed", "errors": errors}
 
     species.save()
@@ -300,6 +311,71 @@ def species_per_polygon(request: HttpRequest, payload: SpeciesPerPolygonIn):
         }
         for s in qs
     ]
+
+
+# Declared after /species/per-polygon/ on purpose: ninja resolves routes in
+# registration order, so a {species_id} pattern declared earlier would swallow
+# that literal path (same reason /observations/species-breakdown/ precedes
+# /observations/{stable_id}/).
+@api_v2.patch(
+    "/species/{species_id}/",
+    response={
+        200: SpeciesOut,
+        422: ValidationErrorOut,
+        **ERR_401,
+        **ERR_403,
+        **ERR_404,
+    },
+    auth=[ApiTokenAuth(), django_auth],
+)
+def species_patch(request: HttpRequest, species_id: int, payload: SpeciesPatchIn):
+    """Partially update a species. Superusers (operators) only.
+
+    Every field is optional; an omitted (or null) one is left untouched, as in
+    area_patch. `tags` replaces the whole set, so adding a tag means sending the
+    current list plus the new one. Validation and the camelCase error keys match
+    species_create.
+    """
+    user = cast(User, request.user)
+    if not user.is_superuser:
+        raise HttpError(403, "Only operators can update species.")
+
+    species = get_object_or_404(Species, pk=species_id)
+
+    # A hand-edited image URL becomes "manual" so the auto-populate command never
+    # overwrites it; clearing the URL resets provenance. Compared against the
+    # stored value (rather than just "was it sent?") so a read-modify-write
+    # round-trip that echoes an auto-populated URL back does not flip it.
+    if payload.imageUrl is not None and payload.imageUrl != species.image_url:
+        species.image_source_type = (
+            Species.ImageSourceType.MANUAL if payload.imageUrl else ""
+        )
+
+    field_map = {
+        "scientificName": "name",
+        "gbifTaxonKey": "gbif_taxon_key",
+        "gbifColTaxonKey": "gbif_col_taxon_key",
+        "vernacularNameEn": "vernacular_name_en",
+        "vernacularNameFr": "vernacular_name_fr",
+        "vernacularNameNl": "vernacular_name_nl",
+        "imageUrl": "image_url",
+        "imageSourceUrl": "image_source_url",
+        "imageAttribution": "image_attribution",
+        "imageLicense": "image_license",
+    }
+    for api_field, model_field in field_map.items():
+        value = getattr(payload, api_field)
+        if value is not None:
+            setattr(species, model_field, value)
+
+    errors = _species_validation_errors(species)
+    if errors is not None:
+        return 422, {"detail": "Validation failed", "errors": errors}
+
+    species.save()
+    if payload.tags is not None:
+        species.tags.set(payload.tags)
+    return _species_to_out(species)
 
 
 @api_v2.get("/datasets/", response=list[DatasetOut])
