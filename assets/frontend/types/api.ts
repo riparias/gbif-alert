@@ -56,6 +56,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/species/{species_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Species Patch
+         * @description Partially update a species. Superusers (operators) only.
+         *
+         *     Every field is optional; an omitted (or null) one is left untouched, as in
+         *     area_patch. `tags` replaces the whole set, so adding a tag means sending the
+         *     current list plus the new one. Validation and the camelCase error keys match
+         *     species_create.
+         */
+        patch: operations["dashboard_api_v2_species_patch"];
+        trace?: never;
+    };
     "/api/v2/datasets/": {
         parameters: {
             query?: never;
@@ -868,6 +893,41 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /**
+         * SpeciesPatchIn
+         * @description Payload to partially update a species (superuser only).
+         *
+         *     Every field is optional and None means "leave unchanged", the same
+         *     convention as AreaPatchIn. `tags`, when given, replaces the whole set (an
+         *     empty list therefore clears every tag). String fields are cleared by
+         *     sending "". gbifTaxonKey is the one exception: since None is the
+         *     "unchanged" marker, it cannot be reset to null here - that stays an admin
+         *     operation. `imageSourceType` is derived server-side, exactly as on create.
+         */
+        SpeciesPatchIn: {
+            /** Scientificname */
+            scientificName?: string | null;
+            /** Gbiftaxonkey */
+            gbifTaxonKey?: number | null;
+            /** Gbifcoltaxonkey */
+            gbifColTaxonKey?: string | null;
+            /** Vernacularnameen */
+            vernacularNameEn?: string | null;
+            /** Vernacularnamefr */
+            vernacularNameFr?: string | null;
+            /** Vernacularnamenl */
+            vernacularNameNl?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Imageurl */
+            imageUrl?: string | null;
+            /** Imagesourceurl */
+            imageSourceUrl?: string | null;
+            /** Imageattribution */
+            imageAttribution?: string | null;
+            /** Imagelicense */
+            imageLicense?: string | null;
+        };
         /** DatasetOut */
         DatasetOut: {
             /** Id */
@@ -1636,6 +1696,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_species_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                species_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpeciesPatchIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpeciesOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationErrorOut"];
                 };
             };
         };
