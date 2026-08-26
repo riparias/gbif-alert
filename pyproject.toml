@@ -1,6 +1,6 @@
 [project]
 name = "gbif-alert"
-version = "2.4.0"
+version = "2.5.0"
 description = "A GBIF-based early alert system"
 authors = [{ name = "Nicolas Noé", email = "nicolas@niconoe.eu" }]
 license = "MIT"

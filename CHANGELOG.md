@@ -1,4 +1,4 @@
-# Unreleased
+# 2.5.0 (2026-08-26)
 
 - Feature: operators can now update an existing species through the API, with
   `PATCH /api/v2/species/{id}/`. Any subset of the fields can be sent - tags,
