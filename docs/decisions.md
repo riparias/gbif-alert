@@ -158,3 +158,16 @@ query - both defeat the spatial join, measuring 10-30 s and over 40 minutes
 against the chosen form's sub-second. A materialized view refreshed at import
 time was also rejected: user-created areas would have no pieces until the next
 import, forcing a permanent fallback path.
+
+## 2026-08-26 - Full partial update for species, not a tags-only endpoint
+
+**What:** `PATCH /api/v2/species/{id}/` accepts any subset of the create
+payload's fields; `null` means "leave unchanged" and `tags` replaces the whole
+set.
+**Why:** Adding tags was the trigger, but `species_create` already owns the
+validation and camelCase error remapping (now the shared
+`_species_validation_errors` helper), so covering every admin-editable field
+cost little more than tags alone would have.
+**Rejected:** A tags-only endpoint - it would have needed a sibling endpoint for
+the first vernacular-name fix. Append-only tag semantics were rejected too:
+replacement matches create, and leaves removal possible.

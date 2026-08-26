@@ -84,6 +84,30 @@ class SpeciesIn(Schema):
     imageLicense: str = ""
 
 
+class SpeciesPatchIn(Schema):
+    """Payload to partially update a species (superuser only).
+
+    Every field is optional and None means "leave unchanged", the same
+    convention as AreaPatchIn. `tags`, when given, replaces the whole set (an
+    empty list therefore clears every tag). String fields are cleared by
+    sending "". gbifTaxonKey is the one exception: since None is the
+    "unchanged" marker, it cannot be reset to null here - that stays an admin
+    operation. `imageSourceType` is derived server-side, exactly as on create.
+    """
+
+    scientificName: str | None = None
+    gbifTaxonKey: int | None = None
+    gbifColTaxonKey: str | None = None
+    vernacularNameEn: str | None = None
+    vernacularNameFr: str | None = None
+    vernacularNameNl: str | None = None
+    tags: list[str] | None = None
+    imageUrl: str | None = None
+    imageSourceUrl: str | None = None
+    imageAttribution: str | None = None
+    imageLicense: str | None = None
+
+
 class SpeciesPerPolygonIn(Schema):
     geojson: dict  # GeoJSON FeatureCollection (EPSG:4326), Polygon/MultiPolygon features
 

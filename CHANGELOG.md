@@ -1,5 +1,9 @@
 # Unreleased
 
+- Feature: operators can now update an existing species through the API, with
+  `PATCH /api/v2/species/{id}/`. Any subset of the fields can be sent - tags,
+  scientific name, vernacular names, taxon keys or image details - and what is
+  not sent is left alone. Sending `tags` replaces the species' whole tag list.
 - Change: filtering observations by area is much faster. On a database of a
   million observations, an alert covering 62 areas went from 16 seconds to under
   one, and one covering 12 areas from 4 seconds to a few milliseconds. Maps,
