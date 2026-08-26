@@ -182,3 +182,16 @@ cost little more than tags alone would have.
 **Rejected:** A tags-only endpoint - it would have needed a sibling endpoint for
 the first vernacular-name fix. Append-only tag semantics were rejected too:
 replacement matches create, and leaves removal possible.
+
+## 2026-08-26 - Dataset names come from the GBIF registry, after the transaction
+
+**What:** Restored the registry lookup that names datasets whose download
+carries an empty `dwc:datasetName`; it now runs after the import transaction
+commits, and an empty incoming name no longer overwrites a stored one.
+**Why:** The workaround for issue #41 was commented out during a GBIF outage and
+then deleted outright by the `run_import` refactor, leaving 236 of 272 datasets
+unnamed on the OneSTOP instance; naming is cosmetic, so it must not be able to
+hold a write transaction open or roll a good import back.
+**Rejected:** Doing the lookup inside the transaction, where the old hack lived -
+zero blank-name window, but hundreds of blocking HTTP calls on the import's
+critical path.
