@@ -9,12 +9,12 @@ import Tag from "primevue/tag";
 import SpeciesName from "./SpeciesName.vue";
 import ObservationStatusToggle from "./ObservationStatusToggle.vue";
 import { useAlertMeta } from "../composables/useAlertMeta";
+import { useMarkAllAsViewed } from "../composables/useMarkAllAsViewed";
 import { useDisplayLabels } from "../composables/useDisplayLabels";
 import { pickVernacular } from "../utils/vernacular";
 import { useResultsStore } from "../stores/results";
 import { useFiltersStore } from "../stores/filters";
 import { getCsrf } from "../utils/csrf";
-import { filtersToBody } from "../utils/filterParams";
 import type { components } from "../types/api";
 import { getNavConfig } from "../utils/navConfig";
 
@@ -42,31 +42,7 @@ const {
     SPECIES_COLLAPSE_THRESHOLD,
 } = useAlertMeta(() => props.alert);
 const { datasetName, basisOfRecordName } = useDisplayLabels();
-
-function confirmMarkAllAsViewed() {
-    confirm.require({
-        message: t("message.markAllAsViewedConfirm"),
-        header: t("message.markAllAsViewed"),
-        acceptLabel: t("message.yesImSure"),
-        rejectLabel: t("message.cancel"),
-        accept: async () => {
-            const resp = await fetch("/api/v2/observations/mark-as-viewed/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": getCsrf(),
-                },
-                body: JSON.stringify(filtersToBody(filtersStore)),
-            });
-            if (!resp.ok) return;
-            toast.add({
-                severity: "success",
-                summary: t("message.markAllAsViewedQueued"),
-                life: 5000,
-            });
-        },
-    });
-}
+const { confirmMarkAllAsViewed } = useMarkAllAsViewed();
 
 function confirmDelete() {
     confirm.require({

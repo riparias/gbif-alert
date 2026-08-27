@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import Menubar from "primevue/menubar";
@@ -7,18 +7,14 @@ import Button from "primevue/button";
 import Select from "primevue/select";
 import Menu from "primevue/menu";
 import ToggleSwitch from "primevue/toggleswitch";
-import type { MenuItem } from "primevue/menuitem";
 import { storeToRefs } from "pinia";
+import MobileNavDrawer from "./MobileNavDrawer.vue";
+import type { NavItem } from "./navItems";
 import { getNavConfig } from "../../utils/navConfig";
 import { getCsrf } from "../../utils/csrf";
+import { useBreakpoint } from "../../composables/useBreakpoint";
 import { usePreferencesStore } from "../../stores/preferences";
 import { useUserStore } from "../../stores/user";
-
-// Custom nav item: extends MenuItem with our badge-dot flag.
-// PrimeVue's MenuItem type has an open index signature, so extra fields are allowed.
-interface NavItem extends MenuItem {
-    showDot?: boolean;
-}
 
 // --- Config ---
 
@@ -255,11 +251,29 @@ async function signout(): Promise<void> {
 function toggleUserMenu(event: Event) {
     userMenuRef.value.toggle(event);
 }
+
+// --- Mobile ---
+
+const { isMobile } = useBreakpoint();
+const mobileMenuOpen = ref(false);
+
+// Any dot at all, shown on the closed hamburger: with the entries hidden behind
+// it, a per-item dot would otherwise be invisible until the drawer is opened.
+const hasAnyDot = computed(
+    () => userStore.hasUnseenNews || userStore.hasAlertsWithUnseenObservations,
+);
+
+// A drawer left open across a navigation would cover the page the user just
+// asked for.
+watch(
+    () => route.path,
+    () => (mobileMenuOpen.value = false),
+);
 </script>
 
 <template>
     <div class="gbif-navbar-wrapper">
-        <Menubar :model="navItems">
+        <Menubar v-if="!isMobile" :model="navItems">
             <template #start>
                 <a
                     :href="config.urls.index"
@@ -395,6 +409,41 @@ function toggleUserMenu(event: Event) {
                 </div>
             </template>
         </Menubar>
+
+        <!-- Mobile: brand + hamburger only; everything else lives in the drawer. -->
+        <div v-else class="gbif-mobile-bar">
+            <a
+                :href="config.urls.index"
+                class="gbif-navbar-brand gbif-mobile-brand"
+                @click="onNavClick($event, config.urls.index)"
+            >
+                <i class="pi pi-megaphone" />
+                <span class="gbif-mobile-brand-text">{{ config.siteName }}</span>
+            </a>
+
+            <button
+                type="button"
+                class="gbif-hamburger"
+                :aria-label="t('message.navOpenMenu')"
+                :aria-expanded="mobileMenuOpen"
+                @click="mobileMenuOpen = true"
+            >
+                <i class="pi pi-bars" />
+                <span v-if="hasAnyDot" class="gbif-nav-dot gbif-hamburger-dot" />
+            </button>
+        </div>
+
+        <MobileNavDrawer
+            v-if="isMobile"
+            v-model:visible="mobileMenuOpen"
+            :config="config"
+            :nav-items="navItems"
+            :user-menu-items="userMenuItems"
+            :is-item-active="isItemActive"
+            @navigate="onNavClick"
+            @menu-item-click="onUserMenuItemClick"
+            @change-language="changeLanguage"
+        />
     </div>
 </template>
 
@@ -420,6 +469,64 @@ function toggleUserMenu(event: Event) {
     display: flex;
     align-items: center;
     gap: 0.4rem;
+}
+
+/* --- Mobile bar (below 768px; see composables/useBreakpoint.ts) --- */
+
+.gbif-mobile-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    background: var(--p-primary-color);
+    color: var(--p-primary-contrast-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.gbif-mobile-brand {
+    /* min-width:0 lets the flex child shrink below its content width, which is
+     * what makes the ellipsis below possible: without it the long site name
+     * ("LIFE RIPARIAS early alert") pushes the hamburger off-screen. */
+    min-width: 0;
+    margin-right: 0;
+}
+
+.gbif-mobile-brand-text {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.gbif-hamburger {
+    all: unset;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 44px: the smallest comfortably tappable target on a phone. */
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--p-primary-contrast-color);
+}
+
+.gbif-hamburger:hover,
+.gbif-hamburger:focus-visible {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.gbif-hamburger .pi-bars {
+    font-size: 1.35rem;
+}
+
+.gbif-hamburger-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
 }
 
 .gbif-nav-link {
