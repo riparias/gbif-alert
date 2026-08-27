@@ -26,6 +26,7 @@ from dashboard.maintenance import (
     disable_maintenance_for_import,
     enable_maintenance_for_import,
 )
+from dashboard.management.commands.helpers import fill_missing_dataset_names
 
 from dashboard.models import (
     Species,
@@ -668,9 +669,14 @@ def run_import(
             hash_table_datasets: dict[str, Dataset] = {}
             for dataset_key, dataset_name in datasets_referenced.items():
                 _log_with_time(stdout, f"Creating/updating dataset {dataset_key}")
+                # Most publishers leave dwc:datasetName empty, so the download
+                # often carries no name at all. Only overwrite the stored name
+                # when the download actually has one - otherwise a dataset named
+                # from the GBIF registry (see fill_missing_dataset_names below)
+                # would be blanked again on every import.
                 dataset, _ = Dataset.objects.update_or_create(
                     gbif_dataset_key=dataset_key,
-                    defaults={"name": dataset_name},
+                    defaults={"name": dataset_name} if dataset_name else {},
                 )
                 hash_table_datasets[dataset_key] = dataset
 
@@ -796,6 +802,14 @@ def run_import(
     # just rewritten, so its visibility map and statistics are stale.
     _log_with_time(stdout, "Vacuuming and analyzing the rewritten tables")
     _vacuum_analyze_rewritten_tables(stdout)
+
+    # Also after the transaction: naming datasets means one blocking HTTP call
+    # per unnamed dataset, and the names are cosmetic. Doing it here keeps GBIF's
+    # API off the import's critical path - it can neither hold the write
+    # transaction open nor roll back an otherwise good import.
+    _log_with_time(stdout, "Naming the datasets the download left unnamed")
+    named_count = fill_missing_dataset_names(stdout=stdout)
+    _log_with_time(stdout, f"Named {named_count} dataset(s) from the GBIF registry")
 
     _log_with_time(stdout, "Sending success report")
     send_successful_import_email()

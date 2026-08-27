@@ -5,6 +5,12 @@
   into a slide-out drawer, and the observation table becomes a list of tappable
   cards. On a small screen an alert opens on that list rather than on the map,
   with the seen/unseen filter and "mark all as viewed" kept within reach.
+- Fix: datasets no longer appear with an empty name in the dataset filter. GBIF
+  downloads rarely carry a dataset name, so it is now taken from the GBIF
+  registry instead, at the end of every import. A dataset that already has a
+  name keeps it, even if GBIF is unreachable.
+- Feature: the new `sync_dataset_names` management command names the datasets of
+  an existing instance right away, without waiting for the next import.
 
 # 2.5.0 (2026-08-26)
 

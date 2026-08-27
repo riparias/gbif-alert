@@ -1,6 +1,7 @@
 """Shared fixtures for import_observations tests (DwCA and logic)."""
 
 import datetime
+from unittest import mock
 
 import pytest
 from django.contrib.gis.geos import Point
@@ -25,6 +26,22 @@ def use_static_files_storage(settings):
     settings.STATICFILES_STORAGE = (
         "django.contrib.staticfiles.storage.StaticFilesStorage"
     )
+
+
+@pytest.fixture(autouse=True)
+def no_gbif_registry_calls():
+    """Keep the dataset-name lookup off the network.
+
+    The import names unnamed datasets from the GBIF registry, so any test
+    importing a row without a dwc:datasetName would otherwise make a real HTTP
+    call. Default to "no title found"; tests that care patch the same name
+    themselves, and their patch wins for the duration of the test.
+    """
+    with mock.patch(
+        "dashboard.management.commands.helpers.get_dataset_name_from_gbif_api",
+        return_value="",
+    ):
+        yield
 
 
 def predicate_builder_belgium(species_list: QuerySet[Species]):
