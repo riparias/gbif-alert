@@ -77,7 +77,7 @@ async function upload() {
         :visible="props.visible"
         :header="t('message.newArea')"
         :modal="true"
-        :style="{ width: '480px' }"
+        :style="{ width: '480px', maxWidth: '95vw' }"
         @update:visible="onHide"
     >
         <div style="display: flex; flex-direction: column; gap: 1.25rem; padding: 0.5rem 0">

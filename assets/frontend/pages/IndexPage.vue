@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import FilterSidebar from "../components/FilterSidebar.vue";
+import ResponsiveSidebar from "../components/layout/ResponsiveSidebar.vue";
 import ActiveFilterChips from "../components/ActiveFilterChips.vue";
 import HistogramBrush from "../components/HistogramBrush.vue";
 import ObservationsView from "../components/ObservationsView.vue";
@@ -36,9 +37,9 @@ onMounted(async () => {
 
 <template>
     <div class="sidebar-layout">
-        <aside class="sidebar-layout__aside">
+        <ResponsiveSidebar :trigger-label="t('message.filters')">
             <FilterSidebar />
-        </aside>
+        </ResponsiveSidebar>
 
         <div class="sidebar-layout__main">
             <div v-if="welcomeHtml" class="welcome-text" v-html="welcomeHtml" />

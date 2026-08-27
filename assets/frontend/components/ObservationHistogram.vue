@@ -148,6 +148,12 @@ const vXaxis: ObjectDirective<SVGGElement> = { mounted: applyXAxis, updated: app
 onMounted(() => {
     loadHistogram();
     if (wrapperEl.value) {
+        // Measure once up front rather than waiting for the observer's first
+        // callback: until it fires the chart draws at the 700px default, which
+        // on a phone is wider than the screen.
+        const initialWidth = wrapperEl.value.getBoundingClientRect().width;
+        if (initialWidth) containerWidth.value = initialWidth;
+
         resizeObserver = new ResizeObserver((entries) => {
             const width = entries[0]?.contentRect.width;
             if (width) containerWidth.value = width;

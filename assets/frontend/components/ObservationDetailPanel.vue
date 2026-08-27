@@ -466,4 +466,24 @@ onMounted(load);
     color: var(--p-text-muted-color);
     font-style: italic;
 }
+
+@media (max-width: 767.98px) {
+    /* A `max-content` label column plus a long dataset name is wider than the
+     * screen, so labels move above their values instead of beside them. */
+    .detail-dl {
+        grid-template-columns: 1fr;
+        gap: 0 0;
+    }
+
+    .detail-dl dt {
+        margin-top: 0.5rem;
+        font-size: 0.8rem;
+        color: var(--p-text-muted-color);
+    }
+
+    .detail-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
 </style>

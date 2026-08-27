@@ -88,6 +88,13 @@ function applyLastYear(): void {
     margin-left: auto;
 }
 
+/* Full width on a phone: 45% of 375px leaves the brush too narrow to grab. */
+@media (max-width: 767.98px) {
+    .histogram-brush {
+        width: 100%;
+    }
+}
+
 .brush-header {
     display: flex;
     align-items: center;

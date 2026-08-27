@@ -5,7 +5,9 @@ import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import Drawer from "primevue/drawer";
 import ObservationDetailPanel from "./ObservationDetailPanel.vue";
+import ObservationCardList from "./ObservationCardList.vue";
 import DataTable, { type DataTablePageEvent, type DataTableSortEvent } from "primevue/datatable";
+import type { PageState } from "primevue/paginator";
 import Column from "primevue/column";
 import Button from "primevue/button";
 import Popover from "primevue/popover";
@@ -23,6 +25,7 @@ import { useResultsStore } from "../stores/results";
 import { filtersToParams } from "../utils/filterParams";
 import { pickVernacular } from "../utils/vernacular";
 import { useDisplayLabels } from "../composables/useDisplayLabels";
+import { useBreakpoint } from "../composables/useBreakpoint";
 import type { components } from "../types/api";
 import SpeciesName from "./SpeciesName.vue";
 import { storeToRefs } from "pinia";
@@ -37,6 +40,7 @@ const props = defineProps<{
 
 const resultsStore = useResultsStore();
 const userStore = useUserStore();
+const { isMobile } = useBreakpoint();
 
 const { activeResultsTab } = storeToRefs(resultsStore);
 
@@ -174,7 +178,7 @@ async function loadObservations() {
     }
 }
 
-function onPage(event: DataTablePageEvent) {
+function onPage(event: DataTablePageEvent | PageState) {
     currentPage.value = event.page + 1;
     loadObservations();
 }
@@ -185,6 +189,19 @@ function onSort(event: DataTableSortEvent) {
     currentPage.value = 1;
     loadObservations();
 }
+
+// The card list has no sortable column headers, so it reports the field and
+// direction directly instead of through a DataTable event.
+function onCardSort(field: string, order: 1 | -1) {
+    sortField.value = field;
+    sortOrder.value = order;
+    currentPage.value = 1;
+    loadObservations();
+}
+
+// PrimeVue's standalone Paginator is driven by a row offset rather than a page
+// number, which is the only place the two list forms disagree.
+const paginatorFirst = computed(() => (currentPage.value - 1) * PAGE_SIZE);
 
 const reloadOnFilterChange = debounce(() => {
     currentPage.value = 1;
@@ -227,8 +244,12 @@ onMounted(async () => {
     // left gated open or falsely marked as already visited. This only runs on
     // mount, so switching tabs via the sidebar's species stat card on an
     // already-mounted page is unaffected.
-    activeResultsTab.value = "map";
-    visitedTabs.value = new Set(["map"]);
+    // Desktop opens on the map; a phone opens on the list. Someone triaging an
+    // alert on a phone wants to read what is new, and a map is a poor answer to
+    // that on a 375px screen.
+    const initialTab = isMobile.value ? "table" : "map";
+    activeResultsTab.value = initialTab;
+    visitedTabs.value = new Set([initialTab]);
 
     // The table/drawer render the basis-of-record name from its id; ensure the
     // option list is available (the alert detail page has no FilterSidebar).
@@ -255,16 +276,39 @@ onMounted(async () => {
     <template v-else>
         <!-- Map / Timeline / Table tabs -->
         <Tabs v-model:value="activeResultsTab">
+            <!-- On mobile the labels drop away and the icons carry the meaning,
+                 with the name moved to aria-label/title: four labelled tabs do
+                 not fit on a 375px screen without wrapping or scrolling. -->
             <TabList>
-                <Tab value="map"><i class="pi pi-map" /> {{ t("message.mapView") }}</Tab>
-                <Tab value="timeline"
-                    ><i class="pi pi-chart-bar" /> {{ t("message.timelineView") }}</Tab
+                <Tab value="map" :aria-label="t('message.mapView')" :title="t('message.mapView')"
+                    ><i class="pi pi-map" />
+                    <span v-if="!isMobile"> {{ t("message.mapView") }}</span></Tab
                 >
-                <Tab value="species"
-                    ><i class="pi pi-sitemap" /> {{ t("message.speciesView") }}
-                    <span class="tab-new-badge">{{ t("message.newBadge") }}</span></Tab
+                <Tab
+                    value="timeline"
+                    :aria-label="t('message.timelineView')"
+                    :title="t('message.timelineView')"
+                    ><i class="pi pi-chart-bar" />
+                    <span v-if="!isMobile"> {{ t("message.timelineView") }}</span></Tab
                 >
-                <Tab value="table"><i class="pi pi-table" /> {{ t("message.tableView") }}</Tab>
+                <Tab
+                    value="species"
+                    :aria-label="t('message.speciesView')"
+                    :title="t('message.speciesView')"
+                    ><i class="pi pi-sitemap" />
+                    <span v-if="!isMobile">
+                        {{ t("message.speciesView") }}
+                        <span class="tab-new-badge">{{ t("message.newBadge") }}</span>
+                    </span>
+                    <span v-else class="tab-new-dot"
+                /></Tab>
+                <Tab
+                    value="table"
+                    :aria-label="t('message.tableView')"
+                    :title="t('message.tableView')"
+                    ><i class="pi pi-table" />
+                    <span v-if="!isMobile"> {{ t("message.tableView") }}</span></Tab
+                >
             </TabList>
             <TabPanels>
                 <TabPanel value="map">
@@ -283,154 +327,179 @@ onMounted(async () => {
                 </TabPanel>
 
                 <TabPanel value="table">
-                    <!-- Column picker toolbar -->
-                    <div class="table-toolbar">
-                        <Button
-                            icon="pi pi-sliders-h"
-                            text
-                            size="small"
-                            @click="(e) => columnPopover.toggle(e)"
-                            aria-label="Configure visible columns"
-                        />
-                        <Popover ref="columnPopover">
-                            <div class="column-picker">
-                                <div
-                                    v-for="col in COLUMN_DEFS.filter(
-                                        (c) => c.key !== 'seen' || hasSeen,
-                                    )"
-                                    :key="col.key"
-                                    class="column-picker-item"
-                                >
-                                    <Checkbox
-                                        :input-id="`col-${col.key}`"
-                                        :model-value="visibleColumns.has(col.key)"
-                                        :binary="true"
-                                        @update:model-value="toggleColumn(col.key)"
-                                    />
-                                    <label :for="`col-${col.key}`">{{
-                                        t(`message.${col.key}`)
-                                    }}</label>
-                                </div>
-                            </div>
-                        </Popover>
-                    </div>
-
-                    <DataTable
-                        :value="observations"
-                        lazy
-                        paginator
-                        :rows="PAGE_SIZE"
+                    <ObservationCardList
+                        v-if="isMobile"
+                        :observations="observations"
                         :total-records="totalRecords"
+                        :rows="PAGE_SIZE"
+                        :first="paginatorFirst"
                         :loading="loading"
                         :sort-field="sortField"
                         :sort-order="sortOrder"
-                        row-hover
-                        resizable-columns
-                        column-resize-mode="fit"
-                        class="observations-table"
+                        :species-sort-field="speciesSortFieldName"
+                        :has-seen="hasSeen"
+                        @open="openObservation"
                         @page="onPage"
-                        @sort="onSort"
-                        @row-click="(e) => openObservation(e.data.stableId)"
-                    >
-                        <Column
-                            v-if="visibleColumns.has('date')"
-                            field="date"
-                            :header="t('message.date')"
-                            sortable
-                        />
-                        <Column
-                            v-if="visibleColumns.has('species')"
-                            :field="speciesSortFieldName"
-                            :header="t('message.species')"
-                            sortable
+                        @sort="onCardSort"
+                    />
+
+                    <template v-else>
+                        <!-- Column picker toolbar -->
+                        <div class="table-toolbar">
+                            <Button
+                                icon="pi pi-sliders-h"
+                                text
+                                size="small"
+                                @click="(e) => columnPopover.toggle(e)"
+                                aria-label="Configure visible columns"
+                            />
+                            <Popover ref="columnPopover">
+                                <div class="column-picker">
+                                    <div
+                                        v-for="col in COLUMN_DEFS.filter(
+                                            (c) => c.key !== 'seen' || hasSeen,
+                                        )"
+                                        :key="col.key"
+                                        class="column-picker-item"
+                                    >
+                                        <Checkbox
+                                            :input-id="`col-${col.key}`"
+                                            :model-value="visibleColumns.has(col.key)"
+                                            :binary="true"
+                                            @update:model-value="toggleColumn(col.key)"
+                                        />
+                                        <label :for="`col-${col.key}`">{{
+                                            t(`message.${col.key}`)
+                                        }}</label>
+                                    </div>
+                                </div>
+                            </Popover>
+                        </div>
+
+                        <DataTable
+                            :value="observations"
+                            lazy
+                            paginator
+                            :rows="PAGE_SIZE"
+                            :total-records="totalRecords"
+                            :loading="loading"
+                            :sort-field="sortField"
+                            :sort-order="sortOrder"
+                            row-hover
+                            resizable-columns
+                            column-resize-mode="fit"
+                            class="observations-table"
+                            @page="onPage"
+                            @sort="onSort"
+                            @row-click="(e) => openObservation(e.data.stableId)"
                         >
-                            <template #body="{ data }">
-                                <SpeciesName
-                                    :scientific-name="data.scientificName"
-                                    :vernacular-name="pickVernacular(data, locale)"
-                                />
-                            </template>
-                        </Column>
-                        <Column
-                            v-if="visibleColumns.has('dataset')"
-                            field="datasetName"
-                            :header="t('message.dataset')"
-                            sortable
-                            header-class="col-dataset"
-                            body-class="col-dataset"
-                        >
-                            <template #body="{ data }">
-                                <span class="cell-text" :title="data.datasetName">{{
-                                    data.datasetName
-                                }}</span>
-                            </template>
-                        </Column>
-                        <Column
-                            v-if="visibleColumns.has('municipality')"
-                            field="municipality"
-                            :header="t('message.municipality')"
-                            sortable
-                        >
-                            <template #body="{ data }">
-                                <span class="cell-text" :title="data.municipality || undefined">{{
-                                    data.municipality || "-"
-                                }}</span>
-                            </template>
-                        </Column>
-                        <Column
-                            v-if="visibleColumns.has('verified')"
-                            field="verified"
-                            :header="t('message.verified')"
-                            sortable
-                        >
-                            <template #body="{ data }">
-                                <span
-                                    class="verified-badge"
-                                    :class="data.verified ? 'badge-success' : 'badge-danger'"
-                                    :title="data.identificationVerificationStatus || undefined"
-                                >
-                                    {{
-                                        data.verified
-                                            ? t("message.verified")
-                                            : t("message.unverified")
-                                    }}
-                                </span>
-                            </template>
-                        </Column>
-                        <Column
-                            v-if="visibleColumns.has('basisOfRecord')"
-                            :header="t('message.basisOfRecord')"
-                        >
-                            <template #body="{ data }">
-                                <span
-                                    class="cell-text"
-                                    :title="basisOfRecordName(data.basisOfRecordId)"
-                                    >{{ basisOfRecordName(data.basisOfRecordId) }}</span
-                                >
-                            </template>
-                        </Column>
-                        <Column v-if="visibleColumns.has('gbifId')" :header="t('message.gbifId')">
-                            <template #body="{ data }">
-                                <a
-                                    :href="`https://www.gbif.org/occurrence/${data.gbifId}`"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="gbif-link"
-                                    @click.stop
-                                    >{{ data.gbifId }}</a
-                                >
-                            </template>
-                        </Column>
-                        <Column
-                            v-if="visibleColumns.has('seen') && hasSeen"
-                            :header="t('message.seen')"
-                        >
-                            <template #body="{ data }">
-                                <span v-if="data.viewedByCurrentUser === true">&#10003;</span>
-                                <span v-else-if="data.viewedByCurrentUser === false">&bull;</span>
-                            </template>
-                        </Column>
-                    </DataTable>
+                            <Column
+                                v-if="visibleColumns.has('date')"
+                                field="date"
+                                :header="t('message.date')"
+                                sortable
+                            />
+                            <Column
+                                v-if="visibleColumns.has('species')"
+                                :field="speciesSortFieldName"
+                                :header="t('message.species')"
+                                sortable
+                            >
+                                <template #body="{ data }">
+                                    <SpeciesName
+                                        :scientific-name="data.scientificName"
+                                        :vernacular-name="pickVernacular(data, locale)"
+                                    />
+                                </template>
+                            </Column>
+                            <Column
+                                v-if="visibleColumns.has('dataset')"
+                                field="datasetName"
+                                :header="t('message.dataset')"
+                                sortable
+                                header-class="col-dataset"
+                                body-class="col-dataset"
+                            >
+                                <template #body="{ data }">
+                                    <span class="cell-text" :title="data.datasetName">{{
+                                        data.datasetName
+                                    }}</span>
+                                </template>
+                            </Column>
+                            <Column
+                                v-if="visibleColumns.has('municipality')"
+                                field="municipality"
+                                :header="t('message.municipality')"
+                                sortable
+                            >
+                                <template #body="{ data }">
+                                    <span
+                                        class="cell-text"
+                                        :title="data.municipality || undefined"
+                                        >{{ data.municipality || "-" }}</span
+                                    >
+                                </template>
+                            </Column>
+                            <Column
+                                v-if="visibleColumns.has('verified')"
+                                field="verified"
+                                :header="t('message.verified')"
+                                sortable
+                            >
+                                <template #body="{ data }">
+                                    <span
+                                        class="verified-badge"
+                                        :class="data.verified ? 'badge-success' : 'badge-danger'"
+                                        :title="data.identificationVerificationStatus || undefined"
+                                    >
+                                        {{
+                                            data.verified
+                                                ? t("message.verified")
+                                                : t("message.unverified")
+                                        }}
+                                    </span>
+                                </template>
+                            </Column>
+                            <Column
+                                v-if="visibleColumns.has('basisOfRecord')"
+                                :header="t('message.basisOfRecord')"
+                            >
+                                <template #body="{ data }">
+                                    <span
+                                        class="cell-text"
+                                        :title="basisOfRecordName(data.basisOfRecordId)"
+                                        >{{ basisOfRecordName(data.basisOfRecordId) }}</span
+                                    >
+                                </template>
+                            </Column>
+                            <Column
+                                v-if="visibleColumns.has('gbifId')"
+                                :header="t('message.gbifId')"
+                            >
+                                <template #body="{ data }">
+                                    <a
+                                        :href="`https://www.gbif.org/occurrence/${data.gbifId}`"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="gbif-link"
+                                        @click.stop
+                                        >{{ data.gbifId }}</a
+                                    >
+                                </template>
+                            </Column>
+                            <Column
+                                v-if="visibleColumns.has('seen') && hasSeen"
+                                :header="t('message.seen')"
+                            >
+                                <template #body="{ data }">
+                                    <span v-if="data.viewedByCurrentUser === true">&#10003;</span>
+                                    <span v-else-if="data.viewedByCurrentUser === false"
+                                        >&bull;</span
+                                    >
+                                </template>
+                            </Column>
+                        </DataTable>
+                    </template>
                 </TabPanel>
             </TabPanels>
         </Tabs>
@@ -439,7 +508,7 @@ onMounted(async () => {
     <Drawer
         :visible="drawerStableId !== null"
         position="right"
-        :style="{ width: 'min(45rem, 95vw)' }"
+        :style="{ width: isMobile ? '100vw' : 'min(45rem, 95vw)' }"
         @update:visible="(v) => !v && closeDrawer()"
     >
         <ObservationDetailPanel
@@ -528,6 +597,18 @@ onMounted(async () => {
     padding: 0.1rem 0.35rem;
     vertical-align: middle;
     margin-left: 0.25rem;
+    animation: badge-pulse 2s ease-in-out infinite;
+}
+
+/* Icon-only tabs have no room for the "NEW" word, so it becomes a dot. */
+.tab-new-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--p-primary-500, #00a58d);
+    vertical-align: super;
+    margin-left: 0.15rem;
     animation: badge-pulse 2s ease-in-out infinite;
 }
 

@@ -1,5 +1,10 @@
 # Unreleased
 
+- Feature: the site is now usable on a phone. The navigation bar collapses into
+  a menu instead of running off the screen, the filter and alert panels move
+  into a slide-out drawer, and the observation table becomes a list of tappable
+  cards. On a small screen an alert opens on that list rather than on the map,
+  with the seen/unseen filter and "mark all as viewed" kept within reach.
 - Fix: datasets no longer appear with an empty name in the dataset filter. GBIF
   downloads rarely carry a dataset name, so it is now taken from the GBIF
   registry instead, at the end of every import. A dataset that already has a

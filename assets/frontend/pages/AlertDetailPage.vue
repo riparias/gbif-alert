@@ -4,12 +4,15 @@ import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 import AlertSidebar from "../components/AlertSidebar.vue";
+import ResponsiveSidebar from "../components/layout/ResponsiveSidebar.vue";
+import ObservationStatusToggle from "../components/ObservationStatusToggle.vue";
 import ObservationsView from "../components/ObservationsView.vue";
 import type { components } from "../types/api";
 import { useFiltersStore } from "../stores/filters";
 import { useResultsStore } from "../stores/results";
 import { getNavConfig } from "../utils/navConfig";
 import { useDisplayLabels } from "../composables/useDisplayLabels";
+import { useMarkAllAsViewed } from "../composables/useMarkAllAsViewed";
 
 type AlertOut = components["schemas"]["AlertOut"];
 
@@ -19,6 +22,7 @@ const router = useRouter();
 const filtersStore = useFiltersStore();
 const resultsStore = useResultsStore();
 const { ensureAlertLabelsLoaded } = useDisplayLabels();
+const { confirmMarkAllAsViewed } = useMarkAllAsViewed();
 
 const alertId = Number(route.params.alertId);
 
@@ -82,9 +86,27 @@ onUnmounted(() => {
     </div>
 
     <div v-else-if="alert" class="sidebar-layout">
-        <aside class="sidebar-layout__aside">
+        <ResponsiveSidebar :trigger-label="t('message.alertDetails')">
             <AlertSidebar :alert="alert" />
-        </aside>
+
+            <!-- Triage is the reason to open an alert on a phone, so its two
+                 controls stay on the bar rather than inside the drawer. -->
+            <template #actions>
+                <ObservationStatusToggle v-if="navConfig.user.isAuthenticated" compact />
+                <Button
+                    v-if="
+                        navConfig.user.isAuthenticated &&
+                        alert.notViewedCount > 0 &&
+                        filtersStore.status !== 'viewed'
+                    "
+                    :label="t('message.markAllAsViewed')"
+                    icon="pi pi-check"
+                    size="small"
+                    outlined
+                    @click="confirmMarkAllAsViewed"
+                />
+            </template>
+        </ResponsiveSidebar>
 
         <div class="sidebar-layout__main">
             <ObservationsView :unseen-fallback="true" />

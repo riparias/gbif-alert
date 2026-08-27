@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
@@ -13,48 +13,30 @@ import ObservationStatusToggle from "./ObservationStatusToggle.vue";
 import { useFiltersStore } from "../stores/filters";
 import { useResultsStore } from "../stores/results";
 import { useFilterOptionsStore } from "../stores/filterOptions";
-import type { components } from "../types/api";
+import { useDisplayLabels } from "../composables/useDisplayLabels";
 import { getNavConfig } from "../utils/navConfig";
-
-type SpeciesOut = components["schemas"]["SpeciesOut"];
-type DatasetOut = components["schemas"]["DatasetOut"];
-type AreaOut = components["schemas"]["AreaOut"];
-type BasisOfRecordOut = components["schemas"]["BasisOfRecordOut"];
 
 const { t } = useI18n();
 const filtersStore = useFiltersStore();
 const resultsStore = useResultsStore();
 const filterOptionsStore = useFilterOptionsStore();
+const { ensureFilterOptionsLoaded } = useDisplayLabels();
 
 // Auth state from the nav config Django injects on every page
 const isAuthenticated: boolean = getNavConfig().user.isAuthenticated;
 
-// --- Available filter options (loaded from API on mount) ---
+// --- Available filter options ---
+//
+// These live in the shared store rather than in local refs: on mobile this
+// panel is rendered inside a drawer, which unmounts its content on close, so
+// component-local options would be re-fetched on every reopen. The store also
+// lets siblings (e.g. ActiveFilterChips) resolve ids to names for free.
+const speciesOptions = computed(() => filterOptionsStore.species);
+const datasetOptions = computed(() => filterOptionsStore.datasets);
+const areaOptions = computed(() => filterOptionsStore.areas);
+const basisOfRecordOptions = computed(() => filterOptionsStore.basisOfRecord);
 
-const speciesOptions = ref<SpeciesOut[]>([]);
-const datasetOptions = ref<DatasetOut[]>([]);
-const areaOptions = ref<AreaOut[]>([]);
-const basisOfRecordOptions = ref<BasisOfRecordOut[]>([]);
-
-onMounted(async () => {
-    const [species, datasets, areas, basisOfRecord] = await Promise.all([
-        fetch("/api/v2/species/").then((r) => r.json()),
-        fetch("/api/v2/datasets/").then((r) => r.json()),
-        fetch("/api/v2/areas/").then((r) => r.json()),
-        fetch("/api/v2/basis-of-record/").then((r) => r.json()),
-    ]);
-    speciesOptions.value = species;
-    datasetOptions.value = datasets;
-    areaOptions.value = areas;
-    basisOfRecordOptions.value = basisOfRecord;
-
-    // Share loaded options so sibling components (e.g. ActiveFilterChips) can
-    // resolve IDs to names without making duplicate API requests.
-    filterOptionsStore.species = species;
-    filterOptionsStore.datasets = datasets;
-    filterOptionsStore.areas = areas;
-    filterOptionsStore.basisOfRecord = basisOfRecord;
-});
+onMounted(ensureFilterOptionsLoaded);
 
 // --- v-model bindings to the Pinia store (computed get/set) ---
 

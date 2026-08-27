@@ -4,6 +4,10 @@ import { useI18n } from "vue-i18n";
 import SelectButton from "primevue/selectbutton";
 import { useFiltersStore } from "../stores/filters";
 
+// `compact` shrinks the control for the mobile bar, where it shares one row
+// with the drawer trigger and the result count.
+withDefaults(defineProps<{ compact?: boolean }>(), { compact: false });
+
 const { t } = useI18n();
 const filtersStore = useFiltersStore();
 
@@ -30,6 +34,7 @@ const selectedStatus = computed({
             option-value="value"
             option-label="label"
             :allow-empty="false"
+            :size="compact ? 'small' : undefined"
         />
     </div>
 </template>

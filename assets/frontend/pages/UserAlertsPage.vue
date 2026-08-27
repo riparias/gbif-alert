@@ -86,6 +86,8 @@ onMounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
 }
 
 .page-header h1 {
@@ -94,7 +96,9 @@ onMounted(() => {
 
 .alerts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    /* min(420px, 100%) rather than a bare 420px: on a narrower viewport the
+     * track would otherwise keep its 420px floor and overflow the page. */
+    grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
     gap: 1.25rem;
     align-items: start;
 }
