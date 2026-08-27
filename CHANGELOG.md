@@ -1,4 +1,4 @@
-# Unreleased
+# 2.5.1 (2026-08-27)
 
 - Feature: the site is now usable on a phone. The navigation bar collapses into
   a menu instead of running off the screen, the filter and alert panels move
