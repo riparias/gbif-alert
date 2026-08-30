@@ -33,9 +33,14 @@
 {# Data for the Vue navbar. Read at mount time via JSON.parse(document.getElementById(...).textContent). #}
 <script type="application/json" id="gbif-alert-nav-config">{% nav_config_json %}</script>
 {% get_page_fragment 'over_navbar' %}
-{# Vue app mount point: renders NavBar (Phase 1) and full page content via RouterView (Phase 2+). #}
-<div id="frontend"></div>
-<div style="margin-bottom: 100px;">
+{% comment %}
+Vue app mount point: renders NavBar (Phase 1) and full page content via RouterView (Phase 2+).
+Templates that render their own page content server-side (the password reset flow) set the
+server_rendered block to "true": their URL is not an SPA route, so the router would otherwise
+match its catch-all and draw the 404 page above the server-rendered content.
+{% endcomment %}
+<div id="frontend" data-server-rendered="{% block server_rendered %}false{% endblock %}"></div>
+<div id="server-rendered-content" style="margin-bottom: 100px;">
     {% block after_messages %}{% endblock %}
 </div>
 
