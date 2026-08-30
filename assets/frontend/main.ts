@@ -59,6 +59,25 @@ const router = createRouter({
     routes,
 });
 
+// Django templates that render their own page content (the password reset flow)
+// share base.html with the SPA shell, and mark the mount point accordingly.
+// Their URLs are not SPA routes, so without this the router's catch-all would
+// draw NotFoundPage above the server-rendered content. Registering the current
+// path as a contentless route keeps the navbar and footer chrome, and leaves
+// navigation away from the page working normally.
+if (document.getElementById("frontend")?.dataset.serverRendered === "true") {
+    const serverRenderedPath = window.location.pathname;
+    router.addRoute({ path: serverRenderedPath, component: { render: () => null } });
+    // That content sits outside the Vue app, so the router cannot replace it.
+    // Drop it once the user navigates client-side to a real SPA route,
+    // otherwise it lingers below the page they asked for.
+    router.afterEach((to) => {
+        if (to.path !== serverRenderedPath) {
+            document.getElementById("server-rendered-content")?.remove();
+        }
+    });
+}
+
 const i18n = createI18n({
     locale: (window as any).LANGUAGE_CODE,
     fallbackLocale: "en",

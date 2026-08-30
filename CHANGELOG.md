@@ -1,3 +1,10 @@
+# Unreleased
+
+- Fix: the password reset screens no longer show a "404 - Page not found"
+  message above the form. The four pages of the flow (request, instructions
+  sent, set a new password, and confirmation) are rendered by Django rather
+  than by the single-page app, and the app mistook them for unknown addresses.
+
 # 2.5.1 (2026-08-27)
 
 - Feature: the site is now usable on a phone. The navigation bar collapses into

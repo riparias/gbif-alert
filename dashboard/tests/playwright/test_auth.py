@@ -1,9 +1,12 @@
-"""Playwright E2E tests for Phase 5 auth pages (sign-in, sign-up, password-change)."""
+"""Playwright E2E tests for the auth pages (sign-in, sign-up, password change/reset)."""
 
 import re
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from playwright.sync_api import Page, expect
 
 from dashboard.tests.playwright.helpers import login
@@ -108,3 +111,52 @@ def test_password_change_wrong_old_password(page: Page, live_server):
     page.get_by_role("button", name="Change password").click()
 
     expect(page.get_by_text("incorrect", exact=False)).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_password_reset_pages_show_no_404(page: Page, live_server):
+    """The password-reset flow renders its content server-side, not via the SPA.
+
+    Those templates share base.html with the SPA shell, so the Vue app mounts on
+    them too. Their URLs are not SPA routes, so the router's catch-all used to
+    paint NotFoundPage right above the Django form.
+    """
+    User = get_user_model()
+    user = User.objects.create_user(
+        username="auth7", password="OldPass123!", email="auth7@t.com"
+    )
+    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+
+    flow = [
+        ("/accounts/password-reset/", "Forgot your password?"),
+        ("/accounts/password-reset-done", "Check your inbox."),
+        (f"/accounts/reset/{uidb64}/{token}", "Set a new password!"),
+        ("/accounts/reset/done", "Password reset complete"),
+    ]
+
+    for path, heading in flow:
+        page.goto(live_server.url + path)
+        # The Vue navbar proves the app mounted, so a missing 404 below is
+        # not just the bundle failing to load.
+        expect(page.locator(".gbif-navbar-wrapper")).to_be_visible()
+        expect(page.get_by_role("heading", name=heading)).to_be_visible()
+        expect(page.locator(".not-found-page")).to_have_count(0)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_password_reset_content_is_dropped_when_navigating_away(
+    page: Page, live_server
+):
+    """Leaving a server-rendered page client-side must not leave its content behind.
+
+    The Django block lives outside the Vue app, so the router cannot replace it:
+    it has to be removed explicitly, or it lingers below the SPA page.
+    """
+    page.goto(live_server.url + "/accounts/password-reset/")
+    expect(page.get_by_role("heading", name="Forgot your password?")).to_be_visible()
+
+    page.get_by_role("link", name="Explore").click()
+
+    expect(page).to_have_url(re.compile(rf"^{re.escape(live_server.url)}/(\?.*)?$"))
+    expect(page.get_by_text("Send me instructions!")).to_have_count(0)
