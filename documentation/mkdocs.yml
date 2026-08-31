@@ -1,0 +1,55 @@
+site_name: GBIF Alert documentation
+site_description: User and operator documentation for the GBIF Alert engine.
+site_url: https://docs.gbif-alert.org/
+repo_url: https://github.com/riparias/gbif-alert
+edit_uri: edit/devel/documentation/docs/
+copyright: GBIF Alert is MIT licensed.
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.instant
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+  - glightbox
+
+nav:
+  - Home: index.md
+  - Concepts: concepts.md
+  - User guide:
+      - Overview: user-guide/index.md
+  - Operator guide:
+      - Overview: operator-guide/index.md

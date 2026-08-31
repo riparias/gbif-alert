@@ -152,3 +152,6 @@ openapi-schema.json
 
 docs/superpowers
 .superpowers
+
+# MkDocs build output (documentation/mkdocs.yml)
+documentation/site/

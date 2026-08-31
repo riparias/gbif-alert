@@ -49,6 +49,10 @@ dev = [
     "pytest-env>=1.1.0,<2",
     "pytest-playwright>=0.7.2,<0.8",
 ]
+docs = [
+    "mkdocs-material>=9.5,<10",
+    "mkdocs-glightbox>=0.4,<0.5",
+]
 
 [tool.uv]
 package = false
