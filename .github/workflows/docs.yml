@@ -1,0 +1,64 @@
+name: Documentation
+
+on:
+  push:
+    branches: [devel]
+    paths:
+      - "documentation/**"
+      - ".github/workflows/docs.yml"
+      - "pyproject.toml"
+      - "uv.lock"
+  pull_request:
+    paths:
+      - "documentation/**"
+      - ".github/workflows/docs.yml"
+      - "pyproject.toml"
+      - "uv.lock"
+
+permissions:
+  contents: read
+
+# A second push to devel supersedes an in-flight deploy; PR builds are
+# cancellable too. Pages itself allows only one concurrent deployment.
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    # Same reason as django_tests.yml: setup-uv has no Node 24 release yet.
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install documentation dependencies
+        run: uv sync --frozen --only-group docs
+      - name: Build site
+        # --strict turns MkDocs warnings (broken links, missing nav targets)
+        # into a failed build.
+        run: uv run --no-sync mkdocs build --strict -f documentation/mkdocs.yml
+      - name: Upload Pages artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: documentation/site
+
+  deploy:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
