@@ -5,6 +5,11 @@ repo_url: https://github.com/riparias/gbif-alert
 edit_uri: edit/devel/documentation/docs/
 copyright: GBIF Alert is MIT licensed.
 
+# Warnings (broken links, missing nav targets) are errors, so a local build
+# fails the same way CI does. This also applies to `mkdocs serve`, which
+# refuses to start on a warning: use `mkdocs serve --no-strict` when drafting.
+strict: true
+
 theme:
   name: material
   language: en

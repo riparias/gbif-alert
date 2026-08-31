@@ -18,18 +18,22 @@ on:
 permissions:
   contents: read
 
-# A second push to devel supersedes an in-flight deploy; PR builds are
-# cancellable too. Pages itself allows only one concurrent deployment.
+# Same reason as django_tests.yml: setup-uv has no Node 24 release yet.
+# actions/deploy-pages@v4 in the deploy job is also a Node 20 action, so this
+# is set at workflow level rather than just on the build job.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+# PR builds are safely cancellable. Pushes to devel are not: cancelling an
+# in-flight deploy-pages run can leave the Pages deployment wedged "in
+# progress" and fail the next run.
 concurrency:
   group: docs-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
     runs-on: ubuntu-24.04
-    # Same reason as django_tests.yml: setup-uv has no Node 24 release yet.
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v5
       - name: Set up uv

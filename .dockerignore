@@ -37,6 +37,7 @@ htmlcov/
 # Docs and design (irrelevant to runtime)
 docs/superpowers/
 benchmarks/
+documentation/
 
 # Worktrees managed by Claude Code superpowers
 .worktrees/
