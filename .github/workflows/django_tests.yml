@@ -1,8 +1,15 @@
 name: Django tests + Mypy
 
 on:
+  # Documentation-only changes cannot affect the Django suite, and this job
+  # spins up Postgres, Redis and Playwright. pyproject.toml and uv.lock are
+  # deliberately NOT ignored: the docs dependency group lives there.
   push:
+    paths-ignore:
+      - "documentation/**"
   pull_request:
+    paths-ignore:
+      - "documentation/**"
 
 jobs:
   build:

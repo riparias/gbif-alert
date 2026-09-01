@@ -1,9 +1,16 @@
 name: Build image
 
 on:
+  # Documentation-only changes cannot affect the image: documentation/ is
+  # dockerignored, so it is not even in the build context. Skipping them here
+  # also avoids redeploying the devel instance for a docs typo.
   push:
     branches: [main, devel]
+    paths-ignore:
+      - "documentation/**"
   pull_request:
+    paths-ignore:
+      - "documentation/**"
 
 permissions:
   contents: read
