@@ -1,4 +1,4 @@
-# Unreleased
+# 2.5.2 (2026-09-01)
 
 - Fix: an alert selecting several hundred species no longer breaks the page it
   is viewed on. The filters were sent as one web address parameter per species,
