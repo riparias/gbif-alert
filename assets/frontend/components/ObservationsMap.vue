@@ -15,6 +15,7 @@ import { interpolateReds } from "d3-scale-chromatic";
 import { hsl } from "d3-color";
 import Slider from "primevue/slider";
 import { useRouter, useRoute } from "vue-router";
+import { encodeIdList } from "../utils/idLists";
 import { useFiltersStore } from "../stores/filters";
 import { useResultsStore } from "../stores/results";
 import BaseMap from "./BaseMap.vue";
@@ -77,14 +78,22 @@ const LAYER_SWITCH_ZOOM = 13;
 // --- Helpers ---
 
 // Build filter query string in the bracket format expected by the legacy internal-api endpoints:
-// ?speciesIds[]=1&speciesIds[]=2 (instead of the new API v2 format ?speciesIds=1&speciesIds=2)
+// ?speciesIds[]=... (instead of the new API v2 format ?speciesIds=...). Ids use
+// the same compact encoding as the v2 params (see utils/idLists) - it matters
+// most here, since the layers refetch on every pan and zoom.
 function buildLegacyParams(): string {
     const p = new URLSearchParams();
-    for (const id of store.speciesIds) p.append("speciesIds[]", String(id));
-    for (const id of store.datasetIds) p.append("datasetsIds[]", String(id));
-    for (const id of store.areaIds) p.append("areaIds[]", String(id));
-    for (const id of store.basisOfRecordIds) p.append("basisOfRecordIds[]", String(id));
-    for (const id of store.initialDataImportIds) p.append("initialDataImportIds[]", String(id));
+    const idLists: Record<string, number[]> = {
+        "speciesIds[]": store.speciesIds,
+        "datasetsIds[]": store.datasetIds,
+        "areaIds[]": store.areaIds,
+        "basisOfRecordIds[]": store.basisOfRecordIds,
+        "initialDataImportIds[]": store.initialDataImportIds,
+    };
+    for (const [name, ids] of Object.entries(idLists)) {
+        const encoded = encodeIdList(ids);
+        if (encoded) p.set(name, encoded);
+    }
     if (store.startDate) p.set("startDate", store.startDate);
     if (store.endDate) p.set("endDate", store.endDate);
     if (store.status) p.set("status", store.status);

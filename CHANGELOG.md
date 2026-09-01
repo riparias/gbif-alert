@@ -1,5 +1,9 @@
 # Unreleased
 
+- Fix: an alert selecting several hundred species no longer breaks the page it
+  is viewed on. The filters were sent as one web address parameter per species,
+  which overflowed the web server's limit on address length; they are now sent
+  in a compact form. Existing links and bookmarks keep working.
 - Fix: the password reset screens no longer show a "404 - Page not found"
   message above the form. The four pages of the flow (request, instructions
   sent, set a new password, and confirmation) are rendered by Django rather

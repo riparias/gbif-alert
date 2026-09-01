@@ -1,6 +1,7 @@
 import { onUnmounted, watch } from "vue";
 import { useRoute, useRouter, type LocationQuery } from "vue-router";
 import { debounce } from "lodash";
+import { encodeIdList, decodeIdList } from "../utils/idLists";
 import { useFiltersStore } from "../stores/filters";
 import { getNavConfig } from "../utils/navConfig";
 
@@ -20,11 +21,14 @@ function sameIds(a: number[], b: number[]): boolean {
 
 // --- Query parsing helpers ---
 
+// Accepts both the compact spelling we now write (?speciesIds=1-350,402) and
+// the one-param-per-id spelling of older bookmarks. Unparseable values (such
+// as the AREA_IDS_NONE sentinel) drop out, as they did before.
 function getIntArray(query: LocationQuery, key: string): number[] {
     const val = query[key];
     if (!val) return [];
     const arr = Array.isArray(val) ? val : [val];
-    return arr.map(Number).filter((n) => !isNaN(n));
+    return arr.flatMap((v) => (typeof v === "string" ? decodeIdList(v) : []));
 }
 
 function getString(query: LocationQuery, key: string): string | null {
@@ -49,16 +53,19 @@ function buildQuery(
     defaultAreaIds: number[],
 ): QueryRecord {
     const q: QueryRecord = {};
-    if (store.speciesIds.length) q.speciesIds = store.speciesIds.map(String);
-    if (store.datasetIds.length) q.datasetIds = store.datasetIds.map(String);
-    if (store.basisOfRecordIds.length) q.basisOfRecordIds = store.basisOfRecordIds.map(String);
+    // Ids are written compactly (see utils/idLists): reloading the page sends
+    // this query string to the server too, so a large selection would
+    // otherwise overflow its request-line limit here as well.
+    if (store.speciesIds.length) q.speciesIds = encodeIdList(store.speciesIds);
+    if (store.datasetIds.length) q.datasetIds = encodeIdList(store.datasetIds);
+    if (store.basisOfRecordIds.length) q.basisOfRecordIds = encodeIdList(store.basisOfRecordIds);
     // The instance default is the implicit value, so it stays out of the URL;
     // an empty selection has to be spelled out when a default exists.
     if (!sameIds(store.areaIds, defaultAreaIds)) {
-        q.areaIds = store.areaIds.length ? store.areaIds.map(String) : [AREA_IDS_NONE];
+        q.areaIds = store.areaIds.length ? encodeIdList(store.areaIds) : AREA_IDS_NONE;
     }
     if (store.initialDataImportIds.length)
-        q.initialDataImportIds = store.initialDataImportIds.map(String);
+        q.initialDataImportIds = encodeIdList(store.initialDataImportIds);
     if (store.startDate) q.startDate = store.startDate;
     if (store.endDate) q.endDate = store.endDate;
     if (isAuthenticated) {

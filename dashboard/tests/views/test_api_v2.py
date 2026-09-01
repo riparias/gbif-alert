@@ -911,6 +911,50 @@ def test_counts_are_zero_when_no_results(client, observations_data):
     assert data["datasetsCount"] == 0
 
 
+# --- Compact id-list spelling (dashboard.id_lists) ---
+
+
+def test_compact_range_matches_repeated_params(client, observations_data):
+    """`?speciesIds=<a>-<b>` selects the same set as one param per id."""
+    species = observations_data["species"]
+    other = observations_data["other_species"]
+    low, high = sorted([species.pk, other.pk])
+
+    repeated = client.get(
+        reverse("api-v2:observations_list"), {"speciesIds": [species.pk, other.pk]}
+    ).json()
+    compact = client.get(
+        reverse("api-v2:observations_list"), {"speciesIds": f"{low}-{high}"}
+    ).json()
+
+    assert compact["count"] == repeated["count"]
+    assert compact["speciesCount"] == repeated["speciesCount"] == 2
+
+
+def test_compact_comma_list_filters(client, observations_data):
+    """A comma-separated list is equivalent to repeating the parameter."""
+    species = observations_data["species"]
+    response = client.get(
+        reverse("api-v2:observations_list"), {"speciesIds": f"{species.pk},999999"}
+    )
+    assert response.json()["speciesCount"] == 1
+
+
+def test_malformed_id_list_is_rejected(client, observations_data):
+    response = client.get(
+        reverse("api-v2:observations_list"), {"speciesIds": "not-an-id"}
+    )
+    assert response.status_code == 422
+
+
+def test_oversized_range_is_rejected(client, observations_data):
+    """A range wide enough to exhaust memory is refused, not expanded."""
+    response = client.get(
+        reverse("api-v2:observations_list"), {"speciesIds": "1-999999"}
+    )
+    assert response.status_code == 422
+
+
 def test_observations_list_camel_case_keys(client, observations_data):
     """All expected camelCase keys must be present in each item."""
     obs = observations_data["obs"]

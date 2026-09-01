@@ -153,6 +153,25 @@ def test_min_max_status_area_combinations(maps_data, client):
     assert response.status_code == 200
 
 
+def test_min_max_accepts_the_compact_id_spelling(maps_data, client):
+    """The legacy bracket params take `speciesIds[]=1-3,10` too.
+
+    Same reason as the v2 API: the map layers refresh on every pan, and one
+    param per id blows past the request-line limit for a large alert.
+    """
+    species_pks = sorted(s.pk for s in Species.objects.all())
+    compact = client.get(
+        reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+        data={"zoom": 8, "speciesIds[]": f"{species_pks[0]}-{species_pks[-1]}"},
+    )
+    repeated = client.get(
+        reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+        data={"zoom": 8, "speciesIds[]": species_pks},
+    )
+    assert compact.status_code == 200
+    assert compact.json() == repeated.json()
+
+
 def test_min_max_per_hexagon(maps_data, client):
     # At zoom level 8, with the initial data: we should have two polygons, both at 1. So min=1 and max=1
     response = client.get(
