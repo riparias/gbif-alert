@@ -347,18 +347,45 @@ The index page (`/`) reads filters from URL query parameters. All parameters are
 
 | Parameter               | Type                              | Example                      |
 |-------------------------|-----------------------------------|------------------------------|
-| `speciesIds`            | integer (repeatable)              | `speciesIds=2&speciesIds=14` |
-| `datasetsIds`           | integer (repeatable)              | `datasetsIds=5`              |
-| `basisOfRecordIds`      | integer (repeatable)              | `basisOfRecordIds=1`         |
-| `areaIds`               | integer (repeatable)              | `areaIds=1`                  |
-| `initialDataImportIds`  | integer (repeatable)              | `initialDataImportIds=3`     |
+| `speciesIds`            | id list                           | `speciesIds=2,14,15`         |
+| `datasetIds`            | id list                           | `datasetIds=5`               |
+| `basisOfRecordIds`      | id list                           | `basisOfRecordIds=1`         |
+| `areaIds`               | id list, or `none`                | `areaIds=1`                  |
+| `initialDataImportIds`  | id list                           | `initialDataImportIds=3`     |
 | `startDate` / `endDate` | date string                       | `startDate=2024-01-01`       |
-| `status`                | `seen` / `unseen` / `all`         | `status=all`                 |
+| `status`                | `viewed` / `notViewed` / `all`    | `status=all`                 |
 | `verifiedFilter`        | `verified` / `unverified` / `all` | `verifiedFilter=verified`    |
 | `areaFilterMode`        | `inside` / `approaching` / `both` | `areaFilterMode=approaching` |
 | `approachingDistanceKm` | float                             | `approachingDistanceKm=5.0`  |
 
+### Id lists
+
+An id list accepts two interchangeable spellings, which may be mixed:
+
+- **repeated:** `speciesIds=2&speciesIds=14&speciesIds=15`
+- **compact:** `speciesIds=2,14,15`, where consecutive ids may be collapsed into
+  an inclusive range - `speciesIds=2-15,42`
+
+Prefer the compact form for a long selection: one parameter per id runs into the
+web server's request-line limit at a few hundred ids. The app writes the compact
+form itself, so a URL copied from the address bar is already compact. See
+`dashboard/id_lists.py`.
+
+### Parameters with a non-obvious default
+
+- **`areaIds`** - an instance may pre-select an area
+  (`Area.is_default_home_filter`). Omitting `areaIds` applies that default, so a
+  link that wants *no* area filter has to say `areaIds=none` explicitly.
+- **`status`** - the default depends on the visitor. Signed in, the page shows
+  unseen observations unless the link says `status=all` or `status=viewed`.
+  Signed out, there is no status filter unless the link asks for one.
+
 Examples:
 
-- `https://alert.riparias.be/?speciesIds=2&speciesIds=14&speciesIds=15`
+- `https://alert.riparias.be/?speciesIds=2,14,15`
 - `https://alert.riparias.be/?speciesIds=2&areaIds=1`
+- `https://alert.riparias.be/?speciesIds=2-15,42&status=all&areaIds=none`
+
+> These are the index page's parameters, which are those of API v2. The internal
+> endpoints behind the map layers take the same filters under bracketed names,
+> and spell one of them differently (`datasetsIds[]`, not `datasetIds`).
