@@ -1,3 +1,4 @@
+import { encodeIdList } from "./idLists";
 import type { useFiltersStore } from "../stores/filters";
 import type { components } from "../types/api";
 
@@ -11,6 +12,9 @@ type FiltersQuery = components["schemas"]["FiltersQuery"];
  * Callers add their own extras (page, pageSize, orderBy, etc.) onto the
  * returned object.
  *
+ * Id lists use the compact encoding (see utils/idLists) so that a
+ * several-hundred-species alert stays within the server's request-line limit.
+ *
  * Note: the legacy tile-server endpoints expect `speciesIds[]` bracket
  * notation - they have their own serializer in ObservationsMap.vue.
  */
@@ -19,12 +23,17 @@ export function filtersToParams(
     { includeDateRange = true }: { includeDateRange?: boolean } = {},
 ): URLSearchParams {
     const params = new URLSearchParams();
-    for (const id of filtersStore.speciesIds) params.append("speciesIds", String(id));
-    for (const id of filtersStore.datasetIds) params.append("datasetIds", String(id));
-    for (const id of filtersStore.areaIds) params.append("areaIds", String(id));
-    for (const id of filtersStore.basisOfRecordIds) params.append("basisOfRecordIds", String(id));
-    for (const id of filtersStore.initialDataImportIds)
-        params.append("initialDataImportIds", String(id));
+    const idLists: Record<string, number[]> = {
+        speciesIds: filtersStore.speciesIds,
+        datasetIds: filtersStore.datasetIds,
+        areaIds: filtersStore.areaIds,
+        basisOfRecordIds: filtersStore.basisOfRecordIds,
+        initialDataImportIds: filtersStore.initialDataImportIds,
+    };
+    for (const [name, ids] of Object.entries(idLists)) {
+        const encoded = encodeIdList(ids);
+        if (encoded) params.set(name, encoded);
+    }
     if (includeDateRange) {
         if (filtersStore.startDate) params.set("startDate", filtersStore.startDate);
         if (filtersStore.endDate) params.set("endDate", filtersStore.endDate);

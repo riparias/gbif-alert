@@ -195,3 +195,17 @@ hold a write transaction open or roll a good import back.
 **Rejected:** Doing the lookup inside the transaction, where the old hack lived -
 zero blank-name window, but hundreds of blocking HTTP calls on the import's
 critical path.
+
+## 2026-09-01 - Filter id lists get a compact query-string encoding
+
+**What:** `speciesIds` and the other id filters now travel as one comma/range
+value (`speciesIds=1-350,402`) on the API, the tile endpoints and the index-page
+address bar; the repeated-parameter spelling is still accepted everywhere.
+**Why:** An alert selecting a few hundred species produced a ~7 KB request line
+on every observation and map-tile request, past gunicorn's 4094-byte default, so
+the alert page was simply broken on such an instance.
+**Rejected:** Sending an `alertId` the server expands - a constant-size URL and
+a tighter fit for the reported case, but no help to a visitor who hand-picks the
+same species on the index page. Also rejected: raising the gunicorn limit alone,
+which moves the ceiling instead of shrinking the request (the limit was raised
+too, but as headroom).

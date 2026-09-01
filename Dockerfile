@@ -101,9 +101,15 @@ EXPOSE 8000
 # always exits 0) so a transient cache hiccup never blocks startup. Only the web
 # service uses this default CMD; rqworker/migrate override `command:`. `exec`
 # keeps gunicorn as the signalled process under tini.
+#
+# --limit-request-line raises gunicorn's 4094-byte default to its maximum. The
+# filter params are compactly encoded (see dashboard/id_lists.py) so this is
+# headroom rather than the fix: an instance whose alerts select many hundreds
+# of species should still fit well under 4094.
 CMD python manage.py clear_stale_import_maintenance; \
     exec gunicorn djangoproject.wsgi \
         --bind 0.0.0.0:8000 \
         --workers ${GUNICORN_WORKERS:-3} \
+        --limit-request-line 8190 \
         --access-logfile - \
         --error-logfile -

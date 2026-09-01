@@ -9,6 +9,7 @@ from urllib.parse import unquote
 from django.db import connection
 from django.db.models import QuerySet
 from django.http import HttpRequest, JsonResponse, QueryDict
+from dashboard.id_lists import parse_id_list
 from dashboard.models import Observation, User
 from dashboard.utils import readable_string
 from django.conf import settings
@@ -53,8 +54,12 @@ def extract_str_request(request: HttpRequest, param_name: str) -> str | None:
 
 
 def extract_int_array_request(request: HttpRequest, param_name: str) -> list[int]:
-    """Like extract_array_request, but elements are converted to integers"""
-    return list(map(lambda e: int(e), extract_array_request(request, param_name)))
+    """Like extract_array_request, but elements are converted to integers.
+
+    Accepts both the one-param-per-id spelling and the compact one
+    (`?speciesIds[]=1-3,10`) - see dashboard.id_lists.
+    """
+    return parse_id_list(extract_array_request(request, param_name))
 
 
 def extract_array_request(request: HttpRequest, param_name: str) -> list[str]:

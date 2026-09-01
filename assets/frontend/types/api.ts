@@ -1051,21 +1051,36 @@ export interface components {
         };
         /** FiltersQuery */
         FiltersQuery: {
-            /** Speciesids */
+            /**
+             * Speciesids
+             * @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed.
+             */
             speciesIds?: number[];
-            /** Datasetids */
+            /**
+             * Datasetids
+             * @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed.
+             */
             datasetIds?: number[];
-            /** Basisofrecordids */
+            /**
+             * Basisofrecordids
+             * @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed.
+             */
             basisOfRecordIds?: number[];
             /** Startdate */
             startDate?: string | null;
             /** Enddate */
             endDate?: string | null;
-            /** Areaids */
+            /**
+             * Areaids
+             * @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed.
+             */
             areaIds?: number[];
             /** Status */
             status?: ("all" | "viewed" | "notViewed") | null;
-            /** Initialdataimportids */
+            /**
+             * Initialdataimportids
+             * @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed.
+             */
             initialDataImportIds?: number[];
             /**
              * Verifiedfilter
@@ -2150,13 +2165,18 @@ export interface operations {
     dashboard_api_v2_observations_list: {
         parameters: {
             query?: {
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 speciesIds?: number[];
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 datasetIds?: number[];
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 basisOfRecordIds?: number[];
                 startDate?: string | null;
                 endDate?: string | null;
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 areaIds?: number[];
                 status?: ("all" | "viewed" | "notViewed") | null;
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 initialDataImportIds?: number[];
                 verifiedFilter?: "all" | "verified" | "unverified";
                 areaFilterMode?: "inside" | "approaching" | "both";
@@ -2195,13 +2215,18 @@ export interface operations {
     dashboard_api_v2_observations_histogram: {
         parameters: {
             query?: {
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 speciesIds?: number[];
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 datasetIds?: number[];
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 basisOfRecordIds?: number[];
                 startDate?: string | null;
                 endDate?: string | null;
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 areaIds?: number[];
                 status?: ("all" | "viewed" | "notViewed") | null;
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 initialDataImportIds?: number[];
                 verifiedFilter?: "all" | "verified" | "unverified";
                 areaFilterMode?: "inside" | "approaching" | "both";
@@ -2227,13 +2252,18 @@ export interface operations {
     dashboard_api_v2_observations_counter: {
         parameters: {
             query?: {
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 speciesIds?: number[];
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 datasetIds?: number[];
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 basisOfRecordIds?: number[];
                 startDate?: string | null;
                 endDate?: string | null;
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 areaIds?: number[];
                 status?: ("all" | "viewed" | "notViewed") | null;
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 initialDataImportIds?: number[];
                 verifiedFilter?: "all" | "verified" | "unverified";
                 areaFilterMode?: "inside" | "approaching" | "both";
@@ -2259,13 +2289,18 @@ export interface operations {
     dashboard_api_v2_observations_species_breakdown: {
         parameters: {
             query?: {
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 speciesIds?: number[];
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 datasetIds?: number[];
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 basisOfRecordIds?: number[];
                 startDate?: string | null;
                 endDate?: string | null;
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 areaIds?: number[];
                 status?: ("all" | "viewed" | "notViewed") | null;
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
                 initialDataImportIds?: number[];
                 verifiedFilter?: "all" | "verified" | "unverified";
                 areaFilterMode?: "inside" | "approaching" | "both";

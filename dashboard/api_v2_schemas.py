@@ -2,7 +2,9 @@ import datetime
 from typing import Literal
 
 from ninja import Schema
-from pydantic import Field
+from pydantic import Field, field_validator
+
+from dashboard.id_lists import parse_id_list
 
 # Closed-choice value sets, exposed as enums in the OpenAPI schema (and validated
 # by ninja on input). Keep in sync with the corresponding model constants
@@ -13,6 +15,17 @@ AreaFilterMode = Literal["inside", "approaching", "both"]
 EmailNotificationFrequency = Literal["N", "D", "W", "M"]
 ObservationStatus = Literal["all", "viewed", "notViewed"]  # "all" / absent = no filter
 DelayUnit = Literal["days", "weeks", "months", "years"]
+
+# Documented on every id filter: API.md deliberately holds no endpoint
+# reference, so /api/v2/docs is where an external consumer learns that the
+# compact spelling exists.
+_ID_LIST_DESC = (
+    "A list of ids. As a query parameter this may be repeated "
+    "(`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated "
+    "ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form "
+    "keeps a filter selecting hundreds of ids within the server's "
+    "request-line limit. Both forms are equivalent and may be mixed."
+)
 
 # `language` is not a fixed enum (instance-configurable via settings.LANGUAGES),
 # so it stays a plain string with a description rather than a Literal.
@@ -146,17 +159,43 @@ class DataImportOut(Schema):
 
 
 class FiltersQuery(Schema):
-    speciesIds: list[int] = Field(default_factory=list)
-    datasetIds: list[int] = Field(default_factory=list)
-    basisOfRecordIds: list[int] = Field(default_factory=list)
+    speciesIds: list[int] = Field(default_factory=list, description=_ID_LIST_DESC)
+    datasetIds: list[int] = Field(default_factory=list, description=_ID_LIST_DESC)
+    basisOfRecordIds: list[int] = Field(default_factory=list, description=_ID_LIST_DESC)
     startDate: datetime.date | None = None
     endDate: datetime.date | None = None
-    areaIds: list[int] = Field(default_factory=list)
+    areaIds: list[int] = Field(default_factory=list, description=_ID_LIST_DESC)
     status: ObservationStatus | None = None  # mapped to internal seen/unseen
-    initialDataImportIds: list[int] = Field(default_factory=list)
+    initialDataImportIds: list[int] = Field(
+        default_factory=list, description=_ID_LIST_DESC
+    )
     verifiedFilter: VerifiedFilter = "all"
     areaFilterMode: AreaFilterMode = "inside"
     approachingDistanceKm: float | None = None
+
+    # As a query string, each id list also accepts the compact spelling
+    # (`?speciesIds=1-350,402`) that keeps a several-hundred-species alert
+    # within the web server's request-line limit - see dashboard.id_lists.
+    # The annotation stays list[int] on purpose: this is an accepted input
+    # encoding, not a second type, so the OpenAPI schema (and the TypeScript
+    # types generated from it) keep describing the payload rather than the
+    # spelling.
+    @field_validator(
+        "speciesIds",
+        "datasetIds",
+        "basisOfRecordIds",
+        "areaIds",
+        "initialDataImportIds",
+        mode="before",
+    )
+    @classmethod
+    def _expand_id_list(cls, value):
+        # Untouched for anything unexpected: pydantic reports it better than
+        # we would. JSON bodies arrive as a list of ints and pass through
+        # parse_id_list unchanged.
+        if not isinstance(value, (list, tuple)):
+            return value
+        return parse_id_list(str(item) for item in value)
 
 
 class ObservationOut(Schema):
