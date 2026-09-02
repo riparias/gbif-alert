@@ -94,7 +94,10 @@ defineExpose({ getOlMap: () => olMap });
     top: 0.5rem;
     right: 0.5rem;
     z-index: 100;
-    background: rgba(255, 255, 255, 0.92);
+    /* Theme tokens, not a fixed white: the labels inside use --p-text-color,
+       which turns white in dark mode and vanished on a hardcoded white panel. */
+    background: color-mix(in srgb, var(--p-content-background, #fff) 92%, transparent);
+    border: 1px solid var(--p-content-border-color, #cbd5e1);
     backdrop-filter: blur(3px);
     border-radius: 6px;
     padding: 0.5rem 0.65rem;

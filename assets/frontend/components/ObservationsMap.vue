@@ -356,8 +356,11 @@ onUnmounted(() => {
    The popup is hidden when OL sets position to undefined (display: none via OL internals).
    We just style its appearance here. */
 .map-popup {
-    background: var(--p-surface-0, #fff);
-    border: 1px solid var(--p-surface-300, #ccc);
+    /* --p-surface-N are palette primitives: surface-0 stays #ffffff in dark
+       mode too, so the popup was white with white inherited text. */
+    background: var(--p-content-background, #fff);
+    border: 1px solid var(--p-content-border-color, #cbd5e1);
+    color: var(--p-text-color, #212529);
     border-radius: 4px;
     padding: 0.4rem 0.6rem;
     min-width: 160px;

@@ -54,7 +54,7 @@
 .filter-group label {
     font-size: 0.78rem;
     font-weight: 500;
-    color: #64748b; /* slate-500 */
+    color: #94a3b8; /* slate-400 */
 }
 
 /* --- Stat block at the bottom of each sidebar --- */
@@ -80,7 +80,7 @@
 
 .stat-label {
     font-size: 0.8rem;
-    color: #64748b; /* slate-500 */
+    color: #94a3b8; /* slate-400 */
 }
 
 .stat-cards {
@@ -115,5 +115,5 @@
 
 .stat-card-label {
     font-size: 0.72rem;
-    color: #64748b; /* slate-500 */
+    color: #94a3b8; /* slate-400 */
 }

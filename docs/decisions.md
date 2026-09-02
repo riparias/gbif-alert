@@ -209,3 +209,19 @@ a tighter fit for the reported case, but no help to a visitor who hand-picks the
 same species on the index page. Also rejected: raising the gunicorn limit alone,
 which moves the ceiling instead of shrinking the request (the limit was raised
 too, but as headroom).
+
+## 2026-09-02 - Custom CSS follows PrimeVue semantic tokens instead of fixed colors
+
+**What:** `body` and the map/dialog panels now take their colors from
+`--p-text-color` / `--p-content-*` / `--p-highlight-*` rather than hardcoded
+values, so the app is readable under `prefers-color-scheme: dark`; sidebar muted
+text moved slate-500 -> slate-400 and the green/amber toggle states one shade
+darker to clear WCAG AA.
+**Why:** PrimeVue's preset emits `color-scheme: dark` on `:root`, which makes the
+browser paint the canvas black, while our CSS still declared light-mode colors -
+page-fragment text, D3 axis labels and the white map panels became unreadable.
+**Rejected:** Setting `darkModeSelector: false` to force the app light - one
+line and it fixes the same symptom, but it throws away a dark theme PrimeVue
+already renders correctly. Also rejected: a parallel
+`@media (prefers-color-scheme: dark)` block of our own, which would duplicate
+PrimeVue's switch and drift from it.
