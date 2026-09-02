@@ -297,7 +297,7 @@ function showSpeciesTab() {
 .species-list :deep(.species-name) {
     font-size: 0.82rem;
     color: #cbd5e1; /* slate-300 */
-    text-decoration-color: #64748b; /* slate-500 */
+    text-decoration-color: #94a3b8; /* slate-400 */
 }
 
 .species-list :deep(.species-name em) {
@@ -328,13 +328,13 @@ function showSpeciesTab() {
 
 .meta-icon {
     flex-shrink: 0;
-    color: #64748b; /* slate-500 */
+    color: #94a3b8; /* slate-400 */
     margin-top: 0.15rem;
     font-size: 0.78rem;
 }
 
 .muted {
-    color: #64748b; /* slate-500 */
+    color: #94a3b8; /* slate-400 */
 }
 
 .chips {

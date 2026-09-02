@@ -273,13 +273,15 @@ function tagColor(name: string): string {
     font-weight: 500;
 }
 
+/* Semantic tokens rather than palette primitives (--p-primary-100 /
+   --p-surface-200 keep their pale light-mode values in dark mode). */
 .area-type-badge.user-specific {
-    background: var(--p-primary-100, #dbeafe);
-    color: var(--p-primary-700, #1d4ed8);
+    background: var(--p-highlight-background);
+    color: var(--p-highlight-color);
 }
 
 .area-type-badge.shared {
-    background: var(--p-surface-200, #e5e7eb);
-    color: var(--p-surface-600, #4b5563);
+    background: var(--p-content-hover-background);
+    color: var(--p-text-muted-color);
 }
 </style>

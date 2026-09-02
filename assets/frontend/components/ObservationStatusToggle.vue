@@ -50,15 +50,15 @@ const selectedStatus = computed({
 
 :deep(.p-togglebutton:nth-child(2).p-togglebutton-checked),
 :deep(.p-togglebutton:nth-child(2).p-togglebutton-checked *) {
-    background: #16a34a;
-    border-color: #16a34a;
+    background: #15803d;
+    border-color: #15803d;
     color: #fff;
 }
 
 :deep(.p-togglebutton:nth-child(3).p-togglebutton-checked),
 :deep(.p-togglebutton:nth-child(3).p-togglebutton-checked *) {
-    background: #d97706;
-    border-color: #d97706;
+    background: #b45309;
+    border-color: #b45309;
     color: #fff;
 }
 </style>

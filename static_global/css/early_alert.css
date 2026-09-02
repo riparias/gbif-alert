@@ -8,7 +8,15 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-size: 1rem;
     line-height: 1.5;
-    color: #212529;
+    /* Follow the PrimeVue theme rather than hardcoding light-mode colors.
+       PrimeVue puts `color-scheme: dark` on :root under
+       `prefers-color-scheme: dark`, which makes the browser paint the canvas
+       black; a fixed near-black `color` here left every piece of plain text
+       (page fragments, headings, D3 axis labels drawn with `currentColor`)
+       unreadable. The fallbacks apply only before the Vite bundle has
+       registered the theme. */
+    color: var(--p-text-color, #212529);
+    background-color: var(--p-content-background, #fff);
 }
 
 
