@@ -1,3 +1,15 @@
+# Unreleased
+
+- Fix: browsing an alert that matches many observations no longer times out
+  once its observations have been marked as viewed (or when switching the
+  status filter to "All" or "Viewed"). The map tiles of such an alert took
+  several seconds each since v2.5.0; they are back to a few milliseconds at
+  the usual zoom levels.
+- Fix: in the "approaching" and "both" area modes, hexagons on the edge of a
+  map tile no longer under-count the observations they contain.
+- Fix: the map's colour scale no longer counts an observation twice when it
+  lies in two overlapping selected areas.
+
 # 2.5.2 (2026-09-01)
 
 - Fix: an alert selecting several hundred species no longer breaks the page it

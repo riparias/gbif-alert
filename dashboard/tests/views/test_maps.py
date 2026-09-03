@@ -3,6 +3,7 @@ import datetime
 import mapbox_vector_tile
 import pytest
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.gis.geos import MultiPolygon, Point, Polygon
 from django.urls import reverse
 from django.utils import timezone
@@ -1907,27 +1908,6 @@ def test_tile_area_filter_matches_the_orm_area_filter(observations_and_areas):
     assert tile_ids == orm_ids
 
 
-def test_tile_area_filter_returns_each_observation_once(observations_and_areas):
-    """Joining many parts must not duplicate an observation in a tile.
-
-    The hexagon endpoint aggregates the subquery with COUNT(*), so a duplicate
-    row does not merely render twice - it inflates the count.
-    """
-    from django.db import connection
-
-    from dashboard.views.maps import _filtered_observations_subquery
-
-    area_ids = [a.pk for a in observations_and_areas.values()]
-    sql, binds = _filtered_observations_subquery({"area_ids": area_ids})
-    with connection.cursor() as cur:
-        cur.execute(
-            f"SELECT count(*), count(DISTINCT gbif_id) FROM ({sql}) AS sub", binds
-        )
-        total, distinct = cur.fetchone()
-
-    assert total == distinct
-
-
 def test_tile_subquery_still_exposes_the_species_columns(observations_and_areas):
     """The MVT endpoint reads species.name and species.vernacular_name_* from
     this subquery, so narrowing its select list to obs.* would break tiles."""
@@ -1943,37 +1923,258 @@ def test_tile_subquery_still_exposes_the_species_columns(observations_and_areas)
         assert cur.fetchall()
 
 
-def test_tile_subquery_does_not_deduplicate_without_an_area_filter():
-    """DISTINCT is only needed when the area-parts join can duplicate a row.
+# --- Tile queries and the area-parts join ------------------------------------
+#
+# Filtering through dashboard_areapart matches an observation once per part it
+# falls in (overlapping selected areas, points on a cut line). The tile queries
+# must not paper over that with DISTINCT in the observation subquery: that
+# blocks subquery pull-up, so every tile first materialises and sorts every
+# matching observation before the tile envelope is applied - measured at
+# 0.4 s -> 7 s per tile on a 152k-observation alert. Deduplication happens
+# after the tile restriction instead.
 
-    Applying it unconditionally costs a sort of every observation in the
-    database on the busiest query there is - the unfiltered main page. Measured
-    at 21 ms -> 1467 ms on a 1.1M-observation database.
+
+def _capture_tile_sql(view, request):
+    """Run a tile view with SQL execution stubbed out, returning the SQL text."""
+    from unittest import mock
+
+    from dashboard.views import maps
+
+    captured = {}
+
+    class Captured(Exception):
+        pass
+
+    def fake_execute(sql, binds):
+        captured["sql"] = sql
+        raise Captured()
+
+    with mock.patch.object(maps, "_execute_sql", fake_execute):
+        try:
+            view(request)
+        except Captured:
+            pass
+    return captured["sql"]
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {},
+        {"area_ids": [1]},
+        {"area_ids": [1], "precomputed_area_ewkb": b"\x00"},
+    ],
+)
+def test_tile_subquery_never_uses_distinct(params):
+    from dashboard.views.maps import _filtered_observations_subquery
+
+    sql, _ = _filtered_observations_subquery(params)
+
+    assert "DISTINCT" not in sql
+
+
+def test_point_tile_query_is_restricted_to_the_tile_envelope(maps_data, rf):
+    """Without it, every point tile evaluates every matching observation and
+    leaves ST_AsMVTGeom to discard the ones outside the tile."""
+    from dashboard.views import maps
+
+    request = rf.get("/x", {"areaIds[]": maps_data["public_area_andenne"].pk})
+    request.user = AnonymousUser()
+
+    sql = _capture_tile_sql(
+        lambda r: maps.mvt_tiles_observations(r, 10, 526, 345), request
+    )
+
+    assert "obs.location && ST_Expand(ST_TileEnvelope(" in sql
+
+
+def test_hexagon_tile_query_restricts_area_parts_to_the_tile_envelope(maps_data, rf):
+    """Only the parts around the tile can contain its observations; joining
+    all parts of a large alert against every hexagon costs 1M index probes."""
+    from dashboard.views import maps
+
+    request = rf.get("/x", {"areaIds[]": maps_data["public_area_andenne"].pk})
+    request.user = AnonymousUser()
+
+    sql = _capture_tile_sql(
+        lambda r: maps.mvt_tiles_observations_hexagon_grid_aggregated(r, 10, 526, 345),
+        request,
+    )
+
+    assert "parts.geom && ST_Expand(ST_TileEnvelope(" in sql
+
+
+def _overlapping_area_ids(observations_and_areas) -> list[int]:
+    """`square` lies inside `wide`: its observations match both areas' parts."""
+    return [observations_and_areas["square"].pk, observations_and_areas["wide"].pk]
+
+
+def test_hexagon_tile_counts_each_observation_once_for_overlapping_areas(
+    observations_and_areas, client
+):
+    response = client.get(
+        reverse(_AGGREGATED_URL, kwargs={"zoom": 2, "x": 2, "y": 1}),
+        data={"areaIds[]": _overlapping_area_ids(observations_and_areas)},
+    )
+    features = mapbox_vector_tile.decode(response.content)["default"]["features"]
+
+    # 3 of the 4 fixture observations are inside `wide`; 2 of those are also in
+    # `square`, so a duplicated join would report 5.
+    assert sum(f["properties"]["count"] for f in features) == 3
+
+
+def test_point_tile_renders_each_observation_once_for_overlapping_areas(
+    observations_and_areas, client
+):
+    response = client.get(
+        reverse(_SINGLE_OBS_URL, kwargs={"zoom": 2, "x": 2, "y": 1}),
+        data={"areaIds[]": _overlapping_area_ids(observations_and_areas)},
+    )
+    features = mapbox_vector_tile.decode(response.content)["default"]["features"]
+
+    assert sorted(f["properties"]["gbif_id"] for f in features) == ["0", "1", "2"]
+
+
+def test_min_max_counts_each_observation_once_for_overlapping_areas(
+    observations_and_areas, client
+):
+    """The colour ramp is scaled from this endpoint, so it must count the way
+    the hexagon tiles do."""
+    create_or_refresh_materialized_views(zoom_levels=[2])
+
+    response = client.get(
+        reverse("dashboard:internal-api:maps:mvt-min-max-per-hexagon"),
+        data={"zoom": 2, "areaIds[]": _overlapping_area_ids(observations_and_areas)},
+    )
+
+    # All 3 matching observations share one 640 km hexagon.
+    assert response.json() == {"min": 3, "max": 3}
+
+
+@pytest.fixture
+def observation_in_a_hexagon_protruding_south_of_a_tile():
+    """An observation south of tile 10/526/345's envelope, but inside one of the
+    edge hexagons ST_HexagonGrid generates for that tile - further out than one
+    hexagon size, which is where a too-small envelope drops it.
+
+    Returns the observation and two tiny areas: `around` contains it, `nearby`
+    sits 300 m east of it (for the approaching mode).
     """
-    from dashboard.views.maps import _filtered_observations_subquery
+    from django.conf import settings
+    from django.db import connection
 
-    sql, _ = _filtered_observations_subquery({})
+    zoom, x, y = 10, 526, 345
+    size = settings.ZOOM_TO_HEX_SIZE[zoom]
+    with connection.cursor() as cur:
+        cur.execute(
+            """
+            SELECT ST_X(ST_Centroid(geom)), ST_YMin(geom),
+                   ST_YMin(ST_TileEnvelope(%(z)s, %(x)s, %(y)s))
+            FROM ST_HexagonGrid(%(size)s, ST_TileEnvelope(%(z)s, %(x)s, %(y)s))
+            ORDER BY ST_YMin(geom) LIMIT 1
+            """,
+            {"z": zoom, "x": x, "y": y, "size": size},
+        )
+        hex_cx, hex_ymin, envelope_ymin = cur.fetchone()
+    # At its centroid's x, a flat-topped hexagon spans its full height, so this
+    # point is inside the hexagon.
+    obs_y = hex_ymin + 0.05 * size
+    assert obs_y < envelope_ymin - size, "fixture tile no longer protrudes enough"
 
-    assert "DISTINCT" not in sql
-
-
-def test_tile_subquery_deduplicates_when_filtering_by_area(observations_and_areas):
-    from dashboard.views.maps import _filtered_observations_subquery
-
-    sql, _ = _filtered_observations_subquery(
-        {"area_ids": [observations_and_areas["square"].pk]}
+    di = DataImport.objects.create(start=timezone.now())
+    dataset = Dataset.objects.create(name="D", gbif_dataset_key="k")
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    species = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    obs = Observation.objects.create(
+        gbif_id=1,
+        occurrence_id="1",
+        species=species,
+        date=datetime.date.today(),
+        data_import=di,
+        initial_data_import=di,
+        source_dataset=dataset,
+        location=Point(hex_cx, obs_y, srid=3857),
+        basis_of_record=basis,
     )
 
-    assert "DISTINCT" in sql
+    def square(cx, cy, half=100):
+        return MultiPolygon(
+            Polygon(
+                (
+                    (cx - half, cy - half),
+                    (cx + half, cy - half),
+                    (cx + half, cy + half),
+                    (cx - half, cy + half),
+                    (cx - half, cy - half),
+                )
+            ),
+            srid=3857,
+        )
+
+    return {
+        "obs": obs,
+        "tile": (zoom, x, y),
+        "around": Area.objects.create(name="Around", mpoly=square(hex_cx, obs_y)),
+        "nearby": Area.objects.create(name="Nearby", mpoly=square(hex_cx + 300, obs_y)),
+    }
 
 
-def test_tile_subquery_does_not_deduplicate_for_a_precomputed_area_buffer():
-    """approaching/both modes filter against one prebuilt geometry, not parts,
-    so they cannot duplicate a row either."""
-    from dashboard.views.maps import _filtered_observations_subquery
+@pytest.mark.parametrize(
+    "mode, area_key",
+    [("inside", "around"), ("both", "around"), ("approaching", "nearby")],
+)
+def test_hexagon_tile_counts_observations_in_edge_hexagons_beyond_the_envelope(
+    observation_in_a_hexagon_protruding_south_of_a_tile, client, mode, area_key
+):
+    """Edge hexagons stick out past the tile envelope by up to one hexagon
+    width (two sizes), and the tile owns their full count: without it, the
+    two tiles sharing that hexagon each show only part of it."""
+    data = observation_in_a_hexagon_protruding_south_of_a_tile
+    zoom, x, y = data["tile"]
+    params = {"areaIds[]": data[area_key].pk, "areaFilterMode": mode}
+    if mode != "inside":
+        params["approachingDistanceKm"] = 1
 
-    sql, _ = _filtered_observations_subquery(
-        {"area_ids": [1], "precomputed_area_ewkb": b"\x00"}
+    response = client.get(
+        reverse(_AGGREGATED_URL, kwargs={"zoom": zoom, "x": x, "y": y}), data=params
     )
+    features = mapbox_vector_tile.decode(response.content)["default"]["features"]
 
-    assert "DISTINCT" not in sql
+    assert sum(f["properties"]["count"] for f in features) == 1
+
+
+def test_point_tile_includes_observations_in_the_mvt_buffer_only(maps_data, client):
+    """ST_AsMVTGeom keeps a 256/4096 buffer around the tile so symbols can
+    straddle tile edges; the tile envelope restriction must keep exactly that."""
+    from django.db import connection
+
+    zoom, x, y = 10, 526, 345
+    with connection.cursor() as cur:
+        cur.execute(
+            "SELECT ST_XMax(e), ST_YMax(e), ST_XMax(e) - ST_XMin(e) "
+            "FROM ST_TileEnvelope(%s, %s, %s) AS e",
+            [zoom, x, y],
+        )
+        envelope_xmax, envelope_ymax, tile_width = cur.fetchone()
+    buffer = tile_width * 256 / 4096
+    obs_y = envelope_ymax - tile_width / 2
+    for gbif_id, dx in ((10, buffer * 0.5), (11, buffer * 1.5)):
+        Observation.objects.create(
+            gbif_id=gbif_id,
+            occurrence_id=str(gbif_id),
+            species=maps_data["first_species"],
+            date=datetime.date.today(),
+            data_import=maps_data["di"],
+            initial_data_import=maps_data["di"],
+            source_dataset=maps_data["first_dataset"],
+            location=Point(envelope_xmax + dx, obs_y, srid=3857),
+            basis_of_record=maps_data["basis_of_record"],
+        )
+
+    response = client.get(
+        reverse(_SINGLE_OBS_URL, kwargs={"zoom": zoom, "x": x, "y": y})
+    )
+    features = mapbox_vector_tile.decode(response.content)["default"]["features"]
+
+    assert "10" in {f["properties"]["gbif_id"] for f in features}
+    assert "11" not in {f["properties"]["gbif_id"] for f in features}

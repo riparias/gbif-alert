@@ -26,6 +26,22 @@ _TBL_OBS = Observation.objects.model._meta.db_table
 _TBL_UNSEEN = ObservationUnseen.objects.model._meta.db_table
 _TBL_SPECIES = Species.objects.model._meta.db_table
 
+_SUPPORTED_LANG_CODES = {code[:2] for code, _name in settings.LANGUAGES}
+
+# Half the width of the Web Mercator world, in meters: ST_TileEnvelope's default
+# bounds. A tile at zoom z is (2 * this) / 2**z meters wide.
+_WEB_MERCATOR_HALF_WIDTH = 20037508.342789244
+# ST_AsMVTGeom's default buffer, as a fraction of the tile width (256 / 4096).
+_MVT_BUFFER_FRACTION = 256 / 4096
+
+# The tile envelope, grown by `tile_envelope_expand_meters` on each side. The
+# observation and area-part bounding-box tests below are what let PostgreSQL
+# start from the tile (via the GIST indexes) rather than from the whole filter.
+_TILE_ENVELOPE_SQL = (
+    "ST_Expand(ST_TileEnvelope(%(zoom)s, %(x)s, %(y)s), "
+    "%(tile_envelope_expand_meters)s)"
+)
+
 
 # ---------------------------------------------------------------------------
 # SQL builders
@@ -49,9 +65,10 @@ def _uses_area_parts(params: dict) -> bool:
     """Whether this query filters through the subdivided area parts.
 
     Three things depend on this and must agree: the parts table joins into the
-    FROM list, the area condition goes in the WHERE clause, and the select list
-    is deduplicated. A precomputed buffer (approaching/both modes) filters
-    against one prebuilt geometry instead, and needs none of them.
+    FROM list, the area condition goes in the WHERE clause, and the endpoints
+    deduplicate their output (an observation matches once per part it falls
+    in). A precomputed buffer (approaching/both modes) filters against one
+    prebuilt geometry instead, and needs none of them.
     """
     return bool(params.get("area_ids")) and not params.get("precomputed_area_ewkb")
 
@@ -92,10 +109,13 @@ def _build_where_clause(params: dict) -> tuple[str, dict]:
         )
         binds["precomputed_area_ewkb"] = params["precomputed_area_ewkb"]
     elif _uses_area_parts(params):
-        clauses.append(
-            "AND parts.area_id = ANY(%(area_ids)s) "
-            "AND ST_Intersects(obs.location, parts.geom)"
-        )
+        clauses.append("AND parts.area_id = ANY(%(area_ids)s)")
+        if params.get("tile_envelope_expand_meters") is not None:
+            # Only the parts around the tile can hold its observations. Without
+            # this, a tile of a 67-area alert joined all 2.8k parts against
+            # every hexagon of the tile: 1.2M index probes, 3.4 s.
+            clauses.append(f"AND parts.geom && {_TILE_ENVELOPE_SQL}")
+        clauses.append("AND ST_Intersects(obs.location, parts.geom)")
 
     if params.get("initial_data_import_ids"):
         clauses.append(
@@ -137,15 +157,13 @@ def _build_where_clause(params: dict) -> tuple[str, dict]:
         clauses.append(f"AND {_TBL_UNSEEN}.user_id = %(user_id)s")
         binds["user_id"] = params["user_id"]
 
-    if params.get("limit_to_tile"):
-        clauses.append(
-            "AND ST_Within(obs.location, ST_Expand("
-            "ST_TileEnvelope(%(zoom)s, %(x)s, %(y)s), %(tile_buffer_meters)s))"
-        )
+    if params.get("tile_envelope_expand_meters") is not None:
+        if params.get("observations_in_tile_envelope", True):
+            clauses.append(f"AND obs.location && {_TILE_ENVELOPE_SQL}")
         binds["zoom"] = params["zoom"]
         binds["x"] = params["x"]
         binds["y"] = params["y"]
-        binds["tile_buffer_meters"] = params["tile_buffer_meters"]
+        binds["tile_envelope_expand_meters"] = params["tile_envelope_expand_meters"]
 
     # Space-separated: the endpoints flatten the assembled SQL with
     # readable_string(), which strips newlines without inserting a separator.
@@ -185,25 +203,25 @@ def _filtered_observations_subquery(params: dict) -> tuple[str, dict]:
     joins_sql, binds = _build_joins(params)
     where_sql, where_binds = _build_where_clause(params)
     binds.update(where_binds)
-    # DISTINCT only when the parts join is present: an observation matches once
-    # per area part it falls in, so overlapping selected areas would otherwise
-    # duplicate it - rendering it twice in a vector tile and inflating the
-    # hexagon endpoint's COUNT(*). The parts join is the only source of
-    # duplicates here; the unseen join is at most 1:1 thanks to its
+    # No DISTINCT here, ever. The parts join yields an observation once per
+    # part it falls in (overlapping selected areas, points on a cut line), but
+    # deduplicating inside this subquery stops PostgreSQL from flattening it:
+    # every tile then materialises and sorts *all* matching observations before
+    # the tile envelope is applied, then cross-joins them with the hexagons
+    # without an index. Measured at 0.4 s -> 7 s per tile for a 152k-observation
+    # alert. Each endpoint deduplicates its own, tile-sized output instead. The
+    # unseen join needs no deduplication: at most 1:1 thanks to its
     # unique_together plus the user_id condition.
     #
-    # Applying it unconditionally is expensive and pointless: on the unfiltered
-    # main page it sorts every observation in the database, measured at
-    # 21 ms -> 1467 ms on 1.1M observations.
-    #
-    # obs.* AND species.*, not obs.* alone: the MVT endpoint reads
-    # `observations.name` and `observations.vernacular_name_<lang>` from this
-    # subquery. Listing the tables explicitly also keeps the joined parts and
-    # unseen columns out, which is what lets DISTINCT collapse the duplicates
-    # at all - `SELECT DISTINCT *` would carry a different parts.id per row.
-    distinct = "DISTINCT " if _uses_area_parts(params) else ""
+    # An explicit, narrow column list: `id` alone would be ambiguous between
+    # obs and species, and the endpoints only read these. The species columns
+    # are there for the MVT endpoint's `name` and `vernacular_name_<lang>`.
+    columns = ", ".join(
+        ["obs.id", "obs.location", "obs.gbif_id", "obs.stable_id", "species.name"]
+        + [f"species.vernacular_name_{code}" for code in sorted(_SUPPORTED_LANG_CODES)]
+    )
     sql = f"""
-        SELECT {distinct}obs.*, species.* FROM {_TBL_OBS} as obs
+        SELECT {columns} FROM {_TBL_OBS} as obs
         {joins_sql}
         WHERE (
             {where_sql}
@@ -277,9 +295,6 @@ def _build_filter_params(request: HttpRequest) -> dict:
     return params
 
 
-_SUPPORTED_LANG_CODES = {code[:2] for code, _name in settings.LANGUAGES}
-
-
 def mvt_tiles_observations(
     request: HttpRequest, zoom: int, x: int, y: int
 ) -> HttpResponse:
@@ -288,14 +303,27 @@ def mvt_tiles_observations(
     lang_code = lang[:2] if lang[:2] in _SUPPORTED_LANG_CODES else "en"
     vernacular_col = f"vernacular_name_{lang_code}"
 
-    params = {**_build_filter_params(request), "limit_to_tile": False}
+    # Restrict the query to what ST_AsMVTGeom keeps: the tile plus its buffer.
+    # It clips the rest anyway, but only after every matching observation has
+    # been fetched - 1.2 s -> 20 ms per tile on a 152k-observation alert.
+    tile_width = 2 * _WEB_MERCATOR_HALF_WIDTH / 2**zoom
+    params = {
+        **_build_filter_params(request),
+        "zoom": zoom,
+        "x": x,
+        "y": y,
+        "tile_envelope_expand_meters": tile_width * _MVT_BUFFER_FRACTION,
+    }
     filtered_sql, binds = _filtered_observations_subquery(params)
     binds.update({"zoom": zoom, "x": x, "y": y})
+    # See _filtered_observations_subquery: the parts join is the only source
+    # of duplicate rows, and by now they are tile-sized.
+    distinct = "DISTINCT " if _uses_area_parts(params) else ""
 
     sql = readable_string(
         f"""
             WITH mvtgeom AS (
-                SELECT ST_AsMVTGeom(observations.location, ST_TileEnvelope(%(zoom)s, %(x)s, %(y)s)), observations.gbif_id, observations.stable_id, observations.name AS scientific_name, observations.{vernacular_col} AS vernacular_name
+                SELECT {distinct}ST_AsMVTGeom(observations.location, ST_TileEnvelope(%(zoom)s, %(x)s, %(y)s)), observations.gbif_id, observations.stable_id, observations.name AS scientific_name, observations.{vernacular_col} AS vernacular_name
                 FROM ({filtered_sql}) AS observations
             )
             SELECT st_asmvt(mvtgeom.*) FROM mvtgeom;
@@ -312,43 +340,41 @@ def mvt_tiles_observations_hexagon_grid_aggregated(
     request: HttpRequest, zoom: int, x: int, y: int
 ) -> HttpResponse:
     """Tile server, showing observations aggregated by hexagon squares. Filters are honoured."""
-    filter_params = _build_filter_params(request)
-
-    # For approaching/both modes the geography index returns candidates from the
-    # whole dataset, which are then cross-joined with the hex grid
-    # (O(candidates * hexes)). Adding an explicit tile envelope filter to WHERE
-    # lets PostgreSQL use a BitmapAnd of the geography index AND the SRID 3857
-    # tile index, reducing the cross-join to only observations that are actually
-    # inside this tile.
-    #
-    # The envelope is expanded by one hex radius (= hex edge length) so that
-    # observations inside edge hexagons that straddle tile boundaries are not
-    # truncated. Without the expansion, each tile would only count the half of an
-    # edge hexagon's observations that fall within its strict envelope.
-    limit_to_tile = bool(filter_params.get("area_ids")) and filter_params.get(
-        "area_filter_mode"
-    ) in ("approaching", "both")
-
+    hex_size = settings.ZOOM_TO_HEX_SIZE[zoom]
+    # ST_HexagonGrid returns every hexagon touching the tile envelope, and this
+    # tile owns their full count - the neighbouring tile renders the same
+    # hexagon with the same number. So the observations (and area parts) to
+    # consider extend past the envelope by however far an edge hexagon sticks
+    # out: up to one hexagon *width*, which is twice ST_HexagonGrid's `size`
+    # (the circumradius). Expanding by one size, as this used to for the
+    # approaching/both modes, silently dropped observations from edge hexagons.
     params = {
-        **filter_params,
-        "limit_to_tile": limit_to_tile,
+        **_build_filter_params(request),
         "zoom": zoom,
         "x": x,
         "y": y,
-        "tile_buffer_meters": settings.ZOOM_TO_HEX_SIZE[zoom],
+        "tile_envelope_expand_meters": 2 * hex_size,
     }
+    # When joining area parts, the envelope goes on the parts only. Putting it
+    # on the observations too makes the planner start from the hexagons and
+    # probe the parts once per observation in the tile - 22k probes, 3.4 s at
+    # zoom 11 on a 152k-observation alert, against 19 ms when it starts from
+    # the handful of parts around the tile. Without parts (no area filter, or a
+    # precomputed approaching/both geometry) the hexagons are the only way in,
+    # and the envelope helps: 1.3 s -> 1.0 s at zoom 8 in approaching mode.
+    params["observations_in_tile_envelope"] = not _uses_area_parts(params)
     filtered_sql, binds = _filtered_observations_subquery(params)
-    binds.update(
-        {
-            "hex_size_meters": settings.ZOOM_TO_HEX_SIZE[zoom],
-            "zoom": zoom,
-            "x": x,
-            "y": y,
-        }
+    binds.update({"hex_size_meters": hex_size, "zoom": zoom, "x": x, "y": y})
+    # See _filtered_observations_subquery: the parts join can repeat an
+    # observation, and COUNT(*) would count it twice.
+    count = (
+        "COUNT(DISTINCT dashboard_filtered_occ.id)"
+        if _uses_area_parts(params)
+        else "COUNT(*)"
     )
 
     grid_sql = f"""
-        SELECT COUNT(*), hexes.geom
+        SELECT {count}, hexes.geom
         FROM
             ST_HexagonGrid(%(hex_size_meters)s, ST_TileEnvelope(%(zoom)s, %(x)s, %(y)s)) AS hexes
             INNER JOIN ({filtered_sql})
@@ -387,10 +413,13 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
     where_sql, where_binds = _build_where_clause(params)
     binds.update(where_binds)
 
+    # Same duplicate rows as the tiles when joining area parts; the colour ramp
+    # is scaled from these numbers, so count the way the hexagon tiles do.
+    count = "COUNT(DISTINCT obs.id)" if _uses_area_parts(params) else "COUNT(*)"
     sql = readable_string(
         f"""
             WITH grid AS (
-                SELECT COUNT(*)
+                SELECT {count}
                 FROM (SELECT * FROM hexa_{hex_size}) AS obs
                     {joins_sql}
                 WHERE (

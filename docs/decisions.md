@@ -209,3 +209,16 @@ a tighter fit for the reported case, but no help to a visitor who hand-picks the
 same species on the index page. Also rejected: raising the gunicorn limit alone,
 which moves the ceiling instead of shrinking the request (the limit was raised
 too, but as headroom).
+
+## 2026-09-03 - Deduplicate tile output after the tile restriction, not before
+**What:** The tile subquery no longer uses DISTINCT; the hexagon and min/max
+endpoints count `DISTINCT id`, the point endpoint deduplicates its tile-sized
+CTE, and the area parts (plus, outside parts mode, the observations) are
+restricted to the tile envelope expanded by two hexagon sizes.
+**Why:** DISTINCT inside the subquery blocked subquery pull-up, so every tile of
+a 152k-observation alert sorted all its observations and cross-joined them with
+the hexagons without an index (0.4 s -> 7 s per tile since v2.5.0, 504s once the
+"Not viewed" filter no longer shrank the set).
+**Rejected:** An EXISTS semi-join on the parts (25 s per tile: nothing selective
+to drive it), and an observation envelope in parts mode (flips the plan to
+hexagons-first, 3.4 s versus 19 ms).
