@@ -1,4 +1,4 @@
-# Unreleased
+# 2.5.3 (2026-09-03)
 
 - Fix: browsing an alert that matches many observations no longer times out
   once its observations have been marked as viewed (or when switching the
