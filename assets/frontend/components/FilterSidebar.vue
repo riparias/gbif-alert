@@ -352,7 +352,7 @@ function showSpeciesTab() {
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.08em;
-    color: #64748b; /* slate-500 - muted on dark */
+    color: #94a3b8; /* slate-400 - muted on dark, 5.71:1 on the slate-800 panel */
     text-transform: uppercase;
 }
 
@@ -427,8 +427,8 @@ function showSpeciesTab() {
 
 :deep(.verified-select-button .p-togglebutton:nth-child(2).p-togglebutton-checked),
 :deep(.verified-select-button .p-togglebutton:nth-child(2).p-togglebutton-checked *) {
-    background: #16a34a;
-    border-color: #16a34a;
+    background: #15803d;
+    border-color: #15803d;
     color: #fff;
 }
 

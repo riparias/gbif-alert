@@ -428,7 +428,8 @@ onUnmounted(() => {
     top: 0.5rem;
     right: 0.5rem;
     z-index: 100;
-    background: rgba(255, 255, 255, 0.92);
+    background: color-mix(in srgb, var(--p-content-background, #fff) 92%, transparent);
+    border: 1px solid var(--p-content-border-color, #cbd5e1);
     backdrop-filter: blur(3px);
     border-radius: 6px;
     padding: 0.5rem 0.65rem;
@@ -460,7 +461,8 @@ onUnmounted(() => {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(255, 255, 255, 0.88);
+    background: color-mix(in srgb, var(--p-content-background, #fff) 88%, transparent);
+    border: 1px solid var(--p-content-border-color, #cbd5e1);
     backdrop-filter: blur(4px);
     border-radius: 8px;
     padding: 0.75rem 1.25rem;
@@ -473,8 +475,8 @@ onUnmounted(() => {
 .editor-sidebar {
     width: 200px;
     flex-shrink: 0;
-    background: var(--p-surface-card);
-    border-left: 1px solid var(--p-surface-border);
+    background: var(--p-content-background);
+    border-left: 1px solid var(--p-content-border-color);
     display: flex;
     flex-direction: column;
     padding: 1rem 0.875rem;
@@ -502,7 +504,7 @@ onUnmounted(() => {
 }
 
 .sidebar-divider {
-    border-top: 1px solid var(--p-surface-border);
+    border-top: 1px solid var(--p-content-border-color);
     margin: 0.5rem 0;
 }
 

@@ -222,3 +222,19 @@ the hexagons without an index (0.4 s -> 7 s per tile since v2.5.0, 504s once the
 **Rejected:** An EXISTS semi-join on the parts (25 s per tile: nothing selective
 to drive it), and an observation envelope in parts mode (flips the plan to
 hexagons-first, 3.4 s versus 19 ms).
+
+## 2026-09-02 - Custom CSS follows PrimeVue semantic tokens instead of fixed colors
+
+**What:** `body` and the map/dialog panels now take their colors from
+`--p-text-color` / `--p-content-*` / `--p-highlight-*` rather than hardcoded
+values, so the app is readable under `prefers-color-scheme: dark`; sidebar muted
+text moved slate-500 -> slate-400 and the green/amber toggle states one shade
+darker to clear WCAG AA.
+**Why:** PrimeVue's preset emits `color-scheme: dark` on `:root`, which makes the
+browser paint the canvas black, while our CSS still declared light-mode colors -
+page-fragment text, D3 axis labels and the white map panels became unreadable.
+**Rejected:** Setting `darkModeSelector: false` to force the app light - one
+line and it fixes the same symptom, but it throws away a dark theme PrimeVue
+already renders correctly. Also rejected: a parallel
+`@media (prefers-color-scheme: dark)` block of our own, which would duplicate
+PrimeVue's switch and drift from it.

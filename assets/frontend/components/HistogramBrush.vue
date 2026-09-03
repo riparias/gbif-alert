@@ -118,7 +118,7 @@ function applyLastYear(): void {
     font-weight: 600;
     background: transparent;
     color: var(--p-text-muted-color);
-    border: 1px solid var(--p-surface-border);
+    border: 1px solid var(--p-content-border-color);
     border-radius: 999px;
     padding: 0.1rem 0.6rem;
     cursor: pointer;
@@ -132,8 +132,10 @@ function applyLastYear(): void {
 
 .brush-preset:hover,
 .brush-preset.is-active {
-    background: var(--p-primary-100, #d1fae5);
-    color: var(--p-primary-700, #065f46);
-    border-color: var(--p-primary-300, #6ee7b7);
+    /* Semantic highlight tokens flip with the color scheme; --p-primary-100
+       is a palette primitive that stays a pale tint in dark mode. */
+    background: var(--p-highlight-background);
+    color: var(--p-highlight-color);
+    border-color: var(--p-highlight-color);
 }
 </style>

@@ -160,6 +160,35 @@ def test_species_filter_narrows_results(page: Page, live_server):
 
 
 @pytest.mark.django_db(transaction=True)
+def test_species_filter_accepts_the_compact_id_spelling(page: Page, live_server):
+    """`?speciesIds=<a>-<b>` selects the same species as repeating the param.
+
+    Backs the link-building documentation in CONTRIBUTING.md: the compact
+    spelling is the one the app writes into the address bar, so it is what a
+    copied link uses.
+    """
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp1 = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    sp2 = Species.objects.create(name="Orconectes virilis", gbif_taxon_key=2227064)
+    sp3 = Species.objects.create(name="Vespa velutina", gbif_taxon_key=1311477)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp1, basis=basis)
+    _make_observation(gbif_id=2, occurrence_id="2", species=sp2, basis=basis)
+    _make_observation(gbif_id=3, occurrence_id="3", species=sp3, basis=basis)
+
+    low, high = sorted([sp1.pk, sp2.pk])
+    # A range covering sp1 and sp2, so sp3's observation drops out.
+    page.goto(live_server.url + f"/?status=all&speciesIds={low}-{high}")
+    expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
+
+    # A comma-separated list, mixed with the repeated spelling.
+    page.goto(
+        live_server.url
+        + f"/?status=all&speciesIds={sp1.pk},{sp2.pk}&speciesIds={sp3.pk}"
+    )
+    expect(page.locator(".stat-count").get_by_text("3")).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
 def test_dataset_filter_narrows_results(page: Page, live_server):
     """Adding a datasetIds filter to the URL reduces the observation count."""
     basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")

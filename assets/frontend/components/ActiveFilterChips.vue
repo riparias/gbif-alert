@@ -211,7 +211,10 @@ function clearAll() {
 .chips-label {
     font-size: 0.72rem;
     font-weight: 700;
-    color: #93c5fd; /* blue-300 */
+    /* This bar sits on the page background, not on the dark sidebar, so the
+       tinted bar is pale in light mode: blue-300 measured 1.57:1 there. The
+       theme token follows the scheme and stays legible on both. */
+    color: var(--p-text-color);
     white-space: nowrap;
     flex-shrink: 0;
     text-transform: uppercase;

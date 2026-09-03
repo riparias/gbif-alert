@@ -9,6 +9,13 @@
   map tile no longer under-count the observations they contain.
 - Fix: the map's colour scale no longer counts an observation twice when it
   lies in two overlapping selected areas.
+- Fix: the site is now readable when your system is set to dark mode. Page text
+  such as the welcome message and "About this site" was drawn in a dark color on
+  the dark background, and the map's floating panels and popups stayed white
+  with white text on them.
+- Fix: better contrast in the filter and alert panels. The field labels were too
+  faint to read comfortably, and the green "Verified only" and amber "Unseen"
+  buttons did not contrast enough with their white text.
 
 # 2.5.2 (2026-09-01)
 
