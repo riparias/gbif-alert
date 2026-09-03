@@ -16,6 +16,9 @@
 - Fix: better contrast in the filter and alert panels. The field labels were too
   faint to read comfortably, and the green "Verified only" and amber "Unseen"
   buttons did not contrast enough with their white text.
+- Fix: "mark all as viewed" on a large alert no longer keeps the database busy
+  for minutes afterwards; the observations are marked in one go instead of one
+  by one.
 
 # 2.5.2 (2026-09-01)
 

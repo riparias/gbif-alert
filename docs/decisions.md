@@ -238,3 +238,14 @@ line and it fixes the same symptom, but it throws away a dark theme PrimeVue
 already renders correctly. Also rejected: a parallel
 `@media (prefers-color-scheme: dark)` block of our own, which would duplicate
 PrimeVue's switch and drift from it.
+
+## 2026-09-03 - Bulk-delete unseen rows in "mark all as viewed"
+**What:** The job selects the ids of the matching observations that are unseen
+by the user (one query through the unseen join), then deletes those rows in one
+DELETE, instead of calling `mark_as_seen_by` per observation.
+**Why:** One DELETE per observation ran for minutes on a 150k-observation alert,
+right when the user went back to browsing it (0.16 s now for 2.6k rows).
+**Rejected:** `observation__in=<queryset>` in one DELETE - invalid, the area
+filter's `.extra()` names the observation table, which Django aliases in a
+subquery; chunked id lists (1.5 s) and an unseen-first intersect (0.27 s), both
+slower than the join.
