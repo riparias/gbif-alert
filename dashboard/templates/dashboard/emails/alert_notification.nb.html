@@ -1,0 +1,74 @@
+{% extends "dashboard/emails/alert_notification_base.html" %}
+
+{% load i18n %}
+
+{% block body %}
+
+{% language "nb" %}
+<p>Du har <b>{{ alert.unseen_observations.count }}</b> observasjon(er) du ikke har sett for dette varselet.</p>
+
+<h3>Eksempler på observasjoner du ikke har sett</h3>
+{# For user familiarity, make sure the structure of this table stay more or less in sync with the table show on the website pages #}
+<table>
+    <thead>
+    <tr>
+        <th>GBIF-ID</th>
+        <th>Lat</th>
+        <th>Lon</th>
+        <th>Dato</th>
+        <th>Art</th>
+        <th>Datasett</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for observation in alert.unseen_observations_sample %}
+        <tr>
+            <td>
+                <a href="
+
+                        {{ site_base_url }}{% url "dashboard:pages:observation-details" stable_id=observation.stable_id %}">
+                    {{ observation.gbif_id }}
+                </a>
+            </td>
+            <td>{{ observation.lat|floatformat:4 }}</td>
+            <td>{{ observation.lon|floatformat:4 }}</td>
+            <td>{{ observation.date }}</td>
+            <td>{{ observation.species.display_name_html|safe }}</td>
+            <td>{{ observation.source_dataset.name }}</td>
+        </tr>
+    {% endfor %}
+
+    {#  One more row so users understand it's only a sample... #}
+    <tr>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+    </tr>
+    </tbody>
+</table>
+
+<p>Se gjerne <a
+        href="{{ site_base_url }}{% url "dashboard:pages:alert-details" alert_id=alert.pk %}">varselsiden</a> for flere observasjoner og detaljer.</p>
+
+<h3>Varseldetaljer</h3>
+<ul>
+    <li><b>Varselnavn:</b> {{ alert.name }}</li>
+    <li><b>Arter:</b> {{ alert.species_list|default:"alle arter" }}</li>
+    <li><b>Område:</b> {{ alert.area_description|default:"alle områder" }}</li>
+    <li><b>Datasett: </b> {{ alert.datasets_list|default:"alle datasett" }}</li>
+    <li><b>Registreringsgrunnlag: </b> {{ alert.basis_of_record_list|default:"alle" }}</li>
+    <li>
+        <b>Frekvens for e-postvarsler:</b>
+        {{ alert.get_email_notifications_frequency_display }}</li>
+</ul>
+
+<p>
+    Takk,<br/>
+    Teamet bak <a href="{{ site_base_url }}">{{ site_name }}</a>
+</p>
+
+{% endlanguage %}
+{% endblock body %}

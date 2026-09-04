@@ -1,0 +1,37 @@
+# Norwegian Bokmal translation for GBIF Alert.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+# NOTE: this catalog is an unreviewed machine translation, added so the
+# interface can be demonstrated in Norwegian. It has not been checked by a
+# native speaker - corrections welcome.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 15:32+0200\n"
+"PO-Revision-Date: 2026-09-04 15:32+0200\n"
+"Last-Translator: Automated first pass <>\n"
+"Language-Team: Norwegian Bokmal\n"
+"Language: nb\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: djangoproject/settings.py:453
+msgid "English"
+msgstr "Engelsk"
+
+#: djangoproject/settings.py:454
+msgid "French"
+msgstr "Fransk"
+
+#: djangoproject/settings.py:455
+msgid "Dutch"
+msgstr "Nederlandsk"
+
+#: djangoproject/settings.py:456
+msgid "Norwegian Bokmal"
+msgstr "Norsk (bokmål)"

@@ -1,3 +1,11 @@
+# Unreleased
+
+- Norwegian Bokmal (`nb`) is now one of the languages an instance can offer:
+  add it to `ENABLED_LANGUAGES` to show it in the language selector. The
+  interface, the account pages and the alert notification email are
+  translated; the translation is a first pass and has not yet been reviewed by
+  a native speaker.
+
 # 2.5.3 (2026-09-03)
 
 - Fix: browsing an alert that matches many observations no longer times out
