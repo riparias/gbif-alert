@@ -1,3 +1,8 @@
+# Unreleased
+
+- Fix: the Map / Timeline / Species / Table tabs no longer glue their icon
+  against their label.
+
 # 2.5.3 (2026-09-03)
 
 - Fix: browsing an alert that matches many observations no longer times out
