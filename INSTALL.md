@@ -198,7 +198,8 @@ All operationally-significant settings live in `.env`. Highlights:
 
 - **Branding**: `SITE_NAME`, `PRIMEVUE_PRIMARY_PALETTE`.
 - **Map default view**: `MAP_INITIAL_ZOOM`, `MAP_INITIAL_LAT`, `MAP_INITIAL_LON`.
-- **Languages**: `ENABLED_LANGUAGES` (comma-separated subset of `en,fr,nl`).
+- **Languages**: `ENABLED_LANGUAGES` (comma-separated subset of `en,fr,nl,nb`;
+  `nb` is Norwegian Bokmal).
 - **EU funding acknowledgement**: `SHOW_EU_FUNDING_ACKNOWLEDGEMENT` (default `False`). When `True`, every page shows the official "Funded by the European Union" emblem in the footer, linking to your "about this site" page. **Only switch this on if your instance is genuinely funded by the European Union** - displaying the emblem otherwise is a false claim of EU support. Such an instance must also put the full disclaimer on its "about this site" page: see [docs/eu-funding-acknowledgement.md](docs/eu-funding-acknowledgement.md) for ready-to-paste text.
 - **Email**: SMTP by default (`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`). To send through **Amazon SES with an IAM role** instead of SMTP credentials, set `EMAIL_BACKEND=django_ses.SESBackend` and `AWS_SES_REGION_NAME` (e.g. `eu-west-1`); the credentials are then taken from the ambient AWS role (ECS task role / EC2 instance role), so no SMTP user/password is stored. `DEFAULT_FROM_EMAIL` must be a verified SES identity.
 - **Co-hosting multiple stacks on one host**: if you run more than one gbif-alert deployment on the same Docker host sharing `dokploy-network`, set `VALKEY_HOST` to a unique value per deployment (e.g. `VALKEY_HOST=mysite-valkey`). Each stack defines a service named `valkey`, and on a shared network the bare name resolves to every stack's Valkey at random - cross-contaminating the cache, the RQ queue, and maintenance-mode state. A unique `VALKEY_HOST` points each app at its own Valkey. A single-stack host needs no change (it defaults to `valkey`).

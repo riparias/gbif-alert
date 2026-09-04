@@ -249,3 +249,13 @@ right when the user went back to browsing it (0.16 s now for 2.6k rows).
 filter's `.extra()` names the observation table, which Django aliases in a
 subquery; chunked id lists (1.5 s) and an unseen-first intersect (0.27 s), both
 slower than the join.
+
+## 2026-09-04 - Add Norwegian Bokmal (nb) as a UI language
+**What:** Fourth locale wired through `LANGUAGES`, both gettext catalogs, the
+Vue `translations.ts` block and the alert email; `ENABLED_LANGUAGES` default
+left at `en,fr,nl` so instances opt in.
+**Why:** A Norwegian team needed the tool demonstrated in their own language,
+and the per-instance language machinery already made this a data-only change.
+**Rejected:** the generic `no` code - Django ships no catalog for it, so the
+admin and form errors would have stayed English; and scaffolding empty
+catalogs, which would have shown a half-English UI during the demo.
