@@ -282,21 +282,23 @@ onMounted(async () => {
             <TabList>
                 <Tab value="map" :aria-label="t('message.mapView')" :title="t('message.mapView')"
                     ><i class="pi pi-map" />
-                    <span v-if="!isMobile"> {{ t("message.mapView") }}</span></Tab
+                    <span v-if="!isMobile" class="tab-label">{{ t("message.mapView") }}</span></Tab
                 >
                 <Tab
                     value="timeline"
                     :aria-label="t('message.timelineView')"
                     :title="t('message.timelineView')"
                     ><i class="pi pi-chart-bar" />
-                    <span v-if="!isMobile"> {{ t("message.timelineView") }}</span></Tab
+                    <span v-if="!isMobile" class="tab-label">{{
+                        t("message.timelineView")
+                    }}</span></Tab
                 >
                 <Tab
                     value="species"
                     :aria-label="t('message.speciesView')"
                     :title="t('message.speciesView')"
                     ><i class="pi pi-sitemap" />
-                    <span v-if="!isMobile">
+                    <span v-if="!isMobile" class="tab-label">
                         {{ t("message.speciesView") }}
                         <span class="tab-new-badge">{{ t("message.newBadge") }}</span>
                     </span>
@@ -307,7 +309,9 @@ onMounted(async () => {
                     :aria-label="t('message.tableView')"
                     :title="t('message.tableView')"
                     ><i class="pi pi-table" />
-                    <span v-if="!isMobile"> {{ t("message.tableView") }}</span></Tab
+                    <span v-if="!isMobile" class="tab-label">{{
+                        t("message.tableView")
+                    }}</span></Tab
                 >
             </TabList>
             <TabPanels>
@@ -585,6 +589,11 @@ onMounted(async () => {
 }
 .observations-table :deep(td) {
     overflow: hidden;
+}
+/* The label lives in its own <span> (dropped on mobile), so it no longer
+   inherits the whitespace that used to separate it from the tab icon. */
+.tab-label {
+    margin-left: 0.375rem;
 }
 .tab-new-badge {
     font-size: 0.58rem;
