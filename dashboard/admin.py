@@ -19,6 +19,7 @@ from .models import (
     AlertTemplate,
     ApiToken,
     ObservationUnseen,
+    MapBaseLayer,
 )
 
 admin.site.site_header = f'{settings.GBIF_ALERT["SITE_NAME"]} administration'
@@ -273,3 +274,10 @@ class ApiTokenAdmin(admin.ModelAdmin):
         return False
 
     # Deletion stays enabled: that is how a token is revoked.
+
+
+@admin.register(MapBaseLayer)
+class MapBaseLayerAdmin(admin.ModelAdmin):
+    list_display = ("name", "layer_type", "is_enabled", "display_order")
+    list_editable = ("is_enabled", "display_order")
+    list_display_links = ("name",)

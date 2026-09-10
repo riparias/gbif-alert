@@ -1725,3 +1725,131 @@ class ApiToken(models.Model):
             user=user, name=name, token_hash=cls.hash_token(raw), prefix=raw[:8]
         )
         return token, raw
+
+
+class MapBaseLayerManager(models.Manager["MapBaseLayer"]):
+    def enabled(self) -> QuerySet["MapBaseLayer"]:
+        return self.get_queryset().filter(is_enabled=True)
+
+
+class MapBaseLayer(models.Model):
+    """A background map an instance offers in the base layer picker.
+
+    The list is per-instance and editable in the admin; a data migration seeds
+    the three layers GBIF Alert used to hardcode, so an operator who is happy
+    with those has nothing to do.
+
+    Attributes
+    ----------
+    name : str
+        Label shown in the picker.
+    layer_type : str
+        Either `XYZ` (a tile URL template) or `WMS`.
+    url : str
+        XYZ: the tile template. WMS: the service endpoint.
+    wms_layers : str
+        WMS only: comma-separated layer names for the LAYERS parameter.
+    attribution : str
+        Credit line shown over the map. Most providers require one.
+    max_zoom : int
+        Deepest zoom the provider serves tiles for.
+    is_enabled : bool
+        Unticking hides the layer without losing its configuration.
+    display_order : int
+        Position in the picker. The first enabled layer is the one maps open
+        with, so there is no separate "default" flag to keep consistent.
+    """
+
+    XYZ = "xyz"
+    WMS = "wms"
+    LAYER_TYPE_CHOICES = [(XYZ, "XYZ tiles"), (WMS, "WMS")]
+
+    name = models.CharField(max_length=100)
+    layer_type = models.CharField(max_length=3, choices=LAYER_TYPE_CHOICES, default=XYZ)
+    url = models.URLField(
+        max_length=500,
+        help_text=(
+            "XYZ: the tile template, with the {z}, {x} and {y} placeholders "
+            "(use {-y} for TMS row ordering). Drop any {r} retina placeholder, "
+            "OpenLayers does not support it. WMS: the service endpoint, "
+            "without parameters. The service must serve EPSG:3857."
+        ),
+    )
+    wms_layers = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="WMS only: comma-separated layer names (the LAYERS parameter).",
+    )
+    attribution = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text=(
+            "Credit shown in the map corner. Most tile providers require this; "
+            "check the provider's terms."
+        ),
+    )
+    max_zoom = models.PositiveSmallIntegerField(default=19)
+    is_enabled = models.BooleanField(
+        default=True, help_text="Untick to hide the layer without deleting it."
+    )
+    display_order = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Position in the picker. Maps open with the first enabled layer.",
+    )
+
+    objects = MapBaseLayerManager()
+
+    class Meta:
+        ordering = ["display_order", "id"]
+
+    def clean(self) -> None:
+        super().clean()
+
+        if self.layer_type == self.XYZ:
+            has_row = "{y}" in self.url or "{-y}" in self.url
+            if not ("{z}" in self.url and "{x}" in self.url and has_row):
+                raise ValidationError(
+                    {
+                        "url": (
+                            "An XYZ tile URL needs the {z}, {x} and {y} (or "
+                            "{-y}) placeholders."
+                        )
+                    }
+                )
+            if "{r}" in self.url:
+                raise ValidationError(
+                    {
+                        "url": (
+                            "OpenLayers does not support the {r} retina "
+                            "placeholder; remove it from the URL."
+                        )
+                    }
+                )
+        else:
+            if not self.wms_layers:
+                raise ValidationError(
+                    {"wms_layers": "A WMS layer needs at least one layer name."}
+                )
+            if "{z}" in self.url:
+                raise ValidationError(
+                    {
+                        "url": (
+                            "A WMS URL is a plain service endpoint, not a tile "
+                            "template. Remove the {z}/{x}/{y} placeholders."
+                        )
+                    }
+                )
+
+    def __str__(self) -> str:
+        return self.name
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.pk,
+            "name": self.name,
+            "type": self.layer_type,
+            "url": self.url,
+            "wmsLayers": self.wms_layers,
+            "attribution": self.attribution,
+            "maxZoom": self.max_zoom,
+        }

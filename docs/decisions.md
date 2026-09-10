@@ -259,3 +259,19 @@ and the per-instance language machinery already made this a data-only change.
 **Rejected:** the generic `no` code - Django ships no catalog for it, so the
 admin and form errors would have stayed English; and scaffolding empty
 catalogs, which would have shown a half-English UI during the demo.
+
+## 2026-09-09 - Map base layers are admin-editable rows, not settings
+**What:** A `MapBaseLayer` model (XYZ or WMS) editable in the Django admin,
+seeded by migration with OSM HOT, ESRI Light Gray Canvas and ESRI World Imagery, and
+exposed to the SPA through the existing nav-config `map` block.
+**Why:** Base layers were hardcoded in the frontend, so an instance could not
+offer a national WMS or drop a layer it has no rights to; the seed keeps the
+upgrade free for operators who are happy with our choices.
+**Rejected:** Env vars / settings (a list of records does not fit an env var,
+and it would need a redeploy per change); a separate API endpoint (the nav
+config already carries the map setup, and a fetch would delay the first paint);
+an `is_default` flag - the first enabled layer by display order is the default,
+which is one invariant less to enforce. Stamen Toner was dropped from the
+defaults: Stadia Maps returns 401 for any domain not registered with them, so
+it only ever loaded on localhost and alert.riparias.be; CartoDB Positron, its
+first replacement, is watermarked "API KEY REQUIRED" without an account.
