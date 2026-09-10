@@ -249,3 +249,13 @@ right when the user went back to browsing it (0.16 s now for 2.6k rows).
 filter's `.extra()` names the observation table, which Django aliases in a
 subquery; chunked id lists (1.5 s) and an unseen-first intersect (0.27 s), both
 slower than the join.
+
+## 2026-09-10 - Evaluate unseen rows per alert, not per user
+**What:** `create_unseen_observations` runs `Alert.observations()` per alert on
+the import's new observations and unions the ids per user, instead of pooling
+every alert's species/datasets/basis-of-record/verified/area filters into one
+query per user.
+**Why:** The pooled query was a cross product (alert A's species with alert B's
+dataset or area) and flagged observations matching no alert as "not viewed".
+**Rejected:** A corrected OR-of-alerts pooled query - a second copy of the alert
+predicate to keep in sync with the readers, for a per-import saving only.

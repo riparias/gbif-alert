@@ -1,3 +1,10 @@
+# Unreleased
+
+- Fix: an observation is now only flagged "not viewed" when it matches at
+  least one of your alerts. Before, with several alerts, the filters of all
+  alerts were combined (for example the species of one alert with the datasets
+  or areas of another), so some observations matching no alert were flagged.
+
 # 2.5.3 (2026-09-03)
 
 - Fix: browsing an alert that matches many observations no longer times out
