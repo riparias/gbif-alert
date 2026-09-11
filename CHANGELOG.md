@@ -3,6 +3,9 @@
 - Fix: filtering on an area that no longer exists, in the "approaching" or
   "both" area mode, no longer fails with a server error. It now returns no
   observations, as the "inside" mode already did.
+- Fix: with an area filter active, the timeline and the species counts no
+  longer count an observation twice when it lies in the overlap of two
+  selected areas.
 - Fix: an observation is now only flagged "not viewed" when it matches at
   least one of your alerts. Before, with several alerts, the filters of all
   alerts were combined (for example the species of one alert with the datasets

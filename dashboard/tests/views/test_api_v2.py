@@ -3748,3 +3748,67 @@ def test_counter_with_unknown_area_returns_zero(client, observations_data, query
     response = client.get(reverse("api-v2:observations_counter") + query)
     assert response.status_code == 200
     assert response.json() == {"count": 0}
+# Aggregates under an area filter: the area-parts join yields one row per
+# matching part, so an observation inside two overlapping areas (or on a shared
+# ST_Subdivide edge) appears twice. Grouped counts must count distinct
+# observations, like the counter endpoint and the map tiles already do.
+# ---------------------------------------------------------------------------
+
+
+def _square_4326(x0, y0, x1, y1):
+    return MultiPolygon(
+        Polygon(((x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)), srid=4326),
+        srid=4326,
+    )
+
+
+@pytest.fixture
+def overlapping_areas_data():
+    species = Species.objects.create(name="Overlapus testus", gbif_taxon_key=9999201)
+    dataset = Dataset.objects.create(
+        name="Overlap dataset", gbif_dataset_key="dddd0000-0000-1111-2222-333344445555"
+    )
+    basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION_OVERLAP")
+    di = DataImport.objects.create(
+        start=datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    )
+    obs = Observation.objects.create(
+        gbif_id="ov1",
+        occurrence_id="occ:ov1",
+        species=species,
+        source_dataset=dataset,
+        date=datetime.date(2026, 3, 5),
+        data_import=di,
+        initial_data_import=di,
+        basis_of_record=basis_of_record,
+        location=Point(4.35, 50.85, srid=4326),
+    )
+    area_1 = Area.objects.create(
+        name="Overlap A", mpoly=_square_4326(4.30, 50.80, 4.40, 50.90)
+    )
+    # Overlaps area_1, and the observation sits in the overlap
+    area_2 = Area.objects.create(
+        name="Overlap B", mpoly=_square_4326(4.32, 50.82, 4.42, 50.92)
+    )
+    return {"species": species, "obs": obs, "area_1": area_1, "area_2": area_2}
+
+
+def test_histogram_counts_each_observation_once_under_overlapping_area_filter(
+    client, overlapping_areas_data
+):
+    d = overlapping_areas_data
+    query = f"?areaIds={d['area_1'].pk}&areaIds={d['area_2'].pk}"
+    response = client.get(reverse("api-v2:observations_histogram") + query)
+    assert response.status_code == 200
+    assert response.json() == [{"year": 2026, "month": 3, "count": 1}]
+
+
+def test_species_breakdown_counts_each_observation_once_under_overlapping_area_filter(
+    client, overlapping_areas_data
+):
+    d = overlapping_areas_data
+    query = f"?areaIds={d['area_1'].pk}&areaIds={d['area_2'].pk}"
+    response = client.get(reverse("api-v2:observations_species_breakdown") + query)
+    assert response.status_code == 200
+    rows = response.json()
+    assert [(row["id"], row["count"]) for row in rows] == [(d["species"].pk, 1)]
