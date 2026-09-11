@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import get_language, get_language_info
 
-from dashboard.models import Area
+from dashboard.models import Area, MapBaseLayer
 
 register = template.Library()
 
@@ -94,6 +94,11 @@ def nav_config_json(context):
                 "dashboard:pages:observation-details",
                 kwargs={"stable_id": "PLACEHOLDER"},
             ).replace("PLACEHOLDER", "{stable_id}"),
+            # Background maps offered in the picker, first one being the
+            # default. Configured per instance in the admin; seeded with three
+            # layers, but an operator is free to leave none at all - the
+            # frontend then falls back to its built-in OSM layer.
+            "baseLayers": [layer.to_dict() for layer in MapBaseLayer.objects.enabled()],
         },
         "speciesNameMode": species_name_mode,
         # Areas pre-selected in the home page's area filter. Public areas only:

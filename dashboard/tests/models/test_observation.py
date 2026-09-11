@@ -656,3 +656,119 @@ def test_two_alerts_different_modes_both_handled(unseen_afm_data):
     assert unseen_afm_data["obs_inside"].pk in unseen
     assert unseen_afm_data["obs_near"].pk in unseen
     assert unseen_afm_data["obs_far"].pk not in unseen
+
+
+# ---------------------------------------------------------------------------
+# create_unseen_observations: filters must be evaluated per alert, never pooled
+# across a user's alerts (see the cross-product reported in the issue tracker:
+# alert A = (X, D1) and alert B = (Y, D2) must NOT mark an X-in-D2 observation).
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def unseen_cross_data():
+    User = get_user_model()
+    user = User.objects.create_user(
+        username="cross_user",
+        password="pass",
+        email="cross@test.com",
+        notification_delay_days=365,
+    )
+    basis_of_record = BasisOfRecord.objects.create(name="HUMAN_OBS_CROSS")
+    species_x = Species.objects.create(name="Species X", gbif_taxon_key=9999101)
+    species_y = Species.objects.create(name="Species Y", gbif_taxon_key=9999102)
+    dataset_1 = Dataset.objects.create(
+        name="Dataset 1", gbif_dataset_key="cccc0000-0000-1111-2222-333344445551"
+    )
+    dataset_2 = Dataset.objects.create(
+        name="Dataset 2", gbif_dataset_key="cccc0000-0000-1111-2222-333344445552"
+    )
+    di = DataImport.objects.create(start=timezone.now())
+    area = Area.objects.create(name="Cross test square", mpoly=_TEST_AREA_POLYGON)
+
+    def make_obs(gbif_id, occurrence_id, species, dataset, location):
+        return Observation.objects.create(
+            gbif_id=gbif_id,
+            occurrence_id=occurrence_id,
+            species=species,
+            date=datetime.date.today(),
+            data_import=di,
+            initial_data_import=di,
+            source_dataset=dataset,
+            location=location,
+            basis_of_record=basis_of_record,
+        )
+
+    inside = Point(4.35, 50.85, srid=4326)
+    far = Point(3.50, 50.85, srid=4326)
+    return {
+        "user": user,
+        "species_x": species_x,
+        "species_y": species_y,
+        "dataset_1": dataset_1,
+        "dataset_2": dataset_2,
+        "area": area,
+        "obs_x_d1": make_obs(9300, "cross_x_d1", species_x, dataset_1, inside),
+        "obs_y_d2": make_obs(9301, "cross_y_d2", species_y, dataset_2, inside),
+        "obs_x_d2": make_obs(9302, "cross_x_d2", species_x, dataset_2, inside),
+        "obs_x_far": make_obs(9303, "cross_x_far", species_x, dataset_1, far),
+        "obs_y_far": make_obs(9304, "cross_y_far", species_y, dataset_1, far),
+    }
+
+
+def _unseen_ids_for(user) -> set[int]:
+    return set(
+        ObservationUnseen.objects.filter(user=user).values_list(
+            "observation_id", flat=True
+        )
+    )
+
+
+def test_unseen_species_and_dataset_filters_are_not_pooled_across_alerts(
+    unseen_cross_data,
+):
+    """Alert A = (X, D1), alert B = (Y, D2): an X observation in D2 matches
+    neither alert and must not be marked unseen."""
+    d = unseen_cross_data
+    alert_a = Alert.objects.create(user=d["user"], name="alert_a")
+    alert_a.species.add(d["species_x"])
+    alert_a.datasets.add(d["dataset_1"])
+    alert_b = Alert.objects.create(user=d["user"], name="alert_b")
+    alert_b.species.add(d["species_y"])
+    alert_b.datasets.add(d["dataset_2"])
+
+    create_unseen_observations(
+        Observation.objects.filter(
+            pk__in=[d["obs_x_d1"].pk, d["obs_y_d2"].pk, d["obs_x_d2"].pk]
+        )
+    )
+
+    unseen = _unseen_ids_for(d["user"])
+    assert d["obs_x_d1"].pk in unseen
+    assert d["obs_y_d2"].pk in unseen
+    assert d["obs_x_d2"].pk not in unseen
+
+
+def test_unseen_area_filter_of_one_alert_does_not_leak_to_another(
+    unseen_cross_data,
+):
+    """Alert A = (X, inside area), alert B = (Y, no area filter): an X
+    observation far outside the area matches neither alert and must not be
+    marked unseen, while a far Y observation must be (B has no area filter)."""
+    d = unseen_cross_data
+    alert_a = Alert.objects.create(user=d["user"], name="alert_a")
+    alert_a.species.add(d["species_x"])
+    alert_a.areas.add(d["area"])
+    alert_b = Alert.objects.create(user=d["user"], name="alert_b")
+    alert_b.species.add(d["species_y"])
+
+    create_unseen_observations(
+        Observation.objects.filter(
+            pk__in=[d["obs_x_d1"].pk, d["obs_x_far"].pk, d["obs_y_far"].pk]
+        )
+    )
+
+    unseen = _unseen_ids_for(d["user"])
+    assert d["obs_x_d1"].pk in unseen
+    assert d["obs_y_far"].pk in unseen
+    assert d["obs_x_far"].pk not in unseen

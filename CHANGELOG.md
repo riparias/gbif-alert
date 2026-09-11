@@ -3,6 +3,23 @@
 - Fix: with an area filter active, the timeline and the species counts no
   longer count an observation twice when it lies in the overlap of two
   selected areas.
+- Fix: an observation is now only flagged "not viewed" when it matches at
+  least one of your alerts. Before, with several alerts, the filters of all
+  alerts were combined (for example the species of one alert with the datasets
+  or areas of another), so some observations matching no alert were flagged.
+- Norwegian Bokmal (`nb`) is now one of the languages an instance can offer:
+  add it to `ENABLED_LANGUAGES` to show it in the language selector. The
+  interface, the account pages and the alert notification email are
+  translated; the translation is a first pass and has not yet been reviewed by
+  a native speaker.
+- Fix: the Map / Timeline / Species / Table tabs no longer glue their icon
+  against their label.
+- New: the map's base layers are now configurable per instance in the Django
+  admin (Dashboard > Map base layers), as XYZ tile templates or WMS services.
+  Existing instances keep working without any action.
+- Change: "Stamen Toner" is replaced by "ESRI Light Gray Canvas" as a default
+  layer. Toner needs a Stadia Maps account and only ever loaded on
+  alert.riparias.be; Light Gray Canvas needs no key and works anywhere.
 
 # 2.5.3 (2026-09-03)
 
