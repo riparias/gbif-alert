@@ -3572,6 +3572,134 @@ def test_publish_as_template_requires_auth(client, alert_data):
 
 
 # ---------------------------------------------------------------------------
+# Area visibility on alerts and templates. An alert may only reference areas
+# its user can see (public, or their own); area ids are sequential so a
+# foreign private area is trivially guessable, and even without the geometry
+# its filtering effect would leak. A template must only reference public
+# areas since every user copies it.
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def area_visibility_data(alert_data):
+    poly = _square_4326(4.30, 50.80, 4.40, 50.90)
+    return {
+        **alert_data,
+        "public_area": Area.objects.create(name="Public", mpoly=poly),
+        "own_area": Area.objects.create(
+            name="Mine", mpoly=poly, owner=alert_data["user"]
+        ),
+        "foreign_area": Area.objects.create(
+            name="Theirs", mpoly=poly, owner=alert_data["other_user"]
+        ),
+    }
+
+
+def _alert_payload(d, area):
+    return {"name": "Area check", "speciesIds": [d["sp1"].pk], "areaIds": [area.pk]}
+
+
+def test_alert_create_rejects_foreign_private_area(client, area_visibility_data):
+    d = area_visibility_data
+    client.login(username="alertuser", password="12345")
+    response = client.post(
+        "/api/v2/alerts/",
+        data=_alert_payload(d, d["foreign_area"]),
+        content_type="application/json",
+    )
+    assert response.status_code == 422
+    assert "areas" in response.json()["errors"]
+    assert not Alert.objects.filter(name="Area check").exists()
+
+
+def test_alert_update_rejects_foreign_private_area(client, area_visibility_data):
+    d = area_visibility_data
+    client.login(username="alertuser", password="12345")
+    response = client.put(
+        f"/api/v2/alerts/{d['alert'].pk}/",
+        data=_alert_payload(d, d["foreign_area"]),
+        content_type="application/json",
+    )
+    assert response.status_code == 422
+    assert "areas" in response.json()["errors"]
+    d["alert"].refresh_from_db()
+    assert d["alert"].areas.count() == 0
+
+
+@pytest.mark.parametrize("area_key", ["public_area", "own_area"])
+def test_alert_create_accepts_visible_areas(client, area_visibility_data, area_key):
+    d = area_visibility_data
+    client.login(username="alertuser", password="12345")
+    response = client.post(
+        "/api/v2/alerts/",
+        data=_alert_payload(d, d[area_key]),
+        content_type="application/json",
+    )
+    assert response.status_code == 201
+    assert response.json()["areaIds"] == [d[area_key].pk]
+
+
+def test_publish_as_template_refuses_alert_with_private_area(
+    client, area_visibility_data
+):
+    from dashboard.models import AlertTemplate
+
+    d = area_visibility_data
+    d["alert"].areas.add(d["own_area"])
+    get_user_model().objects.create_superuser(
+        username="root", password="12345", email="r@e.com"
+    )
+    client.login(username="root", password="12345")
+    response = client.post(f"/api/v2/spa/alerts/{d['alert'].pk}/publish-as-template/")
+    assert response.status_code == 422
+    assert "areas" in response.json()["errors"]
+    assert AlertTemplate.objects.count() == 0
+
+
+def test_publish_as_template_accepts_alert_with_public_area(
+    client, area_visibility_data
+):
+    from dashboard.models import AlertTemplate
+
+    d = area_visibility_data
+    d["alert"].areas.add(d["public_area"])
+    get_user_model().objects.create_superuser(
+        username="root", password="12345", email="r@e.com"
+    )
+    client.login(username="root", password="12345")
+    response = client.post(f"/api/v2/spa/alerts/{d['alert'].pk}/publish-as-template/")
+    assert response.status_code == 201
+    assert list(AlertTemplate.objects.get().areas.all()) == [d["public_area"]]
+
+
+def test_create_from_template_with_private_area_is_rejected(
+    client, area_visibility_data
+):
+    """Defense in depth: a template that somehow references a private area
+    (created through the ORM or the admin) must not copy it into another
+    user's alert."""
+    from dashboard.models import AlertTemplate
+
+    d = area_visibility_data
+    tpl = AlertTemplate.objects.create(name="leaky", created_by=d["other_user"])
+    tpl.species.add(d["sp1"])
+    tpl.areas.add(d["foreign_area"])
+    client.login(username="alertuser", password="12345")
+    response = client.post(
+        "/api/v2/alerts/from-template/",
+        data={
+            "templateId": tpl.pk,
+            "name": "From leaky",
+            "emailNotificationsFrequency": "N",
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 422
+    assert "areas" in response.json()["errors"]
+    assert not Alert.objects.filter(name="From leaky").exists()
+
+
+# ---------------------------------------------------------------------------
 # GET /api/v2/observations/species-breakdown/
 # ---------------------------------------------------------------------------
 
