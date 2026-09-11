@@ -493,41 +493,50 @@ def _batch_insert_observations(
     inserted_observations = Observation.objects.bulk_create(observations_to_insert)
     _log_with_time(stdout, "Migrating comments")
 
-    # Optimization: batch-fetch all potential replaced observations in ONE query
-    # instead of one query per inserted observation (N+1 problem)
+    # Resolve the observations these replace, for the whole chunk in one query.
+    # values_list rather than model objects: on a full re-import nearly every
+    # row is a replacement, so hydrating 10k Observation rows (geometry and
+    # TextFields included) per chunk was most of this step's cost.
     stable_ids = [obs.stable_id for obs in inserted_observations]
     inserted_obs_pks = {obs.pk for obs in inserted_observations}
 
-    existing_obs_by_stable_id = {}
-    for obs in Observation.objects.filter(stable_id__in=stable_ids).exclude(
-        pk__in=inserted_obs_pks
-    ):
-        existing_obs_by_stable_id[obs.stable_id] = obs
+    existing_pk_by_stable_id: dict[str, int] = dict(
+        Observation.objects.filter(stable_id__in=stable_ids)
+        .exclude(pk__in=inserted_obs_pks)
+        .values_list("stable_id", "pk")
+    )
 
     new_obs_ids = []
-    replaced_obs_pks = []
-    stable_id_to_new_obs = {}
+    new_pk_by_replaced_pk: dict[int, int] = {}
 
     for obs in inserted_observations:
         if stdout is not None:
             stdout.write("/", ending="")
-        replaced_obs = existing_obs_by_stable_id.get(obs.stable_id)
-        if replaced_obs is not None:
-            replaced_obs_pks.append(replaced_obs.pk)
-            stable_id_to_new_obs[obs.stable_id] = obs
+        replaced_pk = existing_pk_by_stable_id.get(obs.stable_id)
+        if replaced_pk is not None:
+            new_pk_by_replaced_pk[replaced_pk] = obs.pk
         else:
             new_obs_ids.append(obs.id)
 
-    # Batch migrate comments in ONE update query (no need to load comments into memory)
+    # Re-point comments from the replaced observations to their replacements.
+    # Comments are rare, so first ask which replaced observations actually have
+    # some (one query) and update only those: one UPDATE per *commented*
+    # replaced observation, near zero in practice, rather than one per replaced
+    # observation - which was 10k statements per chunk on a full re-import.
     from dashboard.models import ObservationComment
 
-    if replaced_obs_pks:
-        for old_obs in Observation.objects.filter(pk__in=replaced_obs_pks):
-            new_obs = stable_id_to_new_obs.get(old_obs.stable_id)
-            if new_obs:
-                ObservationComment.objects.filter(observation=old_obs).update(
-                    observation=new_obs
-                )
+    if new_pk_by_replaced_pk:
+        commented_replaced_pks = (
+            ObservationComment.objects.filter(
+                observation_id__in=new_pk_by_replaced_pk.keys()
+            )
+            .values_list("observation_id", flat=True)
+            .distinct()
+        )
+        for replaced_pk in commented_replaced_pks:
+            ObservationComment.objects.filter(observation_id=replaced_pk).update(
+                observation_id=new_pk_by_replaced_pk[replaced_pk]
+            )
 
     _log_with_time(stdout, "Creating unseen observations for new observations")
     create_unseen_observations(Observation.objects.filter(id__in=new_obs_ids))

@@ -3730,6 +3730,27 @@ def test_species_breakdown_respects_unseen_status_filter(client, breakdown_data)
 
 
 # ---------------------------------------------------------------------------
+# An area filter naming no existing area matches no observation, in every
+# area filter mode. Inside mode gets this for free from the area-parts join;
+# approaching/both must not crash on the empty union of areas.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "?areaIds=999999",
+        "?areaIds=999999&areaFilterMode=approaching&approachingDistanceKm=10",
+        "?areaIds=999999&areaFilterMode=both&approachingDistanceKm=10",
+    ],
+)
+def test_counter_with_unknown_area_returns_zero(client, observations_data, query):
+    response = client.get(reverse("api-v2:observations_counter") + query)
+    assert response.status_code == 200
+    assert response.json() == {"count": 0}
+
+
+# ---------------------------------------------------------------------------
 # Aggregates under an area filter: the area-parts join yields one row per
 # matching part, so an observation inside two overlapping areas (or on a shared
 # ST_Subdivide edge) appears twice. Grouped counts must count distinct
