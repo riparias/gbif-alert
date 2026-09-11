@@ -1,5 +1,8 @@
 # Unreleased
 
+- Fix: an occurrence without a basis of record no longer aborts the whole
+  import with a misleading "species not found" error. Such a row is skipped
+  and counted like the other unusable rows.
 - Fix: with an area filter active, the timeline and the species counts no
   longer count an observation twice when it lies in the overlap of two
   selected areas.
