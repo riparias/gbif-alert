@@ -437,3 +437,27 @@ def test_base_layers_can_be_empty(client):
     MapBaseLayer.objects.all().delete()
 
     assert _get_nav_config(client.get("/"))["map"]["baseLayers"] == []
+
+
+def test_nav_config_escapes_html_in_values(client, settings):
+    """The config is inlined in a <script> element, so a value containing
+    "</script>" must not be able to close it. json.dumps alone leaves <, > and
+    & untouched; the tag must use Django's json_script escaping (\\u003C...)."""
+    settings.GBIF_ALERT = {
+        **settings.GBIF_ALERT,
+        "SITE_NAME": 'Evil </script><script>alert("x")</script>',
+    }
+    response = client.get("/")
+    content = response.content.decode()
+
+    start = content.index('id="gbif-alert-nav-config"')
+    end = content.index("</script>", start)
+    element_body = content[start:end]
+    assert "<script" not in element_body
+    assert "<" not in element_body.split(">", 1)[1]  # nothing raw after the opening tag
+
+    # The value itself survives the round trip unchanged.
+    assert (
+        _get_nav_config(response)["siteName"]
+        == 'Evil </script><script>alert("x")</script>'
+    )

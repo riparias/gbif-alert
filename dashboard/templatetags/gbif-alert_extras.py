@@ -1,11 +1,8 @@
-import json
-import re
-
 from django import template
 from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.urls import reverse
-from django.utils.safestring import mark_safe
+from django.utils.html import json_script
 from django.utils.translation import get_language, get_language_info
 
 from dashboard.models import Area, MapBaseLayer
@@ -29,10 +26,14 @@ SPECIES_NAME_MODE_DEFAULT = "scientific"
 
 @register.simple_tag(takes_context=True)
 def nav_config_json(context):
-    """Serialize all data the Vue navbar needs into a JSON string.
+    """Render all data the Vue navbar needs as a <script type="application/json">
+    element, so the Vue app can read it synchronously at mount time without a
+    fetch round-trip.
 
-    Injected into the page as a <script type="application/json"> element so that
-    the Vue app can read it synchronously at mount time without a fetch round-trip.
+    Uses Django's json_script rather than a bare json.dumps: json.dumps leaves
+    <, > and & untouched, so a value containing "</script>" would close the
+    element and inject markup. json_script escapes them to \u003C etc., which
+    JSON.parse reads back unchanged.
     """
     user = context.request.user
 
@@ -111,7 +112,7 @@ def nav_config_json(context):
         ),
     }
 
-    return mark_safe(json.dumps(conf))
+    return json_script(conf, "gbif-alert-nav-config")
 
 
 @register.filter
@@ -127,28 +128,6 @@ def gbif_occurrence_url(occurrence_id: str) -> str:
 @register.filter
 def gbif_dataset_url(dataset_key: str) -> str:
     return f"https://www.gbif.org/dataset/{dataset_key}"
-
-
-def _is_url(s: str) -> bool:
-    regex_url = re.compile(
-        r"^(?:http|ftp)s?://"  # http:// or https://
-        r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|"  # domain...
-        r"localhost|"  # localhost...
-        r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...or ip
-        r"(?::\d+)?"  # optional port
-        r"(?:/?|[/?]\S+)$",
-        re.IGNORECASE,
-    )
-
-    return re.match(regex_url, s) is not None
-
-
-@register.filter
-def as_link_if_url(value):
-    if _is_url(value):
-        return mark_safe(f'<a href="{value}">{value}</a>')
-    else:
-        return value
 
 
 EU_EMBLEM_STATIC_DIR = "eu-funding"

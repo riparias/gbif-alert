@@ -1,5 +1,9 @@
 # Unreleased
 
+- Security hardening: the configuration block embedded in every page is now
+  escaped the way Django's `json_script` does, so no configured value can
+  break out of it. An unused, unescaped link-rendering template filter was
+  removed.
 - Fix: the archive the import downloads from GBIF is now deleted even when
   the import fails, instead of being left behind in the temp directory. A
   file passed with `--source-dwca` is never deleted.

@@ -31,7 +31,7 @@
 </head>
 <body>
 {# Data for the Vue navbar. Read at mount time via JSON.parse(document.getElementById(...).textContent). #}
-<script type="application/json" id="gbif-alert-nav-config">{% nav_config_json %}</script>
+{% nav_config_json %}
 {% get_page_fragment 'over_navbar' %}
 {% comment %}
 Vue app mount point: renders NavBar (Phase 1) and full page content via RouterView (Phase 2+).
