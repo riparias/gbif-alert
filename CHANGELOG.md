@@ -1,3 +1,9 @@
+# Unreleased
+
+- Fix: filtering on an area that no longer exists, in the "approaching" or
+  "both" area mode, no longer fails with a server error. It now returns no
+  observations, as the "inside" mode already did.
+
 # 2.5.3 (2026-09-03)
 
 - Fix: browsing an alert that matches many observations no longer times out

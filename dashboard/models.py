@@ -592,6 +592,12 @@ class ObservationManager(models.Manager["Observation"]):
                 combined_areas = Area.objects.filter(pk__in=areas_ids).aggregate(
                     area=AggregateUnion("mpoly")
                 )["area"]
+                if combined_areas is None:
+                    # None of the ids exists (stale or bogus id): an area filter
+                    # naming no area matches nothing, exactly like the parts
+                    # join above does in inside mode. Without this,
+                    # compute_area_filter_geometry() raises on None.
+                    return qs.none()
                 target_ewkb = compute_area_filter_geometry(
                     combined_areas, area_filter_mode, approaching_distance_km
                 )
