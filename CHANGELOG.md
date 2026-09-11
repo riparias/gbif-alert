@@ -1,3 +1,9 @@
+# Unreleased
+
+- Fix: with an area filter active, the timeline and the species counts no
+  longer count an observation twice when it lies in the overlap of two
+  selected areas.
+
 # 2.5.3 (2026-09-03)
 
 - Fix: browsing an alert that matches many observations no longer times out
