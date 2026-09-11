@@ -1135,6 +1135,65 @@ def test_import_survives_a_failing_vacuum(test_data):
 
 
 # ---------------------------------------------------------------------------
+# Rows the row builder cannot place: an empty basis of record is skipped like
+# any other unusable row, and only a missing species is reported as such.
+# ---------------------------------------------------------------------------
+
+
+def _lixus_row(**overrides):
+    defaults = dict(
+        gbif_id=9001,
+        occurrence_id="bor-test-1",
+        dataset_key=INATURALIST_KEY,
+        dataset_name="iNaturalist",
+        taxon_key=LIXUS_COL_KEY,
+        accepted_taxon_key=LIXUS_COL_KEY,
+        species_key=LIXUS_COL_KEY,
+    )
+    defaults.update(overrides)
+    return make_raw_row(**defaults)
+
+
+def test_row_with_empty_basis_of_record_is_skipped_not_fatal(test_data):
+    """The discovery pass never creates a BasisOfRecord for an empty value, and
+    the model requires one, so such a row is unusable: it is counted as
+    skipped and the import completes, instead of aborting on a KeyError
+    misreported as a missing species."""
+    rows = [
+        _lixus_row(basis_of_record=""),
+        _lixus_row(gbif_id=9002, occurrence_id="bor-test-2"),
+    ]
+    run_import_with_rows(rows)
+
+    di = DataImport.objects.latest("id")
+    assert di.skipped_observations_counter == 1
+    assert Observation.objects.filter(data_import=di).count() == 1
+    assert Observation.objects.get(data_import=di).occurrence_id == "bor-test-2"
+
+
+def test_row_with_unknown_species_still_aborts_with_species_message(test_data):
+    rows = [_lixus_row(taxon_key="NOPE", accepted_taxon_key="NOPE", species_key="NOPE")]
+    with pytest.raises(CommandError) as exc:
+        run_import_with_rows(rows)
+    assert "species not found" in str(exc.value)
+
+
+def test_unrelated_key_error_in_row_builder_is_not_reported_as_missing_species(
+    test_data,
+):
+    """The chunk loop must only translate a *species* lookup failure into the
+    "species not found" CommandError; any other KeyError is a bug and must
+    surface as itself."""
+    from dashboard.management.commands import import_observations as mod
+
+    with mock.patch.object(
+        mod, "build_observation_from_raw", side_effect=KeyError("some other key")
+    ):
+        with pytest.raises(KeyError, match="some other key"):
+            run_import_with_rows([_lixus_row()])
+
+
+# ---------------------------------------------------------------------------
 # _batch_insert_observations must not issue per-observation statements: on a
 # full re-import nearly every row is a replacement, so anything proportional
 # to the chunk size lands on the import's hottest path.
