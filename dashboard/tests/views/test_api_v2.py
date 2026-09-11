@@ -3748,6 +3748,9 @@ def test_counter_with_unknown_area_returns_zero(client, observations_data, query
     response = client.get(reverse("api-v2:observations_counter") + query)
     assert response.status_code == 200
     assert response.json() == {"count": 0}
+
+
+# ---------------------------------------------------------------------------
 # Aggregates under an area filter: the area-parts join yields one row per
 # matching part, so an observation inside two overlapping areas (or on a shared
 # ST_Subdivide edge) appears twice. Grouped counts must count distinct
