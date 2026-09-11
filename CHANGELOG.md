@@ -2,6 +2,9 @@
 
 - Faster import: re-linking comments to re-imported observations no longer
   costs one database statement per re-imported observation.
+- Fix: filtering on an area that no longer exists, in the "approaching" or
+  "both" area mode, no longer fails with a server error. It now returns no
+  observations, as the "inside" mode already did.
 - Fix: with an area filter active, the timeline and the species counts no
   longer count an observation twice when it lies in the overlap of two
   selected areas.
