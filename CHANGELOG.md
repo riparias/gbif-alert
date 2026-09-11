@@ -1,5 +1,8 @@
 # Unreleased
 
+- Security: the image upload and Markdown preview endpoints used by the
+  admin's page editor now require a staff account. They were reachable by
+  anonymous visitors, who could upload files into the media storage.
 - Fix: the archive the import downloads from GBIF is now deleted even when
   the import fails, instead of being left behind in the temp directory. A
   file passed with `--source-dwca` is never deleted.
