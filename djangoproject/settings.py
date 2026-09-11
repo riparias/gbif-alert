@@ -453,6 +453,7 @@ LANGUAGES = [
     ("en", _("English")),
     ("fr", _("French")),
     ("nl", _("Dutch")),
+    ("nb", _("Norwegian Bokmal")),
 ]
 
 TIME_ZONE = os.environ.get("TIME_ZONE", "Europe/Brussels")

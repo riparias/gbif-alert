@@ -259,3 +259,12 @@ query per user.
 dataset or area) and flagged observations matching no alert as "not viewed".
 **Rejected:** A corrected OR-of-alerts pooled query - a second copy of the alert
 predicate to keep in sync with the readers, for a per-import saving only.
+## 2026-09-04 - Add Norwegian Bokmal (nb) as a UI language
+**What:** Fourth locale wired through `LANGUAGES`, both gettext catalogs, the
+Vue `translations.ts` block and the alert email; `ENABLED_LANGUAGES` default
+left at `en,fr,nl` so instances opt in.
+**Why:** A Norwegian team needed the tool demonstrated in their own language,
+and the per-instance language machinery already made this a data-only change.
+**Rejected:** the generic `no` code - Django ships no catalog for it, so the
+admin and form errors would have stayed English; and scaffolding empty
+catalogs, which would have shown a half-English UI during the demo.

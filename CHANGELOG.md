@@ -4,6 +4,13 @@
   least one of your alerts. Before, with several alerts, the filters of all
   alerts were combined (for example the species of one alert with the datasets
   or areas of another), so some observations matching no alert were flagged.
+- Norwegian Bokmal (`nb`) is now one of the languages an instance can offer:
+  add it to `ENABLED_LANGUAGES` to show it in the language selector. The
+  interface, the account pages and the alert notification email are
+  translated; the translation is a first pass and has not yet been reviewed by
+  a native speaker.
+- Fix: the Map / Timeline / Species / Table tabs no longer glue their icon
+  against their label.
 
 # 2.5.3 (2026-09-03)
 
