@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import MultiPolygon, Polygon
 from django.urls import reverse
 
-from dashboard.models import Alert, Area, Dataset, Species
+from dashboard.models import Alert, Area, Dataset, MapBaseLayer, Species
 
 pytestmark = pytest.mark.django_db
 
@@ -396,3 +396,44 @@ def test_default_area_ids_excludes_user_specific_areas(client):
     Area.objects.filter(pk=private.pk).update(is_default_home_filter=True)
 
     assert _get_nav_config(client.get("/"))["defaultAreaIds"] == []
+
+
+def test_base_layers_are_seeded_and_exposed(client):
+    """A fresh instance ships the three default layers, in order."""
+    layers = _get_nav_config(client.get("/"))["map"]["baseLayers"]
+
+    assert [layer["name"] for layer in layers] == [
+        "OSM HOT",
+        "ESRI Light Gray Canvas",
+        "ESRI World Imagery",
+    ]
+    assert all(layer["type"] == "xyz" for layer in layers)
+    assert all(layer["attribution"] for layer in layers)
+
+
+def test_base_layers_excludes_disabled_layers(client):
+    """A layer the operator unticked is not offered to visitors."""
+    MapBaseLayer.objects.filter(name="ESRI World Imagery").update(is_enabled=False)
+
+    names = [
+        layer["name"] for layer in _get_nav_config(client.get("/"))["map"]["baseLayers"]
+    ]
+
+    assert "ESRI World Imagery" not in names
+    assert "OSM HOT" in names
+
+
+def test_base_layers_follow_the_display_order(client):
+    """Reordering in the admin reorders the picker, and so the default layer."""
+    MapBaseLayer.objects.exclude(name="ESRI World Imagery").update(display_order=100)
+
+    layers = _get_nav_config(client.get("/"))["map"]["baseLayers"]
+
+    assert layers[0]["name"] == "ESRI World Imagery"
+
+
+def test_base_layers_can_be_empty(client):
+    """Deleting every layer is not a server error; the frontend falls back."""
+    MapBaseLayer.objects.all().delete()
+
+    assert _get_nav_config(client.get("/"))["map"]["baseLayers"] == []

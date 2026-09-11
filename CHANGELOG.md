@@ -11,6 +11,12 @@
   a native speaker.
 - Fix: the Map / Timeline / Species / Table tabs no longer glue their icon
   against their label.
+- New: the map's base layers are now configurable per instance in the Django
+  admin (Dashboard > Map base layers), as XYZ tile templates or WMS services.
+  Existing instances keep working without any action.
+- Change: "Stamen Toner" is replaced by "ESRI Light Gray Canvas" as a default
+  layer. Toner needs a Stadia Maps account and only ever loaded on
+  alert.riparias.be; Light Gray Canvas needs no key and works anywhere.
 
 # 2.5.3 (2026-09-03)
 
