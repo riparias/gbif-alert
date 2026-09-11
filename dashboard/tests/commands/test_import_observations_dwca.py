@@ -8,7 +8,10 @@ test_import_observations_logic.py and are driven by in-memory
 RawObservationRow fixtures - they don't need the zip.
 """
 
+import os
+import shutil
 from pathlib import Path
+from unittest import mock
 
 import pytest
 import requests_mock as requests_mock_module
@@ -267,3 +270,98 @@ def test_gbif_predicate_stored(test_data, gbif_download_config):
                     ],
                 }
             }
+
+
+# ---------------------------------------------------------------------------
+# Source archive lifecycle: an archive the command downloaded itself is a temp
+# file and must be deleted whatever happens; a file passed with --source-dwca
+# belongs to the operator and must never be touched.
+# ---------------------------------------------------------------------------
+
+
+def _fake_download(output_paths: list[str]):
+    """Stand-in for the GBIF download: copies the sample archive to the path
+    the command asked for and records that path."""
+
+    def fake(predicate, username, password, output_path):
+        output_paths.append(output_path)
+        shutil.copyfile(SAMPLE_DATA_PATH / "gbif_download.zip", output_path)
+
+    return fake
+
+
+def test_downloaded_dwca_deleted_when_import_fails(
+    test_data, gbif_download_config
+) -> None:
+    from dashboard.management.commands import import_observations as mod
+
+    downloaded: list[str] = []
+    with mock.patch.object(
+        mod, "download_gbif_occurrences", side_effect=_fake_download(downloaded)
+    ):
+        with mock.patch.object(mod, "run_import", side_effect=RuntimeError("boom")):
+            with pytest.raises(RuntimeError, match="boom"):
+                call_command("import_observations")
+
+    assert len(downloaded) == 1
+    assert not os.path.exists(downloaded[0])
+
+
+def test_downloaded_dwca_deleted_when_download_fails(
+    test_data, gbif_download_config
+) -> None:
+    from dashboard.management.commands import import_observations as mod
+
+    requested: list[str] = []
+
+    def failing_download(predicate, username, password, output_path):
+        requested.append(output_path)
+        raise RuntimeError("gbif down")
+
+    with mock.patch.object(
+        mod, "download_gbif_occurrences", side_effect=failing_download
+    ):
+        with pytest.raises(RuntimeError, match="gbif down"):
+            call_command("import_observations")
+
+    assert len(requested) == 1
+    assert not os.path.exists(requested[0])
+
+
+def test_downloaded_dwca_deleted_on_success(test_data, gbif_download_config) -> None:
+    from dashboard.management.commands import import_observations as mod
+
+    downloaded: list[str] = []
+    with mock.patch.object(
+        mod, "download_gbif_occurrences", side_effect=_fake_download(downloaded)
+    ):
+        call_command("import_observations")
+
+    assert len(downloaded) == 1
+    assert not os.path.exists(downloaded[0])
+    assert Observation.objects.count() == 7
+
+
+def test_user_provided_dwca_kept_when_import_fails(test_data, tmp_path) -> None:
+    from dashboard.management.commands import import_observations as mod
+
+    user_file = tmp_path / "my_download.zip"
+    shutil.copyfile(SAMPLE_DATA_PATH / "gbif_download.zip", user_file)
+
+    with mock.patch.object(mod, "run_import", side_effect=RuntimeError("boom")):
+        with open(user_file, "rb") as gbif_download_file:
+            with pytest.raises(RuntimeError, match="boom"):
+                call_command("import_observations", source_dwca=gbif_download_file)
+
+    assert user_file.exists()
+
+
+def test_user_provided_dwca_kept_on_success(test_data, tmp_path) -> None:
+    user_file = tmp_path / "my_download.zip"
+    shutil.copyfile(SAMPLE_DATA_PATH / "gbif_download.zip", user_file)
+
+    with open(user_file, "rb") as gbif_download_file:
+        call_command("import_observations", source_dwca=gbif_download_file)
+
+    assert user_file.exists()
+    assert Observation.objects.count() == 7
