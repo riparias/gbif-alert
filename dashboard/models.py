@@ -375,6 +375,14 @@ def create_unseen_observations(observation_queryset: QuerySet["Observation"]) ->
     provided observations and that are not older than the user's notification delay
 
     !!! Only applicable to new observations !!!
+
+    Each alert is evaluated on its own, with the same predicate the alert readers
+    use (``Alert.observations()``), and the per-alert results are unioned per
+    user. Do NOT pool the filters of a user's alerts into one query: with alert A
+    = (species X, dataset D1) and alert B = (species Y, dataset D2), a pooled
+    "species in {X, Y} AND dataset in {D1, D2}" query also matches an X
+    observation in D2, which matches neither alert. The same cross-product
+    applies to basis of record, verified status and areas.
     """
     # Get the current date
     today = timezone.now().date()
@@ -382,7 +390,8 @@ def create_unseen_observations(observation_queryset: QuerySet["Observation"]) ->
     # Collect all ObservationUnseen objects to create in bulk
     unseen_to_create = []
 
-    # Prefetch alerts with their related species/datasets/basis_of_record/areas to avoid N+1 queries
+    # Prefetch alerts with their related species/datasets/basis_of_record/areas so
+    # that Alert.observations() below does not hit the DB per alert relation
     users_with_alerts = User.objects.prefetch_related(
         "alert_set__species",
         "alert_set__datasets",
@@ -401,119 +410,22 @@ def create_unseen_observations(observation_queryset: QuerySet["Observation"]) ->
         if not recent_observations.exists():
             continue
 
-        # Build filter criteria from user's alerts (without executing queries per alert)
         user_alerts = list(user.alert_set.all())  # Already prefetched
         if not user_alerts:
             continue
 
-        # Collect species/dataset/basis_of_record IDs from all alerts (merged).
-        # Spatial filtering is handled per-group below because different alerts may
-        # use different area_filter_mode / approaching_distance_km values.
-        all_species_ids: set[int] = set()
-        all_dataset_ids: set[int] = set()
-        all_basis_of_record_ids: set[int] = set()
-        has_alert_without_dataset_filter = False
-        has_alert_without_basis_of_record_filter = False
-        has_alert_without_verified_filter = False
-        wants_verified = False
-        wants_unverified = False
-
-        # Group alerts by (area_filter_mode, approaching_distance_km) so each group
-        # can apply its own spatial predicate in one query.
-        alerts_by_spatial: dict[tuple, list] = {}
-
+        # One query per alert, restricted to the recent new observations. Only the
+        # ids are needed to build the unseen rows.
+        unseen_ids: set[int] = set()
         for alert in user_alerts:
-            species_ids = {s.pk for s in alert.species.all()}  # Prefetched
-            all_species_ids.update(species_ids)
-
-            dataset_ids = {d.pk for d in alert.datasets.all()}  # Prefetched
-            if not dataset_ids:
-                has_alert_without_dataset_filter = True
-            all_dataset_ids.update(dataset_ids)
-
-            basis_of_record_ids = {
-                b.pk for b in alert.basis_of_record_filters.all()
-            }  # Prefetched
-            if not basis_of_record_ids:
-                has_alert_without_basis_of_record_filter = True
-            all_basis_of_record_ids.update(basis_of_record_ids)
-
-            if alert.verified_filter == Alert.VERIFIED_FILTER_ALL:
-                has_alert_without_verified_filter = True
-            elif alert.verified_filter == Alert.VERIFIED_FILTER_VERIFIED_ONLY:
-                wants_verified = True
-            elif alert.verified_filter == Alert.VERIFIED_FILTER_UNVERIFIED_ONLY:
-                wants_unverified = True
-
-            key = (alert.area_filter_mode, alert.approaching_distance_km)
-            alerts_by_spatial.setdefault(key, []).append(alert)
-
-        # Build base queryset with non-spatial filters applied once.
-        base_obs_qs = recent_observations.filter(species_id__in=all_species_ids)
-
-        if all_dataset_ids and not has_alert_without_dataset_filter:
-            base_obs_qs = base_obs_qs.filter(source_dataset_id__in=all_dataset_ids)
-
-        if all_basis_of_record_ids and not has_alert_without_basis_of_record_filter:
-            base_obs_qs = base_obs_qs.filter(
-                basis_of_record_id__in=all_basis_of_record_ids
+            unseen_ids.update(
+                alert.observations()
+                .filter(pk__in=recent_observations.values("pk"))
+                .values_list("pk", flat=True)
             )
 
-        if not has_alert_without_verified_filter:
-            if wants_verified and not wants_unverified:
-                base_obs_qs = base_obs_qs.filter(verified=True)
-            elif wants_unverified and not wants_verified:
-                base_obs_qs = base_obs_qs.filter(verified=False)
-
-        # For each spatial group, apply that group's area filter and collect results.
-        # Process AREA_FILTER_INSIDE groups first so they have priority on conflicts.
-        def _spatial_sort_key(item: tuple) -> int:
-            (mode, _dist), _alerts = item
-            return 0 if mode == Alert.AREA_FILTER_INSIDE else 1
-
-        for (mode, distance_km), alerts_group in sorted(
-            alerts_by_spatial.items(), key=_spatial_sort_key
-        ):
-            group_area_ids: set[int] = set()
-            has_group_without_area_filter = False
-            for alert in alerts_group:
-                a_ids = {a.pk for a in alert.areas.all()}  # Prefetched
-                if not a_ids:
-                    has_group_without_area_filter = True
-                group_area_ids.update(a_ids)
-
-            group_obs_qs = base_obs_qs
-            if group_area_ids and not has_group_without_area_filter:
-                if mode == Alert.AREA_FILTER_INSIDE or not distance_km:
-                    # Same parts join as filtered_from_my_params - see the
-                    # comment there for why .extra() rather than the ORM's
-                    # EXISTS form.
-                    group_obs_qs = group_obs_qs.extra(
-                        tables=["dashboard_areapart"],
-                        where=[
-                            "dashboard_areapart.area_id = ANY(%s)",
-                            "ST_Intersects(dashboard_observation.location, dashboard_areapart.geom)",
-                        ],
-                        params=[list(group_area_ids)],
-                    ).distinct()
-                else:
-                    combined_areas = Area.objects.filter(
-                        pk__in=group_area_ids
-                    ).aggregate(area=AggregateUnion("mpoly"))["area"]
-                    if combined_areas:
-                        target_ewkb = compute_area_filter_geometry(
-                            combined_areas, mode, distance_km
-                        )
-                        group_obs_qs = group_obs_qs.extra(
-                            where=[
-                                "ST_Within(dashboard_observation.location, ST_GeomFromEWKB(%s))"
-                            ],
-                            params=[target_ewkb],
-                        )
-
-            # Collect unseen entries for bulk creation
-            for obs in group_obs_qs:
-                unseen_to_create.append(ObservationUnseen(observation=obs, user=user))
+        for obs_id in unseen_ids:
+            unseen_to_create.append(ObservationUnseen(observation_id=obs_id, user=user))
 
     # Bulk create all unseen observations at once (ignore conflicts for idempotency)
     if unseen_to_create:
@@ -1731,3 +1643,131 @@ class ApiToken(models.Model):
             user=user, name=name, token_hash=cls.hash_token(raw), prefix=raw[:8]
         )
         return token, raw
+
+
+class MapBaseLayerManager(models.Manager["MapBaseLayer"]):
+    def enabled(self) -> QuerySet["MapBaseLayer"]:
+        return self.get_queryset().filter(is_enabled=True)
+
+
+class MapBaseLayer(models.Model):
+    """A background map an instance offers in the base layer picker.
+
+    The list is per-instance and editable in the admin; a data migration seeds
+    the three layers GBIF Alert used to hardcode, so an operator who is happy
+    with those has nothing to do.
+
+    Attributes
+    ----------
+    name : str
+        Label shown in the picker.
+    layer_type : str
+        Either `XYZ` (a tile URL template) or `WMS`.
+    url : str
+        XYZ: the tile template. WMS: the service endpoint.
+    wms_layers : str
+        WMS only: comma-separated layer names for the LAYERS parameter.
+    attribution : str
+        Credit line shown over the map. Most providers require one.
+    max_zoom : int
+        Deepest zoom the provider serves tiles for.
+    is_enabled : bool
+        Unticking hides the layer without losing its configuration.
+    display_order : int
+        Position in the picker. The first enabled layer is the one maps open
+        with, so there is no separate "default" flag to keep consistent.
+    """
+
+    XYZ = "xyz"
+    WMS = "wms"
+    LAYER_TYPE_CHOICES = [(XYZ, "XYZ tiles"), (WMS, "WMS")]
+
+    name = models.CharField(max_length=100)
+    layer_type = models.CharField(max_length=3, choices=LAYER_TYPE_CHOICES, default=XYZ)
+    url = models.URLField(
+        max_length=500,
+        help_text=(
+            "XYZ: the tile template, with the {z}, {x} and {y} placeholders "
+            "(use {-y} for TMS row ordering). Drop any {r} retina placeholder, "
+            "OpenLayers does not support it. WMS: the service endpoint, "
+            "without parameters. The service must serve EPSG:3857."
+        ),
+    )
+    wms_layers = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="WMS only: comma-separated layer names (the LAYERS parameter).",
+    )
+    attribution = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text=(
+            "Credit shown in the map corner. Most tile providers require this; "
+            "check the provider's terms."
+        ),
+    )
+    max_zoom = models.PositiveSmallIntegerField(default=19)
+    is_enabled = models.BooleanField(
+        default=True, help_text="Untick to hide the layer without deleting it."
+    )
+    display_order = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Position in the picker. Maps open with the first enabled layer.",
+    )
+
+    objects = MapBaseLayerManager()
+
+    class Meta:
+        ordering = ["display_order", "id"]
+
+    def clean(self) -> None:
+        super().clean()
+
+        if self.layer_type == self.XYZ:
+            has_row = "{y}" in self.url or "{-y}" in self.url
+            if not ("{z}" in self.url and "{x}" in self.url and has_row):
+                raise ValidationError(
+                    {
+                        "url": (
+                            "An XYZ tile URL needs the {z}, {x} and {y} (or "
+                            "{-y}) placeholders."
+                        )
+                    }
+                )
+            if "{r}" in self.url:
+                raise ValidationError(
+                    {
+                        "url": (
+                            "OpenLayers does not support the {r} retina "
+                            "placeholder; remove it from the URL."
+                        )
+                    }
+                )
+        else:
+            if not self.wms_layers:
+                raise ValidationError(
+                    {"wms_layers": "A WMS layer needs at least one layer name."}
+                )
+            if "{z}" in self.url:
+                raise ValidationError(
+                    {
+                        "url": (
+                            "A WMS URL is a plain service endpoint, not a tile "
+                            "template. Remove the {z}/{x}/{y} placeholders."
+                        )
+                    }
+                )
+
+    def __str__(self) -> str:
+        return self.name
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.pk,
+            "name": self.name,
+            "type": self.layer_type,
+            "url": self.url,
+            "wmsLayers": self.wms_layers,
+            "attribution": self.attribution,
+            "maxZoom": self.max_zoom,
+        }

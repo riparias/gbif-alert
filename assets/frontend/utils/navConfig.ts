@@ -30,6 +30,16 @@ interface NavUrls {
     setLanguage: string;
 }
 
+export interface BaseLayerConfig {
+    id: number;
+    name: string;
+    type: "xyz" | "wms";
+    url: string;
+    wmsLayers: string;
+    attribution: string;
+    maxZoom: number;
+}
+
 interface MapConfig {
     initialPosition: { initialZoom: number; initialLat: number; initialLon: number };
     zoomLevelMinMaxQuery: number;
@@ -37,6 +47,9 @@ interface MapConfig {
     tileServerAggregatedUrlTemplate: string;
     minMaxOccPerHexagonUrl: string;
     observationDetailsUrlTemplate: string;
+    // Configured per instance in the Django admin. Can be empty: useBaseLayer
+    // then falls back to a built-in layer.
+    baseLayers: BaseLayerConfig[];
 }
 
 export type SpeciesNameMode = "scientific" | "vernacular";
