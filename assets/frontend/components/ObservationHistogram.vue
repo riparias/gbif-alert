@@ -14,6 +14,7 @@ import { scaleBand, scaleLinear } from "d3-scale";
 import { max } from "d3-array";
 import { axisLeft, axisBottom, format, select } from "d3";
 import { useFiltersStore } from "../stores/filters";
+import { useLatestRequest } from "../composables/useLatestRequest";
 import { useResultsStore } from "../stores/results";
 import { filtersToParams } from "../utils/filterParams";
 
@@ -44,20 +45,17 @@ const props = withDefaults(defineProps<{ height?: number; fullRange?: boolean }>
 // --- Data fetching ---
 
 const rawData = ref<HistogramEntry[]>([]);
-const loading = ref(false);
+const { loading, error: loadError, load: fetchLatest } = useLatestRequest<HistogramEntry[]>();
 
 function buildFilterParams(): URLSearchParams {
     return filtersToParams(filtersStore, { includeDateRange: !props.fullRange });
 }
 
 async function loadHistogram() {
-    loading.value = true;
-    try {
-        const response = await fetch(`/api/v2/observations/histogram/?${buildFilterParams()}`);
-        rawData.value = await response.json();
-    } finally {
-        loading.value = false;
-    }
+    const data = await fetchLatest(`/api/v2/observations/histogram/?${buildFilterParams()}`);
+    // undefined: superseded by a newer request, or failed (loadError is set).
+    // Never assign an error body as data.
+    if (data !== undefined) rawData.value = data;
 }
 
 const debouncedReload = debounce(loadHistogram, 300);
@@ -280,7 +278,14 @@ function onHandlePointerDown(event: PointerEvent, target: DragTarget) {
 
 <template>
     <div ref="wrapperEl" class="histogram-wrapper">
-        <div v-if="!loading && isEmpty" class="histogram-empty">
+        <div v-if="loadError" class="histogram-empty">
+            {{ t("message.resultsLoadFailed") }}
+            <a href="#" class="histogram-retry" @click.prevent="loadHistogram()">{{
+                t("message.retry")
+            }}</a>
+        </div>
+
+        <div v-else-if="!loading && isEmpty" class="histogram-empty">
             {{ t("message.noDataToShowInHistogram") }}
         </div>
 
@@ -432,6 +437,10 @@ function onHandlePointerDown(event: PointerEvent, target: DragTarget) {
 </template>
 
 <style scoped>
+.histogram-retry {
+    margin-left: 0.5rem;
+}
+
 .histogram-wrapper {
     width: 100%;
 }

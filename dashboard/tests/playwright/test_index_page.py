@@ -655,3 +655,108 @@ def test_home_page_is_unfiltered_when_no_area_is_flagged(page: Page, live_server
 
     expect(page.locator(".stat-count").get_by_text("1")).to_be_visible()
     expect(page).not_to_have_url(re.compile(r"areaIds"))
+
+
+# ---------------------------------------------------------------------------
+# Request sequencing and load failures
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db(transaction=True)
+def test_stale_filter_response_does_not_overwrite_newer_results(
+    page: Page, live_server
+):
+    """Two filter changes in a row: the first request is slow, the second is
+    fast. The screen must show the second result set, and must still show it
+    once the first response finally lands (or is dropped)."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(
+        gbif_id=1, occurrence_id="1", species=sp, basis=basis, verified=True
+    )
+    _make_observation(
+        gbif_id=2, occurrence_id="2", species=sp, basis=basis, verified=True
+    )
+    _make_observation(
+        gbif_id=3, occurrence_id="3", species=sp, basis=basis, verified=False
+    )
+
+    page.goto(live_server.url + "/?status=all")
+    _switch_to_table_view(page)
+    expect(page.locator(".stat-count").get_by_text("3")).to_be_visible()
+    expect(page.locator("tbody tr")).to_have_count(3)
+
+    # Hold back the "unverified only" list request; let everything else through.
+    held = []
+
+    def handle(route, request):
+        if "verifiedFilter=unverified" in request.url:
+            held.append(route)
+        else:
+            route.continue_()
+
+    page.route(lambda url: "/api/v2/observations/?" in url, handle)
+
+    page.get_by_text("Unverified only", exact=True).click()  # slow request (1 result)
+    # Wait for that request to actually leave the browser (the debounced fetch
+    # fires a few hundred ms after the click) before making the second change,
+    # so the two are distinct requests.
+    for _ in range(50):
+        if held:
+            break
+        page.wait_for_timeout(100)
+    assert len(held) == 1
+    page.get_by_text("Verified only", exact=True).click()  # fast request (2 results)
+
+    expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
+    expect(page.locator("tbody tr")).to_have_count(2)
+
+    # Now release the stale response. With the fix the browser aborted that
+    # request, so continuing it is a no-op; without it, 1 result paints over 2.
+    try:
+        held[0].continue_()
+    except Exception:
+        pass
+    page.wait_for_timeout(1000)
+    expect(page.locator(".stat-count").get_by_text("2")).to_be_visible()
+    expect(page.locator("tbody tr")).to_have_count(2)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_results_load_failure_shows_message(page: Page, live_server):
+    """A failed list request must say so instead of leaving stale rows, or an
+    empty state that claims nothing matches."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+
+    page.route(
+        lambda url: "/api/v2/observations/?" in url,
+        lambda route: route.fulfill(
+            status=500, content_type="application/json", body='{"detail": "boom"}'
+        ),
+    )
+    page.goto(live_server.url + "/?status=all")
+
+    expect(page.get_by_text("could not be loaded", exact=False).first).to_be_visible()
+    expect(page.get_by_text("No matching results", exact=False)).not_to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_histogram_load_failure_shows_message(page: Page, live_server):
+    """The histogram used to assign an error body as its data; it must show a
+    message instead."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+
+    page.route(
+        lambda url: "/api/v2/observations/histogram/" in url,
+        lambda route: route.fulfill(
+            status=429, content_type="application/json", body='{"detail": "slow down"}'
+        ),
+    )
+    page.goto(live_server.url + "/?status=all")
+    page.get_by_role("tab", name="Timeline").click()
+
+    expect(page.get_by_text("could not be loaded", exact=False).first).to_be_visible()

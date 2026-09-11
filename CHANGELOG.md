@@ -1,5 +1,9 @@
 # Unreleased
 
+- Fix: when filters change quickly, a slow earlier request can no longer
+  paint its outdated rows, chart or counts over the newer result. When the
+  results, the timeline or the species list fail to load, a message with a
+  retry link is shown instead of stale data or an empty "no results" state.
 - Security hardening: the configuration block embedded in every page is now
   escaped the way Django's `json_script` does, so no configured value can
   break out of it. An unused, unescaped link-rendering template filter was

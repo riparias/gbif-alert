@@ -26,6 +26,7 @@ import { filtersToParams } from "../utils/filterParams";
 import { pickVernacular } from "../utils/vernacular";
 import { useDisplayLabels } from "../composables/useDisplayLabels";
 import { useBreakpoint } from "../composables/useBreakpoint";
+import { useLatestRequest } from "../composables/useLatestRequest";
 import type { components } from "../types/api";
 import SpeciesName from "./SpeciesName.vue";
 import { storeToRefs } from "pinia";
@@ -136,7 +137,13 @@ const columnPopover = ref();
 const observations = ref<ObservationOut[]>([]);
 const hasSeen = computed(() => observations.value.some((o) => o.viewedByCurrentUser !== null));
 const totalRecords = ref(0);
-const loading = ref(false);
+// Latest-request-wins: filter changes, sorting, paging and the status epoch
+// all reload; a slow earlier response must never paint over a newer one.
+const {
+    loading,
+    error: loadError,
+    load: fetchLatest,
+} = useLatestRequest<components["schemas"]["ObservationsPageOut"]>();
 const currentPage = ref(1);
 const PAGE_SIZE = 20;
 const sortField = ref("date");
@@ -160,21 +167,19 @@ function buildFilterParams(): URLSearchParams {
 }
 
 async function loadObservations() {
-    loading.value = true;
     resultsStore.loading = true;
     try {
-        const response = await fetch(`/api/v2/observations/?${buildFilterParams()}`);
-        if (response.ok) {
-            const data = await response.json();
-            observations.value = data.items;
-            totalRecords.value = data.count;
-            resultsStore.observationCount = data.count;
-            resultsStore.speciesCount = data.speciesCount;
-            resultsStore.datasetsCount = data.datasetsCount;
-        }
+        const data = await fetchLatest(`/api/v2/observations/?${buildFilterParams()}`);
+        if (data === undefined) return; // superseded, or failed (loadError is set)
+        observations.value = data.items;
+        totalRecords.value = data.count;
+        resultsStore.observationCount = data.count;
+        resultsStore.speciesCount = data.speciesCount;
+        resultsStore.datasetsCount = data.datasetsCount;
     } finally {
-        loading.value = false;
-        resultsStore.loading = false;
+        // Mirror the composable's flag: a superseded call must not clear it
+        // while the newer request is still running.
+        resultsStore.loading = loading.value;
     }
 }
 
@@ -266,8 +271,16 @@ onMounted(async () => {
 </script>
 
 <template>
+    <!-- Load failure. Takes precedence over the empty state, which would claim
+         that nothing matches. -->
+    <div v-if="loadError" class="empty-state">
+        <span class="empty-state-icon">&#9888;</span>
+        <p class="empty-state-title">{{ t("message.resultsLoadFailed") }}</p>
+        <Button link :label="t('message.retry')" @click="loadObservations()" />
+    </div>
+
     <!-- Empty state -->
-    <div v-if="!loading && totalRecords === 0" class="empty-state">
+    <div v-else-if="!loading && totalRecords === 0" class="empty-state">
         <span class="empty-state-icon">&#128269;</span>
         <p class="empty-state-title">{{ t("message.noMatchingResultsFound") }}</p>
         <p class="empty-state-hint">{{ t("message.noMatchingResultsFoundHint") }}</p>
