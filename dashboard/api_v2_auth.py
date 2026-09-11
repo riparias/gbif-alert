@@ -26,6 +26,11 @@ class ApiTokenAuth(HttpBearer):
         )
         if obj is None:
             raise HttpError(401, "Invalid API token")
+        # Session auth drops inactive users in authenticate(); a token must not
+        # be the back door around deactivation. The token itself is kept, so
+        # reactivating the account restores it.
+        if not obj.user.is_active:
+            raise HttpError(401, "Invalid API token")
         ApiToken.objects.filter(pk=obj.pk).update(last_used_at=timezone.now())
         # Downstream endpoints read request.user; make the token act as its owner.
         request.user = obj.user

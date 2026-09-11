@@ -36,6 +36,14 @@ msgstr "Minst én art må velges"
 msgid "At least one area must be selected for the chosen area filter mode."
 msgstr "Minst ett område må velges for den valgte områdefiltermodusen."
 
+#: dashboard/api_v2.py
+msgid "One or more selected areas do not exist or are not available to you."
+msgstr "Ett eller flere valgte områder finnes ikke eller er ikke tilgjengelige for deg."
+
+#: dashboard/api_v2.py
+msgid "A template can only reference public areas; this alert uses a private one."
+msgstr "En mal kan bare bruke offentlige områder; dette varselet bruker et privat område."
+
 #: dashboard/api_v2.py:1372
 msgid "Invalid username or password."
 msgstr "Ugyldig brukernavn eller passord."

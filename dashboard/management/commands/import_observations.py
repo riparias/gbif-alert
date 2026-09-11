@@ -314,6 +314,15 @@ class SkippedObservationException(Exception):
     pass
 
 
+class SpeciesNotFoundException(KeyError):
+    """None of the row's taxon keys matches a monitored species.
+
+    A KeyError subclass so the row builder keeps its documented contract
+    (a missing species raises KeyError), while the chunk loop can tell this
+    case apart from any other KeyError and report it accurately.
+    """
+
+
 def build_observation_from_raw(
     raw: RawObservationRow,
     current_data_import: DataImport,
@@ -330,19 +339,29 @@ def build_observation_from_raw(
     row is treated as new to the system.
 
     Raises SkippedObservationException when the row is unusable (missing
-    year, missing coordinates, missing occurrence_id, or occurrence_status
-    other than "PRESENT"). Missing month/day default to 1.
+    year, missing coordinates, missing occurrence_id, missing basis of record,
+    or occurrence_status other than "PRESENT"). Missing month/day default to 1.
 
-    Raises KeyError if the species referenced cannot be found.
+    Raises SpeciesNotFoundException (a KeyError) if the species referenced
+    cannot be found.
     """
+    # An empty basis of record is unusable too: the discovery pass never
+    # creates a BasisOfRecord for it and the model requires one, so the hash
+    # lookup below would raise KeyError and abort the whole import.
     if (
         raw.year is None
         or raw.decimal_longitude is None
         or raw.decimal_latitude is None
         or raw.occurrence_id == ""
+        or not raw.basis_of_record
         or raw.occurrence_status != "PRESENT"
     ):
         raise SkippedObservationException()
+
+    try:
+        species = species_for_raw(raw, hash_species)
+    except KeyError:
+        raise SpeciesNotFoundException(raw.taxon_key)
 
     # Some dates are incomplete, we're good as long as we have a year
     month = raw.month if raw.month is not None else 1
@@ -358,7 +377,7 @@ def build_observation_from_raw(
     new_observation = Observation(
         gbif_id=raw.gbif_id,
         occurrence_id=raw.occurrence_id,
-        species=species_for_raw(raw, hash_species),
+        species=species,
         location=point,
         date=date,
         data_import=current_data_import,
@@ -569,7 +588,10 @@ def _import_all_observations(
                 observations_to_insert.append(obs)
                 if stdout is not None:
                     stdout.write(".", ending="")
-            except KeyError:
+            except SpeciesNotFoundException:
+                # Deliberately not a bare KeyError: any other KeyError is a
+                # bug in the row builder and must surface as itself rather
+                # than be misreported as a missing species.
                 raise CommandError(f"species not found in db for raw row: {raw_row}")
             except SkippedObservationException:
                 skipped_observations_counter += 1

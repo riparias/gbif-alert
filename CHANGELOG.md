@@ -4,6 +4,18 @@
   escaped the way Django's `json_script` does, so no configured value can
   break out of it. An unused, unescaped link-rendering template filter was
   removed.
+- Security: an alert can only use areas its owner can see (public ones or
+  their own); another user's private area is rejected. Publishing an alert as
+  a template is refused when the alert uses a private area, since every user
+  copies a template.
+- Security: the API tokens of a deactivated account are refused, as its
+  sessions already were. Reactivating the account restores them.
+- Security: the image upload and Markdown preview endpoints used by the
+  admin's page editor now require a staff account. They were reachable by
+  anonymous visitors, who could upload files into the media storage.
+- Fix: an occurrence without a basis of record no longer aborts the whole
+  import with a misleading "species not found" error. Such a row is skipped
+  and counted like the other unusable rows.
 - Fix: the archive the import downloads from GBIF is now deleted even when
   the import fails, instead of being left behind in the temp directory. A
   file passed with `--source-dwca` is never deleted.
