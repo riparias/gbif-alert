@@ -311,3 +311,15 @@ static check at all; the first run found two real (if harmless) errors.
 declaration emit for nothing, since no build consumes them; fixing the
 third-party .d.ts errors instead of `skipLibCheck` - they live in node_modules
 and would return with every upgrade.
+
+## 2026-09-11 - Latest-request-wins fetching for filter-driven views
+**What:** A `useLatestRequest` composable (abort previous, ignore superseded,
+own loading/error) used by the observations table, histogram and species
+breakdown, with an inline "could not be loaded" message and retry.
+**Why:** Filter changes fired unguarded fetches; a slow earlier response (area
+filters take seconds) painted over the newer one, and non-2xx responses were
+silently ignored - the histogram even assigned the error body as its data.
+**Rejected:** A fetch library - thirty lines cover the need and there is no
+data layer to plug into; toasts for load failures - they vanish while the stale
+or empty view stays. The ~25 per-action fetch sites without error feedback are
+a separate follow-up (toast per action).

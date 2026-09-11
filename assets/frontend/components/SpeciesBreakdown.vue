@@ -12,6 +12,7 @@ import SpeciesName from "./SpeciesName.vue";
 import { storeToRefs } from "pinia";
 import { usePreferencesStore } from "../stores/preferences";
 import type { components } from "../types/api";
+import { useLatestRequest } from "../composables/useLatestRequest";
 
 type SpeciesCountOut = components["schemas"]["SpeciesCountOut"];
 
@@ -24,7 +25,7 @@ const preferences = usePreferencesStore();
 const { speciesNameMode } = storeToRefs(preferences);
 
 const rows = ref<SpeciesCountOut[]>([]);
-const loading = ref(false);
+const { loading, error: loadError, load: fetchLatest } = useLatestRequest<SpeciesCountOut[]>();
 const stale = ref(true);
 
 const total = computed(() => rows.value.reduce((sum, row) => sum + row.count, 0));
@@ -50,18 +51,12 @@ function share(count: number): number {
 }
 
 async function load() {
-    loading.value = true;
-    try {
-        const response = await fetch(
-            `/api/v2/observations/species-breakdown/?${filtersToParams(filtersStore)}`,
-        );
-        if (response.ok) {
-            rows.value = await response.json();
-            stale.value = false;
-        }
-    } finally {
-        loading.value = false;
-    }
+    const data = await fetchLatest(
+        `/api/v2/observations/species-breakdown/?${filtersToParams(filtersStore)}`,
+    );
+    if (data === undefined) return; // superseded, or failed (loadError is set)
+    rows.value = data;
+    stale.value = false;
 }
 
 // On demand: while the tab is hidden a filter change only marks the data
@@ -93,7 +88,12 @@ onUnmounted(() => debouncedReload.cancel());
 </script>
 
 <template>
+    <div v-if="loadError" class="breakdown-error">
+        {{ t("message.resultsLoadFailed") }}
+        <a href="#" class="breakdown-retry" @click.prevent="load()">{{ t("message.retry") }}</a>
+    </div>
     <DataTable
+        v-else
         :value="displayRows"
         :loading="loading"
         sort-field="count"
@@ -124,6 +124,15 @@ onUnmounted(() => debouncedReload.cancel());
 </template>
 
 <style scoped>
+.breakdown-error {
+    padding: 1rem;
+    color: var(--p-text-muted-color);
+}
+
+.breakdown-retry {
+    margin-left: 0.5rem;
+}
+
 .share-cell {
     display: flex;
     align-items: center;
