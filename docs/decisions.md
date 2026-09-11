@@ -292,3 +292,12 @@ which is one invariant less to enforce. Stamen Toner was dropped from the
 defaults: Stadia Maps returns 401 for any domain not registered with them, so
 it only ever loaded on localhost and alert.riparias.be; CartoDB Positron, its
 first replacement, is watermarked "API KEY REQUIRED" without an account.
+
+## 2026-09-11 - Page fragments stay unsanitized HTML
+**What:** The Markdown page fragments (welcome text, news, about) keep going
+through markdownify with raw HTML passthrough and into v-html on the frontend.
+**Why:** Only staff write them, in the admin, and they use inline HTML on
+purpose; sanitizing would strip that and add a dependency for a threat that
+is already "a staff account is compromised".
+**Rejected:** nh3/bleach on the API output - flagged as a defense-in-depth
+option, not worth its cost today.

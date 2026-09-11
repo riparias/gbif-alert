@@ -1,5 +1,9 @@
 # Unreleased
 
+- Security hardening: the configuration block embedded in every page is now
+  escaped the way Django's `json_script` does, so no configured value can
+  break out of it. An unused, unescaped link-rendering template filter was
+  removed.
 - Security: an alert can only use areas its owner can see (public ones or
   their own); another user's private area is rejected. Publishing an alert as
   a template is refused when the alert uses a private area, since every user
