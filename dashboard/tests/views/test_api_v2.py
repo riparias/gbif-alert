@@ -3242,6 +3242,41 @@ def test_token_last_used_at_is_updated(client, observation_detail_data):
     assert token.last_used_at is not None
 
 
+def test_token_of_inactive_user_returns_401(client, observation_detail_data):
+    """Deactivating an account must revoke its API access, as it does for
+    sessions: session auth drops inactive users in authenticate(), and token
+    auth must not be the back door around that."""
+    user = observation_detail_data["user"]
+    token, raw = ApiToken.create_for(user, "t")
+    user.is_active = False
+    user.save()
+
+    resp = client.get("/api/v2/profile/", HTTP_AUTHORIZATION=f"Bearer {raw}")
+
+    assert resp.status_code == 401
+    token.refresh_from_db()
+    assert token.last_used_at is None  # a refused request is not a use
+
+
+def test_token_works_again_once_user_is_reactivated(client, observation_detail_data):
+    user = observation_detail_data["user"]
+    _, raw = ApiToken.create_for(user, "t")
+    user.is_active = False
+    user.save()
+    assert (
+        client.get("/api/v2/profile/", HTTP_AUTHORIZATION=f"Bearer {raw}").status_code
+        == 401
+    )
+
+    user.is_active = True
+    user.save()
+
+    assert (
+        client.get("/api/v2/profile/", HTTP_AUTHORIZATION=f"Bearer {raw}").status_code
+        == 200
+    )
+
+
 # --- token management endpoints ---
 
 

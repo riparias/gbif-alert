@@ -1,5 +1,7 @@
 # Unreleased
 
+- Security: the API tokens of a deactivated account are refused, as its
+  sessions already were. Reactivating the account restores them.
 - Security: the image upload and Markdown preview endpoints used by the
   admin's page editor now require a staff account. They were reachable by
   anonymous visitors, who could upload files into the media storage.
