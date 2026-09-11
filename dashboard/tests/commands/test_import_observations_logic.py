@@ -1132,3 +1132,71 @@ def test_import_survives_a_failing_vacuum(test_data):
 
     # The import itself completed and committed.
     assert Observation.objects.filter(data_import=data_import).count() == 1
+
+
+# ---------------------------------------------------------------------------
+# _batch_insert_observations must not issue per-observation statements: on a
+# full re-import nearly every row is a replacement, so anything proportional
+# to the chunk size lands on the import's hottest path.
+# ---------------------------------------------------------------------------
+
+
+def _replaced_chunk(n: int) -> list[Observation]:
+    """n stored observations from an older import, and n unsaved replacements
+    for them (same stable ids) in a newer import. The first one has a comment."""
+    from django.contrib.gis.geos import Point
+
+    basis_of_record = BasisOfRecord.objects.create(name=f"BOR-{n}")
+    species = Species.objects.create(name=f"Species {n}", gbif_taxon_key=7000 + n)
+    dataset = Dataset.objects.create(name=f"Dataset {n}", gbif_dataset_key=f"ds-{n}")
+    user = User.objects.create_user(
+        username=f"user{n}", password="pass", email=f"user{n}@test.com"
+    )
+    di_old = DataImport.objects.create(start=timezone.now())
+    di_new = DataImport.objects.create(start=timezone.now())
+    common = dict(
+        species=species,
+        date=datetime.date.today(),
+        source_dataset=dataset,
+        location=Point(4.35, 50.85, srid=4326),
+        basis_of_record=basis_of_record,
+    )
+    old = [
+        Observation.objects.create(
+            gbif_id=n * 1000 + i,
+            occurrence_id=f"occ-{n}-{i}",
+            data_import=di_old,
+            initial_data_import=di_old,
+            **common,
+        )
+        for i in range(n)
+    ]
+    ObservationComment.objects.create(observation=old[0], author=user, text="c")
+    return [
+        Observation(
+            gbif_id=n * 1000 + 500 + i,
+            occurrence_id=f"occ-{n}-{i}",
+            stable_id=Observation.build_stable_id(f"occ-{n}-{i}", f"ds-{n}"),
+            data_import=di_new,
+            initial_data_import=di_old,
+            **common,
+        )
+        for i in range(n)
+    ]
+
+
+def _batch_insert_query_count(n: int) -> int:
+    from django.test.utils import CaptureQueriesContext
+
+    from dashboard.management.commands import import_observations as mod
+
+    chunk = _replaced_chunk(n)
+    with CaptureQueriesContext(connection) as ctx:
+        mod._batch_insert_observations(chunk)
+    return len(ctx.captured_queries)
+
+
+def test_batch_insert_query_count_does_not_grow_with_replaced_observations():
+    """Replacing 3 or 12 observations must cost the same number of queries.
+    Fails if comments are migrated with one UPDATE per replaced observation."""
+    assert _batch_insert_query_count(12) == _batch_insert_query_count(3)
