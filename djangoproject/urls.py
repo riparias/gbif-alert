@@ -14,8 +14,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import views as auth_views
 from django.urls import path, include, re_path, reverse_lazy
+from markdownx.views import ImageUploadView, MarkdownifyView  # type: ignore
 
 from dashboard.api_v2 import api_v2, api_v2_spa
 from dashboard.views.healthz import healthz
@@ -59,7 +61,21 @@ urlpatterns = [
         name="password_reset_complete",
     ),
     path("admin/", admin.site.urls),
-    path("markdownx/", include("markdownx.urls")),
+    # markdownx exists here only for the admin's PageFragment editor, and ships
+    # its views without any authentication: mounted as-is, the upload view lets
+    # any anonymous visitor write files into media storage. Register the two
+    # views the widget needs ourselves, staff-only, under the url names the
+    # widget resolves.
+    path(
+        "markdownx/upload/",
+        staff_member_required(ImageUploadView.as_view()),
+        name="markdownx_upload",
+    ),
+    path(
+        "markdownx/markdownify/",
+        staff_member_required(MarkdownifyView.as_view()),
+        name="markdownx_markdownify",
+    ),
     path("django-rq/", include("django_rq.urls")),
     path("healthz", healthz, name="healthz"),
     # Catch-all for Vue Router history mode: any path not matched by an explicit
