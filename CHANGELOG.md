@@ -1,5 +1,7 @@
 # Unreleased
 
+- Security: the API tokens of a deactivated account are refused, as its
+  sessions already were. Reactivating the account restores them.
 - Fix: the archive the import downloads from GBIF is now deleted even when
   the import fails, instead of being left behind in the temp directory. A
   file passed with `--source-dwca` is never deleted.
