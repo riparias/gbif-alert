@@ -1191,6 +1191,9 @@ def test_unrelated_key_error_in_row_builder_is_not_reported_as_missing_species(
     ):
         with pytest.raises(KeyError, match="some other key"):
             run_import_with_rows([_lixus_row()])
+
+
+# ---------------------------------------------------------------------------
 # _batch_insert_observations must not issue per-observation statements: on a
 # full re-import nearly every row is a replacement, so anything proportional
 # to the chunk size lands on the import's hottest path.
