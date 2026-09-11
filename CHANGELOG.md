@@ -1,3 +1,8 @@
+# Unreleased
+
+- Faster import: re-linking comments to re-imported observations no longer
+  costs one database statement per re-imported observation.
+
 # 2.5.3 (2026-09-03)
 
 - Fix: browsing an alert that matches many observations no longer times out

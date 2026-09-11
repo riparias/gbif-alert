@@ -249,3 +249,12 @@ right when the user went back to browsing it (0.16 s now for 2.6k rows).
 filter's `.extra()` names the observation table, which Django aliases in a
 subquery; chunked id lists (1.5 s) and an unseen-first intersect (0.27 s), both
 slower than the join.
+
+## 2026-09-11 - Migrate comments only for replaced observations that have some
+**What:** `_batch_insert_observations` asks the comment table which replaced
+observations have comments (one query) and re-points only those, and resolves
+the replaced rows with `values_list` instead of hydrating full models twice.
+**Why:** One UPDATE per replaced observation plus 20k model instantiations per
+10k-row chunk, on the full re-import path, for a handful of comments.
+**Rejected:** One CASE-WHEN UPDATE mapping every old pk to its new pk - a
+10k-branch statement for no gain since comments are rare.
