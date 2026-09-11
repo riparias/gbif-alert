@@ -160,3 +160,41 @@ def test_password_reset_content_is_dropped_when_navigating_away(
 
     expect(page).to_have_url(re.compile(rf"^{re.escape(live_server.url)}/(\?.*)?$"))
     expect(page.get_by_text("Send me instructions!")).to_have_count(0)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_write_succeeds_with_a_decoy_cookie_whose_name_ends_in_csrftoken(
+    page: Page, live_server
+):
+    """getCsrf() must read the cookie *named* csrftoken, not any cookie whose
+    name merely ends in it (another app on the same host, or a parent-domain
+    cookie). With a decoy listed first, a substring match sends the decoy as
+    the token and every CSRF-protected write fails with 403.
+
+    Sign-in is CSRF-exempt, so the probe is the profile save."""
+    User = get_user_model()
+    user = User.objects.create_user(
+        username="auth2", password="pass1234", email="auth2@t.com", first_name="Bob"
+    )
+    # Plant the decoy before the first navigation: cookies of equal path list
+    # in creation order, so it precedes the csrftoken the server sets later.
+    domain = live_server.url.split("://")[1].split(":")[0]
+    page.context.add_cookies(
+        [{"name": "mycsrftoken", "value": "bogus", "domain": domain, "path": "/"}]
+    )
+    login(page, live_server.url, "auth2", "pass1234")
+    page.goto(live_server.url + "/profile")
+
+    # Premise check: the decoy is listed first, so a substring match picks it.
+    cookie = page.evaluate("document.cookie")
+    assert cookie.startswith("mycsrftoken=bogus; "), cookie
+    assert "; csrftoken=" in cookie, cookie
+
+    first_name = page.locator("#p-firstname")
+    expect(first_name).to_have_value("Bob")
+    first_name.fill("Charlie")
+    page.get_by_role("button", name="Save profile").click()
+    expect(page.locator(".p-toast")).to_be_visible()
+
+    user.refresh_from_db()
+    assert user.first_name == "Charlie"
