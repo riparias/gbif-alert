@@ -10,10 +10,17 @@ export default defineConfig({
     rollupOptions: {
       input: "assets/frontend/main.ts",
       output: {
+        // PrimeVue is deliberately NOT grouped into one vendor chunk: the app
+        // shell imports PrimeVue's config and theme, so a single forced chunk
+        // becomes a static dependency of the entry and every component used
+        // anywhere (DataTable, DatePicker, MultiSelect, Carousel, ...) ships on
+        // every page. Left to route-level splitting, the shell keeps Button,
+        // Select and InputText and the rest loads with the pages that use it.
+        // Measured: eager JS on every page 299 kB -> 191 kB gzipped, the index
+        // page unchanged (it uses nearly all of it).
         manualChunks(id) {
           if (id.includes("node_modules/ol/")) return "vendor-openlayers";
           if (/node_modules\/d3[-/]/.test(id) || id.includes("node_modules/d3/")) return "vendor-d3";
-          if (id.includes("node_modules/primevue/") || id.includes("node_modules/@primeuix/")) return "vendor-primevue";
           if (
             id.includes("node_modules/vue/") ||
             id.includes("node_modules/vue-router/") ||

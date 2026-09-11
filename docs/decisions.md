@@ -323,3 +323,13 @@ silently ignored - the histogram even assigned the error body as its data.
 data layer to plug into; toasts for load failures - they vanish while the stale
 or empty view stays. The ~25 per-action fetch sites without error feedback are
 a separate follow-up (toast per action).
+
+## 2026-09-11 - No forced vendor chunk for PrimeVue
+**What:** Removed the `vendor-primevue` manualChunks rule; PrimeVue is split by
+route like application code. OpenLayers, d3 and Vue keep their groupings.
+**Why:** The shell imports PrimeVue's config/theme, so one forced chunk was a
+static dependency of the entry and shipped every widget on every page: eager
+JS 299 kB -> 191 kB gzipped, index page unchanged (it uses nearly all of it).
+**Rejected:** Tuning the grouping - any single chunk the shell touches is eager
+by construction; lazy-loading the map/table on the index page - a separate,
+user-visible change.
