@@ -18,7 +18,7 @@ import { Style, Stroke, Fill } from "ol/style";
 import Feature from "ol/Feature";
 import type { Polygon } from "ol/geom";
 import { MultiPolygon as OLMultiPolygon } from "ol/geom";
-import { useBaseLayer, makeBaseLayer, BASE_LAYER_OPTIONS } from "../composables/useBaseLayer";
+import { useBaseLayer, makeDefaultBaseLayer } from "../composables/useBaseLayer";
 import { getCsrf } from "../utils/csrf";
 import { getNavConfig } from "../utils/navConfig";
 import "ol/ol.css";
@@ -45,7 +45,7 @@ const saving = ref(false);
 const loading = ref(false);
 const errorMessage = ref<string | null>(null);
 
-const { selectedBaseLayerId, attachToMap } = useBaseLayer();
+const { baseLayers, selectedBaseLayerId, attachToMap } = useBaseLayer();
 const mapEl = ref<HTMLElement | null>(null);
 let olMap: OLMap | null = null;
 
@@ -208,7 +208,7 @@ onMounted(async () => {
     olMap = markRaw(
         new OLMap({
             target: mapEl.value!,
-            layers: [markRaw(makeBaseLayer("osmHot")), vectorLayer],
+            layers: [markRaw(makeDefaultBaseLayer()), vectorLayer],
             view: new View({
                 zoom: getNavConfig().map.initialPosition.initialZoom,
                 center: fromLonLat([
@@ -284,8 +284,8 @@ onUnmounted(() => {
                     <span class="float-control-label">{{ t("message.baseLayer") }}</span>
                     <Select
                         v-model="selectedBaseLayerId"
-                        :options="BASE_LAYER_OPTIONS"
-                        option-label="label"
+                        :options="baseLayers"
+                        option-label="name"
                         option-value="id"
                         size="small"
                         class="base-layer-select"

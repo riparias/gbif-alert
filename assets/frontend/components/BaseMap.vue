@@ -5,7 +5,7 @@ import { Map as OLMap, View } from "ol";
 import { fromLonLat } from "ol/proj";
 import Select from "primevue/select";
 import "ol/ol.css";
-import { useBaseLayer, makeBaseLayer, BASE_LAYER_OPTIONS } from "../composables/useBaseLayer";
+import { useBaseLayer, makeDefaultBaseLayer } from "../composables/useBaseLayer";
 
 const props = withDefaults(
     defineProps<{
@@ -25,7 +25,7 @@ const props = withDefaults(
 );
 
 const { t } = useI18n();
-const { selectedBaseLayerId, attachToMap } = useBaseLayer();
+const { baseLayers, selectedBaseLayerId, attachToMap } = useBaseLayer();
 const mapEl = ref<HTMLElement | null>(null);
 let olMap: OLMap | null = null;
 
@@ -33,7 +33,7 @@ onMounted(() => {
     olMap = markRaw(
         new OLMap({
             target: mapEl.value!,
-            layers: [markRaw(makeBaseLayer("osmHot"))],
+            layers: [markRaw(makeDefaultBaseLayer())],
             view: new View({
                 zoom: props.initialZoom,
                 center: fromLonLat([props.initialLon, props.initialLat]),
@@ -59,8 +59,8 @@ defineExpose({ getOlMap: () => olMap });
                 <span class="float-control-label">{{ t("message.baseLayer") }}</span>
                 <Select
                     v-model="selectedBaseLayerId"
-                    :options="BASE_LAYER_OPTIONS"
-                    option-label="label"
+                    :options="baseLayers"
+                    option-label="name"
                     option-value="id"
                     size="small"
                     class="base-layer-select"

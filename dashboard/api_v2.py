@@ -858,10 +858,14 @@ def observations_list(
 def observations_histogram(request: HttpRequest, filters: Query[FiltersQuery]):
     qs = _filtered_observations(request, filters)
 
+    # distinct=True: under an area filter the queryset joins dashboard_areapart
+    # and yields one row per matching part (see filtered_from_my_params). The
+    # queryset's .distinct() only dedupes the output rows of this GROUP BY, not
+    # what COUNT sees, so a plain COUNT(id) counts such observations twice.
     rows = (
         qs.annotate(month=TruncMonth("date"))
         .values("month")
-        .annotate(total=Count("id"))
+        .annotate(total=Count("id", distinct=True))
         .order_by("month")
     )
 
@@ -905,9 +909,12 @@ def observations_species_breakdown(request: HttpRequest, filters: Query[FiltersQ
     # dashboard_species in the aggregate. Note that .values() discards the
     # manager's select_related - Query.set_values() sets select_related =
     # False - so this really does touch only dashboard_observation.
+    #
+    # distinct=True for the same reason as in observations_histogram: the
+    # area-parts join can yield an observation more than once.
     rows = (
         qs.values("species_id")
-        .annotate(count=Count("pk"))
+        .annotate(count=Count("pk", distinct=True))
         .order_by("-count", "species_id")
     )
 
