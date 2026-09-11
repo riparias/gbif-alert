@@ -3,6 +3,9 @@
 - Fix: an occurrence without a basis of record no longer aborts the whole
   import with a misleading "species not found" error. Such a row is skipped
   and counted like the other unusable rows.
+- Fix: the archive the import downloads from GBIF is now deleted even when
+  the import fails, instead of being left behind in the temp directory. A
+  file passed with `--source-dwca` is never deleted.
 - Faster import: re-linking comments to re-imported observations no longer
   costs one database statement per re-imported observation.
 - Fix: filtering on an area that no longer exists, in the "approaching" or

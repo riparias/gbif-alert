@@ -897,101 +897,115 @@ class Command(BaseCommand):
         # 1. Resolve DwCA source (existing file or trigger a new GBIF download)
         gbif_predicate: dict | None = None
         tmp_source_path: str | None = None
-        if options["source_dwca"]:
-            _log_with_time(self.stdout, "Using a user-provided DWCA file")
-            source_data_path = options["source_dwca"].name
-        else:
-            _log_with_time(
-                self.stdout,
-                "No DWCA file provided, we'll generate and get a new GBIF download",
-            )
-            _log_with_time(
-                self.stdout,
-                "Triggering a GBIF download and waiting for it - this can be long...",
-            )
-
-            tmp_file = tempfile.NamedTemporaryFile(delete=False)
-            source_data_path = tmp_file.name
-            tmp_source_path = source_data_path
-            tmp_file.close()
-            # This might take several minutes...
-            gbif_predicate = settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"][
-                "PREDICATE_BUILDER"
-            ](Species.objects.all())
-            _log_with_time(
-                self.stdout,
-                f"GBIF predicate sent to the download API: {json.dumps(gbif_predicate)}",
-            )
-
-            # The download library reports progress (the download_id GBIF returns,
-            # each retry, and any non-200 status) via the root logger at INFO, which
-            # is swallowed at the default verbosity - so the GBIF exchange is normally
-            # invisible. Bridge it to our stdout for the duration of the download so we
-            # can confirm the predicate produced a real download (and not, say, an auth
-            # or quota error), then restore the previous logging state.
-            gbif_handler = logging.StreamHandler(sys.stdout)
-            gbif_handler.setFormatter(
-                logging.Formatter("%(asctime)s: GBIF download: %(message)s")
-            )
-            previous_root_level = root_logger.level
-            root_logger.addHandler(gbif_handler)
-            if root_logger.level == logging.NOTSET or root_logger.level > logging.INFO:
-                root_logger.setLevel(logging.INFO)
-            try:
-                download_gbif_occurrences(
-                    gbif_predicate,
-                    username=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["USERNAME"],
-                    password=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PASSWORD"],
-                    output_path=source_data_path,
+        # Everything from here to the end of the import runs under one
+        # try/finally: an archive the command downloaded itself is a temp file
+        # and must be deleted whether the download, the metadata read or the
+        # import fails. A file passed with --source-dwca belongs to the
+        # operator and is never touched (tmp_source_path stays None).
+        try:
+            if options["source_dwca"]:
+                _log_with_time(self.stdout, "Using a user-provided DWCA file")
+                source_data_path = options["source_dwca"].name
+            else:
+                _log_with_time(
+                    self.stdout,
+                    "No DWCA file provided, we'll generate and get a new GBIF download",
                 )
-            finally:
-                root_logger.removeHandler(gbif_handler)
-                root_logger.setLevel(previous_root_level)
-            _log_with_time(self.stdout, "Observations downloaded")
+                _log_with_time(
+                    self.stdout,
+                    "Triggering a GBIF download and waiting for it - this can be long...",
+                )
 
-        # 2. Extract gbif_download_id from DwCA metadata (only needs to read metadata)
-        _log_with_time(self.stdout, "Opening DWCA to read metadata")
-        with DwCAReader(source_data_path) as dwca:
-            gbif_download_id = extract_gbif_download_id_from_dwca(dwca)
-        _log_with_time(
-            self.stdout, f"GBIF download id read from DWCA metadata: {gbif_download_id}"
-        )
+                tmp_file = tempfile.NamedTemporaryFile(delete=False)
+                source_data_path = tmp_file.name
+                tmp_source_path = source_data_path
+                tmp_file.close()
+                # This might take several minutes...
+                gbif_predicate = settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"][
+                    "PREDICATE_BUILDER"
+                ](Species.objects.all())
+                _log_with_time(
+                    self.stdout,
+                    f"GBIF predicate sent to the download API: {json.dumps(gbif_predicate)}",
+                )
 
-        # 3. Build a fresh-generator factory that lazily streams rows
-        def raw_rows_factory() -> Iterable[RawObservationRow]:
-            # A generator function, so each call returns a fresh iterator, and
-            # the reader is closed when the pass ends. The previous generator
-            # expression never closed its DwCAReader.
-            # Metadata was already read at step 2 by its own reader; parsing the
-            # EML again on each row pass is wasted work.
-            with DwCAReader(source_data_path, skip_metadata=True) as dwca:
-                for values in dwca.iter_terms(_IMPORT_TERMS):
-                    yield _raw_from_values(values)
-
-        def discovery_rows_factory() -> Iterable[tuple[str, str, str]]:
-            with DwCAReader(source_data_path, skip_metadata=True) as dwca:
-                for dataset_key, dataset_name, basis_of_record in dwca.iter_terms(
-                    _DISCOVERY_TERMS
+                # The download library reports progress (the download_id GBIF returns,
+                # each retry, and any non-200 status) via the root logger at INFO, which
+                # is swallowed at the default verbosity - so the GBIF exchange is normally
+                # invisible. Bridge it to our stdout for the duration of the download so we
+                # can confirm the predicate produced a real download (and not, say, an auth
+                # or quota error), then restore the previous logging state.
+                gbif_handler = logging.StreamHandler(sys.stdout)
+                gbif_handler.setFormatter(
+                    logging.Formatter("%(asctime)s: GBIF download: %(message)s")
+                )
+                previous_root_level = root_logger.level
+                root_logger.addHandler(gbif_handler)
+                if (
+                    root_logger.level == logging.NOTSET
+                    or root_logger.level > logging.INFO
                 ):
-                    yield (
-                        dataset_key.strip(),
-                        dataset_name.strip(),
-                        basis_of_record.strip(),
+                    root_logger.setLevel(logging.INFO)
+                try:
+                    download_gbif_occurrences(
+                        gbif_predicate,
+                        username=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"][
+                            "USERNAME"
+                        ],
+                        password=settings.GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"][
+                            "PASSWORD"
+                        ],
+                        output_path=source_data_path,
                     )
+                finally:
+                    root_logger.removeHandler(gbif_handler)
+                    root_logger.setLevel(previous_root_level)
+                _log_with_time(self.stdout, "Observations downloaded")
 
-        # 4. Run the transactional pipeline
-        run_import(
-            raw_rows_factory,
-            discovery_rows_factory,
-            gbif_download_id=gbif_download_id,
-            gbif_predicate=gbif_predicate,
-            stdout=self.stdout,
-        )
+            # 2. Extract gbif_download_id from DwCA metadata (only needs to read metadata)
+            _log_with_time(self.stdout, "Opening DWCA to read metadata")
+            with DwCAReader(source_data_path) as dwca:
+                gbif_download_id = extract_gbif_download_id_from_dwca(dwca)
+            _log_with_time(
+                self.stdout,
+                f"GBIF download id read from DWCA metadata: {gbif_download_id}",
+            )
 
-        # 5. Clean up the temporary DwCA (only if we downloaded it ourselves)
-        if tmp_source_path is not None:
-            _log_with_time(self.stdout, "Deleting the (temporary) source DWCA file")
-            os.unlink(tmp_source_path)
+            # 3. Build a fresh-generator factory that lazily streams rows
+            def raw_rows_factory() -> Iterable[RawObservationRow]:
+                # A generator function, so each call returns a fresh iterator, and
+                # the reader is closed when the pass ends. The previous generator
+                # expression never closed its DwCAReader.
+                # Metadata was already read at step 2 by its own reader; parsing the
+                # EML again on each row pass is wasted work.
+                with DwCAReader(source_data_path, skip_metadata=True) as dwca:
+                    for values in dwca.iter_terms(_IMPORT_TERMS):
+                        yield _raw_from_values(values)
+
+            def discovery_rows_factory() -> Iterable[tuple[str, str, str]]:
+                with DwCAReader(source_data_path, skip_metadata=True) as dwca:
+                    for dataset_key, dataset_name, basis_of_record in dwca.iter_terms(
+                        _DISCOVERY_TERMS
+                    ):
+                        yield (
+                            dataset_key.strip(),
+                            dataset_name.strip(),
+                            basis_of_record.strip(),
+                        )
+
+            # 4. Run the transactional pipeline
+            run_import(
+                raw_rows_factory,
+                discovery_rows_factory,
+                gbif_download_id=gbif_download_id,
+                gbif_predicate=gbif_predicate,
+                stdout=self.stdout,
+            )
+        finally:
+            # 5. Clean up the temporary DwCA (only if we downloaded it ourselves)
+            if tmp_source_path is not None and os.path.exists(tmp_source_path):
+                _log_with_time(self.stdout, "Deleting the (temporary) source DWCA file")
+                os.unlink(tmp_source_path)
 
         elapsed_time = time.time() - start_time
         elapsed_minutes = int(elapsed_time // 60)
