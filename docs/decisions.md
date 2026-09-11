@@ -301,3 +301,13 @@ purpose; sanitizing would strip that and add a dependency for a threat that
 is already "a staff account is compromised".
 **Rejected:** nh3/bleach on the API output - flagged as a defense-in-depth
 option, not worth its cost today.
+
+## 2026-09-11 - Frontend type check in CI via vue-tsc
+**What:** `npm run typecheck` runs `vue-tsc --noEmit -p tsconfig.app.json` with
+`skipLibCheck`, and CI runs it before the Vite build.
+**Why:** Vite strips types without checking them, so 15k lines of TS/Vue had no
+static check at all; the first run found two real (if harmless) errors.
+**Rejected:** `tsc -b` over the project references - needs `composite` and
+declaration emit for nothing, since no build consumes them; fixing the
+third-party .d.ts errors instead of `skipLibCheck` - they live in node_modules
+and would return with every upgrade.

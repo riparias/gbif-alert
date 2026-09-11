@@ -5,7 +5,13 @@
     "moduleResolution": "bundler",
     "strict": true,
     "jsx": "preserve",
-    "sourceMap": true
+    "sourceMap": true,
+    // Type-check only: vite does the emitting.
+    "noEmit": true,
+    // Third-party .d.ts files are not ours to fix: ol references optional type
+    // packages it does not ship, and vue-i18n's typings can name Vue exports the
+    // installed Vue lacks. Same default as the create-vue scaffold.
+    "skipLibCheck": true
   },
   "include": ["assets/frontend/**/*.ts", "assets/frontend/**/*.vue"]
 }

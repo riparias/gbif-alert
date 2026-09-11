@@ -150,6 +150,31 @@ def test_profile_save_succeeds(page: Page, live_server):
 
 
 @pytest.mark.django_db(transaction=True)
+def test_profile_save_notification_delay(page: Page, live_server):
+    """The notification delay is a PrimeVue number input; typing a new value and
+    saving must store it (the input must not silently hold a string)."""
+    from dashboard.api_v2 import _days_to_value_unit
+
+    User = get_user_model()
+    user = User.objects.create_user(
+        username="profiledelay", password="pass1234", email="pdelay@t.com"
+    )
+    _, unit = _days_to_value_unit(user.notification_delay_days)
+
+    login(page, live_server.url, "profiledelay", "pass1234")
+    page.goto(live_server.url + "/profile")
+
+    delay = page.locator("#p-delay-value")
+    expect(delay).not_to_have_value("")  # profile data loaded into the form
+    delay.fill("3")
+    page.get_by_role("button", name="Save profile").click()
+    expect(page.locator(".p-toast")).to_be_visible()
+
+    user.refresh_from_db()
+    assert _days_to_value_unit(user.notification_delay_days) == (3, unit)
+
+
+@pytest.mark.django_db(transaction=True)
 def test_api_token_create_and_revoke_via_ui(page: Page, live_server):
     """Dedicated /api-tokens page: create (raw value + sample curl shown once) then revoke."""
     User = get_user_model()

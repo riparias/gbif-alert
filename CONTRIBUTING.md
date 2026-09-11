@@ -93,7 +93,9 @@ $ pytest dashboard/tests/models/test_alert.py::test_has_unseen_observations_true
 
 ### Typing
 
-Can be checked with `$ mypy .`
+Python can be checked with `$ mypy .`, the frontend (TypeScript and Vue single-file
+components) with `$ npm run typecheck` (vue-tsc; Vite strips types without checking
+them, so this is the only static check the frontend gets).
 
 Those should be run frequently on the developer's machines, but will also be executed by GitHub actions each time the code is pushed to GitHub (see the CI-CD section)
 
@@ -101,7 +103,7 @@ Those should be run frequently on the developer's machines, but will also be exe
 
 We make use of GitHub Actions when possible. They're currently used to:
 
-- Run Django tests and `mypy` on every push
+- Run Django tests, `mypy` and the frontend type check on every push
 - Automatically deploy the `devel` branches to the respective server when code is pushed (see `Working with 
   branches` below) 
 
@@ -294,7 +296,7 @@ commands for you to run. It never commits, tags, or pushes - you do.
 
 ### Releasing
 
-1. Make sure all tests pass and `mypy` reports no errors.
+1. Make sure all tests pass and `mypy` and `npm run typecheck` report no errors.
 2. Write the `CHANGELOG.md` entry for the new version. The script checks that a
    matching top entry exists, but does not write it for you.
 3. Run the helper with the version you are releasing (any of `2.0.0-rc1`,
