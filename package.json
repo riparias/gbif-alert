@@ -7,6 +7,7 @@
     "vite-build": "vite build",
     "format": "prettier --write \"assets/frontend/**/*.{ts,vue,css}\"",
     "format-check": "prettier --check \"assets/frontend/**/*.{ts,vue,css}\"",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
     "generate-types": "python scripts/export_openapi_schema.py && openapi-typescript openapi-schema.json -o assets/frontend/types/api.ts"
   },
   "repository": {
@@ -29,7 +30,8 @@
     "openapi-typescript": "^7.13.0",
     "prettier": "^3.8.3",
     "typescript": "^5.9.3",
-    "vite": "^8.0.8"
+    "vite": "^8.0.8",
+    "vue-tsc": "^2.2.12"
   },
   "dependencies": {
     "@primeuix/themes": "^2.0.3",

@@ -45,7 +45,8 @@ uv run python manage.py rqworker default # Start Redis queue worker
 uv run python manage.py test                        # Run all Django tests
 uv run python manage.py test dashboard.tests.models # Run specific test module
 uv run python manage.py test dashboard.tests.commands.test_import_observations # Import tests
-uv run mypy .                                       # Type checking
+uv run mypy .                                       # Type checking (Python)
+npm run typecheck                                   # Type checking (TypeScript + Vue, via vue-tsc)
 ```
 
 ### Code Formatting
@@ -132,7 +133,7 @@ The app provides an OGC Web Feature Service endpoint at `/api/wfs/observations` 
 ## Branching & Deployment
 - Never commit directly to `main`
 - Feature branches → merge to `devel` (auto-builds + redeploys the devel instance from the GHCR image; the demo instance is bumped manually to stable releases) → merge to `main` → tag `v*` to publish a release image; production rolls forward by bumping `GBIF_ALERT_TAG` (see INSTALL.md "Upgrades")
-- CI runs Django tests + mypy on every push (GitHub Actions)
+- CI runs Django tests + mypy + the frontend type check on every push (GitHub Actions)
 
 ## Versioning
 The footer version is stamped into the Docker image at build time (`release.yml` uses the git tag; `image.yml` uses `git describe`), so no manual `VERSION` edit is needed - see CONTRIBUTING.md "How to release a new version". Bumping `pyproject.toml` is optional metadata only (`package.json` no longer carries a version).

@@ -6,6 +6,7 @@ import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
+import InputNumber from "primevue/inputnumber";
 import Select from "primevue/select";
 import ProgressSpinner from "primevue/progressspinner";
 import { getCsrf } from "../utils/csrf";
@@ -177,11 +178,12 @@ async function deleteAccount() {
                 <div style="display: flex; flex-direction: column; gap: 0.375rem">
                     <label style="font-weight: 500">{{ t("message.notificationDelay") }}</label>
                     <div style="display: flex; gap: 0.5rem">
-                        <InputText
-                            v-model.number="delayValue"
-                            type="number"
-                            min="1"
-                            style="width: 80px"
+                        <InputNumber
+                            v-model="delayValue"
+                            input-id="p-delay-value"
+                            :min="1"
+                            :use-grouping="false"
+                            :input-style="{ width: '80px' }"
                         />
                         <Select
                             v-model="delayUnit"
