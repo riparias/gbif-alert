@@ -36,6 +36,14 @@ msgid "At least one area must be selected for the chosen area filter mode."
 msgstr ""
 "Au moins une zone doit être sélectionnée pour le mode de filtrage choisi."
 
+#: dashboard/api_v2.py
+msgid "One or more selected areas do not exist or are not available to you."
+msgstr "Une ou plusieurs zones sélectionnées n'existent pas ou ne vous sont pas accessibles."
+
+#: dashboard/api_v2.py
+msgid "A template can only reference public areas; this alert uses a private one."
+msgstr "Un modèle ne peut utiliser que des zones publiques ; cette alerte utilise une zone privée."
+
 #: dashboard/api_v2.py:1296
 msgid "Invalid username or password."
 msgstr "Nom d'utilisateur ou mot de passe incorrect."

@@ -37,6 +37,14 @@ msgid "At least one area must be selected for the chosen area filter mode."
 msgstr ""
 "Er moet minstens één gebied geselecteerd zijn voor de gekozen filtermodus."
 
+#: dashboard/api_v2.py
+msgid "One or more selected areas do not exist or are not available to you."
+msgstr "Een of meer geselecteerde gebieden bestaan niet of zijn niet voor u beschikbaar."
+
+#: dashboard/api_v2.py
+msgid "A template can only reference public areas; this alert uses a private one."
+msgstr "Een sjabloon kan alleen openbare gebieden gebruiken; deze waarschuwing gebruikt een privégebied."
+
 #: dashboard/api_v2.py:1296
 msgid "Invalid username or password."
 msgstr "Ongeldige gebruikersnaam of wachtwoord."

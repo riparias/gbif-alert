@@ -1177,6 +1177,27 @@ def _save_alert(alert: Alert, payload: AlertIn) -> dict[str, list[str]]:
             )
         ]
 
+    # An alert may only reference areas its user can see: public ones or their
+    # own. Area ids are sequential, so without this check a user could attach
+    # someone else's private area by guessing its id - the geometry stays
+    # hidden (area_geojson checks access) but the filtering effect would leak.
+    # This also guards alert_create_from_template against a template that
+    # references a private area.
+    if payload.areaIds:
+        visible_ids = set(
+            Area.objects.available_to(alert.user)
+            .filter(pk__in=payload.areaIds)
+            .values_list("pk", flat=True)
+        )
+        if set(payload.areaIds) - visible_ids:
+            errors["areas"] = [
+                str(
+                    _(
+                        "One or more selected areas do not exist or are not available to you."
+                    )
+                )
+            ]
+
     try:
         alert.full_clean()
     except DjangoValidationError as e:
@@ -1346,11 +1367,21 @@ def alert_delete(request: HttpRequest, alert_id: int):
 
 @api_v2_spa.post(
     "/alerts/{alert_id}/publish-as-template/",
-    response={201: AlertTemplatePublishedOut, **ERR_401, **ERR_403, **ERR_404},
+    response={
+        201: AlertTemplatePublishedOut,
+        422: ValidationErrorOut,
+        **ERR_401,
+        **ERR_403,
+        **ERR_404,
+    },
     auth=django_auth,
 )
 def alert_publish_as_template(request: HttpRequest, alert_id: int):
-    """Promote an existing alert to a live template. Operators (superusers) only."""
+    """Promote an existing alert to a live template. Operators (superusers) only.
+
+    Refused (422) when the alert references a private area: every user copies
+    a template, so it may only reference public areas.
+    """
     user = cast(User, request.user)
     if not user.is_superuser:
         raise HttpError(403, "Only operators can publish templates.")
@@ -1360,6 +1391,19 @@ def alert_publish_as_template(request: HttpRequest, alert_id: int):
         ),
         id=alert_id,
     )
+    if any(area.owner_id is not None for area in alert.areas.all()):
+        return 422, {
+            "detail": "Validation failed",
+            "errors": {
+                "areas": [
+                    str(
+                        _(
+                            "A template can only reference public areas; this alert uses a private one."
+                        )
+                    )
+                ]
+            },
+        }
     template = AlertTemplate.create_from_alert(alert, created_by=user)
     return 201, {"id": template.pk}
 
