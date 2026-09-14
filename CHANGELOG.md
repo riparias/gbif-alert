@@ -1,12 +1,16 @@
-# Unreleased
+# 2.6.0 (2026-09-14)
 
-- Faster page loads: the interface library is no longer shipped in one block
-  on every page; each page only downloads the widgets it uses. Pages other
-  than the home page load about a third less JavaScript.
-- Fix: when filters change quickly, a slow earlier request can no longer
-  paint its outdated rows, chart or counts over the newer result. When the
-  results, the timeline or the species list fail to load, a message with a
-  retry link is shown instead of stale data or an empty "no results" state.
+- New: the map's base layers are now configurable per instance in the Django
+  admin (Dashboard > Map base layers), as XYZ tile templates or WMS services.
+  Existing instances keep working without any action.
+- Norwegian Bokmal (`nb`) is now one of the languages an instance can offer:
+  add it to `ENABLED_LANGUAGES` to show it in the language selector. The
+  interface, the account pages and the alert notification email are
+  translated; the translation is a first pass and has not yet been reviewed by
+  a native speaker.
+- Change: "Stamen Toner" is replaced by "ESRI Light Gray Canvas" as a default
+  layer. Toner needs a Stadia Maps account and only ever loaded on
+  alert.riparias.be; Light Gray Canvas needs no key and works anywhere.
 - Security hardening: the configuration block embedded in every page is now
   escaped the way Django's `json_script` does, so no configured value can
   break out of it. An unused, unescaped link-rendering template filter was
@@ -20,14 +24,16 @@
 - Security: the image upload and Markdown preview endpoints used by the
   admin's page editor now require a staff account. They were reachable by
   anonymous visitors, who could upload files into the media storage.
+- Fix: when filters change quickly, a slow earlier request can no longer
+  paint its outdated rows, chart or counts over the newer result. When the
+  results, the timeline or the species list fail to load, a message with a
+  retry link is shown instead of stale data or an empty "no results" state.
 - Fix: an occurrence without a basis of record no longer aborts the whole
   import with a misleading "species not found" error. Such a row is skipped
   and counted like the other unusable rows.
 - Fix: the archive the import downloads from GBIF is now deleted even when
   the import fails, instead of being left behind in the temp directory. A
   file passed with `--source-dwca` is never deleted.
-- Faster import: re-linking comments to re-imported observations no longer
-  costs one database statement per re-imported observation.
 - Fix: filtering on an area that no longer exists, in the "approaching" or
   "both" area mode, no longer fails with a server error. It now returns no
   observations, as the "inside" mode already did.
@@ -38,19 +44,13 @@
   least one of your alerts. Before, with several alerts, the filters of all
   alerts were combined (for example the species of one alert with the datasets
   or areas of another), so some observations matching no alert were flagged.
-- Norwegian Bokmal (`nb`) is now one of the languages an instance can offer:
-  add it to `ENABLED_LANGUAGES` to show it in the language selector. The
-  interface, the account pages and the alert notification email are
-  translated; the translation is a first pass and has not yet been reviewed by
-  a native speaker.
 - Fix: the Map / Timeline / Species / Table tabs no longer glue their icon
   against their label.
-- New: the map's base layers are now configurable per instance in the Django
-  admin (Dashboard > Map base layers), as XYZ tile templates or WMS services.
-  Existing instances keep working without any action.
-- Change: "Stamen Toner" is replaced by "ESRI Light Gray Canvas" as a default
-  layer. Toner needs a Stadia Maps account and only ever loaded on
-  alert.riparias.be; Light Gray Canvas needs no key and works anywhere.
+- Faster page loads: the interface library is no longer shipped in one block
+  on every page; each page only downloads the widgets it uses. Pages other
+  than the home page load about a third less JavaScript.
+- Faster import: re-linking comments to re-imported observations no longer
+  costs one database statement per re-imported observation.
 
 # 2.5.3 (2026-09-03)
 
