@@ -5,7 +5,7 @@
 {% block body %}
 
 {% language "nl" %}
-<p>U hebt <b>{{ alert.unseen_observations.count }}</b> niet bekeken waarneming(en) voor deze waarschuwing.</p>
+<p>U hebt <b>{{ unseen_count }}</b> niet bekeken waarneming(en) voor deze waarschuwing.</p>
 
 <h3>Voorbeeld van niet bekeken waarnemingen</h3>
 {# For user familiarity, make sure the structure of this table stay more or less in sync with the table show on the website pages #}
@@ -21,7 +21,7 @@
     </tr>
     </thead>
     <tbody>
-    {% for observation in alert.unseen_observations_sample %}
+    {% for observation in unseen_sample %}
         <tr>
             <td>
                 <a href="

@@ -333,3 +333,12 @@ JS 299 kB -> 191 kB gzipped, index page unchanged (it uses nearly all of it).
 **Rejected:** Tuning the grouping - any single chunk the shell touches is eager
 by construction; lazy-loading the map/table on the index page - a separate,
 user-visible change.
+
+## 2026-09-14 - Token last_used_at refreshed at most every five minutes
+**What:** ApiTokenAuth only writes last_used_at when the stored value is null
+or older than five minutes.
+**Why:** It was a write on every authenticated request; the field is a coarse
+"is this token still in use" signal on the tokens page, so minute precision
+buys nothing.
+**Rejected:** Dropping the field - it is the one hint that a leaked token is
+being used.

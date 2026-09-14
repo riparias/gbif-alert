@@ -29,11 +29,12 @@ from dashboard.maintenance import (
 from dashboard.management.commands.helpers import fill_missing_dataset_names
 
 from dashboard.models import (
-    Species,
-    Observation,
+    BasisOfRecord,
     DataImport,
     Dataset,
-    BasisOfRecord,
+    Observation,
+    ObservationComment,
+    Species,
     create_unseen_observations,
     migrate_unseen_observations,
 )
@@ -523,8 +524,6 @@ def _batch_insert_observations(
     # some (one query) and update only those: one UPDATE per *commented*
     # replaced observation, near zero in practice, rather than one per replaced
     # observation - which was 10k statements per chunk on a full re-import.
-    from dashboard.models import ObservationComment
-
     if new_pk_by_replaced_pk:
         commented_replaced_pks = (
             ObservationComment.objects.filter(

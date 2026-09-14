@@ -7,6 +7,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import MultiPolygon, Point, Polygon
 from django.urls import reverse
+from django.utils import timezone
 
 from dashboard.models import (
     Alert,
@@ -3240,6 +3241,27 @@ def test_token_last_used_at_is_updated(client, observation_detail_data):
     )
     token.refresh_from_db()
     assert token.last_used_at is not None
+
+
+def test_token_last_used_at_is_not_rewritten_on_every_request(
+    client, observation_detail_data
+):
+    """last_used_at is a coarse "is this token alive" signal: a script hitting
+    the API in a loop must not turn every request into a write. Within the
+    window the stored value is kept; past it, it is refreshed."""
+    token, raw = ApiToken.create_for(observation_detail_data["user"], "t")
+    recent = timezone.now() - datetime.timedelta(minutes=1)
+    ApiToken.objects.filter(pk=token.pk).update(last_used_at=recent)
+
+    client.get("/api/v2/profile/", HTTP_AUTHORIZATION=f"Bearer {raw}")
+    token.refresh_from_db()
+    assert token.last_used_at == recent
+
+    stale = timezone.now() - datetime.timedelta(minutes=30)
+    ApiToken.objects.filter(pk=token.pk).update(last_used_at=stale)
+    client.get("/api/v2/profile/", HTTP_AUTHORIZATION=f"Bearer {raw}")
+    token.refresh_from_db()
+    assert token.last_used_at > stale
 
 
 def test_token_of_inactive_user_returns_401(client, observation_detail_data):

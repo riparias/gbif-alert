@@ -256,9 +256,24 @@ class Dataset(models.Model):
         super().save(*args, **kwargs)
 
         if self.gbif_dataset_key != self.__original_gbif_dataset_key:
-            # We updated the gbif dataset key, so all related observations should have a new stable_id
-            for occ in self.observation_set.all():
-                occ.save()
+            # The stable id hashes occurrence_id + dataset key, so every
+            # observation of this dataset needs a new one. Recompute in bulk
+            # (only the two columns involved are read, and one UPDATE per
+            # chunk) rather than one save() per row: a production dataset has
+            # hundreds of thousands of observations. Observation.save() does
+            # nothing else than set_stable_id(), so this is equivalent.
+            to_update = [
+                Observation(
+                    pk=pk,
+                    stable_id=Observation.build_stable_id(
+                        occurrence_id, self.gbif_dataset_key
+                    ),
+                )
+                for pk, occurrence_id in self.observation_set.values_list(
+                    "pk", "occurrence_id"
+                ).iterator(chunk_size=10000)
+            ]
+            Observation.objects.bulk_update(to_update, ["stable_id"], batch_size=10000)
 
         self.__original_gbif_dataset_key = self.gbif_dataset_key
 
@@ -767,10 +782,7 @@ class Observation(models.Model):
         """
 
         if user.is_authenticated:
-            try:
-                self.observationunseen_set.filter(user=user).delete()
-            except ObservationUnseen.DoesNotExist:
-                pass
+            self.observationunseen_set.filter(user=user).delete()
 
     def already_seen_by(self, user: WebsiteUser) -> bool | None:
         """Return True if the observation has already been seen by the user"""
@@ -1130,16 +1142,6 @@ class ObservationUnseen(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, db_index=False
     )
 
-    def relevant_for_user(self, date_new_observation) -> bool:
-        """Return True if this "unseen object" is still relevant for the user"""
-        # TODO: test this
-        if self.observation.date_older_than_user_delay(
-            self.user, the_date=date_new_observation
-        ):
-            return False
-        else:
-            return self.user.obs_match_alerts(self.observation)
-
     class Meta:
         unique_together = [
             ("observation", "user"),
@@ -1475,7 +1477,6 @@ class Alert(ObservationFilterSet):
 
     def observations(self) -> QuerySet[Observation]:
         """Return all observations matching this alert"""
-        # TODO: test this
         return Observation.objects.filtered_from_my_params(
             species_ids=[s.pk for s in self.species.all()],
             datasets_ids=[d.pk for d in self.datasets.all()],
@@ -1510,11 +1511,8 @@ class Alert(ObservationFilterSet):
 
     def unseen_observations_sample(self, sample_size=10) -> QuerySet[Observation]:
         """For notification emails: show max sample_size observations, most recent first"""
-        obs = self.unseen_observations().order_by("-date")
-        if obs.count() > sample_size:
-            obs = obs[:sample_size]
-
-        return obs
+        # Slicing past the end is safe, no need for a COUNT first.
+        return self.unseen_observations().order_by("-date")[:sample_size]
 
     @property
     def unseen_observations_count(self) -> int:
@@ -1557,16 +1555,23 @@ class Alert(ObservationFilterSet):
         """
         language_code = self.user.get_language()
 
+        # Count once for the subject and the body (the caller has just
+        # counted too, in email_should_be_sent_now(); this is the one count
+        # this method owns).
+        unseen_count = self.unseen_observations().count()
+
         # Message subject
         _ = get_translator(language_code)
         unseen_obs_translated = _("new observation(s) for your alert")
-        subject = f"{settings.EMAIL_SUBJECT_PREFIX} {self.unseen_observations().count()} {unseen_obs_translated} {self.name}"
+        subject = f"{settings.EMAIL_SUBJECT_PREFIX} {unseen_count} {unseen_obs_translated} {self.name}"
 
         # Message body
         msg_html = render_to_string(
             f"dashboard/emails/alert_notification.{language_code}.html",
             {
                 "alert": self,
+                "unseen_count": unseen_count,
+                "unseen_sample": self.unseen_observations_sample(),
                 "site_base_url": settings.SITE_BASE_URL,
                 "site_name": settings.GBIF_ALERT["SITE_NAME"],
             },

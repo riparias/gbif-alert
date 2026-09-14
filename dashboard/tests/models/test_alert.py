@@ -421,3 +421,45 @@ def test_both_single_area(make_area_alert, area_desc_data):
 def test_no_areas_returns_empty_string(make_area_alert):
     alert = make_area_alert(Alert.AREA_FILTER_INSIDE, None, [])
     assert alert.area_description == ""
+
+
+def test_observations_applies_species_dataset_and_area_filters(alert_data):
+    """Alert.observations() is the predicate every reader and the import's
+    unseen computation rely on: each configured filter must narrow it."""
+    user = alert_data["user"]
+    obs = alert_data["observation"]
+
+    unfiltered = Alert.objects.create(user=user, name="unfiltered")
+    assert list(unfiltered.observations()) == [obs]
+
+    other_species = Alert.objects.create(user=user, name="other species")
+    other_species.species.add(
+        Species.objects.create(name="Vespa velutina", gbif_taxon_key=1311477)
+    )
+    assert list(other_species.observations()) == []
+
+    same_species = Alert.objects.create(user=user, name="same species")
+    same_species.species.add(obs.species)
+    assert list(same_species.observations()) == [obs]
+
+    other_dataset = Alert.objects.create(user=user, name="other dataset")
+    other_dataset.datasets.add(
+        Dataset.objects.create(name="Elsewhere", gbif_dataset_key="elsewhere")
+    )
+    assert list(other_dataset.observations()) == []
+
+    def square(x0, y0, x1, y1):
+        return MultiPolygon(
+            Polygon(((x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)), srid=4326),
+            srid=4326,
+        )
+
+    around = Alert.objects.create(user=user, name="area around")
+    around.areas.add(
+        Area.objects.create(name="around", mpoly=square(5.0, 50.4, 5.2, 50.6))
+    )
+    assert list(around.observations()) == [obs]
+
+    far = Alert.objects.create(user=user, name="area far")
+    far.areas.add(Area.objects.create(name="far", mpoly=square(3.0, 51.0, 3.2, 51.2)))
+    assert list(far.observations()) == []
