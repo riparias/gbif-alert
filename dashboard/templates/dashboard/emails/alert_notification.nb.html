@@ -5,7 +5,7 @@
 {% block body %}
 
 {% language "nb" %}
-<p>Du har <b>{{ alert.unseen_observations.count }}</b> observasjon(er) du ikke har sett for dette varselet.</p>
+<p>Du har <b>{{ unseen_count }}</b> observasjon(er) du ikke har sett for dette varselet.</p>
 
 <h3>Eksempler på observasjoner du ikke har sett</h3>
 {# For user familiarity, make sure the structure of this table stay more or less in sync with the table show on the website pages #}
@@ -21,7 +21,7 @@
     </tr>
     </thead>
     <tbody>
-    {% for observation in alert.unseen_observations_sample %}
+    {% for observation in unseen_sample %}
         <tr>
             <td>
                 <a href="

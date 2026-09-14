@@ -1645,7 +1645,7 @@ def api_token_create(request: HttpRequest, payload: ApiTokenCreateIn):
 def api_token_delete(request: HttpRequest, token_id: int):
     """Revoke one of the current user's tokens."""
     user = cast(User, request.user)
-    deleted, _ = ApiToken.objects.filter(pk=token_id, user=user).delete()
+    deleted, _per_model = ApiToken.objects.filter(pk=token_id, user=user).delete()
     if not deleted:
         raise HttpError(404, "Token not found")
     return 204, None
