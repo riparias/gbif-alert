@@ -1,10 +1,15 @@
 """Authentication helpers for the v2 API."""
+import datetime
+
 from django.http import HttpRequest
 from django.utils import timezone
 from ninja.errors import HttpError
 from ninja.security import HttpBearer
 
 from dashboard.models import ApiToken
+
+# How stale last_used_at may be before an authenticated request refreshes it.
+LAST_USED_REFRESH = datetime.timedelta(minutes=5)
 
 
 class ApiTokenAuth(HttpBearer):
@@ -31,7 +36,13 @@ class ApiTokenAuth(HttpBearer):
         # reactivating the account restores it.
         if not obj.user.is_active:
             raise HttpError(401, "Invalid API token")
-        ApiToken.objects.filter(pk=obj.pk).update(last_used_at=timezone.now())
+        # last_used_at is a coarse "is this token still in use" signal for the
+        # tokens page. Refresh it at most once per window rather than on every
+        # request, so a script hitting the API in a loop does not turn each
+        # request into a write.
+        now = timezone.now()
+        if obj.last_used_at is None or now - obj.last_used_at > LAST_USED_REFRESH:
+            ApiToken.objects.filter(pk=obj.pk).update(last_used_at=now)
         # Downstream endpoints read request.user; make the token act as its owner.
         request.user = obj.user
         return obj.user

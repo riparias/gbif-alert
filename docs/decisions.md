@@ -343,3 +343,11 @@ it (a job queued just before a deploy could fail after it), and the pickled
 User carried the password hash into Redis.
 **Rejected:** Keeping the queryset and accepting the rare failure - the
 credential material in the queue alone justified the thirty lines.
+## 2026-09-14 - Token last_used_at refreshed at most every five minutes
+**What:** ApiTokenAuth only writes last_used_at when the stored value is null
+or older than five minutes.
+**Why:** It was a write on every authenticated request; the field is a coarse
+"is this token still in use" signal on the tokens page, so minute precision
+buys nothing.
+**Rejected:** Dropping the field - it is the one hint that a leaked token is
+being used.

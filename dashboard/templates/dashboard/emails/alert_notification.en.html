@@ -5,7 +5,7 @@
 {% block body %}
 
 {% language "en" %}
-<p>You have <b>{{ alert.unseen_observations.count }}</b> new observation(s) for this alert.</p>
+<p>You have <b>{{ unseen_count }}</b> new observation(s) for this alert.</p>
 
 <h3>Sample of new observations</h3>
 {# For user familiarity, make sure the structure of this table stay more or less in sync with the table show on the website pages #}
@@ -21,7 +21,7 @@
     </tr>
     </thead>
     <tbody>
-    {% for observation in alert.unseen_observations_sample %}
+    {% for observation in unseen_sample %}
         <tr>
             <td>
                 <a href="
