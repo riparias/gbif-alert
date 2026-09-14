@@ -91,3 +91,36 @@ def test_dont_follow_unrelated_fields(obs_and_species):
     obs.source_dataset.save()
     obs.save()
     assert obs.stable_id == stable_id_before
+
+
+def test_dataset_key_change_rewrites_every_stable_id_in_bulk(
+    django_assert_max_num_queries,
+):
+    """Changing a dataset's GBIF key must recompute the stable id of all its
+    observations with a bounded number of statements, not one save per row
+    (a production dataset has hundreds of thousands of them)."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION_BULK")
+    species = Species.objects.create(name="Bulkus testus", gbif_taxon_key=9999301)
+    di = DataImport.objects.create(start=timezone.now())
+    dataset = Dataset.objects.create(name="Renamed later", gbif_dataset_key="old-key")
+    for i in range(40):
+        Observation.objects.create(
+            gbif_id=70000 + i,
+            occurrence_id=f"bulk-{i}",
+            species=species,
+            date=datetime.date.today(),
+            data_import=di,
+            initial_data_import=di,
+            source_dataset=dataset,
+            location=Point(4.35, 50.85, srid=4326),
+            basis_of_record=basis,
+        )
+
+    dataset.gbif_dataset_key = "new-key"
+    with django_assert_max_num_queries(5):
+        dataset.save()
+
+    for obs in Observation.objects.filter(source_dataset=dataset):
+        assert obs.stable_id == Observation.build_stable_id(
+            obs.occurrence_id, "new-key"
+        )
