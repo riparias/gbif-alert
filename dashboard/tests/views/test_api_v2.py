@@ -9,6 +9,7 @@ from django.contrib.gis.geos import MultiPolygon, Point, Polygon
 from django.urls import reverse
 from django.utils import timezone
 
+from dashboard.api_v2_schemas import FiltersQuery
 from dashboard.models import (
     Alert,
     ApiToken,
@@ -21,6 +22,7 @@ from dashboard.models import (
     ObservationUnseen,
     Species,
 )
+from dashboard.views.helpers import observations_for_filters
 from page_fragments.models import NEWS_PAGE_IDENTIFIER, PageFragment
 
 pytestmark = pytest.mark.django_db
@@ -2888,8 +2890,11 @@ def test_mark_all_as_seen_authenticated_returns_queued(
 
     calls = []
 
-    def fake_delay(queryset, user):
-        calls.append({"count": queryset.count(), "user_id": user.pk})
+    def fake_delay(filters_payload, user_id):
+        # What reaches Redis must be plain data: JSON-serialisable, no models.
+        json.dumps(filters_payload)
+        rebuilt = observations_for_filters(FiltersQuery(**filters_payload), user)
+        calls.append({"count": rebuilt.count(), "user_id": user_id})
 
     monkeypatch.setattr(jobs.mark_many_observations_as_seen, "delay", fake_delay)
 
@@ -2915,7 +2920,7 @@ def test_mark_all_as_seen_returns_count_of_unseen(
     from dashboard.views import jobs
 
     monkeypatch.setattr(
-        jobs.mark_many_observations_as_seen, "delay", lambda qs, u: None
+        jobs.mark_many_observations_as_seen, "delay", lambda payload, user_id: None
     )
 
     user = observations_data["user"]
@@ -2939,8 +2944,9 @@ def test_mark_all_as_seen_respects_species_filter(
 
     captured: dict = {}
 
-    def fake_delay(queryset, user):
-        captured["ids"] = sorted(queryset.values_list("pk", flat=True))
+    def fake_delay(filters_payload, user_id):
+        rebuilt = observations_for_filters(FiltersQuery(**filters_payload), user)
+        captured["ids"] = sorted(rebuilt.values_list("pk", flat=True))
 
     monkeypatch.setattr(jobs.mark_many_observations_as_seen, "delay", fake_delay)
 

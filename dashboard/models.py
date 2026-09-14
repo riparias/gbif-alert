@@ -1475,8 +1475,12 @@ class Alert(ObservationFilterSet):
             "approachingDistanceKm": self.approaching_distance_km,
         }
 
-    def observations(self) -> QuerySet[Observation]:
-        """Return all observations matching this alert"""
+    def _filtered_observations(
+        self, status_for_user: str | None
+    ) -> QuerySet[Observation]:
+        """The observations matching this alert's filters, optionally narrowed
+        to the user's "seen"/"unseen" ones. Shared by observations() and
+        unseen_observations() so the two cannot drift apart."""
         return Observation.objects.filtered_from_my_params(
             species_ids=[s.pk for s in self.species.all()],
             datasets_ids=[d.pk for d in self.datasets.all()],
@@ -1485,29 +1489,20 @@ class Alert(ObservationFilterSet):
             start_date=None,
             end_date=None,
             initial_data_import_ids=[],
-            status_for_user=None,
+            status_for_user=status_for_user,
             user=self.user,
             verified_filter=self.verified_filter,
             area_filter_mode=self.area_filter_mode,
             approaching_distance_km=self.approaching_distance_km,
         )
 
+    def observations(self) -> QuerySet[Observation]:
+        """Return all observations matching this alert"""
+        return self._filtered_observations(status_for_user=None)
+
     def unseen_observations(self) -> QuerySet[Observation]:
         """Return all unseen observations matching this alert"""
-        return Observation.objects.filtered_from_my_params(
-            species_ids=[s.pk for s in self.species.all()],
-            datasets_ids=[d.pk for d in self.datasets.all()],
-            basis_of_record_ids=[b.pk for b in self.basis_of_record_filters.all()],
-            areas_ids=[a.pk for a in self.areas.all()],
-            start_date=None,
-            end_date=None,
-            initial_data_import_ids=[],
-            status_for_user="unseen",
-            user=self.user,
-            verified_filter=self.verified_filter,
-            area_filter_mode=self.area_filter_mode,
-            approaching_distance_km=self.approaching_distance_km,
-        )
+        return self._filtered_observations(status_for_user="unseen")
 
     def unseen_observations_sample(self, sample_size=10) -> QuerySet[Observation]:
         """For notification emails: show max sample_size observations, most recent first"""

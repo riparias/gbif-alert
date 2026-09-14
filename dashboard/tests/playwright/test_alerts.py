@@ -327,8 +327,8 @@ def test_alert_detail_mark_all_as_viewed(page: Page, live_server, monkeypatch):
 
     enqueued = []
 
-    def fake_delay(queryset, user):
-        enqueued.append((queryset.count(), user.pk))
+    def fake_delay(filters_payload, user_id):
+        enqueued.append((filters_payload, user_id))
 
     monkeypatch.setattr(jobs.mark_many_observations_as_seen, "delay", fake_delay)
 

@@ -59,10 +59,12 @@ def unseen_data():
 
 
 def test_mark_many_as_seen_deletes_only_this_users_matching_unseen_rows(unseen_data):
+    """The job receives the filter payload and the user id (plain data that
+    survives a deploy in Redis), not a pickled queryset and User instance."""
     user = unseen_data["user"]
     matching = Observation.objects.filter(species=unseen_data["species"])
 
-    mark_many_observations_as_seen(matching, user)
+    mark_many_observations_as_seen({"speciesIds": [unseen_data["species"].pk]}, user.pk)
 
     assert not ObservationUnseen.objects.filter(
         user=user, observation__in=matching
@@ -80,7 +82,25 @@ def test_mark_many_as_seen_runs_a_bounded_number_of_queries(
 ):
     """One DELETE per observation kept the database busy for minutes on a
     150k-observation alert, right when the user goes back to browsing it."""
-    matching = Observation.objects.filter(species=unseen_data["species"])
+    # One SELECT for the user, one for the matching unseen ids, one DELETE.
+    with django_assert_max_num_queries(3):
+        mark_many_observations_as_seen(
+            {"speciesIds": [unseen_data["species"].pk]}, unseen_data["user"].pk
+        )
 
-    with django_assert_max_num_queries(2):
-        mark_many_observations_as_seen(matching, unseen_data["user"])
+
+def test_mark_many_as_seen_accepts_the_json_form_of_the_filters(unseen_data):
+    """The endpoint enqueues FiltersQuery.model_dump(mode="json"): dates as ISO
+    strings, every key present. The job must rebuild the same queryset."""
+    from dashboard.api_v2_schemas import FiltersQuery
+
+    user = unseen_data["user"]
+    payload = FiltersQuery(
+        speciesIds=[unseen_data["species"].pk],
+        startDate=datetime.date.today() - datetime.timedelta(days=1),
+    ).model_dump(mode="json")
+    assert isinstance(payload["startDate"], str)
+
+    mark_many_observations_as_seen(payload, user.pk)
+
+    assert ObservationUnseen.objects.filter(user=user).count() == 1  # the other species
