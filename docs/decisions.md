@@ -351,3 +351,8 @@ or older than five minutes.
 buys nothing.
 **Rejected:** Dropping the field - it is the one hint that a leaked token is
 being used.
+
+## 2026-09-14 - Context-dependent empty label on the species selector
+**What:** `SpeciesFilterModal` takes an `emptyLabel` prop; the alert form shows "No species selected" instead of "All species".
+**Why:** an empty species selection means "all" in the explorer but is invalid for an alert, so the shared label misled users (#440).
+**Rejected:** a combined "None - select at least one species" label, redundant with the hint already shown above the button.

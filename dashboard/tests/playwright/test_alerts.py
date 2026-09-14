@@ -151,7 +151,7 @@ def test_create_alert_succeeds(page: Page, live_server):
     expect(page.locator("#alert-name")).to_have_value("My alert #1")
 
     # Open the species modal and select a species
-    page.get_by_role("button", name="All species").click()
+    page.get_by_role("button", name="No species selected").click()
     page.get_by_role("row", name="Procambarus fallax").click()
     page.keyboard.press("Escape")
 

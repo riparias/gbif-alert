@@ -1,3 +1,9 @@
+# Unreleased
+
+- Fix: in the alert form, the species selector now reads "No species selected"
+  instead of "All species" when nothing is picked, since an alert needs at
+  least one species (#440).
+
 # 2.6.0 (2026-09-14)
 
 - New: the map's base layers are now configurable per instance in the Django

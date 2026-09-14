@@ -14,6 +14,9 @@ type SpeciesOut = components["schemas"]["SpeciesOut"];
 const props = defineProps<{
     modelValue: number[];
     options: SpeciesOut[];
+    // Button label when nothing is selected. Defaults to "All species", which is
+    // only true where an empty selection means no filter (observation explorer).
+    emptyLabel?: string;
 }>();
 
 const emit = defineEmits<{
@@ -76,7 +79,7 @@ const tableSelection = computed(() => filtered.value.filter((sp) => localIds.val
 const buttonLabel = computed(() =>
     props.modelValue.length
         ? `${props.modelValue.length} ${t("message.xSelectedSpecies")}`
-        : t("message.allSpecies"),
+        : (props.emptyLabel ?? t("message.allSpecies")),
 );
 
 function toggleTag(tag: string) {

@@ -341,7 +341,11 @@ async function save() {
                 <div class="form-field">
                     <label>{{ t("message.speciesToInclude") }} *</label>
                     <p class="field-hint">{{ t("message.atLeastOneSpeciesMustBeSelected") }}</p>
-                    <SpeciesFilterModal v-model="selectedSpeciesIds" :options="speciesOptions" />
+                    <SpeciesFilterModal
+                        v-model="selectedSpeciesIds"
+                        :options="speciesOptions"
+                        :empty-label="t('message.noSpeciesSelected')"
+                    />
                     <Message v-if="errors.species" severity="error" :closable="false" size="small">
                         {{ errors.species.join(", ") }}
                     </Message>
