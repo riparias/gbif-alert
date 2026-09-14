@@ -4,12 +4,18 @@ import ast
 import datetime
 import logging
 from string import Template
+from typing import cast
 from urllib.parse import unquote
 
 from django.db import connection
 from django.db.models import QuerySet
 from django.http import HttpRequest, JsonResponse, QueryDict
-from dashboard.api_v2_schemas import FiltersQuery
+from dashboard.api_v2_schemas import (
+    AreaFilterMode,
+    FiltersQuery,
+    ObservationStatus,
+    VerifiedFilter,
+)
 from dashboard.id_lists import parse_id_list
 from dashboard.models import Observation, User
 from dashboard.utils import readable_string
@@ -25,6 +31,7 @@ logger = logging.getLogger(__name__)
 # truth for the mapping; keep every boundary (api_v2, map tile endpoints) using
 # it so the vocabularies cannot drift apart.
 STATUS_API_TO_INTERNAL = {"viewed": "seen", "notViewed": "unseen"}
+STATUS_INTERNAL_TO_API = {v: k for k, v in STATUS_API_TO_INTERNAL.items()}
 
 
 def api_status_to_internal(api_status: str | None) -> str | None:
@@ -140,7 +147,15 @@ def extract_dict_request(request: HttpRequest, param_name: str) -> dict | None:
 
 
 def filtered_observations_from_request(request: HttpRequest) -> QuerySet[Observation]:
-    """Takes a request, extract common parameters used to filter observations and return a corresponding QuerySet"""
+    """The observation queryset for a legacy public API request.
+
+    The legacy endpoints keep their own parameter spelling (``speciesIds[]``,
+    ``datasetsIds[]``, ...) and take the status filter in the internal
+    "seen"/"unseen" vocabulary. Those are parsed here, then handed to the same
+    ``observations_for_filters`` the v2 API uses, so there is one place that
+    turns filters into a queryset. Values the v2 schema would reject (an
+    unknown status or verified filter) mean "no filter", as they always did.
+    """
     (
         species_ids,
         datasets_ids,
@@ -155,24 +170,31 @@ def filtered_observations_from_request(request: HttpRequest) -> QuerySet[Observa
         approaching_distance_km,
     ) = filters_from_request(request)
 
-    user = None
-    if request.user.is_authenticated:
-        user = request.user
-
-    return Observation.objects.filtered_from_my_params(
-        species_ids=species_ids,
-        datasets_ids=datasets_ids,
-        basis_of_record_ids=basis_of_record_ids,
-        start_date=start_date,
-        end_date=end_date,
-        areas_ids=areas_ids,
-        status_for_user=status_for_user,
-        initial_data_import_ids=initial_data_import_ids,
-        user=user,
-        verified_filter=verified_filter,
-        area_filter_mode=area_filter_mode,
-        approaching_distance_km=approaching_distance_km,
+    # The legacy parser yields plain strings; narrow them to the schema's
+    # literals. filters_from_request() already restricts the area mode to the
+    # three known values.
+    status = cast(
+        ObservationStatus | None, STATUS_INTERNAL_TO_API.get(status_for_user or "")
     )
+    verified = cast(
+        VerifiedFilter,
+        verified_filter if verified_filter in ("verified", "unverified") else "all",
+    )
+    filters = FiltersQuery(
+        speciesIds=species_ids,
+        datasetIds=datasets_ids,
+        basisOfRecordIds=basis_of_record_ids,
+        startDate=start_date,
+        endDate=end_date,
+        areaIds=areas_ids,
+        status=status,
+        initialDataImportIds=initial_data_import_ids,
+        verifiedFilter=verified,
+        areaFilterMode=cast(AreaFilterMode, area_filter_mode),
+        approachingDistanceKm=approaching_distance_km,
+    )
+    user = request.user if request.user.is_authenticated else None
+    return observations_for_filters(filters, user)
 
 
 def filters_from_request(

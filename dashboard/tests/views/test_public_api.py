@@ -1111,3 +1111,35 @@ def test_legacy_endpoints_are_deprecated(public_api_data, client, name, query):
     assert resp.headers.get("Deprecation") == "true"
     assert 'rel="successor-version"' in resp.headers.get("Link", "")
     assert resp.headers.get("Sunset") == "Wed, 30 Jun 2027 00:00:00 GMT"
+
+
+@pytest.mark.parametrize(
+    "status, expected_seen_flag",
+    [("unseen", False), ("seen", True)],
+)
+def test_observations_json_status_filter_uses_internal_vocabulary(
+    public_api_data, client, status, expected_seen_flag
+):
+    """The legacy API takes the status filter as "seen"/"unseen" (the internal
+    vocabulary, unlike v2's "viewed"/"notViewed"), and applies it to the
+    requesting user's own view state."""
+    client.login(username="frusciante1", password="12345")
+    base_url = reverse("dashboard:public-api:filtered-observations-data-page")
+    response = client.get(
+        f"{base_url}?limit=10&page_number=1&order=gbif_id&status={status}"
+    )
+    results = response.json()["results"]
+    assert len(results) > 0
+    assert {r["seenByCurrentUser"] for r in results} == {expected_seen_flag}
+
+
+def test_observations_json_unknown_status_means_no_status_filter(
+    public_api_data, client
+):
+    client.login(username="frusciante1", password="12345")
+    base_url = reverse("dashboard:public-api:filtered-observations-data-page")
+    all_results = client.get(f"{base_url}?limit=10&page_number=1").json()["results"]
+    bogus = client.get(f"{base_url}?limit=10&page_number=1&status=bogus").json()[
+        "results"
+    ]
+    assert len(bogus) == len(all_results)
