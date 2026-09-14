@@ -1,5 +1,8 @@
 # Unreleased
 
+- Faster page loads: the interface library is no longer shipped in one block
+  on every page; each page only downloads the widgets it uses. Pages other
+  than the home page load about a third less JavaScript.
 - Fix: when filters change quickly, a slow earlier request can no longer
   paint its outdated rows, chart or counts over the newer result. When the
   results, the timeline or the species list fail to load, a message with a
