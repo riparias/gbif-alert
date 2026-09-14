@@ -333,3 +333,13 @@ JS 299 kB -> 191 kB gzipped, index page unchanged (it uses nearly all of it).
 **Rejected:** Tuning the grouping - any single chunk the shell touches is eager
 by construction; lazy-loading the map/table on the index page - a separate,
 user-visible change.
+
+## 2026-09-14 - Mark-as-viewed job takes the filter payload, not a queryset
+**What:** `mark_many_observations_as_seen(filters_json, user_id)` rebuilds its
+queryset through the shared `observations_for_filters` at execution time; the
+endpoint enqueues `FiltersQuery.model_dump(mode="json")` and the user's pk.
+**Why:** A pickled QuerySet is only valid for the Django version that produced
+it (a job queued just before a deploy could fail after it), and the pickled
+User carried the password hash into Redis.
+**Rejected:** Keeping the queryset and accepting the rare failure - the
+credential material in the queue alone justified the thirty lines.

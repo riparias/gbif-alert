@@ -9,6 +9,7 @@ from urllib.parse import unquote
 from django.db import connection
 from django.db.models import QuerySet
 from django.http import HttpRequest, JsonResponse, QueryDict
+from dashboard.api_v2_schemas import FiltersQuery
 from dashboard.id_lists import parse_id_list
 from dashboard.models import Observation, User
 from dashboard.utils import readable_string
@@ -30,6 +31,32 @@ def api_status_to_internal(api_status: str | None) -> str | None:
     """Map an external status value ("viewed"/"notViewed") to the internal
     "seen"/"unseen". Returns None for None or any unrecognized value."""
     return STATUS_API_TO_INTERNAL.get(api_status) if api_status else None
+
+
+def observations_for_filters(
+    filters: FiltersQuery, user: User | None
+) -> QuerySet[Observation]:
+    """The observation queryset matching a v2 API filter set, for `user`.
+
+    The single mapping from the API's FiltersQuery to
+    Observation.objects.filtered_from_my_params(). Used by every v2 endpoint
+    that takes filters and by the mark-as-viewed background job, which
+    rebuilds its queryset from the same payload at execution time.
+    """
+    return Observation.objects.filtered_from_my_params(
+        species_ids=filters.speciesIds,
+        datasets_ids=filters.datasetIds,
+        basis_of_record_ids=filters.basisOfRecordIds,
+        start_date=filters.startDate,
+        end_date=filters.endDate,
+        areas_ids=filters.areaIds,
+        status_for_user=api_status_to_internal(filters.status),
+        initial_data_import_ids=filters.initialDataImportIds,
+        user=user,
+        verified_filter=filters.verifiedFilter,
+        area_filter_mode=filters.areaFilterMode,
+        approaching_distance_km=filters.approachingDistanceKm,
+    )
 
 
 # This class is only defined to make Mypy happy

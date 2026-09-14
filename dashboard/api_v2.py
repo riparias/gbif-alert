@@ -75,7 +75,7 @@ from dashboard.forms import SignUpForm, _days_to_value_unit, _value_unit_to_days
 from dashboard.geo_utils import file_to_wkt_multipolygon, geojson_to_multipolygon
 from dashboard.utils import human_readable_git_version_number
 from dashboard.views import jobs as background_jobs
-from dashboard.views.helpers import api_status_to_internal
+from dashboard.views.helpers import api_status_to_internal, observations_for_filters
 from dashboard.models import (
     Alert,
     AlertTemplate,
@@ -717,20 +717,7 @@ def _filtered_observations(
     just like session ones.
     """
     user = request.user if request.user.is_authenticated else None
-    return Observation.objects.filtered_from_my_params(
-        species_ids=filters.speciesIds,
-        datasets_ids=filters.datasetIds,
-        basis_of_record_ids=filters.basisOfRecordIds,
-        start_date=filters.startDate,
-        end_date=filters.endDate,
-        areas_ids=filters.areaIds,
-        status_for_user=api_status_to_internal(filters.status),
-        initial_data_import_ids=filters.initialDataImportIds,
-        user=user,
-        verified_filter=filters.verifiedFilter,
-        area_filter_mode=filters.areaFilterMode,
-        approaching_distance_km=filters.approachingDistanceKm,
-    )
+    return observations_for_filters(filters, user)
 
 
 @api_v2.get(
@@ -949,7 +936,15 @@ def observations_mark_all_as_seen(request: HttpRequest, filters: FiltersQuery):
     # N2: report how many matching observations are currently unseen by the user
     # (the rows the job will actually flip), so the consumer knows what happened.
     count = qs.filter(observationunseen__user=user).distinct().count()
-    background_jobs.mark_many_observations_as_seen.delay(qs, user)
+    # Enqueue plain data (the JSON form of the filters and the user id), not
+    # the queryset and the User instance: a pickled queryset is only valid for
+    # the Django version that produced it, so a job queued just before a
+    # deploy could fail to unpickle after it, and the pickled User carried
+    # the password hash into Redis. The job rebuilds the queryset with the
+    # code running at execution time.
+    background_jobs.mark_many_observations_as_seen.delay(
+        filters.model_dump(mode="json"), user.pk
+    )
     return 200, {"queued": True, "count": count}
 
 
