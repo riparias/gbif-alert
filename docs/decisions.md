@@ -356,3 +356,8 @@ being used.
 **What:** `SpeciesFilterModal` takes an `emptyLabel` prop; the alert form shows "No species selected" instead of "All species".
 **Why:** an empty species selection means "all" in the explorer but is invalid for an alert, so the shared label misled users (#440).
 **Rejected:** a combined "None - select at least one species" label, redundant with the hint already shown above the button.
+
+## 2026-09-15 - Backend dependencies updated within existing caps
+**What:** `uv lock --upgrade` without touching constraints: Django 5.2.17, sqlparse 0.6.0, django-ninja 1.7, django-rq 4.2, django-vite 3.2 and patch/minor updates.
+**Why:** Django 5.2.16/5.2.17 and sqlparse 0.6.0 fix security issues, including a high-severity spatial lookup flaw reachable from the admin.
+**Rejected:** raising the django-maintenance-mode cap to 0.23 - it changes the state value format the import relies on, for features we do not use.
