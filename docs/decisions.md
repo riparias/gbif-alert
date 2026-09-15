@@ -361,3 +361,8 @@ being used.
 **What:** `uv lock --upgrade` without touching constraints: Django 5.2.17, sqlparse 0.6.0, django-ninja 1.7, django-rq 4.2, django-vite 3.2 and patch/minor updates.
 **Why:** Django 5.2.16/5.2.17 and sqlparse 0.6.0 fix security issues, including a high-severity spatial lookup flaw reachable from the admin.
 **Rejected:** raising the django-maintenance-mode cap to 0.23 - it changes the state value format the import relies on, for features we do not use.
+
+## 2026-09-15 - import_observations takes a plain path for --source-dwca
+**What:** dropped `argparse.FileType` for `--source-dwca`; `handle()` checks the path exists and raises `CommandError`.
+**Why:** `FileType` is deprecated, left the zip open in text mode, and never ran for `call_command` callers.
+**Rejected:** a custom argparse `type=` validator - `call_command` kwargs bypass `type=`, so it would not cover programmatic callers.
