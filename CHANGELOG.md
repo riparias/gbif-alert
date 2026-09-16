@@ -1,5 +1,7 @@
 # Unreleased
 
+- New: every map (observations, single observation, custom area editor) now
+  has a full screen button, under the zoom controls.
 - Fix: in the alert form, the species selector now reads "No species selected"
   instead of "All species" when nothing is picked, since an alert needs at
   least one species (#440).
