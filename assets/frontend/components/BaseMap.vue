@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, markRaw } from "vue";
 import { useI18n } from "vue-i18n";
 import { Map as OLMap, View } from "ol";
 import { fromLonLat } from "ol/proj";
+import FullScreen from "ol/control/FullScreen";
 import Select from "primevue/select";
 import "ol/ol.css";
 import { useBaseLayer, makeDefaultBaseLayer } from "../composables/useBaseLayer";
@@ -27,6 +28,7 @@ const props = withDefaults(
 const { t } = useI18n();
 const { baseLayers, selectedBaseLayerId, attachToMap } = useBaseLayer();
 const mapEl = ref<HTMLElement | null>(null);
+const wrapperEl = ref<HTMLElement | null>(null);
 let olMap: OLMap | null = null;
 
 onMounted(() => {
@@ -40,6 +42,10 @@ onMounted(() => {
             }),
         }),
     );
+    // Fullscreen the wrapper, not the OL canvas, so the floating controls come along.
+    olMap.addControl(
+        new FullScreen({ source: wrapperEl.value!, tipLabel: t("message.fullScreen") }),
+    );
     attachToMap(olMap);
 });
 
@@ -52,7 +58,7 @@ defineExpose({ getOlMap: () => olMap });
 </script>
 
 <template>
-    <div class="base-map-wrapper" :style="{ height: props.height }">
+    <div ref="wrapperEl" class="base-map-wrapper" :style="{ height: props.height }">
         <!-- Floating controls panel, top-right corner -->
         <div v-if="props.showControls" class="map-float-controls">
             <div class="float-control-row">
@@ -87,6 +93,18 @@ defineExpose({ getOlMap: () => olMap });
 .map-canvas {
     width: 100%;
     height: 100%;
+}
+
+/* The height prop is an inline style, so it needs overriding in fullscreen. */
+.base-map-wrapper:fullscreen {
+    height: 100% !important;
+}
+
+/* OL's default spot for this button is top-right, under .map-float-controls. */
+.map-canvas :deep(.ol-full-screen) {
+    top: 4.25rem;
+    left: 0.5rem;
+    right: auto;
 }
 
 .map-float-controls {

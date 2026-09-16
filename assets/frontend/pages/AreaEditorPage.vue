@@ -10,6 +10,7 @@ import Message from "primevue/message";
 import Select from "primevue/select";
 import { Map as OLMap, View } from "ol";
 import { fromLonLat } from "ol/proj";
+import FullScreen from "ol/control/FullScreen";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import { GeoJSON } from "ol/format";
@@ -218,6 +219,9 @@ onMounted(async () => {
             }),
         }),
     );
+    // .editor-map is both the map target and the parent of the floating controls,
+    // so the control's default source already covers everything.
+    olMap.addControl(new FullScreen({ tipLabel: t("message.fullScreen") }));
     attachToMap(olMap);
 
     if (isEditMode.value && areaId.value !== null) {
@@ -420,6 +424,13 @@ onUnmounted(() => {
 .editor-map {
     flex: 1;
     position: relative;
+}
+
+/* OL's default spot for this button is top-right, under .map-float-controls. */
+.editor-map :deep(.ol-full-screen) {
+    top: 4.25rem;
+    left: 0.5rem;
+    right: auto;
 }
 
 /* Replicates the floating controls style from BaseMap.vue */
