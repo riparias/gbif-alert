@@ -1,4 +1,3 @@
-import argparse
 import datetime
 import itertools
 import json
@@ -857,12 +856,14 @@ class Command(BaseCommand):
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
             "--source-dwca",
-            type=argparse.FileType("r"),
             help="Use an existing dwca file as source (otherwise a new GBIF download will be generated and downloaded)",
         )
 
     def handle(self, *args, **options) -> None:
         start_time = time.time()
+
+        if options["source_dwca"] and not os.path.isfile(options["source_dwca"]):
+            raise CommandError(f"DwC-A file not found: {options['source_dwca']}")
 
         # Allow the verbosity option for our custom logging
         # (see https://reinout.vanrees.org/weblog/2017/03/08/logging-verbosity-managment-commands.html)
@@ -904,7 +905,7 @@ class Command(BaseCommand):
         try:
             if options["source_dwca"]:
                 _log_with_time(self.stdout, "Using a user-provided DWCA file")
-                source_data_path = options["source_dwca"].name
+                source_data_path = options["source_dwca"]
             else:
                 _log_with_time(
                     self.stdout,

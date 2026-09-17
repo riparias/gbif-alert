@@ -28,7 +28,6 @@ dependencies = [
     "django-modeltranslation>=0.20.0,<0.21",
     "python-dotenv>=1.0.0,<2",
     "django-gisserver>=2.0,<3",
-    "setuptools",
     "django-vite>=3.1.0,<4",
     "django-ninja>=1.6.2,<2",
     "whitenoise>=6.7.0,<7",

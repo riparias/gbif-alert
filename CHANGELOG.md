@@ -2,9 +2,14 @@
 
 - New: the observations map (home page and alert pages) now shows a scale bar
   and a legend for the hexagon colors.
+- New: every map (observations, single observation, custom area editor) now
+  has a full screen button, under the zoom controls.
 - Fix: in the alert form, the species selector now reads "No species selected"
   instead of "All species" when nothing is picked, since an alert needs at
   least one species (#440).
+- Security: Django is updated to 5.2.17 (and its SQL parser to sqlparse 0.6.0),
+  along with patch/minor updates of the other backend dependencies. Run
+  `migrate` when upgrading (django-rq renames its admin permission).
 
 # 2.6.0 (2026-09-14)
 
