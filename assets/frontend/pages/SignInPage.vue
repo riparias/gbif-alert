@@ -27,8 +27,9 @@ async function submit() {
     loading.value = false;
     if (resp.ok) {
         window.location.href = "/";
+    } else if (resp.status === 429) {
+        errorMessage.value = t("message.tooManyAttempts");
     } else {
-        const data = await resp.json();
         errorMessage.value = t("message.invalidCredentials");
     }
 }

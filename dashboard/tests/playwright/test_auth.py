@@ -5,10 +5,12 @@ import re
 import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.core.cache import cache
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from playwright.sync_api import Page, expect
 
+from dashboard.api_v2 import api_v2_signin_throttle
 from dashboard.tests.playwright.helpers import login
 
 
@@ -39,6 +41,22 @@ def test_signin_wrong_password(page: Page, live_server):
 
     expect(page.locator("[data-testid='signin-error']")).to_be_visible()
     expect(page).to_have_url(live_server.url + "/accounts/signin/")
+
+
+@pytest.mark.django_db(transaction=True)
+def test_signin_throttled_shows_too_many_attempts(page: Page, live_server, monkeypatch):
+    """A throttled sign-in says so, instead of claiming bad credentials."""
+    cache.clear()
+    monkeypatch.setattr(api_v2_signin_throttle, "num_requests", 0)
+
+    page.goto(live_server.url + "/accounts/signin/")
+    page.locator("#signin-username").fill("anyone")
+    page.locator("#signin-password").fill("whatever")
+    page.get_by_role("button", name="Sign in").click()
+
+    expect(page.locator("[data-testid='signin-error']")).to_have_text(
+        re.compile("Too many attempts")
+    )
 
 
 @pytest.mark.django_db(transaction=True)

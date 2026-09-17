@@ -507,6 +507,15 @@ STORAGES = {
 # deployment via the environment. Map tiles under /internal-api/ are separate.
 API_V2_THROTTLE_ANON = os.environ.get("API_V2_THROTTLE_ANON", "60/min")
 API_V2_THROTTLE_AUTH = os.environ.get("API_V2_THROTTLE_AUTH", "600/min")
+# Much tighter per-IP limit on the sign-in and sign-up endpoints, to slow down
+# password guessing.
+API_V2_THROTTLE_SIGNIN = os.environ.get("API_V2_THROTTLE_SIGNIN", "5/min")
+# Number of reverse proxies in front of the app. The throttles take the client
+# IP from that position (counted from the right) in X-Forwarded-For; if unset,
+# django-ninja keys on the whole client-supplied header, so an attacker can
+# rotate it to bypass every per-IP limit. Must match the real topology: 1 for
+# a single Traefik/Nginx, 2 behind a CDN + proxy, 0 when nothing is in front.
+NINJA_NUM_PROXIES = int(os.environ.get("NINJA_NUM_PROXIES", "1"))
 
 
 # Default primary key field type

@@ -356,3 +356,8 @@ being used.
 **What:** `SpeciesFilterModal` takes an `emptyLabel` prop; the alert form shows "No species selected" instead of "All species".
 **Why:** an empty species selection means "all" in the explorer but is invalid for an alert, so the shared label misled users (#440).
 **Rejected:** a combined "None - select at least one species" label, redundant with the hint already shown above the button.
+
+## 2026-09-17 - Throttle on the real client IP, tight sign-in limit
+**What:** `NINJA_NUM_PROXIES` (env, default 1) and a dedicated 5/min per-IP throttle on sign-in/sign-up.
+**Why:** unset, ninja keyed throttles on the client-supplied X-Forwarded-For, so rotating it gave unlimited password guesses.
+**Rejected:** hard-coding 1 (breaks CDN + proxy setups); reusing `AnonRateThrottle` (shares the "anon" cache bucket).

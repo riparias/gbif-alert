@@ -99,6 +99,16 @@ from page_fragments.models import PageFragment
 api_v2_anon_throttle = AnonRateThrottle(settings.API_V2_THROTTLE_ANON)
 api_v2_auth_throttle = AuthRateThrottle(settings.API_V2_THROTTLE_AUTH)
 
+
+class SignInRateThrottle(AnonRateThrottle):
+    # Own scope, so it gets its own cache bucket instead of sharing "anon"'s.
+    scope = "signin"
+
+
+# Per-IP limit on sign-in/sign-up (they share one bucket), replacing the looser
+# global throttles on those two endpoints.
+api_v2_signin_throttle = SignInRateThrottle(settings.API_V2_THROTTLE_SIGNIN)
+
 # Public API v2 - powered by Django Ninja. The supported HTTP API for
 # programmatic access; it also powers the web app. (The /api/v2/spa/ instance
 # defined below is internal-only and not part of the public contract.)
@@ -1410,6 +1420,7 @@ def alert_publish_as_template(request: HttpRequest, alert_id: int):
     "/auth/signin/",
     response={200: SignInOut, 401: DetailErrorOut},
     auth=None,
+    throttle=api_v2_signin_throttle,
 )
 def auth_signin(request: HttpRequest, payload: SignInIn):
     """Authenticate and create a session. Returns 401 on bad credentials."""
@@ -1435,6 +1446,7 @@ def auth_signout(request: HttpRequest):
     "/auth/signup/",
     response={201: SignInOut, 422: ValidationErrorOut},
     auth=None,
+    throttle=api_v2_signin_throttle,
 )
 def auth_signup(request: HttpRequest, payload: SignUpIn):
     """Create an account and log in. Returns 422 with field errors on failure."""

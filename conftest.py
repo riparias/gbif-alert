@@ -79,8 +79,13 @@ def _relax_api_v2_throttling(monkeypatch):
     requests share one IP, so the production limits would 429 unrelated tests.
     The dedicated throttle tests re-tighten these in their own bodies.
     """
-    from dashboard.api_v2 import api_v2_anon_throttle, api_v2_auth_throttle
+    from dashboard.api_v2 import (
+        api_v2_anon_throttle,
+        api_v2_auth_throttle,
+        api_v2_signin_throttle,
+    )
 
     monkeypatch.setattr(api_v2_anon_throttle, "num_requests", 10**9)
     monkeypatch.setattr(api_v2_auth_throttle, "num_requests", 10**9)
+    monkeypatch.setattr(api_v2_signin_throttle, "num_requests", 10**9)
     yield
