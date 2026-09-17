@@ -53,6 +53,10 @@ x-app-env: &app-env
   PRIMEVUE_PRIMARY_PALETTE: ${PRIMEVUE_PRIMARY_PALETTE:-indigo}
   # Only for genuinely EU-funded instances (see docs/eu-funding-acknowledgement.md).
   SHOW_EU_FUNDING_ACKNOWLEDGEMENT: ${SHOW_EU_FUNDING_ACKNOWLEDGEMENT:-False}
+  # "-" rather than ":-": an empty ALWAYS_VERIFIED_DATASET_KEYS opts out of the
+  # iNaturalist default, so it must not fall back to it.
+  ALWAYS_VERIFIED_DATASET_KEYS: ${ALWAYS_VERIFIED_DATASET_KEYS-50c9509d-22c7-4a22-a47d-8c48425ef4a7}
+  NEVER_VERIFIED_DATASET_KEYS: ${NEVER_VERIFIED_DATASET_KEYS-}
   MAP_INITIAL_ZOOM: ${MAP_INITIAL_ZOOM:-2}
   MAP_INITIAL_LAT: ${MAP_INITIAL_LAT:-0}
   MAP_INITIAL_LON: ${MAP_INITIAL_LON:-0}

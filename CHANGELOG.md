@@ -1,5 +1,9 @@
 # Unreleased
 
+- New: instance operators can list datasets whose observations are always or
+  never considered verified (`ALWAYS_VERIFIED_DATASET_KEYS`,
+  `NEVER_VERIFIED_DATASET_KEYS`). iNaturalist research-grade observations are
+  now verified by default; this takes effect at the next data import (#430).
 - Fix: in the alert form, the species selector now reads "No species selected"
   instead of "All species" when nothing is picked, since an alert needs at
   least one species (#440).

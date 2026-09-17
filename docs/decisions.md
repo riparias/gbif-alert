@@ -356,3 +356,8 @@ being used.
 **What:** `SpeciesFilterModal` takes an `emptyLabel` prop; the alert form shows "No species selected" instead of "All species".
 **Why:** an empty species selection means "all" in the explorer but is invalid for an alert, so the shared label misled users (#440).
 **Rejected:** a combined "None - select at least one species" label, redundant with the hint already shown above the button.
+
+## 2026-09-17 - Per-dataset verified overrides, iNaturalist verified by default
+**What:** `ALWAYS_VERIFIED_DATASET_KEYS` / `NEVER_VERIFIED_DATASET_KEYS` env vars force `verified` at import, bypassing the identificationVerificationStatus classification; iNaturalist research-grade is the ALWAYS default, and the detail panel says when the flag comes from an override.
+**Why:** iNaturalist records reach GBIF research-grade only but without a verification status, so they were all shown as unverified (#430).
+**Rejected:** writing a synthetic "research grade" status on the observation (invents source data); a hardcoded iNaturalist `if` (other instances have other such datasets).
