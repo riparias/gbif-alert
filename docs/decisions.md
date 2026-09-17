@@ -357,6 +357,21 @@ being used.
 **Why:** an empty species selection means "all" in the explorer but is invalid for an alert, so the shared label misled users (#440).
 **Rejected:** a combined "None - select at least one species" label, redundant with the hint already shown above the button.
 
+## 2026-09-15 - Backend dependencies updated within existing caps
+**What:** `uv lock --upgrade` without touching constraints: Django 5.2.17, sqlparse 0.6.0, django-ninja 1.7, django-rq 4.2, django-vite 3.2 and patch/minor updates.
+**Why:** Django 5.2.16/5.2.17 and sqlparse 0.6.0 fix security issues, including a high-severity spatial lookup flaw reachable from the admin.
+**Rejected:** raising the django-maintenance-mode cap to 0.23 - it changes the state value format the import relies on, for features we do not use.
+
+## 2026-09-15 - import_observations takes a plain path for --source-dwca
+**What:** dropped `argparse.FileType` for `--source-dwca`; `handle()` checks the path exists and raises `CommandError`.
+**Why:** `FileType` is deprecated, left the zip open in text mode, and never ran for `call_command` callers.
+**Rejected:** a custom argparse `type=` validator - `call_command` kwargs bypass `type=`, so it would not cover programmatic callers.
+
+## 2026-09-17 - Continuous gradient legend for the hexagon map
+**What:** `ObservationsMap` shows a min/max-labelled gradient legend (hidden from zoom 13) and an OL `ScaleLine`.
+**Why:** the hexagon colors are a continuous log ramp over the fixed-zoom min/max, so a gradient matches them exactly.
+**Rejected:** stepped color classes, which would suggest breaks the style does not have.
+
 ## 2026-09-17 - Per-dataset verified overrides, iNaturalist verified by default
 **What:** `ALWAYS_VERIFIED_DATASET_KEYS` / `NEVER_VERIFIED_DATASET_KEYS` env vars force `verified` at import, bypassing the identificationVerificationStatus classification; iNaturalist research-grade is the ALWAYS default, and the detail panel says when the flag comes from an override.
 **Why:** iNaturalist records reach GBIF research-grade only but without a verification status, so they were all shown as unverified (#430).
