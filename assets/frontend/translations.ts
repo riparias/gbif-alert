@@ -115,6 +115,8 @@ export const messages = {
             dataImports: "Data imports",
             dataLayerOpacity: "Data layer opacity",
             dataset: "Dataset",
+            datasetAlwaysVerified: "observations from this dataset are always considered verified",
+            datasetNeverVerified: "observations from this dataset are never considered verified",
             datasetsToInclude: "Datasets to include",
             date: "Date",
             dateFrom: "Date (from)",
@@ -435,6 +437,10 @@ export const messages = {
             dataImports: "Imports de données",
             dataLayerOpacity: "Opacité des données",
             dataset: "Jeu de données",
+            datasetAlwaysVerified:
+                "les observations de ce jeu de données sont toujours considérées comme vérifiées",
+            datasetNeverVerified:
+                "les observations de ce jeu de données ne sont jamais considérées comme vérifiées",
             datasetsToInclude: "Jeux de données à inclure",
             date: "Date",
             dateFrom: "Date (depuis)",
@@ -756,6 +762,10 @@ export const messages = {
             dataImports: "Gegevensimports",
             dataLayerOpacity: "Doorzichtigheid datalaag",
             dataset: "Dataset",
+            datasetAlwaysVerified:
+                "waarnemingen uit deze dataset worden altijd als geverifieerd beschouwd",
+            datasetNeverVerified:
+                "waarnemingen uit deze dataset worden nooit als geverifieerd beschouwd",
             datasetsToInclude: "Op te nemen datasets",
             date: "Datum",
             dateFrom: "Datum (van)",
@@ -1074,6 +1084,8 @@ export const messages = {
             dataImports: "Dataimporter",
             dataLayerOpacity: "Dekkevne for datalaget",
             dataset: "Datasett",
+            datasetAlwaysVerified: "observasjoner fra dette datasettet regnes alltid som bekreftet",
+            datasetNeverVerified: "observasjoner fra dette datasettet regnes aldri som bekreftet",
             datasetsToInclude: "Datasett som skal inkluderes",
             date: "Dato",
             dateFrom: "Dato (fra)",

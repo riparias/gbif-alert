@@ -312,6 +312,13 @@ class ObservationDetailOut(Schema):
     references: str
     identificationVerificationStatus: str  # empty string when not provided by GBIF
     verified: bool
+    verifiedByDatasetOverride: bool = Field(
+        description=(
+            "True when `verified` was forced by the instance configuration "
+            "(dataset always/never considered verified) rather than derived "
+            "from identificationVerificationStatus."
+        )
+    )
     basisOfRecordId: int
     basisOfRecordName: str
     coordinateUncertaintyInMeters: float | None

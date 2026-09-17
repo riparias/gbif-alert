@@ -371,3 +371,8 @@ being used.
 **What:** `ObservationsMap` shows a min/max-labelled gradient legend (hidden from zoom 13) and an OL `ScaleLine`.
 **Why:** the hexagon colors are a continuous log ramp over the fixed-zoom min/max, so a gradient matches them exactly.
 **Rejected:** stepped color classes, which would suggest breaks the style does not have.
+
+## 2026-09-17 - Per-dataset verified overrides, iNaturalist verified by default
+**What:** `ALWAYS_VERIFIED_DATASET_KEYS` / `NEVER_VERIFIED_DATASET_KEYS` env vars force `verified` at import, bypassing the identificationVerificationStatus classification; iNaturalist research-grade is the ALWAYS default, and the detail panel says when the flag comes from an override.
+**Why:** iNaturalist records reach GBIF research-grade only but without a verification status, so they were all shown as unverified (#430).
+**Rejected:** writing a synthetic "research grade" status on the observation (invents source data); a hardcoded iNaturalist `if` (other instances have other such datasets).

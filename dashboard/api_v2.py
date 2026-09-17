@@ -1018,6 +1018,10 @@ def observation_detail(request: HttpRequest, stable_id: str):
         "references": obs.references,
         "identificationVerificationStatus": obs.identification_verification_status,
         "verified": obs.verified,
+        # Only reported when it explains the stored flag: `verified` is set at
+        # import, so a settings change shows up here before the next import.
+        "verifiedByDatasetOverride": obs.source_dataset.verification_override
+        == obs.verified,
         "basisOfRecordId": obs.basis_of_record_id,
         "basisOfRecordName": obs.basis_of_record.name,
         "coordinateUncertaintyInMeters": obs.coordinate_uncertainty_in_meters,

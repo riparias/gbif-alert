@@ -8,6 +8,7 @@ import datetime
 from unittest import mock
 
 import pytest
+from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -115,6 +116,57 @@ def test_run_import_with_rows_sanity():
     assert obs.gbif_id == "42"  # gbif_id is stored as a string on Observation
 
 
+def _verification_overrides(always=(), never=()):
+    """override_settings for the always/never verified dataset keys."""
+    return override_settings(
+        GBIF_ALERT={
+            **settings.GBIF_ALERT,
+            "ALWAYS_VERIFIED_DATASET_KEYS": frozenset(always),
+            "NEVER_VERIFIED_DATASET_KEYS": frozenset(never),
+        }
+    )
+
+
+def test_verified_dataset_overrides(test_data):
+    """A dataset listed as always / never verified bypasses the verification
+    status classification, in both directions. The raw status is untouched."""
+    other_key = "4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+    common = dict(
+        taxon_key=LIXUS_COL_KEY,
+        accepted_taxon_key=LIXUS_COL_KEY,
+        species_key=LIXUS_COL_KEY,
+    )
+    rows = [
+        make_raw_row(
+            gbif_id=1,
+            occurrence_id="always",
+            dataset_key=INATURALIST_KEY,
+            dataset_name="iNaturalist",
+            **common,
+        ),
+        make_raw_row(
+            gbif_id=2,
+            occurrence_id="never",
+            dataset_key=other_key,
+            dataset_name="Other",
+            identification_verification_status="validated",
+            **common,
+        ),
+    ]
+
+    with _verification_overrides(always=[INATURALIST_KEY], never=[other_key]):
+        run_import_with_rows(rows)
+
+    always = Observation.objects.get(occurrence_id="always")
+    never = Observation.objects.get(occurrence_id="never")
+    assert always.verified is True
+    assert always.identification_verification_status == ""
+    assert never.verified is False
+    assert never.identification_verification_status == "validated"
+
+
+# No overrides: the iNaturalist rows below must go through the classification
+@_verification_overrides()
 def test_verified_classification(test_data):
     """build_observation_from_raw maps identification_verification_status to
     obs.verified via verification_status_classification.json:
