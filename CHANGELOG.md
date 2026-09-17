@@ -1,5 +1,7 @@
 # Unreleased
 
+- The Docker image now runs on Python 3.14 (from 3.13). Python 3.13 remains
+  supported for non-Docker installs.
 - New: the observations map (home page and alert pages) now shows a scale bar
   and a legend for the hexagon colors.
 - New: every map (observations, single observation, custom area editor) now
