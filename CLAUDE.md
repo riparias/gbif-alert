@@ -8,7 +8,7 @@ GBIF Alert is a Django-based early alert system for invasive species using GBIF 
 
 ## Tech Stack
 
-- **Backend:** Python 3.13+, Django 5.2 (GeoDjango), PostgreSQL/PostGIS 3.1+, Redis/Valkey (django-rq)
+- **Backend:** Python 3.13+ (Docker image and CI use 3.14), Django 5.2 (GeoDjango), PostgreSQL/PostGIS 3.1+, Redis/Valkey (django-rq)
 - **Frontend:** TypeScript, Vue.js 3, PrimeVue (Aura preset), Vue Router, Pinia, OpenLayers (maps), D3.js (charts)
 - **Build tools:** uv (Python), npm + Vite (frontend)
 
@@ -42,9 +42,9 @@ uv run python manage.py rqworker default # Start Redis queue worker
 
 ### Testing & Type Checking
 ```bash
-uv run python manage.py test                        # Run all Django tests
-uv run python manage.py test dashboard.tests.models # Run specific test module
-uv run python manage.py test dashboard.tests.commands.test_import_observations # Import tests
+uv run pytest                                       # Run all tests (builds the Vite bundle first)
+uv run pytest dashboard/tests/models                # Run specific test directory
+uv run pytest dashboard/tests/commands/test_import_observations_logic.py # Import tests
 uv run mypy .                                       # Type checking (Python)
 npm run typecheck                                   # Type checking (TypeScript + Vue, via vue-tsc)
 ```

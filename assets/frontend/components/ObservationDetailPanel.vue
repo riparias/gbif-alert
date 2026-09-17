@@ -226,6 +226,13 @@ onMounted(load);
                                 >
                                     ({{ obs.identificationVerificationStatus }})
                                 </span>
+                                <span v-if="obs.verifiedByDatasetOverride" class="muted-small">
+                                    ({{
+                                        obs.verified
+                                            ? t("message.datasetAlwaysVerified")
+                                            : t("message.datasetNeverVerified")
+                                    }})
+                                </span>
                             </dd>
 
                             <dt>{{ t("message.basisOfRecord") }}</dt>

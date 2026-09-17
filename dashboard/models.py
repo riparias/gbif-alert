@@ -224,6 +224,23 @@ class Species(models.Model):  # type: ignore
         }
 
 
+def dataset_verification_overrides() -> dict[str, bool]:
+    """Map GBIF dataset key -> forced ``verified`` value, from the settings.
+
+    Observations of a dataset listed here are always (True) or never (False)
+    considered verified, whatever their identificationVerificationStatus.
+    ``.get()``: a local_settings.py that replaces the whole GBIF_ALERT dict may
+    predate these keys.
+    """
+    overrides = dict.fromkeys(
+        settings.GBIF_ALERT.get("NEVER_VERIFIED_DATASET_KEYS", ()), False
+    )
+    overrides.update(
+        dict.fromkeys(settings.GBIF_ALERT.get("ALWAYS_VERIFIED_DATASET_KEYS", ()), True)
+    )
+    return overrides
+
+
 class Dataset(models.Model):
     name = models.TextField()
     gbif_dataset_key = models.CharField(max_length=255, unique=True)
@@ -241,6 +258,11 @@ class Dataset(models.Model):
 
     class Meta:
         ordering = ["name"]
+
+    @property
+    def verification_override(self) -> bool | None:
+        """True/False if this dataset is always/never verified, None otherwise."""
+        return dataset_verification_overrides().get(self.gbif_dataset_key.lower())
 
     @property
     def as_dict(self) -> dict[str, Any]:

@@ -1,5 +1,15 @@
 # Unreleased
 
+- The Docker image now runs on Python 3.14 (from 3.13). Python 3.13 remains
+  supported for non-Docker installs.
+- New: the observations map (home page and alert pages) now shows a scale bar
+  and a legend for the hexagon colors.
+- New: every map (observations, single observation, custom area editor) now
+  has a full screen button, under the zoom controls.
+- New: instance operators can list datasets whose observations are always or
+  never considered verified (`ALWAYS_VERIFIED_DATASET_KEYS`,
+  `NEVER_VERIFIED_DATASET_KEYS`). iNaturalist research-grade observations are
+  now verified by default; this takes effect at the next data import (#430).
 - Security: sign-in and sign-up are now limited to 5 attempts per minute per
   IP (`API_V2_THROTTLE_SIGNIN`), and the API rate limits can no longer be
   bypassed with a forged `X-Forwarded-For` header. If more than one proxy sits
@@ -8,6 +18,9 @@
 - Fix: in the alert form, the species selector now reads "No species selected"
   instead of "All species" when nothing is picked, since an alert needs at
   least one species (#440).
+- Security: Django is updated to 5.2.17 (and its SQL parser to sqlparse 0.6.0),
+  along with patch/minor updates of the other backend dependencies. Run
+  `migrate` when upgrading (django-rq renames its admin permission).
 
 # 2.6.0 (2026-09-14)
 

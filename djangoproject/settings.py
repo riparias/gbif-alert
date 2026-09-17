@@ -328,8 +328,56 @@ def _default_predicate_builder(species_list):
     }
 
 
+# "iNaturalist Research-grade Observations": GBIF only receives research-grade
+# (community-reviewed) records from iNaturalist, but they carry no
+# identificationVerificationStatus, so the status-string check alone would
+# leave them all unverified.
+INATURALIST_DATASET_KEY = "50c9509d-22c7-4a22-a47d-8c48425ef4a7"
+
+
+def _dataset_keys(env_var: str, default: str = "") -> frozenset[str]:
+    """Parse a comma-separated env var of GBIF dataset keys.
+
+    An env var set to the empty string means "no datasets", which is how an
+    operator opts out of a non-empty default.
+    """
+    return frozenset(
+        s.strip().lower()
+        for s in os.environ.get(env_var, default).split(",")
+        if s.strip()
+    )
+
+
+def _verification_override_keys() -> tuple[frozenset[str], frozenset[str]]:
+    """Dataset keys whose observations are always / never considered verified.
+
+    Evaluated at import so a dataset listed on both sides fails the deploy
+    fast rather than being silently resolved one way at the next import.
+    """
+    from django.core.exceptions import ImproperlyConfigured
+
+    always = _dataset_keys("ALWAYS_VERIFIED_DATASET_KEYS", INATURALIST_DATASET_KEY)
+    never = _dataset_keys("NEVER_VERIFIED_DATASET_KEYS")
+    if overlap := always & never:
+        raise ImproperlyConfigured(
+            "Dataset key(s) listed in both ALWAYS_VERIFIED_DATASET_KEYS and "
+            f"NEVER_VERIFIED_DATASET_KEYS: {', '.join(sorted(overlap))}."
+        )
+    return always, never
+
+
+(
+    _ALWAYS_VERIFIED_DATASET_KEYS,
+    _NEVER_VERIFIED_DATASET_KEYS,
+) = _verification_override_keys()
+
+
 GBIF_ALERT: dict = {
     "SITE_NAME": os.environ.get("SITE_NAME", ""),
+    # Observations from these datasets skip the identificationVerificationStatus
+    # classification: they are always (resp. never) flagged as verified.
+    "ALWAYS_VERIFIED_DATASET_KEYS": _ALWAYS_VERIFIED_DATASET_KEYS,
+    "NEVER_VERIFIED_DATASET_KEYS": _NEVER_VERIFIED_DATASET_KEYS,
     "PRIMEVUE_PRIMARY_PALETTE": os.environ.get("PRIMEVUE_PRIMARY_PALETTE", "indigo"),
     "ENABLED_LANGUAGES": tuple(
         s.strip()

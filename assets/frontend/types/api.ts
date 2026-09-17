@@ -1292,6 +1292,11 @@ export interface components {
             identificationVerificationStatus: string;
             /** Verified */
             verified: boolean;
+            /**
+             * Verifiedbydatasetoverride
+             * @description True when `verified` was forced by the instance configuration (dataset always/never considered verified) rather than derived from identificationVerificationStatus.
+             */
+            verifiedByDatasetOverride: boolean;
             /** Basisofrecordid */
             basisOfRecordId: number;
             /** Basisofrecordname */

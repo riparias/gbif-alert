@@ -9,6 +9,7 @@ requires-python = ">=3.13"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
     "Django>=5.2,<6",
@@ -28,7 +29,6 @@ dependencies = [
     "django-modeltranslation>=0.20.0,<0.21",
     "python-dotenv>=1.0.0,<2",
     "django-gisserver>=2.0,<3",
-    "setuptools",
     "django-vite>=3.1.0,<4",
     "django-ninja>=1.6.2,<2",
     "whitenoise>=6.7.0,<7",
