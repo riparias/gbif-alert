@@ -1,5 +1,7 @@
 # Unreleased
 
+- New: the observations map (home page and alert pages) now shows a scale bar
+  and a legend for the hexagon colors.
 - Fix: in the alert form, the species selector now reads "No species selected"
   instead of "All species" when nothing is picked, since an alert needs at
   least one species (#440).
