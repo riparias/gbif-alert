@@ -1,5 +1,7 @@
 # Unreleased
 
+- New: the observations map (home page and alert pages) now shows a scale bar
+  and a legend for the hexagon colors.
 - New: every map (observations, single observation, custom area editor) now
   has a full screen button, under the zoom controls.
 - Fix: in the alert form, the species selector now reads "No species selected"

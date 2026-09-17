@@ -366,3 +366,8 @@ being used.
 **What:** dropped `argparse.FileType` for `--source-dwca`; `handle()` checks the path exists and raises `CommandError`.
 **Why:** `FileType` is deprecated, left the zip open in text mode, and never ran for `call_command` callers.
 **Rejected:** a custom argparse `type=` validator - `call_command` kwargs bypass `type=`, so it would not cover programmatic callers.
+
+## 2026-09-17 - Continuous gradient legend for the hexagon map
+**What:** `ObservationsMap` shows a min/max-labelled gradient legend (hidden from zoom 13) and an OL `ScaleLine`.
+**Why:** the hexagon colors are a continuous log ramp over the fixed-zoom min/max, so a gradient matches them exactly.
+**Rejected:** stepped color classes, which would suggest breaks the style does not have.
