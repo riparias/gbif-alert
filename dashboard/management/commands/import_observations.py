@@ -1,4 +1,3 @@
-import argparse
 import datetime
 import itertools
 import json
@@ -36,6 +35,7 @@ from dashboard.models import (
     ObservationComment,
     Species,
     create_unseen_observations,
+    dataset_verification_overrides,
     migrate_unseen_observations,
 )
 from dashboard.views.helpers import (
@@ -332,12 +332,16 @@ def build_observation_from_raw(
     hash_basis_of_record: dict[str, BasisOfRecord],
     hash_verification_status: dict[str, bool],
     existing_by_stable_id: dict[str, list[ExistingObservation]],
+    verification_overrides: dict[str, bool],
 ) -> Observation:
     """Build an Observation from a RawObservationRow.
 
     ``existing_by_stable_id`` is the chunk-wide lookup from
     ``fetch_existing_by_stable_id``; it must cover this row's stable id, or the
     row is treated as new to the system.
+
+    ``verification_overrides`` maps a dataset key to a forced
+    ``verified`` value, which wins over the verification status classification.
 
     Raises SkippedObservationException when the row is unusable (missing
     year, missing coordinates, missing occurrence_id, missing basis of record,
@@ -375,6 +379,12 @@ def build_observation_from_raw(
         :255
     ]
 
+    verified = verification_overrides.get(raw.dataset_key.lower())
+    if verified is None:
+        verified = hash_verification_status.get(
+            identification_verification_status_str, False
+        )
+
     new_observation = Observation(
         gbif_id=raw.gbif_id,
         occurrence_id=raw.occurrence_id,
@@ -388,9 +398,7 @@ def build_observation_from_raw(
         municipality=raw.municipality,
         basis_of_record=hash_basis_of_record[raw.basis_of_record],
         identification_verification_status=identification_verification_status_str,
-        verified=hash_verification_status.get(
-            identification_verification_status_str, False
-        ),
+        verified=verified,
         recorded_by=raw.recorded_by,
         coordinate_uncertainty_in_meters=raw.coordinate_uncertainty_in_meters,
         references=raw.references,
@@ -563,6 +571,8 @@ def _import_all_observations(
     Returns the number of skipped observations.
     """
     skipped_observations_counter = 0
+    # Read once per import, not per row
+    verification_overrides = dataset_verification_overrides()
 
     for raw_chunk in _chunked(raw_rows, BULK_CREATE_CHUNK_SIZE):
         existing_by_stable_id = fetch_existing_by_stable_id(
@@ -583,6 +593,7 @@ def _import_all_observations(
                     hash_basis_of_record=hash_table_basis_of_record,
                     hash_verification_status=hash_table_verification_status,
                     existing_by_stable_id=existing_by_stable_id,
+                    verification_overrides=verification_overrides,
                 )
                 observations_to_insert.append(obs)
                 if stdout is not None:
@@ -857,12 +868,14 @@ class Command(BaseCommand):
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
             "--source-dwca",
-            type=argparse.FileType("r"),
             help="Use an existing dwca file as source (otherwise a new GBIF download will be generated and downloaded)",
         )
 
     def handle(self, *args, **options) -> None:
         start_time = time.time()
+
+        if options["source_dwca"] and not os.path.isfile(options["source_dwca"]):
+            raise CommandError(f"DwC-A file not found: {options['source_dwca']}")
 
         # Allow the verbosity option for our custom logging
         # (see https://reinout.vanrees.org/weblog/2017/03/08/logging-verbosity-managment-commands.html)
@@ -904,7 +917,7 @@ class Command(BaseCommand):
         try:
             if options["source_dwca"]:
                 _log_with_time(self.stdout, "Using a user-provided DWCA file")
-                source_data_path = options["source_dwca"].name
+                source_data_path = options["source_dwca"]
             else:
                 _log_with_time(
                     self.stdout,

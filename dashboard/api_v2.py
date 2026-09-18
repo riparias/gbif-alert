@@ -17,7 +17,7 @@ from django.db.models.functions import Coalesce, NullIf, TruncMonth
 from django.http import Http404, HttpRequest
 from django.shortcuts import get_object_or_404
 from django.utils.translation import get_language, gettext as _
-from ninja import File, Form, NinjaAPI, Query
+from ninja import File, Form, NinjaAPI, Query, Status
 from ninja.files import UploadedFile
 from ninja.errors import HttpError
 from ninja.security import django_auth
@@ -98,6 +98,16 @@ from page_fragments.models import PageFragment
 # settings (env-overridable). api_v2_spa is internal and stays unthrottled.
 api_v2_anon_throttle = AnonRateThrottle(settings.API_V2_THROTTLE_ANON)
 api_v2_auth_throttle = AuthRateThrottle(settings.API_V2_THROTTLE_AUTH)
+
+
+class SignInRateThrottle(AnonRateThrottle):
+    # Own scope, so it gets its own cache bucket instead of sharing "anon"'s.
+    scope = "signin"
+
+
+# Per-IP limit on sign-in/sign-up (they share one bucket), replacing the looser
+# global throttles on those two endpoints.
+api_v2_signin_throttle = SignInRateThrottle(settings.API_V2_THROTTLE_SIGNIN)
 
 # Public API v2 - powered by Django Ninja. The supported HTTP API for
 # programmatic access; it also powers the web app. (The /api/v2/spa/ instance
@@ -276,11 +286,11 @@ def species_create(request: HttpRequest, payload: SpeciesIn):
 
     errors = _species_validation_errors(species)
     if errors is not None:
-        return 422, {"detail": "Validation failed", "errors": errors}
+        return Status(422, {"detail": "Validation failed", "errors": errors})
 
     species.save()
     species.tags.set(payload.tags)
-    return 201, _species_to_out(species)
+    return Status(201, _species_to_out(species))
 
 
 @api_v2.post(
@@ -297,20 +307,23 @@ def species_per_polygon(request: HttpRequest, payload: SpeciesPerPolygonIn):
         # Returns a geometry already projected to DATA_SRID (matches location).
         mpoly = geojson_to_multipolygon(payload.geojson)
     except (ValueError, KeyError, TypeError, GEOSException) as exc:
-        return 422, {"detail": f"Invalid GeoJSON: {exc}"}
+        return Status(422, {"detail": f"Invalid GeoJSON: {exc}"})
 
     qs = (
         Species.objects.filter(observation__location__within=mpoly)
         .annotate(num_observations=Count("observation"))
         .prefetch_related("tags")  # type: ignore[misc]  # taggit manager not resolvable by django-stubs
     )
-    return 200, [
-        {
-            **_species_to_out(s),
-            "observationCountInPolygon": s.num_observations,
-        }
-        for s in qs
-    ]
+    return Status(
+        200,
+        [
+            {
+                **_species_to_out(s),
+                "observationCountInPolygon": s.num_observations,
+            }
+            for s in qs
+        ],
+    )
 
 
 # Declared after /species/per-polygon/ on purpose: ninja resolves routes in
@@ -370,7 +383,7 @@ def species_patch(request: HttpRequest, species_id: int, payload: SpeciesPatchIn
 
     errors = _species_validation_errors(species)
     if errors is not None:
-        return 422, {"detail": "Validation failed", "errors": errors}
+        return Status(422, {"detail": "Validation failed", "errors": errors})
 
     species.save()
     if payload.tags is not None:
@@ -541,12 +554,12 @@ def area_create(request: HttpRequest, payload: AreaIn):
     try:
         mpoly = geojson_to_multipolygon(payload.geojson)
     except ValueError as exc:
-        return 422, {"detail": str(exc)}
+        return Status(422, {"detail": str(exc)})
     if _area_name_taken(payload.name, owner):
-        return 409, {"detail": str(_("An area with this name already exists."))}
+        return Status(409, {"detail": str(_("An area with this name already exists."))})
     area = Area.objects.create(mpoly=mpoly, owner=owner, name=payload.name)
     area.tags.set(payload.tags)
-    return 201, _area_to_out(area)
+    return Status(201, _area_to_out(area))
 
 
 @api_v2.post(
@@ -585,16 +598,16 @@ def area_create_from_file(
         try:
             wkt = file_to_wkt_multipolygon(tmp.name)
         except ValueError as exc:
-            return 422, {"detail": str(exc)}
+            return Status(422, {"detail": str(exc)})
 
     if _area_name_taken(name, owner):
-        return 409, {"detail": str(_("An area with this name already exists."))}
+        return Status(409, {"detail": str(_("An area with this name already exists."))})
 
     area = Area.objects.create(
         mpoly=cast(GEOSMultiPolygon, GEOSGeometry(wkt)), owner=owner, name=name
     )
     area.tags.set(tags)
-    return 201, _area_to_out(area)
+    return Status(201, _area_to_out(area))
 
 
 @api_v2.patch(
@@ -621,13 +634,15 @@ def area_patch(request: HttpRequest, area_id: int, payload: AreaPatchIn):
     area = _get_editable_area(cast(User, request.user), area_id)
     if payload.name is not None and payload.name != area.name:
         if _area_name_taken(payload.name, area.owner, exclude_pk=area.pk):
-            return 409, {"detail": str(_("An area with this name already exists."))}
+            return Status(
+                409, {"detail": str(_("An area with this name already exists."))}
+            )
         area.name = payload.name
     if payload.geojson is not None:
         try:
             area.mpoly = geojson_to_multipolygon(payload.geojson)
         except ValueError as exc:
-            return 422, {"detail": str(exc)}
+            return Status(422, {"detail": str(exc)})
     if payload.tags is not None:
         area.tags.set(payload.tags)
     area.save()
@@ -650,14 +665,17 @@ def area_delete(request: HttpRequest, area_id: int):
     try:
         area.delete()
     except Area.HasAlerts:
-        return 409, {
-            "detail": str(
-                _(
-                    "The area cannot be deleted because it has alerts associated with it."
+        return Status(
+            409,
+            {
+                "detail": str(
+                    _(
+                        "The area cannot be deleted because it has alerts associated with it."
+                    )
                 )
-            )
-        }
-    return 204, None
+            },
+        )
+    return Status(204, None)
 
 
 @api_v2.get("/basis-of-record/", response=list[BasisOfRecordOut])
@@ -750,15 +768,16 @@ def observations_list(
     """
     if orderBy not in _ACCEPTED_ORDER_BY:
         accepted = ", ".join(sorted(_ACCEPTED_ORDER_BY))
-        return 400, {
-            "detail": f"Invalid orderBy '{orderBy}'. Accepted values: {accepted}."
-        }
+        return Status(
+            400,
+            {"detail": f"Invalid orderBy '{orderBy}'. Accepted values: {accepted}."},
+        )
     if orderDir not in ("asc", "desc"):
-        return 400, {"detail": "Invalid orderDir. Accepted values: asc, desc."}
+        return Status(400, {"detail": "Invalid orderDir. Accepted values: asc, desc."})
     if not 1 <= pageSize <= 100:
-        return 400, {"detail": "Invalid pageSize. Must be between 1 and 100."}
+        return Status(400, {"detail": "Invalid pageSize. Must be between 1 and 100."})
     if page < 1:
-        return 400, {"detail": "Invalid page. Must be 1 or greater."}
+        return Status(400, {"detail": "Invalid page. Must be 1 or greater."})
 
     user = request.user if request.user.is_authenticated else None
     qs = _filtered_observations(request, filters)
@@ -828,17 +847,20 @@ def observations_list(
     ]
 
     total_pages = (total + pageSize - 1) // pageSize  # 0 when there are no results
-    return 200, {
-        "count": total,
-        "speciesCount": aggregates["species_count"],
-        "datasetsCount": aggregates["datasets_count"],
-        "page": page,
-        "pageSize": pageSize,
-        "totalPages": total_pages,
-        "hasNextPage": page < total_pages,
-        "hasPreviousPage": page > 1,
-        "items": items,
-    }
+    return Status(
+        200,
+        {
+            "count": total,
+            "speciesCount": aggregates["species_count"],
+            "datasetsCount": aggregates["datasets_count"],
+            "page": page,
+            "pageSize": pageSize,
+            "totalPages": total_pages,
+            "hasNextPage": page < total_pages,
+            "hasPreviousPage": page > 1,
+            "items": items,
+        },
+    )
 
 
 @api_v2.get("/observations/histogram/", response=list[HistogramEntryOut])
@@ -945,7 +967,7 @@ def observations_mark_all_as_seen(request: HttpRequest, filters: FiltersQuery):
     background_jobs.mark_many_observations_as_seen.delay(
         filters.model_dump(mode="json"), user.pk
     )
-    return 200, {"queued": True, "count": count}
+    return Status(200, {"queued": True, "count": count})
 
 
 @api_v2.get(
@@ -1006,6 +1028,10 @@ def observation_detail(request: HttpRequest, stable_id: str):
         "references": obs.references,
         "identificationVerificationStatus": obs.identification_verification_status,
         "verified": obs.verified,
+        # Only reported when it explains the stored flag: `verified` is set at
+        # import, so a settings change shows up here before the next import.
+        "verifiedByDatasetOverride": obs.source_dataset.verification_override
+        == obs.verified,
         "basisOfRecordId": obs.basis_of_record_id,
         "basisOfRecordName": obs.basis_of_record.name,
         "coordinateUncertaintyInMeters": obs.coordinate_uncertainty_in_meters,
@@ -1031,7 +1057,7 @@ def observation_add_comment(request: HttpRequest, stable_id: str, payload: Comme
     text = payload.text.strip()
     if not text:
         # Well-formed body but semantically invalid -> 422 (audit N3).
-        return 422, {"detail": "Comment text cannot be empty"}
+        return Status(422, {"detail": "Comment text cannot be empty"})
 
     comment = ObservationComment.objects.create(
         observation=obs,
@@ -1039,13 +1065,16 @@ def observation_add_comment(request: HttpRequest, stable_id: str, payload: Comme
         text=text,
     )
 
-    return 200, {
-        "id": comment.pk,
-        "authorUsername": user.username,
-        "createdAt": comment.created_at,
-        "text": comment.text,
-        "deletedBecauseAuthorDeleted": False,
-    }
+    return Status(
+        200,
+        {
+            "id": comment.pk,
+            "authorUsername": user.username,
+            "createdAt": comment.created_at,
+            "text": comment.text,
+            "deletedBecauseAuthorDeleted": False,
+        },
+    )
 
 
 @api_v2_spa.get("/page-fragments/{identifier}/", response=PageFragmentOut)
@@ -1080,7 +1109,7 @@ def observation_mark_as_seen(request: HttpRequest, stable_id: str):
         raise HttpError(404, "Observation not found")
 
     obs.mark_as_seen_by(cast(User, request.user))
-    return 200, {"ok": True}
+    return Status(200, {"ok": True})
 
 
 @api_v2.post(
@@ -1098,7 +1127,7 @@ def observation_mark_as_unseen(request: HttpRequest, stable_id: str):
     if not success:
         raise HttpError(403, "Cannot mark this observation as unseen")
 
-    return 200, {"ok": True}
+    return Status(200, {"ok": True})
 
 
 # --- Alert helpers ---
@@ -1276,8 +1305,8 @@ def alert_create(request: HttpRequest, payload: AlertIn):
     alert = Alert(user=cast(User, request.user))
     errors = _save_alert(alert, payload)
     if errors:
-        return 422, {"detail": "Validation failed", "errors": errors}
-    return 201, _alert_to_out(alert)
+        return Status(422, {"detail": "Validation failed", "errors": errors})
+    return Status(201, _alert_to_out(alert))
 
 
 @api_v2.post(
@@ -1307,8 +1336,8 @@ def alert_create_from_template(request: HttpRequest, payload: AlertFromTemplateI
     )
     errors = _save_alert(alert, alert_in)
     if errors:
-        return 422, {"detail": "Validation failed", "errors": errors}
-    return 201, _alert_to_out(alert)
+        return Status(422, {"detail": "Validation failed", "errors": errors})
+    return Status(201, _alert_to_out(alert))
 
 
 @api_v2.get(
@@ -1344,8 +1373,8 @@ def alert_update(request: HttpRequest, alert_id: int, payload: AlertIn):
     )
     errors = _save_alert(alert, payload)
     if errors:
-        return 422, {"detail": "Validation failed", "errors": errors}
-    return 200, _alert_to_out(alert)
+        return Status(422, {"detail": "Validation failed", "errors": errors})
+    return Status(200, _alert_to_out(alert))
 
 
 @api_v2.delete(
@@ -1357,7 +1386,7 @@ def alert_delete(request: HttpRequest, alert_id: int):
     """Delete an alert. 404 if it does not belong to the current user."""
     alert = get_object_or_404(Alert, id=alert_id, user=request.user)
     alert.delete()
-    return 204, None
+    return Status(204, None)
 
 
 @api_v2_spa.post(
@@ -1387,20 +1416,23 @@ def alert_publish_as_template(request: HttpRequest, alert_id: int):
         id=alert_id,
     )
     if any(area.owner_id is not None for area in alert.areas.all()):
-        return 422, {
-            "detail": "Validation failed",
-            "errors": {
-                "areas": [
-                    str(
-                        _(
-                            "A template can only reference public areas; this alert uses a private one."
+        return Status(
+            422,
+            {
+                "detail": "Validation failed",
+                "errors": {
+                    "areas": [
+                        str(
+                            _(
+                                "A template can only reference public areas; this alert uses a private one."
+                            )
                         )
-                    )
-                ]
+                    ]
+                },
             },
-        }
+        )
     template = AlertTemplate.create_from_alert(alert, created_by=user)
-    return 201, {"id": template.pk}
+    return Status(201, {"id": template.pk})
 
 
 # ---- Auth endpoints ----
@@ -1410,14 +1442,15 @@ def alert_publish_as_template(request: HttpRequest, alert_id: int):
     "/auth/signin/",
     response={200: SignInOut, 401: DetailErrorOut},
     auth=None,
+    throttle=api_v2_signin_throttle,
 )
 def auth_signin(request: HttpRequest, payload: SignInIn):
     """Authenticate and create a session. Returns 401 on bad credentials."""
     user = authenticate(request, username=payload.username, password=payload.password)
     if user is None:
-        return 401, {"detail": str(_("Invalid username or password."))}
+        return Status(401, {"detail": str(_("Invalid username or password."))})
     login(request, user)
-    return 200, {"username": user.get_username()}
+    return Status(200, {"username": user.get_username()})
 
 
 @api_v2.post(
@@ -1428,13 +1461,14 @@ def auth_signin(request: HttpRequest, payload: SignInIn):
 def auth_signout(request: HttpRequest):
     """End the current session. Returns 204."""
     logout(request)
-    return 204, None
+    return Status(204, None)
 
 
 @api_v2.post(
     "/auth/signup/",
     response={201: SignInOut, 422: ValidationErrorOut},
     auth=None,
+    throttle=api_v2_signin_throttle,
 )
 def auth_signup(request: HttpRequest, payload: SignUpIn):
     """Create an account and log in. Returns 422 with field errors on failure."""
@@ -1457,10 +1491,10 @@ def auth_signup(request: HttpRequest, payload: SignUpIn):
             key_map.get(field, field): [str(msg) for msg in msgs]
             for field, msgs in form.errors.items()
         }
-        return 422, {"detail": "Validation failed", "errors": errors}
+        return Status(422, {"detail": "Validation failed", "errors": errors})
     user = form.save()
     login(request, user)
-    return 201, {"username": user.get_username()}
+    return Status(201, {"username": user.get_username()})
 
 
 @api_v2.post(
@@ -1472,19 +1506,25 @@ def auth_password_change(request: HttpRequest, payload: PasswordChangeIn):
     """Change password. Returns 204 on success, 422 with field errors on failure."""
     user = cast(User, request.user)
     if not user.check_password(payload.oldPassword):
-        return 422, {
-            "detail": "Validation failed",
-            "errors": {"oldPassword": [str(_("The old password is incorrect."))]},
-        }
+        return Status(
+            422,
+            {
+                "detail": "Validation failed",
+                "errors": {"oldPassword": [str(_("The old password is incorrect."))]},
+            },
+        )
     if payload.newPassword1 != payload.newPassword2:
-        return 422, {
-            "detail": "Validation failed",
-            "errors": {"newPassword2": [str(_("The two passwords do not match."))]},
-        }
+        return Status(
+            422,
+            {
+                "detail": "Validation failed",
+                "errors": {"newPassword2": [str(_("The two passwords do not match."))]},
+            },
+        )
     user.set_password(payload.newPassword1)
     user.save()
     update_session_auth_hash(request, user)
-    return 204, None
+    return Status(204, None)
 
 
 @api_v2_spa.post(
@@ -1496,7 +1536,7 @@ def news_mark_visited(request: HttpRequest):
     """Mark news as visited for the current user. No-op for anonymous users."""
     if request.user.is_authenticated:
         request.user.mark_news_as_visited_now()
-    return 204, None
+    return Status(204, None)
 
 
 @api_v2_spa.get(
@@ -1548,16 +1588,22 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
     user = cast(User, request.user)
     # Validate unique email (excluding self)
     if User.objects.filter(email=payload.email).exclude(pk=user.pk).exists():
-        return 422, {
-            "detail": "Validation failed",
-            "errors": {"email": [str(_("This email address is already in use."))]},
-        }
+        return Status(
+            422,
+            {
+                "detail": "Validation failed",
+                "errors": {"email": [str(_("This email address is already in use."))]},
+            },
+        )
     valid_units = ("days", "weeks", "months", "years")
     if payload.delayUnit not in valid_units:
-        return 422, {
-            "detail": "Validation failed",
-            "errors": {"delayUnit": ["Invalid unit."]},
-        }
+        return Status(
+            422,
+            {
+                "detail": "Validation failed",
+                "errors": {"delayUnit": ["Invalid unit."]},
+            },
+        )
     user.first_name = payload.firstName
     user.last_name = payload.lastName
     user.email = payload.email
@@ -1567,15 +1613,18 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
     )
     user.save()
     value, unit = _days_to_value_unit(user.notification_delay_days)
-    return 200, {
-        "username": user.get_username(),
-        "firstName": user.first_name,
-        "lastName": user.last_name,
-        "email": user.email,
-        "language": user.language,
-        "delayValue": value,
-        "delayUnit": unit,
-    }
+    return Status(
+        200,
+        {
+            "username": user.get_username(),
+            "firstName": user.first_name,
+            "lastName": user.last_name,
+            "email": user.email,
+            "language": user.language,
+            "delayValue": value,
+            "delayUnit": unit,
+        },
+    )
 
 
 @api_v2.delete(
@@ -1588,7 +1637,7 @@ def account_delete(request: HttpRequest):
     user = request.user
     user.delete()
     logout(request)
-    return 204, None
+    return Status(204, None)
 
 
 # --- API tokens (personal access tokens) ---
@@ -1627,9 +1676,9 @@ def api_token_create(request: HttpRequest, payload: ApiTokenCreateIn):
     user = cast(User, request.user)
     name = payload.name.strip()
     if not name:
-        return 422, {"detail": "A token name is required."}
+        return Status(422, {"detail": "A token name is required."})
     token, raw = ApiToken.create_for(user, name=name)
-    return 201, {**_api_token_to_out(token), "token": raw}
+    return Status(201, {**_api_token_to_out(token), "token": raw})
 
 
 @api_v2.delete(
@@ -1643,4 +1692,4 @@ def api_token_delete(request: HttpRequest, token_id: int):
     deleted, _per_model = ApiToken.objects.filter(pk=token_id, user=user).delete()
     if not deleted:
         raise HttpError(404, "Token not found")
-    return 204, None
+    return Status(204, None)

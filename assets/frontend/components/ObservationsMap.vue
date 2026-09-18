@@ -3,6 +3,7 @@ import { ref, watch, onMounted, onUnmounted, markRaw } from "vue";
 import { debounce } from "lodash";
 import { useI18n } from "vue-i18n";
 import { Collection, Map as OLMap, Overlay } from "ol";
+import ScaleLine from "ol/control/ScaleLine";
 import VectorTileLayer from "ol/layer/VectorTile";
 import VectorLayer from "ol/layer/Vector";
 import LayerGroup from "ol/layer/Group";
@@ -65,6 +66,15 @@ const areasCollection = markRaw(new Collection<VectorLayer<any>>());
 
 const hexMin = ref<number>(1);
 const hexMax = ref<number>(1);
+
+// Same ramp as makeAggregatedStyleFn(): the log scale maps hexMin..hexMax
+// linearly onto 0..1 of the interpolator, so this gradient matches it exactly.
+const LEGEND_GRADIENT = `linear-gradient(to right, ${[0, 0.25, 0.5, 0.75, 1]
+    .map((t) => interpolateReds(t))
+    .join(", ")})`;
+
+// Current view zoom, to hide the hexagon legend once points take over
+const zoom = ref<number>(mapCfg.initialPosition.initialZoom);
 
 // --- Popup content (visibility is managed by OL via overlay.setPosition) ---
 
@@ -247,6 +257,10 @@ watch(() => resultsStore.statusEpoch, debouncedRefresh);
 
 onMounted(() => {
     olMap = baseMapRef.value!.getOlMap()!;
+    olMap.addControl(new ScaleLine());
+    olMap.getView().on("change:resolution", () => {
+        zoom.value = olMap!.getView().getZoom() ?? 0;
+    });
 
     // Area outlines sit above everything else: the data layers carry no zIndex
     // (so 0), which keeps the boundary readable over hexagons and points alike.
@@ -313,6 +327,15 @@ onUnmounted(() => {
             </div>
         </template>
 
+        <div v-if="zoom < LAYER_SWITCH_ZOOM" class="hex-legend">
+            <div class="hex-legend-title">{{ t("message.observationsPerHexagon") }}</div>
+            <div class="hex-legend-ramp" :style="{ background: LEGEND_GRADIENT }" />
+            <div class="hex-legend-labels">
+                <span>{{ hexMin }}</span>
+                <span>{{ hexMax }}</span>
+            </div>
+        </div>
+
         <!-- Observation popup (OL Overlay positions this at the click coordinate) -->
         <div ref="popupEl" class="map-popup">
             <button class="popup-close" @click="popupOverlay?.setPosition(undefined)">
@@ -350,6 +373,35 @@ onUnmounted(() => {
 
 .opacity-slider {
     width: 80px;
+}
+
+/* Bottom-left, stacked above OL's ScaleLine. Same theme tokens as BaseMap's
+   floating controls so it stays legible in dark mode. */
+.hex-legend {
+    position: absolute;
+    left: 0.5rem;
+    bottom: 2.5rem;
+    z-index: 100;
+    background: color-mix(in srgb, var(--p-content-background, #fff) 92%, transparent);
+    border: 1px solid var(--p-content-border-color, #cbd5e1);
+    border-radius: 6px;
+    padding: 0.35rem 0.55rem;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.22);
+    color: var(--p-text-color);
+    font-size: 0.72rem;
+    white-space: nowrap;
+    min-width: 150px;
+}
+
+.hex-legend-ramp {
+    height: 10px;
+    margin: 0.25rem 0 0.1rem;
+    border: 1px solid grey;
+}
+
+.hex-legend-labels {
+    display: flex;
+    justify-content: space-between;
 }
 
 /* OL renders the popup inside .ol-overlays-container, which uses absolute positioning.

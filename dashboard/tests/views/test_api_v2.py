@@ -1755,6 +1755,29 @@ def test_detail_camel_case_keys(client, observation_detail_data):
         assert key in data, f"Missing key: {key}"
 
 
+def test_detail_verified_by_dataset_override(client, observation_detail_data, settings):
+    """verifiedByDatasetOverride is True only when the dataset override explains
+    the stored `verified` flag (set at import, so the two can disagree after a
+    settings change)."""
+    obs = observation_detail_data["obs"]
+    url = f"/api/v2/observations/{obs.stable_id}/"
+    key = obs.source_dataset.gbif_dataset_key
+    assert obs.verified is False
+
+    def with_overrides(always=(), never=()):
+        settings.GBIF_ALERT = {
+            **settings.GBIF_ALERT,
+            "ALWAYS_VERIFIED_DATASET_KEYS": frozenset(always),
+            "NEVER_VERIFIED_DATASET_KEYS": frozenset(never),
+        }
+        return client.get(url).json()["verifiedByDatasetOverride"]
+
+    assert with_overrides() is False
+    assert with_overrides(never=[key]) is True
+    # Dataset now "always verified", but the stored flag still says unverified
+    assert with_overrides(always=[key]) is False
+
+
 def test_detail_field_values(client, observation_detail_data):
     obs = observation_detail_data["obs"]
     response = client.get(f"/api/v2/observations/{obs.stable_id}/")

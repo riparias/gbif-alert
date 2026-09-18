@@ -279,6 +279,35 @@ def test_eu_funding_acknowledgement_is_off_unless_asked_for(clean_env):
     assert _import_settings().GBIF_ALERT["SHOW_EU_FUNDING_ACKNOWLEDGEMENT"] is True
 
 
+def test_verification_override_dataset_keys(clean_env):
+    """iNaturalist is always verified by default (GBIF only gets its
+    research-grade records, without an identificationVerificationStatus).
+    An empty env var opts out - it must not fall back to the default - and a
+    dataset listed as both always and never verified fails at startup.
+    """
+    clean_env.setenv("DJANGO_SETTINGS_MODULE", "djangoproject.settings")
+    clean_env.setenv("SECRET_KEY", "x")
+    clean_env.setenv("DJANGO_ALLOWED_HOSTS", "example.org")
+    clean_env.setenv("SITE_BASE_URL", "http://localhost")
+    clean_env.setenv("DATABASE_URL", "postgis://u:p@h:5432/d")
+
+    gbif_alert = _import_settings().GBIF_ALERT
+    assert gbif_alert["ALWAYS_VERIFIED_DATASET_KEYS"] == {
+        "50c9509d-22c7-4a22-a47d-8c48425ef4a7"
+    }
+    assert gbif_alert["NEVER_VERIFIED_DATASET_KEYS"] == set()
+
+    clean_env.setenv("ALWAYS_VERIFIED_DATASET_KEYS", "")
+    clean_env.setenv("NEVER_VERIFIED_DATASET_KEYS", " AAA , bbb,")
+    gbif_alert = _import_settings().GBIF_ALERT
+    assert gbif_alert["ALWAYS_VERIFIED_DATASET_KEYS"] == set()
+    assert gbif_alert["NEVER_VERIFIED_DATASET_KEYS"] == {"aaa", "bbb"}
+
+    clean_env.setenv("ALWAYS_VERIFIED_DATASET_KEYS", "aaa")
+    with pytest.raises(ImproperlyConfigured, match="aaa"):
+        _import_settings()
+
+
 def test_default_time_zone_is_brussels(clean_env):
     """`TIME_ZONE` defaults to `Europe/Brussels` when the env var is
     unset.

@@ -15,7 +15,7 @@ from unittest import mock
 
 import pytest
 import requests_mock as requests_mock_module
-from django.core.management import call_command
+from django.core.management import CommandError, call_command
 
 from dashboard.models import (
     DataImport,
@@ -39,8 +39,9 @@ def test_ignore_unusable_observations(test_data) -> None:
     => so, only 7 should be loaded after the import process
     """
 
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
+    call_command(
+        "import_observations", source_dwca=str(SAMPLE_DATA_PATH / "gbif_download.zip")
+    )
 
     assert Observation.objects.all().count() == 7
 
@@ -50,8 +51,9 @@ def test_ignore_unusable_observations(test_data) -> None:
 
 def test_load_observations_values(test_data) -> None:
     """Imported values look correct"""
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
+    call_command(
+        "import_observations", source_dwca=str(SAMPLE_DATA_PATH / "gbif_download.zip")
+    )
 
     observations = Observation.objects.all().order_by("id")
     # We assume observations are loaded in the DwC-A rows order
@@ -168,8 +170,9 @@ def test_dataimport_object_values(test_data):
     Side effect of the observations_counter check: we also check that newly created observations reference the
     correct DataImport object
     """
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
+    call_command(
+        "import_observations", source_dwca=str(SAMPLE_DATA_PATH / "gbif_download.zip")
+    )
 
     di = DataImport.objects.latest("id")
     assert di.start is not None
@@ -186,14 +189,13 @@ def test_dataimport_object_values(test_data):
 
 def test_gbif_request_not_necessary(test_data) -> None:
     """No HTTP request emitted if the --source-dwca option is used"""
-    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as gbif_download_file:
-        with requests_mock_module.Mocker() as m:
-            call_command(
-                "import_observations",
-                source_dwca=gbif_download_file,
-            )
-            request_history = m.request_history
-            assert len(request_history) == 0
+    with requests_mock_module.Mocker() as m:
+        call_command(
+            "import_observations",
+            source_dwca=str(SAMPLE_DATA_PATH / "gbif_download.zip"),
+        )
+        request_history = m.request_history
+        assert len(request_history) == 0
 
 
 def test_gbif_request(test_data, gbif_download_config) -> None:
@@ -349,9 +351,8 @@ def test_user_provided_dwca_kept_when_import_fails(test_data, tmp_path) -> None:
     shutil.copyfile(SAMPLE_DATA_PATH / "gbif_download.zip", user_file)
 
     with mock.patch.object(mod, "run_import", side_effect=RuntimeError("boom")):
-        with open(user_file, "rb") as gbif_download_file:
-            with pytest.raises(RuntimeError, match="boom"):
-                call_command("import_observations", source_dwca=gbif_download_file)
+        with pytest.raises(RuntimeError, match="boom"):
+            call_command("import_observations", source_dwca=str(user_file))
 
     assert user_file.exists()
 
@@ -360,8 +361,17 @@ def test_user_provided_dwca_kept_on_success(test_data, tmp_path) -> None:
     user_file = tmp_path / "my_download.zip"
     shutil.copyfile(SAMPLE_DATA_PATH / "gbif_download.zip", user_file)
 
-    with open(user_file, "rb") as gbif_download_file:
-        call_command("import_observations", source_dwca=gbif_download_file)
+    call_command("import_observations", source_dwca=str(user_file))
 
     assert user_file.exists()
     assert Observation.objects.count() == 7
+
+
+def test_missing_user_provided_dwca_rejected(test_data, tmp_path) -> None:
+    """A --source-dwca path that doesn't exist fails before any import"""
+    imports_before = DataImport.objects.count()
+
+    with pytest.raises(CommandError, match="DwC-A file not found"):
+        call_command("import_observations", source_dwca=str(tmp_path / "nope.zip"))
+
+    assert DataImport.objects.count() == imports_before
