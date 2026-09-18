@@ -356,3 +356,8 @@ being used.
 **What:** `SpeciesFilterModal` takes an `emptyLabel` prop; the alert form shows "No species selected" instead of "All species".
 **Why:** an empty species selection means "all" in the explorer but is invalid for an alert, so the shared label misled users (#440).
 **Rejected:** a combined "None - select at least one species" label, redundant with the hint already shown above the button.
+
+## 2026-09-18 - No HTML report in admin error emails
+**What:** `include_html` is now `False` on the `mail_admins` handler; a regression test asserts a 500 in signin emails no password.
+**Why:** the HTML report renders frame locals, so any 500 in an auth request emailed the cleartext password to ADMINS.
+**Rejected:** `@sensitive_variables()` on the auth endpoints (reviewer's suggestion) and pydantic `SecretStr` - tested: django-ninja's `Operation.run` and Django's own auth backend frames still leak.

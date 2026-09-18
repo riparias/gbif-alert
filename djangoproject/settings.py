@@ -560,7 +560,11 @@ MAINTENANCE_MODE_RESPONSE_TYPE = "html"
 # I therefore copy-pasted the default config from Django's source code and modified it to my needs.
 # Currently applied changes:
 # - Added a filter to ignore 503 errors when in maintenance mode
-# - "include_html": True for the emails to admins in case of errors
+#
+# Do NOT set "include_html": True on mail_admins: the HTML report renders every
+# frame's local variables, which emails cleartext passwords to ADMINS whenever an
+# auth request 500s. @sensitive_variables cannot scrub them all (django-ninja and
+# Django's auth backend hold the password in frames of their own).
 LOGGING_CONFIG = None
 LOGGING = {
     "version": 1,
@@ -600,7 +604,7 @@ LOGGING = {
             "level": "ERROR",
             "filters": ["require_debug_false", "require_not_maintenance_mode_503"],
             "class": "django.utils.log.AdminEmailHandler",
-            "include_html": True,
+            "include_html": False,
         },
     },
     "loggers": {

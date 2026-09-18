@@ -3,6 +3,10 @@
 - Fix: in the alert form, the species selector now reads "No species selected"
   instead of "All species" when nothing is picked, since an alert needs at
   least one species (#440).
+- Security: the error emails sent to `ADMINS` no longer include the HTML debug
+  report, which could expose a user's password in clear text when a sign-in,
+  sign-up or password change request crashed. Consider deleting old error
+  emails from the admins' mailboxes.
 
 # 2.6.0 (2026-09-14)
 
