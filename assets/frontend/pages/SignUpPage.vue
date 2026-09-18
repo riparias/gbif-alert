@@ -44,6 +44,8 @@ async function submit() {
     loading.value = false;
     if (resp.status === 201) {
         window.location.href = "/";
+    } else if (resp.status === 429) {
+        fieldErrors.value = { __all__: [t("message.tooManyAttempts")] };
     } else {
         const data = await resp.json();
         fieldErrors.value = data.errors ?? {};

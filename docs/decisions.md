@@ -376,3 +376,8 @@ being used.
 **What:** `ALWAYS_VERIFIED_DATASET_KEYS` / `NEVER_VERIFIED_DATASET_KEYS` env vars force `verified` at import, bypassing the identificationVerificationStatus classification; iNaturalist research-grade is the ALWAYS default, and the detail panel says when the flag comes from an override.
 **Why:** iNaturalist records reach GBIF research-grade only but without a verification status, so they were all shown as unverified (#430).
 **Rejected:** writing a synthetic "research grade" status on the observation (invents source data); a hardcoded iNaturalist `if` (other instances have other such datasets).
+
+## 2026-09-17 - Throttle on the real client IP, tight sign-in limit
+**What:** `NINJA_NUM_PROXIES` (env, default 1) and a dedicated 5/min per-IP throttle on sign-in/sign-up.
+**Why:** unset, ninja keyed throttles on the client-supplied X-Forwarded-For, so rotating it gave unlimited password guesses.
+**Rejected:** hard-coding 1 (breaks CDN + proxy setups); reusing `AnonRateThrottle` (shares the "anon" cache bucket).

@@ -10,6 +10,11 @@
   never considered verified (`ALWAYS_VERIFIED_DATASET_KEYS`,
   `NEVER_VERIFIED_DATASET_KEYS`). iNaturalist research-grade observations are
   now verified by default; this takes effect at the next data import (#430).
+- Security: sign-in and sign-up are now limited to 5 attempts per minute per
+  IP (`API_V2_THROTTLE_SIGNIN`), and the API rate limits can no longer be
+  bypassed with a forged `X-Forwarded-For` header. If more than one proxy sits
+  in front of your instance (e.g. a CDN), set `NINJA_NUM_PROXIES` (see
+  INSTALL.md).
 - Fix: in the alert form, the species selector now reads "No species selected"
   instead of "All species" when nothing is picked, since an alert needs at
   least one species (#440).

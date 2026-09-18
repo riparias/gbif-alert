@@ -127,6 +127,14 @@ Per platform:
 - **Plain Nginx / Caddy / ALB**: front the published `GBIF_ALERT_BIND` address
   with your proxy config for TLS and routing.
 
+**Proxy count (`NINJA_NUM_PROXIES`)**: the API rate limits, including the
+sign-in limit that slows down password guessing, identify clients by the IP in
+`X-Forwarded-For`. Set `NINJA_NUM_PROXIES` to the number of proxies in front of
+the app: the default `1` fits a single Traefik/Nginx/Caddy; use `2` behind a CDN
+or load balancer plus a proxy, and `0` if nothing is in front. A value that is
+too high lets clients forge their IP and bypass the limits; one that is too low
+makes all visitors share a single limit.
+
 **Running several instances on one host**: each needs its own domain and a
 **unique** `GBIF_ALERT_BIND` host port (e.g. `127.0.0.1:8001`, `127.0.0.1:8002`).
 A host port can only be bound by one container; reusing `127.0.0.1:8000` fails
