@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import MultiPolygon, Point, Polygon
+from django.core import mail
 from django.urls import reverse
 from django.utils import timezone
 
@@ -2538,6 +2539,30 @@ def test_signin_nonexistent_user(client):
         content_type="application/json",
     )
     assert resp.status_code == 401
+
+
+@pytest.mark.django_db
+def test_signin_500_does_not_email_password_to_admins(client, settings):
+    """The admin error email must not carry frame locals (they hold the password).
+
+    Guards "include_html": False on the mail_admins handler: Django's HTML error
+    report renders per-frame local variables, and neither @sensitive_variables
+    nor pydantic's SecretStr can scrub all of them (django-ninja and Django's
+    auth backend both hold the cleartext password in frames of their own).
+    """
+    settings.ADMINS = [("Admin", "admin@example.com")]
+    client.raise_request_exception = False
+    with patch("dashboard.api_v2.authenticate", side_effect=RuntimeError("boom")):
+        resp = client.post(
+            "/api/v2/auth/signin/",
+            data={"username": "testuser", "password": "s3cret-canary-pw"},
+            content_type="application/json",
+        )
+    assert resp.status_code == 500
+    assert len(mail.outbox) == 1
+    message = mail.outbox[0]
+    assert "s3cret-canary-pw" not in message.body
+    assert not getattr(message, "alternatives", [])
 
 
 # --- signup ---
