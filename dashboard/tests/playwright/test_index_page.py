@@ -579,6 +579,42 @@ def test_species_stat_card_opens_species_view(page: Page, live_server):
     )
 
 
+@pytest.mark.django_db(transaction=True)
+def test_datasets_view_lists_datasets_with_count(page: Page, live_server):
+    """The Datasets tab lists each dataset in the results with its count."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    dataset = Dataset.objects.create(name="Waarnemingen.be", gbif_dataset_key="k1")
+    _make_observation(
+        gbif_id=1, occurrence_id="1", species=sp, basis=basis, dataset=dataset
+    )
+    _make_observation(
+        gbif_id=2, occurrence_id="2", species=sp, basis=basis, dataset=dataset
+    )
+
+    page.goto(live_server.url + "/?status=all")
+    page.get_by_role("tab", name="Datasets").click()
+
+    table = page.locator(".dataset-breakdown-table")
+    expect(table.get_by_text("Waarnemingen.be")).to_be_visible()
+    expect(table.get_by_role("cell", name="2", exact=True)).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_datasets_stat_card_opens_datasets_view(page: Page, live_server):
+    """Clicking the sidebar datasets stat card switches to the Datasets tab."""
+    basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
+    sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
+    _make_observation(gbif_id=1, occurrence_id="1", species=sp, basis=basis)
+
+    page.goto(live_server.url + "/?status=all")
+    page.locator(".stat-cards").get_by_role("button", name="datasets").click()
+
+    expect(page.get_by_role("tab", name="Datasets")).to_have_attribute(
+        "aria-selected", "true"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Instance-configured default area filter (Area.is_default_home_filter)
 # ---------------------------------------------------------------------------

@@ -191,6 +191,10 @@ const formattedDatasetsCount = computed(() =>
 function showSpeciesTab() {
     resultsStore.activeResultsTab = "species";
 }
+
+function showDatasetsTab() {
+    resultsStore.activeResultsTab = "datasets";
+}
 </script>
 
 <template>
@@ -332,14 +336,14 @@ function showSpeciesTab() {
                     >
                     <span class="stat-card-label">{{ t("message.statSpeciesLabel") }}</span>
                 </button>
-                <div class="stat-card">
+                <button type="button" class="stat-card stat-card-action" @click="showDatasetsTab">
                     <span class="stat-card-value"
                         ><i class="pi pi-database stat-card-icon" />{{
                             formattedDatasetsCount
                         }}</span
                     >
                     <span class="stat-card-label">{{ t("message.statDatasetsLabel") }}</span>
-                </div>
+                </button>
             </div>
         </div>
     </div>

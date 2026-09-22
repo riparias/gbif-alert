@@ -386,3 +386,14 @@ being used.
 **What:** `NINJA_NUM_PROXIES` (env, default 1) and a dedicated 5/min per-IP throttle on sign-in/sign-up.
 **Why:** unset, ninja keyed throttles on the client-supplied X-Forwarded-For, so rotating it gave unlimited password guesses.
 **Rejected:** hard-coding 1 (breaks CDN + proxy setups); reusing `AnonRateThrottle` (shares the "anon" cache bucket).
+
+## 2026-09-22 - Datasets breakdown results tab
+
+**What:** A "Datasets" results tab mirroring the Species one, backed by
+`/observations/dataset-breakdown/`; the shared load/stale/debounce logic moved
+into a `useFilteredBreakdown` composable.
+**Why:** The sidebar counted datasets but never named them; the GROUP BY costs
+the same as the species one (about half a second on 720k rows, FK index
+already present).
+**Rejected:** A second table inside the Species tab - the 2026-07-28 entry
+already rejected bundling views behind one tab.

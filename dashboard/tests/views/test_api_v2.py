@@ -3948,6 +3948,59 @@ def test_species_breakdown_species_with_no_matches_is_absent(client, breakdown_d
     assert "Procambarus fallax" not in [e["scientificName"] for e in response.json()]
 
 
+# ---------------------------------------------------------------------------
+# GET /api/v2/observations/dataset-breakdown/
+# ---------------------------------------------------------------------------
+
+
+def test_dataset_breakdown_empty_returns_empty_list(client):
+    """No observations at all: an empty list, not an error."""
+    response = client.get(reverse("api-v2:observations_dataset_breakdown"))
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_dataset_breakdown_counts_and_order(client, breakdown_data):
+    """Entries are ranked by count descending: four observations on the first
+    dataset, one on the second."""
+    response = client.get(reverse("api-v2:observations_dataset_breakdown"))
+    assert [(e["name"], e["count"]) for e in response.json()] == [
+        ("Test dataset", 4),
+        ("Second test dataset", 1),
+    ]
+
+
+def test_dataset_breakdown_entry_shape(client, breakdown_data):
+    """Each entry carries the id, name, GBIF key and count - the fields
+    DatasetBreakdown.vue reads."""
+    response = client.get(reverse("api-v2:observations_dataset_breakdown"))
+    entry = next(e for e in response.json() if e["name"] == "Test dataset")
+    assert set(entry) == {"id", "name", "gbifDatasetKey", "count"}
+    assert entry["id"] == breakdown_data["dataset"].pk
+    assert entry["gbifDatasetKey"] == "4fa7b334-ce0d-4e88-aaae-2e0c138d049e"
+
+
+def test_dataset_breakdown_respects_species_filter(client, breakdown_data):
+    """A species filter narrows the breakdown to the datasets that species is
+    observed in, with only that species' observations counted."""
+    response = client.get(
+        reverse("api-v2:observations_dataset_breakdown"),
+        {"speciesIds": breakdown_data["species_b"].pk},
+    )
+    assert [(e["name"], e["count"]) for e in response.json()] == [("Test dataset", 1)]
+
+
+def test_dataset_breakdown_dataset_with_no_matches_is_absent(client, breakdown_data):
+    """A dataset with zero matching observations does not appear at all,
+    rather than appearing with count 0. Only the first dataset has a June
+    record."""
+    response = client.get(
+        reverse("api-v2:observations_dataset_breakdown"),
+        {"startDate": "2024-05-01"},
+    )
+    assert [(e["name"], e["count"]) for e in response.json()] == [("Test dataset", 1)]
+
+
 def test_species_breakdown_respects_unseen_status_filter(client, breakdown_data):
     """status=notViewed (the external vocabulary for the internal "unseen"
     state - see api_status_to_internal) restricts the breakdown to the

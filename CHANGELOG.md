@@ -1,5 +1,10 @@
 # Unreleased
 
+- New: a "Datasets" results tab lists each dataset present in the current
+  results with its observation count and share, next to the Species tab. The
+  sidebar's datasets stat card opens it.
+- Change: the "Share" column of the Species and Datasets tabs is now labelled
+  "Share of filtered observations", so its reference total is explicit (#468).
 - The Docker image now runs on Python 3.14 (from 3.13). Python 3.13 remains
   supported for non-Docker installs.
 - New: the observations map (home page and alert pages) now shows a scale bar
