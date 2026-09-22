@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import { computed, toRef } from "vue";
+import { toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
-import { pickVernacular } from "../utils/vernacular";
-import SpeciesName from "./SpeciesName.vue";
-import { storeToRefs } from "pinia";
-import { usePreferencesStore } from "../stores/preferences";
 import type { components } from "../types/api";
 import { useFilteredBreakdown } from "../composables/useFilteredBreakdown";
 
-type SpeciesCountOut = components["schemas"]["SpeciesCountOut"];
+type DatasetCountOut = components["schemas"]["DatasetCountOut"];
 
 const props = defineProps<{ active: boolean }>();
 
-const { t, locale } = useI18n();
-const preferences = usePreferencesStore();
-const { speciesNameMode } = storeToRefs(preferences);
+const { t } = useI18n();
 
 const {
     rows,
@@ -24,25 +18,9 @@ const {
     error: loadError,
     load,
     share,
-} = useFilteredBreakdown<SpeciesCountOut>(
-    "/api/v2/observations/species-breakdown/",
+} = useFilteredBreakdown<DatasetCountOut>(
+    "/api/v2/observations/dataset-breakdown/",
     toRef(props, "active"),
-);
-
-// Sort/display key for the species column: mirror exactly what SpeciesName.vue
-// renders for the current scientific/vernacular toggle, so clicking the header
-// doesn't produce an order that looks arbitrary next to what's on screen. In
-// "scientific" mode that's always the scientific name; in "vernacular" mode
-// it's the locale's vernacular name, falling back to the scientific name when
-// that column is empty (same fallback SpeciesName.vue uses).
-const displayRows = computed(() =>
-    rows.value.map((row) => ({
-        ...row,
-        displayName:
-            speciesNameMode.value === "vernacular"
-                ? pickVernacular(row, locale.value) || row.scientificName
-                : row.scientificName,
-    })),
 );
 </script>
 
@@ -53,21 +31,14 @@ const displayRows = computed(() =>
     </div>
     <DataTable
         v-else
-        :value="displayRows"
+        :value="rows"
         :loading="loading"
         sort-field="count"
         :sort-order="-1"
         row-hover
-        class="species-breakdown-table"
+        class="dataset-breakdown-table"
     >
-        <Column field="displayName" :header="t('message.species')" sortable>
-            <template #body="{ data }">
-                <SpeciesName
-                    :scientific-name="data.scientificName"
-                    :vernacular-name="pickVernacular(data, locale)"
-                />
-            </template>
-        </Column>
+        <Column field="name" :header="t('message.dataset')" sortable />
         <Column field="count" :header="t('message.observationCount')" sortable />
         <Column :header="t('message.shareOfResults')">
             <template #body="{ data }">

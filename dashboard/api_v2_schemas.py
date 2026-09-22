@@ -266,6 +266,15 @@ class SpeciesCountOut(Schema):
     count: int
 
 
+class DatasetCountOut(Schema):
+    """A dataset present in a filtered result set, with its observation count."""
+
+    id: int
+    name: str
+    gbifDatasetKey: str
+    count: int
+
+
 class CommentOut(Schema):
     id: int
     authorUsername: str | None

@@ -344,6 +344,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/observations/dataset-breakdown/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Datasets present in a filtered result set
+         * @description Return each dataset present in the filtered observations, with its
+         *     observation count, ranked by count descending.
+         *
+         *     A dataset with no matching observation is absent from the response
+         *     rather than present with a zero count. Same query shape as
+         *     observations_species_breakdown (see the comments there); on a 720k-row
+         *     production copy both run in about half a second.
+         */
+        get: operations["dashboard_api_v2_observations_dataset_breakdown"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/observations/mark-as-viewed/": {
         parameters: {
             query?: never;
@@ -1199,6 +1225,20 @@ export interface components {
             vernacularNameNl: string;
             /** Vernacularnamefr */
             vernacularNameFr: string;
+            /** Count */
+            count: number;
+        };
+        /**
+         * DatasetCountOut
+         * @description A dataset present in a filtered result set, with its observation count.
+         */
+        DatasetCountOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Gbifdatasetkey */
+            gbifDatasetKey: string;
             /** Count */
             count: number;
         };
@@ -2324,6 +2364,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SpeciesCountOut"][];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_observations_dataset_breakdown: {
+        parameters: {
+            query?: {
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
+                speciesIds?: number[];
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
+                datasetIds?: number[];
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
+                basisOfRecordIds?: number[];
+                startDate?: string | null;
+                endDate?: string | null;
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
+                areaIds?: number[];
+                status?: ("all" | "viewed" | "notViewed") | null;
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
+                initialDataImportIds?: number[];
+                verifiedFilter?: "all" | "verified" | "unverified";
+                areaFilterMode?: "inside" | "approaching" | "both";
+                approachingDistanceKm?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetCountOut"][];
                 };
             };
         };

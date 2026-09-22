@@ -118,6 +118,7 @@ export const messages = {
             datasetAlwaysVerified: "observations from this dataset are always considered verified",
             datasetNeverVerified: "observations from this dataset are never considered verified",
             datasetsToInclude: "Datasets to include",
+            datasetsView: "Datasets",
             date: "Date",
             dateFrom: "Date (from)",
             dateFromPrefix: "From",
@@ -443,6 +444,7 @@ export const messages = {
             datasetNeverVerified:
                 "les observations de ce jeu de données ne sont jamais considérées comme vérifiées",
             datasetsToInclude: "Jeux de données à inclure",
+            datasetsView: "Jeux de données",
             date: "Date",
             dateFrom: "Date (depuis)",
             dateFromPrefix: "Depuis",
@@ -769,6 +771,7 @@ export const messages = {
             datasetNeverVerified:
                 "waarnemingen uit deze dataset worden nooit als geverifieerd beschouwd",
             datasetsToInclude: "Op te nemen datasets",
+            datasetsView: "Datasets",
             date: "Datum",
             dateFrom: "Datum (van)",
             dateFromPrefix: "Vanaf",
@@ -1090,6 +1093,7 @@ export const messages = {
             datasetAlwaysVerified: "observasjoner fra dette datasettet regnes alltid som bekreftet",
             datasetNeverVerified: "observasjoner fra dette datasettet regnes aldri som bekreftet",
             datasetsToInclude: "Datasett som skal inkluderes",
+            datasetsView: "Datasett",
             date: "Dato",
             dateFrom: "Dato (fra)",
             dateFromPrefix: "Fra",

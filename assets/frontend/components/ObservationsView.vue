@@ -15,6 +15,7 @@ import Checkbox from "primevue/checkbox";
 import ObservationHistogram from "./ObservationHistogram.vue";
 import ObservationsMap from "./ObservationsMap.vue";
 import SpeciesBreakdown from "./SpeciesBreakdown.vue";
+import DatasetBreakdown from "./DatasetBreakdown.vue";
 import Tabs from "primevue/tabs";
 import TabList from "primevue/tablist";
 import Tab from "primevue/tab";
@@ -311,8 +312,17 @@ onMounted(async () => {
                     :aria-label="t('message.speciesView')"
                     :title="t('message.speciesView')"
                     ><i class="pi pi-sitemap" />
+                    <span v-if="!isMobile" class="tab-label">{{
+                        t("message.speciesView")
+                    }}</span></Tab
+                >
+                <Tab
+                    value="datasets"
+                    :aria-label="t('message.datasetsView')"
+                    :title="t('message.datasetsView')"
+                    ><i class="pi pi-database" />
                     <span v-if="!isMobile" class="tab-label">
-                        {{ t("message.speciesView") }}
+                        {{ t("message.datasetsView") }}
                         <span class="tab-new-badge">{{ t("message.newBadge") }}</span>
                     </span>
                     <span v-else class="tab-new-dot"
@@ -340,6 +350,13 @@ onMounted(async () => {
                     <SpeciesBreakdown
                         v-if="visitedTabs.has('species')"
                         :active="activeResultsTab === 'species'"
+                    />
+                </TabPanel>
+
+                <TabPanel value="datasets">
+                    <DatasetBreakdown
+                        v-if="visitedTabs.has('datasets')"
+                        :active="activeResultsTab === 'datasets'"
                     />
                 </TabPanel>
 
