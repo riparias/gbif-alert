@@ -1,4 +1,4 @@
-# Unreleased
+# 2.7.0 (2026-09-22)
 
 - New: a "Datasets" results tab lists each dataset present in the current
   results with its observation count and share, next to the Species tab. The
