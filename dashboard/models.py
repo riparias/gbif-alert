@@ -1587,6 +1587,7 @@ class Alert(ObservationFilterSet):
             f"dashboard/emails/alert_notification.{language_code}.html",
             {
                 "alert": self,
+                "language_code": language_code,
                 "unseen_count": unseen_count,
                 "unseen_sample": self.unseen_observations_sample(),
                 "site_base_url": settings.SITE_BASE_URL,

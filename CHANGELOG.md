@@ -1,3 +1,10 @@
+# Unreleased
+
+- Accessibility: the page now declares the interface language (it always said
+  English, so screen readers read French, Dutch or Norwegian text with English
+  pronunciation); notification emails do the same. The species picture shown
+  on hover has a text alternative.
+
 # 2.7.0 (2026-09-22)
 
 - New: a "Datasets" results tab lists each dataset present in the current

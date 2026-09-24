@@ -72,8 +72,8 @@ function imageTooltipHtml(): string {
             : "";
     // onerror hides a dead hotlink instead of showing a broken-image icon.
     return (
-        `<img src="${escapeHtml(img.url)}" class="species-tooltip-img" ` +
-        `onerror="this.style.display='none'" />${credit}`
+        `<img src="${escapeHtml(img.url)}" alt="${escapeHtml(props.scientificName)}" ` +
+        `class="species-tooltip-img" onerror="this.style.display='none'" />${credit}`
     );
 }
 

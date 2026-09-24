@@ -118,3 +118,15 @@ def test_send_notification_email_reports_smtp_failure(email_data):
     alert.refresh_from_db()
     assert alert.last_email_sent_on is None
     assert len(mail.outbox) == 0
+
+
+def test_send_notification_email_declares_the_user_language(email_data):
+    email_data["make_unseen"](1)
+    user = email_data["user"]
+    user.language = "fr"
+    user.save()
+
+    assert email_data["alert"].send_notification_email() is True
+
+    html = mail.outbox[0].alternatives[0][0]
+    assert '<html lang="fr">' in html
