@@ -298,7 +298,8 @@ commands for you to run. It never commits, tags, or pushes - you do.
 
 1. Make sure all tests pass and `mypy` and `npm run typecheck` report no errors.
 2. Write the `CHANGELOG.md` entry for the new version. The script checks that a
-   matching top entry exists, but does not write it for you.
+   matching top entry exists, but does not write it for you. The entry also
+   becomes the GitHub release notes.
 3. Run the helper with the version you are releasing (any of `2.0.0-rc1`,
    `2.0.0rc1`, `v2.0.0-rc1`):
    ```
@@ -317,8 +318,11 @@ commands for you to run. It never commits, tags, or pushes - you do.
 
 Pushing the tag triggers `release.yml`, which builds and pushes
 `ghcr.io/riparias/gbif-alert:<version>` stamped with the tag. A stable tag also
-moves `:latest` and the floating `:2.0` tag; a pre-release tag (`v2.0.0-rc1`)
-publishes only `:2.0.0-rc1` and leaves `:latest` untouched. The footer version
+moves `:latest` and the floating `:2.0` tag, and creates the GitHub release
+(with the `CHANGELOG.md` section as notes), which Zenodo archives under a new
+DOI - so a stable release needs no manual step on GitHub or Zenodo. A
+pre-release tag (`v2.0.0-rc1`) publishes only `:2.0.0-rc1`, leaves `:latest`
+untouched and creates no GitHub release (and thus no DOI). The footer version
 is auto-stamped: release images show the tag (`v2.0.0`); `devel`/`main` images
 show a `git describe` string (e.g. `v1.0.0-42-gabc123`).
 
