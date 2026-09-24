@@ -1,3 +1,9 @@
+# Unreleased
+
+- Dev/infra: a stable release tag now also creates the GitHub release, which
+  Zenodo archives under a DOI. The README carries the DOI badge and
+  `CITATION.cff` the concept DOI.
+
 # 2.7.0 (2026-09-22)
 
 - New: a "Datasets" results tab lists each dataset present in the current
