@@ -3,6 +3,7 @@
 <!-- badges: start -->
 [![Django CI](https://github.com/riparias/gbif-alert/actions/workflows/django_tests.yml/badge.svg)](https://github.com/riparias/gbif-alert/actions/workflows/django_tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22935511.svg)](https://doi.org/10.5281/zenodo.22935511)
 <!-- badges: end -->
 
 GBIF Alert is a [GBIF](https://www.gbif.org)-based early alert system for invasive species.

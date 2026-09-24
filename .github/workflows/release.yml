@@ -5,7 +5,7 @@ on:
     tags: ['v*']
 
 permissions:
-  contents: read
+  contents: write # create the GitHub release
   packages: write
 
 env:
@@ -55,3 +55,21 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # A GitHub release (not just the tag) is what Zenodo archives and mints
+      # a DOI for. Stable tags only: a release candidate must not become the
+      # version the concept DOI resolves to. Notes are the CHANGELOG section
+      # for this version; prepare-release.sh guarantees the heading exists.
+      - name: Create GitHub release
+        if: ${{ !contains(github.ref_name, '-') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            /^# / { if (found) exit; found = ($0 ~ "^# " v " ") }
+            found { print }
+          ' CHANGELOG.md | tail -n +2 > release-notes.md
+          test -s release-notes.md
+          gh release create "$GITHUB_REF_NAME" --verify-tag \
+            --title "$GITHUB_REF_NAME" --notes-file release-notes.md
