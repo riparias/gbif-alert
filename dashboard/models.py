@@ -43,10 +43,16 @@ def get_translator(lang: str = "en"):
         # Don't try to get a translation if the language is English (would raise an exception)
         return lambda s: s
     else:
+        # fallback=True: without compiled .mo files (they are gitignored and
+        # only built in the Docker image) this returns NullTranslations and
+        # the email goes out untranslated, instead of the notification job
+        # crashing on every non-English user. Same behaviour as Django's own
+        # template translation.
         trans = gettext.translation(
             "django",
             localedir=os.path.join(THIS_FILE_DIR, "locale"),
             languages=(lang,),
+            fallback=True,
         )
         return trans.gettext
 
