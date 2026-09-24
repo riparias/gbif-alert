@@ -461,3 +461,15 @@ def test_nav_config_escapes_html_in_values(client, settings):
         _get_nav_config(response)["siteName"]
         == 'Evil </script><script>alert("x")</script>'
     )
+
+
+@pytest.mark.parametrize("accept_language, expected", [("fr", "fr"), ("nl", "nl")])
+def test_spa_shell_declares_the_interface_language(client, accept_language, expected):
+    """<html lang> follows the active language, not a hard-coded "en".
+
+    Screen readers pick their pronunciation from this attribute; with "en"
+    they read French or Dutch text with English rules.
+    """
+    response = client.get("/", HTTP_ACCEPT_LANGUAGE=accept_language)
+    assert response.status_code == 200
+    assert f'<html lang="{expected}">' in response.content.decode()

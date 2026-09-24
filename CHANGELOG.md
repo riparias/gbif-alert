@@ -1,5 +1,9 @@
 # Unreleased
 
+- Accessibility: the page now declares the interface language (it always said
+  English, so screen readers read French, Dutch or Norwegian text with English
+  pronunciation); notification emails do the same. The species picture shown
+  on hover has a text alternative.
 - Dev/infra: a stable release tag now also creates the GitHub release, which
   Zenodo archives under a DOI. The README carries the DOI badge and
   `CITATION.cff` the concept DOI.

@@ -5,7 +5,8 @@
 {% load django_vite %}
 
 <!doctype html>
-<html lang="en">
+{% get_current_language as LANGUAGE_CODE %}
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -20,7 +21,6 @@
     {% include "dashboard/_favicon.html" %}
 
     <link rel="stylesheet" href="{% static "css/early_alert.css" %}">
-    {% get_current_language as LANGUAGE_CODE %}
     <script type="text/javascript">
         window.LANGUAGE_CODE = "{{ LANGUAGE_CODE }}";
     </script>
