@@ -1,4 +1,4 @@
-# Unreleased
+# 2.7.1 (2026-09-25)
 
 - Accessibility: the page now declares the interface language (it always said
   English, so screen readers read French, Dutch or Norwegian text with English
