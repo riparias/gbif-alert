@@ -14,8 +14,8 @@ abstract: >-
 type: software
 # Concept DOI: always resolves to the latest archived release on Zenodo.
 doi: 10.5281/zenodo.22935511
-version: 2.7.0
-date-released: "2026-09-22"
+version: 2.7.2
+date-released: "2026-09-25"
 authors:
   - family-names: Noé
     given-names: Nicolas

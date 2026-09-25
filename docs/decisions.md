@@ -416,3 +416,8 @@ expresses the ownership.
 **What:** Non-OK and network failures set a generic error message; only 404 keeps "not found".
 **Why:** A 429 body was rendered as an observation and crashed the drawer.
 **Rejected:** A retry button or 429-specific text - closing and reopening the drawer is enough.
+
+## 2026-09-25 - prepare-release.sh bumps CITATION.cff on stable releases
+**What:** The release helper sets `version` and `date-released` (from the CHANGELOG heading) in `CITATION.cff`, stable releases only.
+**Why:** The citation had already drifted (still 2.7.0 after 2.7.1 shipped); pre-releases get no DOI, so they must not become the cited version.
+**Rejected:** A CI check in `release.yml` - it would fail only after the tag is pushed, and the helper covers the normal flow.

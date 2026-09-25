@@ -1,4 +1,4 @@
-# Unreleased
+# 2.7.2 (2026-09-25)
 
 - Fix: deleting your account failed with a server error when you had created
   your own areas. Your personal areas are now deleted with your account.
