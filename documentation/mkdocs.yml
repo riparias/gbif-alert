@@ -56,5 +56,8 @@ nav:
   - Concepts: concepts.md
   - User guide:
       - Overview: user-guide/index.md
+      - Exploring the data: user-guide/explore.md
+      - Getting alerts: user-guide/alerts.md
+      - Going further: user-guide/advanced.md
   - Operator guide:
       - Overview: operator-guide/index.md

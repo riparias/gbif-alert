@@ -406,3 +406,13 @@ deletion by a user owning an area fail with a 500 (API and admin alike).
 **Rejected:** Deleting the areas in the `pre_delete` receiver - `Area.delete()`
 raises `HasAlerts` for areas used by the user's own alerts, and the FK already
 expresses the ownership.
+
+## 2026-09-25 - User documentation site
+**What:** MkDocs site in `documentation/`, published to docs.gbif-alert.org, with screenshots generated from the demo by `documentation/screenshots.py`.
+**Why:** Users had no documentation; keeping it in this repo lets a feature PR carry its doc change, and scripted screenshots can be refreshed when the UI changes.
+**Rejected:** A section of the Hugo www.gbif-alert.org site (docs would drift from the code), and hand-taken screenshots (they go stale unnoticed).
+
+## 2026-09-25 - Observation drawer shows an error state on failed loads
+**What:** Non-OK and network failures set a generic error message; only 404 keeps "not found".
+**Why:** A 429 body was rendered as an observation and crashed the drawer.
+**Rejected:** A retry button or 429-specific text - closing and reopening the drawer is enough.
