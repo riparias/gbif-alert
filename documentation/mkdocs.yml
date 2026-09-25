@@ -57,5 +57,6 @@ nav:
   - User guide:
       - Overview: user-guide/index.md
       - Exploring the data: user-guide/explore.md
+      - Getting alerts: user-guide/alerts.md
   - Operator guide:
       - Overview: operator-guide/index.md
