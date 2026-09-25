@@ -23,7 +23,7 @@ const { ensureBasisOfRecordLoaded, basisOfRecordName } = useDisplayLabels();
 
 const obs = ref<ObservationDetail | null>(null);
 const loading = ref(true);
-const notFound = ref(false);
+const errorMessage = ref<string | null>(null);
 
 // Comment form
 const newCommentText = ref("");
@@ -53,14 +53,17 @@ const initialDataImportLabel = computed(() => {
 });
 
 async function load() {
-    notFound.value = false;
+    errorMessage.value = null;
     obs.value = null;
     commentError.value = null;
     loading.value = true;
     try {
         const resp = await fetch(`/api/v2/observations/${props.stableId}/`);
-        if (resp.status === 404) {
-            notFound.value = true;
+        if (!resp.ok) {
+            // Anything but 404 (e.g. 429 from the API throttle, 500) is generic.
+            errorMessage.value = t(
+                resp.status === 404 ? "message.observationNotFound" : "message.unexpectedError",
+            );
             return;
         }
         obs.value = await resp.json();
@@ -78,6 +81,9 @@ async function load() {
                 /* non-fatal */
             });
         }
+    } catch {
+        // Network failure: without this the drawer would stay blank.
+        errorMessage.value = t("message.unexpectedError");
     } finally {
         loading.value = false;
     }
@@ -134,12 +140,12 @@ onMounted(load);
 
 <template>
     <div class="obs-detail-panel">
-        <!-- Loading / not found -->
+        <!-- Loading / error (not found, throttled, ...) -->
         <div v-if="loading" class="detail-loading">
             <i class="pi pi-spin pi-spinner" /> {{ t("message.loading") }}
         </div>
-        <div v-else-if="notFound" class="detail-not-found">
-            {{ t("message.observationNotFound") }}
+        <div v-else-if="errorMessage" class="detail-not-found">
+            {{ errorMessage }}
         </div>
 
         <template v-else-if="obs">
