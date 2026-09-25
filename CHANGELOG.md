@@ -1,3 +1,8 @@
+# Unreleased
+
+- Fix: deleting your account failed with a server error when you had created
+  your own areas. Your personal areas are now deleted with your account.
+
 # 2.7.1 (2026-09-25)
 
 - Accessibility: the page now declares the interface language (it always said

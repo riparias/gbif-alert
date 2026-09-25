@@ -15,6 +15,7 @@ from dashboard.models import (
     Alert,
     ApiToken,
     Area,
+    AreaPart,
     BasisOfRecord,
     DataImport,
     Dataset,
@@ -2917,6 +2918,30 @@ def test_delete_account_success(client):
     resp = client.delete("/api/v2/account/")
     assert resp.status_code == 204
     assert not User.objects.filter(username="todelete").exists()
+
+
+def test_delete_account_with_custom_area(client):
+    """A user's private areas (and their pieces) go with the account, even
+    when one of their own alerts uses it; public areas are untouched."""
+    User = get_user_model()
+    user = User.objects.create_user(
+        username="todelete", password="pass", email="del@example.com"
+    )
+    square = MultiPolygon(Polygon(((0, 0), (0, 1), (1, 1), (0, 0))), srid=3857)
+    private_area = Area.objects.create(owner=user, name="mine", mpoly=square)
+    private_area.tags.add("my tag")
+    public_area = Area.objects.create(name="public", mpoly=square)
+    alert = Alert.objects.create(user=user)
+    alert.areas.add(private_area, public_area)
+
+    client.force_login(user)
+    resp = client.delete("/api/v2/account/")
+
+    assert resp.status_code == 204
+    assert not User.objects.filter(username="todelete").exists()
+    assert not Area.objects.filter(pk=private_area.pk).exists()
+    assert not AreaPart.objects.filter(area_id=private_area.pk).exists()
+    assert Area.objects.filter(pk=public_area.pk).exists()
 
 
 # ---------------------------------------------------------------------------
