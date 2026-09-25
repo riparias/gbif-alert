@@ -1,5 +1,7 @@
 # Unreleased
 
+- Fix: deleting your account failed with a server error when you had created
+  your own areas. Your personal areas are now deleted with your account.
 - Fix: the observation detail panel now shows an error message when loading
   fails (e.g. too many requests), instead of a broken, empty panel.
 

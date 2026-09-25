@@ -398,6 +398,15 @@ already present).
 **Rejected:** A second table inside the Species tab - the 2026-07-28 entry
 already rejected bundling views behind one tab.
 
+## 2026-09-25 - A user's private areas are deleted with their account
+
+**What:** `Area.owner` is now `on_delete=CASCADE` (was `PROTECT`, migration 0045).
+**Why:** `PROTECT` was the 2021 default, never a decision, and made every account
+deletion by a user owning an area fail with a 500 (API and admin alike).
+**Rejected:** Deleting the areas in the `pre_delete` receiver - `Area.delete()`
+raises `HasAlerts` for areas used by the user's own alerts, and the FK already
+expresses the ownership.
+
 ## 2026-09-25 - User documentation site
 **What:** MkDocs site in `documentation/`, published to docs.gbif-alert.org, with screenshots generated from the demo by `documentation/screenshots.py`.
 **Why:** Users had no documentation; keeping it in this repo lets a feature PR carry its doc change, and scripted screenshots can be refreshed when the UI changes.

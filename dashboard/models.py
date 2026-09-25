@@ -1002,9 +1002,13 @@ class Area(models.Model):
     """An area that can be shown to the user, or used to filter observations"""
 
     mpoly = models.MultiPolygonField(srid=DATA_SRID)
+    # An area can be public (no owner) or user-specific. A user-specific area
+    # is only visible to its owner, so it goes with their account. The cascade
+    # bypasses Area.delete()'s HasAlerts guard, which is fine: only the owner's
+    # own alerts (deleted too) can reference it through the API.
     owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, blank=True, null=True
-    )  # an area can be public or user-specific
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=True, null=True
+    )
     name = models.CharField(max_length=255)
     is_default_home_filter = models.BooleanField(
         default=False,
