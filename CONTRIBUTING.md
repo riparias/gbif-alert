@@ -291,7 +291,8 @@ displays. No manual `VERSION` file edit is needed.
 
 The recommended flow uses `scripts/prepare-release.sh`, which handles the
 mechanical, error-prone parts (version normalization, the `pyproject.toml` +
-`uv.lock` bump, and a `CHANGELOG.md`/tag sanity check) and then prints the git
+`uv.lock` bump, the `CITATION.cff` bump for stable releases, and a
+`CHANGELOG.md`/tag sanity check) and then prints the git
 commands for you to run. It never commits, tags, or pushes - you do.
 
 ### Releasing
@@ -306,7 +307,10 @@ commands for you to run. It never commits, tags, or pushes - you do.
    $ ./scripts/prepare-release.sh 2.0.0-rc1
    ```
    It bumps `pyproject.toml` + `uv.lock`, verifies they are in sync, and prints
-   the exact `git add` / `commit` / `tag` / `push` commands.
+   the exact `git add` / `commit` / `tag` / `push` commands. For a stable
+   release it also sets `version` and `date-released` in `CITATION.cff` (the
+   date comes from the `CHANGELOG.md` heading, so write it as
+   `# 2.0.0 (YYYY-MM-DD)`).
 4. Run those printed commands, minding the branch rule:
    - **Stable release** (`v2.0.0`): merge `devel` to `main` *before* tagging.
    - **Pre-release / RC** (`v2.0.0-rc1`): stay on `devel`; do *not* merge to
@@ -339,8 +343,11 @@ hyphen).
    `uv.lock`). The version is not load-bearing for the footer, which reads the
    git tag, but `uv.lock` pins it too - skip the lock refresh and the Docker
    build's `uv sync --frozen` fails on the mismatch.
-2. Commit `CHANGELOG.md`, `pyproject.toml`, and `uv.lock`.
-3. Tag with the SemVer form and push the branch and the tag:
+2. For a stable release only, set `version` (`2.0.0`) and `date-released` in
+   `CITATION.cff`. Pre-releases get no DOI, so the citation keeps naming the
+   last stable version.
+3. Commit `CHANGELOG.md`, `pyproject.toml`, `uv.lock`, and `CITATION.cff`.
+4. Tag with the SemVer form and push the branch and the tag:
    ```
    $ git tag v2.0.0-rc1
    $ git push origin devel        # or main, for a stable release

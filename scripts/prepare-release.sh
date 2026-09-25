@@ -4,7 +4,8 @@
 #
 # Given ONE version, it normalizes the two forms that must agree (the PEP 440
 # package version and the SemVer git tag), runs a few guard checks, bumps
-# pyproject.toml + uv.lock, and then PRINTS the git commands for you to run.
+# pyproject.toml + uv.lock (and CITATION.cff for a stable release), and then
+# PRINTS the git commands for you to run.
 # It never commits, tags, or pushes - the irreversible steps stay in your hands.
 #
 # Usage:
@@ -61,6 +62,14 @@ case "$head_line" in
        '# $display '. Add the release notes first." ;;
 esac
 
+# A stable release stamps CITATION.cff with the CHANGELOG date, so it must
+# have one. Checked here, before anything is modified.
+if [ -z "$pre" ]; then
+    [[ "$head_line" =~ \(([0-9]{4}-[0-9]{2}-[0-9]{2})\) ]] \
+        || die "CHANGELOG heading '$head_line' has no (YYYY-MM-DD) date"
+    released="${BASH_REMATCH[1]}"
+fi
+
 # Refuse to clobber an existing tag.
 if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
     die "tag $tag already exists"
@@ -73,17 +82,28 @@ uv lock                            # idempotent; ensures the lock is refreshed
 uv lock --check                    # prove pyproject.toml and uv.lock agree
 echo "==> uv.lock is in sync"
 
+# --- Bump CITATION.cff (stable only) --------------------------------------
+# Pre-releases get no DOI, so the citation keeps naming the last stable one.
+# The release date is taken from the CHANGELOG heading so the two agree.
+if [ -z "$pre" ]; then
+    echo "==> CITATION.cff: version $display, date-released $released"
+    # -i.bak + rm: the only in-place form both GNU and BSD (macOS) sed accept.
+    sed -i.bak -e "s/^version: .*/version: $display/" \
+        -e "s/^date-released: .*/date-released: \"$released\"/" CITATION.cff
+    rm CITATION.cff.bak
+fi
+
 # --- Show what changed and hand back the wheel ----------------------------
 echo
 echo "==> Changes staged for your review:"
-git --no-pager diff --stat -- pyproject.toml uv.lock
+git --no-pager diff --stat -- pyproject.toml uv.lock CITATION.cff
 echo
 echo "Next steps (review the diff above, then run):"
 echo
 if [ -z "$pre" ] && [ "$branch" != "main" ]; then
     echo "  # stable release: merge $branch to main first, then tag (see CONTRIBUTING.md)"
 fi
-echo "  git add CHANGELOG.md pyproject.toml uv.lock"
+echo "  git add CHANGELOG.md pyproject.toml uv.lock CITATION.cff"
 echo "  git commit -m \"release: $tag\""
 echo "  git tag $tag"
 echo "  git push origin $branch"
