@@ -56,5 +56,6 @@ nav:
   - Concepts: concepts.md
   - User guide:
       - Overview: user-guide/index.md
+      - Exploring the data: user-guide/explore.md
   - Operator guide:
       - Overview: operator-guide/index.md
