@@ -1,3 +1,8 @@
+# Unreleased
+
+- Fix: the observation detail panel now shows an error message when loading
+  fails (e.g. too many requests), instead of a broken, empty panel.
+
 # 2.7.1 (2026-09-25)
 
 - Accessibility: the page now declares the interface language (it always said

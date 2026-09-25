@@ -397,3 +397,8 @@ the same as the species one (about half a second on 720k rows, FK index
 already present).
 **Rejected:** A second table inside the Species tab - the 2026-07-28 entry
 already rejected bundling views behind one tab.
+
+## 2026-09-25 - Observation drawer shows an error state on failed loads
+**What:** Non-OK and network failures set a generic error message; only 404 keeps "not found".
+**Why:** A 429 body was rendered as an observation and crashed the drawer.
+**Rejected:** A retry button or 429-specific text - closing and reopening the drawer is enough.
