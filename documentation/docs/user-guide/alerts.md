@@ -11,8 +11,8 @@ password; your first and last names are optional. Then use **Sign in** whenever
 you come back.
 
 Once you are signed in, the top bar gains **My alerts**, and your username
-opens your menu: **My profile**, **API tokens** (covered in part 3 of this
-guide), **Change password**, **My alerts**, **My
+opens your menu: **My profile**, **API tokens** (see
+[Use the API](advanced.md#use-the-api)), **Change password**, **My alerts**, **My
 user-specific areas** and **Sign out**.
 
 ## Your profile

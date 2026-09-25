@@ -203,6 +203,11 @@ def alerts_comments(page: Page) -> Locator:
     return page.locator(".comments-card")
 
 
+def advanced_api_tokens(page: Page) -> Locator:
+    go(page, "/api-tokens")
+    return page.locator(".page-content--wide")
+
+
 SIGNED_IN_SHOTS: dict[str, Callable[[Page], Page | Locator]] = {
     "alerts-profile.png": alerts_profile,
     "alerts-not-viewed.png": alerts_not_viewed,
@@ -211,6 +216,7 @@ SIGNED_IN_SHOTS: dict[str, Callable[[Page], Page | Locator]] = {
     "alerts-form.png": alerts_form,
     "alerts-my-alerts.png": alerts_my_alerts,
     "alerts-comments.png": alerts_comments,
+    "advanced-api-tokens.png": advanced_api_tokens,
 }
 
 PLACEHOLDERS = {

@@ -397,3 +397,8 @@ the same as the species one (about half a second on 720k rows, FK index
 already present).
 **Rejected:** A second table inside the Species tab - the 2026-07-28 entry
 already rejected bundling views behind one tab.
+
+## 2026-09-25 - User documentation site
+**What:** MkDocs site in `documentation/`, published to docs.gbif-alert.org, with screenshots generated from the demo by `documentation/screenshots.py`.
+**Why:** Users had no documentation; keeping it in this repo lets a feature PR carry its doc change, and scripted screenshots can be refreshed when the UI changes.
+**Rejected:** A section of the Hugo www.gbif-alert.org site (docs would drift from the code), and hand-taken screenshots (they go stale unnoticed).
