@@ -42,7 +42,7 @@ See [INSTALL.md](INSTALL.md) for more information.
 
 GBIF Alert exposes a stable, supported public HTTP API (API v2) for programmatic access to its data.
 
-Each instance documents its own API: visit `/api-docs` on any instance for an overview, with the interactive reference at `/api/v2/docs` and an OGC WFS service at `/api/wfs/observations/`. For example, on the demo instance: https://demo.gbif-alert.org/api-docs
+Each instance documents its own API: visit `/api-docs` on any instance for an overview, with the interactive reference at `/api/v2/docs` and an OGC WFS service at `/api/wfs/observations`. For example, on the demo instance: https://demo.gbif-alert.org/api-docs
 
 The older `/api/*` JSON endpoints are deprecated in favour of API v2 and will be removed on 30 June 2027.
 
