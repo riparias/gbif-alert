@@ -16,6 +16,11 @@ from unittest import mock
 import pytest
 import requests_mock as requests_mock_module
 from django.core.management import CommandError, call_command
+from django.test import override_settings
+from maintenance_mode.core import (  # type: ignore
+    get_maintenance_mode,
+    set_maintenance_mode,
+)
 
 from dashboard.models import (
     DataImport,
@@ -285,7 +290,7 @@ def _fake_download(output_paths: list[str]):
     """Stand-in for the GBIF download: copies the sample archive to the path
     the command asked for and records that path."""
 
-    def fake(predicate, username, password, output_path):
+    def fake(predicate, username, password, output_path, max_wait):
         output_paths.append(output_path)
         shutil.copyfile(SAMPLE_DATA_PATH / "gbif_download.zip", output_path)
 
@@ -316,7 +321,7 @@ def test_downloaded_dwca_deleted_when_download_fails(
 
     requested: list[str] = []
 
-    def failing_download(predicate, username, password, output_path):
+    def failing_download(predicate, username, password, output_path, max_wait):
         requested.append(output_path)
         raise RuntimeError("gbif down")
 
@@ -365,6 +370,71 @@ def test_user_provided_dwca_kept_on_success(test_data, tmp_path) -> None:
 
     assert user_file.exists()
     assert Observation.objects.count() == 7
+
+
+# ---------------------------------------------------------------------------
+# Error email: whatever step fails, the admins get exactly one email (#481).
+# ---------------------------------------------------------------------------
+
+
+@override_settings(
+    ADMINS=[("Admin", "admin@example.com")], GBIF_DOWNLOAD_MAX_WAIT_HOURS=2
+)
+def test_stuck_download_gives_up_and_emails_admins(
+    test_data, gbif_download_config, mailoutbox
+) -> None:
+    """A download that never becomes ready is abandoned after the configured
+    wait, and the admins are told - the previous data stays online, so nothing
+    else would reveal that it stopped refreshing."""
+    from dashboard.management.commands import import_observations as mod
+
+    max_waits: list[float] = []
+
+    def stuck_download(predicate, username, password, output_path, max_wait):
+        max_waits.append(max_wait)
+        raise TimeoutError("still not ready")
+
+    with mock.patch.object(
+        mod, "download_gbif_occurrences", side_effect=stuck_download
+    ):
+        with pytest.raises(TimeoutError):
+            call_command("import_observations")
+
+    assert max_waits == [2 * 60 * 60]
+    assert len(mailoutbox) == 1
+    assert "(GBIF download)" in mailoutbox[0].subject
+    assert "still not ready" in mailoutbox[0].body
+
+
+@override_settings(ADMINS=[("Admin", "admin@example.com")])
+def test_failed_database_import_clears_maintenance_and_emails_admins_once(
+    test_data, mailoutbox
+) -> None:
+    """A failed import must not fail silently: it clears maintenance mode and
+    emails the admins with the exception traceback before re-raising.
+
+    Pins the contract behind the production incident where a crashing import
+    left the site stuck in maintenance mode with no notification. Exactly one
+    email: run_import() re-raises, and only handle() reports.
+    """
+    set_maintenance_mode(False)
+
+    with mock.patch(
+        "dashboard.models.DataImport.complete",
+        side_effect=Exception("Boom during import"),
+    ):
+        with pytest.raises(Exception, match="Boom during import"):
+            call_command(
+                "import_observations",
+                source_dwca=str(SAMPLE_DATA_PATH / "gbif_download.zip"),
+            )
+
+    assert get_maintenance_mode() is False
+    assert len(mailoutbox) == 1
+    email = mailoutbox[0]
+    assert "ERROR during observation data import (database import)" in email.subject
+    assert "Boom during import" in email.body
+    assert "admin@example.com" in email.to
 
 
 def test_missing_user_provided_dwca_rejected(test_data, tmp_path) -> None:

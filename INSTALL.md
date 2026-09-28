@@ -237,6 +237,8 @@ The compose stack includes an `ofelia` scheduler container that calls the two pe
 
 These cron expressions are evaluated in the `scheduler` container's timezone, which defaults to UTC.
 
+If GBIF has not prepared the download after `GBIF_DOWNLOAD_MAX_WAIT_HOURS` (default: `10`), the import gives up. As with any failed import, the admins (`ADMINS`) are emailed and the previous observations stay online. If you move the schedules, keep the import start plus this wait before the notification run.
+
 **Cron format note:** Ofelia uses a SIX-field cron expression where the leading field is *seconds* (`second minute hour day month dayofweek`), not the standard five-field Unix cron. A five-field expression like `0 2 * * *` is silently misinterpreted as "every hour at HH:02:00" rather than "daily at 02:00". When overriding the defaults, always include the leading `0` for seconds.
 
 **Applying a schedule change:** the schedule is a label on the `gbif-alert`

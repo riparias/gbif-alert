@@ -1,3 +1,11 @@
+# Unreleased
+
+- Fix: the admins are now emailed when the nightly import fails at any step
+  (GBIF download, preflight check, archive reading), not only during the
+  database import; the email names the failed step (#481).
+- New: `GBIF_DOWNLOAD_MAX_WAIT_HOURS` (default 10) sets how long the import
+  waits for GBIF to prepare the download before giving up.
+
 # 2.7.2 (2026-09-25)
 
 - Fix: deleting your account failed with a server error when you had created

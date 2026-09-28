@@ -421,3 +421,8 @@ expresses the ownership.
 **What:** The release helper sets `version` and `date-released` (from the CHANGELOG heading) in `CITATION.cff`, stable releases only.
 **Why:** The citation had already drifted (still 2.7.0 after 2.7.1 shipped); pre-releases get no DOI, so they must not become the cited version.
 **Rejected:** A CI check in `release.yml` - it would fail only after the tag is pushed, and the helper covers the normal flow.
+
+## 2026-09-28 - Import error email sent from handle(), download wait configurable
+**What:** `import_observations` emails the admins from `handle()` for a failure at any step, naming it; the GBIF download gives up after `GBIF_DOWNLOAD_MAX_WAIT_HOURS` (default 10).
+**Why:** Download/preflight/metadata failures sent no email, and the library's 12h wait expired at the 14:00 notification run.
+**Rejected:** A shorter default wait (downloads are routinely long), and detecting a killed import at the next run (deferred; the web-start self-heal already clears maintenance).

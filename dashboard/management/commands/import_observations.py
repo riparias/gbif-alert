@@ -451,18 +451,24 @@ def send_successful_import_email():
     )
 
 
-def send_error_import_email(exception: BaseException | None = None):
-    body = "An error occurred during the observation data import."
-    if exception is not None:
-        body += "\n\nThe import was rolled back. Exception traceback:\n\n" + "".join(
+def send_error_import_email(exception: BaseException, step: str):
+    # Every step before the database import leaves the database untouched, and
+    # the database import itself rolls back on failure: in all cases the
+    # previous observations stay online, they are just no longer refreshed.
+    body = (
+        f"An error occurred during the observation data import, at step: {step}.\n\n"
+        "The previous observations stay online, but the data will not be "
+        "refreshed until an import succeeds. Exception traceback:\n\n"
+        + "".join(
             traceback.format_exception(
                 type(exception), exception, exception.__traceback__
             )
         )
+    )
     # fail_silently=False so a delivery problem is surfaced (the caller logs it
     # and still re-raises the original import error) rather than swallowed.
     mail_admins(
-        "ERROR during observation data import",
+        f"ERROR during observation data import ({step})",
         body,
         fail_silently=False,
     )
@@ -674,9 +680,9 @@ def run_import(
 
     Maintenance mode is enabled for the duration of the import and always
     cleared on exit, whether the import succeeds or fails. On failure the
-    transaction rolls back (leaving the database unchanged) and an admin email
-    with the exception traceback is sent before the error is re-raised; on
-    success an admin email is sent.
+    transaction rolls back (leaving the database unchanged) and the error is
+    re-raised - the command's ``handle()`` emails the admins about it, whatever
+    the step that failed; on success an admin email is sent from here.
     """
     _log_with_time(
         stdout,
@@ -814,20 +820,6 @@ def run_import(
             _log_with_time(stdout, "Committing the transaction")
 
         _log_with_time(stdout, "Transaction committed")
-    except Exception as exc:
-        # The import failed and the transaction rolled back, so the database is
-        # unchanged. Notify the admins with the traceback before re-raising:
-        # the failure must be visible (no silent failures) and the scheduled
-        # job must exit non-zero. Guard the email send so a mail problem can
-        # neither mask the original error nor skip the maintenance reset below.
-        _log_with_time(stdout, f"Import failed ({exc!r}); notifying admins.")
-        try:
-            send_error_import_email(exc)
-        except Exception as mail_exc:
-            _log_with_time(
-                stdout, f"Could not send the import-error email: {mail_exc!r}"
-            )
-        raise
     finally:
         # Always leave maintenance mode, even if the import raised. The work
         # above runs in a single transaction that rolls back on failure, so a
@@ -872,10 +864,36 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options) -> None:
-        start_time = time.time()
-
+        # An operator typo in a manual run, reported straight to the terminal:
+        # not worth an admin email.
         if options["source_dwca"] and not os.path.isfile(options["source_dwca"]):
             raise CommandError(f"DwC-A file not found: {options['source_dwca']}")
+
+        # The step currently running, named in the error email. _import()
+        # advances it as it goes.
+        self._step = "preflight check"
+        try:
+            self._import(options)
+        except Exception as exc:
+            # Whatever the step, a failed import must not fail silently: the
+            # previous data stays online, so the only other hint would be a
+            # missing success email. Notify the admins with the traceback, then
+            # re-raise so the scheduled job still exits non-zero. Guard the
+            # email send so a mail problem never masks the original error.
+            _log_with_time(
+                self.stdout,
+                f"Import failed during {self._step} ({exc!r}); notifying admins.",
+            )
+            try:
+                send_error_import_email(exc, self._step)
+            except Exception as mail_exc:
+                _log_with_time(
+                    self.stdout, f"Could not send the import-error email: {mail_exc!r}"
+                )
+            raise
+
+    def _import(self, options) -> None:
+        start_time = time.time()
 
         # Allow the verbosity option for our custom logging
         # (see https://reinout.vanrees.org/weblog/2017/03/08/logging-verbosity-managment-commands.html)
@@ -927,6 +945,7 @@ class Command(BaseCommand):
                     self.stdout,
                     "Triggering a GBIF download and waiting for it - this can be long...",
                 )
+                self._step = "GBIF download"
 
                 tmp_file = tempfile.NamedTemporaryFile(delete=False)
                 source_data_path = tmp_file.name
@@ -968,6 +987,10 @@ class Command(BaseCommand):
                             "PASSWORD"
                         ],
                         output_path=source_data_path,
+                        # Give up on a download that never becomes ready, so
+                        # the admins hear about it (see handle()) instead of
+                        # the command waiting indefinitely.
+                        max_wait=settings.GBIF_DOWNLOAD_MAX_WAIT_HOURS * 60 * 60,
                     )
                 finally:
                     root_logger.removeHandler(gbif_handler)
@@ -975,6 +998,7 @@ class Command(BaseCommand):
                 _log_with_time(self.stdout, "Observations downloaded")
 
             # 2. Extract gbif_download_id from DwCA metadata (only needs to read metadata)
+            self._step = "reading the DwC-A metadata"
             _log_with_time(self.stdout, "Opening DWCA to read metadata")
             with DwCAReader(source_data_path) as dwca:
                 gbif_download_id = extract_gbif_download_id_from_dwca(dwca)
@@ -1006,6 +1030,7 @@ class Command(BaseCommand):
                         )
 
             # 4. Run the transactional pipeline
+            self._step = "database import"
             run_import(
                 raw_rows_factory,
                 discovery_rows_factory,
