@@ -209,7 +209,11 @@ async function deleteAccount() {
                 />
 
                 <hr
-                    style="margin: 1rem 0; border: none; border-top: 1px solid var(--p-surface-200)"
+                    style="
+                        margin: 1rem 0;
+                        border: none;
+                        border-top: 1px solid var(--p-content-border-color);
+                    "
                 />
 
                 <Button
