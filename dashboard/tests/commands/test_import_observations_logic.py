@@ -1017,44 +1017,18 @@ def test_transaction(test_data):
 
 
 @override_settings(ADMINS=[("Admin", "admin@example.com")])
-def test_failed_import_clears_maintenance_and_emails_admins(test_data, mailoutbox):
-    """A failed import must not fail silently: it clears maintenance mode and
-    emails the admins with the exception traceback before re-raising.
+def test_refused_preflight_emails_admins(mailoutbox):
+    """A preflight refusal leaves the previous data online and triggers no
+    download, so without an email nobody notices the data stopped refreshing
+    (#481)."""
+    Species.objects.all().delete()
+    Species.objects.create(name="Lixus bardanae", gbif_taxon_key=LIXUS_KEY)
+    with pytest.raises(CommandError):
+        call_command("import_observations")
 
-    Pins the contract behind the production incident where a crashing import
-    left the site stuck in maintenance mode with no notification.
-    """
-    set_maintenance_mode(False)
-    assert get_maintenance_mode() is False
-
-    with mock.patch(
-        "dashboard.models.DataImport.complete",
-        side_effect=Exception("Boom during import"),
-    ):
-        with pytest.raises(Exception, match="Boom during import"):
-            run_import_with_rows(
-                [
-                    make_raw_row(
-                        gbif_id=1,
-                        occurrence_id="fail-1",
-                        dataset_key=INATURALIST_KEY,
-                        dataset_name="iNaturalist",
-                        taxon_key=LIXUS_COL_KEY,
-                        accepted_taxon_key=LIXUS_COL_KEY,
-                        species_key=LIXUS_COL_KEY,
-                    ),
-                ]
-            )
-
-    # Maintenance mode is cleared despite the failure.
-    assert get_maintenance_mode() is False
-
-    # Admins were emailed, and the message carries the exception traceback.
     assert len(mailoutbox) == 1
-    email = mailoutbox[0]
-    assert "ERROR during observation data import" in email.subject
-    assert "Boom during import" in email.body
-    assert "admin@example.com" in email.to
+    assert "(preflight check)" in mailoutbox[0].subject
+    assert "Lixus bardanae" in mailoutbox[0].body
 
 
 def test_import_aborts_when_a_species_lacks_col_key():

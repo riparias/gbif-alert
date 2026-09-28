@@ -297,6 +297,16 @@ GBIF_COL_XR_CHECKLIST_KEY = os.environ.get(
     "GBIF_COL_XR_CHECKLIST_KEY", "7ddf754f-d193-4cc9-b351-99906754a03b"
 )
 
+# How long `import_observations` waits for a GBIF download to become ready
+# before giving up and emailing the admins. Preparing a download is routinely
+# long, so keep it generous; the 10-hour default fails a 02:00 import around
+# 12:00, before the 14:00 notification run. A top-level setting rather than a
+# GBIF_ALERT key, so a local_settings.py that replaces GBIF_ALERT wholesale
+# keeps it.
+GBIF_DOWNLOAD_MAX_WAIT_HOURS = float(
+    os.environ.get("GBIF_DOWNLOAD_MAX_WAIT_HOURS", "10")
+)
+
 
 def _default_predicate_builder(species_list):
     """Default GBIF download predicate builder.
