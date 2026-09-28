@@ -121,8 +121,8 @@ onMounted(async () => {
 /* The deprecation/stability card is informational, not an API: set it apart
    with a tinted background and a muted left border. */
 .api-card--info {
-    background: var(--p-surface-100);
-    border-left: 3px solid var(--p-surface-300);
+    background: var(--p-content-hover-background);
+    border-left: 3px solid var(--p-content-border-color);
 }
 
 .card-title {

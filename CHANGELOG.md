@@ -1,5 +1,8 @@
 # Unreleased
 
+- Fix: in dark mode, the sample command on the API tokens page and the
+  "Stability and deprecation" box on the API documentation page were light
+  text on a light background, and a few separators were too bright.
 - Fix: the admins are now emailed when the nightly import fails at any step
   (GBIF download, preflight check, archive reading), not only during the
   database import; the email names the failed step (#481).
