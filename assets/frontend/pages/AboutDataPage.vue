@@ -59,7 +59,7 @@ function gbifDownloadUrl(downloadId: string): string {
             <!-- Most recent import: details are always expanded -->
             <div
                 style="
-                    border: 1px solid var(--p-surface-300);
+                    border: 1px solid var(--p-content-border-color);
                     border-radius: 6px;
                     padding: 1rem;
                     margin-bottom: 1rem;

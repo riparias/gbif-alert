@@ -125,7 +125,7 @@ watch(isMobile, (mobile) => {
 
 .mobile-sidebar-trigger:hover,
 .mobile-sidebar-trigger:focus-visible {
-    background: var(--p-primary-50, rgba(0, 165, 141, 0.08));
+    background: var(--p-highlight-background);
 }
 
 .mobile-sidebar-count {

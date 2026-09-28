@@ -1,3 +1,9 @@
+# Unreleased
+
+- Fix: in dark mode, the sample command on the API tokens page and the
+  "Stability and deprecation" box on the API documentation page were light
+  text on a light background, and a few separators were too bright.
+
 # 2.7.2 (2026-09-25)
 
 - Fix: deleting your account failed with a server error when you had created

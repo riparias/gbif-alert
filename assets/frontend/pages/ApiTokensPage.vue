@@ -195,14 +195,14 @@ function formatDate(iso: string | null): string {
     border-radius: 6px;
     padding: 0.75rem;
     margin-bottom: 1.25rem;
-    background: var(--p-surface-50);
+    background: var(--p-content-background);
 }
 
 .section-title {
     font-size: 1.1rem;
     margin: 1.75rem 0 0.5rem;
     padding-bottom: 0.25rem;
-    border-bottom: 1px solid var(--p-surface-200);
+    border-bottom: 1px solid var(--p-content-border-color);
 }
 
 .copy-row {
@@ -228,7 +228,7 @@ function formatDate(iso: string | null): string {
     flex: 1;
     margin: 0;
     padding: 0.5rem;
-    background: var(--p-surface-100);
+    background: var(--p-content-hover-background);
     border-radius: 4px;
     font-size: 0.8rem;
     overflow-x: auto;
@@ -250,7 +250,7 @@ function formatDate(iso: string | null): string {
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 0;
-    border-bottom: 1px solid var(--p-surface-200);
+    border-bottom: 1px solid var(--p-content-border-color);
 }
 
 .prefix {
