@@ -25,9 +25,9 @@ read, so any setting defined here overrides the env-driven default.
 Example: a custom GBIF download predicate
 -----------------------------------------
 Uncomment and edit the block below if the env-driven default builder
-(`GBIF_DOWNLOAD_COUNTRY`, `GBIF_DOWNLOAD_YEAR_MIN`, and the
-`GBIF_DOWNLOAD_{LAT,LON}_{MIN,MAX}` bounding box) is not flexible
-enough for your deployment.
+(`GBIF_DOWNLOAD_COUNTRY`, `GBIF_DOWNLOAD_CONTINENT`,
+`GBIF_DOWNLOAD_YEAR_MIN`, and the `GBIF_DOWNLOAD_{LAT,LON}_{MIN,MAX}`
+bounding box) is not flexible enough for your deployment.
 """
 
 # from django.conf import settings

@@ -289,6 +289,46 @@ def _bbox_predicates() -> list[dict]:
 _GBIF_BBOX_PREDICATES = _bbox_predicates()
 
 
+# GBIF's Continent vocabulary (https://api.gbif.org/v1/enumeration/basic/Continent).
+_GBIF_CONTINENTS = (
+    "AFRICA",
+    "ANTARCTICA",
+    "ASIA",
+    "EUROPE",
+    "NORTH_AMERICA",
+    "OCEANIA",
+    "SOUTH_AMERICA",
+)
+
+
+def _continent_predicates() -> list[dict]:
+    """GBIF predicate clause for an optional `GBIF_DOWNLOAD_CONTINENT`.
+
+    Filters on GBIF's interpreted `CONTINENT`, which GBIF derives from the
+    coordinates (or from the country when there are none) - so overseas
+    territories land on their geographic continent, unlike the country-based
+    `GBIF_REGION`. Case-insensitive. Returns `[]` when unset; raises
+    `ImproperlyConfigured` on a value outside GBIF's vocabulary, evaluated at
+    import so a typo fails the deploy rather than the next import.
+    """
+    from django.core.exceptions import ImproperlyConfigured
+
+    raw = os.environ.get("GBIF_DOWNLOAD_CONTINENT", "").strip()
+    if not raw:
+        return []
+    continent = raw.upper()
+    if continent not in _GBIF_CONTINENTS:
+        raise ImproperlyConfigured(
+            f"GBIF_DOWNLOAD_CONTINENT must be one of {', '.join(_GBIF_CONTINENTS)}; "
+            f"got {raw!r}."
+        )
+    return [{"type": "equals", "key": "CONTINENT", "value": continent}]
+
+
+# Validated once at import (fail-fast); appended by the default builder below.
+_GBIF_CONTINENT_PREDICATES = _continent_predicates()
+
+
 # COL XR is the Catalogue of Life Extended Release checklist that superseded the
 # frozen GBIF backbone. Downloads must reference it so occurrences are
 # interpreted against the current taxonomy. Overridable via env for instances
@@ -311,8 +351,9 @@ GBIF_DOWNLOAD_MAX_WAIT_HOURS = float(
 def _default_predicate_builder(species_list):
     """Default GBIF download predicate builder.
 
-    Builds a predicate from `GBIF_DOWNLOAD_COUNTRY`, `GBIF_DOWNLOAD_YEAR_MIN`,
-    and an optional bounding box (`GBIF_DOWNLOAD_{LAT,LON}_{MIN,MAX}`).
+    Builds a predicate from `GBIF_DOWNLOAD_COUNTRY`, `GBIF_DOWNLOAD_CONTINENT`,
+    `GBIF_DOWNLOAD_YEAR_MIN`, and an optional bounding box
+    (`GBIF_DOWNLOAD_{LAT,LON}_{MIN,MAX}`), all ANDed together.
     Operators with more complex predicate needs override this in
     `local_settings.py` by setting `GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"]`.
     """
@@ -331,6 +372,7 @@ def _default_predicate_builder(species_list):
         predicates.append(
             {"type": "greaterThanOrEquals", "key": "YEAR", "value": int(year_min)}
         )
+    predicates.extend(_GBIF_CONTINENT_PREDICATES)
     predicates.extend(_GBIF_BBOX_PREDICATES)
     return {
         "predicate": {"type": "and", "predicates": predicates},

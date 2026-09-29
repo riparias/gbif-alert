@@ -12,6 +12,9 @@
   now return a 400 instead of a server error that emailed the admins (#474).
   The legacy observations page now only sorts on `id`, `gbif_id`, `date`,
   `species__name` or `source_dataset__name`, and caps `limit` at 1000.
+- New: `GBIF_DOWNLOAD_CONTINENT` (e.g. `EUROPE`) scopes the GBIF download to a
+  continent, without a custom `PREDICATE_BUILDER`. It combines with the
+  country, year and bounding-box filters.
 
 # 2.7.2 (2026-09-25)
 

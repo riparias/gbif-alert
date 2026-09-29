@@ -79,6 +79,7 @@ _ENV_VARS_READ_BY_SETTINGS = (
     "GBIF_DOWNLOAD_USERNAME",
     "GBIF_DOWNLOAD_PASSWORD",
     "GBIF_DOWNLOAD_COUNTRY",
+    "GBIF_DOWNLOAD_CONTINENT",
     "GBIF_DOWNLOAD_YEAR_MIN",
     "GBIF_DOWNLOAD_LAT_MIN",
     "GBIF_DOWNLOAD_LAT_MAX",
@@ -634,6 +635,45 @@ def test_min_not_less_than_max_raises(clean_env):
     with pytest.raises(ImproperlyConfigured) as exc_info:
         _import_settings()
     assert "less than" in str(exc_info.value).lower()
+
+
+# ---------------------------------------------------------------------------
+# GBIF download continent (GBIF_DOWNLOAD_CONTINENT)
+# ---------------------------------------------------------------------------
+
+
+def _continent_clauses(clauses):
+    return [c for c in clauses if c["key"] == "CONTINENT"]
+
+
+def test_no_continent_env_produces_no_continent_clause(clean_env):
+    _minimal_env(clean_env)
+    settings = _import_settings()
+    assert _continent_clauses(_predicate_clauses(settings)) == []
+
+
+def test_continent_adds_equals_clause_case_insensitively(clean_env):
+    """The value is normalised to GBIF's upper-case vocabulary, and ANDs with
+    the other filters rather than replacing them."""
+    _minimal_env(clean_env)
+    clean_env.setenv("GBIF_DOWNLOAD_CONTINENT", " north_america ")
+    clean_env.setenv("GBIF_DOWNLOAD_YEAR_MIN", "2000")
+    settings = _import_settings()
+    clauses = _predicate_clauses(settings)
+    assert _continent_clauses(clauses) == [
+        {"type": "equals", "key": "CONTINENT", "value": "NORTH_AMERICA"}
+    ]
+    assert "YEAR" in [c["key"] for c in clauses]
+
+
+def test_unknown_continent_raises(clean_env):
+    """A value outside GBIF's vocabulary fails at startup, not at the next
+    import when GBIF rejects the download request."""
+    _minimal_env(clean_env)
+    clean_env.setenv("GBIF_DOWNLOAD_CONTINENT", "Eurasia")
+    with pytest.raises(ImproperlyConfigured) as exc_info:
+        _import_settings()
+    assert "EUROPE" in str(exc_info.value)
 
 
 # ---------------------------------------------------------------------------

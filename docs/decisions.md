@@ -431,3 +431,8 @@ expresses the ownership.
 **What:** The request-parsing helpers, tile views and legacy `/api/` views raise `BadRequest` on bad input; the data page's `order` is allow-listed and `limit` capped at 1000 (#474).
 **Why:** Each malformed request was a 500 that emailed ADMINS, burying the import-failure emails.
 **Rejected:** A decorator turning every ValueError/KeyError into 400 - it would also silence real bugs in the views.
+
+## 2026-09-29 - GBIF download can be scoped to a continent via env
+**What:** `GBIF_DOWNLOAD_CONTINENT` adds a `CONTINENT` equals clause to the default predicate, validated against GBIF's vocabulary at startup and ANDed with the other filters.
+**Why:** Continent-wide instances needed a custom `PREDICATE_BUILDER` in `local_settings.py`, which the env-only Docker deploy avoids.
+**Rejected:** `GBIF_REGION` (country-based, puts overseas territories on the wrong continent) and a multi-continent list (no instance needs it yet).
