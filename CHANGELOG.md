@@ -1,4 +1,4 @@
-# Unreleased
+# 2.8.0 (2026-09-29)
 
 - Fix: in dark mode, the sample command on the API tokens page and the
   "Stability and deprecation" box on the API documentation page were light
