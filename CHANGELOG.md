@@ -8,6 +8,10 @@
   database import; the email names the failed step (#481).
 - New: `GBIF_DOWNLOAD_MAX_WAIT_HOURS` (default 10) sets how long the import
   waits for GBIF to prepare the download before giving up.
+- Fix: malformed parameters on the map tiles and the legacy `/api/` endpoints
+  now return a 400 instead of a server error that emailed the admins (#474).
+  The legacy observations page now only sorts on `id`, `gbif_id`, `date`,
+  `species__name` or `source_dataset__name`, and caps `limit` at 1000.
 
 # 2.7.2 (2026-09-25)
 

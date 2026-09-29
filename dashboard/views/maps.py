@@ -1,5 +1,6 @@
 """Observations tile server + related endpoints"""
 
+from django.core.exceptions import BadRequest
 from django.db import connection, OperationalError, ProgrammingError
 from django.http import HttpResponse, JsonResponse, HttpRequest
 
@@ -33,6 +34,8 @@ _SUPPORTED_LANG_CODES = {code[:2] for code, _name in settings.LANGUAGES}
 _WEB_MERCATOR_HALF_WIDTH = 20037508.342789244
 # ST_AsMVTGeom's default buffer, as a fraction of the tile width (256 / 4096).
 _MVT_BUFFER_FRACTION = 256 / 4096
+# The highest zoom ST_TileEnvelope accepts.
+_MAX_TILE_ZOOM = 31
 
 # The tile envelope, grown by `tile_envelope_expand_meters` on each side. The
 # observation and area-part bounding-box tests below are what let PostgreSQL
@@ -295,10 +298,22 @@ def _build_filter_params(request: HttpRequest) -> dict:
     return params
 
 
+def _check_tile(zoom: int, x: int, y: int) -> None:
+    """Reject the tile coordinates ST_TileEnvelope would fail on, with a 400.
+
+    The zoom is bounded before anything computes 2**zoom: the URL's <int:zoom>
+    has no upper bound, and a huge value would hold the worker for minutes.
+    x and y cannot be negative, the <int:> converter only matches digits.
+    """
+    if zoom > _MAX_TILE_ZOOM or x >= 2**zoom or y >= 2**zoom:
+        raise BadRequest(f"Invalid tile {zoom}/{x}/{y}")
+
+
 def mvt_tiles_observations(
     request: HttpRequest, zoom: int, x: int, y: int
 ) -> HttpResponse:
     """Tile server, showing non-aggregated observations. Filters are honoured."""
+    _check_tile(zoom, x, y)
     lang = get_language() or "en"
     lang_code = lang[:2] if lang[:2] in _SUPPORTED_LANG_CODES else "en"
     vernacular_col = f"vernacular_name_{lang_code}"
@@ -340,6 +355,9 @@ def mvt_tiles_observations_hexagon_grid_aggregated(
     request: HttpRequest, zoom: int, x: int, y: int
 ) -> HttpResponse:
     """Tile server, showing observations aggregated by hexagon squares. Filters are honoured."""
+    _check_tile(zoom, x, y)
+    if zoom not in settings.ZOOM_TO_HEX_SIZE:
+        raise BadRequest(f"No hexagon grid at zoom {zoom}")
     hex_size = settings.ZOOM_TO_HEX_SIZE[zoom]
     # ST_HexagonGrid returns every hexagon touching the tile envelope, and this
     # tile owns their full count - the neighbouring tile renders the same
@@ -404,8 +422,11 @@ def observation_min_max_in_hex_grid_json(request: HttpRequest):
     This can be useful to dynamically color the grid according to the count
     """
     zoom = extract_int_request(request, "zoom")
-    if zoom is None:
-        return JsonResponse({"error": "zoom parameter is required"}, status=400)
+    if zoom not in settings.ZOOM_TO_HEX_SIZE:
+        return JsonResponse(
+            {"error": "zoom parameter is required, at a zoom with a hexagon grid"},
+            status=400,
+        )
 
     hex_size = settings.ZOOM_TO_HEX_SIZE[zoom]
     params = _build_filter_params(request)

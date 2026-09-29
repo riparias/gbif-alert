@@ -1,12 +1,11 @@
 """Helpers functions used by views"""
 
-import ast
 import datetime
 import logging
 from string import Template
 from typing import cast
-from urllib.parse import unquote
 
+from django.core.exceptions import BadRequest
 from django.db import connection
 from django.db.models import QuerySet
 from django.http import HttpRequest, JsonResponse, QueryDict
@@ -83,6 +82,12 @@ def _get_querydict_from_request(request: HttpRequest) -> QueryDict:
         return QueryDict(query_string=request.body)
 
 
+# The extract_*_request helpers below are where the legacy endpoints (map tiles,
+# /api/*) read their untrusted query params. A malformed value raises
+# BadRequest, which Django answers with a 400 logged as a warning; a plain
+# ValueError would become a 500 and email ADMINS once per bad request.
+
+
 def extract_str_request(request: HttpRequest, param_name: str) -> str | None:
     return _get_querydict_from_request(request).get(param_name, None)
 
@@ -93,7 +98,10 @@ def extract_int_array_request(request: HttpRequest, param_name: str) -> list[int
     Accepts both the one-param-per-id spelling and the compact one
     (`?speciesIds[]=1-3,10`) - see dashboard.id_lists.
     """
-    return parse_id_list(extract_array_request(request, param_name))
+    try:
+        return parse_id_list(extract_array_request(request, param_name))
+    except ValueError as e:
+        raise BadRequest(f"Invalid {param_name}: {e}") from e
 
 
 def extract_array_request(request: HttpRequest, param_name: str) -> list[str]:
@@ -110,8 +118,10 @@ def extract_int_request(request: HttpRequest, param_name: str) -> int | None:
     val = _get_querydict_from_request(request).get(param_name, None)
     if val == "" or val == "null" or val is None:
         return None
-    else:
+    try:
         return int(val)
+    except ValueError as e:
+        raise BadRequest(f"Invalid {param_name}: {val!r}") from e
 
 
 def extract_date_request(
@@ -124,24 +134,10 @@ def extract_date_request(
     val = _get_querydict_from_request(request).get(param_name, None)
 
     if val is not None and val != "" and val != "null":
-        return datetime.datetime.strptime(val, date_format).date()
-
-    return None
-
-
-def extract_dict_request(request: HttpRequest, param_name: str) -> dict | None:
-    """Returns a dict. The parameter is expected to be URL encoded via  urlencode() or similar
-
-    Edge cases:
-    If parameter not set: None
-    If not a dict but something else that can be interpreted by literal_eval (see Python doc): None
-    May raise ValueError, TypeError, SyntaxError, MemoryError and RecursionError depending on the malformed input.
-    """
-    val = extract_str_request(request, param_name)
-    if val is not None:
-        evaluated = ast.literal_eval(unquote(val))
-        if isinstance(evaluated, dict):
-            return evaluated
+        try:
+            return datetime.datetime.strptime(val, date_format).date()
+        except ValueError as e:
+            raise BadRequest(f"Invalid {param_name}: {val!r}") from e
 
     return None
 
