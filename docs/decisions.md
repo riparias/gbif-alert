@@ -426,3 +426,8 @@ expresses the ownership.
 **What:** `import_observations` emails the admins from `handle()` for a failure at any step, naming it; the GBIF download gives up after `GBIF_DOWNLOAD_MAX_WAIT_HOURS` (default 10).
 **Why:** Download/preflight/metadata failures sent no email, and the library's 12h wait expired at the 14:00 notification run.
 **Rejected:** A shorter default wait (downloads are routinely long), and detecting a killed import at the next run (deferred; the web-start self-heal already clears maintenance).
+
+## 2026-09-29 - Legacy endpoints answer malformed input with 400
+**What:** The request-parsing helpers, tile views and legacy `/api/` views raise `BadRequest` on bad input; the data page's `order` is allow-listed and `limit` capped at 1000 (#474).
+**Why:** Each malformed request was a 500 that emailed ADMINS, burying the import-failure emails.
+**Rejected:** A decorator turning every ValueError/KeyError into 400 - it would also silence real bugs in the views.

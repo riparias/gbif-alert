@@ -1,6 +1,8 @@
 """Public-facing API views"""
 from django.conf import settings
-from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.gdal import GDALException
+from django.contrib.gis.geos import GEOSException, GEOSGeometry
+from django.core.exceptions import BadRequest
 from django.core.paginator import Paginator
 from django.db.models import Count
 from django.http import JsonResponse, HttpRequest
@@ -15,6 +17,19 @@ from dashboard.views.helpers import (
     filtered_observations_from_request,
     extract_int_request,
 )
+
+# What `order` accepts on the data page, each optionally prefixed with "-": the
+# columns the pre-SPA observations table sorted on, plus the id default. An
+# allow-list, since order_by() would otherwise sort on any related field.
+_DATA_PAGE_ORDER_FIELDS = {
+    "id",
+    "pk",
+    "gbif_id",
+    "date",
+    "species__name",
+    "source_dataset__name",
+}
+_DATA_PAGE_MAX_LIMIT = 1000
 
 
 @deprecated_endpoint(successor="/api/v2/observations/counter/")
@@ -36,10 +51,13 @@ def filtered_observations_data_page_json(request: HttpRequest) -> JsonResponse:
 
     parameters:
     - filters: same format than other endpoints: getting observations, map tiles, ... (See `internal_api.py`'s docstring)
-    - order: optional, observations order (passed to QuerySet.order_by)
+    - order: optional, observations order: one of id, pk, gbif_id, date, species__name, source_dataset__name,
+      optionally prefixed with "-" for descending. Defaults to id.
     - mode: "normal" | "short". Defaults to normal. If short, only the most important fields are returned
-    - limit: number of observations per page
+    - limit: number of observations per page, 1 to 1000. Defaults to 50.
     - page_number: requested page number
+
+    An invalid parameter returns a 400.
 
     response example (normal mode):
 
@@ -93,18 +111,23 @@ def filtered_observations_data_page_json(request: HttpRequest) -> JsonResponse:
         - If no results are returned because of the filtering: totalResultsCount == 0 and results == []
     """
 
-    order = request.GET.get("order")
-    limit = extract_int_request(request, "limit")
-    mode = request.GET.get("mode", "normal")
-    if limit is None:
-        limit = 50
-    page_number = extract_int_request(request, "page_number")
-
-    observations = filtered_observations_from_request(request)
     # Always impose a deterministic order: paginating an unordered queryset can
     # return inconsistent pages (rows in arbitrary order). Default to ascending
     # id when the caller does not request a specific order.
-    observations = observations.order_by(order or "id")
+    order = request.GET.get("order") or "id"
+    if order.removeprefix("-") not in _DATA_PAGE_ORDER_FIELDS:
+        raise BadRequest(f"Invalid order: {order!r}")
+    limit = extract_int_request(request, "limit")
+    if limit is None:
+        limit = 50
+    if not 1 <= limit <= _DATA_PAGE_MAX_LIMIT:
+        raise BadRequest(f"Invalid limit: must be 1 to {_DATA_PAGE_MAX_LIMIT}")
+    mode = request.GET.get("mode", "normal")
+    if mode not in ("normal", "short"):
+        raise BadRequest(f"Invalid mode: {mode!r}")
+    page_number = extract_int_request(request, "page_number")
+
+    observations = filtered_observations_from_request(request).order_by(order)
 
     paginator = Paginator(observations, limit)
 
@@ -112,7 +135,7 @@ def filtered_observations_data_page_json(request: HttpRequest) -> JsonResponse:
 
     if mode == "normal":
         results = [obs.as_dict(for_user=request.user) for obs in page.object_list]
-    elif mode == "short":
+    else:
         results = [obs.as_short_dict() for obs in page.object_list]
 
     return JsonResponse(
@@ -158,10 +181,18 @@ def species_per_polygon_json(request: HttpRequest) -> JsonResponse:
         ...
     ]
     """
-    feature = GEOSGeometry(request.GET.get("p"), srid=4326)
+    p = request.GET.get("p")
+    if not p:
+        raise BadRequest("p parameter is required")
+    try:
+        # Unparseable text raises ValueError or GEOSException, coordinates
+        # outside EPSG:4326 raise GDALException on the transform.
+        feature = GEOSGeometry(p, srid=4326).transform(DATA_SRID, clone=True)
+    except (ValueError, GEOSException, GDALException) as e:
+        raise BadRequest(f"Invalid polygon: {e}") from e
 
     annotated_species = Species.objects.filter(
-        observation__location__within=feature.transform(DATA_SRID, clone=True)
+        observation__location__within=feature
     ).annotate(num_observations=Count("observation"))
 
     r = []
