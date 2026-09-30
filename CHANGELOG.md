@@ -1,4 +1,4 @@
-# Unreleased
+# 2.10.0 (2026-09-30)
 
 - New: `GBIF_DOWNLOAD_GEOMETRY` scopes the GBIF download to a polygon (WKT),
   without a custom `PREDICATE_BUILDER`. It combines with the country,
