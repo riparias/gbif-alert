@@ -42,6 +42,9 @@ POLYDRUSUS_KEY = 7972617
 # v2 match API and as they appear in a COL XR download's taxonKey columns.
 LIXUS_COL_KEY = "3VPFV"  # Lixus bardanae
 POLYDRUSUS_COL_KEY = "4L6VJ"  # Polydrusus planifrons
+# Higher-rank COL XR keys of Lixus bardanae, as in the sample archive
+LIXUS_GENUS_COL_KEY = "8HFK3"
+CURCULIONIDAE_COL_KEY = "8HBQ5"
 
 pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.sequential]
 
@@ -1202,6 +1205,75 @@ def test_row_with_unknown_species_still_aborts_with_species_message(test_data):
     with pytest.raises(CommandError) as exc:
         run_import_with_rows(rows)
     assert "species not found" in str(exc.value)
+
+
+# ---------------------------------------------------------------------------
+# A taxon monitored above species level (a genus, a family...) must match the
+# occurrences of its descendants. GBIF returns those with species-level keys in
+# taxonKey/acceptedTaxonKey/speciesKey, so only the row's higher-rank keys point
+# back at the monitored taxon.
+# ---------------------------------------------------------------------------
+
+
+def _unmonitored_species_row(**overrides):
+    """A Lixus occurrence identified to a species that is not itself monitored."""
+    defaults = dict(
+        taxon_key="UNMONITORED",
+        accepted_taxon_key="UNMONITORED",
+        species_key="UNMONITORED",
+        genus_key=LIXUS_GENUS_COL_KEY,
+        family_key=CURCULIONIDAE_COL_KEY,
+    )
+    defaults.update(overrides)
+    return _lixus_row(**defaults)
+
+
+def _imported_observation() -> Observation:
+    return Observation.objects.get(data_import=DataImport.objects.latest("id"))
+
+
+def test_genus_level_taxon_matches_an_occurrence_of_one_of_its_species(test_data):
+    genus = Species.objects.create(name="Lixus", gbif_col_taxon_key=LIXUS_GENUS_COL_KEY)
+
+    run_import_with_rows([_unmonitored_species_row()])
+
+    assert _imported_observation().species == genus
+
+
+def test_family_level_taxon_matches_an_occurrence_of_one_of_its_species(test_data):
+    family = Species.objects.create(
+        name="Curculionidae", gbif_col_taxon_key=CURCULIONIDAE_COL_KEY
+    )
+
+    run_import_with_rows([_unmonitored_species_row(genus_key="UNMONITORED-GENUS")])
+
+    assert _imported_observation().species == family
+
+
+def test_most_specific_monitored_taxon_wins(test_data):
+    """An observation has a single species, so when several monitored taxa
+    contain it, it goes to the lowest-ranked one."""
+    genus = Species.objects.create(name="Lixus", gbif_col_taxon_key=LIXUS_GENUS_COL_KEY)
+    Species.objects.create(
+        name="Curculionidae", gbif_col_taxon_key=CURCULIONIDAE_COL_KEY
+    )
+    rows = [
+        # Lixus bardanae is monitored in its own right: species beats genus.
+        _lixus_row(genus_key=LIXUS_GENUS_COL_KEY, family_key=CURCULIONIDAE_COL_KEY),
+        # Another Lixus species: genus beats family.
+        _unmonitored_species_row(gbif_id=9002, occurrence_id="rank-test-2"),
+    ]
+
+    run_import_with_rows(rows)
+
+    di = DataImport.objects.latest("id")
+    species_by_occurrence = {
+        o.occurrence_id: o.species for o in Observation.objects.filter(data_import=di)
+    }
+    assert species_by_occurrence == {
+        "bor-test-1": Species.objects.get(gbif_col_taxon_key=LIXUS_COL_KEY),
+        "rank-test-2": genus,
+    }
 
 
 def test_unrelated_key_error_in_row_builder_is_not_reported_as_missing_species(

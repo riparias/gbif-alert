@@ -436,3 +436,8 @@ expresses the ownership.
 **What:** `GBIF_DOWNLOAD_CONTINENT` adds a `CONTINENT` equals clause to the default predicate, validated against GBIF's vocabulary at startup and ANDed with the other filters.
 **Why:** Continent-wide instances needed a custom `PREDICATE_BUILDER` in `local_settings.py`, which the env-only Docker deploy avoids.
 **Rejected:** `GBIF_REGION` (country-based, puts overseas territories on the wrong continent) and a multi-continent list (no instance needs it yet).
+
+## 2026-09-30 - Import matches taxa monitored above species level
+**What:** `species_for_raw` now walks the row's keys from `taxonKey` up to `kingdomKey` and returns the first monitored taxon; the most specific match wins.
+**Why:** An instance monitoring a genus had its whole import aborted by the first occurrence identified to a species of that genus.
+**Rejected:** Skipping unmatched rows (hides a predicate/species-table mismatch) and attaching an occurrence to every containing taxon (an observation has one species FK).
