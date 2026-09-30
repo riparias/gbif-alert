@@ -1,3 +1,10 @@
+# Unreleased
+
+- New: `GBIF_DOWNLOAD_GEOMETRY` scopes the GBIF download to a polygon (WKT),
+  without a custom `PREDICATE_BUILDER`. It combines with the country,
+  continent, year and bounding-box filters. A malformed or clockwise polygon
+  stops the deploy instead of producing a wrong download.
+
 # 2.9.0 (2026-09-30)
 
 - Fix: the import no longer fails when a monitored taxon is a genus, a family

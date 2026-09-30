@@ -80,6 +80,7 @@ _ENV_VARS_READ_BY_SETTINGS = (
     "GBIF_DOWNLOAD_PASSWORD",
     "GBIF_DOWNLOAD_COUNTRY",
     "GBIF_DOWNLOAD_CONTINENT",
+    "GBIF_DOWNLOAD_GEOMETRY",
     "GBIF_DOWNLOAD_YEAR_MIN",
     "GBIF_DOWNLOAD_LAT_MIN",
     "GBIF_DOWNLOAD_LAT_MAX",
@@ -674,6 +675,34 @@ def test_unknown_continent_raises(clean_env):
     with pytest.raises(ImproperlyConfigured) as exc_info:
         _import_settings()
     assert "EUROPE" in str(exc_info.value)
+
+
+# ---------------------------------------------------------------------------
+# GBIF download geometry (GBIF_DOWNLOAD_GEOMETRY)
+# ---------------------------------------------------------------------------
+
+
+def _within_clauses(clauses):
+    return [c for c in clauses if c["type"] == "within"]
+
+
+def test_no_geometry_env_produces_no_within_clause(clean_env):
+    _minimal_env(clean_env)
+    settings = _import_settings()
+    assert _within_clauses(_predicate_clauses(settings)) == []
+
+
+def test_geometry_adds_within_clause(clean_env):
+    """The WKT is passed through verbatim (surrounding whitespace aside), and
+    ANDs with the other filters rather than replacing them."""
+    _minimal_env(clean_env)
+    wkt = "POLYGON ((4 50, 5 50, 5 51, 4 51, 4 50))"
+    clean_env.setenv("GBIF_DOWNLOAD_GEOMETRY", f" {wkt} ")
+    clean_env.setenv("GBIF_DOWNLOAD_YEAR_MIN", "2000")
+    settings = _import_settings()
+    clauses = _predicate_clauses(settings)
+    assert _within_clauses(clauses) == [{"type": "within", "geometry": wkt}]
+    assert "YEAR" in [c.get("key") for c in clauses]
 
 
 # ---------------------------------------------------------------------------
