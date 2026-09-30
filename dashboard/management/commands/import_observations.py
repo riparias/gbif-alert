@@ -11,6 +11,7 @@ import traceback
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
+import requests
 from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core.mail import mail_admins
@@ -541,6 +542,28 @@ def _log_with_time(stdout, message: str) -> None:
         stdout.flush()
 
 
+def _is_url(source: str) -> bool:
+    return source.startswith(("http://", "https://"))
+
+
+def _download_dwca(url: str, output_path: str) -> None:
+    """Stream a remote DwC-A to output_path.
+
+    Streamed in chunks rather than read in one go: an archive can be several
+    GB, far more than the memory the import is otherwise careful to spare.
+    """
+    try:
+        # The timeout applies to each socket operation, not to the whole
+        # transfer: a large archive is fine, a stalled server is not.
+        with requests.get(url, stream=True, timeout=60) as response:
+            response.raise_for_status()
+            with open(output_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=1024 * 1024):
+                    f.write(chunk)
+    except requests.RequestException as e:
+        raise CommandError(f"Could not download the DwC-A from {url}: {e}") from e
+
+
 def _batch_insert_observations(
     observations_to_insert: list[Observation],
     stdout=None,
@@ -895,20 +918,22 @@ class Command(BaseCommand):
         "Import new observations and delete previous ones. "
         ""
         "By default, a new download is generated at GBIF. "
-        "The --source-dwca option can be used to provide an existing local file instead."
+        "The --source-dwca option can be used to provide an existing archive instead "
+        "(a local file, or an http(s) URL)."
     )
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
             "--source-dwca",
-            help="Use an existing dwca file as source (otherwise a new GBIF download will be generated and downloaded)",
+            help="Use an existing dwca file as source: a local path or an http(s) URL (otherwise a new GBIF download will be generated and downloaded)",
         )
 
     def handle(self, *args, **options) -> None:
         # An operator typo in a manual run, reported straight to the terminal:
         # not worth an admin email.
-        if options["source_dwca"] and not os.path.isfile(options["source_dwca"]):
-            raise CommandError(f"DwC-A file not found: {options['source_dwca']}")
+        source_dwca = options["source_dwca"]
+        if source_dwca and not _is_url(source_dwca) and not os.path.isfile(source_dwca):
+            raise CommandError(f"DwC-A file not found: {source_dwca}")
 
         # The step currently running, named in the error email. _import()
         # advances it as it goes.
@@ -971,10 +996,24 @@ class Command(BaseCommand):
         # Everything from here to the end of the import runs under one
         # try/finally: an archive the command downloaded itself is a temp file
         # and must be deleted whether the download, the metadata read or the
-        # import fails. A file passed with --source-dwca belongs to the
-        # operator and is never touched (tmp_source_path stays None).
+        # import fails - that includes an archive fetched from a --source-dwca
+        # URL. A local file passed with --source-dwca belongs to the operator
+        # and is never touched (tmp_source_path stays None).
         try:
-            if options["source_dwca"]:
+            if options["source_dwca"] and _is_url(options["source_dwca"]):
+                _log_with_time(
+                    self.stdout,
+                    f"Downloading the DWCA file from {options['source_dwca']}",
+                )
+                self._step = "DwC-A download"
+
+                tmp_file = tempfile.NamedTemporaryFile(delete=False)
+                source_data_path = tmp_file.name
+                tmp_source_path = source_data_path
+                tmp_file.close()
+                _download_dwca(options["source_dwca"], source_data_path)
+                _log_with_time(self.stdout, "DWCA file downloaded")
+            elif options["source_dwca"]:
                 _log_with_time(self.stdout, "Using a user-provided DWCA file")
                 source_data_path = options["source_dwca"]
             else:
@@ -1045,7 +1084,9 @@ class Command(BaseCommand):
                 gbif_download_id = extract_gbif_download_id_from_dwca(dwca)
             _log_with_time(
                 self.stdout,
-                f"GBIF download id read from DWCA metadata: {gbif_download_id}",
+                f"GBIF download id read from DWCA metadata: {gbif_download_id} "
+                f"(page: https://www.gbif.org/occurrence/download/{gbif_download_id} - "
+                f"archive: https://api.gbif.org/v1/occurrence/download/request/{gbif_download_id}.zip)",
             )
 
             # 3. Build a fresh-generator factory that lazily streams rows

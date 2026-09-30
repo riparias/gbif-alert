@@ -8,6 +8,7 @@ test_import_observations_logic.py and are driven by in-memory
 RawObservationRow fixtures - they don't need the zip.
 """
 
+import io
 import os
 import shutil
 from pathlib import Path
@@ -443,5 +444,43 @@ def test_missing_user_provided_dwca_rejected(test_data, tmp_path) -> None:
 
     with pytest.raises(CommandError, match="DwC-A file not found"):
         call_command("import_observations", source_dwca=str(tmp_path / "nope.zip"))
+
+    assert DataImport.objects.count() == imports_before
+
+
+def test_source_dwca_url(test_data) -> None:
+    """--source-dwca also takes a URL: the archive is fetched, imported, and
+    the temporary copy deleted. The GBIF URLs of the download are logged."""
+    from dashboard.management.commands import import_observations as mod
+
+    url = "https://example.org/gbif_download.zip"
+    out = io.StringIO()
+    with open(SAMPLE_DATA_PATH / "gbif_download.zip", "rb") as archive:
+        with requests_mock_module.Mocker() as m:
+            m.get(url, body=archive)
+            with mock.patch.object(
+                mod, "_download_dwca", wraps=mod._download_dwca
+            ) as download:
+                call_command("import_observations", source_dwca=url, stdout=out)
+
+    assert Observation.objects.count() == 7
+    assert not os.path.exists(download.call_args.args[1])
+    logs = out.getvalue()
+    assert "https://www.gbif.org/occurrence/download/0076720-210914110416597" in logs
+    assert (
+        "https://api.gbif.org/v1/occurrence/download/request/0076720-210914110416597.zip"
+        in logs
+    )
+
+
+def test_source_dwca_url_download_fails(test_data) -> None:
+    """A --source-dwca URL that cannot be fetched fails before any import"""
+    imports_before = DataImport.objects.count()
+    url = "https://example.org/nope.zip"
+
+    with requests_mock_module.Mocker() as m:
+        m.get(url, status_code=404)
+        with pytest.raises(CommandError, match="Could not download the DwC-A"):
+            call_command("import_observations", source_dwca=url)
 
     assert DataImport.objects.count() == imports_before

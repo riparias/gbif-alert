@@ -441,3 +441,8 @@ expresses the ownership.
 **What:** `species_for_raw` now walks the row's keys from `taxonKey` up to `kingdomKey` and returns the first monitored taxon; the most specific match wins.
 **Why:** An instance monitoring a genus had its whole import aborted by the first occurrence identified to a species of that genus.
 **Rejected:** Skipping unmatched rows (hides a predicate/species-table mismatch) and attaching an occurrence to every containing taxon (an observation has one species FK).
+
+## 2026-09-30 - --source-dwca accepts a URL; GBIF download URLs are logged
+**What:** `--source-dwca` takes an `http(s)://` URL, streamed to a temp file that is deleted like a GBIF download; the log line carrying the download id now gives its page and archive URLs.
+**Why:** Re-importing a known GBIF download on another instance meant fetching the archive by hand first, and the log only gave a bare id.
+**Rejected:** Logging the URL at trigger time (the download library does not return the id, so it would mean parsing its log messages).
