@@ -1,3 +1,10 @@
+# Unreleased
+
+- Fix: the import no longer fails when a monitored taxon is a genus, a family
+  or any higher rank. Occurrences identified to one of its species are now
+  attached to that taxon. When a species and its genus are both monitored, the
+  occurrence goes to the species.
+
 # 2.8.0 (2026-09-29)
 
 - Fix: in dark mode, the sample command on the API tokens page and the

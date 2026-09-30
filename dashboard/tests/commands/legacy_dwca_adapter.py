@@ -17,7 +17,7 @@ from dashboard.management.commands.import_observations import RawObservationRow
 
 _GBIF = "http://rs.gbif.org/terms/1.0/"
 
-# The 21 terms read by the import, in RawObservationRow field order.
+# The 27 terms read by the import, in RawObservationRow field order.
 LEGACY_TERMS = [
     _GBIF + "gbifID",
     qn("occurrenceID"),
@@ -32,6 +32,12 @@ LEGACY_TERMS = [
     _GBIF + "taxonKey",
     _GBIF + "acceptedTaxonKey",
     _GBIF + "speciesKey",
+    _GBIF + "genusKey",
+    _GBIF + "familyKey",
+    _GBIF + "orderKey",
+    _GBIF + "classKey",
+    _GBIF + "phylumKey",
+    _GBIF + "kingdomKey",
     qn("basisOfRecord"),
     qn("individualCount"),
     qn("coordinateUncertaintyInMeters"),
@@ -77,6 +83,12 @@ def legacy_dwca_row_to_raw(row: CoreRow) -> RawObservationRow:
         taxon_key=_get_string_data(row, field_name=_GBIF + "taxonKey"),
         accepted_taxon_key=_get_string_data(row, field_name=_GBIF + "acceptedTaxonKey"),
         species_key=_get_string_data(row, field_name=_GBIF + "speciesKey"),
+        genus_key=_get_string_data(row, field_name=_GBIF + "genusKey"),
+        family_key=_get_string_data(row, field_name=_GBIF + "familyKey"),
+        order_key=_get_string_data(row, field_name=_GBIF + "orderKey"),
+        class_key=_get_string_data(row, field_name=_GBIF + "classKey"),
+        phylum_key=_get_string_data(row, field_name=_GBIF + "phylumKey"),
+        kingdom_key=_get_string_data(row, field_name=_GBIF + "kingdomKey"),
         basis_of_record=_get_string_data(row, field_name=qn("basisOfRecord")),
         individual_count=_get_int_or_none(row, qn("individualCount")),
         coordinate_uncertainty_in_meters=_get_float_or_none(

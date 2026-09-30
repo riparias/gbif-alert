@@ -63,6 +63,12 @@ _IMPORT_TERMS = [
     _GBIF + "taxonKey",
     _GBIF + "acceptedTaxonKey",
     _GBIF + "speciesKey",
+    _GBIF + "genusKey",
+    _GBIF + "familyKey",
+    _GBIF + "orderKey",
+    _GBIF + "classKey",
+    _GBIF + "phylumKey",
+    _GBIF + "kingdomKey",
     qn("basisOfRecord"),
     qn("individualCount"),
     qn("coordinateUncertaintyInMeters"),
@@ -74,7 +80,7 @@ _IMPORT_TERMS = [
 ]
 
 # The discovery pass only ever needed these three. Requesting three terms
-# instead of twenty-one, and skipping the RawObservationRow construction
+# instead of twenty-seven, and skipping the RawObservationRow construction
 # entirely, makes pass 1 substantially cheaper on a multi-million-row archive.
 _DISCOVERY_TERMS = [
     _GBIF + "datasetKey",
@@ -118,6 +124,12 @@ class RawObservationRow:
     taxon_key: str
     accepted_taxon_key: str
     species_key: str
+    genus_key: str
+    family_key: str
+    order_key: str
+    class_key: str
+    phylum_key: str
+    kingdom_key: str
     basis_of_record: str
     individual_count: int | None
     coordinate_uncertainty_in_meters: float | None
@@ -163,6 +175,12 @@ def _raw_from_values(values: tuple[str, ...]) -> RawObservationRow:
         taxon_key,
         accepted_taxon_key,
         species_key,
+        genus_key,
+        family_key,
+        order_key,
+        class_key,
+        phylum_key,
+        kingdom_key,
         basis_of_record,
         individual_count,
         coordinate_uncertainty_in_meters,
@@ -187,6 +205,12 @@ def _raw_from_values(values: tuple[str, ...]) -> RawObservationRow:
         taxon_key=taxon_key,
         accepted_taxon_key=accepted_taxon_key,
         species_key=species_key,
+        genus_key=genus_key,
+        family_key=family_key,
+        order_key=order_key,
+        class_key=class_key,
+        phylum_key=phylum_key,
+        kingdom_key=kingdom_key,
         basis_of_record=basis_of_record,
         individual_count=_int_or_none(individual_count),
         coordinate_uncertainty_in_meters=_float_or_none(
@@ -255,21 +279,38 @@ def _chunked(
         yield chunk
 
 
+# RawObservationRow fields holding a taxon key, from most to least specific.
+# The order decides which monitored taxon an occurrence goes to when several
+# contain it (a species and its genus, say): the most specific one wins.
+# Ranks GBIF gives no key column for (tribe, subfamily...) cannot be matched.
+_TAXON_KEY_FIELDS = (
+    "taxon_key",
+    "accepted_taxon_key",
+    "species_key",
+    "genus_key",
+    "family_key",
+    "order_key",
+    "class_key",
+    "phylum_key",
+    "kingdom_key",
+)
+
+
 def species_for_raw(
     raw: RawObservationRow, hash_species: dict[str, Species]
 ) -> Species:
     """Look up a Species from a RawObservationRow.
 
-    Tries taxon_key first, falls back to accepted_taxon_key, then species_key.
+    Tries the row's keys from most to least specific (see _TAXON_KEY_FIELDS) and
+    returns the first monitored taxon found, so a taxon monitored at genus level
+    or above also gets the occurrences of its descendants.
     Raises KeyError if none match.
     """
-    try:
-        return hash_species[raw.taxon_key]
-    except KeyError:
-        try:
-            return hash_species[raw.accepted_taxon_key]
-        except KeyError:
-            return hash_species[raw.species_key]
+    for field in _TAXON_KEY_FIELDS:
+        species = hash_species.get(getattr(raw, field))
+        if species is not None:
+            return species
+    raise KeyError(raw.taxon_key)
 
 
 def discover_datasets_and_basis_of_record(
@@ -281,7 +322,7 @@ def discover_datasets_and_basis_of_record(
     Each element is a (dataset_key, dataset_name, basis_of_record) triple -
     the only three fields this pass ever read. Taking a narrow triple rather
     than a full RawObservationRow lets the DwCA adapter request three terms
-    instead of twenty-one.
+    instead of twenty-seven.
 
     Memory is O(distinct datasets + distinct BoR values), never O(rows),
     so this is safe for multi-million-row imports.
