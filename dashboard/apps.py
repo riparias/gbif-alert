@@ -6,10 +6,11 @@ class DashboardConfig(AppConfig):
     name = "dashboard"
 
     def ready(self):
-        # Imported here, not at module level: the check imports models, which
+        # Imported here, not at module level: the checks import models, which
         # cannot be loaded before the app registry is ready.
         from django.core.checks import register
 
-        from dashboard.checks import check_areas_have_parts
+        from dashboard.checks import check_areas_have_parts, check_download_geometry
 
         register(check_areas_have_parts)
+        register(check_download_geometry)

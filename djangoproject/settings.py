@@ -329,6 +329,15 @@ def _continent_predicates() -> list[dict]:
 _GBIF_CONTINENT_PREDICATES = _continent_predicates()
 
 
+# Optional WKT (multi)polygon scoping the download (GBIF `within` predicate).
+# Only read here: unlike the bounding box and continent above, it is validated
+# by the `check_download_geometry` system check (dashboard/checks.py). That
+# needs GEOS, and loading GEOS from this module would read GEOS_LIBRARY_PATH
+# before local_settings.py (imported at the end) had a chance to set it.
+# The check runs with `migrate`, so a bad polygon still fails the deploy.
+GBIF_DOWNLOAD_GEOMETRY = os.environ.get("GBIF_DOWNLOAD_GEOMETRY", "").strip()
+
+
 # COL XR is the Catalogue of Life Extended Release checklist that superseded the
 # frozen GBIF backbone. Downloads must reference it so occurrences are
 # interpreted against the current taxonomy. Overridable via env for instances
@@ -352,8 +361,9 @@ def _default_predicate_builder(species_list):
     """Default GBIF download predicate builder.
 
     Builds a predicate from `GBIF_DOWNLOAD_COUNTRY`, `GBIF_DOWNLOAD_CONTINENT`,
-    `GBIF_DOWNLOAD_YEAR_MIN`, and an optional bounding box
-    (`GBIF_DOWNLOAD_{LAT,LON}_{MIN,MAX}`), all ANDed together.
+    `GBIF_DOWNLOAD_YEAR_MIN`, an optional bounding box
+    (`GBIF_DOWNLOAD_{LAT,LON}_{MIN,MAX}`) and an optional polygon
+    (`GBIF_DOWNLOAD_GEOMETRY`), all ANDed together.
     Operators with more complex predicate needs override this in
     `local_settings.py` by setting `GBIF_ALERT["GBIF_DOWNLOAD_CONFIG"]["PREDICATE_BUILDER"]`.
     """
@@ -374,6 +384,8 @@ def _default_predicate_builder(species_list):
         )
     predicates.extend(_GBIF_CONTINENT_PREDICATES)
     predicates.extend(_GBIF_BBOX_PREDICATES)
+    if GBIF_DOWNLOAD_GEOMETRY:
+        predicates.append({"type": "within", "geometry": GBIF_DOWNLOAD_GEOMETRY})
     return {
         "predicate": {"type": "and", "predicates": predicates},
         "checklistKey": GBIF_COL_XR_CHECKLIST_KEY,

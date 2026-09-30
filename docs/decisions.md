@@ -446,3 +446,8 @@ expresses the ownership.
 **What:** `--source-dwca` takes an `http(s)://` URL, streamed to a temp file that is deleted like a GBIF download; the log line carrying the download id now gives its page and archive URLs.
 **Why:** Re-importing a known GBIF download on another instance meant fetching the archive by hand first, and the log only gave a bare id.
 **Rejected:** Logging the URL at trigger time (the download library does not return the id, so it would mean parsing its log messages).
+
+## 2026-09-30 - Scope the GBIF download to a polygon via GBIF_DOWNLOAD_GEOMETRY
+**What:** `GBIF_DOWNLOAD_GEOMETRY` (WKT) adds a `within` clause to the default predicate; a system check rejects malformed, invalid or clockwise polygons.
+**Why:** An instance scoped to an arbitrary area (land plus EEZ) needed a custom `PREDICATE_BUILDER`, which on Dokploy means a per-instance mount in the shared compose file.
+**Rejected:** A file path or URL variable (same mount, or a network dependency) and validating in `settings.py` (would load GEOS before `local_settings.py` can set its library path).
