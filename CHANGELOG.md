@@ -4,6 +4,10 @@
   or any higher rank. Occurrences identified to one of its species are now
   attached to that taxon. When a species and its genus are both monitored, the
   occurrence goes to the species.
+- Import: `--source-dwca` now also accepts an `http(s)://` URL, not only a
+  local file. The archive is downloaded, imported, then deleted.
+- Import: the log now shows the URLs of the GBIF download (its page and the
+  archive itself), so the same download can be inspected or re-imported.
 
 # 2.8.0 (2026-09-29)
 
