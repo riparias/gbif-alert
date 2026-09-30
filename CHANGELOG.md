@@ -1,4 +1,4 @@
-# Unreleased
+# 2.9.0 (2026-09-30)
 
 - Fix: the import no longer fails when a monitored taxon is a genus, a family
   or any higher rank. Occurrences identified to one of its species are now
