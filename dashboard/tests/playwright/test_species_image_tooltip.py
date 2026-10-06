@@ -1,6 +1,4 @@
 import datetime
-import struct
-import zlib
 
 import pytest
 from django.contrib.gis.geos import Point
@@ -14,36 +12,11 @@ from dashboard.models import (
     Observation,
     Species,
 )
-
-
-def _solid_png(width: int, height: int, rgb=(60, 140, 60)) -> bytes:
-    """Build a valid solid-color RGB PNG of the given size (no Pillow needed).
-
-    A genuinely wide image is required to exercise the tooltip's overflow
-    handling - a 1x1 stub would never reach the CSS size limits.
-    """
-
-    def chunk(typ: bytes, data: bytes) -> bytes:
-        body = typ + data
-        return (
-            struct.pack(">I", len(data))
-            + body
-            + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
-        )
-
-    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
-    row = b"\x00" + bytes(rgb) * width
-    idat = zlib.compress(row * height)
-    return (
-        b"\x89PNG\r\n\x1a\n"
-        + chunk(b"IHDR", ihdr)
-        + chunk(b"IDAT", idat)
-        + chunk(b"IEND", b"")
-    )
+from dashboard.tests.playwright.helpers import solid_png
 
 
 # A wide image so the tooltip image is rendered at a real, non-trivial size.
-_WIDE_PNG = _solid_png(400, 260)
+_WIDE_PNG = solid_png(400, 260)
 
 
 @pytest.mark.django_db(transaction=True)
@@ -88,6 +61,9 @@ def test_species_tooltip_shows_image(page: Page, live_server):
     # PrimeVue renders the tooltip with our injected <img>.
     img = page.locator('.p-tooltip img[src="https://example.org/fox.jpg"]')
     expect(img).to_be_visible()
+    # The observation has no photo of its own: say the image is generic.
+    expect(page.locator(".p-tooltip")).to_contain_text("Generic image of this species")
+    expect(name.locator(".pi-camera")).to_have_count(0)
 
     # Regression: the image must stay inside the tooltip's rounded box (it used
     # to overflow because the image was wider than PrimeVue's tooltip box).

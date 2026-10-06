@@ -10,9 +10,11 @@ import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
 import { getNavConfig } from "../utils/navConfig";
 import { pickVernacular } from "../utils/vernacular";
+import { licenseLabel } from "../utils/license";
 import { useDisplayLabels } from "../composables/useDisplayLabels";
 
 type ObservationDetail = components["schemas"]["ObservationDetailOut"];
+type ObservationImage = components["schemas"]["ObservationImageOut"];
 type Comment = components["schemas"]["CommentOut"];
 
 const props = defineProps<{ stableId: string }>();
@@ -32,6 +34,31 @@ const commentError = ref<string | null>(null);
 
 // Mark-unseen
 const markingUnseen = ref(false);
+
+// Photos. Camera-trap observations carry hundreds of frames: show the first
+// ones and link to GBIF for the rest. A thumbnail GBIF's cache cannot serve
+// (e.g. xeno-canto sonograms) is dropped rather than shown broken.
+const MAX_PHOTOS = 12;
+const failedThumbnails = ref(new Set<string>());
+const shownImages = computed(() =>
+    (obs.value?.images ?? [])
+        .filter((image) => !failedThumbnails.value.has(image.thumbnailUrl))
+        .slice(0, MAX_PHOTOS),
+);
+
+function dropThumbnail(image: ObservationImage) {
+    failedThumbnails.value = new Set(failedThumbnails.value).add(image.thumbnailUrl);
+}
+
+// dcterms:references is meant to be the source page, but some publishers put a
+// credit there (Pl@ntNet): only link to it when it is a URL.
+function photoLink(image: ObservationImage): string {
+    return image.sourceUrl.startsWith("http") ? image.sourceUrl : image.originalUrl;
+}
+
+function photoCredit(image: ObservationImage): string {
+    return [image.attribution, licenseLabel(image.license)].filter(Boolean).join(" \u00b7 ");
+}
 
 const isAuthenticated: boolean = getNavConfig().user.isAuthenticated;
 
@@ -55,6 +82,7 @@ const initialDataImportLabel = computed(() => {
 async function load() {
     errorMessage.value = null;
     obs.value = null;
+    failedThumbnails.value = new Set();
     commentError.value = null;
     loading.value = true;
     try {
@@ -269,6 +297,40 @@ onMounted(load);
                     </template>
                 </Card>
 
+                <!-- Photos of this observation (not the generic species image) -->
+                <Card v-if="shownImages.length" class="observation-photos">
+                    <template #title
+                        ><i class="pi pi-camera" /> {{ t("message.observationPhotos") }}</template
+                    >
+                    <template #content>
+                        <ul class="photo-grid">
+                            <li v-for="(image, index) in shownImages" :key="index">
+                                <a :href="photoLink(image)" target="_blank" rel="noopener">
+                                    <img
+                                        :src="image.thumbnailUrl"
+                                        :alt="t('message.observationPhoto')"
+                                        @error="dropThumbnail(image)"
+                                    />
+                                </a>
+                                <span
+                                    v-if="photoCredit(image)"
+                                    class="photo-credit"
+                                    :title="photoCredit(image)"
+                                    >{{ photoCredit(image) }}</span
+                                >
+                            </li>
+                        </ul>
+                        <a
+                            v-if="obs.images.length > MAX_PHOTOS"
+                            :href="gbifOccurrenceUrl(obs.gbifId)"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            {{ t("message.viewAllPhotosOnGbif", { count: obs.images.length }) }}
+                        </a>
+                    </template>
+                </Card>
+
                 <!-- Map + location details -->
                 <Card class="detail-map-card">
                     <template #title
@@ -428,6 +490,35 @@ onMounted(load);
 
 .location-dl {
     margin-top: 0.75rem;
+}
+
+.photo-grid {
+    list-style: none;
+    margin: 0 0 0.5rem;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
+}
+
+.photo-grid img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 4px;
+    /* GBIF's cache can take seconds on a first request: show a box meanwhile */
+    background: var(--p-content-hover-background);
+}
+
+.photo-credit {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--p-text-muted-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .no-location {

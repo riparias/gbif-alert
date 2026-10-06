@@ -30,6 +30,7 @@ import { useBreakpoint } from "../composables/useBreakpoint";
 import { useLatestRequest } from "../composables/useLatestRequest";
 import type { components } from "../types/api";
 import SpeciesName from "./SpeciesName.vue";
+import ObservationPhotoIcon from "./ObservationPhotoIcon.vue";
 import { storeToRefs } from "pinia";
 import { usePreferencesStore } from "../stores/preferences";
 import { useUserStore } from "../stores/user";
@@ -89,6 +90,7 @@ const COLUMN_DEFS = [
     { key: "dataset", sortField: "datasetName", defaultVisible: true },
     { key: "municipality", sortField: "municipality", defaultVisible: true },
     { key: "verified", sortField: "verified", defaultVisible: true },
+    { key: "photos", sortField: null, defaultVisible: true },
     { key: "basisOfRecord", sortField: null, defaultVisible: true },
     { key: "gbifId", sortField: null, defaultVisible: false },
     { key: "seen", sortField: null, defaultVisible: true },
@@ -495,6 +497,22 @@ onMounted(async () => {
                                 </template>
                             </Column>
                             <Column
+                                v-if="visibleColumns.has('photos')"
+                                header-class="col-photos"
+                                body-class="col-photos"
+                            >
+                                <template #header>
+                                    <i
+                                        class="pi pi-camera"
+                                        role="img"
+                                        :aria-label="t('message.photos')"
+                                    />
+                                </template>
+                                <template #body="{ data }">
+                                    <ObservationPhotoIcon :image="data.firstImage" />
+                                </template>
+                            </Column>
+                            <Column
                                 v-if="visibleColumns.has('basisOfRecord')"
                                 :header="t('message.basisOfRecord')"
                             >
@@ -563,6 +581,11 @@ onMounted(async () => {
 .observations-table :deep(th.col-dataset),
 .observations-table :deep(td.col-dataset) {
     width: 180px;
+}
+.observations-table :deep(th.col-photos),
+.observations-table :deep(td.col-photos) {
+    width: 3rem;
+    text-align: center;
 }
 .gbif-link {
     color: var(--p-primary-color);

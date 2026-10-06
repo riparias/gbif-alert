@@ -3,6 +3,7 @@ import { useI18n } from "vue-i18n";
 import Paginator, { type PageState } from "primevue/paginator";
 import Select from "primevue/select";
 import SpeciesName from "./SpeciesName.vue";
+import ObservationPhotoIcon from "./ObservationPhotoIcon.vue";
 import { pickVernacular } from "../utils/vernacular";
 import { useDisplayLabels } from "../composables/useDisplayLabels";
 import type { components } from "../types/api";
@@ -120,6 +121,7 @@ function onSortChange(event: { value: string }): void {
                         >
                             {{ obs.verified ? t("message.verified") : t("message.unverified") }}
                         </span>
+                        <ObservationPhotoIcon :image="obs.firstImage" />
                         <span class="obs-card-dataset">{{
                             basisOfRecordName(obs.basisOfRecordId) || obs.datasetName
                         }}</span>
