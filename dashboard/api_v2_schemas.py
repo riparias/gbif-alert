@@ -198,6 +198,21 @@ class FiltersQuery(Schema):
         return parse_id_list(str(item) for item in value)
 
 
+class ObservationImageOut(Schema):
+    """A photo of this observation, as published to GBIF.
+
+    Not to be confused with the generic species image (`imageUrl` on species).
+    """
+
+    thumbnailUrl: str = Field(
+        description="200px-wide JPEG served by GBIF's image cache."
+    )
+    originalUrl: str = Field(description="The full-size image file, as published.")
+    sourceUrl: str  # page to credit/link back to; empty when not provided
+    attribution: str  # empty when not provided
+    license: str  # empty when not provided
+
+
 class ObservationOut(Schema):
     id: int
     stableId: str
@@ -222,6 +237,9 @@ class ObservationOut(Schema):
     basisOfRecordId: int
     basisOfRecordName: str
     viewedByCurrentUser: bool | None = None
+    firstImage: ObservationImageOut | None = Field(
+        description="The observation's first photo, or null when it has none."
+    )
 
 
 class ObservationsPageOut(Schema):
@@ -341,6 +359,7 @@ class ObservationDetailOut(Schema):
         )
     )
     comments: list[CommentOut]
+    images: list[ObservationImageOut]
 
 
 class AlertNotificationFrequencyOut(Schema):

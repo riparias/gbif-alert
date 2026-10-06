@@ -87,6 +87,7 @@ from dashboard.models import (
     Dataset,
     Observation,
     ObservationComment,
+    ObservationImage,
     ObservationUnseen,
     Species,
     User,
@@ -190,6 +191,16 @@ def _vernacular_names(species: Species) -> dict[str, str]:
         "vernacularNameEn": species.vernacular_name_en or "",  # type: ignore[attr-defined]
         "vernacularNameNl": species.vernacular_name_nl or "",  # type: ignore[attr-defined]
         "vernacularNameFr": species.vernacular_name_fr or "",  # type: ignore[attr-defined]
+    }
+
+
+def _image_to_out(image: ObservationImage) -> dict[str, str]:
+    return {
+        "thumbnailUrl": image.gbif_thumbnail_url,
+        "originalUrl": image.identifier,
+        "sourceUrl": image.references,
+        "attribution": image.attribution,
+        "license": image.license,
     }
 
 
@@ -824,6 +835,20 @@ def observations_list(
     else:
         unseen_ids = set()
 
+    # First image of each observation on the page, in one extra query. DISTINCT
+    # ON keeps it to one row per observation: a camera-trap observation can
+    # carry hundreds of frames.
+    first_image_by_obs_id: dict[int, ObservationImage] = {
+        image.observation_id: image
+        for image in ObservationImage.objects.filter(observation__in=obs_page)
+        .select_related("observation")
+        .only(
+            "identifier", "references", "license", "attribution", "observation__gbif_id"
+        )
+        .order_by("observation_id", "pk")
+        .distinct("observation_id")
+    }
+
     items = [
         {
             "id": obs.pk,
@@ -843,6 +868,11 @@ def observations_list(
             "viewedByCurrentUser": (obs.pk not in unseen_ids)
             if user is not None
             else None,
+            "firstImage": (
+                _image_to_out(first_image_by_obs_id[obs.pk])
+                if obs.pk in first_image_by_obs_id
+                else None
+            ),
         }
         for obs in obs_page
     ]
@@ -1072,6 +1102,8 @@ def observation_detail(request: HttpRequest, stable_id: str):
         "viewedByCurrentUser": seen_by_current_user,
         "canBeMarkedNotViewed": can_be_marked_unseen,
         "comments": comments,
+        # obs.images sets image.observation, which the thumbnail URL reads
+        "images": [_image_to_out(image) for image in obs.images.order_by("pk")],
     }
 
 
