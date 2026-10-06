@@ -1,3 +1,12 @@
+# Unreleased
+
+- New: observation photos published to GBIF are shown in the observation
+  details. In the results table, a camera column marks observations that have
+  some; hover it to see the photo. The image shown when hovering a species name
+  is now labelled as a generic image of the species (#430).
+- API: `/api/v2/observations/{stableId}/` returns the observation's `images`,
+  and each `/api/v2/observations/` item its `firstImage` (or null).
+
 # 2.10.0 (2026-09-30)
 
 - New: `GBIF_DOWNLOAD_GEOMETRY` scopes the GBIF download to a polygon (WKT),

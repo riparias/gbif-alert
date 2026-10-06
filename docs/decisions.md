@@ -451,3 +451,8 @@ expresses the ownership.
 **What:** `GBIF_DOWNLOAD_GEOMETRY` (WKT) adds a `within` clause to the default predicate; a system check rejects malformed, invalid or clockwise polygons.
 **Why:** An instance scoped to an arbitrary area (land plus EEZ) needed a custom `PREDICATE_BUILDER`, which on Dokploy means a per-instance mount in the shared compose file.
 **Rejected:** A file path or URL variable (same mount, or a network dependency) and validating in `settings.py` (would load GEOS before `local_settings.py` can set its library path).
+
+## 2026-10-01 - Show observation photos from the download's Multimedia extension
+**What:** The import stores each observation's StillImage rows from `multimedia.txt` in `ObservationImage` (FK, rebuilt every import); the UI shows them via GBIF's image cache (200px thumbnails keyed on md5 of the identifier).
+**Why:** Users took the generic species image in the tooltip for a photo of the observation (#430); the photos were already in every download.
+**Rejected:** Fetching media from the GBIF occurrence API at view time (one call per row for the list indicator) and a JSONField on Observation (multimedia.txt is not row-aligned with the core, so it would need the whole file in memory).
