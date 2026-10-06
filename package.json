@@ -8,7 +8,7 @@
     "format": "prettier --write \"assets/frontend/**/*.{ts,vue,css}\"",
     "format-check": "prettier --check \"assets/frontend/**/*.{ts,vue,css}\"",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
-    "generate-types": "python scripts/export_openapi_schema.py && openapi-typescript openapi-schema.json -o assets/frontend/types/api.ts"
+    "generate-types": "uv run python scripts/export_openapi_schema.py && openapi-typescript openapi-schema.json -o assets/frontend/types/api.ts"
   },
   "repository": {
     "type": "git",
