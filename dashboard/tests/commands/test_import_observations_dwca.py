@@ -10,7 +10,9 @@ RawObservationRow fixtures - they don't need the zip.
 
 import io
 import os
+import re
 import shutil
+import zipfile
 from pathlib import Path
 from unittest import mock
 
@@ -26,6 +28,7 @@ from maintenance_mode.core import (  # type: ignore
 from dashboard.models import (
     DataImport,
     Observation,
+    ObservationImage,
 )
 
 THIS_SCRIPT_PATH = Path(__file__).parent
@@ -484,3 +487,50 @@ def test_source_dwca_url_download_fails(test_data) -> None:
             call_command("import_observations", source_dwca=url)
 
     assert DataImport.objects.count() == imports_before
+
+
+def test_load_observation_images(test_data) -> None:
+    """multimedia.txt rows end up attached to their observation."""
+    call_command(
+        "import_observations", source_dwca=str(SAMPLE_DATA_PATH / "gbif_download.zip")
+    )
+
+    assert ObservationImage.objects.count() == 6
+    assert Observation.objects.get(gbif_id="1914197587").images.count() == 2
+    image = Observation.objects.get(gbif_id="3044795455").images.get()
+    assert (
+        image.identifier
+        == "https://inaturalist-open-data.s3.amazonaws.com/photos/67764576/original.jpg"
+    )
+    assert image.references == "https://www.inaturalist.org/photos/67764576"
+    assert image.license == "http://creativecommons.org/licenses/by-nc/4.0/"
+    assert image.attribution == "radja"
+
+
+def _copy_without_multimedia(source: Path, dest: Path) -> None:
+    """Copy a DwC-A zip, dropping multimedia.txt and its meta.xml declaration."""
+    with zipfile.ZipFile(source) as src, zipfile.ZipFile(dest, "w") as out:
+        for item in src.infolist():
+            if item.filename == "multimedia.txt":
+                continue
+            data = src.read(item)
+            if item.filename == "meta.xml":
+                data = re.sub(
+                    rb'<extension[^>]*rowType="http://rs.gbif.org/terms/1.0/Multimedia".*?</extension>',
+                    b"",
+                    data,
+                    flags=re.S,
+                )
+            out.writestr(item, data)
+
+
+def test_archive_without_multimedia_extension(test_data, tmp_path) -> None:
+    """Older or hand-made archives may lack the Multimedia extension: the
+    observations are still imported, just without images."""
+    archive = tmp_path / "no_multimedia.zip"
+    _copy_without_multimedia(SAMPLE_DATA_PATH / "gbif_download.zip", archive)
+
+    call_command("import_observations", source_dwca=str(archive))
+
+    assert Observation.objects.count() == 7
+    assert ObservationImage.objects.count() == 0
