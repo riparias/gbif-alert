@@ -27,11 +27,16 @@ from dashboard.models import (
     Dataset,
     Observation,
     ObservationComment,
+    ObservationImage,
     ObservationUnseen,
     Species,
     User,
 )
-from dashboard.tests.commands.factories import make_raw_row, run_import_with_rows
+from dashboard.tests.commands.factories import (
+    make_raw_image_row,
+    make_raw_row,
+    run_import_with_rows,
+)
 
 # iNaturalist gbif_dataset_key used by observations created in test_data
 INATURALIST_KEY = "50c9509d-22c7-4a22-a47d-8c48425ef4a7"
@@ -1093,7 +1098,7 @@ def test_import_aborts_when_a_species_has_blank_col_key():
 
 
 def test_import_vacuum_analyzes_the_rewritten_tables(test_data):
-    """The import ends by vacuuming the two tables it rewrites wholesale.
+    """The import ends by vacuuming the tables it rewrites wholesale.
 
     Why it matters: the import replaces every observation row, so on commit the
     visibility map still describes the previous dataset and index-only scans
@@ -1131,6 +1136,7 @@ def test_import_vacuum_analyzes_the_rewritten_tables(test_data):
     assert executed == [
         "VACUUM (ANALYZE) dashboard_observation",
         "VACUUM (ANALYZE) dashboard_observationunseen",
+        "VACUUM (ANALYZE) dashboard_observationimage",
     ]
 
 
@@ -1357,3 +1363,121 @@ def test_batch_insert_query_count_does_not_grow_with_replaced_observations():
     """Replacing 3 or 12 observations must cost the same number of queries.
     Fails if comments are migrated with one UPDATE per replaced observation."""
     assert _batch_insert_query_count(12) == _batch_insert_query_count(3)
+
+
+# --- Observation images (DwC-A Multimedia extension) ---
+
+
+def test_images_attached_to_their_observation_in_file_order(test_data):
+    """Image rows are stored against the observation sharing their gbifID,
+    keeping the file order, with the credit taken from rightsHolder."""
+    run_import_with_rows(
+        [
+            make_raw_row(gbif_id=1, occurrence_id="occ-1"),
+            make_raw_row(gbif_id=2, occurrence_id="occ-2"),
+        ],
+        images=[
+            make_raw_image_row(
+                gbif_id=2,
+                identifier="https://example.org/b.jpg",
+                references="https://example.org/b",
+                license="http://creativecommons.org/licenses/by-nc/4.0/",
+                rights_holder="Jane Doe",
+                creator="Someone else",
+            ),
+            make_raw_image_row(gbif_id=2, identifier="https://example.org/a.jpg"),
+        ],
+    )
+
+    obs_with_images = Observation.objects.get(gbif_id="2")
+    images = list(obs_with_images.images.order_by("pk"))
+    assert [i.identifier for i in images] == [
+        "https://example.org/b.jpg",
+        "https://example.org/a.jpg",
+    ]
+    assert images[0].references == "https://example.org/b"
+    assert images[0].license == "http://creativecommons.org/licenses/by-nc/4.0/"
+    assert images[0].attribution == "Jane Doe"
+    assert not Observation.objects.get(gbif_id="1").images.exists()
+
+
+def test_image_attribution_falls_back_to_creator(test_data):
+    run_import_with_rows(
+        [make_raw_row()],
+        images=[make_raw_image_row(rights_holder="", creator="John Roe")],
+    )
+
+    assert ObservationImage.objects.get().attribution == "John Roe"
+
+
+def test_only_still_images_with_an_identifier_are_stored(test_data):
+    """Sounds, interactive resources and rows without a URL are ignored."""
+    run_import_with_rows(
+        [make_raw_row()],
+        images=[
+            make_raw_image_row(type="Sound", identifier="https://example.org/s.mp3"),
+            make_raw_image_row(
+                type="InteractiveResource", identifier="https://example.org/i"
+            ),
+            make_raw_image_row(identifier=""),
+            make_raw_image_row(identifier="https://example.org/kept.jpg"),
+        ],
+    )
+
+    assert list(ObservationImage.objects.values_list("identifier", flat=True)) == [
+        "https://example.org/kept.jpg"
+    ]
+
+
+def test_images_without_an_imported_observation_are_dropped(test_data):
+    """Images of a skipped row, or of a gbifID absent from the core file, are
+    not stored - and do not fail the import."""
+    run_import_with_rows(
+        [
+            make_raw_row(gbif_id=1, occurrence_id="occ-1"),
+            make_raw_row(gbif_id=2, occurrence_id="occ-2", occurrence_status="ABSENT"),
+        ],
+        images=[
+            make_raw_image_row(gbif_id=2),
+            make_raw_image_row(gbif_id=3),
+        ],
+    )
+
+    assert Observation.objects.filter(gbif_id="2").count() == 0
+    assert ObservationImage.objects.count() == 0
+
+
+def test_reimport_replaces_images(test_data):
+    """A re-import leaves exactly the new archive's images, attached to the new
+    observations: the previous ones leave with the previous observations."""
+    rows = [make_raw_row()]
+    images = [make_raw_image_row()]
+
+    run_import_with_rows(rows, images=images)
+    run_import_with_rows(rows, images=images)
+
+    image = ObservationImage.objects.get()
+    assert image.observation.data_import == DataImport.objects.latest("id")
+
+
+def test_images_imported_across_chunks(test_data, monkeypatch):
+    """With a small chunk size, images spread over several chunks are all
+    stored against the right observation."""
+    from dashboard.management.commands import import_observations as mod
+
+    monkeypatch.setattr(mod, "BULK_CREATE_CHUNK_SIZE", 2)
+    rows = [make_raw_row(gbif_id=i, occurrence_id=f"occ-{i}") for i in range(1, 4)]
+    images = [
+        make_raw_image_row(gbif_id=i, identifier=f"https://example.org/{i}-{n}.jpg")
+        for i in range(1, 4)
+        for n in range(2)
+    ]
+
+    run_import_with_rows(rows, images=images)
+
+    for i in range(1, 4):
+        assert sorted(
+            Observation.objects.get(gbif_id=str(i)).images.values_list(
+                "identifier", flat=True
+            )
+        ) == [f"https://example.org/{i}-0.jpg", f"https://example.org/{i}-1.jpg"]

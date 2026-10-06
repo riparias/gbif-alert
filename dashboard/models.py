@@ -976,6 +976,43 @@ class ObservationComment(models.Model):
         self.save()
 
 
+class ObservationImage(models.Model):
+    """A photo of an observation, from the Multimedia extension of the GBIF download.
+
+    Rebuilt by every import: an image belongs to the observation it was imported
+    with, and leaves with it (CASCADE) when the next import deletes that
+    observation.
+
+    TextFields rather than URLField(max_length=...) on purpose: the values come
+    straight from the download, and a single over-long one would raise DataError
+    and roll back the whole import.
+    """
+
+    observation = models.ForeignKey(
+        Observation, on_delete=models.CASCADE, related_name="images"
+    )
+    identifier = models.TextField()  # URL of the image file itself
+    references = models.TextField(blank=True)  # human page to link to
+    license = models.TextField(blank=True)
+    attribution = models.TextField(blank=True)  # rightsHolder, else creator
+
+    @property
+    def gbif_thumbnail_url(self) -> str:
+        """A 200px-wide JPEG of this image, served by GBIF's image cache.
+
+        Much lighter than the original (16 KB against 1.4 MB for a typical
+        iNaturalist photo). GBIF keys the cached copy on the md5 of the
+        identifier. Reads self.observation, so fetch it along with the image.
+        """
+        digest = hashlib.md5(
+            self.identifier.encode(), usedforsecurity=False
+        ).hexdigest()
+        return (
+            "https://api.gbif.org/v1/image/cache/200x/occurrence/"
+            f"{self.observation.gbif_id}/media/{digest}"
+        )
+
+
 class MyAreaManager(models.Manager["Area"]):
     def owned_by(self, user: WebsiteUser) -> QuerySet["Area"]:
         # owned_by is only meaningful for an authenticated user; the FK lookup

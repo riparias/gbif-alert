@@ -34,6 +34,7 @@ from dashboard.models import (
     Dataset,
     Observation,
     ObservationComment,
+    ObservationImage,
     Species,
     create_unseen_observations,
     dataset_verification_overrides,
@@ -87,6 +88,20 @@ _DISCOVERY_TERMS = [
     _GBIF + "datasetKey",
     qn("datasetName"),
     qn("basisOfRecord"),
+]
+
+_DC = "http://purl.org/dc/terms/"
+_MULTIMEDIA_ROW_TYPE = _GBIF + "Multimedia"
+
+# Terms requested from the Multimedia extension, in RawImageRow field order.
+_IMAGE_TERMS = [
+    _GBIF + "gbifID",
+    _DC + "type",
+    _DC + "identifier",
+    _DC + "references",
+    _DC + "license",
+    _DC + "rightsHolder",
+    _DC + "creator",
 ]
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -226,6 +241,25 @@ def _raw_from_values(values: tuple[str, ...]) -> RawObservationRow:
 
 
 @dataclass(frozen=True)
+class RawImageRow:
+    """One row of the DwC-A Multimedia extension, as the image pass needs it."""
+
+    gbif_id: int
+    type: str
+    identifier: str
+    references: str
+    license: str
+    rights_holder: str
+    creator: str
+
+
+def _raw_image_from_values(values: tuple[str, ...]) -> RawImageRow:
+    """Build a RawImageRow from one iter_terms(_IMAGE_TERMS) tuple."""
+    gbif_id, *rest = (value.strip() for value in values)
+    return RawImageRow(int(gbif_id), *rest)
+
+
+@dataclass(frozen=True)
 class ExistingObservation:
     """The two fields the import needs from an already-stored observation."""
 
@@ -264,9 +298,7 @@ def fetch_existing_by_stable_id(
     return existing
 
 
-def _chunked(
-    iterable: Iterable[RawObservationRow], size: int
-) -> Iterable[list[RawObservationRow]]:
+def _chunked[T](iterable: Iterable[T], size: int) -> Iterable[list[T]]:
     """Yield lists of up to ``size`` rows, pulling from ``iterable`` lazily.
 
     Only one chunk is held at a time, so this keeps the import's streaming
@@ -685,13 +717,55 @@ def _import_all_observations(
     return skipped_observations_counter
 
 
-def _vacuum_analyze_rewritten_tables(stdout) -> None:
-    """VACUUM ANALYZE the two tables the import rewrites wholesale.
+def _import_all_images(
+    image_rows: Iterable[RawImageRow], data_import: DataImport
+) -> int:
+    """Attach the Multimedia extension's still images to this import's observations.
 
-    The import replaces every observation row (and, through
-    ``migrate_unseen_observations``, most of the unseen table), so on commit
-    both tables hold as many dead tuples as live ones and their visibility maps
-    still describe the *previous* dataset. Until something vacuums them, an
+    Runs once every observation of the import is inserted, because
+    multimedia.txt is not ordered like the core file: an image's observation
+    can be anywhere in the archive. Each chunk resolves its gbifIDs in one query
+    (served by the (gbif_id, data_import) unique index), so memory stays
+    O(chunk). Images whose gbifID has no observation in this import (skipped
+    rows) are dropped.
+
+    Returns the number of stored images.
+    """
+    stored = 0
+    still_images = (
+        row for row in image_rows if row.type == "StillImage" and row.identifier
+    )
+    for chunk in _chunked(still_images, BULK_CREATE_CHUNK_SIZE):
+        pk_by_gbif_id = {
+            int(gbif_id): pk
+            for gbif_id, pk in Observation.objects.filter(
+                data_import=data_import,
+                gbif_id__in={str(row.gbif_id) for row in chunk},
+            ).values_list("gbif_id", "pk")
+        }
+        images = [
+            ObservationImage(
+                observation_id=pk_by_gbif_id[row.gbif_id],
+                identifier=row.identifier,
+                references=row.references,
+                license=row.license,
+                attribution=row.rights_holder or row.creator,
+            )
+            for row in chunk
+            if row.gbif_id in pk_by_gbif_id
+        ]
+        ObservationImage.objects.bulk_create(images)
+        stored += len(images)
+    return stored
+
+
+def _vacuum_analyze_rewritten_tables(stdout) -> None:
+    """VACUUM ANALYZE the tables the import rewrites wholesale.
+
+    The import replaces every observation row and every observation image (and,
+    through ``migrate_unseen_observations``, most of the unseen table), so on
+    commit these tables hold as many dead tuples as live ones and their
+    visibility maps still describe the *previous* dataset. Until something vacuums them, an
     index-only scan has to fall back to a heap fetch per index entry: measured
     on a 100k-row import, the observations histogram did 199970 heap fetches
     and touched ~200k buffers (85 ms), against 0 heap fetches and 773 buffers
@@ -713,7 +787,11 @@ def _vacuum_analyze_rewritten_tables(stdout) -> None:
         _log_with_time(stdout, "Skipping VACUUM ANALYZE: running inside a transaction.")
         return
 
-    for table in ("dashboard_observation", "dashboard_observationunseen"):
+    for table in (
+        "dashboard_observation",
+        "dashboard_observationunseen",
+        "dashboard_observationimage",
+    ):
         try:
             with connection.cursor() as cursor:
                 # Table names are literals, never user input.
@@ -730,6 +808,7 @@ def run_import(
     raw_rows_factory: Callable[[], Iterable[RawObservationRow]],
     discovery_rows_factory: Callable[[], Iterable[tuple[str, str, str]]],
     *,
+    image_rows_factory: Callable[[], Iterable[RawImageRow]] | None = None,
     gbif_download_id: str | None = None,
     gbif_predicate: dict | None = None,
     stdout=None,
@@ -738,9 +817,11 @@ def run_import(
 
     ``discovery_rows_factory`` feeds pass 1 (dataset / basis-of-record
     discovery) with (dataset_key, dataset_name, basis_of_record) triples;
-    ``raw_rows_factory`` feeds pass 2, which builds and inserts observations.
-    Each call must return a fresh iterable. This preserves streaming for
-    multi-million-row imports: no row is held in memory across passes.
+    ``raw_rows_factory`` feeds pass 2, which builds and inserts observations;
+    ``image_rows_factory`` feeds pass 3, which attaches their images (None when
+    the archive has no Multimedia extension). Each call must return a fresh
+    iterable. This preserves streaming for multi-million-row imports: no row
+    is held in memory across passes.
 
     Maintenance mode is enabled for the duration of the import and always
     cleared on exit, whether the import succeeds or fails. On failure the
@@ -823,6 +904,15 @@ def run_import(
             )
 
             _log_with_time(stdout, "All observations imported")
+
+            # Pass 3: attach images (before the previous import's observations,
+            # and with them their images, are deleted below)
+            if image_rows_factory is not None:
+                _log_with_time(stdout, "Importing observation images")
+                images_count = _import_all_images(
+                    image_rows_factory(), current_data_import
+                )
+                _log_with_time(stdout, f"{images_count} observation images imported")
 
             _log_with_time(stdout, "Migrating unseen observations")
             migrate_unseen_observations(current_data_import)
@@ -1082,6 +1172,12 @@ class Command(BaseCommand):
             _log_with_time(self.stdout, "Opening DWCA to read metadata")
             with DwCAReader(source_data_path) as dwca:
                 gbif_download_id = extract_gbif_download_id_from_dwca(dwca)
+                # Older or hand-made archives may lack the Multimedia extension:
+                # their observations are then imported without images.
+                has_images = any(
+                    f.file_descriptor.type == _MULTIMEDIA_ROW_TYPE
+                    for f in dwca.extension_files
+                )
             _log_with_time(
                 self.stdout,
                 f"GBIF download id read from DWCA metadata: {gbif_download_id} "
@@ -1100,6 +1196,16 @@ class Command(BaseCommand):
                     for values in dwca.iter_terms(_IMPORT_TERMS):
                         yield _raw_from_values(values)
 
+            def image_rows_factory() -> Iterable[RawImageRow]:
+                with DwCAReader(source_data_path, skip_metadata=True) as dwca:
+                    multimedia = next(
+                        f
+                        for f in dwca.extension_files
+                        if f.file_descriptor.type == _MULTIMEDIA_ROW_TYPE
+                    )
+                    for values in multimedia.iter_terms(_IMAGE_TERMS):
+                        yield _raw_image_from_values(values)
+
             def discovery_rows_factory() -> Iterable[tuple[str, str, str]]:
                 with DwCAReader(source_data_path, skip_metadata=True) as dwca:
                     for dataset_key, dataset_name, basis_of_record in dwca.iter_terms(
@@ -1116,6 +1222,7 @@ class Command(BaseCommand):
             run_import(
                 raw_rows_factory,
                 discovery_rows_factory,
+                image_rows_factory=image_rows_factory if has_images else None,
                 gbif_download_id=gbif_download_id,
                 gbif_predicate=gbif_predicate,
                 stdout=self.stdout,

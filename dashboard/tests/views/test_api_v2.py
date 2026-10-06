@@ -7,6 +7,8 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import MultiPolygon, Point, Polygon
 from django.core import mail
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
@@ -21,6 +23,7 @@ from dashboard.models import (
     Dataset,
     Observation,
     ObservationComment,
+    ObservationImage,
     ObservationUnseen,
     Species,
 )
@@ -4132,3 +4135,116 @@ def test_species_breakdown_counts_each_observation_once_under_overlapping_area_f
     assert response.status_code == 200
     rows = response.json()
     assert [(row["id"], row["count"]) for row in rows] == [(d["species"].pk, 1)]
+
+
+# --- Observation images ---
+
+# A real occurrence and image (riparias/gbif-alert#430). The thumbnail URL below
+# was checked against the live GBIF image cache, which keys a media item on the
+# md5 of its identifier.
+REAL_GBIF_ID = "6320328664"
+REAL_IMAGE_IDENTIFIER = (
+    "https://inaturalist-open-data.s3.amazonaws.com/photos/589310386/original.jpg"
+)
+REAL_THUMBNAIL_URL = (
+    "https://api.gbif.org/v1/image/cache/200x/occurrence/6320328664"
+    "/media/1b45d464452e771d224e541d5e9994ff"
+)
+
+
+def _add_image(obs, identifier="https://example.org/a.jpg", **fields):
+    return ObservationImage.objects.create(
+        observation=obs, identifier=identifier, **fields
+    )
+
+
+def test_observation_detail_images(client, observations_data):
+    """All images, in import order, each with a GBIF-cache thumbnail and the
+    fields needed to credit and link back to the source."""
+    obs = observations_data["obs"]
+    obs.gbif_id = REAL_GBIF_ID
+    obs.save()
+    _add_image(
+        obs,
+        identifier=REAL_IMAGE_IDENTIFIER,
+        references="https://www.inaturalist.org/photos/589310386",
+        license="http://creativecommons.org/licenses/by-nc/4.0/",
+        attribution="Marleen 61",
+    )
+    _add_image(obs, identifier="https://example.org/second.jpg")
+
+    images = client.get(f"/api/v2/observations/{obs.stable_id}/").json()["images"]
+
+    assert images[0] == {
+        "thumbnailUrl": REAL_THUMBNAIL_URL,
+        "originalUrl": REAL_IMAGE_IDENTIFIER,
+        "sourceUrl": "https://www.inaturalist.org/photos/589310386",
+        "attribution": "Marleen 61",
+        "license": "http://creativecommons.org/licenses/by-nc/4.0/",
+    }
+    assert [i["originalUrl"] for i in images] == [
+        REAL_IMAGE_IDENTIFIER,
+        "https://example.org/second.jpg",
+    ]
+
+
+def test_observation_detail_without_images(client, observations_data):
+    obs = observations_data["obs"]
+    data = client.get(f"/api/v2/observations/{obs.stable_id}/").json()
+    assert data["images"] == []
+
+
+def test_observations_list_first_image(client, observations_data):
+    """Each row carries its first image (import order), or null."""
+    obs = observations_data["obs"]
+    obs.gbif_id = REAL_GBIF_ID
+    obs.save()
+    _add_image(obs, identifier=REAL_IMAGE_IDENTIFIER, attribution="Marleen 61")
+    _add_image(obs, identifier="https://example.org/second.jpg")
+
+    items = {
+        i["id"]: i
+        for i in client.get(reverse("api-v2:observations_list")).json()["items"]
+    }
+
+    first = items[obs.pk]["firstImage"]
+    assert first["thumbnailUrl"] == REAL_THUMBNAIL_URL
+    assert first["originalUrl"] == REAL_IMAGE_IDENTIFIER
+    assert first["attribution"] == "Marleen 61"
+    assert items[observations_data["obs_other_species"].pk]["firstImage"] is None
+
+
+def test_observations_list_images_cost_one_query(client, observations_data):
+    """First images are fetched for the whole page at once, whatever the number
+    of observations - or images - on it."""
+    url = reverse("api-v2:observations_list")
+    _add_image(observations_data["obs"])
+    with CaptureQueriesContext(connection) as one_with_images:
+        client.get(url)
+
+    for n in range(5):
+        _add_image(
+            observations_data["obs_other_species"], f"https://example.org/{n}.jpg"
+        )
+    with CaptureQueriesContext(connection) as both_with_images:
+        client.get(url)
+
+    assert len(both_with_images.captured_queries) == len(
+        one_with_images.captured_queries
+    )
+
+
+def test_observation_detail_image_count_does_not_add_queries(client, observations_data):
+    """Building each image's thumbnail URL must not fetch its observation again."""
+    obs = observations_data["obs"]
+    url = f"/api/v2/observations/{obs.stable_id}/"
+    _add_image(obs)
+    with CaptureQueriesContext(connection) as one_image:
+        client.get(url)
+
+    for n in range(5):
+        _add_image(obs, f"https://example.org/{n}.jpg")
+    with CaptureQueriesContext(connection) as six_images:
+        client.get(url)
+
+    assert len(six_images.captured_queries) == len(one_image.captured_queries)

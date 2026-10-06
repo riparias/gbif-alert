@@ -1,6 +1,35 @@
 """Shared helpers for Playwright browser tests."""
 
+import struct
+import zlib
+
 from playwright.sync_api import Page
+
+
+def solid_png(width: int, height: int, rgb=(60, 140, 60)) -> bytes:
+    """Build a valid solid-color RGB PNG of the given size (no Pillow needed).
+
+    Served through page.route() wherever a test needs a real image: a stub that
+    fails to decode would trigger the app's onerror handling instead.
+    """
+
+    def chunk(typ: bytes, data: bytes) -> bytes:
+        body = typ + data
+        return (
+            struct.pack(">I", len(data))
+            + body
+            + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
+        )
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    row = b"\x00" + bytes(rgb) * width
+    idat = zlib.compress(row * height)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", idat)
+        + chunk(b"IEND", b"")
+    )
 
 
 def login(page: Page, base_url: str, username: str, password: str) -> None:

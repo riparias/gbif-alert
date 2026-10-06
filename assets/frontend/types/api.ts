@@ -1123,6 +1123,30 @@ export interface components {
             /** Approachingdistancekm */
             approachingDistanceKm?: number | null;
         };
+        /**
+         * ObservationImageOut
+         * @description A photo of this observation, as published to GBIF.
+         *
+         *     Not to be confused with the generic species image (`imageUrl` on species).
+         */
+        ObservationImageOut: {
+            /**
+             * Thumbnailurl
+             * @description 200px-wide JPEG served by GBIF's image cache.
+             */
+            thumbnailUrl: string;
+            /**
+             * Originalurl
+             * @description The full-size image file, as published.
+             */
+            originalUrl: string;
+            /** Sourceurl */
+            sourceUrl: string;
+            /** Attribution */
+            attribution: string;
+            /** License */
+            license: string;
+        };
         /** ObservationOut */
         ObservationOut: {
             /** Id */
@@ -1165,6 +1189,8 @@ export interface components {
             basisOfRecordName: string;
             /** Viewedbycurrentuser */
             viewedByCurrentUser?: boolean | null;
+            /** @description The observation's first photo, or null when it has none. */
+            firstImage: components["schemas"]["ObservationImageOut"] | null;
         };
         /** ObservationsPageOut */
         ObservationsPageOut: {
@@ -1353,6 +1379,8 @@ export interface components {
             canBeMarkedNotViewed: boolean;
             /** Comments */
             comments: components["schemas"]["CommentOut"][];
+            /** Images */
+            images: components["schemas"]["ObservationImageOut"][];
         };
         /** CommentIn */
         CommentIn: {

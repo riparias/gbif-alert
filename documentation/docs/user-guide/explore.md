@@ -172,6 +172,12 @@ details.
   The site downloads new data from GBIF regularly, and each download is a data
   import.
 
+When the observation was published with photos, **Photos of this observation**
+shows them, each credited and linking to where it was published (the first 12;
+GBIF has the rest). In the results table, a camera icon marks these
+observations: hover it to see the photo. Hovering a species name, by contrast,
+always shows a generic image of the species, not of this observation.
+
 The map under **Location** shows where the observation was made. The circle is
 how precise that location is:
 

@@ -5,6 +5,7 @@ import Tooltip from "primevue/tooltip";
 import { usePreferencesStore } from "../stores/preferences";
 import { useFilterOptionsStore } from "../stores/filterOptions";
 import { getNavConfig } from "../utils/navConfig";
+import { escapeHtml, imageTooltipHtml } from "../utils/imageTooltip";
 
 defineOptions({ directives: { tooltip: Tooltip } });
 
@@ -35,15 +36,6 @@ const variant = computed<Variant>(() => {
     return props.vernacularName ? "vernacular" : "vernacular-fallback";
 });
 
-function escapeHtml(s: string): string {
-    return s
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-}
-
 // Look up the matched species from the filter options store and return image
 // fields when available; null otherwise.
 const speciesImage = computed(() => {
@@ -56,25 +48,25 @@ const speciesImage = computed(() => {
     };
 });
 
-// Build the image + credit HTML to prepend to the tooltip, or "" when there
-// is no image. All interpolated values are HTML-escaped.
-function imageTooltipHtml(): string {
+// The image block to prepend to the tooltip, or "" when there is no image. Its
+// caption says the image is generic, so it is never taken for a photo of the
+// observation at hand (#430) - those are shown by ObservationPhotoIcon.
+function speciesImageHtml(): string {
     const img = speciesImage.value;
     if (!img) return "";
     const credit =
         img.attribution || img.license
-            ? `<div class="species-tooltip-credit">${escapeHtml(
-                  t("message.speciesImageCredit", {
-                      attribution: img.attribution || "?",
-                      license: img.license || "?",
-                  }),
-              )}</div>`
+            ? t("message.speciesImageCredit", {
+                  attribution: img.attribution || "?",
+                  license: img.license || "?",
+              })
             : "";
-    // onerror hides a dead hotlink instead of showing a broken-image icon.
-    return (
-        `<img src="${escapeHtml(img.url)}" alt="${escapeHtml(props.scientificName)}" ` +
-        `class="species-tooltip-img" onerror="this.style.display='none'" />${credit}`
-    );
+    return imageTooltipHtml({
+        url: img.url,
+        alt: props.scientificName,
+        caption: t("message.speciesGenericImage"),
+        credit,
+    });
 }
 
 // PrimeVue's v-tooltip accepts an object with `escape: false` to render HTML.
@@ -105,7 +97,7 @@ function baseTooltip(): { value: string; escape: boolean } {
 }
 
 const tooltipBinding = computed(() => {
-    const imageHtml = imageTooltipHtml();
+    const imageHtml = speciesImageHtml();
     const base = baseTooltip();
     if (!imageHtml) return base;
     // With an image we must render HTML; escape the base text ourselves.

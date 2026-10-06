@@ -6,6 +6,7 @@ exercised by a separate, smaller set of tests.
 """
 
 from dashboard.management.commands.import_observations import (
+    RawImageRow,
     RawObservationRow,
     run_import,
 )
@@ -54,9 +55,28 @@ def make_raw_row(**overrides) -> RawObservationRow:
     return RawObservationRow(**{**defaults, **overrides})
 
 
+def make_raw_image_row(**overrides) -> RawImageRow:
+    """Build a RawImageRow (one Multimedia extension row) with sensible defaults.
+
+    Defaults produce a storable image attached to gbif_id 1, the default
+    gbif_id of make_raw_row().
+    """
+    defaults = dict(
+        gbif_id=1,
+        type="StillImage",
+        identifier="https://example.org/photos/1/original.jpg",
+        references="https://example.org/photos/1",
+        license="http://creativecommons.org/licenses/by/4.0/",
+        rights_holder="Jane Doe",
+        creator="",
+    )
+    return RawImageRow(**{**defaults, **overrides})
+
+
 def run_import_with_rows(
     rows: list[RawObservationRow],
     *,
+    images: list[RawImageRow] | None = None,
     gbif_download_id: str = "test-dl",
     gbif_predicate: dict | None = None,
 ):
@@ -67,12 +87,16 @@ def run_import_with_rows(
     discovery pass, one yielding the full rows used by the insert pass.
     Both are derived from the same list here, and each call rebuilds its
     iterator so the two passes stay independent.
+
+    ``images`` feeds the image pass; None means the archive has no
+    Multimedia extension.
     """
     return run_import(
         lambda: iter(rows),
         lambda: (
             (row.dataset_key, row.dataset_name, row.basis_of_record) for row in rows
         ),
+        image_rows_factory=(lambda: iter(images)) if images is not None else None,
         gbif_download_id=gbif_download_id,
         gbif_predicate=gbif_predicate,
     )
