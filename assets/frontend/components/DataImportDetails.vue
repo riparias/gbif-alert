@@ -141,8 +141,6 @@ async function toggleSkipped() {
     display: flex;
     flex-wrap: wrap;
     gap: 0.25rem 0.75rem;
-    max-height: 12rem;
-    overflow-y: auto;
     margin: 0.25rem 0 0.5rem 1rem;
     font-size: 0.875rem;
 }

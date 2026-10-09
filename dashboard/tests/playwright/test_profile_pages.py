@@ -131,6 +131,29 @@ def test_about_data_page_lists_skipped_rows_by_reason(page: Page, live_server):
 
 
 @pytest.mark.django_db(transaction=True)
+def test_about_data_page_long_skip_list_is_not_clipped(page: Page, live_server):
+    """Every id of a long list can be reached by scrolling the page. A
+    height-capped box hid most of them behind a scrollbar macOS does not show.
+
+    to_be_visible() would pass even for a clipped link, so this checks the
+    last one is actually on screen once the page is scrolled to the bottom."""
+    gbif_ids = list(range(1_000_000, 1_000_200))
+    _import_with_skips(
+        skipped_observations_counter=len(gbif_ids),
+        skipped_observations={"missing_coordinates": gbif_ids},
+    )
+
+    page.goto(live_server.url + "/about-data")
+    page.get_by_role("button", name="Show details").click()
+    page.get_by_text("Missing coordinates (200)").click()
+    last = page.get_by_role("link", name=str(gbif_ids[-1]))
+    expect(last).to_be_attached()
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+
+    expect(last).to_be_in_viewport()
+
+
+@pytest.mark.django_db(transaction=True)
 def test_about_data_page_skipped_rows_not_recorded(page: Page, live_server):
     """Imports from before the details were recorded say so, rather than
     showing an empty list next to a non-zero count."""
