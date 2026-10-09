@@ -301,6 +301,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/observations/gallery/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Observations with photos, newest first
+         * @description Return a page of the filtered observations that have photos, newest
+         *     first, each with its first photo.
+         *
+         *     Pagination is controlled by `page` (1-based) and `pageSize` (must be
+         *     1-100); invalid values return 400. The order is fixed.
+         *
+         *     Defined before observation_detail so the literal `/observations/gallery/`
+         *     path is matched ahead of `/observations/{stable_id}/`.
+         */
+        get: operations["dashboard_api_v2_observations_gallery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/observations/histogram/": {
         parameters: {
             query?: never;
@@ -1255,6 +1282,40 @@ export interface components {
             hasPreviousPage: boolean;
             /** Items */
             items: components["schemas"]["ObservationOut"][];
+        };
+        /**
+         * GalleryItemOut
+         * @description An observation with photos, as the results gallery shows it.
+         *
+         *     Deliberately slimmer than ObservationOut: a tile shows the photo, the
+         *     species and the date, and opens the observation by its stableId. The three
+         *     flat vernacular columns are kept for pickVernacular, as in SpeciesCountOut.
+         */
+        GalleryItemOut: {
+            /** Stableid */
+            stableId: string;
+            /** Scientificname */
+            scientificName: string;
+            /** Vernacularnameen */
+            vernacularNameEn: string;
+            /** Vernacularnamenl */
+            vernacularNameNl: string;
+            /** Vernacularnamefr */
+            vernacularNameFr: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** @description The observation's first photo. */
+            image: components["schemas"]["ObservationImageOut"];
+        };
+        /** GalleryPageOut */
+        GalleryPageOut: {
+            /** Count */
+            count: number;
+            /** Items */
+            items: components["schemas"]["GalleryItemOut"][];
         };
         /** HistogramEntryOut */
         HistogramEntryOut: {
@@ -2346,6 +2407,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ObservationsPageOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_observations_gallery: {
+        parameters: {
+            query?: {
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
+                speciesIds?: number[];
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
+                datasetIds?: number[];
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
+                basisOfRecordIds?: number[];
+                startDate?: string | null;
+                endDate?: string | null;
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
+                areaIds?: number[];
+                status?: ("all" | "viewed" | "notViewed") | null;
+                /** @description A list of ids. As a query parameter this may be repeated (`?speciesIds=1&speciesIds=2`) or given compactly as comma-separated ids and inclusive ranges (`?speciesIds=1-350,402`). The compact form keeps a filter selecting hundreds of ids within the server's request-line limit. Both forms are equivalent and may be mixed. */
+                initialDataImportIds?: number[];
+                verifiedFilter?: "all" | "verified" | "unverified";
+                areaFilterMode?: "inside" | "approaching" | "both";
+                approachingDistanceKm?: number | null;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalleryPageOut"];
                 };
             };
             /** @description Bad Request */
