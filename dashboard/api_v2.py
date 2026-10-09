@@ -61,6 +61,7 @@ from dashboard.api_v2_schemas import (
     SignInIn,
     SignInOut,
     SignUpIn,
+    SkippedReasonOut,
     SpeciesCountOut,
     SpeciesIn,
     SpeciesOut,
@@ -697,8 +698,11 @@ def basis_of_record_list(request: HttpRequest):
 
 @api_v2.get("/data-imports/", response=list[DataImportOut])
 def data_imports_list(request: HttpRequest):
-    qs = DataImport.objects.order_by("-start").annotate(
-        new_observations_count=Count("occurrences_initially_imported")
+    # The skip details are tens of KB per import, and this lists every import
+    qs = (
+        DataImport.objects.order_by("-start")
+        .defer("skipped_observations")
+        .annotate(new_observations_count=Count("occurrences_initially_imported"))
     )
     return [
         {
@@ -713,6 +717,32 @@ def data_imports_list(request: HttpRequest):
         }
         for di in qs
     ]
+
+
+@api_v2.get(
+    "/data-imports/{data_import_id}/skipped-observations/",
+    response={200: list[SkippedReasonOut] | None, **ERR_404},
+    summary="Rows skipped by a data import",
+)
+def data_import_skipped_observations(request: HttpRequest, data_import_id: int):
+    """The rows of this import's GBIF download that were left out as unusable,
+    grouped by reason, most common reason first.
+
+    A row failing several rules appears under each of them, so the lists can
+    add up to more than the import's skippedCount. An empty list means nothing
+    was skipped; null means the import predates this record (skippedCount is
+    still available on /api/v2/data-imports/).
+    """
+    di = get_object_or_404(DataImport, pk=data_import_id)
+    if di.skipped_observations is None:
+        return None
+    return sorted(
+        (
+            {"reason": reason, "gbifIds": gbif_ids}
+            for reason, gbif_ids in di.skipped_observations.items()
+        ),
+        key=lambda entry: -len(entry["gbifIds"]),
+    )
 
 
 _SIMPLE_SORT_FIELD_MAP = {

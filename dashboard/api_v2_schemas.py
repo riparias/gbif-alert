@@ -15,6 +15,15 @@ AreaFilterMode = Literal["inside", "approaching", "both"]
 EmailNotificationFrequency = Literal["N", "D", "W", "M"]
 ObservationStatus = Literal["all", "viewed", "notViewed"]  # "all" / absent = no filter
 DelayUnit = Literal["days", "weeks", "months", "years"]
+# Keep in sync with SkipReason in dashboard/management/commands/import_observations.py
+# (enforced by test_skip_reasons_are_documented_as_an_enum).
+SkipReasonCode = Literal[
+    "missing_year",
+    "missing_coordinates",
+    "missing_occurrence_id",
+    "missing_basis_of_record",
+    "occurrence_status_not_present",
+]
 
 # Documented on every id filter: API.md deliberately holds no endpoint
 # reference, so /api/v2/docs is where an external consumer learns that the
@@ -154,8 +163,23 @@ class DataImportOut(Schema):
     endedAt: datetime.datetime | None
     importedCount: int
     newObservationsCount: int
-    skippedCount: int
+    skippedCount: int = Field(
+        description="Rows of the GBIF download left out as unusable. Which rows "
+        "and why: /api/v2/data-imports/{id}/skipped-observations/."
+    )
     gbifDownloadId: str
+
+
+class SkippedReasonOut(Schema):
+    reason: SkipReasonCode = Field(
+        description="Why the rows were left out: a missing year, missing "
+        "coordinates, an empty occurrenceID or basisOfRecord, or an "
+        "occurrenceStatus other than PRESENT (e.g. an absence record)."
+    )
+    gbifIds: list[int] = Field(
+        description="GBIF occurrence keys of the rows, each viewable at "
+        "https://www.gbif.org/occurrence/<gbifId>."
+    )
 
 
 class FiltersQuery(Schema):
