@@ -70,6 +70,8 @@ def test_zero_rows_import(test_data):
     assert di.end is not None
     assert di.imported_observations_counter == 0
     assert di.skipped_observations_counter == 0
+    # Recorded and empty, unlike imports from before the details existed (None)
+    assert di.skipped_observations == {}
 
     # Previous-import observations are gone, same as any other import
     obs_ids_after = set(Observation.objects.values_list("id", flat=True))
@@ -489,6 +491,39 @@ def test_ignore_unusable_observations_logic(test_data):
     assert Observation.objects.count() == 1
     assert Observation.objects.get().occurrence_id == "good-1"
     assert DataImport.objects.latest("id").skipped_observations_counter == 5
+
+
+def test_skipped_rows_are_recorded_by_reason(test_data):
+    """The import keeps the gbifID of every skipped row under each reason it
+    fails, so a row breaking two rules appears under both."""
+    rows = [
+        _lixus_row(gbif_id=1, occurrence_id="good-1"),
+        _lixus_row(gbif_id=2, occurrence_id="no-lon", decimal_longitude=None),
+        _lixus_row(gbif_id=3, occurrence_id="no-lat", decimal_latitude=None),
+        _lixus_row(gbif_id=4, occurrence_id="no-year", year=None),
+        _lixus_row(gbif_id=5, occurrence_id=""),
+        _lixus_row(gbif_id=6, occurrence_id="no-bor", basis_of_record=""),
+        _lixus_row(gbif_id=7, occurrence_id="absent", occurrence_status="ABSENT"),
+        _lixus_row(
+            gbif_id=8,
+            occurrence_id="absent-no-year",
+            occurrence_status="ABSENT",
+            year=None,
+        ),
+    ]
+
+    run_import_with_rows(rows)
+
+    di = DataImport.objects.latest("id")
+    assert di.skipped_observations == {
+        "missing_coordinates": [2, 3],
+        "missing_year": [4, 8],
+        "missing_occurrence_id": [5],
+        "missing_basis_of_record": [6],
+        "occurrence_status_not_present": [7, 8],
+    }
+    # The counter stays the number of skipped rows, not of reasons
+    assert di.skipped_observations_counter == 7
 
 
 def _recent_raw_row(**overrides):

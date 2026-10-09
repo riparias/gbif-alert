@@ -6,6 +6,11 @@
   is now labelled as a generic image of the species (#430).
 - API: `/api/v2/observations/{stableId}/` returns the observation's `images`,
   and each `/api/v2/observations/` item its `firstImage` (or null).
+- New: on About the data, the skipped observations of an import can be
+  expanded into the rows left out, grouped by reason (missing year, missing
+  coordinates, absence record...), each linking to the record on GBIF. Imports
+  made before this release have no details.
+- API: `/api/v2/data-imports/{id}/skipped-observations/` lists those rows.
 
 # 2.10.0 (2026-09-30)
 

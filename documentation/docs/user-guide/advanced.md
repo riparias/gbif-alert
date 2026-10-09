@@ -64,6 +64,11 @@ GBIF download behind the latest data import. From there you can download the
 complete records, with every field GBIF provides, and get the citation to use if
 you publish work based on them.
 
+Some records in the download are left out because the site cannot use them,
+for example an absence record or one without coordinates. **Show details**,
+next to the skipped observations count, lists them by reason, each linking to
+the record on GBIF.
+
 ## Use the API
 
 The API lets scripts and applications read the site's data, in R, Python or any

@@ -250,6 +250,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/data-imports/{data_import_id}/skipped-observations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rows skipped by a data import
+         * @description The rows of this import's GBIF download that were left out as unusable,
+         *     grouped by reason, most common reason first.
+         *
+         *     A row failing several rules appears under each of them, so the lists can
+         *     add up to more than the import's skippedCount. An empty list means nothing
+         *     was skipped; null means the import predates this record (skippedCount is
+         *     still available on /api/v2/data-imports/).
+         */
+        get: operations["dashboard_api_v2_data_import_skipped_observations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/observations/": {
         parameters: {
             query?: never;
@@ -1070,10 +1096,27 @@ export interface components {
             importedCount: number;
             /** Newobservationscount */
             newObservationsCount: number;
-            /** Skippedcount */
+            /**
+             * Skippedcount
+             * @description Rows of the GBIF download left out as unusable. Which rows and why: /api/v2/data-imports/{id}/skipped-observations/.
+             */
             skippedCount: number;
             /** Gbifdownloadid */
             gbifDownloadId: string;
+        };
+        /** SkippedReasonOut */
+        SkippedReasonOut: {
+            /**
+             * Reason
+             * @description Why the rows were left out: a missing year, missing coordinates, an empty occurrenceID or basisOfRecord, or an occurrenceStatus other than PRESENT (e.g. an absence record).
+             * @enum {string}
+             */
+            reason: "missing_year" | "missing_coordinates" | "missing_occurrence_id" | "missing_basis_of_record" | "occurrence_status_not_present";
+            /**
+             * Gbifids
+             * @description GBIF occurrence keys of the rows, each viewable at https://www.gbif.org/occurrence/<gbifId>.
+             */
+            gbifIds: number[];
         };
         /** FiltersQuery */
         FiltersQuery: {
@@ -2231,6 +2274,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DataImportOut"][];
+                };
+            };
+        };
+    };
+    dashboard_api_v2_data_import_skipped_observations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                data_import_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkippedReasonOut"][] | null;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailErrorOut"];
                 };
             };
         };

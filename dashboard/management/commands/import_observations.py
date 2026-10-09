@@ -10,6 +10,7 @@ import time
 import traceback
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from enum import StrEnum
 
 import requests
 from django.conf import settings
@@ -385,8 +386,41 @@ def extract_gbif_download_id_from_dwca(dwca: DwCAReader) -> str:
         )
 
 
+class SkipReason(StrEnum):
+    """Why a row is unusable. The values are stored in
+    DataImport.skipped_observations and translated by the frontend, so they
+    must not be renamed."""
+
+    MISSING_YEAR = "missing_year"
+    MISSING_COORDINATES = "missing_coordinates"
+    MISSING_OCCURRENCE_ID = "missing_occurrence_id"
+    # The discovery pass never creates a BasisOfRecord for an empty value and
+    # the model requires one, so the hash lookup would otherwise raise KeyError
+    # and abort the whole import.
+    MISSING_BASIS_OF_RECORD = "missing_basis_of_record"
+    OCCURRENCE_STATUS_NOT_PRESENT = "occurrence_status_not_present"
+
+
+def skip_reasons(raw: RawObservationRow) -> list[SkipReason]:
+    """Every reason this row is unusable; empty if it can be imported."""
+    reasons = []
+    if raw.year is None:
+        reasons.append(SkipReason.MISSING_YEAR)
+    if raw.decimal_longitude is None or raw.decimal_latitude is None:
+        reasons.append(SkipReason.MISSING_COORDINATES)
+    if raw.occurrence_id == "":
+        reasons.append(SkipReason.MISSING_OCCURRENCE_ID)
+    if not raw.basis_of_record:
+        reasons.append(SkipReason.MISSING_BASIS_OF_RECORD)
+    if raw.occurrence_status != "PRESENT":
+        reasons.append(SkipReason.OCCURRENCE_STATUS_NOT_PRESENT)
+    return reasons
+
+
 class SkippedObservationException(Exception):
-    pass
+    def __init__(self, reasons: list[SkipReason]):
+        super().__init__(", ".join(reasons))
+        self.reasons = reasons
 
 
 class SpeciesNotFoundException(KeyError):
@@ -417,25 +451,17 @@ def build_observation_from_raw(
     ``verification_overrides`` maps a dataset key to a forced
     ``verified`` value, which wins over the verification status classification.
 
-    Raises SkippedObservationException when the row is unusable (missing
-    year, missing coordinates, missing occurrence_id, missing basis of record,
-    or occurrence_status other than "PRESENT"). Missing month/day default to 1.
+    Raises SkippedObservationException, carrying every reason from
+    ``skip_reasons``, when the row is unusable. Missing month/day default to 1.
 
     Raises SpeciesNotFoundException (a KeyError) if the species referenced
     cannot be found.
     """
-    # An empty basis of record is unusable too: the discovery pass never
-    # creates a BasisOfRecord for it and the model requires one, so the hash
-    # lookup below would raise KeyError and abort the whole import.
-    if (
-        raw.year is None
-        or raw.decimal_longitude is None
-        or raw.decimal_latitude is None
-        or raw.occurrence_id == ""
-        or not raw.basis_of_record
-        or raw.occurrence_status != "PRESENT"
-    ):
-        raise SkippedObservationException()
+    reasons = skip_reasons(raw)
+    if reasons:
+        raise SkippedObservationException(reasons)
+    # skip_reasons() rejected these; mypy cannot see through the call
+    assert raw.year is not None
 
     try:
         species = species_for_raw(raw, hash_species)
@@ -659,7 +685,7 @@ def _import_all_observations(
     hash_table_basis_of_record: dict[str, BasisOfRecord],
     hash_table_verification_status: dict[str, bool],
     stdout=None,
-) -> int:
+) -> tuple[int, dict[str, list[int]]]:
     """Stream rows into the DB in chunks of BULK_CREATE_CHUNK_SIZE.
 
     Rows are consumed a chunk at a time rather than one at a time: every chunk
@@ -670,9 +696,11 @@ def _import_all_observations(
     Each chunk is looked up after the previous chunk has been inserted, so a row
     that replaces one inserted earlier in the same import is still detected.
 
-    Returns the number of skipped observations.
+    Returns the number of skipped observations, and their gbifIDs keyed by
+    skip reason (the shape of DataImport.skipped_observations).
     """
     skipped_observations_counter = 0
+    skipped_by_reason: dict[str, list[int]] = {}
     # Read once per import, not per row
     verification_overrides = dataset_verification_overrides()
 
@@ -705,8 +733,10 @@ def _import_all_observations(
                 # bug in the row builder and must surface as itself rather
                 # than be misreported as a missing species.
                 raise CommandError(f"species not found in db for raw row: {raw_row}")
-            except SkippedObservationException:
+            except SkippedObservationException as e:
                 skipped_observations_counter += 1
+                for reason in e.reasons:
+                    skipped_by_reason.setdefault(reason, []).append(raw_row.gbif_id)
                 if stdout is not None:
                     stdout.write("x", ending="")
 
@@ -714,7 +744,7 @@ def _import_all_observations(
             _log_with_time(stdout, "Bulk size reached...")
             _batch_insert_observations(observations_to_insert, stdout=stdout)
 
-    return skipped_observations_counter
+    return skipped_observations_counter, skipped_by_reason
 
 
 def _import_all_images(
@@ -893,7 +923,10 @@ def run_import(
 
             # Pass 2: build and insert observations
             _log_with_time(stdout, "Importing all rows")
-            current_data_import.skipped_observations_counter = _import_all_observations(
+            (
+                current_data_import.skipped_observations_counter,
+                current_data_import.skipped_observations,
+            ) = _import_all_observations(
                 raw_rows_factory(),
                 current_data_import,
                 hash_table_datasets=hash_table_datasets,

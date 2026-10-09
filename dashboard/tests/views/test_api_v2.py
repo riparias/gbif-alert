@@ -13,6 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from dashboard.api_v2_schemas import FiltersQuery
+from dashboard.management.commands.import_observations import SkipReason
 from dashboard.models import (
     Alert,
     ApiToken,
@@ -801,6 +802,72 @@ def test_data_imports_list_start_timestamp(client, filter_lists_data):
     response = client.get(reverse("api-v2:data_imports_list"))
     entry = next(d for d in response.json() if d["id"] == di.pk)
     assert entry["startedAt"] == "2024-03-15T10:00:00Z"
+
+
+def test_data_imports_list_does_not_load_skipped_observations(
+    client, filter_lists_data
+):
+    """The list returns every import ever made, so the per-row skip details
+    (tens of KB each) must stay out of its query."""
+    with CaptureQueriesContext(connection) as ctx:
+        client.get(reverse("api-v2:data_imports_list"))
+    assert not any('"skipped_observations"' in q["sql"] for q in ctx.captured_queries)
+
+
+# --- /api/v2/data-imports/{id}/skipped-observations/ ---
+
+
+def _skipped_observations_url(data_import_id: int) -> str:
+    return reverse(
+        "api-v2:data_import_skipped_observations",
+        kwargs={"data_import_id": data_import_id},
+    )
+
+
+def test_data_import_skipped_observations_most_common_reason_first(
+    client, filter_lists_data
+):
+    di = filter_lists_data["di"]
+    di.skipped_observations = {
+        "missing_year": [4],
+        "occurrence_status_not_present": [7, 8],
+    }
+    di.save()
+
+    response = client.get(_skipped_observations_url(di.pk))
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"reason": "occurrence_status_not_present", "gbifIds": [7, 8]},
+        {"reason": "missing_year", "gbifIds": [4]},
+    ]
+
+
+def test_data_import_skipped_observations_not_recorded_is_null(
+    client, filter_lists_data
+):
+    """Imports from before the details were recorded answer null, so the page
+    can tell them apart from an import that skipped nothing ([])."""
+    di = filter_lists_data["di"]  # skipped_observations left at None
+
+    response = client.get(_skipped_observations_url(di.pk))
+
+    assert response.status_code == 200
+    assert response.json() is None
+
+
+def test_data_import_skipped_observations_unknown_import_404(client):
+    response = client.get(_skipped_observations_url(999999))
+    assert response.status_code == 404
+
+
+def test_skip_reasons_are_documented_as_an_enum(client):
+    """/api/v2/docs lists every reason the import can store. Also the guard
+    that keeps SkipReasonCode in sync with SkipReason: an undeclared reason
+    would otherwise fail response validation in production."""
+    schema = client.get("/api/v2/openapi.json").json()
+    props = schema["components"]["schemas"]["SkippedReasonOut"]["properties"]
+    assert set(props["reason"]["enum"]) == set(SkipReason)
 
 
 # ---------------------------------------------------------------------------

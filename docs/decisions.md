@@ -456,3 +456,8 @@ expresses the ownership.
 **What:** The import stores each observation's StillImage rows from `multimedia.txt` in `ObservationImage` (FK, rebuilt every import); the UI shows them via GBIF's image cache (200px thumbnails keyed on md5 of the identifier).
 **Why:** Users took the generic species image in the tooltip for a photo of the observation (#430); the photos were already in every download.
 **Rejected:** Fetching media from the GBIF occurrence API at view time (one call per row for the list indicator) and a JSONField on Observation (multimedia.txt is not row-aligned with the core, so it would need the whole file in memory).
+
+## 2026-10-09 - Record why each import skipped rows
+**What:** `DataImport.skipped_observations` stores `{reason: [gbifID, ...]}` (JSON); About the data lists it on demand via `/api/v2/data-imports/{id}/skipped-observations/`.
+**Why:** Only a skipped count was kept, so nobody could tell which GBIF records the site left out, or why.
+**Rejected:** A TextField log (untranslatable, no per-reason counts or links) and a SkippedObservation table (about 1.7M rows a year for rarely read data).

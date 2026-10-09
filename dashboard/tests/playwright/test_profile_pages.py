@@ -99,6 +99,51 @@ def test_about_data_page_older_imports_expand_to_full_details(page: Page, live_s
     expect(page.get_by_text("7", exact=True)).to_be_visible()
 
 
+def _import_with_skips(**fields) -> DataImport:
+    return DataImport.objects.create(
+        start=datetime.datetime(2024, 3, 15, 10, 0, 0, tzinfo=datetime.timezone.utc),
+        end=datetime.datetime(2024, 3, 15, 11, 0, 0, tzinfo=datetime.timezone.utc),
+        completed=True,
+        **fields,
+    )
+
+
+@pytest.mark.django_db(transaction=True)
+def test_about_data_page_lists_skipped_rows_by_reason(page: Page, live_server):
+    """The skipped count expands, on demand, into the rows grouped by reason,
+    each linking to its occurrence page on GBIF."""
+    _import_with_skips(
+        skipped_observations_counter=3,
+        skipped_observations={
+            "occurrence_status_not_present": [111, 222],
+            "missing_year": [333],
+        },
+    )
+
+    page.goto(live_server.url + "/about-data")
+    page.get_by_role("button", name="Show details").click()
+
+    expect(page.get_by_text("Not a presence record (e.g. absence) (2)")).to_be_visible()
+    page.get_by_text("Missing year (1)").click()
+    expect(page.get_by_role("link", name="333")).to_have_attribute(
+        "href", "https://www.gbif.org/occurrence/333"
+    )
+
+
+@pytest.mark.django_db(transaction=True)
+def test_about_data_page_skipped_rows_not_recorded(page: Page, live_server):
+    """Imports from before the details were recorded say so, rather than
+    showing an empty list next to a non-zero count."""
+    _import_with_skips(skipped_observations_counter=7)  # details left at None
+
+    page.goto(live_server.url + "/about-data")
+    page.get_by_role("button", name="Show details").click()
+
+    expect(
+        page.get_by_text("Details were not recorded for this import.")
+    ).to_be_visible()
+
+
 @pytest.mark.django_db(transaction=True)
 def test_news_page_renders(page: Page, live_server):
     """News page loads and shows a heading."""
