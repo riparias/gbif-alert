@@ -330,6 +330,9 @@ class DataImport(models.Model):
     gbif_download_id = models.CharField(max_length=255, blank=True)
     imported_observations_counter = models.IntegerField(default=0)
     skipped_observations_counter = models.IntegerField(default=0)
+    # {skip reason code: [gbifID, ...]}; a row failing several rules is listed
+    # under each. Null for imports that predate this field (not recorded).
+    skipped_observations = models.JSONField(blank=True, null=True)
     gbif_predicate = models.JSONField(
         blank=True, null=True
     )  # Null if a DwC-A file was provided - no GBIF download
