@@ -461,3 +461,8 @@ expresses the ownership.
 **What:** `DataImport.skipped_observations` stores `{reason: [gbifID, ...]}` (JSON); About the data lists it on demand via `/api/v2/data-imports/{id}/skipped-observations/`.
 **Why:** Only a skipped count was kept, so nobody could tell which GBIF records the site left out, or why.
 **Rejected:** A TextField log (untranslatable, no per-reason counts or links) and a SkippedObservation table (about 1.7M rows a year for rarely read data).
+
+## 2026-10-09 - Results gallery on a has_images flag and its own endpoint
+**What:** A Gallery tab pages through `/api/v2/observations/gallery/` (each observation's first photo, newest first), filtered on a stored `Observation.has_images` with a partial `(date, id)` index.
+**Why:** With photos on about 2% of observations, EXISTS on the images table took up to 3.8 s on 1M rows when a filter matched few of them; the flag keeps every page under 11 ms.
+**Rejected:** A `withImages` parameter on the list endpoint (a filter only one endpoint would honour) and one tile per photo (camera traps hold 77% of the images).

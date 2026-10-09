@@ -21,8 +21,8 @@ The home page has three parts:
 - **Observations over time**, at the top, is a small chart of the matching
   observations per month. You can also use it to pick a period (see
   [When](#when)).
-- **The results**, in tabs: **Map**, **Timeline**, **Species**, **Datasets**
-  and **Table**.
+- **The results**, in tabs: **Map**, **Timeline**, **Species**, **Datasets**,
+  **Table** and **Gallery**.
 
 At the bottom of the filters, a counter shows how many observations match, and
 how many species and datasets they come from. Click the species or datasets
@@ -157,10 +157,16 @@ columns to show.
 
 ![The table tab](../assets/img/explore-table.png)
 
+### Gallery
+
+The photo of each matching observation that has some, newest first:
+observations without photos are left out. Hover a photo to see its credit, and
+click it to open the observation with all its photos.
+
 ## Looking at one observation
 
-Click a row in the table, or an observation's name on the map, to open its
-details.
+Click a row in the table, a photo in the gallery, or an observation's name on
+the map, to open its details.
 
 ![The details of one observation](../assets/img/explore-observation.png){ width="480" }
 
