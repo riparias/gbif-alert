@@ -1516,3 +1516,35 @@ def test_images_imported_across_chunks(test_data, monkeypatch):
                 "identifier", flat=True
             )
         ) == [f"https://example.org/{i}-0.jpg", f"https://example.org/{i}-1.jpg"]
+    assert Observation.objects.filter(has_images=True).count() == 3
+
+
+def test_has_images_flags_only_observations_with_a_stored_image(test_data):
+    """The flag follows what was stored: a sound alone does not set it."""
+    run_import_with_rows(
+        [make_raw_row(gbif_id=i, occurrence_id=f"occ-{i}") for i in range(1, 4)],
+        images=[
+            make_raw_image_row(gbif_id=1),
+            make_raw_image_row(
+                gbif_id=2, type="Sound", identifier="https://example.org/s.mp3"
+            ),
+        ],
+    )
+
+    assert dict(Observation.objects.values_list("gbif_id", "has_images")) == {
+        "1": True,
+        "2": False,
+        "3": False,
+    }
+
+
+def test_reimport_clears_has_images_when_the_photos_are_gone(test_data):
+    """The flag is not carried over: a re-imported observation whose photos
+    were removed from GBIF leaves the gallery."""
+    rows = [make_raw_row()]
+
+    run_import_with_rows(rows, images=[make_raw_image_row()])
+    assert Observation.objects.get().has_images is True
+
+    run_import_with_rows(rows, images=[])
+    assert Observation.objects.get().has_images is False

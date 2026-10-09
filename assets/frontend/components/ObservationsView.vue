@@ -16,6 +16,7 @@ import ObservationHistogram from "./ObservationHistogram.vue";
 import ObservationsMap from "./ObservationsMap.vue";
 import SpeciesBreakdown from "./SpeciesBreakdown.vue";
 import DatasetBreakdown from "./DatasetBreakdown.vue";
+import ObservationGallery from "./ObservationGallery.vue";
 import Tabs from "primevue/tabs";
 import TabList from "primevue/tablist";
 import Tab from "primevue/tab";
@@ -323,12 +324,10 @@ onMounted(async () => {
                     :aria-label="t('message.datasetsView')"
                     :title="t('message.datasetsView')"
                     ><i class="pi pi-database" />
-                    <span v-if="!isMobile" class="tab-label">
-                        {{ t("message.datasetsView") }}
-                        <span class="tab-new-badge">{{ t("message.newBadge") }}</span>
-                    </span>
-                    <span v-else class="tab-new-dot"
-                /></Tab>
+                    <span v-if="!isMobile" class="tab-label">{{
+                        t("message.datasetsView")
+                    }}</span></Tab
+                >
                 <Tab
                     value="table"
                     :aria-label="t('message.tableView')"
@@ -338,6 +337,17 @@ onMounted(async () => {
                         t("message.tableView")
                     }}</span></Tab
                 >
+                <Tab
+                    value="gallery"
+                    :aria-label="t('message.galleryView')"
+                    :title="t('message.galleryView')"
+                    ><i class="pi pi-images" />
+                    <span v-if="!isMobile" class="tab-label">
+                        {{ t("message.galleryView") }}
+                        <span class="tab-new-badge">{{ t("message.newBadge") }}</span>
+                    </span>
+                    <span v-else class="tab-new-dot"
+                /></Tab>
             </TabList>
             <TabPanels>
                 <TabPanel value="map">
@@ -553,6 +563,14 @@ onMounted(async () => {
                         </DataTable>
                     </template>
                 </TabPanel>
+
+                <TabPanel value="gallery">
+                    <ObservationGallery
+                        v-if="visitedTabs.has('gallery')"
+                        :active="activeResultsTab === 'gallery'"
+                        @open="openObservation"
+                    />
+                </TabPanel>
             </TabPanels>
         </Tabs>
     </template>
@@ -647,6 +665,14 @@ onMounted(async () => {
    inherits the whitespace that used to separate it from the tab icon. */
 .tab-label {
     margin-left: 0.375rem;
+}
+/* At PrimeVue's default padding, six icon-only tabs overflow a 375px screen by
+   a few pixels, and the scroll arrow that appears then hides the last one. */
+@media (max-width: 767.98px) {
+    :deep(.p-tab) {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
 }
 .tab-new-badge {
     font-size: 0.58rem;

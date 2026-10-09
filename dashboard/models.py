@@ -782,6 +782,14 @@ class Observation(models.Model):
     )
     source_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
 
+    # True when the import attached at least one ObservationImage. Duplicates
+    # what the images table says, so the gallery can walk the small partial
+    # index below instead of probing that table for every observation: with
+    # EXISTS, a filter matching few photos made Postgres scan the whole date
+    # index (3.8 s on 1M observations against 3 ms with the flag). Only
+    # _import_all_images sets it; new rows start at False.
+    has_images = models.BooleanField(default=False)
+
     objects = ObservationManager()
 
     class Meta:
@@ -795,6 +803,13 @@ class Observation(models.Model):
             # direction, so this serves the DESC sort just as well, and it also
             # covers the ascending sort the API exposes via orderDir=asc.
             models.Index(fields=["date", "id"], name="dashboard_o_date_id_idx"),
+            # The gallery's newest-first walk over observations with photos
+            # (about 2% of them): 680 kB against 43 MB for the full index above.
+            models.Index(
+                fields=["date", "id"],
+                name="dashboard_o_img_date_id_idx",
+                condition=Q(has_images=True),
+            ),
         ]
 
     def __str__(self):

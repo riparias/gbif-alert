@@ -1,6 +1,7 @@
 import datetime
 import json
 import tempfile
+from collections.abc import Sequence
 from typing import Annotated, cast
 
 from django.conf import settings
@@ -48,6 +49,7 @@ from dashboard.api_v2_schemas import (
     DatasetOut,
     DetailErrorOut,
     FiltersQuery,
+    GalleryPageOut,
     GeoJSONFeatureCollectionOut,
     HistogramEntryOut,
     ObservationDetailOut,
@@ -202,6 +204,27 @@ def _image_to_out(image: ObservationImage) -> dict[str, str]:
         "sourceUrl": image.references,
         "attribution": image.attribution,
         "license": image.license,
+    }
+
+
+def _first_image_by_obs_id(
+    observations: Sequence[Observation],
+) -> dict[int, ObservationImage]:
+    """The first image (import order) of each of these observations that has
+    one, in one query.
+
+    DISTINCT ON keeps it to one row per observation: a camera-trap observation
+    can carry hundreds of frames.
+    """
+    return {
+        image.observation_id: image
+        for image in ObservationImage.objects.filter(observation__in=observations)
+        .select_related("observation")
+        .only(
+            "identifier", "references", "license", "attribution", "observation__gbif_id"
+        )
+        .order_by("observation_id", "pk")
+        .distinct("observation_id")
     }
 
 
@@ -865,19 +888,7 @@ def observations_list(
     else:
         unseen_ids = set()
 
-    # First image of each observation on the page, in one extra query. DISTINCT
-    # ON keeps it to one row per observation: a camera-trap observation can
-    # carry hundreds of frames.
-    first_image_by_obs_id: dict[int, ObservationImage] = {
-        image.observation_id: image
-        for image in ObservationImage.objects.filter(observation__in=obs_page)
-        .select_related("observation")
-        .only(
-            "identifier", "references", "license", "attribution", "observation__gbif_id"
-        )
-        .order_by("observation_id", "pk")
-        .distinct("observation_id")
-    }
+    first_image_by_obs_id = _first_image_by_obs_id(obs_page)
 
     items = [
         {
@@ -920,6 +931,55 @@ def observations_list(
             "hasNextPage": page < total_pages,
             "hasPreviousPage": page > 1,
             "items": items,
+        },
+    )
+
+
+@api_v2.get(
+    "/observations/gallery/",
+    response={200: GalleryPageOut, 400: DetailErrorOut},
+    summary="Observations with photos, newest first",
+)
+def observations_gallery(
+    request: HttpRequest,
+    filters: Query[FiltersQuery],
+    page: int = 1,
+    pageSize: int = 48,
+):
+    """Return a page of the filtered observations that have photos, newest
+    first, each with its first photo.
+
+    Pagination is controlled by `page` (1-based) and `pageSize` (must be
+    1-100); invalid values return 400. The order is fixed.
+
+    Defined before observation_detail so the literal `/observations/gallery/`
+    path is matched ahead of `/observations/{stable_id}/`.
+    """
+    if not 1 <= pageSize <= 100:
+        return Status(400, {"detail": "Invalid pageSize. Must be between 1 and 100."})
+    if page < 1:
+        return Status(400, {"detail": "Invalid page. Must be 1 or greater."})
+
+    # The flag rather than EXISTS on the images table: see Observation.has_images
+    qs = _filtered_observations(request, filters).filter(has_images=True)
+    offset = (page - 1) * pageSize
+    obs_page = list(qs.order_by("-date", "-pk")[offset : offset + pageSize])
+    first_image_by_obs_id = _first_image_by_obs_id(obs_page)
+
+    return Status(
+        200,
+        {
+            "count": qs.count(),
+            "items": [
+                {
+                    "stableId": obs.stable_id,
+                    "scientificName": obs.species.name,
+                    **_vernacular_names(obs.species),
+                    "date": obs.date,
+                    "image": _image_to_out(first_image_by_obs_id[obs.pk]),
+                }
+                for obs in obs_page
+            ],
         },
     )
 

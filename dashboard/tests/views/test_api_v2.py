@@ -4315,3 +4315,134 @@ def test_observation_detail_image_count_does_not_add_queries(client, observation
         client.get(url)
 
     assert len(six_images.captured_queries) == len(one_image.captured_queries)
+
+
+# --- Gallery ---
+
+
+def _with_photo(obs, identifier="https://example.org/a.jpg", **fields):
+    """Give obs a photo the way the import does: the image and the flag."""
+    _add_image(obs, identifier, **fields)
+    Observation.objects.filter(pk=obs.pk).update(has_images=True)
+
+
+def test_gallery_leaves_out_observations_without_photos(client, observations_data):
+    obs = observations_data["obs"]
+    _with_photo(obs)
+
+    data = client.get(reverse("api-v2:observations_gallery")).json()
+
+    assert data["count"] == 1
+    assert [i["stableId"] for i in data["items"]] == [obs.stable_id]
+
+
+def test_gallery_is_newest_first(client, observations_data):
+    d = observations_data
+    _with_photo(d["obs_other_species"])  # 2024-03-09
+    _with_photo(d["obs"])  # 2024-03-10
+
+    items = client.get(reverse("api-v2:observations_gallery")).json()["items"]
+
+    assert [i["stableId"] for i in items] == [
+        d["obs"].stable_id,
+        d["obs_other_species"].stable_id,
+    ]
+
+
+def test_gallery_item_carries_species_date_and_first_photo(client, observations_data):
+    obs = observations_data["obs"]
+    obs.gbif_id = REAL_GBIF_ID
+    obs.save()
+    _with_photo(obs, REAL_IMAGE_IDENTIFIER, attribution="Marleen 61")
+    _add_image(obs, "https://example.org/second.jpg")
+
+    item = client.get(reverse("api-v2:observations_gallery")).json()["items"][0]
+
+    assert set(item) == {
+        "stableId",
+        "scientificName",
+        "vernacularNameEn",
+        "vernacularNameNl",
+        "vernacularNameFr",
+        "date",
+        "image",
+    }
+    assert item["stableId"] == obs.stable_id
+    assert item["scientificName"] == "Procambarus fallax"
+    assert item["vernacularNameEn"] == "marbled crayfish"
+    assert item["date"] == "2024-03-10"
+    assert item["image"] == {
+        "thumbnailUrl": REAL_THUMBNAIL_URL,
+        "originalUrl": REAL_IMAGE_IDENTIFIER,
+        "sourceUrl": "",
+        "attribution": "Marleen 61",
+        "license": "",
+    }
+
+
+def test_gallery_applies_the_filters(client, observations_data):
+    d = observations_data
+    _with_photo(d["obs"])
+    _with_photo(d["obs_other_species"])
+
+    data = client.get(
+        reverse("api-v2:observations_gallery") + f"?speciesIds={d['other_species'].pk}"
+    ).json()
+
+    assert data["count"] == 1
+    assert [i["stableId"] for i in data["items"]] == [d["obs_other_species"].stable_id]
+
+
+def test_gallery_pages(client, observations_data):
+    d = observations_data
+    _with_photo(d["obs"])
+    _with_photo(d["obs_other_species"])
+
+    data = client.get(
+        reverse("api-v2:observations_gallery") + "?page=2&pageSize=1"
+    ).json()
+
+    assert data["count"] == 2
+    assert [i["stableId"] for i in data["items"]] == [d["obs_other_species"].stable_id]
+
+
+@pytest.mark.parametrize("query", ["pageSize=0", "pageSize=101", "page=0"])
+def test_gallery_rejects_invalid_paging(client, query):
+    response = client.get(reverse("api-v2:observations_gallery") + f"?{query}")
+    assert response.status_code == 400
+
+
+def test_gallery_counts_each_observation_once_under_overlapping_area_filter(
+    client, overlapping_areas_data
+):
+    d = overlapping_areas_data
+    _with_photo(d["obs"])
+
+    data = client.get(
+        reverse("api-v2:observations_gallery")
+        + f"?areaIds={d['area_1'].pk}&areaIds={d['area_2'].pk}"
+    ).json()
+
+    assert data["count"] == 1
+    assert len(data["items"]) == 1
+
+
+def test_gallery_photos_cost_one_query(client, observations_data):
+    """As in the list, first photos are fetched for the whole page at once,
+    whatever the number of observations - or photos - on it."""
+    url = reverse("api-v2:observations_gallery")
+    _with_photo(observations_data["obs"])
+    with CaptureQueriesContext(connection) as one_with_photos:
+        client.get(url)
+
+    _with_photo(observations_data["obs_other_species"])
+    for n in range(5):
+        _add_image(
+            observations_data["obs_other_species"], f"https://example.org/{n}.jpg"
+        )
+    with CaptureQueriesContext(connection) as both_with_photos:
+        client.get(url)
+
+    assert len(both_with_photos.captured_queries) == len(
+        one_with_photos.captured_queries
+    )

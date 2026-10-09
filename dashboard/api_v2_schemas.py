@@ -278,6 +278,28 @@ class ObservationsPageOut(Schema):
     items: list[ObservationOut]
 
 
+class GalleryItemOut(Schema):
+    """An observation with photos, as the results gallery shows it.
+
+    Deliberately slimmer than ObservationOut: a tile shows the photo, the
+    species and the date, and opens the observation by its stableId. The three
+    flat vernacular columns are kept for pickVernacular, as in SpeciesCountOut.
+    """
+
+    stableId: str
+    scientificName: str
+    vernacularNameEn: str
+    vernacularNameNl: str
+    vernacularNameFr: str
+    date: datetime.date
+    image: ObservationImageOut = Field(description="The observation's first photo.")
+
+
+class GalleryPageOut(Schema):
+    count: int  # observations with photos matching the filters, across all pages
+    items: list[GalleryItemOut]
+
+
 class CountOut(Schema):
     """The number of observations matching a filter set."""
 
