@@ -324,12 +324,10 @@ onMounted(async () => {
                     :aria-label="t('message.datasetsView')"
                     :title="t('message.datasetsView')"
                     ><i class="pi pi-database" />
-                    <span v-if="!isMobile" class="tab-label">
-                        {{ t("message.datasetsView") }}
-                        <span class="tab-new-badge">{{ t("message.newBadge") }}</span>
-                    </span>
-                    <span v-else class="tab-new-dot"
-                /></Tab>
+                    <span v-if="!isMobile" class="tab-label">{{
+                        t("message.datasetsView")
+                    }}</span></Tab
+                >
                 <Tab
                     value="table"
                     :aria-label="t('message.tableView')"
