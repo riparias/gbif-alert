@@ -756,8 +756,9 @@ def _import_all_images(
     multimedia.txt is not ordered like the core file: an image's observation
     can be anywhere in the archive. Each chunk resolves its gbifIDs in one query
     (served by the (gbif_id, data_import) unique index), so memory stays
-    O(chunk). Images whose gbifID has no observation in this import (skipped
-    rows) are dropped.
+    O(chunk), and flags the observations it gave images (has_images) in one
+    more. Images whose gbifID has no observation in this import (skipped rows)
+    are dropped.
 
     Returns the number of stored images.
     """
@@ -785,6 +786,9 @@ def _import_all_images(
             if row.gbif_id in pk_by_gbif_id
         ]
         ObservationImage.objects.bulk_create(images)
+        Observation.objects.filter(
+            pk__in={image.observation_id for image in images}
+        ).update(has_images=True)
         stored += len(images)
     return stored
 
