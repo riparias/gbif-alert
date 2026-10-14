@@ -65,6 +65,10 @@ def test_observation_changelist_query_count_does_not_grow_with_rows(client):
 
 
 def test_sent_notification_admin_is_read_only(client):
+    """The log is append-only evidence for reporting, so the admin can list
+    it (showing the alert by name, not "Alert object (1)") but not add rows.
+    Only the add page is requested here; change and delete are switched off
+    by the same kind of permission override."""
     root = get_user_model().objects.create_superuser("root", "root@example.com", "pw")
     alert = Alert.objects.create(user=root, name="Crayfish watch")
     SentNotification.objects.create(alert=alert, user=root, observations_count=7)

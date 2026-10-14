@@ -28,6 +28,11 @@ def _stats() -> str:
 
 
 def test_totals_per_month_and_per_user():
+    """The three figures D4.3 needs, on sends spread over two months: the
+    grand total with distinct recipients and the first send date (the log
+    starts at deploy, so the report must say since when), then emails and
+    distinct recipients per month, then emails per user. A deleted account
+    counts as an email but not as a recipient, and is grouped on one line."""
     alice = User.objects.create_user(username="alice", email="alice@example.com")
     bob = User.objects.create_user(username="bob", email="bob@example.com")
     _sent(alice, "2026-09-15")
@@ -46,4 +51,7 @@ def test_totals_per_month_and_per_user():
 
 
 def test_no_notification_yet():
+    """On an instance that has sent nothing yet (e.g. right after deploying
+    the log), the command says so instead of failing on the empty aggregate
+    (the first send date is None)."""
     assert "No notification email recorded yet." in _stats()
