@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.admin import RelatedOnlyFieldListFilter
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.gis import admin
 from django.utils.html import format_html
@@ -20,6 +21,7 @@ from .models import (
     ApiToken,
     ObservationUnseen,
     MapBaseLayer,
+    SentNotification,
 )
 
 admin.site.site_header = f'{settings.GBIF_ALERT["SITE_NAME"]} administration'
@@ -213,6 +215,25 @@ class AlertAdmin(admin.ModelAdmin):
     list_filter = ["user", "email_notifications_frequency"]
 
     actions = [send_alert_notification_email]
+
+
+@admin.register(SentNotification)
+class SentNotificationAdmin(admin.ModelAdmin):
+    """The log of sent notification emails, for reporting: append-only."""
+
+    list_display = ("sent_at", "user", "alert", "observations_count")
+    list_select_related = ("user", "alert")
+    list_filter = [("user", RelatedOnlyFieldListFilter)]
+    date_hierarchy = "sent_at"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(AlertTemplate)

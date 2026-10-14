@@ -20,6 +20,7 @@ from dashboard.models import (
     Dataset,
     Observation,
     ObservationUnseen,
+    SentNotification,
     Species,
     User,
 )
@@ -111,6 +112,10 @@ def test_send_notification_email_sends_one_mail_with_count_and_marks_sent(email_
 
 
 def test_send_notification_email_reports_smtp_failure(email_data):
+    """A failed SMTP send returns False and leaves no trace of a send: the
+    alert is not marked as sent (so the next run retries it) and no
+    SentNotification is logged (so the D4.3 count only includes emails that
+    actually went out)."""
     email_data["make_unseen"](1)
     alert = email_data["alert"]
     with mock.patch("dashboard.models.send_mail", side_effect=smtplib.SMTPException):
@@ -118,6 +123,53 @@ def test_send_notification_email_reports_smtp_failure(email_data):
     alert.refresh_from_db()
     assert alert.last_email_sent_on is None
     assert len(mail.outbox) == 0
+    assert not SentNotification.objects.exists()
+
+
+def test_send_notification_email_records_the_send(email_data):
+    """A successful send appends one SentNotification linking the alert and
+    its user, with the unseen count the email reported. This row is the only
+    record of the send once last_email_sent_on is overwritten by the next one,
+    and it is what notification_stats counts."""
+    email_data["make_unseen"](3)
+    alert = email_data["alert"]
+
+    assert alert.send_notification_email() is True
+
+    sent = SentNotification.objects.get()
+    assert sent.alert == alert
+    assert sent.user == email_data["user"]
+    assert sent.observations_count == 3
+    assert sent.sent_at is not None
+
+
+def test_sent_notification_survives_alert_deletion(email_data):
+    """Deleting an alert keeps its sends in the log: the alert link is nulled
+    but the user stays. Users clean up their alerts; without this the totals
+    would shrink, and storing the user apart from the alert is what keeps
+    those sends in the per-user breakdown."""
+    email_data["make_unseen"](1)
+    email_data["alert"].send_notification_email()
+
+    email_data["alert"].delete()
+
+    sent = SentNotification.objects.get()
+    assert sent.alert is None
+    assert sent.user == email_data["user"]  # still in the per-user breakdown
+
+
+def test_sent_notification_survives_account_deletion_anonymised(email_data):
+    """Deleting an account (which cascades to its alerts) keeps the row as an
+    anonymous count: both links are nulled, so the instance totals hold while
+    nothing ties the send back to the deleted person."""
+    email_data["make_unseen"](1)
+    email_data["alert"].send_notification_email()
+
+    email_data["user"].delete()
+
+    sent = SentNotification.objects.get()
+    assert sent.alert is None
+    assert sent.user is None
 
 
 def test_send_notification_email_declares_the_user_language(email_data):

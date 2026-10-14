@@ -1498,6 +1498,9 @@ class Alert(ObservationFilterSet):
     class Meta:
         unique_together = [("user", "name")]
 
+    def __str__(self) -> str:
+        return self.name
+
     def get_absolute_url(self) -> str:
         return reverse("dashboard:pages:alert-details", kwargs={"alert_id": self.id})
 
@@ -1676,7 +1679,42 @@ class Alert(ObservationFilterSet):
 
         self.last_email_sent_on = timezone.now()
         self.save(update_fields=["last_email_sent_on"])
+        SentNotification.objects.create(
+            alert=self, user=self.user, observations_count=unseen_count
+        )
         return True
+
+
+class SentNotification(models.Model):
+    """One notification email that was sent: an append-only log, kept for
+    reporting (how many alerts were distributed, to how many users).
+
+    Deleting the alert or the user account nulls the link but keeps the row,
+    so totals do not shrink when users clean up.
+
+    Attributes
+    ----------
+    alert : Alert or None
+    user : User or None
+        The recipient, stored apart from the alert so the per-user breakdown
+        survives the alert's deletion.
+    sent_at : datetime.datetime
+    observations_count : int
+        The number of unseen observations the email reported.
+    """
+
+    alert = models.ForeignKey(Alert, on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
+    )
+    sent_at = models.DateTimeField(auto_now_add=True)
+    observations_count = models.PositiveIntegerField()
+
+    class Meta:
+        ordering = ["-sent_at"]
+
+    def __str__(self) -> str:
+        return f"{self.sent_at:%Y-%m-%d %H:%M} to {self.user} ({self.alert})"
 
 
 class ApiToken(models.Model):
