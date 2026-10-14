@@ -10,7 +10,15 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
-from dashboard.models import BasisOfRecord, DataImport, Dataset, Observation, Species
+from dashboard.models import (
+    Alert,
+    BasisOfRecord,
+    DataImport,
+    Dataset,
+    Observation,
+    SentNotification,
+    Species,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -54,3 +62,17 @@ def test_observation_changelist_query_count_does_not_grow_with_rows(client):
         get_user_model().objects.create_superuser("root", "root@example.com", "pw")
     )
     assert _changelist_query_count(client, 20) == _changelist_query_count(client, 3)
+
+
+def test_sent_notification_admin_is_read_only(client):
+    root = get_user_model().objects.create_superuser("root", "root@example.com", "pw")
+    alert = Alert.objects.create(user=root, name="Crayfish watch")
+    SentNotification.objects.create(alert=alert, user=root, observations_count=7)
+    client.force_login(root)
+
+    response = client.get(reverse("admin:dashboard_sentnotification_changelist"))
+    assert response.status_code == 200
+    assert "Crayfish watch" in response.content.decode()
+
+    response = client.get(reverse("admin:dashboard_sentnotification_add"))
+    assert response.status_code == 403

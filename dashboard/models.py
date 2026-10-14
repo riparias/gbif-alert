@@ -1498,6 +1498,9 @@ class Alert(ObservationFilterSet):
     class Meta:
         unique_together = [("user", "name")]
 
+    def __str__(self) -> str:
+        return self.name
+
     def get_absolute_url(self) -> str:
         return reverse("dashboard:pages:alert-details", kwargs={"alert_id": self.id})
 
