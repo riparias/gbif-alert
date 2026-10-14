@@ -466,3 +466,8 @@ expresses the ownership.
 **What:** A Gallery tab pages through `/api/v2/observations/gallery/` (each observation's first photo, newest first), filtered on a stored `Observation.has_images` with a partial `(date, id)` index.
 **Why:** With photos on about 2% of observations, EXISTS on the images table took up to 3.8 s on 1M rows when a filter matched few of them; the flag keeps every page under 11 ms.
 **Rejected:** A `withImages` parameter on the list endpoint (a filter only one endpoint would honour) and one tile per photo (camera traps hold 77% of the images).
+
+## 2026-10-14 - Log each notification email sent, for the D4.3 indicators
+**What:** `send_notification_email()` appends a `SentNotification` (alert, user, sent_at, observations_count), read-only in the admin; `notification_stats` prints totals per month and per user.
+**Why:** D4.3 must report the alerts distributed and the user base, but `Alert.last_email_sent_on` kept only the latest send.
+**Rejected:** A counter on Alert (no per-month or per-user breakdown) and an alert-only FK (deleting an alert would drop its sends from the per-user totals).

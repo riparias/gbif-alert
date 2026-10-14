@@ -260,6 +260,15 @@ docker compose exec gbif-alert python manage.py import_observations
 docker compose exec gbif-alert python manage.py send_alert_notifications_email
 ```
 
+**Notification statistics:** each notification email sent is logged (Django
+admin, "Sent notifications"). To print the totals, per month and per user:
+
+```
+docker compose exec gbif-alert python manage.py notification_stats
+```
+
+Only emails sent since the log was introduced are counted.
+
 ### Upgrades
 
 1. Bump `GBIF_ALERT_TAG` in your `.env` (e.g. `1.10.0` -> `1.11.0`). The compose file reads this var via `image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?...}`, so you do not edit the committed compose file itself. The var is required (no baked-in default): an unset or empty value aborts the deploy with a hint instead of silently pulling a stale tag.

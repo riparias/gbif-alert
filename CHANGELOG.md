@@ -10,6 +10,9 @@
   some, newest first. Click one to open the observation.
 - API: `/api/v2/observations/gallery/` lists the matching observations with
   photos, newest first, each with its first photo.
+- New: each notification email sent is now logged (Django admin, "Sent
+  notifications"). `manage.py notification_stats` prints the totals per month
+  and per user (#477).
 - New: on About the data, the skipped observations of an import can be
   expanded into the rows left out, grouped by reason (missing year, missing
   coordinates, absence record...), each linking to the record on GBIF. Imports
