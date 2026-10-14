@@ -20,6 +20,7 @@ from dashboard.models import (
     Dataset,
     Observation,
     ObservationUnseen,
+    SentNotification,
     Species,
     User,
 )
@@ -118,6 +119,42 @@ def test_send_notification_email_reports_smtp_failure(email_data):
     alert.refresh_from_db()
     assert alert.last_email_sent_on is None
     assert len(mail.outbox) == 0
+    assert not SentNotification.objects.exists()
+
+
+def test_send_notification_email_records_the_send(email_data):
+    email_data["make_unseen"](3)
+    alert = email_data["alert"]
+
+    assert alert.send_notification_email() is True
+
+    sent = SentNotification.objects.get()
+    assert sent.alert == alert
+    assert sent.user == email_data["user"]
+    assert sent.observations_count == 3
+    assert sent.sent_at is not None
+
+
+def test_sent_notification_survives_alert_deletion(email_data):
+    email_data["make_unseen"](1)
+    email_data["alert"].send_notification_email()
+
+    email_data["alert"].delete()
+
+    sent = SentNotification.objects.get()
+    assert sent.alert is None
+    assert sent.user == email_data["user"]  # still in the per-user breakdown
+
+
+def test_sent_notification_survives_account_deletion_anonymised(email_data):
+    email_data["make_unseen"](1)
+    email_data["alert"].send_notification_email()
+
+    email_data["user"].delete()
+
+    sent = SentNotification.objects.get()
+    assert sent.alert is None
+    assert sent.user is None
 
 
 def test_send_notification_email_declares_the_user_language(email_data):
