@@ -1,4 +1,4 @@
-# Unreleased
+# 2.11.0 (2026-10-22)
 
 - New: observation photos published to GBIF are shown in the observation
   details. In the results table, a camera column marks observations that have
