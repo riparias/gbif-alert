@@ -1607,7 +1607,20 @@ class Alert(ObservationFilterSet):
     @property
     def has_unseen_observations(self) -> bool:
         """True if this alert has unseen observations"""
-        return self.unseen_observations_count > 0
+        qs = self.unseen_observations()
+        if self.area_filter_mode != self.AREA_FILTER_INSIDE:
+            # Approaching/both keep COUNT. Measured on a 720k-observation copy
+            # (2026-10-23): EXISTS's LIMIT 1 made Postgres give up COUNT's
+            # parallel plan for a serial nested loop, up to 2x slower (+340 ms)
+            # when nothing matches - the navbar's common case.
+            return qs.count() > 0
+        # Inside mode: EXISTS cut the navbar check from 8.6 s to 0.4 s summed
+        # over 69 users on the same copy, but only without DISTINCT. Django
+        # keeps .distinct() in .exists(), and on one alert that flipped Postgres
+        # to a parallel seq scan of dashboard_areapart (9 -> 92 ms). Duplicate
+        # rows cannot change whether one exists, so drop it.
+        qs.query.distinct = False
+        return qs.exists()
 
     def email_should_be_sent_now(self) -> bool:
         """Returns true if a notification email for this alert should be sent at the present time.
@@ -1616,7 +1629,7 @@ class Alert(ObservationFilterSet):
         """
         if (
             self.email_notifications_frequency != self.NO_EMAILS
-            and self.unseen_observations_count > 0
+            and self.has_unseen_observations
         ):
             if (
                 self.last_email_sent_on is None
@@ -1640,9 +1653,7 @@ class Alert(ObservationFilterSet):
         """
         language_code = self.user.get_language()
 
-        # Count once for the subject and the body (the caller has just
-        # counted too, in email_should_be_sent_now(); this is the one count
-        # this method owns).
+        # Count once for the subject and the body.
         unseen_count = self.unseen_observations().count()
 
         # Message subject

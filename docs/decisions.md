@@ -476,3 +476,8 @@ expresses the ownership.
 **What:** `AlertAdmin` shows `unseen_observations_count` on the alert's change page only, no longer as a list column.
 **Why:** The count is a full spatial query per alert (up to seconds each), so a 100-row list page timed out in production.
 **Rejected:** Storing the count on Alert (every seen/unseen path would have to keep it in sync).
+
+## 2026-10-23 - Unseen check: EXISTS for inside-mode alerts only
+**What:** `Alert.has_unseen_observations` (navbar dot, email check) runs EXISTS without DISTINCT for inside-mode alerts and keeps COUNT for approaching/both.
+**Why:** On a 720k-observation copy the navbar check fell from 8.6 s to 0.4 s summed over 69 users; in approaching mode LIMIT 1 lost COUNT's parallel plan (up to 2x slower when nothing matched).
+**Rejected:** EXISTS for every mode (+340 ms worst on approaching alerts with nothing unseen) and EXISTS keeping Django's DISTINCT (one alert 9 -> 92 ms).
