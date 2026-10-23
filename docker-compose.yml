@@ -68,7 +68,7 @@ x-app-env: &app-env
   MAP_INITIAL_LON: ${MAP_INITIAL_LON:-0}
   TIME_ZONE: ${TIME_ZONE:-Europe/Brussels}
 
-# Image tag is operator-controlled: pin to a specific version (`:1.10.0`)
+# Image tag is operator-controlled: pin to a specific version (`:2.11.0`)
 # for stable deploys, or track a moving tag (`:devel`, `:latest`) for
 # auto-redeploy via registry polling. Inlined into each service (instead
 # of a YAML anchor) because some docker-compose implementations
@@ -78,7 +78,7 @@ x-app-env: &app-env
 services:
 
   migrate:
-    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 2.11.0}
     # Always check the registry on `docker compose up`. Without this, moving
     # tags like `devel` are never re-pulled because the image reference
     # string is unchanged - the local cached layer is silently reused.
@@ -92,7 +92,7 @@ services:
     restart: "no"
 
   gbif-alert:
-    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 2.11.0}
     pull_policy: always
     # Dockerfile CMD reads ${GUNICORN_WORKERS:-3} at runtime.
     environment:
@@ -142,7 +142,7 @@ services:
       # clashing on a hardcoded router name. See INSTALL.md.
 
   rqworker:
-    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 2.11.0}
     pull_policy: always
     command: python manage.py rqworker default
     environment: *app-env
