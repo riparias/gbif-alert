@@ -471,3 +471,8 @@ expresses the ownership.
 **What:** `send_notification_email()` appends a `SentNotification` (alert, user, sent_at, observations_count), read-only in the admin; `notification_stats` prints totals per month and per user.
 **Why:** D4.3 must report the alerts distributed and the user base, but `Alert.last_email_sent_on` kept only the latest send.
 **Rejected:** A counter on Alert (no per-month or per-user breakdown) and an alert-only FK (deleting an alert would drop its sends from the per-user totals).
+
+## 2026-10-23 - Unseen count off the admin alerts list
+**What:** `AlertAdmin` shows `unseen_observations_count` on the alert's change page only, no longer as a list column.
+**Why:** The count is a full spatial query per alert (up to seconds each), so a 100-row list page timed out in production.
+**Rejected:** Storing the count on Alert (every seen/unseen path would have to keep it in sync).

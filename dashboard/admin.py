@@ -205,14 +205,17 @@ class AlertAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "name",
-        "unseen_observations_count",
         "species_list",
         "datasets_list",
         "basis_of_record_list",
         "areas_list",
         "email_notifications_frequency",
     )
+    list_select_related = ("user",)
     list_filter = ["user", "email_notifications_frequency"]
+    # Not in list_display: the count is a full spatial query per alert (up to
+    # seconds each), which made the list time out in production.
+    readonly_fields = ("unseen_observations_count",)
 
     actions = [send_alert_notification_email]
 

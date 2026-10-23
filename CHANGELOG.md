@@ -1,3 +1,8 @@
+# Unreleased
+
+- Fix: the alerts list in the Django admin no longer times out on large
+  instances. The unseen observations count moved to each alert's admin page.
+
 # 2.11.0 (2026-10-22)
 
 - New: observation photos published to GBIF are shown in the observation
