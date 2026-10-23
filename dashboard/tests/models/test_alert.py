@@ -3,6 +3,8 @@ import datetime
 import pytest
 from django.contrib.gis.geos import MultiPolygon, Point, Polygon
 from django.core.exceptions import ValidationError
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from dashboard.models import (
@@ -20,6 +22,13 @@ from dashboard.models import (
 SEPTEMBER_13_2021 = datetime.datetime.strptime("2021-09-13", "%Y-%m-%d").date()
 
 pytestmark = pytest.mark.django_db
+
+
+def _square(x0, y0, x1, y1):
+    return MultiPolygon(
+        Polygon(((x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)), srid=4326),
+        srid=4326,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -125,6 +134,63 @@ def test_has_unseen_observations_false_case_2(alert_data):
     )
     alert.species.add(another_species)
     assert not alert.has_unseen_observations
+
+
+def test_has_unseen_observations_inside_areas_uses_exists_without_distinct(
+    alert_data,
+):
+    """Inside mode checks with EXISTS and no DISTINCT, and still finds an
+    observation that two overlapping areas both match.
+
+    On a 720k-observation copy (2026-10-23) EXISTS made the navbar check about
+    20x faster, but only once DISTINCT was dropped: Django keeps .distinct() in
+    .exists(), and that pushed Postgres into a parallel seq scan of
+    dashboard_areapart (9 -> 92 ms on one alert). Overlapping areas are the
+    duplicate case the DISTINCT in filtered_from_my_params is there for.
+    """
+    alert = Alert.objects.create(user=alert_data["user"], name="overlapping areas")
+    alert.areas.add(
+        Area.objects.create(name="big", mpoly=_square(5.0, 50.4, 5.2, 50.6)),
+        Area.objects.create(name="small", mpoly=_square(5.05, 50.45, 5.15, 50.55)),
+    )
+    with CaptureQueriesContext(connection) as ctx:
+        assert alert.has_unseen_observations
+    sql = ctx.captured_queries[-1]["sql"]
+    assert "LIMIT 1" in sql
+    assert "DISTINCT" not in sql
+
+
+def test_has_unseen_observations_inside_area_excludes_outside(alert_data):
+    """The EXISTS path still applies the area: an unseen observation outside
+    the alert's only area does not light the navbar dot."""
+    alert = Alert.objects.create(user=alert_data["user"], name="area far")
+    alert.areas.add(
+        Area.objects.create(name="far", mpoly=_square(3.0, 51.0, 3.2, 51.2))
+    )
+    assert not alert.has_unseen_observations
+
+
+def test_has_unseen_observations_approaching_keeps_count(alert_data):
+    """Approaching mode keeps COUNT, and finds an unseen observation in the
+    ring around the area.
+
+    Benchmarked 2026-10-23: in this mode EXISTS's LIMIT 1 made Postgres give
+    up COUNT's parallel plan for a serial nested loop, up to 2x slower
+    (+340 ms) when nothing matches - the navbar's common case.
+    """
+    alert = Alert.objects.create(
+        user=alert_data["user"],
+        name="approaching",
+        area_filter_mode=Alert.AREA_FILTER_APPROACHING,
+        approaching_distance_km=10.0,
+    )
+    # About 2 km east of the observation: outside the area, inside the ring.
+    alert.areas.add(
+        Area.objects.create(name="east", mpoly=_square(5.12, 50.45, 5.2, 50.55))
+    )
+    with CaptureQueriesContext(connection) as ctx:
+        assert alert.has_unseen_observations
+    assert "COUNT(" in ctx.captured_queries[-1]["sql"]
 
 
 def test_basis_of_record_list_empty(alert_data):
@@ -448,18 +514,12 @@ def test_observations_applies_species_dataset_and_area_filters(alert_data):
     )
     assert list(other_dataset.observations()) == []
 
-    def square(x0, y0, x1, y1):
-        return MultiPolygon(
-            Polygon(((x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)), srid=4326),
-            srid=4326,
-        )
-
     around = Alert.objects.create(user=user, name="area around")
     around.areas.add(
-        Area.objects.create(name="around", mpoly=square(5.0, 50.4, 5.2, 50.6))
+        Area.objects.create(name="around", mpoly=_square(5.0, 50.4, 5.2, 50.6))
     )
     assert list(around.observations()) == [obs]
 
     far = Alert.objects.create(user=user, name="area far")
-    far.areas.add(Area.objects.create(name="far", mpoly=square(3.0, 51.0, 3.2, 51.2)))
+    far.areas.add(Area.objects.create(name="far", mpoly=_square(3.0, 51.0, 3.2, 51.2)))
     assert list(far.observations()) == []

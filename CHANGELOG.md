@@ -2,6 +2,8 @@
 
 - Fix: the alerts list in the Django admin no longer times out on large
   instances. The unseen observations count moved to each alert's admin page.
+- Fix: pages load faster for users with large alerts. Checking for unseen
+  observations (the dot in the navigation bar) no longer counts them all.
 
 # 2.11.0 (2026-10-22)
 
