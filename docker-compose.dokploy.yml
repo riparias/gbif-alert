@@ -85,14 +85,14 @@ x-app-env: &app-env
 services:
 
   migrate:
-    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 2.11.0}
     pull_policy: always
     command: python manage.py migrate --noinput
     environment: *app-env
     restart: "no"
 
   gbif-alert:
-    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 2.11.0}
     pull_policy: always
     # Dockerfile CMD reads ${GUNICORN_WORKERS:-3} at runtime.
     environment:
@@ -135,7 +135,7 @@ services:
       - "ofelia.job-exec.send-notifications.no-overlap=true"
 
   rqworker:
-    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 1.11.0}
+    image: ghcr.io/riparias/gbif-alert:${GBIF_ALERT_TAG:?set GBIF_ALERT_TAG, e.g. devel or 2.11.0}
     pull_policy: always
     command: python manage.py rqworker default
     environment: *app-env
