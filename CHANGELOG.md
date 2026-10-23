@@ -1,4 +1,4 @@
-# Unreleased
+# 2.11.1 (2026-10-23)
 
 - Fix: the alerts list in the Django admin no longer times out on large
   instances. The unseen observations count moved to each alert's admin page.
