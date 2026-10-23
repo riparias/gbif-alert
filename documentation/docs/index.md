@@ -23,7 +23,7 @@ The shared vocabulary both guides use. Start here if a term is unfamiliar.
 
 ## Elsewhere
 
-- **Installing and deploying an instance:** [INSTALL.md](https://github.com/riparias/gbif-alert/blob/devel/INSTALL.md)
+- **Installing and deploying an instance:** [INSTALL.md](https://github.com/riparias/gbif-alert/blob/main/INSTALL.md)
 - **Contributing to the code:** [CONTRIBUTING.md](https://github.com/riparias/gbif-alert/blob/devel/CONTRIBUTING.md)
 - **HTTP API:** each instance documents its own at `/api-docs`, with the
   interactive reference at `/api/v2/docs`. For example, on the

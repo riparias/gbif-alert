@@ -3,7 +3,7 @@
 For whoever runs a GBIF Alert instance day to day.
 
 Installing and deploying an instance is covered separately, in
-[INSTALL.md](https://github.com/riparias/gbif-alert/blob/devel/INSTALL.md).
+[INSTALL.md](https://github.com/riparias/gbif-alert/blob/main/INSTALL.md).
 
 !!! note "Under construction"
 
