@@ -2,6 +2,9 @@
 
 - Fix: the timeline above the results now spans the whole width, and its
   axis labels show round dates (2010, 2015...) instead of overlapping (#366).
+- The notification delay help text on the profile page now warns that GBIF
+  datasets can be updated monthly or yearly, so a short delay may hide
+  observations (#503).
 
 # 2.11.1 (2026-10-23)
 

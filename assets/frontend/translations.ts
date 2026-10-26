@@ -238,7 +238,9 @@ export const messages = {
             speciesImageCredit: "Image: {attribution} ({license})",
             notificationDelay: "Notification delay",
             notificationDelayHelp:
-                "Observations older than this delay will be automatically marked as viewed. This takes effect after the next periodic sync.",
+                "Observations older than this delay will be automatically marked as viewed.",
+            notificationDelayHelpDetails:
+                "Changes will only take effect after the next synchronization of the alert tool with GBIF. Be aware that datasets on GBIF could be updated on a monthly or yearly basis. A short notification delay could result in missed observations.",
             observationCount: "Observations",
             observationHasPhotos: "This observation has photos",
             observationNotFound: "Observation not found.",
@@ -586,7 +588,9 @@ export const messages = {
             speciesImageCredit: "Image : {attribution} ({license})",
             notificationDelay: "Délai de notification",
             notificationDelayHelp:
-                "Les observations plus anciennes que ce délai seront automatiquement marquées comme vues. Cela prend effet après la prochaine synchronisation périodique.",
+                "Les observations plus anciennes que ce délai seront automatiquement marquées comme vues.",
+            notificationDelayHelpDetails:
+                "Les modifications ne prendront effet qu'après la prochaine synchronisation de l'outil d'alerte avec GBIF. Attention : les jeux de données sur GBIF peuvent n'être mis à jour que mensuellement ou annuellement. Un délai de notification court pourrait vous faire manquer des observations.",
             observationCount: "Observations",
             observationHasPhotos: "Cette observation a des photos",
             observationNotFound: "Observation introuvable.",
@@ -931,7 +935,9 @@ export const messages = {
             speciesImageCredit: "Afbeelding: {attribution} ({license})",
             notificationDelay: "Meldingsvertraging",
             notificationDelayHelp:
-                "Waarnemingen ouder dan deze vertraging worden automatisch als gezien gemarkeerd. Dit heeft effect na de volgende periodieke synchronisatie.",
+                "Waarnemingen ouder dan deze vertraging worden automatisch als gezien gemarkeerd.",
+            notificationDelayHelpDetails:
+                "Wijzigingen worden pas van kracht na de volgende synchronisatie van de alerttool met GBIF. Let op: datasets op GBIF worden soms maar maandelijks of jaarlijks bijgewerkt. Een korte meldingsvertraging kan ertoe leiden dat je waarnemingen mist.",
             observationCount: "Waarnemingen",
             observationHasPhotos: "Deze observatie heeft foto's",
             observationNotFound: "Observatie niet gevonden.",
@@ -1273,7 +1279,9 @@ export const messages = {
             speciesImageCredit: "Bilde: {attribution} ({license})",
             notificationDelay: "Varslingsforsinkelse",
             notificationDelayHelp:
-                "Observasjoner som er eldre enn denne forsinkelsen, merkes automatisk som sett. Dette trer i kraft etter neste periodiske synkronisering.",
+                "Observasjoner som er eldre enn denne forsinkelsen, merkes automatisk som sett.",
+            notificationDelayHelpDetails:
+                "Endringer trer først i kraft etter neste synkronisering av varslingsverktøyet med GBIF. Vær oppmerksom på at datasett på GBIF kan bli oppdatert månedlig eller årlig. En kort varslingsforsinkelse kan føre til at du går glipp av observasjoner.",
             observationCount: "Observasjoner",
             observationHasPhotos: "Denne observasjonen har bilder",
             observationNotFound: "Observasjonen ble ikke funnet.",
