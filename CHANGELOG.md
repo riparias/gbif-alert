@@ -1,3 +1,8 @@
+# Unreleased
+
+- Fix: the timeline above the results now spans the whole width, and its
+  axis labels show round dates (2010, 2015...) instead of overlapping (#366).
+
 # 2.11.1 (2026-10-23)
 
 - Fix: the alerts list in the Django admin no longer times out on large

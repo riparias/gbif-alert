@@ -481,3 +481,8 @@ expresses the ownership.
 **What:** `Alert.has_unseen_observations` (navbar dot, email check) runs EXISTS without DISTINCT for inside-mode alerts and keeps COUNT for approaching/both.
 **Why:** On a 720k-observation copy the navbar check fell from 8.6 s to 0.4 s summed over 69 users; in approaching mode LIMIT 1 lost COUNT's parallel plan (up to 2x slower when nothing matched).
 **Rejected:** EXISTS for every mode (+340 ms worst on approaching alerts with nothing unseen) and EXISTS keeping Django's DISTINCT (one alert 9 -> 92 ms).
+
+## 2026-10-26 - Histogram brush: full width, round-date ticks
+**What:** The homepage brush spans the main column, and the histogram x axis ticks on round dates (every 1-6 months or 1-50 years) sized to the chart width.
+**Why:** #366 - at 45% width, 12 "YYYY-M" ticks overlapped; the row left of the brush was empty anyway, so widening costs no height.
+**Rejected:** Moving the brush into the Timeline tab as drag-to-zoom (also fixes month precision and the date filter living in two places); deferred, may revisit.

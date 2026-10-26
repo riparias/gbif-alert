@@ -123,7 +123,10 @@ const yScale = computed(() =>
 
 // --- D3 axis directives ---
 
-const NUM_X_TICKS = 12;
+// Tick intervals in months, finest first. The x axis takes the finest one that
+// leaves at least MIN_X_TICK_SPACING_PX between labels.
+const X_TICK_STEPS_MONTHS = [1, 2, 3, 6, 12, 24, 60, 120, 240, 600];
+const MIN_X_TICK_SPACING_PX = 60; // a "YYYY-MM" label plus a gap
 
 function applyYAxis(el: SVGGElement, binding: DirectiveBinding) {
     const scale = binding.value.scale;
@@ -134,10 +137,22 @@ function applyYAxis(el: SVGGElement, binding: DirectiveBinding) {
 function applyXAxis(el: SVGGElement, binding: DirectiveBinding) {
     const scale = binding.value.scale;
     const domain: string[] = scale.domain();
-    const step = Math.max(1, Math.floor(domain.length / NUM_X_TICKS));
-    axisBottom<string>(scale).tickValues(domain.filter((_: string, i: number) => i % step === 0))(
-        select(el),
-    );
+    const maxTicks = Math.max(1, Math.floor(scale.range()[1] / MIN_X_TICK_SPACING_PX));
+    const step =
+        X_TICK_STEPS_MONTHS.find((s) => domain.length / s <= maxTicks) ??
+        X_TICK_STEPS_MONTHS[X_TICK_STEPS_MONTHS.length - 1];
+    // Ticks land on round dates (every 3rd month, January of every 5th year...)
+    // rather than on every n-th bar, so labels read "2010, 2015" not "2010-11, 2013-1".
+    const ticks = domain.filter((key) => {
+        const [y, m] = key.split("-").map(Number);
+        return (y * 12 + m - 1) % step === 0;
+    });
+    axisBottom<string>(scale)
+        .tickValues(ticks)
+        .tickFormat((key) => {
+            const [y, m] = key.split("-");
+            return step >= 12 ? y : `${y}-${m.padStart(2, "0")}`;
+        })(select(el));
 }
 
 const vYaxis: ObjectDirective<SVGGElement> = { mounted: applyYAxis, updated: applyYAxis };
