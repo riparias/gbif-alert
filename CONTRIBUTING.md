@@ -269,18 +269,53 @@ If the cache is misconfigured or unreachable in production, `CacheBackend` logs 
 ## Internationalization (i18n)
 
 - For template-based / backend translations, we use the standard Django i18n tools (see [Django documentation](https://docs.djangoproject.com/en/4.1/topics/i18n/)) 
-- (don't forget the translation for the notification e-mails: see `dashboard/templates/dashboard/emails` )
 - For Vue components, we use https://vue-i18n.intlify.dev/ instead.
 - Data-related translations that should be provided directly in the database via Django Admin: page fragments, vernacular names, ...
 
 ### How to update translations: Django
 - In code, use the appropriate `gettext` functions (e.g. `_()`, `gettext()`, `ngettext()`, etc.), the `trans` template tag, etc.
-- Update PO files with `$ python manage.py makemessages --ignore="node_modules/*" -l fr -l nl`
+- Update PO files with `$ python manage.py makemessages --ignore="node_modules/*" -l fr -l nl -l nb`
 - Fill in the translations in the PO files
-- Compile the PO files to MO with `$ python manage.py compilemessages`
+- Compile the PO files to MO with `$ python manage.py compilemessages --ignore=.venv --ignore=node_modules`
 
 ### How to update translations: Vue
 - Update the `messages` object in assets/frontend/translations.ts. Please keep the keys in alphabetical order.
+
+### How to add a new language
+
+A new language is a code change, released like any other, because the interface texts live in the codebase. Every
+instance gets it, and each one opts in with `ENABLED_LANGUAGES`. Norwegian Bokmal (`nb`) was added this way.
+
+1. **Pick the language code.** Prefer a code Django ships a translation for (look for
+   `django/conf/locale/<code>/` in the Django package): the Django admin, form errors and date formats then come
+   translated for free. That is why Norwegian is `nb` and not `no`.
+2. **Declare it.** Add `("<code>", _("<English name>"))` to `LANGUAGES` in `djangoproject/settings.py`.
+3. **Create the migrations.** Run `uv run python manage.py makemigrations` and commit the result. It adds the language's
+   column to every translated model field (see each app's `translation.py`: species vernacular names, alert template
+   names and descriptions, page fragments), and to the choices of the user's language setting.
+4. **Translate the backend texts.** Run
+   `uv run python manage.py makemessages --ignore="node_modules/*" -l <code>`, which creates the PO files under
+   `dashboard/locale/<code>/` and `djangoproject/locale/<code>/`. Translate them, the notification email included. Then
+   check with `uv run python manage.py compilemessages --ignore=.venv --ignore=node_modules` (the compiled MO files are
+   not committed: CI and the Docker image build them). An untranslated text shows in English.
+5. **Translate the Vue texts.** Add a `<code>: { ... }` block to `assets/frontend/translations.ts` with every key of the
+   `en` block, in the same alphabetical order. A missing key shows the English text.
+6. **EU emblem (optional).** On an instance showing the EU funding acknowledgement, the emblem is an image with the
+   wording typeset in it. Add `eu-funded-<code>.png` and `eu-funded-<code>-negative.png` to
+   `static_global/eu-funding/` (see `PROVENANCE.md` there for the source), otherwise the English one is shown.
+7. **Document it.** List the code in `.env.example` (the `ENABLED_LANGUAGES` comment) and in `INSTALL.md` (the
+   supported languages and the `ENABLED_LANGUAGES` setting), and add a `CHANGELOG.md` entry.
+
+The API, the Vue components, the map tiles, the WFS service and the notification email take their language list from
+`LANGUAGES`: they need no change.
+
+Once the release is deployed, each instance that wants the language:
+
+- adds the code to its `ENABLED_LANGUAGES`;
+- fills in the translated content in the Django admin: species vernacular names (one field per language, also importable
+  from CSV/XLSX with a `vernacular_name_<code>` column, or through the API's `vernacularNames`), alert templates and page
+  fragments. Nothing is filled in automatically. Until it is, page fragments and alert templates show their English
+  text, and species show their scientific name.
 
 ## How to release a new version
 

@@ -57,8 +57,8 @@ prettier      # Format JS/TS/Vue code (configure editor for format-on-save)
 
 ### Translations
 ```bash
-uv run python manage.py makemessages --ignore="node_modules/*" -l fr -l nl  # Update PO files
-uv run python manage.py compilemessages                                      # Compile MO files
+uv run python manage.py makemessages --ignore="node_modules/*" -l fr -l nl -l nb  # Update PO files
+uv run python manage.py compilemessages --ignore=.venv --ignore=node_modules  # Compile MO files
 ```
 
 ### Key Management Commands

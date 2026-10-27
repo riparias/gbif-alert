@@ -5,6 +5,17 @@
 - The notification delay help text on the profile page now warns that GBIF
   datasets can be updated monthly or yearly, so a short delay may hide
   observations (#503).
+- Fix: Norwegian is now complete. The home page, "about this site" and "what's
+  new" texts can be written in Norwegian, and Norwegian species names and alert
+  template names are shown.
+- Fix: a user whose language has no translated notification email yet now gets
+  it in English instead of no email at all. French emails now also translate
+  "all" in the alert details.
+- API: species carry `vernacularNames` and alert templates `names` and
+  `descriptions`, with one entry per language; creating or updating a species
+  accepts `vernacularNames`. The `vernacularNameEn/Fr/Nl`, `nameEn/Fr/Nl` and
+  `descriptionEn/Fr/Nl` fields still work but are deprecated. The WFS service
+  gains a `species_vernacular_name_nb` column.
 
 # 2.11.1 (2026-10-23)
 
