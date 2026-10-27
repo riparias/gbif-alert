@@ -3165,7 +3165,7 @@ def test_spa_openapi_schema_is_served_and_marked_internal(client):
 def test_page_fragment_returns_html_under_spa_namespace(client):
     """page-fragments is served under /api/v2/spa/ and returns rendered HTML."""
     # Set all three language fields so the result is locale-independent
-    # (get_content_in falls back to other languages when a field is empty).
+    # (an empty language falls back to English).
     PageFragment.objects.create(
         identifier="welcome_text",
         content_en="# Hello",

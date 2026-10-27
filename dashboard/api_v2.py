@@ -1241,7 +1241,7 @@ def page_fragment(request: HttpRequest, identifier: str):
     """
     try:
         fragment = PageFragment.objects.get(identifier=identifier)
-        html = markdownify(fragment.get_content_in(request.LANGUAGE_CODE))
+        html = markdownify(fragment.content)
     except PageFragment.DoesNotExist:
         html = ""
     return {"html": html}
