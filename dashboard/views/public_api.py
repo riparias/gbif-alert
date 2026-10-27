@@ -239,19 +239,15 @@ class CustomXsdElementScientificName(XSDElementForceStringType):
         return instance.species.name
 
 
-class CustomXsdElementVernacularNameNL(XSDElementForceStringType):
-    def get_value(self, instance):
-        return instance.species.vernacular_name_nl
+def _vernacular_name_xsd_class(code: str) -> type[XSDElementForceStringType]:
+    """The XSD element reading the species' vernacular name in language `code`
+    (its django-modeltranslation column)."""
 
+    class CustomXsdElementVernacularName(XSDElementForceStringType):
+        def get_value(self, instance):
+            return getattr(instance.species, f"vernacular_name_{code}")
 
-class CustomXsdElementVernacularNameEN(XSDElementForceStringType):
-    def get_value(self, instance):
-        return instance.species.vernacular_name_en
-
-
-class CustomXsdElementVernacularNameFR(XSDElementForceStringType):
-    def get_value(self, instance):
-        return instance.species.vernacular_name_fr
+    return CustomXsdElementVernacularName
 
 
 class CustomXsdElementBasisOfRecord(XSDElementForceStringType):
@@ -309,21 +305,15 @@ class ObservationsWFSView(WFSView):
                     model_attribute="species",
                     xsd_class=CustomXsdElementScientificName,
                 ),
-                field(
-                    "species_vernacular_name_nl",
-                    model_attribute="species",
-                    xsd_class=CustomXsdElementVernacularNameNL,
-                ),
-                field(
-                    "species_vernacular_name_en",
-                    model_attribute="species",
-                    xsd_class=CustomXsdElementVernacularNameEN,
-                ),
-                field(
-                    "species_vernacular_name_fr",
-                    model_attribute="species",
-                    xsd_class=CustomXsdElementVernacularNameFR,
-                ),
+                # One column per language in settings.LANGUAGES.
+                *[
+                    field(
+                        f"species_vernacular_name_{code}",
+                        model_attribute="species",
+                        xsd_class=_vernacular_name_xsd_class(code),
+                    )
+                    for code, _name in settings.LANGUAGES
+                ],
                 field(
                     "dataset_name",
                     model_attribute="source_dataset",

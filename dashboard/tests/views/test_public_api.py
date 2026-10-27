@@ -241,6 +241,43 @@ def test_wfs_getfeature_exposes_col_key_for_col_only_species(public_api_data, cl
     assert '"species_col_key":"C5KM"' in body
 
 
+def test_wfs_getfeature_exposes_vernacular_name_in_every_language(
+    public_api_data, client
+):
+    """GetFeature has a species_vernacular_name_<code> column for every
+    language in settings.LANGUAGES, so a language added to the site (nb here)
+    reaches GIS users without a code change. The existing en/fr/nl columns
+    keep their names, so saved QGIS layers keep working."""
+    species = Species.objects.create(
+        name="Lithobates catesbeianus",
+        gbif_col_taxon_key="3DXV3",
+        vernacular_name_en="American bullfrog",
+        vernacular_name_nb="oksefrosk",
+    )
+    Observation.objects.create(
+        gbif_id=998,
+        occurrence_id="998",
+        species=species,
+        date=SEPTEMBER_13_2021,
+        data_import=public_api_data["di"],
+        initial_data_import=public_api_data["di"],
+        source_dataset=public_api_data["first_dataset"],
+        location=Point(5.09513, 50.48941, srid=4326),  # Andenne
+        basis_of_record=public_api_data["basis_of_record"],
+    )
+
+    base_url = reverse("dashboard:public-api:wfs-observations")
+    response = client.get(
+        f"{base_url}?SERVICE=WFS&REQUEST=GetFeature&VERSION=2.0.0"
+        f"&TYPENAMES=app:observation&OUTPUTFORMAT=geojson"
+    )
+    assert response.status_code == 200
+    body = b"".join(response.streaming_content).decode()
+    assert '"species_vernacular_name_nb":"oksefrosk"' in body
+    assert '"species_vernacular_name_en":"American bullfrog"' in body
+    assert '"species_vernacular_name_fr":null' in body
+
+
 def test_observations_json_view_data(public_api_data, client):
     """If the user is authenticated, there is data about which observations were already seen by that user"""
     client.login(username="frusciante1", password="12345")
