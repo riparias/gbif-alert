@@ -125,7 +125,7 @@ async function loadTemplates() {
 }
 
 function templateName(tpl: AlertTemplateOut): string {
-    return pickByLocale(tpl.nameEn, tpl.nameFr, tpl.nameNl, locale.value);
+    return pickByLocale(tpl.names, locale.value);
 }
 
 async function openTemplateDialog(tpl: AlertTemplateOut) {

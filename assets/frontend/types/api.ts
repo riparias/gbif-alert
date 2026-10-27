@@ -811,12 +811,31 @@ export interface components {
             id: number;
             /** Scientificname */
             scientificName: string;
-            /** Vernacularnameen */
+            /**
+             * Vernacularnameen
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameEn: string;
-            /** Vernacularnamenl */
+            /**
+             * Vernacularnamenl
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameNl: string;
-            /** Vernacularnamefr */
+            /**
+             * Vernacularnamefr
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameFr: string;
+            /**
+             * Vernacularnames
+             * @description One entry per language code in settings.LANGUAGES (every language this version supports, enabled on this site or not); "" when not set.
+             */
+            vernacularNames: {
+                [key: string]: string;
+            };
             /**
              * Gbiftaxonkey
              * @description Legacy GBIF backbone taxon key. Numeric in GBIF's data model, so returned as an integer. Null for a species that only has a COL key - the backbone is frozen, so a species described after the freeze has no such key. Distinct from `gbifId` (an occurrence identifier) which GBIF models as a string - the int/str split is intrinsic to GBIF, not an inconsistency in this API.
@@ -874,9 +893,9 @@ export interface components {
          * SpeciesIn
          * @description Payload to create a species (superuser only).
          *
-         *     Mirrors the fields exposed by the Django admin's Species form. The three
-         *     localized vernacular names map to the django-modeltranslation columns
-         *     (vernacular_name_en/_fr/_nl). `imageSourceType` is intentionally absent: it
+         *     Mirrors the fields exposed by the Django admin's Species form.
+         *     `vernacularNames` maps to the django-modeltranslation columns
+         *     (vernacular_name_<code>). `imageSourceType` is intentionally absent: it
          *     is derived server-side (MANUAL when an image URL is given, else empty),
          *     exactly as SpeciesAdmin.save_model does.
          */
@@ -892,19 +911,32 @@ export interface components {
             gbifColTaxonKey?: string | null;
             /**
              * Vernacularnameen
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
              * @default
              */
             vernacularNameEn: string;
             /**
              * Vernacularnamefr
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
              * @default
              */
             vernacularNameFr: string;
             /**
              * Vernacularnamenl
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
              * @default
              */
             vernacularNameNl: string;
+            /**
+             * Vernacularnames
+             * @description Vernacular name per language code (see settings.LANGUAGES). Wins over the deprecated flat field of the same language.
+             */
+            vernacularNames?: {
+                [key: string]: string;
+            };
             /** Tags */
             tags?: string[];
             /**
@@ -934,12 +966,31 @@ export interface components {
             id: number;
             /** Scientificname */
             scientificName: string;
-            /** Vernacularnameen */
+            /**
+             * Vernacularnameen
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameEn: string;
-            /** Vernacularnamenl */
+            /**
+             * Vernacularnamenl
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameNl: string;
-            /** Vernacularnamefr */
+            /**
+             * Vernacularnamefr
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameFr: string;
+            /**
+             * Vernacularnames
+             * @description One entry per language code in settings.LANGUAGES (every language this version supports, enabled on this site or not); "" when not set.
+             */
+            vernacularNames: {
+                [key: string]: string;
+            };
             /**
              * Gbiftaxonkey
              * @description Legacy GBIF backbone taxon key. Numeric in GBIF's data model, so returned as an integer. Null for a species that only has a COL key - the backbone is frozen, so a species described after the freeze has no such key. Distinct from `gbifId` (an occurrence identifier) which GBIF models as a string - the int/str split is intrinsic to GBIF, not an inconsistency in this API.
@@ -990,12 +1041,31 @@ export interface components {
             gbifTaxonKey?: number | null;
             /** Gbifcoltaxonkey */
             gbifColTaxonKey?: string | null;
-            /** Vernacularnameen */
+            /**
+             * Vernacularnameen
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameEn?: string | null;
-            /** Vernacularnamefr */
+            /**
+             * Vernacularnamefr
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameFr?: string | null;
-            /** Vernacularnamenl */
+            /**
+             * Vernacularnamenl
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameNl?: string | null;
+            /**
+             * Vernacularnames
+             * @description Vernacular name per language code (see settings.LANGUAGES). Only the languages given change, "" clears one. Wins over the deprecated flat field of the same language.
+             */
+            vernacularNames?: {
+                [key: string]: string;
+            } | null;
             /** Tags */
             tags?: string[] | null;
             /** Imageurl */
@@ -1234,12 +1304,31 @@ export interface components {
             lon: number | null;
             /** Scientificname */
             scientificName: string;
-            /** Vernacularnameen */
+            /**
+             * Vernacularnameen
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameEn: string;
-            /** Vernacularnamenl */
+            /**
+             * Vernacularnamenl
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameNl: string;
-            /** Vernacularnamefr */
+            /**
+             * Vernacularnamefr
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameFr: string;
+            /**
+             * Vernacularnames
+             * @description One entry per language code in settings.LANGUAGES (every language this version supports, enabled on this site or not); "" when not set.
+             */
+            vernacularNames: {
+                [key: string]: string;
+            };
             /** Datasetname */
             datasetName: string;
             /**
@@ -1288,20 +1377,39 @@ export interface components {
          * @description An observation with photos, as the results gallery shows it.
          *
          *     Deliberately slimmer than ObservationOut: a tile shows the photo, the
-         *     species and the date, and opens the observation by its stableId. The three
-         *     flat vernacular columns are kept for pickVernacular, as in SpeciesCountOut.
+         *     species and the date, and opens the observation by its stableId. The
+         *     vernacular names are kept for pickVernacular, as in SpeciesCountOut.
          */
         GalleryItemOut: {
             /** Stableid */
             stableId: string;
             /** Scientificname */
             scientificName: string;
-            /** Vernacularnameen */
+            /**
+             * Vernacularnameen
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameEn: string;
-            /** Vernacularnamenl */
+            /**
+             * Vernacularnamenl
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameNl: string;
-            /** Vernacularnamefr */
+            /**
+             * Vernacularnamefr
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameFr: string;
+            /**
+             * Vernacularnames
+             * @description One entry per language code in settings.LANGUAGES (every language this version supports, enabled on this site or not); "" when not set.
+             */
+            vernacularNames: {
+                [key: string]: string;
+            };
             /**
              * Date
              * Format: date
@@ -1340,8 +1448,8 @@ export interface components {
          *
          *     Deliberately slimmer than SpeciesOut: this feeds a summary table, so the
          *     tags, image and taxon-key fields would be dead weight on every row (and
-         *     the tags would cost a prefetch). The three flat vernacular columns are
-         *     kept so the frontend's pickVernacular helper and the scientific/vernacular
+         *     the tags would cost a prefetch). The vernacular names are kept so the
+         *     frontend's pickVernacular helper and the scientific/vernacular
          *     display toggle work unchanged.
          */
         SpeciesCountOut: {
@@ -1349,12 +1457,31 @@ export interface components {
             id: number;
             /** Scientificname */
             scientificName: string;
-            /** Vernacularnameen */
+            /**
+             * Vernacularnameen
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameEn: string;
-            /** Vernacularnamenl */
+            /**
+             * Vernacularnamenl
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameNl: string;
-            /** Vernacularnamefr */
+            /**
+             * Vernacularnamefr
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameFr: string;
+            /**
+             * Vernacularnames
+             * @description One entry per language code in settings.LANGUAGES (every language this version supports, enabled on this site or not); "" when not set.
+             */
+            vernacularNames: {
+                [key: string]: string;
+            };
             /** Count */
             count: number;
         };
@@ -1433,12 +1560,31 @@ export interface components {
             lon: number | null;
             /** Scientificname */
             scientificName: string;
-            /** Vernacularnameen */
+            /**
+             * Vernacularnameen
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameEn: string;
-            /** Vernacularnamenl */
+            /**
+             * Vernacularnamenl
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameNl: string;
-            /** Vernacularnamefr */
+            /**
+             * Vernacularnamefr
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameFr: string;
+            /**
+             * Vernacularnames
+             * @description One entry per language code in settings.LANGUAGES (every language this version supports, enabled on this site or not); "" when not set.
+             */
+            vernacularNames: {
+                [key: string]: string;
+            };
             /** Datasetname */
             datasetName: string;
             /** Gbifdatasetkey */
@@ -1551,12 +1697,31 @@ export interface components {
         AlertSpeciesOut: {
             /** Scientificname */
             scientificName: string;
-            /** Vernacularnameen */
+            /**
+             * Vernacularnameen
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameEn: string;
-            /** Vernacularnamenl */
+            /**
+             * Vernacularnamenl
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameNl: string;
-            /** Vernacularnamefr */
+            /**
+             * Vernacularnamefr
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             vernacularNameFr: string;
+            /**
+             * Vernacularnames
+             * @description One entry per language code in settings.LANGUAGES (every language this version supports, enabled on this site or not); "" when not set.
+             */
+            vernacularNames: {
+                [key: string]: string;
+            };
         };
         /** AlertIn */
         AlertIn: {
@@ -1595,18 +1760,56 @@ export interface components {
         AlertTemplateOut: {
             /** Id */
             id: number;
-            /** Nameen */
+            /**
+             * Nameen
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             nameEn: string;
-            /** Namefr */
+            /**
+             * Namefr
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             nameFr: string;
-            /** Namenl */
+            /**
+             * Namenl
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             nameNl: string;
-            /** Descriptionen */
+            /**
+             * Descriptionen
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             descriptionEn: string;
-            /** Descriptionfr */
+            /**
+             * Descriptionfr
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             descriptionFr: string;
-            /** Descriptionnl */
+            /**
+             * Descriptionnl
+             * @deprecated
+             * @description Deprecated: covers en/fr/nl only. Use the per-language field (vernacularNames, names or descriptions) instead.
+             */
             descriptionNl: string;
+            /**
+             * Names
+             * @description One entry per language code in settings.LANGUAGES (every language this version supports, enabled on this site or not); "" when not set.
+             */
+            names: {
+                [key: string]: string;
+            };
+            /**
+             * Descriptions
+             * @description One entry per language code in settings.LANGUAGES (every language this version supports, enabled on this site or not); "" when not set.
+             */
+            descriptions: {
+                [key: string]: string;
+            };
             /** Speciesids */
             speciesIds: number[];
             /** Datasetids */

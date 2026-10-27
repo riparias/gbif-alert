@@ -46,8 +46,8 @@ const allTags = computed(() => {
 });
 
 // Each row carries a `vernacularName` resolved for the active locale, so the
-// search filter and the sortable vernacularName column keep working after N6
-// replaced the single field with vernacularNameEn/Nl/Fr.
+// search filter and the sortable vernacularName column work on a plain field
+// rather than on the per-language vernacularNames.
 const rows = computed(() =>
     props.options.map((sp) => ({
         ...sp,
