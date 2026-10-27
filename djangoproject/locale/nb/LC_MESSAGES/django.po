@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-04 15:32+0200\n"
+"POT-Creation-Date: 2026-10-27 11:20+0100\n"
 "PO-Revision-Date: 2026-09-04 15:32+0200\n"
 "Last-Translator: Automated first pass <>\n"
 "Language-Team: Norwegian Bokmal\n"
@@ -20,18 +20,18 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: djangoproject/settings.py:453
+#: djangoproject/settings.py:566
 msgid "English"
 msgstr "Engelsk"
 
-#: djangoproject/settings.py:454
+#: djangoproject/settings.py:567
 msgid "French"
 msgstr "Fransk"
 
-#: djangoproject/settings.py:455
+#: djangoproject/settings.py:568
 msgid "Dutch"
 msgstr "Nederlandsk"
 
-#: djangoproject/settings.py:456
+#: djangoproject/settings.py:569
 msgid "Norwegian Bokmal"
-msgstr "Norsk (bokmål)"
+msgstr "Norsk bokmål"

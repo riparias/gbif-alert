@@ -1663,7 +1663,7 @@ class Alert(ObservationFilterSet):
 
         # Message body
         msg_html = render_to_string(
-            f"dashboard/emails/alert_notification.{language_code}.html",
+            "dashboard/emails/alert_notification.html",
             {
                 "alert": self,
                 "language_code": language_code,

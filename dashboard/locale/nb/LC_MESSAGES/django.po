@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-04 15:32+0200\n"
+"POT-Creation-Date: 2026-10-27 11:20+0100\n"
 "PO-Revision-Date: 2026-09-04 15:32+0200\n"
 "Last-Translator: Automated first pass <>\n"
 "Language-Team: Norwegian Bokmal\n"
@@ -20,43 +20,48 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: dashboard/api_v2.py:546 dashboard/api_v2.py:591 dashboard/api_v2.py:624
+#: dashboard/api_v2.py:595 dashboard/api_v2.py:640 dashboard/api_v2.py:674
 msgid "An area with this name already exists."
 msgstr "Det finnes allerede et område med dette navnet."
 
-#: dashboard/api_v2.py:656
+#: dashboard/api_v2.py:709
 msgid "The area cannot be deleted because it has alerts associated with it."
 msgstr "Området kan ikke slettes fordi det er knyttet varsler til det."
 
-#: dashboard/api_v2.py:1164
+#: dashboard/api_v2.py:1350
 msgid "At least one species must be selected"
 msgstr "Minst én art må velges"
 
-#: dashboard/api_v2.py:1169
+#: dashboard/api_v2.py:1355
 msgid "At least one area must be selected for the chosen area filter mode."
 msgstr "Minst ett område må velges for den valgte områdefiltermodusen."
 
-#: dashboard/api_v2.py
+#: dashboard/api_v2.py:1375
 msgid "One or more selected areas do not exist or are not available to you."
-msgstr "Ett eller flere valgte områder finnes ikke eller er ikke tilgjengelige for deg."
+msgstr ""
+"Ett eller flere valgte områder finnes ikke eller er ikke tilgjengelige for "
+"deg."
 
-#: dashboard/api_v2.py
-msgid "A template can only reference public areas; this alert uses a private one."
-msgstr "En mal kan bare bruke offentlige områder; dette varselet bruker et privat område."
+#: dashboard/api_v2.py:1582
+msgid ""
+"A template can only reference public areas; this alert uses a private one."
+msgstr ""
+"En mal kan bare bruke offentlige områder; dette varselet bruker et privat "
+"område."
 
-#: dashboard/api_v2.py:1372
+#: dashboard/api_v2.py:1606
 msgid "Invalid username or password."
 msgstr "Ugyldig brukernavn eller passord."
 
-#: dashboard/api_v2.py:1431
+#: dashboard/api_v2.py:1668
 msgid "The old password is incorrect."
 msgstr "Det gamle passordet er feil."
 
-#: dashboard/api_v2.py:1436
+#: dashboard/api_v2.py:1676
 msgid "The two passwords do not match."
 msgstr "De to passordene er ikke like."
 
-#: dashboard/api_v2.py:1507
+#: dashboard/api_v2.py:1750
 msgid "This email address is already in use."
 msgstr "Denne e-postadressen er allerede i bruk."
 
@@ -88,11 +93,11 @@ msgstr "Språk"
 msgid "This language will be used for emails."
 msgstr "Dette språket brukes i e-poster."
 
-#: dashboard/models.py:1289
+#: dashboard/models.py:1296
 msgid "species"
 msgstr "arter"
 
-#: dashboard/models.py:1292
+#: dashboard/models.py:1299
 msgid ""
 "To select multiple items, press and hold the Ctrl or Command key and click "
 "the items."
@@ -100,11 +105,11 @@ msgstr ""
 "For å velge flere elementer, hold inne Ctrl- eller Command-tasten og klikk "
 "på elementene."
 
-#: dashboard/models.py:1298
+#: dashboard/models.py:1305
 msgid "datasets"
 msgstr "datasett"
 
-#: dashboard/models.py:1301
+#: dashboard/models.py:1308
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
@@ -112,11 +117,11 @@ msgstr ""
 "Valgfritt (ingen valg = varsle meg om alle datasett). For å velge flere "
 "elementer, hold inne Ctrl- eller Command-tasten og klikk på elementene."
 
-#: dashboard/models.py:1307
+#: dashboard/models.py:1314
 msgid "basis of record"
 msgstr "registreringsgrunnlag"
 
-#: dashboard/models.py:1310
+#: dashboard/models.py:1317
 msgid ""
 "Optional (no selection = notify me for all basis of records). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
@@ -125,43 +130,44 @@ msgstr ""
 "velge flere elementer, hold inne Ctrl- eller Command-tasten og klikk på "
 "elementene."
 
-#: dashboard/models.py:1317
+#: dashboard/models.py:1324
 msgid "areas"
 msgstr "områder"
 
-#: dashboard/models.py:1319
+#: dashboard/models.py:1326
 msgid ""
 "Optional (no selection = notify me for all data in the system). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
 msgstr ""
 "Valgfritt (ingen valg = varsle meg om alle data i systemet). For å velge "
-"flere elementer, hold inne Ctrl- eller Command-tasten og klikk på elementene."
+"flere elementer, hold inne Ctrl- eller Command-tasten og klikk på "
+"elementene."
 
-#: dashboard/models.py:1456
+#: dashboard/models.py:1463
 msgid "No emails"
 msgstr "Ingen e-poster"
 
-#: dashboard/models.py:1457
+#: dashboard/models.py:1464
 msgid "Daily"
 msgstr "Daglig"
 
-#: dashboard/models.py:1458
+#: dashboard/models.py:1465
 msgid "Weekly"
 msgstr "Ukentlig"
 
-#: dashboard/models.py:1459
+#: dashboard/models.py:1466
 msgid "Monthly"
 msgstr "Månedlig"
 
-#: dashboard/models.py:1470
+#: dashboard/models.py:1477
 msgid "name"
 msgstr "navn"
 
-#: dashboard/models.py:1477
+#: dashboard/models.py:1484
 msgid "email notifications frequency"
 msgstr "frekvens for e-postvarsler"
 
-#: dashboard/models.py:1644
+#: dashboard/models.py:1661
 msgid "new observation(s) for your alert"
 msgstr "nye observasjoner for varselet ditt"
 
@@ -184,6 +190,104 @@ msgid ""
 msgstr ""
 "Dette nettstedet drives av <a href=\"https://github.com/riparias/gbif-"
 "alert\">GBIF Alert</a> versjon"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:26
+#, python-format
+msgid "You have <b>%(unseen_count)s</b> new observation(s) for this alert."
+msgstr ""
+"Du har <b>%(unseen_count)s</b> observasjon(er) du ikke har sett for dette "
+"varselet."
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:28
+msgid "Sample of new observations"
+msgstr "Eksempler på observasjoner du ikke har sett"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:33
+msgid "GBIF ID"
+msgstr "GBIF-ID"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:34
+msgid "Lat"
+msgstr "Lat"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:35
+msgid "Lon"
+msgstr "Lon"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:36
+msgid "Date"
+msgstr "Dato"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:37
+msgid "Species"
+msgstr "Art"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:38
+msgid "Dataset"
+msgstr "Datasett"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:70
+#, python-format
+msgid ""
+"Don't hesitate to check it out on the <a "
+"href=\"%(site_base_url)s%(alert_path)s\">Alert page</a> for more "
+"observations and details."
+msgstr ""
+"Se gjerne <a href=\"%(site_base_url)s%(alert_path)s\">varselsiden</a> for "
+"flere observasjoner og detaljer."
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:72
+msgid "Alert details"
+msgstr "Varseldetaljer"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:73
+msgctxt "species"
+msgid "all"
+msgstr "alle arter"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:74
+msgctxt "areas"
+msgid "all"
+msgstr "alle områder"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:75
+msgctxt "datasets"
+msgid "all"
+msgstr "alle datasett"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:76
+msgctxt "basis of record"
+msgid "all"
+msgstr "alle"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:78
+msgid "Alert name:"
+msgstr "Varselnavn:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:79
+msgid "Species:"
+msgstr "Arter:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:80
+msgid "Areas:"
+msgstr "Område:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:81
+msgid "Datasets:"
+msgstr "Datasett:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:82
+msgid "Basis of record:"
+msgstr "Registreringsgrunnlag:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:84
+msgid "Email notifications frequency:"
+msgstr "Frekvens for e-postvarsler:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:89
+#, python-format
+msgid "Thanks,<br/>The <a href=\"%(site_base_url)s\">%(site_name)s</a> team"
+msgstr "Takk,<br/>Teamet bak <a href=\"%(site_base_url)s\">%(site_name)s</a>"
 
 #: dashboard/templates/dashboard/password_reset.html:8
 #: dashboard/templates/dashboard/password_reset.html:14
@@ -211,13 +315,11 @@ msgstr "Passordet er tilbakestilt"
 #, python-format
 msgid ""
 "\n"
-"                Your new password has been set. You can now <a "
-"href=\"%(signin_url)s\">sign in</a>.\n"
+"                Your new password has been set. You can now <a href=\"%(signin_url)s\">sign in</a>.\n"
 "            "
 msgstr ""
 "\n"
-"                Det nye passordet ditt er lagret. Du kan nå <a "
-"href=\"%(signin_url)s\">logge inn</a>.\n"
+"                Det nye passordet ditt er lagret. Du kan nå <a href=\"%(signin_url)s\">logge inn</a>.\n"
 "            "
 
 #: dashboard/templates/dashboard/password_reset_confirm.html:8
@@ -250,8 +352,8 @@ msgstr "Sjekk innboksen din."
 
 #: dashboard/templates/dashboard/password_reset_done.html:16
 msgid ""
-"We've emailed you instructions for setting your password. You should receive "
-"the email shortly!"
+"We've emailed you instructions for setting your password. You should receive"
+" the email shortly!"
 msgstr ""
 "Vi har sendt deg instruksjoner for å angi passordet ditt på e-post. Du skal "
 "motta e-posten om kort tid!"

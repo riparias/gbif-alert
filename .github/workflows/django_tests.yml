@@ -72,6 +72,16 @@ jobs:
       run: npm run vite-build
     - name: Install Playwright browsers
       run: uv run playwright install chromium --with-deps
+    - name: Compile translations
+      # The .mo files are not committed, and the tests check translated output
+      # (the notification email). msgfmt also fails on a translation that breaks
+      # a placeholder. Throwaway env, as for mypy below.
+      env:
+        SECRET_KEY: compilemessages-not-for-runtime
+        DJANGO_ALLOWED_HOSTS: localhost
+        SITE_BASE_URL: http://localhost
+        DATABASE_URL: postgis://postgres:postgres@127.0.0.1:5432/github_actions
+      run: uv run python manage.py compilemessages --ignore=.venv --ignore=node_modules
     - name: Run tests
       run: uv run pytest
     - name: Run mypy

@@ -8,6 +8,7 @@ import smtplib
 from unittest import mock
 
 import pytest
+from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core import mail
 from django.urls import reverse
@@ -189,8 +190,8 @@ def test_send_notification_email_uses_the_user_language_vernacular_name(email_da
     language. The vernacular name is a modeltranslation field resolved against
     the active language, and the notification job runs as a management command
     where that is settings.LANGUAGE_CODE (English). Only the template's
-    `{% language %}` block switches it: merging the per-language templates or
-    dropping that block would silently send English names to everyone."""
+    `{% language %}` block switches it: dropping that block would silently send
+    English names to everyone."""
     species = Species.objects.get(name="Procambarus fallax")
     species.vernacular_name_en = "Slough crayfish"  # type: ignore[attr-defined]
     species.vernacular_name_fr = "Ecrevisse des marais"  # type: ignore[attr-defined]
@@ -205,3 +206,39 @@ def test_send_notification_email_uses_the_user_language_vernacular_name(email_da
     html = mail.outbox[0].alternatives[0][0]
     assert "Ecrevisse des marais" in html
     assert "Slough crayfish" not in html
+
+
+def test_send_notification_email_without_translation_is_sent_in_english(email_data):
+    """A user whose language has no translation of the email still gets it, in
+    English. A language can be added to the site before every text is
+    translated; that must not stop its users' alert emails (with one template
+    file per language, a missing file made every send fail)."""
+    email_data["make_unseen"](1)
+    user = email_data["user"]
+    user.language = "de"  # no catalog and no template for German
+    user.save()
+
+    assert email_data["alert"].send_notification_email() is True
+
+    html = mail.outbox[0].alternatives[0][0]
+    assert "new observation(s) for this alert" in html
+
+
+def test_send_notification_email_body_is_translated(email_data):
+    """The email body is in the recipient's language, links included. The
+    texts are gettext strings, so this also catches a template text drifting
+    from its catalog entry (which would send English to every French user) or
+    a translation that mangles the link placeholders."""
+    email_data["make_unseen"](1)
+    user = email_data["user"]
+    user.language = "fr"
+    user.save()
+    alert = email_data["alert"]
+
+    assert alert.send_notification_email() is True
+
+    html = mail.outbox[0].alternatives[0][0]
+    assert "Extrait des observations non-vues" in html
+    assert "Merci," in html
+    alert_path = reverse("dashboard:pages:alert-details", kwargs={"alert_id": alert.pk})
+    assert f'href="{settings.SITE_BASE_URL}{alert_path}">page de l\'alerte</a>' in html
