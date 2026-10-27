@@ -486,3 +486,8 @@ expresses the ownership.
 **What:** The homepage brush spans the main column, and the histogram x axis ticks on round dates (every 1-6 months or 1-50 years) sized to the chart width.
 **Why:** #366 - at 45% width, 12 "YYYY-M" ticks overlapped; the row left of the brush was empty anyway, so widening costs no height.
 **Rejected:** Moving the brush into the Timeline tab as drag-to-zoom (also fixes month precision and the date filter living in two places); deferred, may revisit.
+
+## 2026-10-27 - Translated data stays on modeltranslation, made language-generic
+**What:** Page fragments move to modeltranslation, API v2 adds per-language dicts (flat En/Fr/Nl fields deprecated), the email is one gettext template, WFS columns follow `LANGUAGES`.
+**Why:** A language already needs a release (catalogs, Vue strings), so a column per language costs one generated migration; the rigidity was our hand-written en/fr/nl code, which left nb half-wired.
+**Rejected:** django-modeltrans (jsonb; skipping migrations gains nothing while a language needs a release), django-parler (joins in tile SQL and sorting), a homegrown JSONField, and dropping the flat API fields (API v2 is public).

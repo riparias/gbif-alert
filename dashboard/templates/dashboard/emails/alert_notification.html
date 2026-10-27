@@ -1,0 +1,93 @@
+{% load i18n %}<!DOCTYPE html>
+<html lang="{{ language_code }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            color: black;
+            font-family: Verdana, sans-serif;
+        }
+
+        table {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+{# The notification job runs outside any request, so nothing else activates the recipient's language: this block does, for the texts below and for the translated model fields (species vernacular names). #}
+{% language language_code %}
+<p>{% blocktranslate %}You have <b>{{ unseen_count }}</b> new observation(s) for this alert.{% endblocktranslate %}</p>
+
+<h3>{% translate "Sample of new observations" %}</h3>
+{# For user familiarity, make sure the structure of this table stay more or less in sync with the table show on the website pages #}
+<table>
+    <thead>
+    <tr>
+        <th>{% translate "GBIF ID" %}</th>
+        <th>{% translate "Lat" %}</th>
+        <th>{% translate "Lon" %}</th>
+        <th>{% translate "Date" %}</th>
+        <th>{% translate "Species" %}</th>
+        <th>{% translate "Dataset" %}</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for observation in unseen_sample %}
+        <tr>
+            <td>
+                <a href="{{ site_base_url }}{% url "dashboard:pages:observation-details" stable_id=observation.stable_id %}">
+                    {{ observation.gbif_id }}
+                </a>
+            </td>
+            <td>{{ observation.lat|floatformat:4 }}</td>
+            <td>{{ observation.lon|floatformat:4 }}</td>
+            <td>{{ observation.date }}</td>
+            <td>{{ observation.species.display_name_html|safe }}</td>
+            <td>{{ observation.source_dataset.name }}</td>
+        </tr>
+    {% endfor %}
+
+    {#  One more row so users understand it's only a sample... #}
+    <tr>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+        <td>...</td>
+    </tr>
+    </tbody>
+</table>
+
+{% url "dashboard:pages:alert-details" alert_id=alert.pk as alert_path %}
+<p>{% blocktranslate %}Don't hesitate to check it out on the <a href="{{ site_base_url }}{{ alert_path }}">Alert page</a> for more observations and details.{% endblocktranslate %}</p>
+
+<h3>{% translate "Alert details" %}</h3>
+{% translate "all" context "species" as all_species %}
+{% translate "all" context "areas" as all_areas %}
+{% translate "all" context "datasets" as all_datasets %}
+{% translate "all" context "basis of record" as all_basis_of_record %}
+<ul>
+    <li><b>{% translate "Alert name:" %}</b> {{ alert.name }}</li>
+    <li><b>{% translate "Species:" %}</b> {{ alert.species_list|default:all_species }}</li>
+    <li><b>{% translate "Areas:" %}</b> {{ alert.area_description|default:all_areas }}</li>
+    <li><b>{% translate "Datasets:" %}</b> {{ alert.datasets_list|default:all_datasets }}</li>
+    <li><b>{% translate "Basis of record:" %}</b> {{ alert.basis_of_record_list|default:all_basis_of_record }}</li>
+    <li>
+        <b>{% translate "Email notifications frequency:" %}</b>
+        {{ alert.get_email_notifications_frequency_display }}</li>
+</ul>
+
+<p>
+    {% blocktranslate %}Thanks,<br/>The <a href="{{ site_base_url }}">{{ site_name }}</a> team{% endblocktranslate %}
+</p>
+{% endlanguage %}
+</body>
+</html>

@@ -6,8 +6,8 @@
 #
 # Setup:
 #   - add to `INSTALLED_APPS`
-#   - set the PAGE_FRAGMENTS_FALLBACK_LANGUAGE settings (the language code that will be used if a page fragment has not
-#     been translated to the requested language yet).
+#   - add `modeltranslation` to `INSTALLED_APPS`: `content` is translated per language in settings.LANGUAGES, and
+#     falls back to the default language (the first one) when a fragment is not translated yet.
 #   - make sure 'django.middleware.locale.LocaleMiddleware' is listed in the MIDDLEWARE settings.
 #
 # Mini-tutorial
@@ -23,7 +23,7 @@
 #    entries via other means: python console, fixtures, ... (PageFragment is just a regular Django model)
 #
 #
-# - To add support for a language, you need to add a new field to the PageFragment model.
+# - To add support for a language, add it to settings.LANGUAGES and run `makemigrations`.
 
 from django.apps import AppConfig
 

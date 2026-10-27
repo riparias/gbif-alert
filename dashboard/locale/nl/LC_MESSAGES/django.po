@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-21 14:50+0200\n"
+"POT-Creation-Date: 2026-10-27 11:20+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,46 +18,51 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: dashboard/api_v2.py:470 dashboard/api_v2.py:515 dashboard/api_v2.py:548
+#: dashboard/api_v2.py:595 dashboard/api_v2.py:640 dashboard/api_v2.py:674
 msgid "An area with this name already exists."
 msgstr "Er bestaat al een gebied met deze naam."
 
-#: dashboard/api_v2.py:580
+#: dashboard/api_v2.py:709
 msgid "The area cannot be deleted because it has alerts associated with it."
 msgstr ""
 "Het gebied kan niet verwijderd worden omdat er waarschuwingen aan gekoppeld "
 "zijn."
 
-#: dashboard/api_v2.py:1088
+#: dashboard/api_v2.py:1350
 msgid "At least one species must be selected"
 msgstr "Ten minste één soort moet geselecteerd zijn"
 
-#: dashboard/api_v2.py:1093
+#: dashboard/api_v2.py:1355
 msgid "At least one area must be selected for the chosen area filter mode."
 msgstr ""
 "Er moet minstens één gebied geselecteerd zijn voor de gekozen filtermodus."
 
-#: dashboard/api_v2.py
+#: dashboard/api_v2.py:1375
 msgid "One or more selected areas do not exist or are not available to you."
-msgstr "Een of meer geselecteerde gebieden bestaan niet of zijn niet voor u beschikbaar."
+msgstr ""
+"Een of meer geselecteerde gebieden bestaan niet of zijn niet voor u "
+"beschikbaar."
 
-#: dashboard/api_v2.py
-msgid "A template can only reference public areas; this alert uses a private one."
-msgstr "Een sjabloon kan alleen openbare gebieden gebruiken; deze waarschuwing gebruikt een privégebied."
+#: dashboard/api_v2.py:1582
+msgid ""
+"A template can only reference public areas; this alert uses a private one."
+msgstr ""
+"Een sjabloon kan alleen openbare gebieden gebruiken; deze waarschuwing "
+"gebruikt een privégebied."
 
-#: dashboard/api_v2.py:1296
+#: dashboard/api_v2.py:1606
 msgid "Invalid username or password."
 msgstr "Ongeldige gebruikersnaam of wachtwoord."
 
-#: dashboard/api_v2.py:1355
+#: dashboard/api_v2.py:1668
 msgid "The old password is incorrect."
 msgstr "Het oude wachtwoord is onjuist."
 
-#: dashboard/api_v2.py:1360
+#: dashboard/api_v2.py:1676
 msgid "The two passwords do not match."
 msgstr "De twee wachtwoorden komen niet overeen."
 
-#: dashboard/api_v2.py:1431
+#: dashboard/api_v2.py:1750
 msgid "This email address is already in use."
 msgstr "Dit e-mailadres is al in gebruik."
 
@@ -89,23 +94,23 @@ msgstr "Taal"
 msgid "This language will be used for emails."
 msgstr "Deze taal zal gebruikt worden voor emails."
 
-#: dashboard/models.py:1197
+#: dashboard/models.py:1296
 msgid "species"
 msgstr "soort"
 
-#: dashboard/models.py:1200
+#: dashboard/models.py:1299
 msgid ""
 "To select multiple items, press and hold the Ctrl or Command key and click "
 "the items."
 msgstr ""
-"Om meerdere items te selecteren, druk op de Ctrl of Command toets en klik de "
-"items."
+"Om meerdere items te selecteren, druk op de Ctrl of Command toets en klik de"
+" items."
 
-#: dashboard/models.py:1206
+#: dashboard/models.py:1305
 msgid "datasets"
 msgstr "datasets"
 
-#: dashboard/models.py:1209
+#: dashboard/models.py:1308
 msgid ""
 "Optional (no selection = notify me for all datasets). To select multiple "
 "items, press and hold the Ctrl or Command key and click the items."
@@ -113,11 +118,11 @@ msgstr ""
 "Optioneel (geen selectie = notificaties voor alle datasets). Om meerdere "
 "items te selecteren, druk op de Ctrl of Command toets en klik de items."
 
-#: dashboard/models.py:1215
+#: dashboard/models.py:1314
 msgid "basis of record"
 msgstr "type waarneming"
 
-#: dashboard/models.py:1218
+#: dashboard/models.py:1317
 msgid ""
 "Optional (no selection = notify me for all basis of records). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
@@ -126,11 +131,11 @@ msgstr ""
 "meerdere items te selecteren, druk op de Ctrl of Command toets en klik de "
 "items."
 
-#: dashboard/models.py:1225
+#: dashboard/models.py:1324
 msgid "areas"
 msgstr "gebieden"
 
-#: dashboard/models.py:1227
+#: dashboard/models.py:1326
 msgid ""
 "Optional (no selection = notify me for all data in the system). To select "
 "multiple items, press and hold the Ctrl or Command key and click the items."
@@ -139,31 +144,31 @@ msgstr ""
 "meerdere items te selecteren, druk op de Ctrl of Command toets en klik de "
 "items."
 
-#: dashboard/models.py:1364
+#: dashboard/models.py:1463
 msgid "No emails"
 msgstr "Geen emails"
 
-#: dashboard/models.py:1365
+#: dashboard/models.py:1464
 msgid "Daily"
 msgstr "Dagelijks"
 
-#: dashboard/models.py:1366
+#: dashboard/models.py:1465
 msgid "Weekly"
 msgstr "Wekelijks"
 
-#: dashboard/models.py:1367
+#: dashboard/models.py:1466
 msgid "Monthly"
 msgstr "Maandelijks"
 
-#: dashboard/models.py:1378
+#: dashboard/models.py:1477
 msgid "name"
 msgstr "naam"
 
-#: dashboard/models.py:1385
+#: dashboard/models.py:1484
 msgid "email notifications frequency"
 msgstr "frequentie email notificaties"
 
-#: dashboard/models.py:1552
+#: dashboard/models.py:1661
 msgid "new observation(s) for your alert"
 msgstr "nieuwe waarneming(en) voor je waarschuwing"
 
@@ -187,12 +192,111 @@ msgstr ""
 "Deze site wordt aangedreven door <a href=\"https://github.com/riparias/gbif-"
 "alert\">GBIF Alert</a> versie"
 
-#: dashboard/templates/dashboard/password_reset.html:6
-#: dashboard/templates/dashboard/password_reset.html:12
+#: dashboard/templates/dashboard/emails/alert_notification.html:26
+#, python-format
+msgid "You have <b>%(unseen_count)s</b> new observation(s) for this alert."
+msgstr ""
+"U hebt <b>%(unseen_count)s</b> niet bekeken waarneming(en) voor deze "
+"waarschuwing."
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:28
+msgid "Sample of new observations"
+msgstr "Voorbeeld van niet bekeken waarnemingen"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:33
+msgid "GBIF ID"
+msgstr "GBIF ID"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:34
+msgid "Lat"
+msgstr "Lat"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:35
+msgid "Lon"
+msgstr "Lon"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:36
+msgid "Date"
+msgstr "Datum"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:37
+msgid "Species"
+msgstr "Soort"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:38
+msgid "Dataset"
+msgstr "Dataset"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:70
+#, python-format
+msgid ""
+"Don't hesitate to check it out on the <a "
+"href=\"%(site_base_url)s%(alert_path)s\">Alert page</a> for more "
+"observations and details."
+msgstr ""
+"Aarzel niet om het te bekijken op de <a "
+"href=\"%(site_base_url)s%(alert_path)s\">waarschuwing pagina</a> voor meer "
+"waarnemingen en details."
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:72
+msgid "Alert details"
+msgstr "Waarschuwing details"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:73
+msgctxt "species"
+msgid "all"
+msgstr "alle soorten"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:74
+msgctxt "areas"
+msgid "all"
+msgstr "alle gebieden"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:75
+msgctxt "datasets"
+msgid "all"
+msgstr "alle datasets"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:76
+msgctxt "basis of record"
+msgid "all"
+msgstr "alle"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:78
+msgid "Alert name:"
+msgstr "Waarschuwing naam:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:79
+msgid "Species:"
+msgstr "Soort:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:80
+msgid "Areas:"
+msgstr "Gebied:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:81
+msgid "Datasets:"
+msgstr "Datasets:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:82
+msgid "Basis of record:"
+msgstr "Type waarneming:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:84
+msgid "Email notifications frequency:"
+msgstr "Frequentie email notificaties:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:89
+#, python-format
+msgid "Thanks,<br/>The <a href=\"%(site_base_url)s\">%(site_name)s</a> team"
+msgstr "Dank U,<br/>Het <a href=\"%(site_base_url)s\">%(site_name)s</a> team"
+
+#: dashboard/templates/dashboard/password_reset.html:8
+#: dashboard/templates/dashboard/password_reset.html:14
 msgid "Forgot your password?"
 msgstr "Paswoord vergeten?"
 
-#: dashboard/templates/dashboard/password_reset.html:13
+#: dashboard/templates/dashboard/password_reset.html:15
 msgid ""
 "Enter your email address below, and we'll email instructions for setting a "
 "new one."
@@ -200,40 +304,38 @@ msgstr ""
 "Vul hieronder uw e-mailadres in, en we sturen u instructies om een nieuw "
 "paswoord in te stellen."
 
-#: dashboard/templates/dashboard/password_reset.html:19
+#: dashboard/templates/dashboard/password_reset.html:21
 msgid "Send me instructions!"
 msgstr "Zend me instructies!"
 
-#: dashboard/templates/dashboard/password_reset_complete.html:5
-#: dashboard/templates/dashboard/password_reset_complete.html:11
+#: dashboard/templates/dashboard/password_reset_complete.html:7
+#: dashboard/templates/dashboard/password_reset_complete.html:13
 msgid "Password reset complete"
 msgstr "Paswoord reset voltooid"
 
-#: dashboard/templates/dashboard/password_reset_complete.html:14
+#: dashboard/templates/dashboard/password_reset_complete.html:16
 #, python-format
 msgid ""
 "\n"
-"                Your new password has been set. You can now <a "
-"href=\"%(signin_url)s\">sign in</a>.\n"
+"                Your new password has been set. You can now <a href=\"%(signin_url)s\">sign in</a>.\n"
 "            "
 msgstr ""
 "\n"
-"                        Uw nieuw paswoord is ingesteld. U kunt nu <a "
-"href=\"%(signin_url)s\">inloggen</a>."
+"                        Uw nieuw paswoord is ingesteld. U kunt nu <a href=\"%(signin_url)s\">inloggen</a>."
 
-#: dashboard/templates/dashboard/password_reset_confirm.html:6
+#: dashboard/templates/dashboard/password_reset_confirm.html:8
 msgid "Reset your password"
 msgstr "Reset uw paswoord"
 
-#: dashboard/templates/dashboard/password_reset_confirm.html:13
+#: dashboard/templates/dashboard/password_reset_confirm.html:15
 msgid "Set a new password!"
 msgstr "Nieuw paswoord instellen!"
 
-#: dashboard/templates/dashboard/password_reset_confirm.html:18
+#: dashboard/templates/dashboard/password_reset_confirm.html:20
 msgid "Change my password"
 msgstr "Wijzig mijn paswoord"
 
-#: dashboard/templates/dashboard/password_reset_confirm.html:23
+#: dashboard/templates/dashboard/password_reset_confirm.html:25
 msgid ""
 "The password reset link was invalid, possibly because it has already been "
 "used. Please request a new password reset."
@@ -241,21 +343,21 @@ msgstr ""
 "De reset paswoord link is ongeldig, mogelijk omdat deze al gebruikt is. "
 "Vraag een nieuwe reset aan."
 
-#: dashboard/templates/dashboard/password_reset_done.html:6
+#: dashboard/templates/dashboard/password_reset_done.html:8
 msgid "Instructions sent"
 msgstr "Instructies verzonden"
 
-#: dashboard/templates/dashboard/password_reset_done.html:12
+#: dashboard/templates/dashboard/password_reset_done.html:14
 msgid "Check your inbox."
 msgstr "Controleer uw inbox."
 
-#: dashboard/templates/dashboard/password_reset_done.html:14
+#: dashboard/templates/dashboard/password_reset_done.html:16
 msgid ""
-"We've emailed you instructions for setting your password. You should receive "
-"the email shortly!"
+"We've emailed you instructions for setting your password. You should receive"
+" the email shortly!"
 msgstr ""
-"We hebben u instructies gemaild om uw paswoord in te stellen. U zou de email "
-"binnenkort moeten ontvangen!"
+"We hebben u instructies gemaild om uw paswoord in te stellen. U zou de email"
+" binnenkort moeten ontvangen!"
 
 #~ msgid "Authentication required"
 #~ msgstr "Authenticatie vereist"
@@ -294,16 +396,12 @@ msgstr ""
 #~ msgid "Date/time"
 #~ msgstr "Datum/tijd"
 
-#~ msgid "Imported observations"
-#~ msgstr "Geïmporteerde waarnemingen"
-
 #~ msgid "New observations in this import"
 #~ msgstr "Nieuwe waarnemingen in deze import"
 
 #, python-format
 #~ msgid "Skipped observations in <a href=\"%(gbif_url)s\">GBIF download</a>"
-#~ msgstr ""
-#~ "Overgeslagen waarnemingen in <a href=\"%(gbif_url)s\">GBIF download</a>"
+#~ msgstr "Overgeslagen waarnemingen in <a href=\"%(gbif_url)s\">GBIF download</a>"
 
 #~ msgid "GBIF predicate"
 #~ msgstr "GBIF predicate"
@@ -314,35 +412,14 @@ msgstr ""
 #~ msgid "Your account has been deleted."
 #~ msgstr "Uw account is verwijderd."
 
-#~ msgid "Area name"
-#~ msgstr "Naam gebied"
-
 #~ msgid "A short name to identify this area"
 #~ msgstr "Korte naam om dit gebied te identificeren"
 
 #~ msgid "Data file"
 #~ msgstr "Data bestand"
 
-#~ msgid "all"
-#~ msgstr "alles"
-
-#~ msgid "Species:"
-#~ msgstr "Soort"
-
-#~ msgid "Areas:"
-#~ msgstr "Gebieden"
-
-#~ msgid "Datasets:"
-#~ msgstr "Datasets:"
-
-#~ msgid "Basis of record:"
-#~ msgstr "Type waarneming:"
-
 #~ msgid "Verification filter:"
 #~ msgstr "Verificatiefilter:"
-
-#~ msgid "Email notifications frequency:"
-#~ msgstr "Frequentie email notificaties:"
 
 #~ msgid "Last email sent:"
 #~ msgstr "Laatste email:"
@@ -424,9 +501,6 @@ msgstr ""
 #~ msgid "Create a new alert"
 #~ msgstr "Maak een nieuwe waarschuwing"
 
-#~ msgid "Alert details"
-#~ msgstr "Details waarschuwing"
-
 #~ msgid "Edit alert"
 #~ msgstr "Wijzig waarschuwing"
 
@@ -449,12 +523,6 @@ msgstr ""
 #~ msgid "Mark this observation as unseen"
 #~ msgstr "Markeer deze observatie als niet bekeken"
 
-#~ msgid "GBIF ID"
-#~ msgstr "GBIF ID"
-
-#~ msgid "Species"
-#~ msgstr "Soort"
-
 #~ msgid "Individual count"
 #~ msgstr "Aantal individuen"
 
@@ -474,9 +542,6 @@ msgstr ""
 
 #~ msgid "Basis of record"
 #~ msgstr "Type waarneming"
-
-#~ msgid "Date"
-#~ msgstr "Datum"
 
 #~ msgid "Recorded by"
 #~ msgstr "Geregistreerd door"
@@ -539,8 +604,8 @@ msgstr ""
 #~ "Please <a href=\"%(signin_url)s?next=%(next)s\">sign in</a> to be able to "
 #~ "post comments."
 #~ msgstr ""
-#~ "<a href=\"%(signin_url)s?next=%(next)s\">Log in</a> om commentaar te "
-#~ "kunnen plaatsen."
+#~ "<a href=\"%(signin_url)s?next=%(next)s\">Log in</a> om commentaar te kunnen "
+#~ "plaatsen."
 
 #~ msgid "Change password"
 #~ msgstr "Wijzig paswoord"
@@ -587,34 +652,22 @@ msgstr ""
 
 #~ msgid ""
 #~ "\n"
-#~ "                    <p><i class=\"bi bi-info-square\"></i> The following "
-#~ "contraints apply to the uploaded file:</p>\n"
+#~ "                    <p><i class=\"bi bi-info-square\"></i> The following contraints apply to the uploaded file:</p>\n"
 #~ "                    <ul>\n"
-#~ "                        <li>it must be a <b><a href=\"https://"
-#~ "en.wikipedia.org/wiki/GeoPackage\">GeoPackage</a></b> (many external "
-#~ "tools exist to convert other file formats to GeoPackages)</li>\n"
+#~ "                        <li>it must be a <b><a href=\"https://en.wikipedia.org/wiki/GeoPackage\">GeoPackage</a></b> (many external tools exist to convert other file formats to GeoPackages)</li>\n"
 #~ "                        <li>it must contain a <b>single layer</b></li>\n"
-#~ "                        <li>the layer must contain a <b>single feature</"
-#~ "b> of type <b>polygon</b> or <b>multipolygon</b></li>\n"
-#~ "                        <li>the GeoPackage must have a valid coordinate "
-#~ "reference system</li>\n"
+#~ "                        <li>the layer must contain a <b>single feature</b> of type <b>polygon</b> or <b>multipolygon</b></li>\n"
+#~ "                        <li>the GeoPackage must have a valid coordinate reference system</li>\n"
 #~ "                    </ul>\n"
 #~ "                    "
 #~ msgstr ""
 #~ "\n"
-#~ "                    <p><i class=\"bi bi-info-square\"></i> De volgende "
-#~ "beoerkingen gelden voor het bestand:</p>\n"
+#~ "                    <p><i class=\"bi bi-info-square\"></i> De volgende beoerkingen gelden voor het bestand:</p>\n"
 #~ "                    <ul>\n"
-#~ "                        <li>het moet een <b><a href=\"https://"
-#~ "en.wikipedia.org/wiki/GeoPackage\">GeoPackage</a></b> (er bestaan veel "
-#~ "externe tools om andere bestandsformaten om te zetten naar GeoPackages)</"
-#~ "li>\n"
-#~ "                        <li>het moet een <b>single layer</b> bevatten </"
-#~ "li>\n"
-#~ "                        <li>het moet een <b>single feature</b> "
-#~ "bevattenvan het type <b>polygon</b> of <b>multipolygon</b></li>\n"
-#~ "                        <li>het GeoPackage moet een geldig "
-#~ "coördinatenreferentiesysteem bevatten</li>\n"
+#~ "                        <li>het moet een <b><a href=\"https://en.wikipedia.org/wiki/GeoPackage\">GeoPackage</a></b> (er bestaan veel externe tools om andere bestandsformaten om te zetten naar GeoPackages)</li>\n"
+#~ "                        <li>het moet een <b>single layer</b> bevatten </li>\n"
+#~ "                        <li>het moet een <b>single feature</b> bevattenvan het type <b>polygon</b> of <b>multipolygon</b></li>\n"
+#~ "                        <li>het GeoPackage moet een geldig coördinatenreferentiesysteem bevatten</li>\n"
 #~ "                    </ul>\n"
 #~ "                    "
 

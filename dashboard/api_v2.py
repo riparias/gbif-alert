@@ -13,7 +13,7 @@ from django.contrib.gis.geos import (
 )
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.serializers import serialize
-from django.db.models import Count, F, QuerySet, Value
+from django.db.models import Count, F, Model, QuerySet, Value
 from django.db.models.functions import Coalesce, NullIf, TruncMonth
 from django.http import Http404, HttpRequest
 from django.shortcuts import get_object_or_404
@@ -183,17 +183,28 @@ ERR_403 = {403: DetailErrorOut}  # session write without a valid CSRF token
 ERR_404 = {404: DetailErrorOut}  # object not found, or not owned by the user
 
 
-def _vernacular_names(species: Species) -> dict[str, str]:
-    """The species' vernacular name in all three languages, as flat fields (N6).
+# Every language with a django-modeltranslation column (<field>_<code>).
+_LANGUAGE_CODES = [code for code, _name in settings.LANGUAGES]
+
+
+def _by_language(obj: Model, field: str) -> dict[str, str]:
+    """A translated field as {language code: text}, "" where not set.
 
     django-modeltranslation creates the per-language columns at runtime, so they
-    are invisible to the static type checker - hence the localized ignores here,
-    kept in one place rather than scattered across every builder.
+    are invisible to the static type checker - hence getattr.
     """
+    return {code: getattr(obj, f"{field}_{code}") or "" for code in _LANGUAGE_CODES}
+
+
+def _vernacular_names(species: Species) -> dict:
+    """The species' vernacular names: per language, plus the deprecated flat
+    en/nl/fr fields kept for existing API clients (N6)."""
+    names = _by_language(species, "vernacular_name")
     return {
-        "vernacularNameEn": species.vernacular_name_en or "",  # type: ignore[attr-defined]
-        "vernacularNameNl": species.vernacular_name_nl or "",  # type: ignore[attr-defined]
-        "vernacularNameFr": species.vernacular_name_fr or "",  # type: ignore[attr-defined]
+        "vernacularNameEn": names["en"],
+        "vernacularNameNl": names["nl"],
+        "vernacularNameFr": names["fr"],
+        "vernacularNames": names,
     }
 
 
@@ -264,9 +275,7 @@ def _species_validation_errors(species: Species) -> dict[str, list[str]] | None:
             "name": "scientificName",
             "gbif_taxon_key": "gbifTaxonKey",
             "gbif_col_taxon_key": "gbifColTaxonKey",
-            "vernacular_name_en": "vernacularNameEn",
-            "vernacular_name_fr": "vernacularNameFr",
-            "vernacular_name_nl": "vernacularNameNl",
+            **{f"vernacular_name_{c}": f"vernacularNames.{c}" for c in _LANGUAGE_CODES},
             "image_url": "imageUrl",
             "image_source_url": "imageSourceUrl",
         }
@@ -319,6 +328,8 @@ def species_create(request: HttpRequest, payload: SpeciesIn):
         # Derived, never client-set - mirrors SpeciesAdmin.save_model.
         image_source_type=(Species.ImageSourceType.MANUAL if payload.imageUrl else ""),
     )
+    for code, name in payload.vernacularNames.items():
+        setattr(species, f"vernacular_name_{code}", name)
 
     errors = _species_validation_errors(species)
     if errors is not None:
@@ -416,6 +427,9 @@ def species_patch(request: HttpRequest, species_id: int, payload: SpeciesPatchIn
         value = getattr(payload, api_field)
         if value is not None:
             setattr(species, model_field, value)
+    # After the flat fields, so the per-language dict wins over them.
+    for code, name in (payload.vernacularNames or {}).items():
+        setattr(species, f"vernacular_name_{code}", name)
 
     errors = _species_validation_errors(species)
     if errors is not None:
@@ -780,10 +794,6 @@ _SIMPLE_SORT_FIELD_MAP = {
 # direct column reference. Kept separate so the simple map stays minimal.
 _LOCALISED_SORT_FIELDS = {"vernacularName"}
 
-# Active language codes recognised when picking the vernacular_name_<lang>
-# column. Mirrors the pattern in dashboard/views/maps.py.
-_VERNACULAR_LANG_CODES = {code[:2] for code, _name in settings.LANGUAGES}
-
 # Every orderBy value the list endpoint accepts. Unknown values are rejected
 # with 400 rather than silently coerced to date (audit M8).
 _ACCEPTED_ORDER_BY = set(_SIMPLE_SORT_FIELD_MAP) | _LOCALISED_SORT_FIELDS
@@ -859,11 +869,11 @@ def observations_list(
     if orderBy in _LOCALISED_SORT_FIELDS:
         # Build a sort key that falls back to the scientific name when the
         # vernacular column is empty for the active locale. django-modeltranslation
-        # uses one column per language: vernacular_name_en, vernacular_name_fr,
-        # vernacular_name_nl. Normalise the active locale to a known two-letter
-        # code to avoid building a field name that doesn't exist (e.g. "fr-be").
+        # uses one column per language (vernacular_name_<code>). Normalise the
+        # active locale to a known two-letter code to avoid building a field
+        # name that doesn't exist (e.g. "fr-be").
         lang = get_language() or "en"
-        lang_code = lang[:2] if lang[:2] in _VERNACULAR_LANG_CODES else "en"
+        lang_code = lang[:2] if lang[:2] in _LANGUAGE_CODES else "en"
         field = f"species__vernacular_name_{lang_code}"
         annotated_qs = qs.annotate(
             vernacular_sort_key=Coalesce(
@@ -1241,7 +1251,7 @@ def page_fragment(request: HttpRequest, identifier: str):
     """
     try:
         fragment = PageFragment.objects.get(identifier=identifier)
-        html = markdownify(fragment.get_content_in(request.LANGUAGE_CODE))
+        html = markdownify(fragment.content)
     except PageFragment.DoesNotExist:
         html = ""
     return {"html": html}
@@ -1310,14 +1320,19 @@ def _alert_to_out(alert: Alert) -> dict:
 
 
 def _alert_template_to_out(template: "AlertTemplate") -> dict:
+    names = _by_language(template, "name")
+    descriptions = _by_language(template, "description")
     return {
         "id": template.pk,
-        "nameEn": template.name_en or "",  # type: ignore[attr-defined]
-        "nameFr": template.name_fr or "",  # type: ignore[attr-defined]
-        "nameNl": template.name_nl or "",  # type: ignore[attr-defined]
-        "descriptionEn": template.description_en or "",  # type: ignore[attr-defined]
-        "descriptionFr": template.description_fr or "",  # type: ignore[attr-defined]
-        "descriptionNl": template.description_nl or "",  # type: ignore[attr-defined]
+        # Deprecated flat fields, kept for existing API clients.
+        "nameEn": names["en"],
+        "nameFr": names["fr"],
+        "nameNl": names["nl"],
+        "descriptionEn": descriptions["en"],
+        "descriptionFr": descriptions["fr"],
+        "descriptionNl": descriptions["nl"],
+        "names": names,
+        "descriptions": descriptions,
         "speciesIds": [s.pk for s in template.species.all()],
         "datasetIds": [d.pk for d in template.datasets.all()],
         "basisOfRecordIds": [b.pk for b in template.basis_of_record_filters.all()],

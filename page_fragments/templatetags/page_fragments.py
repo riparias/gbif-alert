@@ -7,15 +7,13 @@ from page_fragments.models import PageFragment
 register = template.Library()
 
 
-@register.simple_tag(takes_context=True)
-def get_page_fragment(context, identifier):
+@register.simple_tag
+def get_page_fragment(identifier):
     """Return rendered HTML for the page fragment with identifier, in the current language"""
 
     try:
         fragment = PageFragment.objects.get(identifier=identifier)
 
-        return mark_safe(
-            markdownify(fragment.get_content_in(context.request.LANGUAGE_CODE))
-        )
+        return mark_safe(markdownify(fragment.content))
     except PageFragment.DoesNotExist:
         return ""

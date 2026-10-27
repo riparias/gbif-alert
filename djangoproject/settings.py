@@ -560,7 +560,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-# Beware: when adding a new language, you also need to run `python manage.py makemigrations` (it is referenced from the user profile model)
+# Beware: when adding a new language, you also need to run `python manage.py makemigrations`: it adds the
+# language's columns to the translated models (see each app's translation.py) and to the user profile choices.
 LANGUAGES = [
     ("en", _("English")),
     ("fr", _("French")),
@@ -646,8 +647,6 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_METHODS = [
     "GET"
 ]  # Probably needed, but just to be on the safe side. See https://github.com/riparias/gbif-alert/issues/100
-
-PAGE_FRAGMENTS_FALLBACK_LANGUAGE = "en"
 
 RQ_SHOW_ADMIN_LINK = True
 

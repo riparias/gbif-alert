@@ -25,18 +25,9 @@ const { ensureAlertLabelsLoaded, datasetName, basisOfRecordName } = useDisplayLa
 
 const expanded = ref(false);
 
-const name = computed(() =>
-    pickByLocale(props.template.nameEn, props.template.nameFr, props.template.nameNl, locale.value),
-);
+const name = computed(() => pickByLocale(props.template.names, locale.value));
 
-const description = computed(() =>
-    pickByLocale(
-        props.template.descriptionEn,
-        props.template.descriptionFr,
-        props.template.descriptionNl,
-        locale.value,
-    ),
-);
+const description = computed(() => pickByLocale(props.template.descriptions, locale.value));
 
 // useAlertMeta expects a getter returning a full AlertOut, but only reads
 // speciesDetails/areaIds/areaFilterMode/approachingDistanceKm to build

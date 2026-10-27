@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import MultiPolygon, Point, Polygon
 from django.core import mail
@@ -104,6 +105,12 @@ def filter_lists_data():
 # --- /api/v2/species/ ---
 
 
+def _every_language(**names: str) -> dict[str, str]:
+    """A per-language dict as the API returns it: one key per language in
+    settings.LANGUAGES, "" where nothing is set."""
+    return {code: names.get(code, "") for code, _name in settings.LANGUAGES}
+
+
 def test_species_list_status(client):
     response = client.get(reverse("api-v2:species_list"))
     assert response.status_code == 200
@@ -145,6 +152,22 @@ def test_species_list_returns_three_vernacular_languages(client):
     assert row["vernacularNameNl"] == "nl naam"
     assert row["vernacularNameFr"] == "nom fr"
     assert "vernacularName" not in row
+
+
+def test_species_list_returns_vernacular_names_for_every_language(client):
+    """vernacularNames has one entry per language in settings.LANGUAGES, so a
+    language added to the site (nb here) reaches API clients without a schema
+    change. The flat En/Nl/Fr fields stay, deprecated, for existing clients."""
+    sp = Species.objects.create(
+        name="Testus multilingua",
+        gbif_taxon_key=42424243,
+        vernacular_name_en="english name",
+        vernacular_name_nb="norsk navn",
+    )
+    data = client.get(reverse("api-v2:species_list")).json()
+    row = next(r for r in data if r["id"] == sp.pk)
+    assert row["vernacularNames"] == _every_language(en="english name", nb="norsk navn")
+    assert row["vernacularNameEn"] == "english name"
 
 
 def test_species_list_empty_tags(client, filter_lists_data):
@@ -364,6 +387,46 @@ def test_species_create_full_parity_fields_are_stored(client, superuser):
     assert sp.image_source_type == Species.ImageSourceType.MANUAL
 
 
+def test_species_create_accepts_vernacular_names_per_language(client, superuser):
+    """vernacularNames sets the name in any site language, including those the
+    deprecated flat fields never covered (nb), and wins over a flat field sent
+    for the same language."""
+    client.force_login(superuser)
+    resp = client.post(
+        "/api/v2/species/",
+        data={
+            "scientificName": "Lithobates catesbeianus",
+            "gbifTaxonKey": 2427091,
+            "vernacularNameEn": "bullfrog (flat field)",
+            "vernacularNames": {"en": "American bullfrog", "nb": "oksefrosk"},
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    sp = Species.objects.get(gbif_taxon_key=2427091)
+    assert sp.vernacular_name_en == "American bullfrog"
+    assert sp.vernacular_name_nb == "oksefrosk"
+    assert resp.json()["vernacularNames"]["nb"] == "oksefrosk"
+
+
+def test_species_create_unknown_language_code_returns_422(client, superuser):
+    """A vernacularNames key that is not a site language is refused rather than
+    silently ignored, so a typo in a language code does not lose the name."""
+    client.force_login(superuser)
+    resp = client.post(
+        "/api/v2/species/",
+        data={
+            "scientificName": "Lithobates catesbeianus",
+            "gbifTaxonKey": 2427091,
+            "vernacularNames": {"xx": "unknown"},
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "xx" in resp.content.decode()
+    assert not Species.objects.filter(gbif_taxon_key=2427091).exists()
+
+
 def test_species_create_without_image_leaves_source_type_empty(client, superuser):
     """No imageUrl -> imageSourceType stays empty (not MANUAL)."""
     client.force_login(superuser)
@@ -532,6 +595,25 @@ def test_species_patch_updates_scalar_fields(client, superuser, patchable_specie
     assert patchable_species.image_source_url == "https://example.org/other-page"
     assert patchable_species.image_attribution == "B. Photographer"
     assert patchable_species.image_license == "CC0"
+
+
+def test_species_patch_vernacular_names_updates_only_given_languages(
+    client, superuser, patchable_species
+):
+    """Only the languages present in vernacularNames change, and "" clears one:
+    a client can add the Norwegian name without resending the others."""
+    client.force_login(superuser)
+    resp = client.patch(
+        f"/api/v2/species/{patchable_species.pk}/",
+        data={"vernacularNames": {"nb": "smal vasspest", "fr": ""}},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    patchable_species.refresh_from_db()
+    assert patchable_species.vernacular_name_nb == "smal vasspest"
+    assert patchable_species.vernacular_name_fr == ""
+    assert patchable_species.vernacular_name_en == "Nuttall's waterweed"
+    assert patchable_species.vernacular_name_nl == "smalle waterpest"
 
 
 def test_species_patch_response_is_the_updated_species(
@@ -2249,6 +2331,15 @@ def test_alert_species_details_have_three_vernacular_languages(client, alert_dat
     assert "vernacularName" not in sd
 
 
+def test_alert_species_details_have_vernacular_names(client, alert_data):
+    """AlertOut.speciesDetails carries the per-language vernacularNames too:
+    the alert pages pick the active language from it."""
+    alert = alert_data["alert"]
+    client.login(username="alertuser", password="12345")
+    sd = client.get(f"/api/v2/alerts/{alert.pk}/").json()["speciesDetails"][0]
+    assert set(sd["vernacularNames"]) == {code for code, _name in settings.LANGUAGES}
+
+
 def test_alert_detail_wrong_user_returns_404(client, alert_data):
     alert = alert_data["alert"]
     client.login(username="otheruser", password="12345")
@@ -3165,7 +3256,7 @@ def test_spa_openapi_schema_is_served_and_marked_internal(client):
 def test_page_fragment_returns_html_under_spa_namespace(client):
     """page-fragments is served under /api/v2/spa/ and returns rendered HTML."""
     # Set all three language fields so the result is locale-independent
-    # (get_content_in falls back to other languages when a field is empty).
+    # (an empty language falls back to English).
     PageFragment.objects.create(
         identifier="welcome_text",
         content_en="# Hello",
@@ -3626,6 +3717,23 @@ def test_templates_list_returns_flat_language_fields(client, template_data):
     assert "notViewedCount" not in row
 
 
+def test_templates_list_returns_names_for_every_language(client, template_data):
+    """names and descriptions have one entry per site language (nb included),
+    so the template cards show the active language with no code per language."""
+    tpl = template_data["template"]
+    tpl.name_nb = "Amfibier naer X"
+    tpl.save()
+    client.login(username="op", password="12345")
+    row = client.get("/api/v2/alert-templates/").json()[0]
+    assert row["names"] == _every_language(
+        en="Amphibians near X",
+        fr="Amphibiens pres de X",
+        nl="Amfibieen bij X",
+        nb="Amfibier naer X",
+    )
+    assert row["descriptions"] == _every_language(en="All amphibians within 50 km")
+
+
 def test_templates_list_respects_display_order(client):
     """The list is ordered by the operator-configured display_order (Meta.ordering),
     regardless of creation order - this is the order the carousel renders."""
@@ -3990,6 +4098,7 @@ def test_species_breakdown_entry_shape(client, breakdown_data):
         "vernacularNameEn",
         "vernacularNameNl",
         "vernacularNameFr",
+        "vernacularNames",
         "count",
     }
     assert entry["vernacularNameEn"] == "Marbled crayfish"
@@ -4364,6 +4473,7 @@ def test_gallery_item_carries_species_date_and_first_photo(client, observations_
         "vernacularNameEn",
         "vernacularNameNl",
         "vernacularNameFr",
+        "vernacularNames",
         "date",
         "image",
     }

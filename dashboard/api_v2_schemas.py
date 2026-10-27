@@ -1,8 +1,9 @@
 import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
+from django.conf import settings
 from ninja import Schema
-from pydantic import Field, field_validator
+from pydantic import AfterValidator, Field, field_validator
 
 from dashboard.id_lists import parse_id_list
 
@@ -43,12 +44,47 @@ _LANGUAGE_DESC = (
 )
 
 
+# Per-language texts (species vernacular names, alert template names and
+# descriptions) as {language code: text}. The flat En/Fr/Nl fields predate them
+# and only cover those three languages: they stay for existing API clients.
+ByLanguage = Annotated[
+    dict[str, str],
+    Field(
+        description=(
+            "One entry per language code in settings.LANGUAGES (every language "
+            'this version supports, enabled on this site or not); "" when not set.'
+        )
+    ),
+]
+_DEPRECATED_FLAT = Field(
+    description=(
+        "Deprecated: covers en/fr/nl only. Use the per-language field "
+        "(vernacularNames, names or descriptions) instead."
+    ),
+    json_schema_extra={"deprecated": True},
+)
+DeprecatedStr = Annotated[str, _DEPRECATED_FLAT]
+DeprecatedOptionalStr = Annotated[str | None, _DEPRECATED_FLAT]
+
+
+def _check_language_codes(names: dict[str, str]) -> dict[str, str]:
+    """Refuse unknown codes rather than drop them: a typo would lose the text."""
+    unknown = sorted(set(names) - {code for code, _name in settings.LANGUAGES})
+    if unknown:
+        raise ValueError(f"Unknown language code(s): {', '.join(unknown)}")
+    return names
+
+
+ByLanguageIn = Annotated[dict[str, str], AfterValidator(_check_language_codes)]
+
+
 class SpeciesOut(Schema):
     id: int
     scientificName: str
-    vernacularNameEn: str
-    vernacularNameNl: str
-    vernacularNameFr: str
+    vernacularNameEn: DeprecatedStr
+    vernacularNameNl: DeprecatedStr
+    vernacularNameFr: DeprecatedStr
+    vernacularNames: ByLanguage
     gbifTaxonKey: int | None = Field(
         description=(
             "Legacy GBIF backbone taxon key. Numeric in GBIF's data model, so "
@@ -79,9 +115,9 @@ class SpeciesOut(Schema):
 class SpeciesIn(Schema):
     """Payload to create a species (superuser only).
 
-    Mirrors the fields exposed by the Django admin's Species form. The three
-    localized vernacular names map to the django-modeltranslation columns
-    (vernacular_name_en/_fr/_nl). `imageSourceType` is intentionally absent: it
+    Mirrors the fields exposed by the Django admin's Species form.
+    `vernacularNames` maps to the django-modeltranslation columns
+    (vernacular_name_<code>). `imageSourceType` is intentionally absent: it
     is derived server-side (MANUAL when an image URL is given, else empty),
     exactly as SpeciesAdmin.save_model does.
     """
@@ -96,9 +132,16 @@ class SpeciesIn(Schema):
         ),
     )
     gbifColTaxonKey: str | None = None
-    vernacularNameEn: str = ""
-    vernacularNameFr: str = ""
-    vernacularNameNl: str = ""
+    vernacularNameEn: DeprecatedStr = ""
+    vernacularNameFr: DeprecatedStr = ""
+    vernacularNameNl: DeprecatedStr = ""
+    vernacularNames: ByLanguageIn = Field(
+        default_factory=dict,
+        description=(
+            "Vernacular name per language code (see settings.LANGUAGES). Wins "
+            "over the deprecated flat field of the same language."
+        ),
+    )
     tags: list[str] = Field(default_factory=list)
     imageUrl: str = ""
     imageSourceUrl: str = ""
@@ -120,9 +163,17 @@ class SpeciesPatchIn(Schema):
     scientificName: str | None = None
     gbifTaxonKey: int | None = None
     gbifColTaxonKey: str | None = None
-    vernacularNameEn: str | None = None
-    vernacularNameFr: str | None = None
-    vernacularNameNl: str | None = None
+    vernacularNameEn: DeprecatedOptionalStr = None
+    vernacularNameFr: DeprecatedOptionalStr = None
+    vernacularNameNl: DeprecatedOptionalStr = None
+    vernacularNames: ByLanguageIn | None = Field(
+        default=None,
+        description=(
+            "Vernacular name per language code (see settings.LANGUAGES). Only "
+            'the languages given change, "" clears one. Wins over the '
+            "deprecated flat field of the same language."
+        ),
+    )
     tags: list[str] | None = None
     imageUrl: str | None = None
     imageSourceUrl: str | None = None
@@ -250,9 +301,10 @@ class ObservationOut(Schema):
     lat: float | None
     lon: float | None
     scientificName: str
-    vernacularNameEn: str
-    vernacularNameNl: str
-    vernacularNameFr: str
+    vernacularNameEn: DeprecatedStr
+    vernacularNameNl: DeprecatedStr
+    vernacularNameFr: DeprecatedStr
+    vernacularNames: ByLanguage
     datasetName: str
     date: datetime.date
     municipality: str
@@ -282,15 +334,16 @@ class GalleryItemOut(Schema):
     """An observation with photos, as the results gallery shows it.
 
     Deliberately slimmer than ObservationOut: a tile shows the photo, the
-    species and the date, and opens the observation by its stableId. The three
-    flat vernacular columns are kept for pickVernacular, as in SpeciesCountOut.
+    species and the date, and opens the observation by its stableId. The
+    vernacular names are kept for pickVernacular, as in SpeciesCountOut.
     """
 
     stableId: str
     scientificName: str
-    vernacularNameEn: str
-    vernacularNameNl: str
-    vernacularNameFr: str
+    vernacularNameEn: DeprecatedStr
+    vernacularNameNl: DeprecatedStr
+    vernacularNameFr: DeprecatedStr
+    vernacularNames: ByLanguage
     date: datetime.date
     image: ObservationImageOut = Field(description="The observation's first photo.")
 
@@ -317,16 +370,17 @@ class SpeciesCountOut(Schema):
 
     Deliberately slimmer than SpeciesOut: this feeds a summary table, so the
     tags, image and taxon-key fields would be dead weight on every row (and
-    the tags would cost a prefetch). The three flat vernacular columns are
-    kept so the frontend's pickVernacular helper and the scientific/vernacular
+    the tags would cost a prefetch). The vernacular names are kept so the
+    frontend's pickVernacular helper and the scientific/vernacular
     display toggle work unchanged.
     """
 
     id: int
     scientificName: str
-    vernacularNameEn: str
-    vernacularNameNl: str
-    vernacularNameFr: str
+    vernacularNameEn: DeprecatedStr
+    vernacularNameNl: DeprecatedStr
+    vernacularNameFr: DeprecatedStr
+    vernacularNames: ByLanguage
     count: int
 
 
@@ -372,9 +426,10 @@ class ObservationDetailOut(Schema):
     lat: float | None
     lon: float | None
     scientificName: str
-    vernacularNameEn: str
-    vernacularNameNl: str
-    vernacularNameFr: str
+    vernacularNameEn: DeprecatedStr
+    vernacularNameNl: DeprecatedStr
+    vernacularNameFr: DeprecatedStr
+    vernacularNames: ByLanguage
     datasetName: str
     gbifDatasetKey: str
     date: datetime.date
@@ -433,9 +488,10 @@ class AlertFromTemplateIn(Schema):
 
 class AlertSpeciesOut(Schema):
     scientificName: str
-    vernacularNameEn: str
-    vernacularNameNl: str
-    vernacularNameFr: str
+    vernacularNameEn: DeprecatedStr
+    vernacularNameNl: DeprecatedStr
+    vernacularNameFr: DeprecatedStr
+    vernacularNames: ByLanguage
 
 
 class AlertOut(Schema):
@@ -456,12 +512,14 @@ class AlertOut(Schema):
 
 class AlertTemplateOut(Schema):
     id: int
-    nameEn: str
-    nameFr: str
-    nameNl: str
-    descriptionEn: str
-    descriptionFr: str
-    descriptionNl: str
+    nameEn: DeprecatedStr
+    nameFr: DeprecatedStr
+    nameNl: DeprecatedStr
+    descriptionEn: DeprecatedStr
+    descriptionFr: DeprecatedStr
+    descriptionNl: DeprecatedStr
+    names: ByLanguage
+    descriptions: ByLanguage
     speciesIds: list[int]
     datasetIds: list[int]
     basisOfRecordIds: list[int]
