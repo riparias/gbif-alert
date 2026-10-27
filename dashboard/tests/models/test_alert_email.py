@@ -182,3 +182,26 @@ def test_send_notification_email_declares_the_user_language(email_data):
 
     html = mail.outbox[0].alternatives[0][0]
     assert '<html lang="fr">' in html
+
+
+def test_send_notification_email_uses_the_user_language_vernacular_name(email_data):
+    """The species in the email shows its vernacular name in the recipient's
+    language. The vernacular name is a modeltranslation field resolved against
+    the active language, and the notification job runs as a management command
+    where that is settings.LANGUAGE_CODE (English). Only the template's
+    `{% language %}` block switches it: merging the per-language templates or
+    dropping that block would silently send English names to everyone."""
+    species = Species.objects.get(name="Procambarus fallax")
+    species.vernacular_name_en = "Slough crayfish"  # type: ignore[attr-defined]
+    species.vernacular_name_fr = "Ecrevisse des marais"  # type: ignore[attr-defined]
+    species.save()
+    email_data["make_unseen"](1)
+    user = email_data["user"]
+    user.language = "fr"
+    user.save()
+
+    assert email_data["alert"].send_notification_email() is True
+
+    html = mail.outbox[0].alternatives[0][0]
+    assert "Ecrevisse des marais" in html
+    assert "Slough crayfish" not in html
