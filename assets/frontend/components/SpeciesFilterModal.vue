@@ -168,6 +168,7 @@ function tagColor(name: string): string {
                     >{{ tag }}</span
                 >
             </div>
+            <small class="tag-filter-hint">{{ t("message.filterByTagsHint") }}</small>
         </div>
 
         <!-- Search + selection count -->
@@ -266,6 +267,12 @@ function tagColor(name: string): string {
 
 .tag-chip--active {
     font-weight: 600;
+}
+
+.tag-filter-hint {
+    display: block;
+    margin-top: 0.4rem;
+    color: var(--p-text-muted-color);
 }
 
 .search-row {
