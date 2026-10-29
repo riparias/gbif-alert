@@ -491,3 +491,8 @@ expresses the ownership.
 **What:** Page fragments move to modeltranslation, API v2 adds per-language dicts (flat En/Fr/Nl fields deprecated), the email is one gettext template, WFS columns follow `LANGUAGES`.
 **Why:** A language already needs a release (catalogs, Vue strings), so a column per language costs one generated migration; the rigidity was our hand-written en/fr/nl code, which left nb half-wired.
 **Rejected:** django-modeltrans (jsonb; skipping migrations gains nothing while a language needs a release), django-parler (joins in tile SQL and sorting), a homegrown JSONField, and dropping the flat API fields (API v2 is public).
+
+## 2026-10-29 - Demo data for devel populated through API v2
+**What:** `scripts/populate_demo_data.py` tags species by group and creates 42 shared Belgian areas (regions, provinces, RIPARIAS, river basins) from `source_data` via API v2.
+**Why:** an operator token is all it needs (no shell into the container to run the `load_*_areas` commands), so it works against any deployed instance and is safe to re-run.
+**Rejected:** Natura 2000, municipalities and DVW areas (too many/large for a demo), and an EU Union-list species tag (membership not verified).
