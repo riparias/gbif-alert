@@ -147,7 +147,7 @@ export const messages = {
             everywhere: "Everywhere",
             filterByTags: "Filter by tags:",
             filterByTagsHint:
-                "Tags narrow the list below. To select the listed species, tick the checkbox in the table header.",
+                "Tags narrow the list below. To select the listed entries, tick the checkbox in the table header.",
             filters: "Filters",
             filterSectionStatus: "Status",
             filterSectionWhat: "What",
@@ -498,7 +498,7 @@ export const messages = {
             everywhere: "Partout",
             filterByTags: "Filtrer par tags :",
             filterByTagsHint:
-                "Les tags restreignent la liste ci-dessous. Pour sélectionner les espèces listées, cochez la case dans l'en-tête du tableau.",
+                "Les tags restreignent la liste ci-dessous. Pour sélectionner les entrées listées, cochez la case dans l'en-tête du tableau.",
             filters: "Filtres",
             filterSectionStatus: "Statut",
             filterSectionWhat: "Quoi",
@@ -848,7 +848,7 @@ export const messages = {
             everywhere: "Overal",
             filterByTags: "Filter op labels:",
             filterByTagsHint:
-                "Labels beperken de lijst hieronder. Vink het vakje in de tabelkop aan om de getoonde soorten te selecteren.",
+                "Labels beperken de lijst hieronder. Vink het vakje in de tabelkop aan om de getoonde items te selecteren.",
             filters: "Filters",
             filterSectionStatus: "Status",
             filterSectionWhat: "Wat",
@@ -1194,7 +1194,7 @@ export const messages = {
             everywhere: "Overalt",
             filterByTags: "Filtrer etter emneord:",
             filterByTagsHint:
-                "Emneord avgrenser listen nedenfor. Huk av boksen i tabelloverskriften for å velge artene som vises.",
+                "Emneord avgrenser listen nedenfor. Huk av boksen i tabelloverskriften for å velge oppføringene som vises.",
             filters: "Filtre",
             filterSectionStatus: "Status",
             filterSectionWhat: "Hva",

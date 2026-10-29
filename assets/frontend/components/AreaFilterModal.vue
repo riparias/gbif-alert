@@ -7,6 +7,8 @@ import InputText from "primevue/inputtext";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import type { components } from "../types/api";
+import { tagColor } from "../utils/tagColor";
+import TagFilterChips from "./TagFilterChips.vue";
 
 type AreaOut = components["schemas"]["AreaOut"];
 
@@ -60,12 +62,6 @@ const buttonLabel = computed(() =>
         : t("message.everywhere"),
 );
 
-function toggleTag(tag: string) {
-    const i = activeTags.value.indexOf(tag);
-    if (i >= 0) activeTags.value.splice(i, 1);
-    else activeTags.value.push(tag);
-}
-
 function onRowSelect(e: { data: AreaOut }) {
     localIds.value = new Set([...localIds.value, e.data.id]);
     emit("update:modelValue", [...localIds.value]);
@@ -88,24 +84,6 @@ function onUnselectAll() {
     localIds.value = new Set([...localIds.value].filter((id) => !filteredIds.has(id)));
     emit("update:modelValue", [...localIds.value]);
 }
-
-const TAG_PALETTE = [
-    "#0b7285",
-    "#7048e8",
-    "#c92a2a",
-    "#e67700",
-    "#2b8a3e",
-    "#1864ab",
-    "#a61e4d",
-    "#087f5b",
-    "#862e9c",
-    "#d9480f",
-];
-function tagColor(name: string): string {
-    let h = 0;
-    for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) & 0xffff;
-    return TAG_PALETTE[h % TAG_PALETTE.length];
-}
 </script>
 
 <template>
@@ -123,29 +101,7 @@ function tagColor(name: string): string {
         modal
         :style="{ width: '760px', maxWidth: '95vw' }"
     >
-        <!-- Tag filter chips -->
-        <div v-if="allTags.length" class="tag-filter-row">
-            <span class="tag-filter-label">{{ t("message.filterByTags") }}</span>
-            <div class="tag-chips">
-                <span
-                    v-for="tag in allTags"
-                    :key="tag"
-                    class="tag-chip"
-                    :class="{ 'tag-chip--active': activeTags.includes(tag) }"
-                    :style="
-                        activeTags.includes(tag)
-                            ? {
-                                  backgroundColor: tagColor(tag),
-                                  color: '#fff',
-                                  borderColor: tagColor(tag),
-                              }
-                            : { borderColor: tagColor(tag), color: tagColor(tag) }
-                    "
-                    @click="toggleTag(tag)"
-                    >{{ tag }}</span
-                >
-            </div>
-        </div>
+        <TagFilterChips v-model="activeTags" :tags="allTags" />
 
         <!-- Search + count -->
         <div class="search-row">
@@ -203,41 +159,6 @@ function tagColor(name: string): string {
 </template>
 
 <style scoped>
-.tag-filter-row {
-    margin-bottom: 0.75rem;
-}
-
-.tag-filter-label {
-    display: block;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--p-text-muted-color);
-    margin-bottom: 0.4rem;
-}
-
-.tag-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-}
-
-.tag-chip {
-    cursor: pointer;
-    padding: 2px 9px;
-    border-radius: 10px;
-    border: 1px solid;
-    font-size: 0.78rem;
-    white-space: nowrap;
-    user-select: none;
-    transition:
-        background-color 0.15s,
-        color 0.15s;
-}
-
-.tag-chip--active {
-    font-weight: 600;
-}
-
 .search-row {
     display: flex;
     align-items: center;

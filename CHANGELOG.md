@@ -1,7 +1,7 @@
 # Unreleased
 
-- The species picker now explains that tags only narrow the list, and that
-  the table header checkbox selects the listed species (#470).
+- The species and area pickers now explain that tags only narrow the list,
+  and that the table header checkbox selects the listed entries (#470).
 - Fix: the timeline above the results now spans the whole width, and its
   axis labels show round dates (2010, 2015...) instead of overlapping (#366).
 - The notification delay help text on the profile page now warns that GBIF
