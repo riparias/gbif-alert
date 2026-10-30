@@ -491,3 +491,8 @@ expresses the ownership.
 **What:** Page fragments move to modeltranslation, API v2 adds per-language dicts (flat En/Fr/Nl fields deprecated), the email is one gettext template, WFS columns follow `LANGUAGES`.
 **Why:** A language already needs a release (catalogs, Vue strings), so a column per language costs one generated migration; the rigidity was our hand-written en/fr/nl code, which left nb half-wired.
 **Rejected:** django-modeltrans (jsonb; skipping migrations gains nothing while a language needs a release), django-parler (joins in tile SQL and sorting), a homegrown JSONField, and dropping the flat API fields (API v2 is public).
+
+## 2026-10-30 - One import at a time, through a Postgres advisory lock
+**What:** `import_observations` holds a session advisory lock for its whole run; a run that finds it taken stops with an error and emails the admins.
+**Why:** ofelia's `no-overlap` misses manual runs and forgets a running import when it restarts, and Postgres frees this lock when the connection closes, so a killed import leaves nothing stale.
+**Rejected:** a Redis key, a file or a `DataImport` row (stale after a SIGKILL, and the row is invisible until commit), and a transaction-level lock (works behind any PgBouncer mode, but a second run only fails after its GBIF download).

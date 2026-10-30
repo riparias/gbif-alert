@@ -277,6 +277,8 @@ These cron expressions are evaluated in the `scheduler` container's timezone, wh
 
 If GBIF has not prepared the download after `GBIF_DOWNLOAD_MAX_WAIT_HOURS` (default: `10`), the import gives up. As with any failed import, the admins (`ADMINS`) are emailed and the previous observations stay online. If you move the schedules, keep the import start plus this wait before the notification run.
 
+**Only one import runs at a time.** An import started while another one is still running stops with an error and the admins are emailed; the running import is not affected. This holds however the import was started (schedule, `docker compose exec`, cron). It relies on a PostgreSQL session advisory lock, so the import needs a direct connection to PostgreSQL, or PgBouncer in session mode. PgBouncer in transaction mode is not supported.
+
 **Cron format note:** Ofelia uses a SIX-field cron expression where the leading field is *seconds* (`second minute hour day month dayofweek`), not the standard five-field Unix cron. A five-field expression like `0 2 * * *` is silently misinterpreted as "every hour at HH:02:00" rather than "daily at 02:00". When overriding the defaults, always include the leading `0` for seconds.
 
 **Applying a schedule change:** the schedule is a label on the `gbif-alert`
@@ -415,7 +417,7 @@ You'll need to install Python, PostgreSQL, PostGIS, Valkey (or Redis), GDAL and 
   - Place an Nginx reverse proxy in front for TLS. It must send `X-Forwarded-Proto` (see *HTTPS is required* above), or every request is redirected to itself. On a manual deploy only, you may instead turn the hardening off with the `SECURE_*` variables in `.env.example`.
   - Static files can be served either by Nginx directly (point it at `STATIC_ROOT`) for slightly better performance, or by Gunicorn itself: WhiteNoise is registered in the app and will serve the contents of `STATIC_ROOT`. If you let WhiteNoise handle static files, the Nginx config can be simplified to a pure reverse proxy (no `location /static/ { ... }` block needed). Either approach works.
 - RQ worker: `$ uv run python manage.py rqworker default`.
-- Cron: schedule `python manage.py import_observations` and `python manage.py send_alert_notifications_email` periodically, e.g. at 02:00 and 14:00 (the import puts the site in maintenance mode while it loads data, and the notification run must start after the import has finished - see *Periodic tasks* above). Make sure two imports never overlap (`flock`, or a long enough gap).
+- Cron: schedule `python manage.py import_observations` and `python manage.py send_alert_notifications_email` periodically, e.g. at 02:00 and 14:00 (the import puts the site in maintenance mode while it loads data, and the notification run must start after the import has finished - see *Periodic tasks* above). The import refuses to start while another one is running, so overlapping runs are safe.
 - Process supervision (systemd, supervisord, etc.) and env-var loading mechanism are deployment-specific; settings can be provided via a project-root `.env` file or any other mechanism that populates the process environment.
 
 ### Upgrading from a legacy manual deploy

@@ -8,7 +8,8 @@ import sys
 import tempfile
 import time
 import traceback
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -17,7 +18,7 @@ from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core.mail import mail_admins
 from django.core.management.base import BaseCommand, CommandParser, CommandError
-from django.db import connection, transaction
+from django.db import Error as DatabaseLayerError, connection, transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 from dwca.darwincore.utils import qualname as qn  # type: ignore
@@ -1040,6 +1041,40 @@ def run_import(
     return current_data_import
 
 
+# Any constant works: advisory locks are per database, so two instances on one
+# Postgres server do not block each other.
+IMPORT_LOCK_KEY = 258
+
+
+@contextmanager
+def _exclusive_import_lock() -> Iterator[None]:
+    """Refuse to run while another import holds the lock (ofelia, cron, a manual run).
+
+    A session advisory lock rather than a Redis key or a file: Postgres releases
+    it when the connection closes, so an import killed halfway (a redeploy
+    SIGKILLs it) cannot leave a stale lock behind. It needs a real session, so
+    PgBouncer in transaction mode is not supported (see INSTALL.md).
+    """
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT pg_try_advisory_lock(%s)", [IMPORT_LOCK_KEY])
+        (acquired,) = cursor.fetchone()
+    if not acquired:
+        raise CommandError(
+            "Another import_observations run is still in progress, not starting "
+            "a second one."
+        )
+    try:
+        yield
+    finally:
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT pg_advisory_unlock(%s)", [IMPORT_LOCK_KEY])
+        except DatabaseLayerError:
+            # The connection died, and Postgres released the lock with it. Do
+            # not let this replace the import's own error.
+            pass
+
+
 class Command(BaseCommand):
     help = (
         "Import new observations and delete previous ones. "
@@ -1064,9 +1099,11 @@ class Command(BaseCommand):
 
         # The step currently running, named in the error email. _import()
         # advances it as it goes.
-        self._step = "preflight check"
+        self._step = "import lock"
         try:
-            self._import(options)
+            with _exclusive_import_lock():
+                self._step = "preflight check"
+                self._import(options)
         except Exception as exc:
             # Whatever the step, a failed import must not fail silently: the
             # previous data stays online, so the only other hint would be a

@@ -1,5 +1,8 @@
 # Unreleased
 
+- An import started while another one is still running now stops with an
+  error, and the admins are emailed. The import needs a direct PostgreSQL
+  connection or PgBouncer in session mode (#258).
 - The species and area pickers now explain that tags only narrow the list,
   and that the table header checkbox selects the listed entries (#470).
 - Fix: the timeline above the results now spans the whole width, and its
