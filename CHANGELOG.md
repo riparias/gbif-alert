@@ -1,5 +1,9 @@
 # Unreleased
 
+- The browser tab icon can now be uploaded in the admin (Dashboard > Site
+  icons), and instances without one show a neutral map pin instead of the LIFE
+  RIPARIAS logo. **After upgrading, upload your icon if you want a custom
+  one** (#248).
 - An import started while another one is still running now stops with an
   error, and the admins are emailed. The import needs a direct PostgreSQL
   connection or PgBouncer in session mode (#258).

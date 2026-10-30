@@ -33,6 +33,7 @@ dependencies = [
     "django-ninja>=1.6.2,<2",
     "whitenoise>=6.7.0,<7",
     "gunicorn>=25.0.3,<26",
+    "pillow>=12,<13",
 ]
 
 [dependency-groups]

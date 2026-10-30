@@ -21,7 +21,7 @@ from markdownx.views import ImageUploadView, MarkdownifyView  # type: ignore
 
 from dashboard.api_v2 import api_v2, api_v2_spa
 from dashboard.views.healthz import healthz
-from dashboard.views.pages import spa_shell
+from dashboard.views.pages import site_icon, spa_shell
 
 urlpatterns = [
     path("api/v2/spa/", api_v2_spa.urls),
@@ -78,6 +78,7 @@ urlpatterns = [
     ),
     path("django-rq/", include("django_rq.urls")),
     path("healthz", healthz, name="healthz"),
+    path("site-icon.png", site_icon, name="site-icon"),
     # Catch-all for Vue Router history mode: any path not matched by an explicit
     # Django URL returns the SPA shell so Vue Router can handle direct-load navigation.
     # The negative lookahead excludes Django-owned prefixes so that paths like /admin

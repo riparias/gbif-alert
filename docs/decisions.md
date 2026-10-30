@@ -496,3 +496,8 @@ expresses the ownership.
 **What:** `import_observations` holds a session advisory lock for its whole run; a run that finds it taken stops with an error and emails the admins.
 **Why:** ofelia's `no-overlap` misses manual runs and forgets a running import when it restarts, and Postgres frees this lock when the connection closes, so a killed import leaves nothing stale.
 **Rejected:** a Redis key, a file or a `DataImport` row (stale after a SIGKILL, and the row is invisible until commit), and a transaction-level lock (works behind any PgBouncer mode, but a second run only fails after its GBIF download).
+
+## 2026-10-30 - Site icon: admin upload stored in Postgres
+**What:** The engine ships a neutral icon; operators upload their own in the admin, re-encoded to one PNG (max 512x512) in `SiteIcon` and served from `/site-icon.png`.
+**Why:** #248 - every instance showed the LIFE RIPARIAS logo; deployments have no persistent media storage, and a fixed URL cached for a day keeps the image out of page rendering.
+**Rejected:** a `SITE_ICON_URL` env var (someone must host the file, and every visitor's browser contacts that host), a bind-mounted file (needs host access) and a generated icon (cannot carry a real logo).
