@@ -4,10 +4,13 @@ from django.http import (
     HttpRequest,
     HttpResponse,
 )
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import redirect, render, get_object_or_404
+from django.templatetags.static import static
+from django.views.decorators.cache import cache_control
 from django.views.decorators.csrf import ensure_csrf_cookie
+from maintenance_mode.decorators import force_maintenance_mode_off  # type: ignore
 
-from dashboard.models import Alert
+from dashboard.models import Alert, SiteIcon
 from dashboard.views.helpers import (
     AuthenticatedHttpRequest,
 )
@@ -22,6 +25,22 @@ def spa_shell(request: HttpRequest, **kwargs) -> HttpResponse:
     even on a fresh visit with no prior cookies.
     """
     return render(request, "dashboard/base.html")
+
+
+# `force_maintenance_mode_off`: the 503 page links to the icon too.
+@force_maintenance_mode_off
+@cache_control(public=True, max_age=86400)
+def site_icon(request: HttpRequest) -> HttpResponse:
+    """Serve the icon uploaded for this instance, or redirect to the default.
+
+    Pages link to this fixed URL, so rendering them never queries the icon.
+    """
+    # ponytail: Cache-Control limits this to about one query per browser per
+    # day. Add cache_page on top if it ever shows up as load.
+    icon = SiteIcon.objects.first()
+    if icon is None:
+        return redirect(static("site-icon-default.png"))
+    return HttpResponse(icon.png, content_type="image/png")
 
 
 def index_page(request: HttpRequest) -> HttpResponse:

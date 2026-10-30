@@ -1908,3 +1908,26 @@ class MapBaseLayer(models.Model):
             "attribution": self.attribution,
             "maxZoom": self.max_zoom,
         }
+
+
+class SiteIcon(models.Model):
+    """The icon an operator uploaded for this instance, shown in browser tabs.
+
+    There is at most one row: the admin refuses a second one. Without it, the
+    instance shows the neutral icon shipped with the engine. The image lives in
+    the database because a deployment has no persistent media storage, so a file
+    would not survive a redeploy.
+
+    Attributes
+    ----------
+    png : bytes
+        The icon. The admin form always re-encodes uploads to PNG.
+    updated_at : datetime.datetime
+        When the icon was last replaced.
+    """
+
+    png = models.BinaryField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return "Site icon"

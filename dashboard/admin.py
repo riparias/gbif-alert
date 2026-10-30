@@ -1,11 +1,16 @@
+from io import BytesIO
+
+from django import forms
 from django.conf import settings
 from django.contrib.admin import RelatedOnlyFieldListFilter
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.gis import admin
+from django.urls import reverse
 from django.utils.html import format_html
 from import_export import resources  # type: ignore
 from import_export.admin import ImportExportModelAdmin  # type: ignore
 from modeltranslation.admin import TranslationAdmin  # type: ignore
+from PIL import Image, ImageOps
 
 from .models import (
     Species,
@@ -22,6 +27,7 @@ from .models import (
     ObservationUnseen,
     MapBaseLayer,
     SentNotification,
+    SiteIcon,
 )
 
 admin.site.site_header = f'{settings.GBIF_ALERT["SITE_NAME"]} administration'
@@ -305,3 +311,71 @@ class MapBaseLayerAdmin(admin.ModelAdmin):
     list_display = ("name", "layer_type", "is_enabled", "display_order")
     list_editable = ("is_enabled", "display_order")
     list_display_links = ("name",)
+
+
+class SiteIconForm(forms.ModelForm):
+    upload = forms.ImageField(
+        label="New icon",
+        help_text=(
+            "PNG, JPEG, ICO or WebP, not SVG. A square image works best: any "
+            "other shape gets transparent margins. Visitors can keep seeing the "
+            "previous icon for a day or more, as browsers hold on to icons."
+        ),
+    )
+
+    class Meta:
+        model = SiteIcon
+        fields = ()
+
+    def clean_upload(self) -> bytes:
+        """Re-encode the upload as a square PNG of at most 512x512 pixels.
+
+        Only these bytes are stored, so the site never serves an uploaded file
+        as it is.
+        """
+        image = Image.open(self.cleaned_data["upload"])
+        # forms.ImageField does not decode the pixels, and a few KB of PNG can
+        # declare a size that takes gigabytes of memory once decoded.
+        if max(image.size) > 4096:
+            raise forms.ValidationError(
+                "This image is too large: use at most 4096 pixels on a side."
+            )
+
+        try:
+            rgba = image.convert("RGBA")
+        except OSError as e:
+            # A truncated JPEG gets past forms.ImageField and only fails here.
+            raise forms.ValidationError("This image is damaged.") from e
+
+        side = min(max(rgba.size), 512)
+        output = BytesIO()
+        ImageOps.pad(rgba, (side, side), color=(0, 0, 0, 0)).save(output, "PNG")
+        return output.getvalue()
+
+    def save(self, commit=True):
+        self.instance.png = self.cleaned_data["upload"]
+        return super().save(commit)
+
+
+@admin.register(SiteIcon)
+class SiteIconAdmin(admin.ModelAdmin):
+    form = SiteIconForm
+    fields = ("upload", "preview")
+    readonly_fields = ("preview",)
+
+    def has_add_permission(self, request):
+        # The icon view reads a single row: a second one would never be shown.
+        return super().has_add_permission(request) and not SiteIcon.objects.exists()
+
+    # Deletion stays enabled: that is how an instance goes back to the default.
+
+    @admin.display(description="Current icon")
+    def preview(self, obj):
+        if obj.pk is None:
+            return "-"
+        # The query string gets past the browser's copy of the cached icon URL.
+        return format_html(
+            '<img src="{}?v={}" alt="Current icon" height="64">',
+            reverse("site-icon"),
+            obj.updated_at.timestamp(),
+        )
