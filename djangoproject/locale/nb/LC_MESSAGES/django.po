@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-27 11:20+0100\n"
+"POT-Creation-Date: 2026-11-03 13:20+0100\n"
 "PO-Revision-Date: 2026-09-04 15:32+0200\n"
 "Last-Translator: Automated first pass <>\n"
 "Language-Team: Norwegian Bokmal\n"
@@ -35,3 +35,7 @@ msgstr "Nederlandsk"
 #: djangoproject/settings.py:569
 msgid "Norwegian Bokmal"
 msgstr "Norsk bokmål"
+
+#: djangoproject/settings.py:570
+msgid "Portuguese"
+msgstr "Portugisisk"

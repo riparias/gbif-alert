@@ -1,0 +1,362 @@
+# European Portuguese translation for GBIF Alert.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+# NOTE: this catalog is an unreviewed machine translation, added so the
+# interface can be offered in Portuguese. It has not been checked by a
+# native speaker - corrections welcome.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-03 13:20+0100\n"
+"PO-Revision-Date: 2026-11-03 13:30+0100\n"
+"Last-Translator: Automated first pass <>\n"
+"Language-Team: Portuguese\n"
+"Language: pt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: dashboard/api_v2.py:609 dashboard/api_v2.py:654 dashboard/api_v2.py:688
+msgid "An area with this name already exists."
+msgstr "Já existe uma área com este nome."
+
+#: dashboard/api_v2.py:723
+msgid "The area cannot be deleted because it has alerts associated with it."
+msgstr "A área não pode ser eliminada porque tem alertas associados."
+
+#: dashboard/api_v2.py:1365
+msgid "At least one species must be selected"
+msgstr "Tem de selecionar pelo menos uma espécie"
+
+#: dashboard/api_v2.py:1370
+msgid "At least one area must be selected for the chosen area filter mode."
+msgstr ""
+"Tem de selecionar pelo menos uma área para o modo de filtro de área escolhido."
+
+#: dashboard/api_v2.py:1390
+msgid "One or more selected areas do not exist or are not available to you."
+msgstr ""
+"Uma ou mais das áreas selecionadas não existem ou não estão disponíveis para "
+"si."
+
+#: dashboard/api_v2.py:1597
+msgid ""
+"A template can only reference public areas; this alert uses a private one."
+msgstr ""
+"Um modelo só pode referir áreas públicas; este alerta utiliza uma área "
+"privada."
+
+#: dashboard/api_v2.py:1621
+msgid "Invalid username or password."
+msgstr "Nome de utilizador ou palavra-passe inválidos."
+
+#: dashboard/api_v2.py:1683
+msgid "The old password is incorrect."
+msgstr "A palavra-passe antiga está incorreta."
+
+#: dashboard/api_v2.py:1691
+msgid "The two passwords do not match."
+msgstr "As duas palavras-passe não coincidem."
+
+#: dashboard/api_v2.py:1765
+msgid "This email address is already in use."
+msgstr "Este endereço de e-mail já está a ser utilizado."
+
+#: dashboard/forms.py:26
+msgid "First name"
+msgstr "Nome próprio"
+
+#: dashboard/forms.py:26 dashboard/forms.py:29
+msgid "Optional."
+msgstr "Opcional."
+
+#: dashboard/forms.py:29
+msgid "Last name"
+msgstr "Apelido"
+
+#: dashboard/forms.py:32
+msgid "Email"
+msgstr "E-mail"
+
+#: dashboard/forms.py:34
+msgid "Required. Enter a valid email address."
+msgstr "Obrigatório. Introduza um endereço de e-mail válido."
+
+#: dashboard/forms.py:38
+msgid "Language"
+msgstr "Idioma"
+
+#: dashboard/forms.py:40
+msgid "This language will be used for emails."
+msgstr "Este idioma será utilizado nos e-mails."
+
+#: dashboard/models.py:1296
+msgid "species"
+msgstr "espécies"
+
+#: dashboard/models.py:1299
+msgid ""
+"To select multiple items, press and hold the Ctrl or Command key and click "
+"the items."
+msgstr ""
+"Para selecionar vários itens, mantenha premida a tecla Ctrl ou Command e "
+"clique nos itens."
+
+#: dashboard/models.py:1305
+msgid "datasets"
+msgstr "conjuntos de dados"
+
+#: dashboard/models.py:1308
+msgid ""
+"Optional (no selection = notify me for all datasets). To select multiple "
+"items, press and hold the Ctrl or Command key and click the items."
+msgstr ""
+"Opcional (sem seleção = notificar-me para todos os conjuntos de dados). Para "
+"selecionar vários itens, mantenha premida a tecla Ctrl ou Command e clique "
+"nos itens."
+
+#: dashboard/models.py:1314
+msgid "basis of record"
+msgstr "base do registo"
+
+#: dashboard/models.py:1317
+msgid ""
+"Optional (no selection = notify me for all basis of records). To select "
+"multiple items, press and hold the Ctrl or Command key and click the items."
+msgstr ""
+"Opcional (sem seleção = notificar-me para todas as bases do registo). Para "
+"selecionar vários itens, mantenha premida a tecla Ctrl ou Command e clique "
+"nos itens."
+
+#: dashboard/models.py:1324
+msgid "areas"
+msgstr "áreas"
+
+#: dashboard/models.py:1326
+msgid ""
+"Optional (no selection = notify me for all data in the system). To select "
+"multiple items, press and hold the Ctrl or Command key and click the items."
+msgstr ""
+"Opcional (sem seleção = notificar-me para todos os dados do sistema). Para "
+"selecionar vários itens, mantenha premida a tecla Ctrl ou Command e clique "
+"nos itens."
+
+#: dashboard/models.py:1463
+msgid "No emails"
+msgstr "Sem e-mails"
+
+#: dashboard/models.py:1464
+msgid "Daily"
+msgstr "Diária"
+
+#: dashboard/models.py:1465
+msgid "Weekly"
+msgstr "Semanal"
+
+#: dashboard/models.py:1466
+msgid "Monthly"
+msgstr "Mensal"
+
+#: dashboard/models.py:1477
+msgid "name"
+msgstr "nome"
+
+#: dashboard/models.py:1484
+msgid "email notifications frequency"
+msgstr "frequência das notificações por e-mail"
+
+#: dashboard/models.py:1661
+msgid "new observation(s) for your alert"
+msgstr "nova(s) observação(ões) para o seu alerta"
+
+#: dashboard/templates/dashboard/_eu_funding_acknowledgement.html:20
+msgid "Funded by the European Union"
+msgstr "Financiado pela União Europeia"
+
+#: dashboard/templates/dashboard/_footer.html:10
+msgid "API"
+msgstr "API"
+
+#: dashboard/templates/dashboard/_footer.html:11
+msgid "Latest data import:"
+msgstr "Última importação de dados:"
+
+#: dashboard/templates/dashboard/_footer.html:12
+msgid ""
+"This site is powered by <a href=\"https://github.com/riparias/gbif-"
+"alert\">GBIF Alert</a> version"
+msgstr ""
+"Este site funciona com o <a href=\"https://github.com/riparias/gbif-"
+"alert\">GBIF Alert</a> versão"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:26
+#, python-format
+msgid "You have <b>%(unseen_count)s</b> new observation(s) for this alert."
+msgstr "Tem <b>%(unseen_count)s</b> nova(s) observação(ões) para este alerta."
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:28
+msgid "Sample of new observations"
+msgstr "Amostra das novas observações"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:33
+msgid "GBIF ID"
+msgstr "ID GBIF"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:34
+msgid "Lat"
+msgstr "Lat"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:35
+msgid "Lon"
+msgstr "Lon"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:36
+msgid "Date"
+msgstr "Data"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:37
+msgid "Species"
+msgstr "Espécie"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:38
+msgid "Dataset"
+msgstr "Conjunto de dados"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:70
+#, python-format
+msgid ""
+"Don't hesitate to check it out on the <a "
+"href=\"%(site_base_url)s%(alert_path)s\">Alert page</a> for more "
+"observations and details."
+msgstr ""
+"Não hesite em consultar a <a "
+"href=\"%(site_base_url)s%(alert_path)s\">página do alerta</a> para ver mais "
+"observações e detalhes."
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:72
+msgid "Alert details"
+msgstr "Detalhes do alerta"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:73
+msgctxt "species"
+msgid "all"
+msgstr "todas"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:74
+msgctxt "areas"
+msgid "all"
+msgstr "todas"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:75
+msgctxt "datasets"
+msgid "all"
+msgstr "todos"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:76
+msgctxt "basis of record"
+msgid "all"
+msgstr "todas"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:78
+msgid "Alert name:"
+msgstr "Nome do alerta:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:79
+msgid "Species:"
+msgstr "Espécies:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:80
+msgid "Areas:"
+msgstr "Áreas:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:81
+msgid "Datasets:"
+msgstr "Conjuntos de dados:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:82
+msgid "Basis of record:"
+msgstr "Base do registo:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:84
+msgid "Email notifications frequency:"
+msgstr "Frequência das notificações por e-mail:"
+
+#: dashboard/templates/dashboard/emails/alert_notification.html:89
+#, python-format
+msgid "Thanks,<br/>The <a href=\"%(site_base_url)s\">%(site_name)s</a> team"
+msgstr ""
+"Obrigado,<br/>A equipa do <a href=\"%(site_base_url)s\">%(site_name)s</a>"
+
+#: dashboard/templates/dashboard/password_reset.html:8
+#: dashboard/templates/dashboard/password_reset.html:14
+msgid "Forgot your password?"
+msgstr "Esqueceu-se da palavra-passe?"
+
+#: dashboard/templates/dashboard/password_reset.html:15
+msgid ""
+"Enter your email address below, and we'll email instructions for setting a "
+"new one."
+msgstr ""
+"Introduza o seu endereço de e-mail abaixo e enviar-lhe-emos por e-mail as "
+"instruções para definir uma nova."
+
+#: dashboard/templates/dashboard/password_reset.html:21
+msgid "Send me instructions!"
+msgstr "Enviem-me as instruções!"
+
+#: dashboard/templates/dashboard/password_reset_complete.html:7
+#: dashboard/templates/dashboard/password_reset_complete.html:13
+msgid "Password reset complete"
+msgstr "Redefinição da palavra-passe concluída"
+
+#: dashboard/templates/dashboard/password_reset_complete.html:16
+#, python-format
+msgid ""
+"\n"
+"                Your new password has been set. You can now <a "
+"href=\"%(signin_url)s\">sign in</a>.\n"
+"            "
+msgstr ""
+"\n"
+"A sua nova palavra-passe foi definida. Já pode <a "
+"href=\"%(signin_url)s\">iniciar sessão</a>."
+
+#: dashboard/templates/dashboard/password_reset_confirm.html:8
+msgid "Reset your password"
+msgstr "Redefinir a palavra-passe"
+
+#: dashboard/templates/dashboard/password_reset_confirm.html:15
+msgid "Set a new password!"
+msgstr "Defina uma nova palavra-passe!"
+
+#: dashboard/templates/dashboard/password_reset_confirm.html:20
+msgid "Change my password"
+msgstr "Alterar a minha palavra-passe"
+
+#: dashboard/templates/dashboard/password_reset_confirm.html:25
+msgid ""
+"The password reset link was invalid, possibly because it has already been "
+"used. Please request a new password reset."
+msgstr ""
+"A ligação de redefinição da palavra-passe é inválida, possivelmente porque já "
+"foi utilizada. Peça uma nova redefinição da palavra-passe."
+
+#: dashboard/templates/dashboard/password_reset_done.html:8
+msgid "Instructions sent"
+msgstr "Instruções enviadas"
+
+#: dashboard/templates/dashboard/password_reset_done.html:14
+msgid "Check your inbox."
+msgstr "Verifique a sua caixa de entrada."
+
+#: dashboard/templates/dashboard/password_reset_done.html:16
+msgid ""
+"We've emailed you instructions for setting your password. You should receive "
+"the email shortly!"
+msgstr ""
+"Enviámos-lhe por e-mail as instruções para definir a sua palavra-passe. "
+"Deverá recebê-lo em breve!"

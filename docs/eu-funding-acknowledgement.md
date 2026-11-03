@@ -40,8 +40,9 @@ SHOW_EU_FUNDING_ACKNOWLEDGEMENT=True
 ```
 
 Restart the stack afterwards (`docker compose up -d`). The footer then shows the
-official emblem, in the language the visitor is browsing in (English, French or
-Dutch), using the Commission's own file for that language. Nothing about it is
+official emblem, in the language the visitor is browsing in (English, French,
+Dutch or Portuguese; other languages get the English one), using the
+Commission's own file for that language. Nothing about it is
 instance-specific, so there is nothing to configure beyond the flag.
 
 ### The "about this site" page
