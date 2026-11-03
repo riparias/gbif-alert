@@ -78,7 +78,7 @@ def test_emblem_matches_active_language(settings):
 
 
 def test_emblem_falls_back_to_english_for_an_unshipped_language():
-    """We only ship en/fr/nl; anything else must still get an emblem."""
+    """We only ship en/fr/nl/pt; anything else must still get an emblem."""
     with translation.override("de"):
         assert eu_emblem_path() == "eu-funding/eu-funded-en.png"
         assert eu_emblem_path(negative=True) == "eu-funding/eu-funded-en-negative.png"
@@ -91,6 +91,9 @@ def test_emblem_path_handles_a_regional_language_code():
 
 
 def test_emblem_path_per_shipped_language():
-    for language_code in ("en", "fr", "nl"):
+    """Each language we ship an emblem for gets its own, not the English
+    fallback: the wording is typeset in the image, so a missing or misnamed
+    file would silently show the wrong language to that language's users."""
+    for language_code in ("en", "fr", "nl", "pt"):
         with translation.override(language_code):
             assert eu_emblem_path() == f"eu-funding/eu-funded-{language_code}.png"

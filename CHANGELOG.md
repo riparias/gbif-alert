@@ -1,5 +1,9 @@
 # Unreleased
 
+- European Portuguese (`pt`) is now one of the languages an instance can
+  offer: add it to `ENABLED_LANGUAGES`. The interface, account pages,
+  notification email and EU emblem are translated; the translation is a first
+  pass not yet reviewed by a native speaker.
 - The browser tab icon can now be uploaded in the admin (Dashboard > Site
   icons), and instances without one show a neutral map pin instead of the LIFE
   RIPARIAS logo. **After upgrading, upload your icon if you want a custom

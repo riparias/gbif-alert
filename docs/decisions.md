@@ -501,3 +501,8 @@ expresses the ownership.
 **What:** The engine ships a neutral icon; operators upload their own in the admin, re-encoded to one PNG (max 512x512) in `SiteIcon` and served from `/site-icon.png`.
 **Why:** #248 - every instance showed the LIFE RIPARIAS logo; deployments have no persistent media storage, and a fixed URL cached for a day keeps the image out of page rendering.
 **Rejected:** a `SITE_ICON_URL` env var (someone must host the file, and every visitor's browser contacts that host), a bind-mounted file (needs host access) and a generated icon (cannot carry a real logo).
+
+## 2026-11-03 - Add European Portuguese (pt) as a UI language
+**What:** `pt` added to `LANGUAGES` with generated migrations, both catalogs, the Vue block and the official EC emblem; instances opt in via `ENABLED_LANGUAGES`.
+**Why:** First language added after the 2026-10-27 generic-translations work; the recipe needed no code change, and an unreviewed first pass beats an English-only UI.
+**Rejected:** `pt-br` (Brazilian wording; Django's `pt` catalog, used for the admin and password-reset email, is European) and `pt-pt` (no Django catalog under that code).

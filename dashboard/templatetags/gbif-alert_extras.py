@@ -140,9 +140,9 @@ def eu_funding_emblem_path(negative: bool = False) -> str:
 
     The Commission ships one file per language, with the funding statement
     already typeset in it, so the file - not a translated caption next to a
-    flag - is what carries the wording. We ship en/fr/nl (the languages this
-    tool supports) and fall back to English when the active language has no
-    asset, rather than showing nothing.
+    flag - is what carries the wording. We ship en/fr/nl/pt and fall back to
+    English when the active language has no asset (e.g. nb, not an EU
+    language), rather than showing nothing.
 
     `negative` selects the Commission's version for dark backgrounds (white
     lettering); the default is the positive/colour one.

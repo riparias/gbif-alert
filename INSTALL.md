@@ -12,7 +12,7 @@ You can customize:
 only [occurrences of the 5 invasive alien fishes in New Zealand](https://www.gbif.org/occurrence/search?country=NZ&taxon_key=2367196&taxon_key=2350580&taxon_key=2362635&taxon_key=2340989&taxon_key=8215487). Those are the **only** occurrences that GBIF Alert 
 will periodically download from GBIF and will import in its database.
 - Your end-users will be able to filter those occurrences further to match their specific needs.
-- The available languages in the interface: English, French, Dutch and Norwegian Bokmal are currently supported.
+- The available languages in the interface: English, French, Dutch, Norwegian Bokmal and European Portuguese are currently supported.
 - Website texts: the introduction on the home page, the "about this site" page and the "what's new" page.
 - Whether the footer carries the EU funding acknowledgement, via `SHOW_EU_FUNDING_ACKNOWLEDGEMENT` (off by default, and reserved for genuinely EU-funded instances - see [docs/eu-funding-acknowledgement.md](docs/eu-funding-acknowledgement.md)).
 - The primary color theme of the interface, via the `PRIMEVUE_PRIMARY_PALETTE`
@@ -243,8 +243,8 @@ All operationally-significant settings live in `.env`. Highlights:
 - **Branding**: `SITE_NAME`, `PRIMEVUE_PRIMARY_PALETTE`.
 - **Web workers**: `GUNICORN_WORKERS` (default `3`) is the number of gunicorn worker processes in the `gbif-alert` container. The usual rule is two per CPU core plus one.
 - **Map default view**: `MAP_INITIAL_ZOOM`, `MAP_INITIAL_LAT`, `MAP_INITIAL_LON`.
-- **Languages**: `ENABLED_LANGUAGES` (comma-separated subset of `en,fr,nl,nb`;
-  `nb` is Norwegian Bokmal).
+- **Languages**: `ENABLED_LANGUAGES` (comma-separated subset of `en,fr,nl,nb,pt`;
+  `nb` is Norwegian Bokmal, `pt` European Portuguese).
 - **EU funding acknowledgement**: `SHOW_EU_FUNDING_ACKNOWLEDGEMENT` (default `False`). When `True`, every page shows the official "Funded by the European Union" emblem in the footer, linking to your "about this site" page. **Only switch this on if your instance is genuinely funded by the European Union** - displaying the emblem otherwise is a false claim of EU support. Such an instance must also put the full disclaimer on its "about this site" page: see [docs/eu-funding-acknowledgement.md](docs/eu-funding-acknowledgement.md) for ready-to-paste text.
 - **Verified status per dataset**: an observation is normally flagged as verified based on its `identificationVerificationStatus`. `ALWAYS_VERIFIED_DATASET_KEYS` and `NEVER_VERIFIED_DATASET_KEYS` (comma-separated GBIF dataset keys) bypass that check for whole datasets. `ALWAYS_VERIFIED_DATASET_KEYS` defaults to the iNaturalist research-grade dataset (`50c9509d-22c7-4a22-a47d-8c48425ef4a7`), whose records reach GBIF without a verification status; note that research grade means community consensus, not expert validation, so set the variable to an empty value if that is not good enough for your instance. Changes apply at the next observation import.
 - **Email**: SMTP by default (`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`). To send through **Amazon SES with an IAM role** instead of SMTP credentials, set `EMAIL_BACKEND=django_ses.SESBackend` and `AWS_SES_REGION_NAME` (e.g. `eu-west-1`); the credentials are then taken from the ambient AWS role (ECS task role / EC2 instance role), so no SMTP user/password is stored. `DEFAULT_FROM_EMAIL` must be a verified SES identity.
