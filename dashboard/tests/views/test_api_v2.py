@@ -3067,6 +3067,46 @@ def test_profile_put_invalid_delay_unit(client, auth_data):
     assert "delayUnit" in resp.json()["errors"]
 
 
+def test_profile_get_returns_the_language_in_use(client, auth_data, enabled_languages):
+    """The profile reports the language the user's emails are sent in, not the
+    raw stored value. Accounts created outside the sign-up form keep the model
+    default "en-us", and older profiles a language the site has since
+    disabled: the profile page only offers enabled languages, so either would
+    show an empty language select."""
+    enabled_languages("nl", "pt")
+    client.force_login(auth_data["user"])  # created with the default, "en-us"
+
+    assert client.get("/api/v2/profile/").json()["language"] == "nl"
+
+
+def test_profile_put_rejects_a_language_the_site_has_not_enabled(
+    client, auth_data, enabled_languages
+):
+    """The profile only stores an enabled language, as sign-up already does
+    through its form choices. The API is reachable directly, and a stored
+    disabled (or made-up, or over-long) language would at best be silently
+    replaced in the emails and at worst fail the save."""
+    enabled_languages("en", "pt")
+    user = auth_data["user"]
+    client.force_login(user)
+    resp = client.put(
+        "/api/v2/profile/",
+        data={
+            "firstName": "Test",
+            "lastName": "User",
+            "email": "testuser@example.com",
+            "language": "fr",
+            "delayValue": 1,
+            "delayUnit": "days",
+        },
+        content_type="application/json",
+    )
+    assert resp.status_code == 422
+    assert "language" in resp.json()["errors"]
+    user.refresh_from_db()
+    assert user.language != "fr"
+
+
 # --- account delete ---
 
 

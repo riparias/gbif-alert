@@ -511,3 +511,8 @@ expresses the ownership.
 **What:** New command fills each enabled language's blank `vernacular_name_<lang>` from ChecklistBank COL XR by COL key (preferred name, else the first); `--overwrite` replaces existing names but never blanks one.
 **Why:** Enabling a language (e.g. `pt`) left every species name blank; COL keys are mandatory for the import, so every monitored species can be looked up.
 **Rejected:** GBIF backbone `vernacularNames` (better "preferred" flags, but keyed on the frozen legacy key) and a provenance field like `image_source_type` (more schema for an opt-in flag).
+
+## 2026-11-05 - Serve only ENABLED_LANGUAGES
+**What:** A `LocaleMiddleware` subclass tries the cookie, Accept-Language, then `LANGUAGE_CODE`, skipping languages the site has not enabled (else the first enabled one); `User.get_language()` applies the same rule to emails.
+**Why:** #513 - Django negotiates against `settings.LANGUAGES`, so a French browser got onestop-pt (en, pt) in French.
+**Rejected:** shrinking `LANGUAGES` to the enabled set (it drives modeltranslation columns, `User.language` choices and the API's per-language dicts) and a data migration of stored profile languages (`ENABLED_LANGUAGES` changes at any deploy).

@@ -464,12 +464,58 @@ def test_nav_config_escapes_html_in_values(client, settings):
 
 
 @pytest.mark.parametrize("accept_language, expected", [("fr", "fr"), ("nl", "nl")])
-def test_spa_shell_declares_the_interface_language(client, accept_language, expected):
+def test_spa_shell_declares_the_interface_language(
+    client, enabled_languages, accept_language, expected
+):
     """<html lang> follows the active language, not a hard-coded "en".
 
     Screen readers pick their pronunciation from this attribute; with "en"
     they read French or Dutch text with English rules.
     """
+    enabled_languages("en", "fr", "nl")
     response = client.get("/", HTTP_ACCEPT_LANGUAGE=accept_language)
     assert response.status_code == 200
     assert f'<html lang="{expected}">' in response.content.decode()
+
+
+def _served_language(client, **headers):
+    """The language the SPA shell is served in, as the Vue app reads it."""
+    response = client.get("/", **headers)
+    assert response.status_code == 200
+    return _get_nav_config(response)["currentLanguage"]
+
+
+def test_accept_language_skips_languages_the_site_has_not_enabled(
+    client, enabled_languages
+):
+    """A browser preference for a supported but disabled language is skipped
+    for the next one it lists, and with no enabled match the site falls back
+    to English. Before #513, a French browser got the whole onestop-pt
+    interface (en, pt) in French, a language its selector does not even offer.
+    """
+    enabled_languages("en", "pt")
+
+    assert _served_language(client, HTTP_ACCEPT_LANGUAGE="fr, pt;q=0.8") == "pt"
+    assert _served_language(client, HTTP_ACCEPT_LANGUAGE="fr") == "en"
+
+
+def test_cookie_for_a_language_no_longer_enabled_is_ignored(client, enabled_languages):
+    """A language cookie the site no longer offers (set before an operator
+    removed the language, or posted straight to /i18n/setlang/, which accepts
+    any language Django has a catalog for) gives way to Accept-Language
+    instead of pinning the visitor to a hidden language."""
+    enabled_languages("en", "pt")
+    client.cookies["django_language"] = "fr"
+
+    assert _served_language(client, HTTP_ACCEPT_LANGUAGE="pt") == "pt"
+
+
+def test_site_without_english_never_falls_back_to_english(client, enabled_languages):
+    """With no usable preference, a site that does not enable English is
+    served in its first enabled language. Django's own last resort is
+    LANGUAGE_CODE ("en-us"), which would show English on a Dutch/Portuguese
+    site, including to a browser that asks for English."""
+    enabled_languages("nl", "pt")
+
+    assert _served_language(client) == "nl"
+    assert _served_language(client, HTTP_ACCEPT_LANGUAGE="en-US") == "nl"

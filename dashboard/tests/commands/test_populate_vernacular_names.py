@@ -21,20 +21,6 @@ HORNET_NAMES = [
 ]
 
 
-@pytest.fixture
-def enabled(settings):
-    """Set GBIF_ALERT["ENABLED_LANGUAGES"] for one test.
-
-    GBIF_ALERT is a dict, so it is copied rather than mutated: pytest-django
-    only restores attributes it replaced, not dicts changed in place.
-    """
-
-    def _set(*languages):
-        settings.GBIF_ALERT = {**settings.GBIF_ALERT, "ENABLED_LANGUAGES": languages}
-
-    return _set
-
-
 def _hornet(**names):
     return Species.objects.create(
         name="Vespa velutina", gbif_col_taxon_key="7G3C6", **names
@@ -48,14 +34,14 @@ def _run(*args):
 
 
 @pytest.mark.django_db
-def test_fills_blank_names_for_enabled_languages_only(enabled):
+def test_fills_blank_names_for_enabled_languages_only(enabled_languages):
     """Blank names are filled, but only in the instance's enabled languages.
 
     Dutch is in the source but not enabled: writing it anyway would fill
     columns nobody sees, and silently pre-empt a curator's choice the day the
     language gets enabled.
     """
-    enabled("en", "fr")
+    enabled_languages("en", "fr")
     sp = _hornet()
     with mock.patch(FETCH, return_value=HORNET_NAMES):
         _run()
@@ -67,13 +53,13 @@ def test_fills_blank_names_for_enabled_languages_only(enabled):
 
 
 @pytest.mark.django_db
-def test_keeps_existing_names_by_default(enabled):
+def test_keeps_existing_names_by_default(enabled_languages):
     """Without --overwrite an existing name is never replaced.
 
     There is no provenance field for names, so a non-blank name may have been
     typed by hand in the admin; the default run must be safe to repeat.
     """
-    enabled("en", "fr")
+    enabled_languages("en", "fr")
     sp = _hornet(vernacular_name_fr="Frelon d'Asie")
     with mock.patch(FETCH, return_value=HORNET_NAMES):
         _run()
@@ -83,9 +69,9 @@ def test_keeps_existing_names_by_default(enabled):
 
 
 @pytest.mark.django_db
-def test_overwrite_replaces_existing_names(enabled):
+def test_overwrite_replaces_existing_names(enabled_languages):
     """--overwrite replaces names that are already set."""
-    enabled("fr")
+    enabled_languages("fr")
     sp = _hornet(vernacular_name_fr="Frelon d'Asie")
     with mock.patch(FETCH, return_value=HORNET_NAMES):
         _run("--overwrite")
@@ -94,13 +80,13 @@ def test_overwrite_replaces_existing_names(enabled):
 
 
 @pytest.mark.django_db
-def test_overwrite_never_blanks_a_name_missing_at_source(enabled):
+def test_overwrite_never_blanks_a_name_missing_at_source(enabled_languages):
     """--overwrite keeps a name the source has nothing to replace it with.
 
     Otherwise a gap in the source (or a source-side removal) would erase
     curated names.
     """
-    enabled("fr")
+    enabled_languages("fr")
     sp = _hornet(vernacular_name_fr="Frelon d'Asie")
     with mock.patch(FETCH, return_value=[{"name": "Asian Hornet", "language": "eng"}]):
         _run("--overwrite")
@@ -109,9 +95,9 @@ def test_overwrite_never_blanks_a_name_missing_at_source(enabled):
 
 
 @pytest.mark.django_db
-def test_preferred_name_wins_over_first(enabled):
+def test_preferred_name_wins_over_first(enabled_languages):
     """A name flagged preferred is chosen even if another one comes first."""
-    enabled("fr")
+    enabled_languages("fr")
     sp = _hornet()
     names = [
         {"name": "Frelon asiatique", "language": "fra"},
@@ -124,12 +110,12 @@ def test_preferred_name_wins_over_first(enabled):
 
 
 @pytest.mark.django_db
-def test_norwegian_bokmal_matches_generic_norwegian(enabled):
+def test_norwegian_bokmal_matches_generic_norwegian(enabled_languages):
     """`nb` is filled from names tagged `nor`, as COL tags most Norwegian names.
 
     Matching only `nob` would leave Norwegian blank for almost every species.
     """
-    enabled("nb")
+    enabled_languages("nb")
     sp = _hornet()
     with mock.patch(FETCH, return_value=HORNET_NAMES):
         _run()
@@ -138,13 +124,13 @@ def test_norwegian_bokmal_matches_generic_norwegian(enabled):
 
 
 @pytest.mark.django_db
-def test_overlong_name_is_skipped_for_the_next_one(enabled):
+def test_overlong_name_is_skipped_for_the_next_one(enabled_languages):
     """A name longer than the 100-char column is skipped, not truncated.
 
     Saving it would raise on PostgreSQL and lose every language of the
     species; truncating would store a wrong name.
     """
-    enabled("fr")
+    enabled_languages("fr")
     sp = _hornet()
     names = [
         {"name": "A" * 101, "language": "fra"},
@@ -157,9 +143,9 @@ def test_overlong_name_is_skipped_for_the_next_one(enabled):
 
 
 @pytest.mark.django_db
-def test_dry_run_writes_nothing(enabled):
+def test_dry_run_writes_nothing(enabled_languages):
     """--dry-run reports what it would do but leaves the database untouched."""
-    enabled("fr")
+    enabled_languages("fr")
     sp = _hornet()
     with mock.patch(FETCH, return_value=HORNET_NAMES):
         out, _ = _run("--dry-run")
@@ -169,12 +155,12 @@ def test_dry_run_writes_nothing(enabled):
 
 
 @pytest.mark.django_db
-def test_species_without_col_key_is_not_fetched(enabled):
+def test_species_without_col_key_is_not_fetched(enabled_languages):
     """A species with only a legacy key is skipped: names are looked up by COL key.
 
     Calling the API with a missing key would request a bogus URL.
     """
-    enabled("fr")
+    enabled_languages("fr")
     Species.objects.create(name="Legacius onlyus", gbif_taxon_key=999040)
     with mock.patch(FETCH, return_value=HORNET_NAMES) as fetch:
         _run()
@@ -182,9 +168,9 @@ def test_species_without_col_key_is_not_fetched(enabled):
 
 
 @pytest.mark.django_db
-def test_one_failing_species_does_not_abort_the_run(enabled):
+def test_one_failing_species_does_not_abort_the_run(enabled_languages):
     """An error on one species is reported and the next species is still processed."""
-    enabled("fr")
+    enabled_languages("fr")
     Species.objects.create(name="Aaa failus", gbif_col_taxon_key="FAIL1")
     sp = _hornet()
 
@@ -201,13 +187,13 @@ def test_one_failing_species_does_not_abort_the_run(enabled):
 
 
 @pytest.mark.django_db
-def test_enabled_language_without_code_mapping_is_skipped(enabled):
+def test_enabled_language_without_code_mapping_is_skipped(enabled_languages):
     """An enabled language the command has no ISO 639-3 code for is skipped.
 
     A future language added to LANGUAGES without updating the mapping must
     not crash the run for the languages that are mapped.
     """
-    enabled("en", "xx")
+    enabled_languages("en", "xx")
     sp = _hornet()
     with mock.patch(FETCH, return_value=HORNET_NAMES):
         _, err = _run()

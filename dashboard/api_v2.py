@@ -1742,7 +1742,7 @@ def profile_get(request: HttpRequest):
         "firstName": user.first_name,
         "lastName": user.last_name,
         "email": user.email,
-        "language": user.language,
+        "language": user.get_language(),
         "delayValue": value,
         "delayUnit": unit,
     }
@@ -1763,6 +1763,14 @@ def profile_put(request: HttpRequest, payload: ProfileIn):
             {
                 "detail": "Validation failed",
                 "errors": {"email": [str(_("This email address is already in use."))]},
+            },
+        )
+    if payload.language not in settings.GBIF_ALERT["ENABLED_LANGUAGES"]:
+        return Status(
+            422,
+            {
+                "detail": "Validation failed",
+                "errors": {"language": ["Invalid language."]},
             },
         )
     valid_units = ("days", "weeks", "months", "years")

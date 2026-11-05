@@ -10,10 +10,11 @@ pytestmark = pytest.mark.django_db
 URL = "/api/v2/spa/page-fragments/welcome_text/"
 
 
-def test_page_fragment_is_served_in_every_site_language(client):
+def test_page_fragment_is_served_in_every_site_language(client, enabled_languages):
     """A fragment has a text for each language in settings.LANGUAGES, not only
     the original en/fr/nl: an instance running in Norwegian must be able to
     write its welcome, about and news pages in Norwegian."""
+    enabled_languages("en", "nb")
     PageFragment.objects.create(
         identifier="welcome_text", content_en="Welcome", content_nb="Velkommen"
     )

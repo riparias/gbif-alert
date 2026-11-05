@@ -1106,8 +1106,9 @@ def test_tiles_initial_data_import_filter(maps_data, client):
     assert decoded_tile["default"]["features"][0]["properties"]["gbif_id"] == "3"
 
 
-def test_tiles_vernacular_name_in_active_language(maps_data, client):
+def test_tiles_vernacular_name_in_active_language(maps_data, client, enabled_languages):
     """Tile properties include the vernacular name for the active language."""
+    enabled_languages("en", "nl", "fr")
     tile_url = reverse(
         _SINGLE_OBS_URL,
         kwargs={"zoom": 2, "x": 2, "y": 1},

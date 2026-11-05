@@ -17,6 +17,20 @@ from dashboard.models import (
 
 
 @pytest.fixture
+def enabled_languages(settings):
+    """Set GBIF_ALERT["ENABLED_LANGUAGES"] for one test.
+
+    GBIF_ALERT is a dict, so it is copied rather than mutated: pytest-django
+    only restores attributes it replaced, not dicts changed in place.
+    """
+
+    def _set(*languages):
+        settings.GBIF_ALERT = {**settings.GBIF_ALERT, "ENABLED_LANGUAGES": languages}
+
+    return _set
+
+
+@pytest.fixture
 def observations_and_areas():
     di = DataImport.objects.create(start=timezone.now())
     dataset = Dataset.objects.create(name="D", gbif_dataset_key="k")
