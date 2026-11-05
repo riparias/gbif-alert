@@ -1,4 +1,4 @@
-# Unreleased
+# 2.12.0 (2026-11-05)
 
 - Fix: the interface and notification emails are now always in one of the
   instance's `ENABLED_LANGUAGES`. A browser or a saved choice asking for
