@@ -208,11 +208,17 @@ def test_send_notification_email_uses_the_user_language_vernacular_name(email_da
     assert "Slough crayfish" not in html
 
 
-def test_send_notification_email_without_translation_is_sent_in_english(email_data):
+def test_send_notification_email_without_translation_is_sent_in_english(
+    email_data, settings, enabled_languages
+):
     """A user whose language has no translation of the email still gets it, in
     English. A language can be added to the site before every text is
     translated; that must not stop its users' alert emails (with one template
     file per language, a missing file made every send fail)."""
+    # German must be a site language, or the user's language falls back to an
+    # enabled one before the missing translation is ever reached.
+    settings.LANGUAGES = [*settings.LANGUAGES, ("de", "German")]
+    enabled_languages("en", "de")
     email_data["make_unseen"](1)
     user = email_data["user"]
     user.language = "de"  # no catalog and no template for German
@@ -222,6 +228,33 @@ def test_send_notification_email_without_translation_is_sent_in_english(email_da
 
     html = mail.outbox[0].alternatives[0][0]
     assert "new observation(s) for this alert" in html
+
+
+@pytest.mark.parametrize(
+    "enabled, stored, expected",
+    [
+        (("en", "pt"), "fr", "en"),
+        (("nl", "pt"), "en-us", "nl"),
+    ],
+)
+def test_send_notification_email_is_in_an_enabled_language(
+    email_data, enabled_languages, enabled, stored, expected
+):
+    """The email is sent in a language the site enables, even when the stored
+    profile language is not one: profiles keep a language the operator has
+    since removed from ENABLED_LANGUAGES, and accounts created outside the
+    sign-up form (createsuperuser, the admin) keep the model default "en-us",
+    which must not mean English on a site without English (#513)."""
+    enabled_languages(*enabled)
+    email_data["make_unseen"](1)
+    user = email_data["user"]
+    user.language = stored
+    user.save()
+
+    assert email_data["alert"].send_notification_email() is True
+
+    html = mail.outbox[0].alternatives[0][0]
+    assert f'<html lang="{expected}">' in html
 
 
 def test_send_notification_email_body_is_translated(email_data):

@@ -29,6 +29,7 @@ from django.utils.translation import gettext_lazy as _
 from taggit.managers import TaggableManager
 
 from page_fragments.models import PageFragment, NEWS_PAGE_IDENTIFIER
+from dashboard.utils import enabled_language
 
 DATA_SRID = 3857  # Let's keep everything in Google Mercator to avoid reprojections
 
@@ -75,10 +76,12 @@ class User(AbstractUser):  # type: ignore[django-manager-missing]
         return False
 
     def get_language(self) -> str:
-        # Use this method instead of self.language to get the language code (some got en-us as a default value, that will cause issues)
-        if self.language == "en-us":
-            return "en"
-        return self.language
+        """The language to use for this user: their own if the site enables it.
+
+        Use this rather than self.language, which can hold the model default
+        "en-us" or a language removed from ENABLED_LANGUAGES since it was saved.
+        """
+        return enabled_language(self.language)
 
     @property
     def has_alerts_with_unseen_observations(self) -> bool:

@@ -2,10 +2,32 @@ import logging
 import subprocess
 
 from django.conf import settings
+from django.utils.translation import get_supported_language_variant
 
 logger = logging.getLogger(__name__)
 
 _cached_version: str | None = None
+
+
+def enabled_language(*candidates: str | None) -> str:
+    """The first candidate this site enables, as a code from settings.LANGUAGES.
+
+    Candidates are tried in order, then LANGUAGE_CODE; a variant counts as its
+    base language ("fr-BE" or "en-us" as "fr" or "en"). With no enabled match,
+    the first of GBIF_ALERT["ENABLED_LANGUAGES"] wins, so LANGUAGE_CODE does not
+    leak through on a site without English.
+    """
+    enabled = settings.GBIF_ALERT["ENABLED_LANGUAGES"]
+    for candidate in (*candidates, settings.LANGUAGE_CODE):
+        if not candidate:
+            continue
+        try:
+            code = get_supported_language_variant(candidate)
+        except LookupError:
+            continue
+        if code in enabled:
+            return code
+    return enabled[0]
 
 
 def readable_string(input_string: str) -> str:

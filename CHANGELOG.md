@@ -1,5 +1,9 @@
 # Unreleased
 
+- Fix: the interface and notification emails are now always in one of the
+  instance's `ENABLED_LANGUAGES`. A browser or a saved choice asking for
+  another language gets the next enabled match, else English, or the first
+  enabled language when English is not enabled (#513).
 - New `populate_vernacular_names` command: fills blank species names in every
   enabled language from the Catalogue of Life, e.g. after enabling a language.
   `--overwrite` also replaces existing names.
