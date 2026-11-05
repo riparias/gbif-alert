@@ -371,6 +371,7 @@ Valkey only holds the cache and the job queue; it needs no backup. Production de
 | Rebuild area parts | `docker compose exec gbif-alert python manage.py rebuild_area_parts` |
 | Name unnamed datasets | `docker compose exec gbif-alert python manage.py sync_dataset_names` |
 | Fetch species pictures | `docker compose exec gbif-alert python manage.py populate_species_images` |
+| Fetch species vernacular names | `docker compose exec gbif-alert python manage.py populate_vernacular_names` |
 
 Areas are stored pre-subdivided so that filtering observations by area is fast,
 and this is maintained automatically whenever an area is saved. If
@@ -378,12 +379,15 @@ and this is maintained automatically whenever an area is saved. If
 import or a database restore that bypassed the application - run the rebuild
 command above.
 
-The last two are occasional, not periodic. Every import already names the
+The last three are occasional, not periodic. Every import already names the
 datasets it finds; `sync_dataset_names` repairs the names after a GBIF API
 outage without waiting for the next import. `populate_species_images` fills the
 optional species picture (shown when hovering a species name) from Wikipedia,
 falling back to GBIF occurrence media; it never overwrites a picture set by hand
-in the admin.
+in the admin. `populate_vernacular_names` fills blank species names in every
+enabled language from the Catalogue of Life (useful after enabling a language);
+`--overwrite` also replaces existing names, including ones typed in the admin,
+so try it with `--dry-run` first.
 
 ## Run GBIF Alert manually
 

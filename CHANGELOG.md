@@ -1,5 +1,8 @@
 # Unreleased
 
+- New `populate_vernacular_names` command: fills blank species names in every
+  enabled language from the Catalogue of Life, e.g. after enabling a language.
+  `--overwrite` also replaces existing names.
 - European Portuguese (`pt`) is now one of the languages an instance can
   offer: add it to `ENABLED_LANGUAGES`. The interface, account pages,
   notification email and EU emblem are translated; the translation is a first

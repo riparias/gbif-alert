@@ -506,3 +506,8 @@ expresses the ownership.
 **What:** `pt` added to `LANGUAGES` with generated migrations, both catalogs, the Vue block and the official EC emblem; instances opt in via `ENABLED_LANGUAGES`.
 **Why:** First language added after the 2026-10-27 generic-translations work; the recipe needed no code change, and an unreviewed first pass beats an English-only UI.
 **Rejected:** `pt-br` (Brazilian wording; Django's `pt` catalog, used for the admin and password-reset email, is European) and `pt-pt` (no Django catalog under that code).
+
+## 2026-11-05 - populate_vernacular_names fills blanks from COL XR
+**What:** New command fills each enabled language's blank `vernacular_name_<lang>` from ChecklistBank COL XR by COL key (preferred name, else the first); `--overwrite` replaces existing names but never blanks one.
+**Why:** Enabling a language (e.g. `pt`) left every species name blank; COL keys are mandatory for the import, so every monitored species can be looked up.
+**Rejected:** GBIF backbone `vernacularNames` (better "preferred" flags, but keyed on the frozen legacy key) and a provenance field like `image_source_type` (more schema for an opt-in flag).
