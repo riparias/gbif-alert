@@ -375,6 +375,12 @@ def _default_predicate_builder(species_list):
             "checklistKey": GBIF_COL_XR_CHECKLIST_KEY,
         },
         {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"},
+        # import_observations skips rows lacking these (see skip_reasons), so
+        # don't download them: GBIF's download metadata then shows the filter
+        # instead of an opaque local skip (#488).
+        {"type": "equals", "key": "HAS_COORDINATE", "value": "true"},
+        {"type": "isNotNull", "parameter": "YEAR"},
+        {"type": "isNotNull", "parameter": "OCCURRENCE_ID"},
     ]
     if country := os.environ.get("GBIF_DOWNLOAD_COUNTRY"):
         predicates.append({"type": "equals", "key": "COUNTRY", "value": country})

@@ -549,7 +549,9 @@ def _predicate_clauses(settings):
 
 
 def _lat_lon_clauses(clauses):
-    return [c for c in clauses if c["key"] in ("DECIMAL_LATITUDE", "DECIMAL_LONGITUDE")]
+    return [
+        c for c in clauses if c.get("key") in ("DECIMAL_LATITUDE", "DECIMAL_LONGITUDE")
+    ]
 
 
 def test_no_bbox_env_produces_no_lat_lon_clauses(clean_env):
@@ -584,7 +586,7 @@ def test_bbox_composes_with_country_and_year(clean_env):
     clean_env.setenv("GBIF_DOWNLOAD_YEAR_MIN", "2000")
     settings = _import_settings()
     clauses = _predicate_clauses(settings)
-    keys = [c["key"] for c in clauses]
+    keys = [c.get("key") for c in clauses]
     assert keys.count("DECIMAL_LATITUDE") == 2
     assert keys.count("DECIMAL_LONGITUDE") == 2
     assert "COUNTRY" in keys
@@ -644,7 +646,7 @@ def test_min_not_less_than_max_raises(clean_env):
 
 
 def _continent_clauses(clauses):
-    return [c for c in clauses if c["key"] == "CONTINENT"]
+    return [c for c in clauses if c.get("key") == "CONTINENT"]
 
 
 def test_no_continent_env_produces_no_continent_clause(clean_env):
@@ -664,7 +666,7 @@ def test_continent_adds_equals_clause_case_insensitively(clean_env):
     assert _continent_clauses(clauses) == [
         {"type": "equals", "key": "CONTINENT", "value": "NORTH_AMERICA"}
     ]
-    assert "YEAR" in [c["key"] for c in clauses]
+    assert "YEAR" in [c.get("key") for c in clauses]
 
 
 def test_unknown_continent_raises(clean_env):
@@ -737,3 +739,23 @@ def test_default_predicate_builder_uses_col_key_and_checklist():
     )
     assert taxon_pred["values"] == ["5WRC3"]
     assert taxon_pred["checklistKey"] == GBIF_COL_XR_CHECKLIST_KEY
+
+
+@pytest.mark.django_db
+def test_default_predicate_builder_excludes_rows_the_import_would_skip():
+    """The default download asks GBIF for coordinates, a year and an occurrenceID.
+
+    import_observations skips rows missing any of these (skip_reasons), so
+    downloading them only produces opaque local skips. Filtering at GBIF moves
+    that step into the download's own, citable metadata (#488). If one of these
+    clauses is dropped, the skipped-observation counts grow back silently.
+    """
+    from djangoproject.settings import _default_predicate_builder
+
+    clauses = _default_predicate_builder(Species.objects.all())["predicate"][
+        "predicates"
+    ]
+
+    assert {"type": "equals", "key": "HAS_COORDINATE", "value": "true"} in clauses
+    assert {"type": "isNotNull", "parameter": "YEAR"} in clauses
+    assert {"type": "isNotNull", "parameter": "OCCURRENCE_ID"} in clauses

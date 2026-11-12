@@ -521,3 +521,8 @@ expresses the ownership.
 **What:** Rows with interpreted occurrenceStatus `DETECTED` or `PRESENT` are imported; an import producing no observation while some exist raises and rolls back.
 **Why:** GBIF renamed PRESENT to DETECTED, every row was skipped, and the commit deleted all observations along with comments, unseen status and alert dataset filters. Reverses the earlier "zero-row import commits and wipes" behaviour asserted by `test_zero_rows_import`.
 **Rejected:** a percentage threshold vs the previous import (legitimate predicate changes shrink imports; zero is the unambiguous case) and switching the default predicate to `DETECTED` (`present` still matches the same records).
+
+## 2026-11-12 - Default predicate excludes rows the import would skip
+**What:** The default predicate adds `HAS_COORDINATE=true`, `isNotNull YEAR` and `isNotNull OCCURRENCE_ID`; the local skip checks stay as a safety net.
+**Why:** Filtering at GBIF records it in the citable download metadata instead of an opaque local skip (#488); on devel it matched all 309 skipped rows exactly.
+**Rejected:** `isNotNull BASIS_OF_RECORD` (GBIF always sets it, zero rows) and dropping the local skip checks (they catch whatever GBIF lets through).
