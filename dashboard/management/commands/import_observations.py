@@ -402,6 +402,12 @@ class SkipReason(StrEnum):
     OCCURRENCE_STATUS_NOT_PRESENT = "occurrence_status_not_present"
 
 
+# Interpreted occurrenceStatus values meaning "the organism was there". GBIF
+# renamed PRESENT to DETECTED (and ABSENT to NOT_DETECTED) in November 2026;
+# PRESENT is kept for archives produced before the change.
+PRESENCE_OCCURRENCE_STATUSES = frozenset({"PRESENT", "DETECTED"})
+
+
 def skip_reasons(raw: RawObservationRow) -> list[SkipReason]:
     """Every reason this row is unusable; empty if it can be imported."""
     reasons = []
@@ -413,7 +419,7 @@ def skip_reasons(raw: RawObservationRow) -> list[SkipReason]:
         reasons.append(SkipReason.MISSING_OCCURRENCE_ID)
     if not raw.basis_of_record:
         reasons.append(SkipReason.MISSING_BASIS_OF_RECORD)
-    if raw.occurrence_status != "PRESENT":
+    if raw.occurrence_status not in PRESENCE_OCCURRENCE_STATUSES:
         reasons.append(SkipReason.OCCURRENCE_STATUS_NOT_PRESENT)
     return reasons
 
@@ -942,6 +948,26 @@ def run_import(
             )
 
             _log_with_time(stdout, "All observations imported")
+
+            # Refuse to replace existing data with nothing: the previous
+            # observations (and with them comments, seen/unseen status and the
+            # alerts' dataset filters) would be deleted below. This is how a
+            # GBIF vocabulary change (occurrenceStatus PRESENT -> DETECTED, every
+            # row skipped) wiped production instances. Raising rolls back the
+            # transaction and handle() emails the admins.
+            if (
+                not Observation.objects.filter(data_import=current_data_import).exists()
+                and Observation.objects.exists()
+            ):
+                skipped_counts = {
+                    reason: len(gbif_ids)
+                    for reason, gbif_ids in current_data_import.skipped_observations.items()
+                }
+                raise CommandError(
+                    "No observation could be imported (skipped rows by reason: "
+                    f"{skipped_counts}). Aborting rather than deleting all "
+                    "existing observations."
+                )
 
             # Pass 3: attach images (before the previous import's observations,
             # and with them their images, are deleted below)

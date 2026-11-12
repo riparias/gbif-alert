@@ -1,3 +1,11 @@
+# Unreleased
+
+- Fix: GBIF now reports presence records with occurrenceStatus `DETECTED`
+  instead of `PRESENT`, so every observation was skipped and the instance
+  emptied. Both values are now imported.
+- An import that would leave the instance with no observation at all now fails
+  (admins are emailed) and keeps the existing data.
+
 # 2.12.0 (2026-11-05)
 
 - Fix: the interface and notification emails are now always in one of the

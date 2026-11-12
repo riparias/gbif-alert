@@ -54,17 +54,13 @@ CURCULIONIDAE_COL_KEY = "8HBQ5"
 pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.sequential]
 
 
-def test_zero_rows_import(test_data):
-    """run_import handles an empty row stream gracefully: a DataImport is
-    still created (counters at 0), all previous observations are deleted,
-    and the transaction commits normally."""
-    obs_ids_before = set(Observation.objects.values_list("id", flat=True))
-    di_count_before = DataImport.objects.count()
-    assert obs_ids_before  # sanity: test_data creates some observations
-
+def test_zero_rows_import_on_empty_database():
+    """An import yielding no observation commits normally when there is
+    nothing to lose: a fresh instance whose predicate genuinely matches no
+    record must not fail every night. The guard against empty imports only
+    protects existing data."""
     run_import_with_rows([])
 
-    assert DataImport.objects.count() == di_count_before + 1
     di = DataImport.objects.latest("id")
     assert di.completed
     assert di.end is not None
@@ -73,10 +69,56 @@ def test_zero_rows_import(test_data):
     # Recorded and empty, unlike imports from before the details existed (None)
     assert di.skipped_observations == {}
 
-    # Previous-import observations are gone, same as any other import
-    obs_ids_after = set(Observation.objects.values_list("id", flat=True))
-    assert not (obs_ids_before & obs_ids_after)
-    assert obs_ids_after == set()
+
+def test_import_with_no_observation_aborts_and_keeps_existing_data(test_data):
+    """When every row is skipped (here: GBIF changed a vocabulary we filter
+    on), the import must fail and roll back instead of deleting all existing
+    observations - with them would go comments, seen/unseen status and the
+    alerts' dataset filters, which a later re-import cannot bring back. This is
+    what happened in production when occurrenceStatus became DETECTED."""
+    obs_ids_before = set(Observation.objects.values_list("id", flat=True))
+    unseen_before = ObservationUnseen.objects.count()
+    di_count_before = DataImport.objects.count()
+    assert obs_ids_before  # sanity: test_data creates some observations
+
+    with pytest.raises(CommandError, match="occurrence_status_not_present"):
+        run_import_with_rows(
+            [make_raw_row(gbif_id=1, occurrence_status="SOMETHING_NEW")]
+        )
+
+    assert set(Observation.objects.values_list("id", flat=True)) == obs_ids_before
+    assert ObservationUnseen.objects.count() == unseen_before
+    assert DataImport.objects.count() == di_count_before
+    # The finally block still lifts maintenance mode on failure
+    assert not get_maintenance_mode()
+
+
+@pytest.mark.parametrize("status", ["DETECTED", "PRESENT"])
+def test_presence_statuses_are_imported(test_data, status):
+    """GBIF renamed the interpreted occurrenceStatus PRESENT to DETECTED in
+    November 2026. Both must be imported: DETECTED for current downloads,
+    PRESENT for archives produced before the change (e.g. --source-dwca)."""
+    run_import_with_rows([make_raw_row(gbif_id=1, occurrence_status=status)])
+
+    assert Observation.objects.get().gbif_id == "1"
+    assert DataImport.objects.latest("id").skipped_observations == {}
+
+
+@pytest.mark.parametrize("status", ["NOT_DETECTED", "ABSENT"])
+def test_absence_statuses_are_skipped(test_data, status):
+    """NOT_DETECTED is the new name of ABSENT: both are absence records, which
+    an alert system for invasive species must not report as observations."""
+    run_import_with_rows(
+        [
+            make_raw_row(gbif_id=1, occurrence_id="occ-1"),
+            make_raw_row(gbif_id=2, occurrence_id="occ-2", occurrence_status=status),
+        ]
+    )
+
+    assert list(Observation.objects.values_list("gbif_id", flat=True)) == ["1"]
+    assert DataImport.objects.latest("id").skipped_observations == {
+        "occurrence_status_not_present": [2]
+    }
 
 
 def test_maintenance_mode_cleared_after_success(test_data):
