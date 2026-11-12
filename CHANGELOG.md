@@ -1,4 +1,4 @@
-# Unreleased
+# 2.12.1 (2026-11-12)
 
 - Fix: GBIF now reports presence records with occurrenceStatus `DETECTED`
   instead of `PRESENT`, so every observation was skipped and the instance
