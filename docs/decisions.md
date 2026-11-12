@@ -516,3 +516,8 @@ expresses the ownership.
 **What:** A `LocaleMiddleware` subclass tries the cookie, Accept-Language, then `LANGUAGE_CODE`, skipping languages the site has not enabled (else the first enabled one); `User.get_language()` applies the same rule to emails.
 **Why:** #513 - Django negotiates against `settings.LANGUAGES`, so a French browser got onestop-pt (en, pt) in French.
 **Rejected:** shrinking `LANGUAGES` to the enabled set (it drives modeltranslation columns, `User.language` choices and the API's per-language dicts) and a data migration of stored profile languages (`ENABLED_LANGUAGES` changes at any deploy).
+
+## 2026-11-12 - Accept DETECTED occurrenceStatus; refuse imports that would empty the instance
+**What:** Rows with interpreted occurrenceStatus `DETECTED` or `PRESENT` are imported; an import producing no observation while some exist raises and rolls back.
+**Why:** GBIF renamed PRESENT to DETECTED, every row was skipped, and the commit deleted all observations along with comments, unseen status and alert dataset filters. Reverses the earlier "zero-row import commits and wipes" behaviour asserted by `test_zero_rows_import`.
+**Rejected:** a percentage threshold vs the previous import (legitimate predicate changes shrink imports; zero is the unambiguous case) and switching the default predicate to `DETECTED` (`present` still matches the same records).
