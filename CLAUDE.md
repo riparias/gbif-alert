@@ -67,7 +67,7 @@ uv run python manage.py import_observations              # Import GBIF occurrenc
 uv run python manage.py send_alert_notifications_email   # Send notification emails
 uv run python manage.py refresh_materialized_views       # Refresh DB materialized views
 uv run python manage.py migrate_new_seen_unseen          # Update seen/unseen status
-uv run python manage.py load_area <source_file>          # Import geographic area
+uv run python manage.py load_area <path> --name-field <f> # Import public areas from a file
 ```
 
 ### Production Build

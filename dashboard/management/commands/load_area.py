@@ -1,47 +1,28 @@
-import os
-import sys
-
+from django.contrib.gis.gdal import DataSource
 from django.contrib.gis.utils.layermapping import LayerMapping
 from django.core.management.base import BaseCommand, CommandParser
 
 from dashboard.models import Area
 
-THIS_DIR = os.path.dirname(__file__)
-
-SOURCE_DIRECTORY = os.path.join(THIS_DIR, "../../../source_data/public_areas")
-
-LAYER_MAPPING_CONFIGURATION = {  # key: filename / value: mapping
-    "Riparias_Official_StudyArea.geojson": {"name": "BEKNAAM", "mpoly": "POLYGON"},
-    "belgian_regions/belgian_regions.shp": {"name": "NAME_1", "mpoly": "POLYGON"},
-    "belgian_provinces/belgian_provinces.shp": {"name": "NAME_2", "mpoly": "POLYGON"},
-}
-
 
 class Command(BaseCommand):
     help = (
-        "Import new predefined areas in the database. "
-        ""
-        "Takes a single argument: source data file name (in source_data/public_areas). "
-        "This script should be adjusted (mapping, projections, ...) for each area data source"
+        "Import public areas from a vector file (shapefile, GeoJSON, GeoPackage, ...). "
+        "Each feature of the first layer becomes one area, named after the --name-field attribute."
     )
 
     def add_arguments(self, parser: CommandParser) -> None:
+        parser.add_argument("path", help="Path to the source file")
         parser.add_argument(
-            "area-source-filename",
-            help="Source data file name",
+            "--name-field",
+            required=True,
+            help="Attribute of the source features holding the area name",
         )
 
     def handle(self, *args, **options) -> None:
-        filename = options["area-source-filename"]
-        try:
-            mapping = LAYER_MAPPING_CONFIGURATION[filename]
-            self.stdout.write(f"Mapping found for {filename}")
-        except KeyError:
-            self.stdout.write(
-                f"No mapping found for {filename}, is the filename correct. Has the script been adjusted "
-                f"for this data source?"
-            )
-            sys.exit(1)
-
-        lm = LayerMapping(Area, os.path.join(SOURCE_DIRECTORY, filename), mapping)
-        lm.save(verbose=True)
+        path = options["path"]
+        # LayerMapping wants the source geometry type; read it from the layer instead of
+        # hardcoding it per file. Polygons are promoted to the MultiPolygon model field.
+        geom_type = DataSource(path)[0].geom_type.name.upper()
+        mapping = {"name": options["name_field"], "mpoly": geom_type}
+        LayerMapping(Area, path, mapping).save(verbose=True)
