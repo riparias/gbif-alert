@@ -1,3 +1,11 @@
+# Unreleased
+
+- The default GBIF download now only requests occurrences with coordinates, a
+  year and an occurrenceID. These were always skipped at import; the filter
+  now shows up in the GBIF download itself (#488). Instances with a custom
+  `PREDICATE_BUILDER` can add the same clauses (see
+  `local_settings.template.py`).
+
 # 2.12.1 (2026-11-12)
 
 - Fix: GBIF now reports presence records with occurrenceStatus `DETECTED`

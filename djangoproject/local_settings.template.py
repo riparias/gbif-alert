@@ -48,6 +48,10 @@ enough for your deployment.
 #                     "checklistKey": settings.GBIF_COL_XR_CHECKLIST_KEY,
 #                 },
 #                 {"type": "equals", "key": "OCCURRENCE_STATUS", "value": "present"},
+#                 # Rows without these are skipped at import anyway:
+#                 {"type": "equals", "key": "HAS_COORDINATE", "value": "true"},
+#                 {"type": "isNotNull", "parameter": "YEAR"},
+#                 {"type": "isNotNull", "parameter": "OCCURRENCE_ID"},
 #                 {"type": "greaterThanOrEquals", "key": "YEAR", "value": 2000},
 #             ],
 #         },
