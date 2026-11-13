@@ -5,6 +5,10 @@
   now shows up in the GBIF download itself (#488). Instances with a custom
   `PREDICATE_BUILDER` can add the same clauses (see
   `local_settings.template.py`).
+- The RIPARIAS area data (`source_data/`) and its Belgium-specific
+  `load_*_areas` commands moved to
+  [riparias/early-alert-webapp](https://github.com/riparias/early-alert-webapp)
+  (#364). `load_area` now takes any file: `load_area <path> --name-field <field>`.
 
 # 2.12.1 (2026-11-12)
 

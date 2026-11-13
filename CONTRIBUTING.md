@@ -25,10 +25,6 @@
    ```
 - For settings that cannot be expressed as env vars (e.g. a custom `PREDICATE_BUILDER` callable), copy `djangoproject/local_settings.template.py` to `djangoproject/local_settings.py` and edit. This file is gitignored and imported as an escape hatch after the env-driven settings.
 - Django is pointed at `djangoproject.settings` (the canonical entry point - it loads `.env`, then reads env vars, then imports `local_settings.py` as the escape hatch).
-- **Large LFS data:** the repo excludes one large LFS file from download by default via `.lfsconfig` - `source_data/public_areas/belgian_municipalities/adminvector_4326.gpkg` (209 MB of instance-specific data). After cloning you get a small pointer in its place, and clones/CI/deploys no longer burn LFS bandwidth on it. If you actually need the file, fetch it on demand:
-   ```
-   git lfs pull --include=source_data/public_areas/belgian_municipalities/adminvector_4326.gpkg --exclude=
-   ```
 
 ## Adding a new environment-driven setting
 
@@ -216,11 +212,13 @@ superusers for shared areas, and area names must be unique among shared areas.
 
 ### How to use the `load_area` command to import a new public Area
 
-1) Copy the source data file to `source_data/public_areas`
-2) Adjust the `LAYER_MAPPING_CONFIGURATION` constant in `load_area.py` so it can deal with the specificities 
-   of the new source file (other adjustments to `load_area.py` may also be necessary, see 
-   [LayerMapping documentation](https://docs.djangoproject.com/en/3.2/ref/contrib/gis/layermapping/).)
-3) Run `$ python manage.py load_area <my_source_file>`
+Run `$ python manage.py load_area <path/to/file> --name-field <attribute>`. Each feature of the file's first
+layer becomes a public area, named after `<attribute>`. Any format GDAL reads works (shapefile, GeoJSON,
+GeoPackage, ...); the geometry is reprojected automatically. Files that need more (tags, computed names,
+filtering) are better loaded through the API above, or with a small custom script.
+
+Instance-specific area data is not kept in this repository. The RIPARIAS areas and the custom scripts that
+loaded them are archived in [riparias/early-alert-webapp](https://github.com/riparias/early-alert-webapp).
 
 
 ## Users

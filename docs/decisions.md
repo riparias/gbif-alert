@@ -526,3 +526,8 @@ expresses the ownership.
 **What:** The default predicate adds `HAS_COORDINATE=true`, `isNotNull YEAR` and `isNotNull OCCURRENCE_ID`; the local skip checks stay as a safety net.
 **Why:** Filtering at GBIF records it in the citable download metadata instead of an opaque local skip (#488); on devel it matched all 309 skipped rows exactly.
 **Rejected:** `isNotNull BASIS_OF_RECORD` (GBIF always sets it, zero rows) and dropping the local skip checks (they catch whatever GBIF lets through).
+
+## 2026-11-12 - Instance area data and Belgian loaders leave the engine repo
+**What:** `source_data/` and the 5 `load_*_areas` commands move to riparias/early-alert-webapp (gpkg as a zipped release asset); `load_area` takes a path and `--name-field`.
+**Why:** They are RIPARIAS instance data, the 209 MB LFS file burned quota (#364), and the area API now covers shared-area creation, so the loaders are archived as deprecated.
+**Rejected:** keeping the loaders with a path argument, Git LFS in the instance repo, and rewriting history now (scheduled separately in #364).
