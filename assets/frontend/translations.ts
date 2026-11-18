@@ -97,6 +97,7 @@ export const messages = {
             cancel: "Cancel",
             cannotDeleteArea: "Cannot delete area",
             changePassword: "Change password",
+            chooseFile: "Choose file",
             clearAllFilters: "Clear all",
             clickToStartDrawing: "Click on the map to start drawing",
             configureManually: "Configure the alert manually",
@@ -232,6 +233,7 @@ export const messages = {
             noDatasetSelection:
                 "If you make no selection here, all observations will be included regardless of their origin dataset.",
             noDataToShowInHistogram: "No data to show in histogram.",
+            noFileChosen: "No file chosen",
             noLocationData: "No location data available.",
             noMatchingResultsFound: "No matching results found.",
             noMatchingResultsFoundHint: "Try adjusting or clearing the filters above.",
@@ -445,6 +447,7 @@ export const messages = {
             cancel: "Annuler",
             cannotDeleteArea: "Impossible de supprimer la zone",
             changePassword: "Changer le mot de passe",
+            chooseFile: "Choisir un fichier",
             clearAllFilters: "Tout effacer",
             clickToStartDrawing: "Cliquez sur la carte pour commencer à dessiner",
             configureManually: "Configurer l'alerte manuellement",
@@ -583,6 +586,7 @@ export const messages = {
             noDatasetSelection:
                 "Si vous ne faites aucune sélection ici, toutes les observations seront incluses, quel que soit leur jeu de données d'origine.",
             noDataToShowInHistogram: "Aucune donnée à afficher dans l'histogramme.",
+            noFileChosen: "Aucun fichier choisi",
             noLocationData: "Aucune donnée de localisation disponible.",
             noMatchingResultsFound: "Aucun résultat correspondant trouvé.",
             noMatchingResultsFoundHint:
@@ -797,6 +801,7 @@ export const messages = {
             cancel: "Annuleer",
             cannotDeleteArea: "Kan gebied niet verwijderen",
             changePassword: "Wachtwoord wijzigen",
+            chooseFile: "Bestand kiezen",
             clearAllFilters: "Alles wissen",
             clickToStartDrawing: "Klik op de kaart om te beginnen met tekenen",
             configureManually: "Alert handmatig instellen",
@@ -933,6 +938,7 @@ export const messages = {
             noDatasetSelection:
                 "Als je hier geen selectie maakt, worden alle waarnemingen meegenomen, ongeacht de dataset waaruit ze komen.",
             noDataToShowInHistogram: "Geen gegevens om weer te geven in histogram.",
+            noFileChosen: "Geen bestand gekozen",
             noLocationData: "Geen locatiegegevens beschikbaar.",
             noMatchingResultsFound: "Geen overeenkomende resultaten gevonden.",
             noMatchingResultsFoundHint: "Pas de filters hierboven aan of verwijder ze.",
@@ -1145,6 +1151,7 @@ export const messages = {
             cancel: "Avbryt",
             cannotDeleteArea: "Kan ikke slette området",
             changePassword: "Endre passord",
+            chooseFile: "Velg fil",
             clearAllFilters: "Nullstill alle",
             clickToStartDrawing: "Klikk på kartet for å begynne å tegne",
             configureManually: "Sett opp varselet manuelt",
@@ -1279,6 +1286,7 @@ export const messages = {
             noDatasetSelection:
                 "Hvis du ikke velger noe her, tas alle observasjoner med uansett hvilket datasett de kommer fra.",
             noDataToShowInHistogram: "Ingen data å vise i histogrammet.",
+            noFileChosen: "Ingen fil valgt",
             noLocationData: "Ingen stedsdata tilgjengelig.",
             noMatchingResultsFound: "Ingen treff funnet.",
             noMatchingResultsFoundHint: "Prøv å justere eller fjerne filtrene ovenfor.",
@@ -1493,6 +1501,7 @@ export const messages = {
             cancel: "Cancelar",
             cannotDeleteArea: "Não é possível eliminar a área",
             changePassword: "Alterar palavra-passe",
+            chooseFile: "Escolher ficheiro",
             clearAllFilters: "Limpar tudo",
             clickToStartDrawing: "Clique no mapa para começar a desenhar",
             configureManually: "Configurar o alerta manualmente",
@@ -1629,6 +1638,7 @@ export const messages = {
             noDatasetSelection:
                 "Se não selecionar nada aqui, serão incluídas todas as observações, independentemente do seu conjunto de dados de origem.",
             noDataToShowInHistogram: "Não há dados para mostrar no histograma.",
+            noFileChosen: "Nenhum ficheiro escolhido",
             noLocationData: "Não há dados de localização disponíveis.",
             noMatchingResultsFound: "Não foram encontrados resultados correspondentes.",
             noMatchingResultsFoundHint: "Experimente ajustar ou limpar os filtros acima.",

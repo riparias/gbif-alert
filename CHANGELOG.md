@@ -9,6 +9,8 @@
   `load_*_areas` commands moved to
   [riparias/early-alert-webapp](https://github.com/riparias/early-alert-webapp)
   (#364). `load_area` now takes any file: `load_area <path> --name-field <field>`.
+- The file picker in the "New area" dialog now follows the site language
+  instead of the browser's, and Upload stays disabled until a file is chosen.
 
 # 2.12.1 (2026-11-12)
 

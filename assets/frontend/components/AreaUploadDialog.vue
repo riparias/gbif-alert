@@ -22,6 +22,9 @@ const toast = useToast();
 
 const name = ref("");
 const fileInput = ref<HTMLInputElement | null>(null);
+// Mirrors the native input's selection: its own button and "no file" text are
+// rendered in the browser's locale, so we hide it and show translated ones.
+const fileName = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
 const uploading = ref(false);
 
@@ -30,6 +33,11 @@ function resetForm() {
     errorMessage.value = null;
     uploading.value = false;
     if (fileInput.value) fileInput.value.value = "";
+    fileName.value = null;
+}
+
+function onFileChange() {
+    fileName.value = fileInput.value?.files?.[0]?.name ?? null;
 }
 
 function onHide() {
@@ -89,15 +97,29 @@ async function upload() {
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 0.375rem">
-                <label style="display: block; font-weight: 500">
+                <label for="area-file" style="display: block; font-weight: 500">
                     {{ t("message.areaFile") }}
                 </label>
                 <input
+                    id="area-file"
                     ref="fileInput"
                     type="file"
                     accept=".gpkg"
-                    style="display: block; width: 100%"
+                    class="visually-hidden"
+                    @change="onFileChange"
                 />
+                <div style="display: flex; align-items: center; gap: 0.75rem">
+                    <Button
+                        :label="t('message.chooseFile')"
+                        icon="pi pi-upload"
+                        severity="secondary"
+                        size="small"
+                        @click="fileInput?.click()"
+                    />
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">
+                        {{ fileName ?? t("message.noFileChosen") }}
+                    </span>
+                </div>
                 <small style="color: var(--p-text-muted-color, #6b7280)">{{
                     t("message.areaFileHint")
                 }}</small>
@@ -113,9 +135,21 @@ async function upload() {
             <Button
                 :label="t('message.upload')"
                 :loading="uploading"
-                :disabled="!name || uploading"
+                :disabled="!name || !fileName || uploading"
                 @click="upload"
             />
         </template>
     </Dialog>
 </template>
+
+<style scoped>
+/* Visually hidden but still focusable/clickable, so the label and tests still reach it. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+</style>
