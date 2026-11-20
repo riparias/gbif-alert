@@ -6,6 +6,7 @@ import Button from "primevue/button";
 import Textarea from "primevue/textarea";
 import Tag from "primevue/tag";
 import SingleObservationMap from "./SingleObservationMap.vue";
+import SpeciesName from "./SpeciesName.vue";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
 import { getNavConfig } from "../utils/navConfig";
@@ -81,16 +82,15 @@ const initialDataImportLabel = computed(() => {
     return `${di.name} (${new Date(di.startedAt).toLocaleDateString(locale.value)})`;
 });
 
-// Title lines: the name style the user picked comes first, the other one below
-// (when the species has a vernacular name in this locale at all).
-const nameLines = computed(() => {
+// The title is a SpeciesName (preferred name style + generic-image tooltip);
+// the subtitle shows the other name, when there is a vernacular one at all.
+const secondaryName = computed(() => {
     if (!obs.value) return null;
-    const scientific = obs.value.scientificName;
     const vernacular = pickVernacular(obs.value, locale.value);
-    if (!vernacular) return { primary: scientific, secondary: "", primaryIsScientific: true };
+    if (!vernacular) return null;
     return preferences.speciesNameMode === "vernacular"
-        ? { primary: vernacular, secondary: scientific, primaryIsScientific: false }
-        : { primary: scientific, secondary: vernacular, primaryIsScientific: true };
+        ? { text: obs.value.scientificName, scientific: true }
+        : { text: vernacular, scientific: false };
 });
 
 // obs.date is a plain YYYY-MM-DD: format it in UTC so it never shifts a day.
@@ -216,15 +216,18 @@ onMounted(load);
             <!-- Header: species + GBIF link -->
             <div class="detail-header">
                 <div class="detail-title">
-                    <h2 :class="{ 'scientific-name': nameLines!.primaryIsScientific }">
-                        {{ nameLines!.primary }}
+                    <h2>
+                        <SpeciesName
+                            :scientific-name="obs.scientificName"
+                            :vernacular-name="pickVernacular(obs, locale)"
+                        />
                     </h2>
                     <div
-                        v-if="nameLines!.secondary"
+                        v-if="secondaryName"
                         class="detail-subtitle"
-                        :class="{ 'scientific-name': !nameLines!.primaryIsScientific }"
+                        :class="{ 'scientific-name': secondaryName.scientific }"
                     >
-                        {{ nameLines!.secondary }}
+                        {{ secondaryName.text }}
                     </div>
                 </div>
                 <div class="detail-header-actions">
