@@ -1,5 +1,10 @@
 # Unreleased
 
+- The observation details panel now leads with what matters: species, date
+  (with "x days ago"), individual count and verification status, with a GBIF
+  button for the occurrence ID. Dataset and import details move to a smaller
+  "Source" section (#519).
+
 - The default GBIF download now only requests occurrences with coordinates, a
   year and an occurrenceID. These were always skipped at import; the filter
   now shows up in the GBIF download itself (#488). Instances with a custom
