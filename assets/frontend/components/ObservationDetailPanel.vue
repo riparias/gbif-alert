@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import Card from "primevue/card";
 import Button from "primevue/button";
 import Textarea from "primevue/textarea";
+import Tag from "primevue/tag";
 import SingleObservationMap from "./SingleObservationMap.vue";
 import SpeciesName from "./SpeciesName.vue";
 import type { components } from "../types/api";
@@ -12,6 +13,7 @@ import { getNavConfig } from "../utils/navConfig";
 import { pickVernacular } from "../utils/vernacular";
 import { licenseLabel } from "../utils/license";
 import { useDisplayLabels } from "../composables/useDisplayLabels";
+import { usePreferencesStore } from "../stores/preferences";
 
 type ObservationDetail = components["schemas"]["ObservationDetailOut"];
 type ObservationImage = components["schemas"]["ObservationImageOut"];
@@ -22,6 +24,7 @@ const emit = defineEmits<{ close: [] }>();
 
 const { t, locale } = useI18n();
 const { ensureBasisOfRecordLoaded, basisOfRecordName } = useDisplayLabels();
+const preferences = usePreferencesStore();
 
 const obs = ref<ObservationDetail | null>(null);
 const loading = ref(true);
@@ -77,6 +80,39 @@ const initialDataImportLabel = computed(() => {
     if (!obs.value) return "";
     const di = obs.value.initialDataImport;
     return `${di.name} (${new Date(di.startedAt).toLocaleDateString(locale.value)})`;
+});
+
+// The title is a SpeciesName (preferred name style + generic-image tooltip);
+// the subtitle shows the other name, when there is a vernacular one at all.
+const secondaryName = computed(() => {
+    if (!obs.value) return null;
+    const vernacular = pickVernacular(obs.value, locale.value);
+    if (!vernacular) return null;
+    return preferences.speciesNameMode === "vernacular"
+        ? { text: obs.value.scientificName, scientific: true }
+        : { text: vernacular, scientific: false };
+});
+
+// obs.date is a plain YYYY-MM-DD: format it in UTC so it never shifts a day.
+const formattedDate = computed(() =>
+    obs.value
+        ? new Date(obs.value.date).toLocaleDateString(locale.value, {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+              timeZone: "UTC",
+          })
+        : "",
+);
+
+// "2 days ago", "last month", ... in the active locale.
+const relativeDate = computed(() => {
+    if (!obs.value) return "";
+    const days = Math.round((Date.parse(obs.value.date) - Date.now()) / 86_400_000);
+    const rtf = new Intl.RelativeTimeFormat(locale.value, { numeric: "auto" });
+    if (Math.abs(days) < 31) return rtf.format(days, "day");
+    if (Math.abs(days) < 365) return rtf.format(Math.round(days / 30.4), "month");
+    return rtf.format(Math.round(days / 365.25), "year");
 });
 
 async function load() {
@@ -177,24 +213,44 @@ onMounted(load);
         </div>
 
         <template v-else-if="obs">
-            <!-- Header -->
+            <!-- Header: species + GBIF link -->
             <div class="detail-header">
                 <div class="detail-title">
-                    <span
-                        class="verified-badge"
-                        :class="obs.verified ? 'badge-success' : 'badge-danger'"
-                    >
-                        {{ obs.verified ? t("message.verified") : t("message.unverified") }}
-                    </span>
                     <h2>
                         <SpeciesName
                             :scientific-name="obs.scientificName"
                             :vernacular-name="pickVernacular(obs, locale)"
                         />
-                        &mdash; {{ obs.date }}
                     </h2>
+                    <div
+                        v-if="secondaryName"
+                        class="detail-subtitle"
+                        :class="{ 'scientific-name': secondaryName.scientific }"
+                    >
+                        {{ secondaryName.text }}
+                    </div>
                 </div>
                 <div class="detail-header-actions">
+                    <a
+                        :href="gbifOccurrenceUrl(obs.gbifId)"
+                        target="_blank"
+                        rel="noopener"
+                        class="gbif-button"
+                        :title="t('message.viewOnGbif')"
+                        :aria-label="`${t('message.viewOnGbif')} (${t('message.gbifId')} ${obs.gbifId})`"
+                    >
+                        <!-- GBIF mark, paths from gbif.org's own logo -->
+                        <svg class="gbif-mark" viewBox="0 0 247 239" aria-hidden="true">
+                            <path
+                                d="M105.17,116.46c0-46.6,22.75-86.94,90.42-86.94,0,46.7-30.72,86.94-90.42,86.94"
+                            />
+                            <path
+                                d="M213.6,238.83c12.68,0,22.42-1.8,32.42-5.49,0-36.88-22-63.24-60.87-82.23-29.74-14.91-66.35-22.64-99.73-22.64,14.65-43.97,3.97-98.53-10.23-128.47-15.73,31.37-25.54,85.16-10.44,128.92-29.66,2.16-53.17,15.08-63.12,32.11-.75,1.3-2.26,4.07-1.36,4.54.71.38,1.86-.78,2.57-1.43,10.72-9.92,24.9-14.75,38.53-14.75,31.48,0,53.71,26.13,69.41,41.82,33.75,33.75,66.74,47.67,102.82,47.6"
+                            />
+                        </svg>
+                        {{ obs.gbifId }}
+                        <i class="pi pi-external-link" aria-hidden="true" />
+                    </a>
                     <a
                         v-if="adminUrl"
                         :href="adminUrl"
@@ -219,83 +275,78 @@ onMounted(load);
 
             <!-- Body -->
             <div class="detail-body">
-                <!-- Metadata -->
-                <Card class="detail-meta-card">
-                    <template #title
-                        ><i class="pi pi-info-circle" /> {{ t("message.details") }}</template
+                <!-- Key facts first (#519), provenance below -->
+                <div class="key-facts">
+                    <div class="fact-tile">
+                        <div class="fact-label">
+                            <i class="pi pi-calendar" aria-hidden="true" /> {{ t("message.date") }}
+                        </div>
+                        <div class="fact-value">{{ formattedDate }}</div>
+                        <div class="fact-hint">{{ relativeDate }}</div>
+                    </div>
+                    <div class="fact-tile">
+                        <div class="fact-label">
+                            <i class="pi pi-hashtag" aria-hidden="true" />
+                            {{ t("message.individualCount") }}
+                        </div>
+                        <div class="fact-value">{{ obs.individualCount ?? "—" }}</div>
+                    </div>
+                </div>
+
+                <div class="fact-tags">
+                    <Tag
+                        :severity="obs.verified ? 'success' : 'danger'"
+                        :icon="obs.verified ? 'pi pi-check-circle' : 'pi pi-times-circle'"
+                        :title="
+                            obs.verifiedByDatasetOverride
+                                ? obs.verified
+                                    ? t('message.datasetAlwaysVerified')
+                                    : t('message.datasetNeverVerified')
+                                : undefined
+                        "
                     >
-                    <template #content>
-                        <dl class="detail-dl">
-                            <dt>{{ t("message.gbifId") }}</dt>
-                            <dd>
-                                <a :href="gbifOccurrenceUrl(obs.gbifId)" target="_blank">
-                                    {{ obs.gbifId }}
-                                </a>
-                            </dd>
+                        {{ obs.verified ? t("message.verified") : t("message.unverified") }}
+                        <template v-if="obs.identificationVerificationStatus">
+                            &middot; {{ obs.identificationVerificationStatus }}
+                        </template>
+                    </Tag>
+                    <Tag
+                        severity="secondary"
+                        icon="pi pi-tag"
+                        :value="basisOfRecordName(obs.basisOfRecordId)"
+                    />
+                </div>
 
-                            <dt>{{ t("message.species") }}</dt>
-                            <dd>
-                                <SpeciesName
-                                    :scientific-name="obs.scientificName"
-                                    :vernacular-name="pickVernacular(obs, locale)"
-                                />
-                            </dd>
+                <section class="provenance">
+                    <h3>{{ t("message.source") }}</h3>
+                    <dl>
+                        <dt>{{ t("message.dataset") }}</dt>
+                        <dd>
+                            <a :href="gbifDatasetUrl(obs.gbifDatasetKey)" target="_blank">
+                                {{ obs.datasetName }}
+                            </a>
+                        </dd>
 
-                            <dt>{{ t("message.individualCount") }}</dt>
-                            <dd>{{ obs.individualCount ?? "—" }}</dd>
+                        <dt>{{ t("message.recordedBy") }}</dt>
+                        <dd>{{ obs.recordedBy || "—" }}</dd>
 
-                            <dt>{{ t("message.sourceDataset") }}</dt>
+                        <template v-if="obs.references">
+                            <dt>{{ t("message.references") }}</dt>
                             <dd>
-                                <a :href="gbifDatasetUrl(obs.gbifDatasetKey)" target="_blank">
-                                    {{ obs.datasetName }}
-                                </a>
-                            </dd>
-
-                            <dt>{{ t("message.verified") }}</dt>
-                            <dd>
-                                {{ obs.verified ? t("message.yes") : t("message.no") }}
-                                <span
-                                    v-if="obs.identificationVerificationStatus"
-                                    class="muted-small"
+                                <a
+                                    v-if="obs.references.startsWith('http')"
+                                    :href="obs.references"
+                                    target="_blank"
+                                    >{{ obs.references }}</a
                                 >
-                                    ({{ obs.identificationVerificationStatus }})
-                                </span>
-                                <span v-if="obs.verifiedByDatasetOverride" class="muted-small">
-                                    ({{
-                                        obs.verified
-                                            ? t("message.datasetAlwaysVerified")
-                                            : t("message.datasetNeverVerified")
-                                    }})
-                                </span>
+                                <span v-else>{{ obs.references }}</span>
                             </dd>
+                        </template>
 
-                            <dt>{{ t("message.basisOfRecord") }}</dt>
-                            <dd>{{ basisOfRecordName(obs.basisOfRecordId) }}</dd>
-
-                            <dt>{{ t("message.date") }}</dt>
-                            <dd>{{ obs.date }}</dd>
-
-                            <dt>{{ t("message.recordedBy") }}</dt>
-                            <dd>{{ obs.recordedBy || "—" }}</dd>
-
-                            <template v-if="obs.references">
-                                <dt>{{ t("message.references") }}</dt>
-                                <dd>
-                                    <a
-                                        v-if="obs.references.startsWith('http')"
-                                        :href="obs.references"
-                                        target="_blank"
-                                        >{{ obs.references }}</a
-                                    >
-                                    <span v-else>{{ obs.references }}</span>
-                                </dd>
-                            </template>
-
-                            <dt>{{ t("message.firstImportedDuring") }}</dt>
-                            <dd>{{ initialDataImportLabel }}</dd>
-                        </dl>
-                    </template>
-                </Card>
+                        <dt>{{ t("message.firstImportedDuring") }}</dt>
+                        <dd>{{ initialDataImportLabel }}</dd>
+                    </dl>
+                </section>
 
                 <!-- Photos of this observation (not the generic species image) -->
                 <Card v-if="shownImages.length" class="observation-photos">
@@ -445,21 +496,150 @@ onMounted(load);
 
 .detail-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 1rem;
 }
 
 .detail-title {
-    display: flex;
-    align-items: baseline;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+    min-width: 0;
 }
 
 .detail-title h2 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.4rem;
+    line-height: 1.2;
+}
+
+.detail-subtitle {
+    color: var(--p-text-muted-color);
+}
+
+.scientific-name {
+    font-style: italic;
+}
+
+.detail-header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+/* GBIF green from the GBIF logo */
+.gbif-button {
+    --gbif-green: #4e9f41;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    height: 2rem;
+    padding: 0 0.65rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: var(--p-border-radius-md, 6px);
+    background: var(--p-content-background);
+    color: var(--p-text-color);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+        border-color 0.15s,
+        background 0.15s;
+}
+
+.gbif-button:hover,
+.gbif-button:focus-visible {
+    border-color: var(--gbif-green);
+    background: color-mix(in srgb, var(--gbif-green) 8%, transparent);
+}
+
+.gbif-mark {
+    width: 1.05rem;
+    height: 1.05rem;
+    fill: var(--gbif-green);
+    flex: none;
+}
+
+.gbif-button .pi {
+    font-size: 0.65rem;
+    color: var(--p-text-muted-color);
+}
+
+.key-facts {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 0.5rem;
+}
+
+.fact-tile {
+    border: 1px solid var(--p-content-border-color);
+    border-radius: var(--p-border-radius-lg, 8px);
+    padding: 0.5rem 0.75rem;
+}
+
+.fact-label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--p-text-muted-color);
+}
+
+.fact-label .pi {
+    font-size: 0.7rem;
+}
+
+.fact-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-top: 0.1rem;
+}
+
+.fact-hint {
+    font-size: 0.8rem;
+    color: var(--p-text-muted-color);
+}
+
+.fact-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: -0.25rem;
+}
+
+.provenance {
+    border-top: 1px solid var(--p-content-border-color);
+    padding-top: 0.75rem;
+    font-size: 0.85rem;
+}
+
+.provenance h3 {
+    margin: 0 0 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--p-text-muted-color);
+}
+
+.provenance dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.2rem 0.75rem;
+    margin: 0;
+}
+
+.provenance dt {
+    color: var(--p-text-muted-color);
+}
+
+.provenance dd {
+    margin: 0;
+    overflow-wrap: anywhere;
 }
 
 .mark-unseen-row {
@@ -587,7 +767,21 @@ onMounted(load);
 
     .detail-header {
         flex-direction: column;
+        align-items: flex-start;
         gap: 0.5rem;
+    }
+
+    .detail-header-actions {
+        align-items: flex-start;
+    }
+
+    .provenance dl {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .provenance dt {
+        margin-top: 0.4rem;
     }
 }
 </style>

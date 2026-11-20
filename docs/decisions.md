@@ -536,3 +536,8 @@ expresses the ownership.
 **What:** Dropped the navbar Sign up button, renamed Sign in to Log in, single-label "Use scientific names" switch, user menu behind a `pi-user` icon (#367).
 **Why:** The navbar wrapped to two lines on a laptop; the species-name switch stays visible because it changes every page.
 **Rejected:** Hiding the name switch behind a settings cogwheel; a cogwheel for the account menu (a cog reads as settings).
+
+## 2026-11-20 - Observation drawer: key facts first, GBIF ID as a header button
+**What:** Drawer header is the species name plus a GBIF-logo button with the occurrence ID; date/count as tiles, verification and basis of record as tags, provenance in a muted "Source" list (#519).
+**Why:** The flat Details list gave every field the same weight, so date, count and verification did not stand out (tutorial-video feedback).
+**Rejected:** Reorder-only; GBIF ID as a third key-fact tile (too cramped in the drawer, longer FR/NL labels); a collapsible "More details" fold.
