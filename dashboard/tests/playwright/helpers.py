@@ -51,7 +51,7 @@ def login(page: Page, base_url: str, username: str, password: str) -> None:
     # No explicit load-state wait: .fill() below auto-waits for the field.
     page.locator("#signin-username").fill(username)
     page.locator("#signin-password").fill(password)
-    page.get_by_role("button", name="Sign in").click()
+    page.get_by_role("button", name="Log in").click()
     # wait_until defaults to "load"; we already gate on the URL predicate, which
     # is the deterministic signal that the post-login redirect has committed.
     page.wait_for_url(

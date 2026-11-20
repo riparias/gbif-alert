@@ -77,9 +77,14 @@ def test_navbar_renders(page: Page, live_server):
 
 @pytest.mark.django_db(transaction=True)
 def test_navbar_anonymous_shows_signin_hides_my_alerts(page: Page, live_server):
-    """Anonymous visitors see 'Sign in' but not the 'My alerts' nav item."""
+    """Anonymous visitors see 'Log in' but neither 'Sign up' nor 'My alerts'.
+
+    'Sign up' was dropped from the navbar to keep it on one line (#367); the
+    sign-in page links to it instead.
+    """
     page.goto(live_server.url + "/")
-    expect(page.get_by_role("link", name="Sign in")).to_be_visible()
+    expect(page.get_by_role("link", name="Log in")).to_be_visible()
+    expect(page.get_by_role("link", name="Sign up")).to_have_count(0)
     expect(page.get_by_role("menuitem", name="My alerts")).not_to_be_visible()
 
 
@@ -271,7 +276,7 @@ def test_navbar_signout_logs_user_out(page: Page, live_server):
     page.get_by_role("menuitem", name="Sign out").click()
 
     # The session is gone: the navbar returns to its anonymous state.
-    expect(page.get_by_role("link", name="Sign in")).to_be_visible()
+    expect(page.get_by_role("link", name="Log in")).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)

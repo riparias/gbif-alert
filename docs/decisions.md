@@ -531,3 +531,8 @@ expresses the ownership.
 **What:** `source_data/` and the 5 `load_*_areas` commands move to riparias/early-alert-webapp (gpkg as a zipped release asset); `load_area` takes a path and `--name-field`.
 **Why:** They are RIPARIAS instance data, the 209 MB LFS file burned quota (#364), and the area API now covers shared-area creation, so the loaders are archived as deprecated.
 **Rejected:** keeping the loaders with a path argument, Git LFS in the instance repo, and rewriting history now (scheduled separately in #364).
+
+## 2026-11-20 - Compact navbar: icon-only user menu, no Sign up button
+**What:** Dropped the navbar Sign up button, renamed Sign in to Log in, single-label "Use scientific names" switch, user menu behind a `pi-user` icon (#367).
+**Why:** The navbar wrapped to two lines on a laptop; the species-name switch stays visible because it changes every page.
+**Rejected:** Hiding the name switch behind a settings cogwheel; a cogwheel for the account menu (a cog reads as settings).

@@ -246,7 +246,6 @@ def test_required_url_keys(client):
         "passwordChange",
         "myCustomAreas",
         "signin",
-        "signup",
         "admin",
         "setLanguage",
     }

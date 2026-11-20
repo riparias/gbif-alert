@@ -25,7 +25,7 @@ def test_signin_succeeds(page: Page, live_server):
     # Path should be "/"; a trailing "?status=all" may appear because of
     # IndexPage's useFilterSync debounced URL sync.
     expect(page).to_have_url(re.compile(rf"^{re.escape(live_server.url)}/(\?.*)?$"))
-    expect(page.get_by_text("auth1")).to_be_visible()
+    expect(page.get_by_role("button", name="auth1")).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -37,7 +37,7 @@ def test_signin_wrong_password(page: Page, live_server):
     page.goto(live_server.url + "/accounts/signin/")
     page.locator("#signin-username").fill("auth2")
     page.locator("#signin-password").fill("wrong")
-    page.get_by_role("button", name="Sign in").click()
+    page.get_by_role("button", name="Log in").click()
 
     expect(page.locator("[data-testid='signin-error']")).to_be_visible()
     expect(page).to_have_url(live_server.url + "/accounts/signin/")
@@ -52,7 +52,7 @@ def test_signin_throttled_shows_too_many_attempts(page: Page, live_server, monke
     page.goto(live_server.url + "/accounts/signin/")
     page.locator("#signin-username").fill("anyone")
     page.locator("#signin-password").fill("whatever")
-    page.get_by_role("button", name="Sign in").click()
+    page.get_by_role("button", name="Log in").click()
 
     expect(page.locator("[data-testid='signin-error']")).to_have_text(
         re.compile("Too many attempts")

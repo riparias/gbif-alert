@@ -11,6 +11,9 @@
   (#364). `load_area` now takes any file: `load_area <path> --name-field <field>`.
 - The file picker in the "New area" dialog now follows the site language
   instead of the browser's, and Upload stays disabled until a file is chosen.
+- A more compact navbar (#367): "Sign in" is now "Log in" and the "Sign up"
+  button is gone (the login page links to it), the species name switch reads
+  "Use scientific names", and the user menu is a single icon.
 
 # 2.12.1 (2026-11-12)
 
