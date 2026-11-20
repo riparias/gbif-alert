@@ -73,7 +73,6 @@ def nav_config_json(context):
             "passwordChange": reverse("password_change"),
             "myCustomAreas": reverse("dashboard:pages:my-custom-areas"),
             "signin": reverse("signin"),
-            "signup": reverse("dashboard:pages:signup"),
             "admin": reverse("admin:index"),
             "setLanguage": reverse("set_language"),
         },

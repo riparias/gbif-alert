@@ -133,7 +133,7 @@ const flatNavItems = computed((): NavItem[] =>
             </template>
         </nav>
 
-        <!-- Anonymous: sign in / sign up -->
+        <!-- Anonymous: log in only - the sign-in page links to sign up (#367). -->
         <div v-else class="mobile-nav-auth">
             <Button
                 :label="t('message.navSignIn')"
@@ -141,14 +141,6 @@ const flatNavItems = computed((): NavItem[] =>
                 as="a"
                 :href="config.urls.signin"
                 @click="emit('navigate', $event, config.urls.signin)"
-            />
-            <Button
-                :label="t('message.navSignUp')"
-                icon="pi pi-user-plus"
-                outlined
-                as="a"
-                :href="config.urls.signup"
-                @click="emit('navigate', $event, config.urls.signup)"
             />
         </div>
     </Drawer>

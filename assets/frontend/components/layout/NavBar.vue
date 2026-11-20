@@ -74,9 +74,9 @@ function onUserMenuItemClick(event: MouseEvent, item: NavItem): void {
 const preferences = usePreferencesStore();
 const { speciesNameMode } = storeToRefs(preferences);
 
-const speciesNameSwitchValue = computed<boolean>({
-    get: () => speciesNameMode.value === "vernacular",
-    set: (value) => preferences.setSpeciesNameMode(value ? "vernacular" : "scientific"),
+const useScientificNames = computed<boolean>({
+    get: () => speciesNameMode.value === "scientific",
+    set: (value) => preferences.setSpeciesNameMode(value ? "scientific" : "vernacular"),
 });
 
 // --- Active page detection ---
@@ -311,28 +311,12 @@ watch(
 
             <template #end>
                 <div class="gbif-navbar-end">
-                    <div
-                        class="gbif-species-name-toggle"
-                        :aria-label="t('message.speciesDisplayToggleLabel')"
-                        :title="t('message.speciesDisplayToggleLabel')"
-                    >
-                        <span
-                            class="gbif-species-name-toggle-label"
-                            :class="{ 'is-active': !speciesNameSwitchValue }"
-                        >
-                            <em>{{ t("message.speciesDisplayShowScientific") }}</em>
-                        </span>
-                        <ToggleSwitch
-                            v-model="speciesNameSwitchValue"
-                            :aria-label="t('message.speciesDisplayToggleLabel')"
-                        />
-                        <span
-                            class="gbif-species-name-toggle-label"
-                            :class="{ 'is-active': speciesNameSwitchValue }"
-                        >
-                            {{ t("message.speciesDisplayShowVernacular") }}
-                        </span>
-                    </div>
+                    <!-- A single label + switch: the former "Scientific names [o] Vernacular
+                         names" pair took too much room and pushed the bar to two lines (#367). -->
+                    <label class="gbif-species-name-toggle">
+                        <ToggleSwitch v-model="useScientificNames" />
+                        <span>{{ t("message.speciesDisplayUseScientific") }}</span>
+                    </label>
 
                     <!-- Language selector: only shown when more than one language is enabled.
                          Collapsed it is just a globe + the language code, to keep the navbar
@@ -360,14 +344,24 @@ watch(
 
                     <!-- Authenticated user: dropdown menu -->
                     <template v-if="config.user.isAuthenticated">
+                        <!-- Icon only, to save navbar room (#367): the username is
+                             the menu's header instead. -->
                         <Button
-                            :label="config.user.username ?? ''"
                             icon="pi pi-user"
                             text
+                            rounded
                             class="gbif-navbar-user-btn"
+                            :aria-label="config.user.username ?? ''"
+                            :title="config.user.username ?? ''"
+                            aria-haspopup="true"
                             @click="toggleUserMenu"
                         />
                         <Menu ref="userMenuRef" :model="userMenuItems" popup>
+                            <template #start>
+                                <div class="gbif-user-menu-header">
+                                    {{ config.user.username }}
+                                </div>
+                            </template>
                             <template #item="{ item, props }">
                                 <a
                                     v-bind="props.action"
@@ -386,26 +380,16 @@ watch(
                         </Menu>
                     </template>
 
-                    <!-- Anonymous user: sign in / sign up -->
-                    <template v-else>
-                        <Button
-                            :label="t('message.navSignIn')"
-                            icon="pi pi-lock"
-                            size="small"
-                            as="a"
-                            :href="config.urls.signin"
-                            @click="onNavClick($event, config.urls.signin)"
-                        />
-                        <Button
-                            :label="t('message.navSignUp')"
-                            icon="pi pi-user-plus"
-                            size="small"
-                            outlined
-                            as="a"
-                            :href="config.urls.signup"
-                            @click="onNavClick($event, config.urls.signup)"
-                        />
-                    </template>
+                    <!-- Anonymous user: log in only - the sign-in page links to sign up (#367). -->
+                    <Button
+                        v-else
+                        :label="t('message.navSignIn')"
+                        icon="pi pi-lock"
+                        size="small"
+                        as="a"
+                        :href="config.urls.signin"
+                        @click="onNavClick($event, config.urls.signin)"
+                    />
                 </div>
             </template>
         </Menubar>
@@ -590,6 +574,14 @@ watch(
     color: inherit !important;
 }
 
+/* The popup Menu is teleported to <body>, but its slot content keeps this
+ * component's scope id, so a scoped rule still reaches it. */
+.gbif-user-menu-header {
+    padding: 0.5rem 0.75rem;
+    font-weight: bold;
+    border-bottom: 1px solid var(--p-content-border-color);
+}
+
 .gbif-user-menu-item {
     display: flex;
     align-items: center;
@@ -645,16 +637,9 @@ watch(
     align-items: center;
     gap: 0.4rem;
     color: #ffffff;
-}
-
-.gbif-species-name-toggle-label {
     font-size: 0.85rem;
-    opacity: 0.55;
-    transition: opacity 120ms ease;
-}
-
-.gbif-species-name-toggle-label.is-active {
-    opacity: 1;
+    white-space: nowrap;
+    cursor: pointer;
 }
 </style>
 
