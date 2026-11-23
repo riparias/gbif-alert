@@ -32028,5 +32028,21 @@
   {
     "key": "Genus Identified",
     "verified": false
+  },
+  {
+    "key": "accepted (automatic validation)",
+    "verified": true
+  },
+  {
+    "key": "accepted (with evidence)",
+    "verified": true
+  },
+  {
+    "key": "accepted (plausible)",
+    "verified": false
+  },
+  {
+    "key": "unknown",
+    "verified": false
   }
 ]

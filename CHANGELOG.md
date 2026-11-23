@@ -1,5 +1,10 @@
 # Unreleased
 
+- Waarnemingen.be's new verification statuses are now recognised:
+  `accepted (with evidence)` and `accepted (automatic validation)` count as
+  verified, `accepted (plausible)` and `unknown` do not (#522). Existing
+  observations are corrected at the next import.
+
 - The observation details panel now leads with what matters: species, date
   (with "x days ago"), individual count and verification status, with a GBIF
   button for the occurrence ID. Dataset and import details move to a smaller
