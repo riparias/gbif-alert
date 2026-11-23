@@ -1,4 +1,4 @@
-# Unreleased
+# 2.13.0 (2026-11-23)
 
 - Waarnemingen.be's new verification statuses are now recognised:
   `accepted (with evidence)` and `accepted (automatic validation)` count as
