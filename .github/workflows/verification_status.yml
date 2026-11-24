@@ -1,0 +1,79 @@
+# Weekly check for new identificationVerificationStatus values across GBIF
+# (#297). Opens a pull request against devel that appends them to
+# dashboard/verification_status_classification.json, for a human to review.
+#
+# Secrets: GBIF_DOWNLOAD_USERNAME / GBIF_DOWNLOAD_PASSWORD (a GBIF.org account,
+# username not email). Scheduled runs use this file as it is on the default
+# branch (main), so the schedule starts with the first release that has it;
+# "Run workflow" works from any branch.
+name: Verification status mapping
+
+on:
+  schedule:
+    - cron: "0 3 * * 1" # Mondays 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      download_key:
+        description: "Reuse an existing GBIF SQL download (key) instead of requesting one"
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: verification-status-mapping
+
+env:
+  BRANCH: bot/verification-status-mapping
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    # GBIF SQL downloads over the whole occurrence table can take hours
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: devel
+
+      # A still-open PR may hold a reviewer's edits; never overwrite them.
+      - name: Skip if the previous proposal is still open
+        id: open_pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          open=$(gh pr list --head "$BRANCH" --state open --json number --jq length)
+          echo "open=$open" >> "$GITHUB_OUTPUT"
+          if [ "$open" != "0" ]; then
+            echo "::notice::A verification status PR is still open - review it first."
+          fi
+
+      - name: Find and classify new values
+        if: steps.open_pr.outputs.open == '0'
+        env:
+          GBIF_DOWNLOAD_USERNAME: ${{ secrets.GBIF_DOWNLOAD_USERNAME }}
+          GBIF_DOWNLOAD_PASSWORD: ${{ secrets.GBIF_DOWNLOAD_PASSWORD }}
+          DOWNLOAD_KEY: ${{ inputs.download_key }}
+        run: |
+          python3 scripts/update_verification_status_mapping.py \
+            --timeout-hours 5.5 \
+            --body-file "$RUNNER_TEMP/body.md" \
+            ${DOWNLOAD_KEY:+--download-key "$DOWNLOAD_KEY"}
+
+      - name: Open pull request
+        if: steps.open_pr.outputs.open == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet; then
+            echo "No new values."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git commit -am "Add new identificationVerificationStatus values"
+          git push --force origin "$BRANCH"
+          gh pr create --base devel --head "$BRANCH" \
+            --title "New identificationVerificationStatus values to review" \
+            --body-file "$RUNNER_TEMP/body.md"
