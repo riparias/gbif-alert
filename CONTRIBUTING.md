@@ -194,6 +194,20 @@ The data import history is recorded with the DataImport model, and shown to the 
 => For a given observation, Django-managed IDs are therefore not stable. A hashing mechanism (based on `occurrenceId` 
 and `DatasetKey`) to allow recognizing a given observation is implemented (`stable_id` field on Observation).
 
+### Verification status mapping
+
+An observation's `verified` flag comes from its `identificationVerificationStatus`, looked up in
+`dashboard/verification_status_classification.json` (values not in that file count as unverified).
+The `Verification status mapping` GitHub Action keeps it current: every Monday it runs
+`scripts/update_verification_status_mapping.py`, which lists every value in GBIF with a SQL download,
+classifies the new ones with simple rules and opens a pull request against `devel`.
+
+To review such a PR: check every value proposed as verified, and skim the unverified ones for missed
+verified values (often non-English). Change a verdict by editing the JSON on the PR branch, and if it
+contradicts the rules, add an exception in the script too (a test keeps both in sync). No new PR is
+opened while one is still open. The script also runs locally, e.g. with `--download-key` to reuse a
+download or `--continent EUROPE` to narrow the scope.
+
 ## Areas import mechanism
 
 The application allows storing Areas (multipolygons) in the database for observation filtering and to display as map 

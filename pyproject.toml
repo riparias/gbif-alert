@@ -60,7 +60,7 @@ package = false
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "djangoproject.settings"
-testpaths = ["dashboard/tests"]
+testpaths = ["dashboard/tests", "scripts"]
 markers = [
     "sequential: marks tests as sequential (avoids DB deadlocks when run in parallel)",
 ]
