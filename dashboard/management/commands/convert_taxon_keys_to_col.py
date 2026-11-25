@@ -7,15 +7,47 @@ migration and before resuming imports.
 
 With --recheck it also repairs keys that Catalogue of Life has retired since
 (COL XR keys are not stable, see #523): each existing key is looked up at GBIF,
-and a retired one is replaced by the key GBIF now gives for the legacy key.
+and a retired one is replaced by the key GBIF now gives for the legacy key. A
+species without a legacy key gets the successor ChecklistBank recorded for its
+retired key, provided GBIF knows that successor as an accepted taxon.
 """
 import requests
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 
-from dashboard.gbif_taxonomy import col_key_status, match_col_key
+from dashboard.gbif_taxonomy import (
+    ColMatchResult,
+    col_key_status,
+    col_key_successor,
+    match_col_key,
+)
 from dashboard.models import Species
+
+
+def successor_of_retired_key(retired_key: str) -> ColMatchResult:
+    """Resolve a retired COL XR key through ChecklistBank's archive.
+
+    For species with no legacy key to match on. The successor is only accepted
+    when GBIF itself knows it as ACCEPTED: ChecklistBank can be a release ahead
+    of GBIF, and its successor is not always the taxon GBIF would pick.
+    """
+    successor = col_key_successor(retired_key)
+    if successor is None:
+        return ColMatchResult(
+            col_key=None, matched=False, detail="no successor at ChecklistBank"
+        )
+    status = col_key_status(successor)
+    if status != "ACCEPTED":
+        return ColMatchResult(
+            col_key=None,
+            matched=False,
+            detail=f"ChecklistBank successor {successor} is "
+            f"{status or 'unknown'} at GBIF",
+        )
+    return ColMatchResult(
+        col_key=successor, matched=True, detail="ChecklistBank successor/ACCEPTED"
+    )
 
 
 class Command(BaseCommand):
@@ -59,9 +91,10 @@ class Command(BaseCommand):
         no_taxon_key = list(needs_col_key.filter(gbif_taxon_key__isnull=True))
         to_resolve = list(needs_col_key.exclude(gbif_taxon_key__isnull=True))
 
-        # --recheck: a species whose key was retired is resolved again from its
-        # legacy key, exactly like one that never had a key. Its dead key is
-        # kept until a replacement is found, and remembered for the report.
+        # --recheck: a species whose key was retired is resolved again, from
+        # its legacy key like one that never had a key, or failing that from
+        # ChecklistBank's archive. Its dead key is kept until a replacement is
+        # found, and remembered for the report.
         retired_keys: dict[int, str] = {}
         retired_no_legacy_key = []
         not_accepted = []
@@ -76,16 +109,18 @@ class Command(BaseCommand):
                     continue
                 if status is None:
                     retired_keys[species.pk] = species.gbif_col_taxon_key
-                    if species.gbif_taxon_key is None:
-                        retired_no_legacy_key.append(species)
-                    else:
-                        to_resolve.append(species)
+                    to_resolve.append(species)
                 elif status != "ACCEPTED":
                     not_accepted.append((species, status))
 
         for species in to_resolve:
             try:
-                result = match_col_key(species.gbif_taxon_key)
+                if species.gbif_taxon_key is not None:
+                    result = match_col_key(species.gbif_taxon_key)
+                else:
+                    # Only a rechecked species gets here: one with neither key
+                    # is in no_taxon_key, not in to_resolve.
+                    result = successor_of_retired_key(retired_keys[species.pk])
             except (requests.RequestException, ValueError) as exc:
                 # A transient GBIF/network/parse error for one species must not
                 # abort the whole run - record it and keep going.
@@ -115,6 +150,8 @@ class Command(BaseCommand):
                         )
                         continue
                 filled.append((species, result))
+            elif species.gbif_taxon_key is None:
+                retired_no_legacy_key.append((species, result))
             else:
                 unresolved.append((species, result))
 
@@ -127,8 +164,8 @@ class Command(BaseCommand):
                 else ""
             )
             self.stdout.write(
-                f"  {species.name} ({species.gbif_taxon_key}) -> "
-                f"{result.col_key}{replaced} [{result.detail}]"
+                f"  {species.name} ({species.gbif_taxon_key or 'no legacy key'}) "
+                f"-> {result.col_key}{replaced} [{result.detail}]"
             )
 
         self.stdout.write("")
@@ -160,10 +197,11 @@ class Command(BaseCommand):
                 "RETIRED KEY, no legacy key - needs manual curation "
                 f"({len(retired_no_legacy_key)}):"
             )
-            for species in retired_no_legacy_key:
+            for species, result in retired_no_legacy_key:
                 self.stdout.write(
-                    f"  {species.name} ({species.gbif_col_taxon_key}) - search "
-                    "the name on gbif.org and enter the new key manually"
+                    f"  {species.name} ({species.gbif_col_taxon_key}) "
+                    f"[{result.detail}] - search the name on gbif.org and enter "
+                    "the new key manually"
                 )
 
             self.stdout.write("")

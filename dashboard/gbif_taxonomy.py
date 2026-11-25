@@ -10,6 +10,8 @@ from django.conf import settings
 
 COL_XR_CHECKLIST_KEY = settings.GBIF_COL_XR_CHECKLIST_KEY
 _GBIF_MATCH_URL = "https://api.gbif.org/v2/species/match"
+# "3LXR" is ChecklistBank's alias for the latest COL XR release.
+_CLB_TAXON_INFO_URL = "https://api.checklistbank.org/dataset/3LXR/taxon/{key}/info"
 _TIMEOUT = 30
 
 
@@ -84,3 +86,25 @@ def col_key_status(col_key: str) -> str | None:
     # A usage with no status would be a GBIF anomaly; report it as such rather
     # than as a retired key.
     return usage.get("status") or "UNKNOWN"
+
+
+def col_key_successor(col_key: str) -> str | None:
+    """Return the key ChecklistBank records as replacing a retired COL XR key.
+
+    Catalogue of Life archives the keys it retires. ChecklistBank answers a
+    retired key with HTTP 404, but the body holds the archived record, which
+    usually names its successor in `supersededBy`. This is the only way back
+    for a species that has no legacy backbone key (#523).
+
+    Returns None when ChecklistBank has no successor, or still knows the key.
+    The successor is ChecklistBank's opinion, from a release that may be newer
+    than the one GBIF serves: callers must check it with col_key_status before
+    using it. Raises requests.RequestException on any other HTTP error.
+    """
+    resp = requests.get(_CLB_TAXON_INFO_URL.format(key=col_key), timeout=_TIMEOUT)
+    if resp.status_code != 404:
+        # 200: the key is alive in the latest release, nothing supersedes it.
+        resp.raise_for_status()
+        return None
+    usage = resp.json().get("usage") or {}
+    return usage.get("supersededBy") or None

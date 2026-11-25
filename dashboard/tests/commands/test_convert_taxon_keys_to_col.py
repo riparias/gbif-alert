@@ -259,19 +259,95 @@ def test_recheck_keeps_retired_key_when_no_replacement(mock_match, mock_status):
 @patch(f"{_CMD}.col_key_status")
 @patch(f"{_CMD}.match_col_key")
 def test_recheck_reports_retired_key_without_legacy_key(mock_match, mock_status):
-    """A COL-only species with a retired key is flagged for manual curation.
+    """A COL-only species whose retired key has no successor is flagged.
 
-    Species described after the backbone froze have no legacy key, so there is
-    nothing to re-derive from; the report must say so rather than skip them.
+    Species described after the backbone froze have no legacy key, and here
+    ChecklistBank names no successor either, so nothing can be re-derived; the
+    report must say so rather than skip the species.
     """
     mock_status.return_value = None
     sp = Species.objects.create(name="Novum taxon", gbif_col_taxon_key="DEAD2")
-    output = _run(recheck=True)
+    with patch(f"{_CMD}.col_key_successor", return_value=None):
+        output = _run(recheck=True)
     sp.refresh_from_db()
     assert sp.gbif_col_taxon_key == "DEAD2"
     assert "no legacy key" in output
-    assert "Novum taxon (DEAD2)" in output
+    assert "Novum taxon (DEAD2) [no successor at ChecklistBank]" in output
     mock_match.assert_not_called()
+
+
+def _statuses(statuses: dict[str, str | None]):
+    """Stand-in for col_key_status answering from a dict of key -> status."""
+    return lambda col_key: statuses[col_key]
+
+
+@patch(f"{_CMD}.col_key_successor")
+@patch(f"{_CMD}.col_key_status")
+@patch(f"{_CMD}.match_col_key")
+def test_recheck_uses_checklistbank_successor_without_legacy_key(
+    mock_match, mock_status, mock_successor
+):
+    """A COL-only species is repaired from ChecklistBank's archived record.
+
+    Why: recent instances enter species by COL key only, so the legacy-key
+    route does not exist for them. ChecklistBank records what replaced a
+    retired key, and the replacement is applied once GBIF confirms it is an
+    accepted taxon.
+    """
+    mock_status.side_effect = _statuses({"OLD1": None, "NEW1": "ACCEPTED"})
+    mock_successor.return_value = "NEW1"
+    sp = Species.objects.create(name="Novum taxon", gbif_col_taxon_key="OLD1")
+    output = _run(recheck=True)
+    sp.refresh_from_db()
+    assert sp.gbif_col_taxon_key == "NEW1"
+    assert "NEW1 (replaces retired OLD1)" in output
+    mock_successor.assert_called_once_with("OLD1")
+    mock_match.assert_not_called()
+
+
+@patch(f"{_CMD}.col_key_successor")
+@patch(f"{_CMD}.col_key_status")
+@patch(f"{_CMD}.match_col_key")
+def test_recheck_rejects_successor_gbif_does_not_accept(
+    mock_match, mock_status, mock_successor
+):
+    """A ChecklistBank successor is not applied unless GBIF accepts it.
+
+    Why: ChecklistBank can be a release ahead of GBIF, and its successor is
+    not always the taxon GBIF itself points to. Writing a key GBIF does not
+    know would just trade one dead key for another, so the retired key is kept
+    and the rejected successor is shown to the operator.
+    """
+    mock_status.side_effect = _statuses({"OLD1": None, "NEW1": None})
+    mock_successor.return_value = "NEW1"
+    sp = Species.objects.create(name="Novum taxon", gbif_col_taxon_key="OLD1")
+    output = _run(recheck=True)
+    sp.refresh_from_db()
+    assert sp.gbif_col_taxon_key == "OLD1"
+    assert "ChecklistBank successor NEW1 is unknown at GBIF" in output
+
+
+@patch(f"{_CMD}.col_key_successor")
+@patch(f"{_CMD}.col_key_status")
+@patch(f"{_CMD}.match_col_key")
+def test_recheck_prefers_legacy_key_over_checklistbank(
+    mock_match, mock_status, mock_successor
+):
+    """A species with a legacy key never goes through ChecklistBank.
+
+    Why: the legacy key is GBIF's own mapping and the operator's original
+    intent; ChecklistBank's successor disagrees with it in a minority of
+    cases, so it is only the fallback.
+    """
+    mock_status.return_value = None
+    mock_match.return_value = ColMatchResult(
+        col_key="PR9JG", matched=True, detail="EXACT/ACCEPTED"
+    )
+    Species.objects.create(
+        name="Lycaenidae", gbif_taxon_key=5473, gbif_col_taxon_key="C98"
+    )
+    _run(recheck=True)
+    mock_successor.assert_not_called()
 
 
 @patch(f"{_CMD}.col_key_status")

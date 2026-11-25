@@ -397,9 +397,10 @@ key, so before requesting a download `import_observations` checks every species
 key and refuses to run if one no longer exists; the admins get the error email,
 which names the species and the replacement key GBIF suggests. To fix it, run
 `convert_taxon_keys_to_col --recheck` (first with `--dry-run`): it replaces each
-retired key with the one GBIF now gives for the species' legacy backbone key.
-Species without a legacy key, and keys that became synonyms, are listed for you
-to update in the admin. Keys hard-coded in a custom `PREDICATE_BUILDER` are not
+retired key with the one GBIF now gives for the species' legacy backbone key,
+or, for a species without one, with the successor Catalogue of Life recorded for
+the retired key. Keys it cannot replace, and keys that became synonyms, are
+listed for you to update in the admin. Keys hard-coded in a custom `PREDICATE_BUILDER` are not
 checked.
 
 ## Run GBIF Alert manually

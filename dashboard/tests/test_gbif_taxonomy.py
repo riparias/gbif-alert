@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 import requests
 
-from dashboard.gbif_taxonomy import col_key_status, match_col_key
+from dashboard.gbif_taxonomy import col_key_status, col_key_successor, match_col_key
 
 
 def _fake_response(payload):
@@ -203,3 +203,76 @@ def test_col_key_status_propagates_http_errors(mock_get):
     mock_get.side_effect = requests.ConnectionError("GBIF unreachable")
     with pytest.raises(requests.ConnectionError):
         col_key_status("LN27W")
+
+
+def _fake_clb_response(status_code, payload):
+    class _R:
+        def __init__(self):
+            self.status_code = status_code
+
+        def json(self):
+            return payload
+
+        def raise_for_status(self):
+            if status_code >= 400:
+                raise requests.HTTPError(f"{status_code}")
+
+    return _R()
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_successor_read_from_archived_record(mock_get):
+    """The successor of a retired key is read from ChecklistBank's 404 body.
+
+    Why the odd shape: ChecklistBank reports a retired key as "not found" but
+    still returns its archived record. The payload mirrors the real answer for
+    C98 (Lycaenidae), superseded by PR9JG. Treating the 404 as a plain error
+    would throw away the only route back for a species with no legacy key.
+    """
+    mock_get.return_value = _fake_clb_response(
+        404,
+        {
+            "usage": {"id": "C98", "archived": True, "supersededBy": "PR9JG"},
+            "code": 404,
+            "message": "Usage 3:C98 was deleted and archived in release: 316165, "
+            "superseded by PR9JG",
+        },
+    )
+    assert col_key_successor("C98") == "PR9JG"
+    assert "/taxon/C98/info" in mock_get.call_args.args[0]
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_successor_none_when_archive_names_no_successor(mock_get):
+    """An archived key without `supersededBy` has no successor.
+
+    This happens for real (Aeshnidae was one such key), so the absence must
+    come back as None for the caller to report, not as a KeyError.
+    """
+    mock_get.return_value = _fake_clb_response(
+        404, {"usage": {"id": "XYZ", "archived": True}, "code": 404}
+    )
+    assert col_key_successor("XYZ") is None
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_successor_none_for_a_key_checklistbank_still_knows(mock_get):
+    """A key alive at ChecklistBank has nothing superseding it.
+
+    GBIF and ChecklistBank can be on different releases, so a key GBIF calls
+    retired may be alive in ChecklistBank's latest one. No successor then.
+    """
+    mock_get.return_value = _fake_clb_response(200, {"usage": {"id": "PR9JG"}})
+    assert col_key_successor("PR9JG") is None
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_successor_propagates_server_errors(mock_get):
+    """A ChecklistBank outage raises instead of answering "no successor".
+
+    Why: "no successor" sends the operator to search by hand; an outage should
+    be retried instead, so the two must not look alike.
+    """
+    mock_get.return_value = _fake_clb_response(503, {})
+    with pytest.raises(requests.HTTPError):
+        col_key_successor("C98")
