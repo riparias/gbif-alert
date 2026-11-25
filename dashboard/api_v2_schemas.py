@@ -100,7 +100,7 @@ class SpeciesOut(Schema):
         description=(
             "Catalogue of Life (COL XR) taxon key - alphanumeric. Primary key "
             "used for GBIF downloads and occurrence matching. Null until the "
-            "operator has run convert_taxon_keys_to_col. Distinct from the "
+            "operator has run update_col_taxon_keys. Distinct from the "
             "legacy integer gbifTaxonKey, which is retained for reference."
         ),
     )

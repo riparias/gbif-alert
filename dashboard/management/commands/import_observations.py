@@ -609,7 +609,7 @@ def check_col_keys_are_alive(stdout=None) -> None:
             "Cannot import: these COL XR keys no longer exist at GBIF, they were "
             f"retired by Catalogue of Life: {', '.join(details)}. Importing "
             "would delete the observations of these taxa. Run `manage.py "
-            "convert_taxon_keys_to_col --recheck` (preview with --dry-run), or "
+            "update_col_taxon_keys` (preview with --dry-run), or "
             "update the keys in the admin, then import again."
         )
 
@@ -1240,7 +1240,7 @@ class Command(BaseCommand):
             names = ", ".join(f"{s.name} ({s.gbif_taxon_key})" for s in missing)
             raise CommandError(
                 "Cannot import: these species have no gbif_col_taxon_key: "
-                f"{names}. Run `manage.py convert_taxon_keys_to_col` (and curate "
+                f"{names}. Run `manage.py update_col_taxon_keys` (and curate "
                 "any unresolved species in the admin) before importing."
             )
 

@@ -1,15 +1,18 @@
-"""Populate Species.gbif_col_taxon_key from the legacy integer gbif_taxon_key.
+"""Keep Species.gbif_col_taxon_key valid: fill blank keys, repair retired ones.
 
-One-off, idempotent operator command. Calls the GBIF v2 match API per species.
-EXACT + ACCEPTED matches are filled; everything else is left blank and reported
-for manual curation (never silently guessed). Run after deploying the schema
-migration and before resuming imports.
+Idempotent operator command, safe to re-run. It does two things:
 
-With --recheck it also repairs keys that Catalogue of Life has retired since
-(COL XR keys are not stable, see #523): each existing key is looked up at GBIF,
-and a retired one is replaced by the key GBIF now gives for the legacy key. A
-species without a legacy key gets the successor ChecklistBank recorded for its
-retired key, provided GBIF knows that successor as an accepted taxon.
+- A species with no COL XR key gets one from its legacy integer
+  gbif_taxon_key, through the GBIF v2 match API. This is the migration step
+  for an instance that predates COL XR.
+- Every existing COL XR key is looked up at GBIF, because Catalogue of Life
+  retires a key when the name behind it changes (see #523). A retired key is
+  replaced by the key GBIF now gives for the legacy key; a species without a
+  legacy key gets the successor ChecklistBank recorded for its retired key,
+  provided GBIF knows that successor as an accepted taxon.
+
+Only clean results are written (EXACT + ACCEPTED); everything else is left as
+it is and reported for manual curation, never silently guessed.
 """
 import requests
 from django.core.management.base import BaseCommand
@@ -51,21 +54,15 @@ def successor_of_retired_key(retired_key: str) -> ColMatchResult:
 
 
 class Command(BaseCommand):
-    help = "Populate Species.gbif_col_taxon_key from the legacy GBIF backbone key."
+    help = (
+        "Fill blank COL XR taxon keys and replace the ones Catalogue of Life retired."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--dry-run",
             action="store_true",
             help="Show what would change without writing to the database.",
-        )
-        parser.add_argument(
-            "--recheck",
-            action="store_true",
-            help=(
-                "Also look up every existing COL XR key at GBIF and replace the "
-                "retired ones from the legacy key."
-            ),
         )
 
     def handle(self, *args, **options):
@@ -74,9 +71,9 @@ class Command(BaseCommand):
         unresolved = []
         errors = []
 
-        # Only species that still need a key: reruns must not re-query GBIF for
-        # already-resolved species (and doing so would widen the window for the
-        # COL-key collision handled below).
+        # Species that have no key yet. A species with a live key is never
+        # matched again from its legacy key: that would overwrite a key set by
+        # hand, and widen the window for the COL-key collision handled below.
         needs_col_key = Species.objects.filter(
             Q(gbif_col_taxon_key__isnull=True) | Q(gbif_col_taxon_key="")
         ).order_by("name")
@@ -91,34 +88,33 @@ class Command(BaseCommand):
         no_taxon_key = list(needs_col_key.filter(gbif_taxon_key__isnull=True))
         to_resolve = list(needs_col_key.exclude(gbif_taxon_key__isnull=True))
 
-        # --recheck: a species whose key was retired is resolved again, from
-        # its legacy key like one that never had a key, or failing that from
+        # Existing keys: one whose key was retired is resolved again, from its
+        # legacy key like a species that never had a key, or failing that from
         # ChecklistBank's archive. Its dead key is kept until a replacement is
         # found, and remembered for the report.
         retired_keys: dict[int, str] = {}
         retired_no_legacy_key = []
         not_accepted = []
-        if options["recheck"]:
-            for species in Species.objects.exclude(
-                Q(gbif_col_taxon_key__isnull=True) | Q(gbif_col_taxon_key="")
-            ).order_by("name"):
-                try:
-                    status = col_key_status(species.gbif_col_taxon_key)
-                except (requests.RequestException, ValueError) as exc:
-                    errors.append((species, str(exc)))
-                    continue
-                if status is None:
-                    retired_keys[species.pk] = species.gbif_col_taxon_key
-                    to_resolve.append(species)
-                elif status != "ACCEPTED":
-                    not_accepted.append((species, status))
+        for species in Species.objects.exclude(
+            Q(gbif_col_taxon_key__isnull=True) | Q(gbif_col_taxon_key="")
+        ).order_by("name"):
+            try:
+                status = col_key_status(species.gbif_col_taxon_key)
+            except (requests.RequestException, ValueError) as exc:
+                errors.append((species, str(exc)))
+                continue
+            if status is None:
+                retired_keys[species.pk] = species.gbif_col_taxon_key
+                to_resolve.append(species)
+            elif status != "ACCEPTED":
+                not_accepted.append((species, status))
 
         for species in to_resolve:
             try:
                 if species.gbif_taxon_key is not None:
                     result = match_col_key(species.gbif_taxon_key)
                 else:
-                    # Only a rechecked species gets here: one with neither key
+                    # Only a species with a retired key gets here: one with neither key
                     # is in no_taxon_key, not in to_resolve.
                     result = successor_of_retired_key(retired_keys[species.pk])
             except (requests.RequestException, ValueError) as exc:
@@ -191,27 +187,26 @@ class Command(BaseCommand):
                 "or the next import will be blocked)"
             )
 
-        if options["recheck"]:
-            self.stdout.write("")
+        self.stdout.write("")
+        self.stdout.write(
+            "RETIRED KEY, no legacy key - needs manual curation "
+            f"({len(retired_no_legacy_key)}):"
+        )
+        for species, result in retired_no_legacy_key:
             self.stdout.write(
-                "RETIRED KEY, no legacy key - needs manual curation "
-                f"({len(retired_no_legacy_key)}):"
+                f"  {species.name} ({species.gbif_col_taxon_key}) "
+                f"[{result.detail}] - search the name on gbif.org and enter "
+                "the new key manually"
             )
-            for species, result in retired_no_legacy_key:
-                self.stdout.write(
-                    f"  {species.name} ({species.gbif_col_taxon_key}) "
-                    f"[{result.detail}] - search the name on gbif.org and enter "
-                    "the new key manually"
-                )
 
-            self.stdout.write("")
+        self.stdout.write("")
+        self.stdout.write(
+            f"NOT ACCEPTED - key still exists, check manually ({len(not_accepted)}):"
+        )
+        for species, status in not_accepted:
             self.stdout.write(
-                f"NOT ACCEPTED - key still exists, check manually ({len(not_accepted)}):"
+                f"  {species.name} ({species.gbif_col_taxon_key}) is {status}"
             )
-            for species, status in not_accepted:
-                self.stdout.write(
-                    f"  {species.name} ({species.gbif_col_taxon_key}) is {status}"
-                )
 
         self.stdout.write("")
         self.stdout.write(f"ERRORS ({len(errors)}):")

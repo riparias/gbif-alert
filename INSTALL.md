@@ -332,7 +332,7 @@ Release (COL XR) taxonomy instead of GBIF's frozen numeric backbone, and
 `import_observations` refuses to run until every species has a COL XR key. After
 the upgrade (the `migrate` service has already added the column):
 
-1. Run `docker compose exec gbif-alert python manage.py convert_taxon_keys_to_col`.
+1. Run `docker compose exec gbif-alert python manage.py update_col_taxon_keys`.
    Review the report and curate any UNRESOLVED species in the admin (assign a
    COL XR key manually, or remove species COL cannot match).
 2. If you use a custom `PREDICATE_BUILDER` in `local_settings.py`, update it to
@@ -372,7 +372,7 @@ Valkey only holds the cache and the job queue; it needs no backup. Production de
 | Name unnamed datasets | `docker compose exec gbif-alert python manage.py sync_dataset_names` |
 | Fetch species pictures | `docker compose exec gbif-alert python manage.py populate_species_images` |
 | Fetch species vernacular names | `docker compose exec gbif-alert python manage.py populate_vernacular_names` |
-| Repair retired COL XR keys | `docker compose exec gbif-alert python manage.py convert_taxon_keys_to_col --recheck` |
+| Repair retired COL XR keys | `docker compose exec gbif-alert python manage.py update_col_taxon_keys` |
 
 Areas are stored pre-subdivided so that filtering observations by area is fast,
 and this is maintained automatically whenever an area is saved. If
@@ -396,7 +396,7 @@ moves to a newer COL XR release. GBIF silently returns nothing for a retired
 key, so before requesting a download `import_observations` checks every species
 key and refuses to run if one no longer exists; the admins get the error email,
 which names the species and the replacement key GBIF suggests. To fix it, run
-`convert_taxon_keys_to_col --recheck` (first with `--dry-run`): it replaces each
+`update_col_taxon_keys` (first with `--dry-run`): it replaces each
 retired key with the one GBIF now gives for the species' legacy backbone key,
 or, for a species without one, with the successor Catalogue of Life recorded for
 the retired key. Keys it cannot replace, and keys that became synonyms, are

@@ -546,3 +546,8 @@ expresses the ownership.
 **What:** Before requesting a GBIF download, `import_observations` looks up every species' COL XR key and aborts if one no longer exists; `convert_taxon_keys_to_col --recheck` replaces retired keys from the legacy key (#523).
 **Why:** COL XR keys are retired when a name changes and GBIF then returns nothing for them without error, so the import would silently delete that species' observations and comments.
 **Rejected:** Warn and continue (still loses the data), self-repair inside the import (a changed key changes what is monitored, a human should see it), and going back to legacy keys against the frozen backbone (loses post-freeze taxa, no end-of-life date).
+
+## 2026-11-25 - convert_taxon_keys_to_col renamed update_col_taxon_keys, always rechecks
+**What:** The command is now `update_col_taxon_keys`; it fills blank COL XR keys and repairs retired ones in every run, the `--recheck` flag is gone, and the old name is not kept as an alias.
+**Why:** With retired-key repair it is routine maintenance, also for instances that never had legacy keys, so a name describing a one-off migration misled.
+**Rejected:** `update_gbif_taxon_keys` (reads as the legacy `gbif_taxon_key` field, which is never written), and an alias for the old name (a second command file for a one-off few scripts call).
