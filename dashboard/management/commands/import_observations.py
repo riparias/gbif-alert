@@ -24,6 +24,7 @@ from django.utils import timezone
 from dwca.darwincore.utils import qualname as qn  # type: ignore
 from dwca.read import DwCAReader  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
+from dashboard.gbif_taxonomy import col_key_status, match_col_key
 from dashboard.maintenance import (
     disable_maintenance_for_import,
     enable_maintenance_for_import,
@@ -548,6 +549,69 @@ def _set_initial_data_import(
         raise Observation.OtherIdenticalObservationIsNewer
 
     observation.initial_data_import_id = replaced.initial_data_import_id
+
+
+def _suggested_col_key(species: Species) -> str | None:
+    """Return the current COL XR key GBIF gives for a species' legacy key.
+
+    Best effort, to save the operator a search when a COL key was retired: no
+    legacy key, no clean match or a GBIF error all mean "no suggestion".
+    """
+    if species.gbif_taxon_key is None:
+        return None
+    try:
+        return match_col_key(species.gbif_taxon_key).col_key
+    except (requests.RequestException, ValueError):
+        return None
+
+
+def check_col_keys_are_alive(stdout=None) -> None:
+    """Refuse to go on if a monitored COL XR key no longer exists at GBIF.
+
+    COL XR keys get retired when Catalogue of Life changes the name they stand
+    for, and GBIF then ignores them silently: the download succeeds without the
+    taxon, and the import would delete its observations and their comments
+    (#523). One lookup per species, so this is only run ahead of a real GBIF
+    download.
+
+    A key that still exists but is no longer accepted (a synonym, say) is only
+    logged: it keeps returning records, though possibly fewer than before.
+
+    Raises CommandError naming every retired key. A GBIF error propagates: an
+    unchecked key must not be imported on trust.
+    """
+    retired: list[Species] = []
+    for species in Species.objects.order_by("name"):
+        # The caller has checked that every species has a key
+        assert species.gbif_col_taxon_key
+        status = col_key_status(species.gbif_col_taxon_key)
+        if status is None:
+            retired.append(species)
+        elif status != "ACCEPTED":
+            _log_with_time(
+                stdout,
+                f"Warning: COL XR key {species.gbif_col_taxon_key} "
+                f"({species.name}) is {status}, not ACCEPTED: records of the "
+                "accepted taxon may be missed.",
+            )
+
+    if retired:
+        details = []
+        for species in retired:
+            suggestion = _suggested_col_key(species)
+            hint = (
+                f"GBIF now gives {suggestion}"
+                if suggestion
+                else "no replacement found, search the name on gbif.org"
+            )
+            details.append(f"{species.name} ({species.gbif_col_taxon_key}; {hint})")
+        raise CommandError(
+            "Cannot import: these COL XR keys no longer exist at GBIF, they were "
+            f"retired by Catalogue of Life: {', '.join(details)}. Importing "
+            "would delete the observations of these taxa. Run `manage.py "
+            "convert_taxon_keys_to_col --recheck` (preview with --dry-run), or "
+            "update the keys in the admin, then import again."
+        )
 
 
 def send_successful_import_email():
@@ -1211,6 +1275,14 @@ class Command(BaseCommand):
                     self.stdout,
                     "No DWCA file provided, we'll generate and get a new GBIF download",
                 )
+                # Still part of the preflight: a retired key must stop the run
+                # before a download is requested. Not done for a provided
+                # archive, whose keys may belong to an older COL XR release.
+                _log_with_time(
+                    self.stdout, "Checking that the COL XR keys still exist at GBIF"
+                )
+                check_col_keys_are_alive(self.stdout)
+
                 _log_with_time(
                     self.stdout,
                     "Triggering a GBIF download and waiting for it - this can be long...",

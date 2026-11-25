@@ -541,3 +541,8 @@ expresses the ownership.
 **What:** Drawer header is the species name plus a GBIF-logo button with the occurrence ID; date/count as tiles, verification and basis of record as tags, provenance in a muted "Source" list (#519).
 **Why:** The flat Details list gave every field the same weight, so date, count and verification did not stand out (tutorial-video feedback).
 **Rejected:** Reorder-only; GBIF ID as a third key-fact tile (too cramped in the drawer, longer FR/NL labels); a collapsible "More details" fold.
+
+## 2026-11-25 - Import refuses to run on a retired COL XR key
+**What:** Before requesting a GBIF download, `import_observations` looks up every species' COL XR key and aborts if one no longer exists; `convert_taxon_keys_to_col --recheck` replaces retired keys from the legacy key (#523).
+**Why:** COL XR keys are retired when a name changes and GBIF then returns nothing for them without error, so the import would silently delete that species' observations and comments.
+**Rejected:** Warn and continue (still loses the data), self-repair inside the import (a changed key changes what is monitored, a human should see it), and going back to legacy keys against the frozen backbone (loses post-freeze taxa, no end-of-life date).

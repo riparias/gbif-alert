@@ -186,3 +186,146 @@ def test_idempotent_rerun(mock_match):
     sp.refresh_from_db()
     assert sp.gbif_col_taxon_key == "5WRC3"
     assert mock_match.call_count == 1  # not re-queried
+
+
+_CMD = "dashboard.management.commands.convert_taxon_keys_to_col"
+
+
+@patch(f"{_CMD}.col_key_status")
+@patch(f"{_CMD}.match_col_key")
+def test_recheck_replaces_a_retired_key(mock_match, mock_status):
+    """--recheck swaps a retired COL key for the one GBIF now gives.
+
+    Why: Catalogue of Life retires a key when the name behind it changes, and
+    the import refuses to run on a retired key (#523). The case is real:
+    Lycaenidae (legacy 5473) went from C98 to PR9JG when its authorship was
+    added. The report names both keys so the operator can see what changed.
+    """
+    mock_status.return_value = None
+    mock_match.return_value = ColMatchResult(
+        col_key="PR9JG", matched=True, detail="EXACT/ACCEPTED"
+    )
+    sp = Species.objects.create(
+        name="Lycaenidae", gbif_taxon_key=5473, gbif_col_taxon_key="C98"
+    )
+    output = _run(recheck=True)
+    sp.refresh_from_db()
+    assert sp.gbif_col_taxon_key == "PR9JG"
+    assert "PR9JG (replaces retired C98)" in output
+
+
+@patch(f"{_CMD}.col_key_status")
+@patch(f"{_CMD}.match_col_key")
+def test_recheck_leaves_live_keys_alone(mock_match, mock_status):
+    """A key that still exists is never re-derived from the legacy key.
+
+    Why: an operator may have set a COL key by hand that differs from what the
+    legacy key maps to. --recheck repairs dead keys only; it must not overwrite
+    a deliberate, working choice.
+    """
+    mock_status.return_value = "ACCEPTED"
+    sp = Species.objects.create(
+        name="Branta canadensis", gbif_taxon_key=5232437, gbif_col_taxon_key="5WRC3"
+    )
+    _run(recheck=True)
+    sp.refresh_from_db()
+    assert sp.gbif_col_taxon_key == "5WRC3"
+    mock_match.assert_not_called()
+
+
+@patch(f"{_CMD}.col_key_status")
+@patch(f"{_CMD}.match_col_key")
+def test_recheck_keeps_retired_key_when_no_replacement(mock_match, mock_status):
+    """A retired key with no clean replacement is kept and reported.
+
+    Why: blanking it would lose the only trace of what was monitored, and
+    guessing is ruled out. The dead key stays, so the import keeps refusing to
+    run until a human decides.
+    """
+    mock_status.return_value = None
+    mock_match.return_value = ColMatchResult(
+        col_key=None, matched=False, detail="NONE/no-usage"
+    )
+    sp = Species.objects.create(
+        name="Ghostus specius", gbif_taxon_key=999999999, gbif_col_taxon_key="DEAD1"
+    )
+    output = _run(recheck=True)
+    sp.refresh_from_db()
+    assert sp.gbif_col_taxon_key == "DEAD1"
+    assert "Ghostus specius" in output
+    assert "COL key DEAD1 is retired" in output
+
+
+@patch(f"{_CMD}.col_key_status")
+@patch(f"{_CMD}.match_col_key")
+def test_recheck_reports_retired_key_without_legacy_key(mock_match, mock_status):
+    """A COL-only species with a retired key is flagged for manual curation.
+
+    Species described after the backbone froze have no legacy key, so there is
+    nothing to re-derive from; the report must say so rather than skip them.
+    """
+    mock_status.return_value = None
+    sp = Species.objects.create(name="Novum taxon", gbif_col_taxon_key="DEAD2")
+    output = _run(recheck=True)
+    sp.refresh_from_db()
+    assert sp.gbif_col_taxon_key == "DEAD2"
+    assert "no legacy key" in output
+    assert "Novum taxon (DEAD2)" in output
+    mock_match.assert_not_called()
+
+
+@patch(f"{_CMD}.col_key_status")
+@patch(f"{_CMD}.match_col_key")
+def test_recheck_reports_non_accepted_key_without_changing_it(mock_match, mock_status):
+    """A key that became a synonym is listed, not rewritten.
+
+    Why: it still returns records, and which accepted taxon to monitor instead
+    is a judgement call (the accepted name may cover more than the operator
+    wants), so the command only points it out.
+    """
+    mock_status.return_value = "SYNONYM"
+    sp = Species.objects.create(
+        name="Rana catesbeiana", gbif_taxon_key=2427092, gbif_col_taxon_key="6X35Q"
+    )
+    output = _run(recheck=True)
+    sp.refresh_from_db()
+    assert sp.gbif_col_taxon_key == "6X35Q"
+    assert "Rana catesbeiana (6X35Q) is SYNONYM" in output
+    mock_match.assert_not_called()
+
+
+@patch(f"{_CMD}.col_key_status")
+@patch(f"{_CMD}.match_col_key")
+def test_recheck_dry_run_writes_nothing(mock_match, mock_status):
+    """--recheck --dry-run previews the replacement without applying it.
+
+    A replaced key changes what the instance monitors, so the operator must be
+    able to read the report before anything is written.
+    """
+    mock_status.return_value = None
+    mock_match.return_value = ColMatchResult(
+        col_key="PR9JG", matched=True, detail="EXACT/ACCEPTED"
+    )
+    sp = Species.objects.create(
+        name="Lycaenidae", gbif_taxon_key=5473, gbif_col_taxon_key="C98"
+    )
+    output = _run(recheck=True, dry_run=True)
+    sp.refresh_from_db()
+    assert sp.gbif_col_taxon_key == "C98"
+    assert "PR9JG (replaces retired C98)" in output
+
+
+@patch(f"{_CMD}.col_key_status")
+@patch(f"{_CMD}.match_col_key")
+def test_without_recheck_existing_keys_are_not_looked_up(mock_match, mock_status):
+    """The default run still only fills blank keys.
+
+    Why: it is documented as idempotent and cheap to re-run; checking every
+    existing key costs one GBIF request per species and is opt-in.
+    """
+    Species.objects.create(
+        name="Lycaenidae", gbif_taxon_key=5473, gbif_col_taxon_key="C98"
+    )
+    _run()
+    mock_status.assert_not_called()
+    mock_match.assert_not_called()

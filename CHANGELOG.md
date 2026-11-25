@@ -1,3 +1,11 @@
+# Unreleased
+
+- `import_observations` now refuses to run when a species' COL XR key has been
+  retired by Catalogue of Life, instead of silently importing nothing for that
+  species and deleting its observations (#523). The error names the species and
+  the replacement key; `convert_taxon_keys_to_col --recheck` repairs the keys.
+  See INSTALL.md "Common operations".
+
 # 2.13.0 (2026-11-23)
 
 - Waarnemingen.be's new verification statuses are now recognised:

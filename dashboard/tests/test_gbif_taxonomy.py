@@ -6,7 +6,10 @@ real COL XR keys of the species named in each test.
 """
 from unittest.mock import patch
 
-from dashboard.gbif_taxonomy import match_col_key
+import pytest
+import requests
+
+from dashboard.gbif_taxonomy import col_key_status, match_col_key
 
 
 def _fake_response(payload):
@@ -127,3 +130,76 @@ def test_non_accepted_or_fuzzy_is_unresolved(mock_get):
     result = match_col_key(1176451)
     assert result.matched is False
     assert result.col_key is None
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_status_of_live_key(mock_get):
+    """A key that still exists reports its status, and is looked up by key.
+
+    Aquarana catesbeiana (LN27W) is accepted. The request must use `usageKey`
+    with the COL XR checklist: looking the key up any other way (as a name, or
+    against the default backbone) would answer for a different taxon.
+    """
+    mock_get.return_value = _fake_response(
+        {
+            "usage": {"key": "LN27W", "status": "ACCEPTED"},
+            "diagnostics": {"matchType": "EXACT"},
+        }
+    )
+    assert col_key_status("LN27W") == "ACCEPTED"
+    params = mock_get.call_args.kwargs["params"]
+    assert params["usageKey"] == "LN27W"
+    assert params["checklistKey"]
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_status_of_retired_key_is_none(mock_get):
+    """A retired key yields None - the case the import preflight blocks on.
+
+    The payload is GBIF's real answer for C98, the key Lycaenidae had before
+    COL added the authorship to the name (#523): HTTP 200, matchType NONE and
+    no usage at all. Without this check the import would treat the taxon as
+    having no occurrences.
+    """
+    mock_get.return_value = _fake_response(
+        {
+            "diagnostics": {
+                "matchType": "NONE",
+                "note": "All provided names were ignored since the usageKey was provided",
+            },
+            "synonym": False,
+        }
+    )
+    assert col_key_status("C98") is None
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_status_of_synonym(mock_get):
+    """A key that is alive but no longer accepted reports its real status.
+
+    Why it matters: such a key still returns records, but only those identified
+    under the synonym, so the caller must be able to tell it from an accepted
+    one. Rana catesbeiana (6X35Q) is a synonym of Aquarana catesbeiana.
+    """
+    mock_get.return_value = _fake_response(
+        {
+            "usage": {"key": "6X35Q", "status": "SYNONYM"},
+            "acceptedUsage": {"key": "LN27W"},
+            "diagnostics": {"matchType": "EXACT"},
+            "synonym": True,
+        }
+    )
+    assert col_key_status("6X35Q") == "SYNONYM"
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_status_propagates_http_errors(mock_get):
+    """A GBIF outage raises instead of answering None.
+
+    Why: None means "retired" and blocks the import with a message telling the
+    operator to change the key. An unreachable GBIF must not send them hunting
+    for a replacement of a key that is perfectly valid.
+    """
+    mock_get.side_effect = requests.ConnectionError("GBIF unreachable")
+    with pytest.raises(requests.ConnectionError):
+        col_key_status("LN27W")

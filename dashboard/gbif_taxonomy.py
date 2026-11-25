@@ -1,4 +1,5 @@
-"""Helpers to map legacy GBIF backbone taxon keys to COL XR taxon keys.
+"""Helpers to map legacy GBIF backbone taxon keys to COL XR taxon keys, and to
+check that a stored COL XR key still exists.
 
 Isolated from the management command so the HTTP call is easy to mock in tests.
 """
@@ -54,3 +55,32 @@ def match_col_key(gbif_taxon_key: int) -> ColMatchResult:
     else:
         detail = f"{match_type}/{status or 'no-usage'}"
     return ColMatchResult(col_key=None, matched=False, detail=detail)
+
+
+def col_key_status(col_key: str) -> str | None:
+    """Return the taxonomic status of a COL XR key, or None if it is retired.
+
+    COL XR keys are not stable: Catalogue of Life ties a key to a name, so a
+    change to the name retires the key (see #523). GBIF answers a retired or
+    unknown key with HTTP 200 and matchType NONE rather than an error, and a
+    download silently returns nothing for it - hence this explicit check.
+
+    Returns the usage status as GBIF reports it ("ACCEPTED", "SYNONYM"...).
+    Raises requests.RequestException on a network or HTTP error: "could not
+    check" must never be mistaken for "retired".
+    """
+    resp = requests.get(
+        _GBIF_MATCH_URL,
+        params={"checklistKey": COL_XR_CHECKLIST_KEY, "usageKey": col_key},
+        timeout=_TIMEOUT,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+
+    usage = data.get("usage") or {}
+    match_type = (data.get("diagnostics") or {}).get("matchType", "NONE")
+    if match_type == "NONE" or not usage:
+        return None
+    # A usage with no status would be a GBIF anomaly; report it as such rather
+    # than as a retired key.
+    return usage.get("status") or "UNKNOWN"
