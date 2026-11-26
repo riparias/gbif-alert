@@ -6,7 +6,15 @@ real COL XR keys of the species named in each test.
 """
 from unittest.mock import patch
 
-from dashboard.gbif_taxonomy import match_col_key
+import pytest
+import requests
+
+from dashboard.gbif_taxonomy import (
+    accepted_col_key,
+    col_key_status,
+    col_key_successor,
+    match_col_key,
+)
 
 
 def _fake_response(payload):
@@ -127,3 +135,194 @@ def test_non_accepted_or_fuzzy_is_unresolved(mock_get):
     result = match_col_key(1176451)
     assert result.matched is False
     assert result.col_key is None
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_status_of_live_key(mock_get):
+    """A key that still exists reports its status, and is looked up by key.
+
+    Aquarana catesbeiana (LN27W) is accepted. The request must use `usageKey`
+    with the COL XR checklist: looking the key up any other way (as a name, or
+    against the default backbone) would answer for a different taxon.
+    """
+    mock_get.return_value = _fake_response(
+        {
+            "usage": {"key": "LN27W", "status": "ACCEPTED"},
+            "diagnostics": {"matchType": "EXACT"},
+        }
+    )
+    assert col_key_status("LN27W") == "ACCEPTED"
+    params = mock_get.call_args.kwargs["params"]
+    assert params["usageKey"] == "LN27W"
+    assert params["checklistKey"]
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_status_of_retired_key_is_none(mock_get):
+    """A retired key yields None - the case the import preflight blocks on.
+
+    The payload is GBIF's real answer for C98, the key Lycaenidae had before
+    COL added the authorship to the name (#523): HTTP 200, matchType NONE and
+    no usage at all. Without this check the import would treat the taxon as
+    having no occurrences.
+    """
+    mock_get.return_value = _fake_response(
+        {
+            "diagnostics": {
+                "matchType": "NONE",
+                "note": "All provided names were ignored since the usageKey was provided",
+            },
+            "synonym": False,
+        }
+    )
+    assert col_key_status("C98") is None
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_status_of_synonym(mock_get):
+    """A key that is alive but no longer accepted reports its real status.
+
+    Why it matters: such a key still returns records, but only those identified
+    under the synonym, so the caller must be able to tell it from an accepted
+    one. Rana catesbeiana (6X35Q) is a synonym of Aquarana catesbeiana.
+    """
+    mock_get.return_value = _fake_response(
+        {
+            "usage": {"key": "6X35Q", "status": "SYNONYM"},
+            "acceptedUsage": {"key": "LN27W"},
+            "diagnostics": {"matchType": "EXACT"},
+            "synonym": True,
+        }
+    )
+    assert col_key_status("6X35Q") == "SYNONYM"
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_status_propagates_http_errors(mock_get):
+    """A GBIF outage raises instead of answering None.
+
+    Why: None means "retired" and blocks the import with a message telling the
+    operator to change the key. An unreachable GBIF must not send them hunting
+    for a replacement of a key that is perfectly valid.
+    """
+    mock_get.side_effect = requests.ConnectionError("GBIF unreachable")
+    with pytest.raises(requests.ConnectionError):
+        col_key_status("LN27W")
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_accepted_col_key_of_synonym(mock_get):
+    """A synonym key gives the key of its accepted taxon.
+
+    Why it matters: GBIF does not resolve a synonym key in a download, it only
+    returns the records filed under that name (#523), so the operator is told
+    which key covers the whole taxon. Payload shape as GBIF returns it for
+    Rana catesbeiana (6X35Q).
+    """
+    mock_get.return_value = _fake_response(
+        {
+            "usage": {"key": "6X35Q", "status": "SYNONYM"},
+            "acceptedUsage": {"key": "LN27W"},
+            "diagnostics": {"matchType": "EXACT"},
+            "synonym": True,
+        }
+    )
+    assert accepted_col_key("6X35Q") == "LN27W"
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_accepted_col_key_is_none_without_accepted_usage(mock_get):
+    """No acceptedUsage in the answer means no hint, not a crash.
+
+    GBIF omits acceptedUsage for an accepted key and for statuses that have no
+    accepted counterpart (a doubtful name, say).
+    """
+    mock_get.return_value = _fake_response(
+        {"usage": {"key": "LN27W", "status": "ACCEPTED"}}
+    )
+    assert accepted_col_key("LN27W") is None
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_accepted_col_key_is_none_on_gbif_error(mock_get):
+    """A GBIF error gives None instead of raising.
+
+    Why: the accepted key is only a hint added to a warning. Unlike
+    col_key_status, whose errors must stop the import, a failed hint must not
+    abort an import that is otherwise fine.
+    """
+    mock_get.side_effect = requests.ConnectionError("down")
+    assert accepted_col_key("6X35Q") is None
+
+
+def _fake_clb_response(status_code, payload):
+    class _R:
+        def __init__(self):
+            self.status_code = status_code
+
+        def json(self):
+            return payload
+
+        def raise_for_status(self):
+            if status_code >= 400:
+                raise requests.HTTPError(f"{status_code}")
+
+    return _R()
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_successor_read_from_archived_record(mock_get):
+    """The successor of a retired key is read from ChecklistBank's 404 body.
+
+    Why the odd shape: ChecklistBank reports a retired key as "not found" but
+    still returns its archived record. The payload mirrors the real answer for
+    C98 (Lycaenidae), superseded by PR9JG. Treating the 404 as a plain error
+    would throw away the only route back for a species with no legacy key.
+    """
+    mock_get.return_value = _fake_clb_response(
+        404,
+        {
+            "usage": {"id": "C98", "archived": True, "supersededBy": "PR9JG"},
+            "code": 404,
+            "message": "Usage 3:C98 was deleted and archived in release: 316165, "
+            "superseded by PR9JG",
+        },
+    )
+    assert col_key_successor("C98") == "PR9JG"
+    assert "/taxon/C98/info" in mock_get.call_args.args[0]
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_successor_none_when_archive_names_no_successor(mock_get):
+    """An archived key without `supersededBy` has no successor.
+
+    This happens for real (Aeshnidae was one such key), so the absence must
+    come back as None for the caller to report, not as a KeyError.
+    """
+    mock_get.return_value = _fake_clb_response(
+        404, {"usage": {"id": "XYZ", "archived": True}, "code": 404}
+    )
+    assert col_key_successor("XYZ") is None
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_successor_none_for_a_key_checklistbank_still_knows(mock_get):
+    """A key alive at ChecklistBank has nothing superseding it.
+
+    GBIF and ChecklistBank can be on different releases, so a key GBIF calls
+    retired may be alive in ChecklistBank's latest one. No successor then.
+    """
+    mock_get.return_value = _fake_clb_response(200, {"usage": {"id": "PR9JG"}})
+    assert col_key_successor("PR9JG") is None
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_col_key_successor_propagates_server_errors(mock_get):
+    """A ChecklistBank outage raises instead of answering "no successor".
+
+    Why: "no successor" sends the operator to search by hand; an outage should
+    be retried instead, so the two must not look alike.
+    """
+    mock_get.return_value = _fake_clb_response(503, {})
+    with pytest.raises(requests.HTTPError):
+        col_key_successor("C98")

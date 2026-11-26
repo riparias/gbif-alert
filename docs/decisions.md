@@ -542,7 +542,22 @@ expresses the ownership.
 **Why:** The flat Details list gave every field the same weight, so date, count and verification did not stand out (tutorial-video feedback).
 **Rejected:** Reorder-only; GBIF ID as a third key-fact tile (too cramped in the drawer, longer FR/NL labels); a collapsible "More details" fold.
 
+## 2026-11-25 - Import refuses to run on a retired COL XR key
+**What:** Before requesting a GBIF download, `import_observations` looks up every species' COL XR key and aborts if one no longer exists; `convert_taxon_keys_to_col --recheck` replaces retired keys from the legacy key (#523).
+**Why:** COL XR keys are retired when a name changes and GBIF then returns nothing for them without error, so the import would silently delete that species' observations and comments.
+**Rejected:** Warn and continue (still loses the data), self-repair inside the import (a changed key changes what is monitored, a human should see it), and going back to legacy keys against the frozen backbone (loses post-freeze taxa, no end-of-life date).
+
+## 2026-11-25 - convert_taxon_keys_to_col renamed update_col_taxon_keys, always rechecks
+**What:** The command is now `update_col_taxon_keys`; it fills blank COL XR keys and repairs retired ones in every run, the `--recheck` flag is gone, and the old name is not kept as an alias.
+**Why:** With retired-key repair it is routine maintenance, also for instances that never had legacy keys, so a name describing a one-off migration misled.
+**Rejected:** `update_gbif_taxon_keys` (reads as the legacy `gbif_taxon_key` field, which is never written), and an alias for the old name (a second command file for a one-off few scripts call).
+
 ## 2026-11-26 - Typo-tolerant search in the filter modals
 **What:** Species, dataset and area search boxes share one helper: accent-insensitive substring match, with an edit-distance fallback only when nothing matches exactly (#433).
 **Why:** A misspelled name returned an empty list; always-on fuzzy matching would flood the list while typing.
 **Rejected:** Fuse.js (a dependency and score tuning for short client-side lists); always-on fuzzy matching.
+
+## 2026-11-26 - Non-accepted COL XR keys are listed in the import's success email
+**What:** A species key that still exists but is no longer accepted is named in the success email (subject flagged, accepted key suggested) and in the `update_col_taxon_keys` report; the import still runs (#523).
+**Why:** GBIF does not resolve a synonym key in a download, it only returns the records filed under that exact name (tested: 22,474 of 22,476 for one synonym, 0 for another), and the log-only warning was never read.
+**Rejected:** Aborting the import (a synonym key can be deliberate), a separate email or one sent only when the list changes (more mail, or stored state), and switching to the accepted key automatically (the operator's call).

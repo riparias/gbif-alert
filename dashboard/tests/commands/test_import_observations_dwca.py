@@ -17,6 +17,7 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+import requests
 import requests_mock as requests_mock_module
 from django.core.management import CommandError, call_command
 from django.test import override_settings
@@ -29,6 +30,7 @@ from dashboard.models import (
     DataImport,
     Observation,
     ObservationImage,
+    Species,
 )
 
 THIS_SCRIPT_PATH = Path(__file__).parent
@@ -534,3 +536,162 @@ def test_archive_without_multimedia_extension(test_data, tmp_path) -> None:
 
     assert Observation.objects.count() == 7
     assert ObservationImage.objects.count() == 0
+
+
+# ---------------------------------------------------------------------------
+# COL key liveness preflight (#523): a COL XR key retired by Catalogue of Life
+# is silently ignored by a GBIF download, so the import must catch it first.
+# ---------------------------------------------------------------------------
+
+_MOD = "dashboard.management.commands.import_observations"
+
+
+def _status_by_key(statuses: dict[str, str | None]):
+    """Stand-in for col_key_status: answers from a dict, "ACCEPTED" otherwise."""
+    return lambda col_key: statuses.get(col_key, "ACCEPTED")
+
+
+@override_settings(ADMINS=[("Admin", "admin@example.com")])
+def test_retired_col_key_aborts_before_the_download(
+    test_data, gbif_download_config, mailoutbox
+) -> None:
+    """A retired key stops the import before any download is requested.
+
+    Why: GBIF accepts a retired key and returns nothing for it, so going on
+    would replace the species' observations (and delete their comments) with
+    an empty set while reporting success. The error names the species, its dead
+    key and the key GBIF now gives for its legacy key; the admins are emailed
+    and the previous data stays in place.
+    """
+    observations_before = Observation.objects.count()
+    with (
+        mock.patch(
+            f"{_MOD}.col_key_status", side_effect=_status_by_key({"3VPFV": None})
+        ),
+        mock.patch(f"{_MOD}.match_col_key") as match,
+        mock.patch(f"{_MOD}.download_gbif_occurrences") as download,
+    ):
+        match.return_value.col_key = "NEWKEY"
+        with pytest.raises(CommandError) as exc:
+            call_command("import_observations")
+
+    message = str(exc.value)
+    assert "Lixus bardanae (3VPFV; GBIF now gives NEWKEY)" in message
+    assert "Polydrusus planifrons" not in message
+    download.assert_not_called()
+    assert Observation.objects.count() == observations_before
+    assert len(mailoutbox) == 1
+    assert "(preflight check)" in mailoutbox[0].subject
+
+
+def test_retired_col_key_without_legacy_key_gets_no_suggestion(
+    test_data, gbif_download_config
+) -> None:
+    """A retired key on a COL-only species is reported without a replacement.
+
+    Species described after the backbone froze have no legacy key to translate,
+    so the message must say so instead of failing or suggesting nothing at all.
+    """
+    Species.objects.create(name="Novum taxon", gbif_col_taxon_key="DEAD1")
+    with (
+        mock.patch(
+            f"{_MOD}.col_key_status", side_effect=_status_by_key({"DEAD1": None})
+        ),
+        mock.patch(f"{_MOD}.match_col_key") as match,
+        mock.patch(f"{_MOD}.download_gbif_occurrences"),
+    ):
+        with pytest.raises(CommandError) as exc:
+            call_command("import_observations")
+
+    assert "Novum taxon (DEAD1; no replacement found" in str(exc.value)
+    match.assert_not_called()
+
+
+@override_settings(ADMINS=[("Admin", "admin@example.com")])
+def test_non_accepted_col_key_is_reported_in_the_success_email(
+    test_data, gbif_download_config, mailoutbox
+) -> None:
+    """A key that became a synonym does not block the import but is emailed.
+
+    Why: GBIF only returns the records filed under the synonym's exact name,
+    which can be nearly all of the taxon's records or none (#523). Blocking
+    every import on a status change would cost more than it protects, but a
+    log line alone is never read: the success email names the species, its key
+    and the accepted key, and its subject changes so it stands out.
+    """
+    downloaded: list[str] = []
+    with (
+        mock.patch(
+            f"{_MOD}.col_key_status", side_effect=_status_by_key({"3VPFV": "SYNONYM"})
+        ),
+        mock.patch(f"{_MOD}.accepted_col_key", return_value="ACC1"),
+        mock.patch(
+            f"{_MOD}.download_gbif_occurrences", side_effect=_fake_download(downloaded)
+        ),
+    ):
+        call_command("import_observations")
+
+    assert len(downloaded) == 1
+    assert Observation.objects.count() == 7
+    assert len(mailoutbox) == 1
+    assert "1 taxon key(s) need attention" in mailoutbox[0].subject
+    assert (
+        "- Lixus bardanae (3VPFV) is SYNONYM; the accepted taxon is ACC1"
+        in mailoutbox[0].body
+    )
+
+
+@override_settings(ADMINS=[("Admin", "admin@example.com")])
+def test_success_email_is_plain_when_every_key_is_accepted(
+    test_data, gbif_download_config, mailoutbox
+) -> None:
+    """With nothing to report, the success email keeps its usual subject and body.
+
+    Guards the other side of the key warning: it must only appear when a key
+    needs attention, or admins learn to ignore it.
+    """
+    with mock.patch(
+        f"{_MOD}.download_gbif_occurrences", side_effect=_fake_download([])
+    ):
+        call_command("import_observations")
+
+    assert len(mailoutbox) == 1
+    assert mailoutbox[0].subject.endswith("Successful observations data import")
+    assert "no longer accepted" not in mailoutbox[0].body
+
+
+def test_col_key_check_skipped_for_a_provided_archive(test_data, tmp_path) -> None:
+    """With --source-dwca the keys are not checked against GBIF.
+
+    Why: a provided archive can predate the COL XR release GBIF serves today,
+    so its keys may legitimately be retired; and such an import must keep
+    working offline.
+    """
+    user_file = tmp_path / "my_download.zip"
+    shutil.copyfile(SAMPLE_DATA_PATH / "gbif_download.zip", user_file)
+
+    with mock.patch(f"{_MOD}.col_key_status", return_value=None) as status:
+        call_command("import_observations", source_dwca=str(user_file))
+
+    status.assert_not_called()
+    assert Observation.objects.count() == 7
+
+
+def test_gbif_error_during_col_key_check_aborts_the_import(
+    test_data, gbif_download_config
+) -> None:
+    """If GBIF cannot be asked, the import stops instead of trusting the keys.
+
+    Why: skipping the check on error would reopen the silent data loss it
+    exists to prevent, on exactly the days GBIF misbehaves.
+    """
+    with (
+        mock.patch(
+            f"{_MOD}.col_key_status", side_effect=requests.ConnectionError("down")
+        ),
+        mock.patch(f"{_MOD}.download_gbif_occurrences") as download,
+    ):
+        with pytest.raises(requests.ConnectionError):
+            call_command("import_observations")
+
+    download.assert_not_called()

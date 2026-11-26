@@ -24,6 +24,7 @@ from django.utils import timezone
 from dwca.darwincore.utils import qualname as qn  # type: ignore
 from dwca.read import DwCAReader  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
+from dashboard.gbif_taxonomy import accepted_col_key, col_key_status, match_col_key
 from dashboard.maintenance import (
     disable_maintenance_for_import,
     enable_maintenance_for_import,
@@ -550,12 +551,92 @@ def _set_initial_data_import(
     observation.initial_data_import_id = replaced.initial_data_import_id
 
 
-def send_successful_import_email():
-    mail_admins(
-        "Successful observations data import",
-        "The daily observation data import has been successfully performed",
-        fail_silently=True,
-    )
+def _suggested_col_key(species: Species) -> str | None:
+    """Return the current COL XR key GBIF gives for a species' legacy key.
+
+    Best effort, to save the operator a search when a COL key was retired: no
+    legacy key, no clean match or a GBIF error all mean "no suggestion".
+    """
+    if species.gbif_taxon_key is None:
+        return None
+    try:
+        return match_col_key(species.gbif_taxon_key).col_key
+    except (requests.RequestException, ValueError):
+        return None
+
+
+def check_col_keys_are_alive(stdout=None) -> list[str]:
+    """Refuse to go on if a monitored COL XR key no longer exists at GBIF.
+
+    COL XR keys get retired when Catalogue of Life changes the name they stand
+    for, and GBIF then ignores them silently: the download succeeds without the
+    taxon, and the import would delete its observations and their comments
+    (#523). One lookup per species, so this is only run ahead of a real GBIF
+    download.
+
+    A key that still exists but is no longer accepted (a synonym, say) does
+    not stop the import: GBIF keeps returning the records filed under that
+    exact name, which can be nearly all of them or none. Such keys are logged
+    and returned, one line each, for the success email.
+
+    Raises CommandError naming every retired key. A GBIF error propagates: an
+    unchecked key must not be imported on trust.
+    """
+    retired: list[Species] = []
+    not_accepted: list[str] = []
+    for species in Species.objects.order_by("name"):
+        # The caller has checked that every species has a key
+        assert species.gbif_col_taxon_key
+        status = col_key_status(species.gbif_col_taxon_key)
+        if status is None:
+            retired.append(species)
+        elif status != "ACCEPTED":
+            accepted = accepted_col_key(species.gbif_col_taxon_key)
+            line = f"{species.name} ({species.gbif_col_taxon_key}) is {status}" + (
+                f"; the accepted taxon is {accepted}" if accepted else ""
+            )
+            not_accepted.append(line)
+            _log_with_time(stdout, f"Warning: COL XR key not accepted: {line}")
+
+    if retired:
+        details = []
+        for species in retired:
+            suggestion = _suggested_col_key(species)
+            hint = (
+                f"GBIF now gives {suggestion}"
+                if suggestion
+                else "no replacement found, search the name on gbif.org"
+            )
+            details.append(f"{species.name} ({species.gbif_col_taxon_key}; {hint})")
+        raise CommandError(
+            "Cannot import: these COL XR keys no longer exist at GBIF, they were "
+            f"retired by Catalogue of Life: {', '.join(details)}. Importing "
+            "would delete the observations of these taxa. Run `manage.py "
+            "update_col_taxon_keys` (preview with --dry-run), or "
+            "update the keys in the admin, then import again."
+        )
+    return not_accepted
+
+
+def send_successful_import_email(key_warnings: list[str] | None = None):
+    """Tell the admins the import worked, and which keys need a look.
+
+    ``key_warnings`` are the lines check_col_keys_are_alive returned. They
+    change the subject too: a daily mail that always reads the same is not read.
+    """
+    subject = "Successful observations data import"
+    body = "The daily observation data import has been successfully performed"
+    if key_warnings:
+        subject += f" - {len(key_warnings)} taxon key(s) need attention"
+        body += (
+            "\n\nThese taxon keys still exist at GBIF but are no longer accepted. "
+            "GBIF only returns the observations filed under that exact name, so "
+            "some may be missing:\n"
+            + "\n".join(f"- {line}" for line in key_warnings)
+            + "\nUpdate the key in the admin if you want all the observations of "
+            "the accepted taxon."
+        )
+    mail_admins(subject, body, fail_silently=True)
 
 
 def send_error_import_email(exception: BaseException, step: str):
@@ -852,6 +933,7 @@ def run_import(
     image_rows_factory: Callable[[], Iterable[RawImageRow]] | None = None,
     gbif_download_id: str | None = None,
     gbif_predicate: dict | None = None,
+    key_warnings: list[str] | None = None,
     stdout=None,
 ) -> DataImport:
     """Run the transactional observation-import pipeline.
@@ -868,7 +950,8 @@ def run_import(
     cleared on exit, whether the import succeeds or fails. On failure the
     transaction rolls back (leaving the database unchanged) and the error is
     re-raised - the command's ``handle()`` emails the admins about it, whatever
-    the step that failed; on success an admin email is sent from here.
+    the step that failed; on success an admin email is sent from here, listing
+    ``key_warnings`` (see check_col_keys_are_alive) if there are any.
     """
     _log_with_time(
         stdout,
@@ -1063,7 +1146,7 @@ def run_import(
     _log_with_time(stdout, f"Named {named_count} dataset(s) from the GBIF registry")
 
     _log_with_time(stdout, "Sending success report")
-    send_successful_import_email()
+    send_successful_import_email(key_warnings)
     return current_data_import
 
 
@@ -1176,7 +1259,7 @@ class Command(BaseCommand):
             names = ", ".join(f"{s.name} ({s.gbif_taxon_key})" for s in missing)
             raise CommandError(
                 "Cannot import: these species have no gbif_col_taxon_key: "
-                f"{names}. Run `manage.py convert_taxon_keys_to_col` (and curate "
+                f"{names}. Run `manage.py update_col_taxon_keys` (and curate "
                 "any unresolved species in the admin) before importing."
             )
 
@@ -1189,6 +1272,7 @@ class Command(BaseCommand):
         # import fails - that includes an archive fetched from a --source-dwca
         # URL. A local file passed with --source-dwca belongs to the operator
         # and is never touched (tmp_source_path stays None).
+        key_warnings: list[str] = []
         try:
             if options["source_dwca"] and _is_url(options["source_dwca"]):
                 _log_with_time(
@@ -1211,6 +1295,14 @@ class Command(BaseCommand):
                     self.stdout,
                     "No DWCA file provided, we'll generate and get a new GBIF download",
                 )
+                # Still part of the preflight: a retired key must stop the run
+                # before a download is requested. Not done for a provided
+                # archive, whose keys may belong to an older COL XR release.
+                _log_with_time(
+                    self.stdout, "Checking that the COL XR keys still exist at GBIF"
+                )
+                key_warnings = check_col_keys_are_alive(self.stdout)
+
                 _log_with_time(
                     self.stdout,
                     "Triggering a GBIF download and waiting for it - this can be long...",
@@ -1325,6 +1417,7 @@ class Command(BaseCommand):
                 image_rows_factory=image_rows_factory if has_images else None,
                 gbif_download_id=gbif_download_id,
                 gbif_predicate=gbif_predicate,
+                key_warnings=key_warnings,
                 stdout=self.stdout,
             )
         finally:

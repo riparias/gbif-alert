@@ -1,4 +1,5 @@
-"""Helpers to map legacy GBIF backbone taxon keys to COL XR taxon keys.
+"""Helpers to map legacy GBIF backbone taxon keys to COL XR taxon keys, and to
+check that a stored COL XR key still exists.
 
 Isolated from the management command so the HTTP call is easy to mock in tests.
 """
@@ -9,6 +10,8 @@ from django.conf import settings
 
 COL_XR_CHECKLIST_KEY = settings.GBIF_COL_XR_CHECKLIST_KEY
 _GBIF_MATCH_URL = "https://api.gbif.org/v2/species/match"
+# "3LXR" is ChecklistBank's alias for the latest COL XR release.
+_CLB_TAXON_INFO_URL = "https://api.checklistbank.org/dataset/3LXR/taxon/{key}/info"
 _TIMEOUT = 30
 
 
@@ -54,3 +57,73 @@ def match_col_key(gbif_taxon_key: int) -> ColMatchResult:
     else:
         detail = f"{match_type}/{status or 'no-usage'}"
     return ColMatchResult(col_key=None, matched=False, detail=detail)
+
+
+def col_key_status(col_key: str) -> str | None:
+    """Return the taxonomic status of a COL XR key, or None if it is retired.
+
+    COL XR keys are not stable: Catalogue of Life ties a key to a name, so a
+    change to the name retires the key (see #523). GBIF answers a retired or
+    unknown key with HTTP 200 and matchType NONE rather than an error, and a
+    download silently returns nothing for it - hence this explicit check.
+
+    Returns the usage status as GBIF reports it ("ACCEPTED", "SYNONYM"...).
+    Raises requests.RequestException on a network or HTTP error: "could not
+    check" must never be mistaken for "retired".
+    """
+    resp = requests.get(
+        _GBIF_MATCH_URL,
+        params={"checklistKey": COL_XR_CHECKLIST_KEY, "usageKey": col_key},
+        timeout=_TIMEOUT,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+
+    usage = data.get("usage") or {}
+    match_type = (data.get("diagnostics") or {}).get("matchType", "NONE")
+    if match_type == "NONE" or not usage:
+        return None
+    # A usage with no status would be a GBIF anomaly; report it as such rather
+    # than as a retired key.
+    return usage.get("status") or "UNKNOWN"
+
+
+def accepted_col_key(col_key: str) -> str | None:
+    """Return the accepted key GBIF gives for a COL XR key that is a synonym.
+
+    A hint for the operator, never applied automatically: which taxon to
+    monitor in place of a synonym is their call. Because it is only a hint, a
+    GBIF error gives None instead of raising.
+    """
+    try:
+        resp = requests.get(
+            _GBIF_MATCH_URL,
+            params={"checklistKey": COL_XR_CHECKLIST_KEY, "usageKey": col_key},
+            timeout=_TIMEOUT,
+        )
+        resp.raise_for_status()
+        return (resp.json().get("acceptedUsage") or {}).get("key")
+    except (requests.RequestException, ValueError):
+        return None
+
+
+def col_key_successor(col_key: str) -> str | None:
+    """Return the key ChecklistBank records as replacing a retired COL XR key.
+
+    Catalogue of Life archives the keys it retires. ChecklistBank answers a
+    retired key with HTTP 404, but the body holds the archived record, which
+    usually names its successor in `supersededBy`. This is the only way back
+    for a species that has no legacy backbone key (#523).
+
+    Returns None when ChecklistBank has no successor, or still knows the key.
+    The successor is ChecklistBank's opinion, from a release that may be newer
+    than the one GBIF serves: callers must check it with col_key_status before
+    using it. Raises requests.RequestException on any other HTTP error.
+    """
+    resp = requests.get(_CLB_TAXON_INFO_URL.format(key=col_key), timeout=_TIMEOUT)
+    if resp.status_code != 404:
+        # 200: the key is alive in the latest release, nothing supersedes it.
+        resp.raise_for_status()
+        return None
+    usage = resp.json().get("usage") or {}
+    return usage.get("supersededBy") or None

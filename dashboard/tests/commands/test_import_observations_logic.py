@@ -1146,7 +1146,7 @@ def test_import_aborts_when_all_missing():
     Species.objects.create(name="Lixus bardanae", gbif_taxon_key=LIXUS_KEY)
     with pytest.raises(CommandError) as exc:
         call_command("import_observations")
-    assert "convert_taxon_keys_to_col" in str(exc.value)
+    assert "update_col_taxon_keys" in str(exc.value)
 
 
 def test_import_aborts_when_a_species_has_blank_col_key():

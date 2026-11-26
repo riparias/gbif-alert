@@ -44,6 +44,21 @@ def no_gbif_registry_calls():
         yield
 
 
+@pytest.fixture(autouse=True)
+def no_gbif_key_liveness_calls():
+    """Keep the COL key liveness preflight off the network.
+
+    A test that lets the command request a GBIF download would otherwise look
+    every species key up at GBIF. Default to "all keys are alive and accepted";
+    tests of the preflight patch the same name themselves, and their patch wins.
+    """
+    with mock.patch(
+        "dashboard.management.commands.import_observations.col_key_status",
+        return_value="ACCEPTED",
+    ):
+        yield
+
+
 def predicate_builder_belgium(species_list: QuerySet[Species]):
     """Build a GBIF.org download predicate for Belgian observations, after 2000.
 
