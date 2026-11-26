@@ -7,6 +7,7 @@ import InputText from "primevue/inputtext";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import type { components } from "../types/api";
+import { searchFilter } from "../utils/fuzzyMatch";
 import { tagColor } from "../utils/tagColor";
 import { pickVernacular } from "../utils/vernacular";
 import TagFilterChips from "./TagFilterChips.vue";
@@ -58,15 +59,10 @@ const rows = computed(() =>
 );
 
 const filtered = computed(() => {
-    let list = rows.value;
-    const q = search.value.trim().toLowerCase();
-    if (q) {
-        list = list.filter(
-            (sp) =>
-                sp.scientificName.toLowerCase().includes(q) ||
-                (sp.vernacularName ?? "").toLowerCase().includes(q),
-        );
-    }
+    let list = searchFilter(rows.value, search.value, (sp) => [
+        sp.scientificName,
+        sp.vernacularName,
+    ]);
     if (activeTags.value.length) {
         list = list.filter((sp) =>
             activeTags.value.every((activeTag) => sp.tags.includes(activeTag)),
