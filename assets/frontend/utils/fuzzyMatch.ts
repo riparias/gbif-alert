@@ -6,7 +6,10 @@
 
 /** Lowercase and strip diacritics (e-acute -> e). */
 function normalize(s: string): string {
-    return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    return s
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
 }
 
 /** Typos tolerated for a query word: none when short, 1 from 4 letters, 2 from 8. */
