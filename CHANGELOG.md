@@ -1,5 +1,8 @@
 # Unreleased
 
+- The search box of the species, dataset and area filters now forgives typos
+  ("Procyon lotro" finds *Procyon lotor*) and ignores accents (#433). Near
+  matches are only shown when nothing matches exactly.
 - `import_observations` now refuses to run when a species' COL XR key has been
   retired by Catalogue of Life, instead of silently importing nothing for that
   species and deleting its observations (#523). The error names the species and

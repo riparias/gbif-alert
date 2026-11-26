@@ -551,3 +551,8 @@ expresses the ownership.
 **What:** The command is now `update_col_taxon_keys`; it fills blank COL XR keys and repairs retired ones in every run, the `--recheck` flag is gone, and the old name is not kept as an alias.
 **Why:** With retired-key repair it is routine maintenance, also for instances that never had legacy keys, so a name describing a one-off migration misled.
 **Rejected:** `update_gbif_taxon_keys` (reads as the legacy `gbif_taxon_key` field, which is never written), and an alias for the old name (a second command file for a one-off few scripts call).
+
+## 2026-11-26 - Typo-tolerant search in the filter modals
+**What:** Species, dataset and area search boxes share one helper: accent-insensitive substring match, with an edit-distance fallback only when nothing matches exactly (#433).
+**Why:** A misspelled name returned an empty list; always-on fuzzy matching would flood the list while typing.
+**Rejected:** Fuse.js (a dependency and score tuning for short client-side lists); always-on fuzzy matching.

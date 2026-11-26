@@ -7,6 +7,7 @@ import InputText from "primevue/inputtext";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import type { components } from "../types/api";
+import { searchFilter } from "../utils/fuzzyMatch";
 
 type DatasetOut = components["schemas"]["DatasetOut"];
 
@@ -33,11 +34,7 @@ watch(
     { deep: true },
 );
 
-const filtered = computed(() => {
-    const q = search.value.trim().toLowerCase();
-    if (!q) return props.options;
-    return props.options.filter((d) => d.name.toLowerCase().includes(q));
-});
+const filtered = computed(() => searchFilter(props.options, search.value, (d) => [d.name]));
 
 const tableSelection = computed(() => filtered.value.filter((d) => localIds.value.has(d.id)));
 
