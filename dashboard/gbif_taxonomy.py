@@ -88,6 +88,25 @@ def col_key_status(col_key: str) -> str | None:
     return usage.get("status") or "UNKNOWN"
 
 
+def accepted_col_key(col_key: str) -> str | None:
+    """Return the accepted key GBIF gives for a COL XR key that is a synonym.
+
+    A hint for the operator, never applied automatically: which taxon to
+    monitor in place of a synonym is their call. Because it is only a hint, a
+    GBIF error gives None instead of raising.
+    """
+    try:
+        resp = requests.get(
+            _GBIF_MATCH_URL,
+            params={"checklistKey": COL_XR_CHECKLIST_KEY, "usageKey": col_key},
+            timeout=_TIMEOUT,
+        )
+        resp.raise_for_status()
+        return (resp.json().get("acceptedUsage") or {}).get("key")
+    except (requests.RequestException, ValueError):
+        return None
+
+
 def col_key_successor(col_key: str) -> str | None:
     """Return the key ChecklistBank records as replacing a retired COL XR key.
 

@@ -24,7 +24,7 @@ from django.utils import timezone
 from dwca.darwincore.utils import qualname as qn  # type: ignore
 from dwca.read import DwCAReader  # type: ignore
 from gbif_blocking_occurrences_download import download_occurrences as download_gbif_occurrences  # type: ignore
-from dashboard.gbif_taxonomy import col_key_status, match_col_key
+from dashboard.gbif_taxonomy import accepted_col_key, col_key_status, match_col_key
 from dashboard.maintenance import (
     disable_maintenance_for_import,
     enable_maintenance_for_import,
@@ -565,7 +565,7 @@ def _suggested_col_key(species: Species) -> str | None:
         return None
 
 
-def check_col_keys_are_alive(stdout=None) -> None:
+def check_col_keys_are_alive(stdout=None) -> list[str]:
     """Refuse to go on if a monitored COL XR key no longer exists at GBIF.
 
     COL XR keys get retired when Catalogue of Life changes the name they stand
@@ -574,13 +574,16 @@ def check_col_keys_are_alive(stdout=None) -> None:
     (#523). One lookup per species, so this is only run ahead of a real GBIF
     download.
 
-    A key that still exists but is no longer accepted (a synonym, say) is only
-    logged: it keeps returning records, though possibly fewer than before.
+    A key that still exists but is no longer accepted (a synonym, say) does
+    not stop the import: GBIF keeps returning the records filed under that
+    exact name, which can be nearly all of them or none. Such keys are logged
+    and returned, one line each, for the success email.
 
     Raises CommandError naming every retired key. A GBIF error propagates: an
     unchecked key must not be imported on trust.
     """
     retired: list[Species] = []
+    not_accepted: list[str] = []
     for species in Species.objects.order_by("name"):
         # The caller has checked that every species has a key
         assert species.gbif_col_taxon_key
@@ -588,12 +591,12 @@ def check_col_keys_are_alive(stdout=None) -> None:
         if status is None:
             retired.append(species)
         elif status != "ACCEPTED":
-            _log_with_time(
-                stdout,
-                f"Warning: COL XR key {species.gbif_col_taxon_key} "
-                f"({species.name}) is {status}, not ACCEPTED: records of the "
-                "accepted taxon may be missed.",
+            accepted = accepted_col_key(species.gbif_col_taxon_key)
+            line = f"{species.name} ({species.gbif_col_taxon_key}) is {status}" + (
+                f"; the accepted taxon is {accepted}" if accepted else ""
             )
+            not_accepted.append(line)
+            _log_with_time(stdout, f"Warning: COL XR key not accepted: {line}")
 
     if retired:
         details = []
@@ -612,14 +615,28 @@ def check_col_keys_are_alive(stdout=None) -> None:
             "update_col_taxon_keys` (preview with --dry-run), or "
             "update the keys in the admin, then import again."
         )
+    return not_accepted
 
 
-def send_successful_import_email():
-    mail_admins(
-        "Successful observations data import",
-        "The daily observation data import has been successfully performed",
-        fail_silently=True,
-    )
+def send_successful_import_email(key_warnings: list[str] | None = None):
+    """Tell the admins the import worked, and which keys need a look.
+
+    ``key_warnings`` are the lines check_col_keys_are_alive returned. They
+    change the subject too: a daily mail that always reads the same is not read.
+    """
+    subject = "Successful observations data import"
+    body = "The daily observation data import has been successfully performed"
+    if key_warnings:
+        subject += f" - {len(key_warnings)} taxon key(s) need attention"
+        body += (
+            "\n\nThese taxon keys still exist at GBIF but are no longer accepted. "
+            "GBIF only returns the observations filed under that exact name, so "
+            "some may be missing:\n"
+            + "\n".join(f"- {line}" for line in key_warnings)
+            + "\nUpdate the key in the admin if you want all the observations of "
+            "the accepted taxon."
+        )
+    mail_admins(subject, body, fail_silently=True)
 
 
 def send_error_import_email(exception: BaseException, step: str):
@@ -916,6 +933,7 @@ def run_import(
     image_rows_factory: Callable[[], Iterable[RawImageRow]] | None = None,
     gbif_download_id: str | None = None,
     gbif_predicate: dict | None = None,
+    key_warnings: list[str] | None = None,
     stdout=None,
 ) -> DataImport:
     """Run the transactional observation-import pipeline.
@@ -932,7 +950,8 @@ def run_import(
     cleared on exit, whether the import succeeds or fails. On failure the
     transaction rolls back (leaving the database unchanged) and the error is
     re-raised - the command's ``handle()`` emails the admins about it, whatever
-    the step that failed; on success an admin email is sent from here.
+    the step that failed; on success an admin email is sent from here, listing
+    ``key_warnings`` (see check_col_keys_are_alive) if there are any.
     """
     _log_with_time(
         stdout,
@@ -1127,7 +1146,7 @@ def run_import(
     _log_with_time(stdout, f"Named {named_count} dataset(s) from the GBIF registry")
 
     _log_with_time(stdout, "Sending success report")
-    send_successful_import_email()
+    send_successful_import_email(key_warnings)
     return current_data_import
 
 
@@ -1253,6 +1272,7 @@ class Command(BaseCommand):
         # import fails - that includes an archive fetched from a --source-dwca
         # URL. A local file passed with --source-dwca belongs to the operator
         # and is never touched (tmp_source_path stays None).
+        key_warnings: list[str] = []
         try:
             if options["source_dwca"] and _is_url(options["source_dwca"]):
                 _log_with_time(
@@ -1281,7 +1301,7 @@ class Command(BaseCommand):
                 _log_with_time(
                     self.stdout, "Checking that the COL XR keys still exist at GBIF"
                 )
-                check_col_keys_are_alive(self.stdout)
+                key_warnings = check_col_keys_are_alive(self.stdout)
 
                 _log_with_time(
                     self.stdout,
@@ -1397,6 +1417,7 @@ class Command(BaseCommand):
                 image_rows_factory=image_rows_factory if has_images else None,
                 gbif_download_id=gbif_download_id,
                 gbif_predicate=gbif_predicate,
+                key_warnings=key_warnings,
                 stdout=self.stdout,
             )
         finally:

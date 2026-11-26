@@ -607,19 +607,24 @@ def test_retired_col_key_without_legacy_key_gets_no_suggestion(
     match.assert_not_called()
 
 
-def test_non_accepted_col_key_does_not_block_the_import(
-    test_data, gbif_download_config
+@override_settings(ADMINS=[("Admin", "admin@example.com")])
+def test_non_accepted_col_key_is_reported_in_the_success_email(
+    test_data, gbif_download_config, mailoutbox
 ) -> None:
-    """A key that became a synonym is only warned about; the import goes on.
+    """A key that became a synonym does not block the import but is emailed.
 
-    Why: the key still returns records, so blocking every import on a status
-    change would cost more than it protects. Only a retired key is fatal.
+    Why: GBIF only returns the records filed under the synonym's exact name,
+    which can be nearly all of the taxon's records or none (#523). Blocking
+    every import on a status change would cost more than it protects, but a
+    log line alone is never read: the success email names the species, its key
+    and the accepted key, and its subject changes so it stands out.
     """
     downloaded: list[str] = []
     with (
         mock.patch(
             f"{_MOD}.col_key_status", side_effect=_status_by_key({"3VPFV": "SYNONYM"})
         ),
+        mock.patch(f"{_MOD}.accepted_col_key", return_value="ACC1"),
         mock.patch(
             f"{_MOD}.download_gbif_occurrences", side_effect=_fake_download(downloaded)
         ),
@@ -628,6 +633,31 @@ def test_non_accepted_col_key_does_not_block_the_import(
 
     assert len(downloaded) == 1
     assert Observation.objects.count() == 7
+    assert len(mailoutbox) == 1
+    assert "1 taxon key(s) need attention" in mailoutbox[0].subject
+    assert (
+        "- Lixus bardanae (3VPFV) is SYNONYM; the accepted taxon is ACC1"
+        in mailoutbox[0].body
+    )
+
+
+@override_settings(ADMINS=[("Admin", "admin@example.com")])
+def test_success_email_is_plain_when_every_key_is_accepted(
+    test_data, gbif_download_config, mailoutbox
+) -> None:
+    """With nothing to report, the success email keeps its usual subject and body.
+
+    Guards the other side of the key warning: it must only appear when a key
+    needs attention, or admins learn to ignore it.
+    """
+    with mock.patch(
+        f"{_MOD}.download_gbif_occurrences", side_effect=_fake_download([])
+    ):
+        call_command("import_observations")
+
+    assert len(mailoutbox) == 1
+    assert mailoutbox[0].subject.endswith("Successful observations data import")
+    assert "no longer accepted" not in mailoutbox[0].body
 
 
 def test_col_key_check_skipped_for_a_provided_archive(test_data, tmp_path) -> None:

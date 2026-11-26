@@ -556,3 +556,8 @@ expresses the ownership.
 **What:** Species, dataset and area search boxes share one helper: accent-insensitive substring match, with an edit-distance fallback only when nothing matches exactly (#433).
 **Why:** A misspelled name returned an empty list; always-on fuzzy matching would flood the list while typing.
 **Rejected:** Fuse.js (a dependency and score tuning for short client-side lists); always-on fuzzy matching.
+
+## 2026-11-26 - Non-accepted COL XR keys are listed in the import's success email
+**What:** A species key that still exists but is no longer accepted is named in the success email (subject flagged, accepted key suggested) and in the `update_col_taxon_keys` report; the import still runs (#523).
+**Why:** GBIF does not resolve a synonym key in a download, it only returns the records filed under that exact name (tested: 22,474 of 22,476 for one synonym, 0 for another), and the log-only warning was never read.
+**Rejected:** Aborting the import (a synonym key can be deliberate), a separate email or one sent only when the list changes (more mail, or stored state), and switching to the accepted key automatically (the operator's call).

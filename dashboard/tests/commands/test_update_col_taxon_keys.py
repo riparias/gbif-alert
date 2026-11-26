@@ -363,20 +363,22 @@ def test_prefers_legacy_key_over_checklistbank(mock_match, mock_status, mock_suc
 @patch(f"{_CMD}.col_key_status")
 @patch(f"{_CMD}.match_col_key")
 def test_reports_non_accepted_key_without_changing_it(mock_match, mock_status):
-    """A key that became a synonym is listed, not rewritten.
+    """A key that became a synonym is listed with its accepted key, not rewritten.
 
     Why: it still returns records, and which accepted taxon to monitor instead
     is a judgement call (the accepted name may cover more than the operator
-    wants), so the command only points it out.
+    wants), so the command only points it out. Naming the accepted key saves
+    the operator a search on gbif.org.
     """
     mock_status.return_value = "SYNONYM"
     sp = Species.objects.create(
         name="Rana catesbeiana", gbif_taxon_key=2427092, gbif_col_taxon_key="6X35Q"
     )
-    output = _run()
+    with patch(f"{_CMD}.accepted_col_key", return_value="LN27W"):
+        output = _run()
     sp.refresh_from_db()
     assert sp.gbif_col_taxon_key == "6X35Q"
-    assert "Rana catesbeiana (6X35Q) is SYNONYM" in output
+    assert "Rana catesbeiana (6X35Q) is SYNONYM; the accepted taxon is LN27W" in output
     mock_match.assert_not_called()
 
 

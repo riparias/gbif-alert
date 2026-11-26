@@ -21,6 +21,7 @@ from django.db.models import Q
 
 from dashboard.gbif_taxonomy import (
     ColMatchResult,
+    accepted_col_key,
     col_key_status,
     col_key_successor,
     match_col_key,
@@ -107,7 +108,9 @@ class Command(BaseCommand):
                 retired_keys[species.pk] = species.gbif_col_taxon_key
                 to_resolve.append(species)
             elif status != "ACCEPTED":
-                not_accepted.append((species, status))
+                not_accepted.append(
+                    (species, status, accepted_col_key(species.gbif_col_taxon_key))
+                )
 
         for species in to_resolve:
             try:
@@ -203,9 +206,10 @@ class Command(BaseCommand):
         self.stdout.write(
             f"NOT ACCEPTED - key still exists, check manually ({len(not_accepted)}):"
         )
-        for species, status in not_accepted:
+        for species, status, accepted in not_accepted:
+            hint = f"; the accepted taxon is {accepted}" if accepted else ""
             self.stdout.write(
-                f"  {species.name} ({species.gbif_col_taxon_key}) is {status}"
+                f"  {species.name} ({species.gbif_col_taxon_key}) is {status}{hint}"
             )
 
         self.stdout.write("")

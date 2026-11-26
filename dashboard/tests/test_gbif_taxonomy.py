@@ -9,7 +9,12 @@ from unittest.mock import patch
 import pytest
 import requests
 
-from dashboard.gbif_taxonomy import col_key_status, col_key_successor, match_col_key
+from dashboard.gbif_taxonomy import (
+    accepted_col_key,
+    col_key_status,
+    col_key_successor,
+    match_col_key,
+)
 
 
 def _fake_response(payload):
@@ -203,6 +208,51 @@ def test_col_key_status_propagates_http_errors(mock_get):
     mock_get.side_effect = requests.ConnectionError("GBIF unreachable")
     with pytest.raises(requests.ConnectionError):
         col_key_status("LN27W")
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_accepted_col_key_of_synonym(mock_get):
+    """A synonym key gives the key of its accepted taxon.
+
+    Why it matters: GBIF does not resolve a synonym key in a download, it only
+    returns the records filed under that name (#523), so the operator is told
+    which key covers the whole taxon. Payload shape as GBIF returns it for
+    Rana catesbeiana (6X35Q).
+    """
+    mock_get.return_value = _fake_response(
+        {
+            "usage": {"key": "6X35Q", "status": "SYNONYM"},
+            "acceptedUsage": {"key": "LN27W"},
+            "diagnostics": {"matchType": "EXACT"},
+            "synonym": True,
+        }
+    )
+    assert accepted_col_key("6X35Q") == "LN27W"
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_accepted_col_key_is_none_without_accepted_usage(mock_get):
+    """No acceptedUsage in the answer means no hint, not a crash.
+
+    GBIF omits acceptedUsage for an accepted key and for statuses that have no
+    accepted counterpart (a doubtful name, say).
+    """
+    mock_get.return_value = _fake_response(
+        {"usage": {"key": "LN27W", "status": "ACCEPTED"}}
+    )
+    assert accepted_col_key("LN27W") is None
+
+
+@patch("dashboard.gbif_taxonomy.requests.get")
+def test_accepted_col_key_is_none_on_gbif_error(mock_get):
+    """A GBIF error gives None instead of raising.
+
+    Why: the accepted key is only a hint added to a warning. Unlike
+    col_key_status, whose errors must stop the import, a failed hint must not
+    abort an import that is otherwise fine.
+    """
+    mock_get.side_effect = requests.ConnectionError("down")
+    assert accepted_col_key("6X35Q") is None
 
 
 def _fake_clb_response(status_code, payload):

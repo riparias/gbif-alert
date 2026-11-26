@@ -400,7 +400,9 @@ which names the species and the replacement key GBIF suggests. To fix it, run
 retired key with the one GBIF now gives for the species' legacy backbone key,
 or, for a species without one, with the successor Catalogue of Life recorded for
 the retired key. Keys it cannot replace, and keys that became synonyms, are
-listed for you to update in the admin. Keys hard-coded in a custom `PREDICATE_BUILDER` are not
+listed for you to update in the admin. A synonym key does not stop the import,
+but GBIF only returns the observations filed under that exact name: the success
+email lists such keys with the accepted key to use instead. Keys hard-coded in a custom `PREDICATE_BUILDER` are not
 checked.
 
 ## Run GBIF Alert manually

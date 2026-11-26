@@ -6,7 +6,8 @@
 - `import_observations` now refuses to run when a species' COL XR key has been
   retired by Catalogue of Life, instead of silently importing nothing for that
   species and deleting its observations (#523). The error names the species and
-  the replacement key, and `update_col_taxon_keys` repairs the keys. That
+  the replacement key, and `update_col_taxon_keys` repairs the keys. A key that
+  became a synonym is listed in the import's success email. That
   command is the former `convert_taxon_keys_to_col`, renamed: update any script
   that calls it. See INSTALL.md "Common operations".
 
