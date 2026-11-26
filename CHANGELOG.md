@@ -1,3 +1,9 @@
+# Unreleased
+
+- The search box of the species, dataset and area filters now forgives typos
+  ("Procyon lotro" finds *Procyon lotor*) and ignores accents (#433). Near
+  matches are only shown when nothing matches exactly.
+
 # 2.13.0 (2026-11-23)
 
 - Waarnemingen.be's new verification statuses are now recognised:

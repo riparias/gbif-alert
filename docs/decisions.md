@@ -541,3 +541,8 @@ expresses the ownership.
 **What:** Drawer header is the species name plus a GBIF-logo button with the occurrence ID; date/count as tiles, verification and basis of record as tags, provenance in a muted "Source" list (#519).
 **Why:** The flat Details list gave every field the same weight, so date, count and verification did not stand out (tutorial-video feedback).
 **Rejected:** Reorder-only; GBIF ID as a third key-fact tile (too cramped in the drawer, longer FR/NL labels); a collapsible "More details" fold.
+
+## 2026-11-26 - Typo-tolerant search in the filter modals
+**What:** Species, dataset and area search boxes share one helper: accent-insensitive substring match, with an edit-distance fallback only when nothing matches exactly (#433).
+**Why:** A misspelled name returned an empty list; always-on fuzzy matching would flood the list while typing.
+**Rejected:** Fuse.js (a dependency and score tuning for short client-side lists); always-on fuzzy matching.

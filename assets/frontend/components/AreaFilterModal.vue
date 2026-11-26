@@ -7,6 +7,7 @@ import InputText from "primevue/inputtext";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import type { components } from "../types/api";
+import { searchFilter } from "../utils/fuzzyMatch";
 import { tagColor } from "../utils/tagColor";
 import TagFilterChips from "./TagFilterChips.vue";
 
@@ -43,9 +44,7 @@ const allTags = computed(() => {
 });
 
 const filtered = computed(() => {
-    let list = props.options;
-    const q = search.value.trim().toLowerCase();
-    if (q) list = list.filter((a) => a.name.toLowerCase().includes(q));
+    let list = searchFilter(props.options, search.value, (a) => [a.name]);
     if (activeTags.value.length) {
         list = list.filter((a) =>
             activeTags.value.every((activeTag) => a.tags.includes(activeTag)),
