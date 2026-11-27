@@ -16,6 +16,7 @@ import SpeciesFilterModal from "../components/SpeciesFilterModal.vue";
 import AreaFilterModal from "../components/AreaFilterModal.vue";
 import DatasetFilterModal from "../components/DatasetFilterModal.vue";
 import TemplateCard from "../components/TemplateCard.vue";
+import FieldHelp from "../components/FieldHelp.vue";
 import { getNavConfig } from "../utils/navConfig";
 import type { components } from "../types/api";
 import { getCsrf } from "../utils/csrf";
@@ -420,7 +421,10 @@ async function save() {
                 </div>
 
                 <div class="form-field">
-                    <label>{{ t("message.verificationFilter") }}</label>
+                    <label>
+                        {{ t("message.verificationFilter") }}
+                        <FieldHelp :text="t('message.verificationFilterHelp')" />
+                    </label>
                     <Select
                         v-model="verifiedFilter"
                         :options="verifiedFilterOptions"

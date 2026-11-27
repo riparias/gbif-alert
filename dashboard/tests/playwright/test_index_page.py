@@ -247,7 +247,8 @@ def test_table_shows_verified_badge(page: Page, live_server):
 
 @pytest.mark.django_db(transaction=True)
 def test_table_shows_unverified_badge(page: Page, live_server):
-    """An unverified observation shows a red 'Unverified' badge in the table."""
+    """An unverified observation shows a red 'Not marked as verified' badge in the
+    table: the wording must not claim the record failed verification (#469)."""
     basis = BasisOfRecord.objects.create(name="HUMAN_OBSERVATION")
     sp = Species.objects.create(name="Procambarus fallax", gbif_taxon_key=8879526)
     _make_observation(
@@ -259,7 +260,7 @@ def test_table_shows_unverified_badge(page: Page, live_server):
 
     badge = page.locator(".badge-danger")
     expect(badge).to_be_visible()
-    expect(badge).to_have_text("Unverified")
+    expect(badge).to_have_text("Not marked as verified")
 
 
 @pytest.mark.django_db(transaction=True)
@@ -733,7 +734,9 @@ def test_stale_filter_response_does_not_overwrite_newer_results(
 
     page.route(lambda url: "/api/v2/observations/?" in url, handle)
 
-    page.get_by_text("Unverified only", exact=True).click()  # slow request (1 result)
+    page.locator(".verified-select-button").get_by_text(
+        "Not marked as verified", exact=True
+    ).click()  # slow request (1 result)
     # Wait for that request to actually leave the browser (the debounced fetch
     # fires a few hundred ms after the click) before making the second change,
     # so the two are distinct requests.

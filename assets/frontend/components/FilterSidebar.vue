@@ -10,6 +10,7 @@ import SpeciesFilterModal from "./SpeciesFilterModal.vue";
 import AreaFilterModal from "./AreaFilterModal.vue";
 import DatasetFilterModal from "./DatasetFilterModal.vue";
 import ObservationStatusToggle from "./ObservationStatusToggle.vue";
+import FieldHelp from "./FieldHelp.vue";
 import { useFiltersStore } from "../stores/filters";
 import { useResultsStore } from "../stores/results";
 import { useFilterOptionsStore } from "../stores/filterOptions";
@@ -305,7 +306,10 @@ function showDatasetsTab() {
             </div>
 
             <div class="filter-group">
-                <label>{{ t("message.verificationFilter") }}</label>
+                <label>
+                    {{ t("message.verificationFilter") }}
+                    <FieldHelp :text="t('message.verificationFilterHelp')" />
+                </label>
                 <SelectButton
                     v-model="selectedVerifiedFilter"
                     :options="verifiedFilterOptions"
@@ -421,7 +425,7 @@ function showDatasetsTab() {
     height: 100%;
 }
 
-/* Verified filter: All (1st) slate, Verified (2nd) green, Unverified (3rd) red */
+/* Verified filter: All (1st) slate, Verified (2nd) green, Not marked as verified (3rd) red */
 :deep(.verified-select-button .p-togglebutton:nth-child(1).p-togglebutton-checked),
 :deep(.verified-select-button .p-togglebutton:nth-child(1).p-togglebutton-checked *) {
     background: #475569;
