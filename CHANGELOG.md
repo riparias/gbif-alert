@@ -10,6 +10,10 @@
   became a synonym is listed in the import's success email. That
   command is the former `convert_taxon_keys_to_col`, renamed: update any script
   that calls it. See INSTALL.md "Common operations".
+- "Unverified" is now "Not marked as verified" (#469): most records shown as
+  unverified simply have no verification status from their publisher. A
+  question mark next to the verification filter explains where the value
+  comes from.
 
 # 2.13.0 (2026-11-23)
 

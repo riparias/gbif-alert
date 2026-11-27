@@ -561,3 +561,8 @@ expresses the ownership.
 **What:** A species key that still exists but is no longer accepted is named in the success email (subject flagged, accepted key suggested) and in the `update_col_taxon_keys` report; the import still runs (#523).
 **Why:** GBIF does not resolve a synonym key in a download, it only returns the records filed under that exact name (tested: 22,474 of 22,476 for one synonym, 0 for another), and the log-only warning was never read.
 **Rejected:** Aborting the import (a synonym key can be deliberate), a separate email or one sent only when the list changes (more mail, or stored state), and switching to the accepted key automatically (the operator's call).
+
+## 2026-11-27 - "Unverified" relabelled "Not marked as verified", with a field help tooltip
+**What:** UI and alert choice labels say "Not marked as verified"; a reusable `FieldHelp` question-mark tooltip next to the verification filter names `identificationVerificationStatus` (#469, #472).
+**Why:** Most records are only "unverified" because the publisher left the field empty, which readers took as a data quality problem.
+**Rejected:** A third `unknown` class (data model and filter value change), help text on every field (#472: only where needed).

@@ -1281,7 +1281,7 @@ class ObservationFilterSet(models.Model):
     VERIFIED_FILTER_CHOICES = [
         (VERIFIED_FILTER_ALL, "All observations"),
         (VERIFIED_FILTER_VERIFIED_ONLY, "Verified only"),
-        (VERIFIED_FILTER_UNVERIFIED_ONLY, "Unverified only"),
+        (VERIFIED_FILTER_UNVERIFIED_ONLY, "Not marked as verified"),
     ]
 
     AREA_FILTER_INSIDE = "inside"
